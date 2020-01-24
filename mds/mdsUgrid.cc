@@ -50,7 +50,7 @@ namespace {
     unsigned nvtx, ntri, nquad, ntet, npyr, nprz, nhex, nbdry;
     void print() {
       lion_eprint(1,
-          "nvtx %u ntri %u nquad %u ntet %u npyr %u nprz %u nhex %u\n",
+          "nvtx %u ntri %u nquad %u ntet %u npyr %u nprz %u nhex %u\n",        
           nvtx,ntri,nquad,ntet,npyr,nprz,nhex);
     }
   };
@@ -529,7 +529,7 @@ namespace {
     fclose(r->file);
   }
 
-  void readUgrid(apf::Mesh2* m, const char* filename)
+  void read3DUgrid(apf::Mesh2* m, const char* filename)
   {
     header hdr;
     Reader r;
@@ -546,7 +546,7 @@ namespace {
     m->acceptChanges();
   }
 
-  void readUgrid2D(apf::Mesh2* m, const char* filename)
+  void read2DUgrid(apf::Mesh2* m, const char* filename)
   {
     header hdr;
     Reader r;
@@ -555,7 +555,6 @@ namespace {
     hdr.print();
     readNodes(&r, &hdr);
     setNodeIds(&r, &hdr);
-    // readFacesAndTags(&r,&hdr);
     std::cout << "set faces and tags\n";
     read2DElms(&r,&hdr);
     std::cout << "read elems\n";
@@ -720,37 +719,59 @@ namespace {
 }
 
 namespace apf {
+  // Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename)
+  // {
+  //   Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+  //   apf::changeMdsDimension(m, 3);
+  //   readUgrid(m, filename);
+  //   lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
+  //       m->count(0), m->count(1), m->count(2), m->count(3));
+  //   return m;
+  // }
+
+  // Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename,
+  //                         const int mesh_dim)
+  // {
+  //   PCU_ALWAYS_ASSERT(mesh_dim >= 2);
+  //   if (3 == mesh_dim)
+  //     return loadMdsFromUgrid(g, filename);
+  //   else if (2 == mesh_dim)
+  //   {
+  //     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+  //     apf::changeMdsDimension(m, mesh_dim);
+  //     readUgrid2D(m, filename);
+  //     std::cout << "read ugrid\n";
+  //     lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
+  //                 m->count(0), m->count(1), m->count(2), m->count(3));
+  //     return m;
+  //   }
+  //   else // silence compiler warning
+  //   {
+  //     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+  //     return m;
+  //   }
+  // }
+
   Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename)
   {
     Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-    apf::changeMdsDimension(m, 3);
-    readUgrid(m, filename);
-    lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
-        m->count(0), m->count(1), m->count(2), m->count(3));
-    return m;
-  }
+    header hdr;
+    Reader r;
+    initReader(&r, m, filename);
+    readHeader(&r, &hdr);
+    int dim = 2;
+    if (hdr.ntet != 0 || hdr.npyr != 0 || hdr.nprz != 0 || hdr.nhex != 0)
+      dim = 3;
 
-  Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename,
-                          const int mesh_dim)
-  {
-    PCU_ALWAYS_ASSERT(mesh_dim >= 2);
-    if (3 == mesh_dim)
-      return loadMdsFromUgrid(g, filename);
-    else if (2 == mesh_dim)
-    {
-      Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-      apf::changeMdsDimension(m, mesh_dim);
-      readUgrid2D(m, filename);
-      std::cout << "read ugrid\n";
-      lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
+    apf::changeMdsDimension(m, dim);
+    freeReader(&r);
+    if (2 == dim)
+      read2DUgrid(m, filename);
+    else if (3 == dim)
+      read3DUgrid(m, filename);
+    lion_eprint(1,"vtx %lu edge %lu face %lu rgn %lu\n",
                   m->count(0), m->count(1), m->count(2), m->count(3));
-      return m;
-    }
-    else // silence compiler warning
-    {
-      Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-      return m;
-    }
+    return m;
   }
 
   void printUgridPtnStats(gmi_model* g, const char* ufile, const char* vtxptn,
