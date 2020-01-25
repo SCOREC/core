@@ -258,8 +258,6 @@ namespace {
       int val = tags[id];
       r->mesh->setIntTag(f, t, &val);
     }
-    // free(vtx);
-    // free(tags);
     lion_eprint(1, "set %d %s face tags\n",
         nbdry, apf::Mesh::typeName[apfType]);
   }
@@ -276,15 +274,11 @@ namespace {
     unsigned* tags = r->edgeTags;
     for(unsigned id=0; id<nbdry; id++) {
       apf::Downward verts;
-      std::cout << "boundary edge " << id << " has verts: ";
       for(unsigned j=0; j<nverts; j++) {
-        std::cout << vtx[id*nverts+j] << ", ";
         verts[j] = lookupVert(r, vtx[id*nverts+j]);
         apf::Vector3 vtx_coord;
         r->mesh->getPoint(verts[j], 0, vtx_coord);
-        std::cout << "at point: (" << vtx_coord[0] << ", " << vtx_coord[1] << ", " << vtx_coord[2] << "), ";
       }
-      std::cout << std::endl;
       apf::MeshEntity* f =
         apf::findElement(r->mesh, apfType, verts);
       PCU_ALWAYS_ASSERT(f);
@@ -325,12 +319,10 @@ namespace {
                                   [upward_dim](const int i) {
                                     return upward_dim[0] == i;
                                   });
-      std::cout << "same dim? " << same_dim << "\n";
       bool same_id = std::all_of(upward_id.begin(), upward_id.end(), 
                                  [upward_id](const int i) {
                                    return upward_id[0] == i;
                                  });
-      std::cout << "same id? " << same_id << "\n";
       if (same_dim && same_id)
       {
         /// if all edges adjacent to a vertex have the same classification
@@ -343,7 +335,6 @@ namespace {
           apf::Vector3 from, to, param;
           m->getPoint(vtx, 0, from);
           m->getClosestPoint(gent, from, to, param);
-          std::cout << "param from: " << from << " and param to: " << to << "\n";
           m->setParam(vtx, param);
         }
       }
@@ -368,7 +359,6 @@ namespace {
                                         [edge_id](const int i) {
                                           return edge_id[0] == i;
                                         });
-        std::cout << "same edge id?: " << same_edge_id << "\n";
         if (same_edge_id)
         {
           /// if the edges adjacent to a vertex that are classified on a dim 1
@@ -384,7 +374,6 @@ namespace {
             apf::Vector3 from, to, param;
             m->getPoint(vtx, 0, from);
             m->getClosestPoint(gent, from, to, param);
-            std::cout << "param from: " << from << " and param to: " << to << "\n";
             m->setParam(vtx, param);
           }
         }
@@ -393,30 +382,20 @@ namespace {
         {
           apf::Vector3 vtx_coord;
           m->getPoint(vtx, 0, vtx_coord);
-          std::cout << "got vertex point\n";
 
           /// it doesn't matter which edge
           apf::ModelEntity* gent = m->findModelEntity(1, edge_id[0]);
           gmi_set* adjacent_verts = gmi_adjacent(m->getModel(), (gmi_ent*)gent, 0);
           int n_adj_verts = adjacent_verts->n;
-          std::cout << "got " << n_adj_verts << " adjacent verts\n";
           double p[2];
           double x[3];
           for (int j = 0; j < n_adj_verts; j++)
           {
-            if (adjacent_verts->e[j] == NULL)
-            {
-              std::cout << "null ptr\n";
-            }
             gmi_eval(m->getModel(), adjacent_verts->e[j], p, x);
-            std::cout << "eval'd vert " << j << "\n";
             apf::Vector3 vec_x(x);
-            std::cout << "mesh vtx coord:(" << vtx_coord[0] << ", " << vtx_coord[1] << ", " << vtx_coord[2] << ")\n";
-            std::cout << "model vtx coord:(" << vec_x[0] << ", " << vec_x[1] << ", " << vec_x[2] << ")\n";
 
             /// only look at x and y dimensions of vector, model must be in x-y plane, but need not be at z=0
             double mag = pow(pow((vtx_coord[0] - vec_x[0]), 2) + pow((vtx_coord[1] - vec_x[1]), 2), 0.5);
-            std::cout << "with mag: " << mag << "\n";
             if (mag < 0.001)
             {
               m->setModelEntity(vtx, (apf::ModelEntity*)adjacent_verts->e[j]);
@@ -485,27 +464,10 @@ namespace {
         verts[mdsIdx] = lookupVert(r, vtx[i*nverts+j]);
       }
       apf::ModelEntity* g = r->mesh->findModelEntity(2, elm_model_id[i]);
-      // apf::ModelEntity* g = r->mesh->findModelEntity(2, 0);
-      if (!g) {
-        std::cout << "null ent\n";
-      }
-      std::cout << "elm tag: " << elm_model_id[i] << "\n";
-      apf::MeshEntity* elm =
-        apf::buildElement(r->mesh, g, apfType, verts);
+      apf::MeshEntity* elm = apf::buildElement(r->mesh, g, apfType, verts);
       PCU_ALWAYS_ASSERT(elm);
 
       r->mesh->setModelEntity(elm, g);
-      /// tag all downward adjacent entities with the element's model ent
-      const unsigned nadj = apf::Mesh::adjacentCount[apfType][0];
-      apf::Downward down;
-      for (int dim = 1; dim >= 0; dim--)
-      {
-        r->mesh->getDownward(elm, dim, down);
-        for (unsigned i = 0; i < nadj; i++)
-        {
-          r->mesh->setModelEntity(down[i], g);
-        }
-      }
     }
     free(vtx);
     free(elm_model_id);
