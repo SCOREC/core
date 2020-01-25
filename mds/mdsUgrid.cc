@@ -495,17 +495,6 @@ namespace {
       PCU_ALWAYS_ASSERT(elm);
 
       r->mesh->setModelEntity(elm, g);
-      /// tag all downward adjacent entities with the element's model ent
-      const unsigned nadj = apf::Mesh::adjacentCount[apfType][0];
-      apf::Downward down;
-      for (int dim = 1; dim >= 0; dim--)
-      {
-        r->mesh->getDownward(elm, dim, down);
-        for (unsigned i = 0; i < nadj; i++)
-        {
-          r->mesh->setModelEntity(down[i], g);
-        }
-      }
     }
     free(vtx);
     free(elm_model_id);
