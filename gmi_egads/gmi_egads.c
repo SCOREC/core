@@ -43,22 +43,22 @@ void get_3D_adjacency(struct gmi_model* m,
                       egads_ent* ent, 
                       int adj_dim, 
                       int *num_adjacent, 
-                      egads_ent* adjacent_ents)
+                      egads_ent** adjacent_ents)
 {
   int ent_dim = m->ops->dim(m, (struct gmi_ent*)ent);
   int ent_tag = m->ops->tag(m, (struct gmi_ent*)ent);
   
   int *adj_tags = adjacency_table[adj_dim][ent_dim][ent_tag];
   *num_adjacent = adj_tags[0];
-  adjacent_ents = (egads_ent*)EG_alloc(sizeof(*adjacent_ents) * (*num_adjacent));
+  *adjacent_ents = (egads_ent*)EG_alloc(sizeof(**adjacent_ents) * (*num_adjacent));
 
   if (adj_dim == 3)
   {
     for (int i = 0; i < *num_adjacent; i++)
     {
-      adjacent_ents[i]->ego_ent = NULL;
-      adjacent_ents[i]->dim = 3;
-      adjacent_ents[i]->tag = adj_tags[i+1]; // first entry is the number of adjacent
+      (*adjacent_ents)[i].ego_ent = NULL;
+      (*adjacent_ents)[i].dim = 3;
+      (*adjacent_ents)[i].tag = adj_tags[i+1]; // first entry is the number of adjacent
     }
   }
   else
@@ -66,9 +66,9 @@ void get_3D_adjacency(struct gmi_model* m,
     for (int i = 0; i < *num_adjacent; i++)
     {
       egads_ent *eg_ent = (egads_ent*)m->ops->find(m, adj_dim, adj_tags[i]);
-      adjacent_ents[i]->ego_ent = eg_ent->ego_ent;
-      adjacent_ents[i]->dim = -1;
-      adjacent_ents[i]->tag = -1;
+      (*adjacent_ents)[i].ego_ent = eg_ent->ego_ent;
+      (*adjacent_ents)[i].dim = -1;
+      (*adjacent_ents)[i].tag = -1;
     }
   }
 }
@@ -297,7 +297,7 @@ struct gmi_set* adjacent(struct gmi_model* m,
   ego *adjacent_egos;
   if (eg_ent->dim == 3 || dim == 3)
   {
-    get_3D_adjacency(m, eg_ent, dim, &num_adjacent, adjacent_ents);
+    get_3D_adjacency(m, eg_ent, dim, &num_adjacent, &adjacent_ents);
   }
   else // only dealing with egos
   {
@@ -625,7 +625,7 @@ int is_in_closure_of(struct gmi_model* m,
   {
     egads_ent *adjacent_ents;
     // get entities of dim ent_dim adjacent to eg_region (will be downward adjacent)
-    get_3D_adjacency(m, eg_region, ent_dim, &num_adjacent, adjacent_ents);
+    get_3D_adjacency(m, eg_region, ent_dim, &num_adjacent, &adjacent_ents);
 
     for (int i = 0; i < num_adjacent; i++)
     {
