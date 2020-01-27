@@ -265,6 +265,7 @@ struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
   /// address to stack memory, so when memory dereferenced was not an ego
   /// might need to think about when to free this memory.
   egads_ent *eg_ent = (egads_ent*)EG_alloc(sizeof(*eg_ent));
+  eg_ent->ego_ent = (ego*)EG_alloc(sizeof(*(eg_ent->ego_ent)));
   eg_ent->dim = -1;
   printf("set dim\n");
   eg_ent->tag = -1;
