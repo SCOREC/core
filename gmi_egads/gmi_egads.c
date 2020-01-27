@@ -50,15 +50,15 @@ void get_3D_adjacency(struct gmi_model* m,
   
   int *adj_tags = adjacency_table[adj_dim][ent_dim][ent_tag];
   *num_adjacent = adj_tags[0];
-  *adjacent_ents = (egads_ent*)EG_alloc(*num_adjacent * sizeof(egads_ent));
+  *adjacent_ents = (egads_ent*)EG_alloc(sizeof(**adjacent_ents) * (*num_adjacent));
 
   if (adj_dim == 3)
   {
     for (int i = 0; i < *num_adjacent; i++)
     {
-      adjacent_ents[i]->ego_ent = NULL;
-      adjacent_ents[i]->dim = 3;
-      adjacent_ents[i]->tag = adj_tags[i+1]; // first entry is the number of adjacent
+      (*adjacent_ents)[i].ego_ent = NULL;
+      (*adjacent_ents)[i].dim = 3;
+      (*adjacent_ents)[i].tag = adj_tags[i+1]; // first entry is the number of adjacent
     }
   }
   else
@@ -66,9 +66,9 @@ void get_3D_adjacency(struct gmi_model* m,
     for (int i = 0; i < *num_adjacent; i++)
     {
       egads_ent *eg_ent = (egads_ent*)m->ops->find(m, adj_dim, adj_tags[i]);
-      adjacent_ents[i]->ego_ent = eg_ent->ego_ent;
-      adjacent_ents[i]->dim = -1;
-      adjacent_ents[i]->tag = -1;
+      (*adjacent_ents)[i].ego_ent = eg_ent->ego_ent;
+      (*adjacent_ents)[i].dim = -1;
+      (*adjacent_ents)[i].tag = -1;
     }
   }
 }
@@ -132,7 +132,7 @@ struct gmi_iter* begin(struct gmi_model* m, int dim)
   else if (dim == 2)
     EG_getBodyTopos(eg_body, NULL, FACE, &nbodies, &ego_ents);
 
-  egads_ent *eg_ents = (egads_ent*)EG_alloc(nbodies*sizeof(egads_ent));
+  egads_ent *eg_ents = (egads_ent*)EG_alloc(sizeof(*eg_ents) * nbodies);
   for (int i = 0; i < nbodies; i++)
   {
     if (dim == 3)
@@ -151,7 +151,7 @@ struct gmi_iter* begin(struct gmi_model* m, int dim)
   struct egads_iter *eg_iter;
   if (dim >= 0 && dim <= 3)
   {
-    eg_iter = EG_alloc(sizeof(struct egads_iter));
+    eg_iter = EG_alloc(sizeof(*eg_iter));
     if (eg_iter == NULL)
     {
       gmi_fail("EG_alloc failed to allocate memory for iter");
@@ -264,8 +264,7 @@ struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
   /// Not sure if this is the best way to handle this, previously was returning
   /// address to stack memory, so when memory dereferenced was not an ego
   /// might need to think about when to free this memory.
-  egads_ent *eg_ent = (egads_ent*)EG_alloc(sizeof(egads_ent));
-  printf("eg alloc 1\n");
+  egads_ent *eg_ent = (egads_ent*)EG_alloc(sizeof(*eg_ent));
   eg_ent->dim = -1;
   printf("set dim\n");
   eg_ent->tag = -1;
@@ -313,7 +312,7 @@ struct gmi_set* adjacent(struct gmi_model* m,
     else if (dim == 2)
       EG_getBodyTopos(eg_body, *ego_ent, FACE, &num_adjacent, &adjacent_egos);
 
-    adjacent_ents = (egads_ent*)EG_alloc(num_adjacent * sizeof(egads_ent));
+    adjacent_ents = (egads_ent*)EG_alloc(sizeof(*adjacent_ents) * num_adjacent);
     for (int i = 0; i < num_adjacent; i++)
     {
       adjacent_ents[i].ego_ent = &adjacent_egos[i];
@@ -564,12 +563,21 @@ int is_point_in_region(struct gmi_model* m,
 {
   printf("is in region\n");
   (void)m;
-  ego *eg_ent = (ego*)e;
-  int status = EG_inTopology(*eg_ent, p);
-  if (status == EGADS_SUCCESS)
-    return 1;
+  egads_ent *eg_ent = (egads_ent*)e;
+  ego *ego_ent = eg_ent->ego_ent;
+  if (eg_ent->dim == -1)
+  {
+    int status = EG_inTopology(*ego_ent, p);
+    if (status == EGADS_SUCCESS)
+      return 1;
+    else
+      return 0;
+  }
   else
-    return 0;
+  {
+    /// TODO: implement
+    return -1;
+  }
 }
 
 /// TODO: make this work for new 3D object
