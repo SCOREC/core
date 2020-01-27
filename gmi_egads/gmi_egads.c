@@ -21,12 +21,12 @@ ego eg_model;
 // will be initialized by `gmi_egads_load`
 ego eg_body;
 
-struct egads_ent
+typedef struct egads_ent
 {
   ego *ego_ent;
   int dim;
   int tag;
-} typedef egads_ent;
+} egads_ent; 
 
 struct egads_iter
 {
