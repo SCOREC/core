@@ -464,6 +464,9 @@ namespace {
         verts[mdsIdx] = lookupVert(r, vtx[i*nverts+j]);
       }
       apf::ModelEntity* g = r->mesh->findModelEntity(2, elm_model_id[i]);
+      std::cout << "found ent w dim: " << r->mesh->getModelType(g) << "\n";
+      std::cout << "found ent w tag: " << r->mesh->getModelTag(g) << "\n";
+      std::cout << "actual tag: " << elm_model_id[i] << "\n";
       apf::MeshEntity* elm = apf::buildElement(r->mesh, g, apfType, verts);
       PCU_ALWAYS_ASSERT(elm);
 

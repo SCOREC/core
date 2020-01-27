@@ -50,7 +50,7 @@ void get_3D_adjacency(struct gmi_model* m,
   
   int *adj_tags = adjacency_table[adj_dim][ent_dim][ent_tag];
   *num_adjacent = adj_tags[0];
-  *adjacent_ents = (egads_ent*)EG_calloc(*num_adjacent, sizeof(egads_ent*));
+  *adjacent_ents = (egads_ent*)EG_alloc(*num_adjacent * sizeof(egads_ent));
 
   if (adj_dim == 3)
   {
@@ -132,7 +132,7 @@ struct gmi_iter* begin(struct gmi_model* m, int dim)
   else if (dim == 2)
     EG_getBodyTopos(eg_body, NULL, FACE, &nbodies, &ego_ents);
 
-  egads_ent *eg_ents = (egads_ent*)EG_alloc(nbodies*sizeof(egads_ent*));
+  egads_ent *eg_ents = (egads_ent*)EG_alloc(nbodies*sizeof(egads_ent));
   for (int i = 0; i < nbodies; i++)
   {
     if (dim == 3)
@@ -264,9 +264,12 @@ struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
   /// Not sure if this is the best way to handle this, previously was returning
   /// address to stack memory, so when memory dereferenced was not an ego
   /// might need to think about when to free this memory.
-  egads_ent *eg_ent = (egads_ent*)EG_alloc(sizeof(egads_ent*));
+  egads_ent *eg_ent = (egads_ent*)EG_alloc(sizeof(egads_ent));
+  printf("eg alloc 1\n");
   eg_ent->dim = -1;
+  printf("set dim\n");
   eg_ent->tag = -1;
+  printf("set tag\n");
 
   if (dim == 0)
     EG_objectBodyTopo(eg_body, NODE, tag, eg_ent->ego_ent);
@@ -281,6 +284,8 @@ struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
   }
   else
     gmi_fail("gmi_ent not found!");
+  
+  printf("finished find\n");
   return (struct gmi_ent*)eg_ent;
 }
 
@@ -308,7 +313,7 @@ struct gmi_set* adjacent(struct gmi_model* m,
     else if (dim == 2)
       EG_getBodyTopos(eg_body, *ego_ent, FACE, &num_adjacent, &adjacent_egos);
 
-    adjacent_ents = (egads_ent*)EG_calloc(num_adjacent, sizeof(egads_ent*));
+    adjacent_ents = (egads_ent*)EG_alloc(num_adjacent * sizeof(egads_ent));
     for (int i = 0; i < num_adjacent; i++)
     {
       adjacent_ents[i].ego_ent = &adjacent_egos[i];
