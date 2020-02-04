@@ -439,7 +439,7 @@ struct LogAnisoSizeField : public MetricSizeField
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
-    logMField = apf::createFieldOn(m, "ma_logM", apf::MATRIX);
+    logMField = apf::createField(m, "ma_logM", apf::MATRIX, apf::getLagrange(1));
     Entity* v;
     Iterator* it = m->begin(0);
     while ( (v = m->iterate(it)) ) {
