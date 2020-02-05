@@ -713,7 +713,35 @@ struct gmi_model* gmi_egads_load(const char* filename)
     gmi_fail("EGADS model should only have one body");
   }
 
-  eg_body = eg_bodies[0];
+  // eg_body = eg_bodies[0];
+
+  // struct gmi_model *model;
+  // model = (struct gmi_model*)malloc(sizeof(*model));
+  // model->ops = &ops;
+
+  // EG_getBodyTopos(eg_body, NULL, NODE, &(model->n[0]), NULL);
+  // EG_getBodyTopos(eg_body, NULL, EDGE, &(model->n[1]), NULL);
+  // EG_getBodyTopos(eg_body, NULL, FACE, &(model->n[2]), NULL);
+  // // I believe this should be shell, but always seems to result in 1 shell
+  // EG_getBodyTopos(eg_body, NULL, SHELL, &(model->n[3]), NULL); // BODY?
+
+  return gmi_egads_init(eg_bodies[0]);
+}
+#else
+struct gmi_model* gmi_egads_load(const char* filename)
+{
+  (void)filename;
+  /// TODO: chose a compile flag
+  gmi_fail("recompile with -DUSE_EGADS=ON");
+}
+#endif
+
+struct gmi_model* gmi_egads_init(ego body)
+{
+  eg_body = body;
+
+  // set the context
+  EG_getContext(eg_body, &eg_context);
 
   struct gmi_model *model;
   model = (struct gmi_model*)malloc(sizeof(*model));
@@ -727,14 +755,6 @@ struct gmi_model* gmi_egads_load(const char* filename)
 
   return model;
 }
-#else
-struct gmi_model* gmi_egads_load(const char* filename)
-{
-  (void)filename;
-  /// TODO: chose a compile flag
-  gmi_fail("recompile with -DUSE_EGADS=ON");
-}
-#endif
 
 void gmi_egads_start(void)
 {
