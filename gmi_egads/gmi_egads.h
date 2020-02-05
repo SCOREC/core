@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+struct egObject;
+
 /** \brief start the EGADS session */
 void gmi_egads_start(void);
 /** \brief end the EGADS session */
@@ -26,6 +28,9 @@ void gmi_register_egads(void);
 
 /** \brief load an EGADS file into a gmi_model object */
 struct gmi_model* gmi_egads_load(const char* filename);
+
+/** \brief initialize a gmi_model with an EGADS body */
+struct gmi_model* gmi_egads_init(struct egObject *body);
 
 #ifdef __cplusplus
 }
