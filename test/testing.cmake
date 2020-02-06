@@ -239,6 +239,7 @@ mpi_test(uniform_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "pipe_unif.smb")
+mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
 smoke_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.${GXT}"
