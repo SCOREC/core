@@ -619,6 +619,24 @@ void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordi
   }
 }
 
+void readSolution(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** solution) {
+  long firstVtx, lastVtx;
+  getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
+  *solution = new double[localnumvtx*4];
+  rewind(f);
+  int vidx = 0;
+  for(unsigned i=0; i<numvtx; i++) {
+    int id;
+    double pos[4];
+    gmi_fscanf(f, 5, "%d %lf %lf %lf %lf", &id, pos+0, pos+1, pos+2, pos+3);
+    if( i >= firstVtx && i < lastVtx ) {
+      for(unsigned j=0; j<4; j++)
+        (*solution)[vidx*4+j] = pos[j];
+      vidx++;
+    }
+  }
+}
+
 void readMatches(FILE* f, unsigned numvtx, int** matches) {
   long firstVtx, lastVtx;
   unsigned localnumvtx;
@@ -679,6 +697,7 @@ void readElements(FILE* f, unsigned &dim, unsigned& numElms,
 
 struct MeshInfo {
   double* coords;
+  double* solution;
   int* elements;
   int* matches;
   int* classification;
@@ -697,6 +716,7 @@ void readMesh(const char* meshfilename,
     const char* matchfilename,
     const char* classfilename,
     const char* fathers2Dfilename,
+    const char* solutionfilename,
     MeshInfo& mesh) {
   FILE* fc = fopen(coordfilename, "r");
   PCU_ALWAYS_ASSERT(fc);
@@ -705,6 +725,13 @@ void readMesh(const char* meshfilename,
     fprintf(stderr, "numVerts %u\n", mesh.numVerts);
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
+ 
+  if(0==1) {
+  FILE* fs = fopen(solutionfilename, "r");
+  PCU_ALWAYS_ASSERT(fs);
+  readSolution(fs, mesh.numVerts, mesh.localNumVerts, &(mesh.solution));
+  fclose(fs);
+  }
 
   FILE* ff = fopen(classfilename, "r");
   PCU_ALWAYS_ASSERT(ff);
@@ -757,7 +784,7 @@ int main(int argc, char** argv)
 
   double t0 = PCU_Time();
   MeshInfo m;
-  readMesh(argv[1],argv[2],argv[3],argv[4],argv[5],m);
+  readMesh(argv[1],argv[2],argv[3],argv[4],argv[5],argv[6],m);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
