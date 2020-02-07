@@ -47,18 +47,19 @@ namespace {
 namespace apf {
 /** \brief Assign tag values to the mesh
   * \param m (in) mesh
+  * \param tagName (in) name of returned tag
   * \param vals (in) T array of length nverts 
   * \param entries (in) number of values per vertex
   * \param nverts (in) number of vertices for this process
   * \param globalToVert (in) map from global mesh vertex ids
   *                          to local vertex * pointers
-  * \param tagName (in) name of returned tag
   * \details
   * See 'setCoords' for distribution details
   */
 template<class T> 
-apf::MeshTag* setMappedTag(Mesh2* m, const T* vals, const int entries,
-    int nverts, GlobalToVert& globalToVert, const char* tagName)
+apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
+    const T* vals, const int entries,
+    int nverts, GlobalToVert& globalToVert)
 {
   Gid max = getMax(globalToVert);
   Gid total = max + 1;
