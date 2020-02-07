@@ -727,7 +727,7 @@ void readMesh(const char* meshfilename,
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
  
-  if(1==1) {
+  if(0==1) {
   FILE* fs = fopen(solutionfilename, "r");
   PCU_ALWAYS_ASSERT(fs);
   readSolution(fs, mesh.numVerts, mesh.localNumVerts, &(mesh.solution));
@@ -824,10 +824,11 @@ int main(int argc, char** argv)
   (void) tf;
   //mesh->destroyTag(tf);
 
-  apf::MeshTag* ts = setMappedTag(mesh, "solution", m.solution, 1,
+  if(0==1) {
+  apf::MeshTag* ts = setMappedTag(mesh, "solution", m.solution, 5,
       m.localNumVerts, outMap);
   (void) ts;
-  //mesh->destroyTag(tf);
+  }
 
 
   /* // Print the father2D tags
