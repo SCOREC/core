@@ -813,15 +813,20 @@ int main(int argc, char** argv)
     mesh->acceptChanges();
     delete [] m.matches;
   }
-  apf::MeshTag* tc = setIntTag(mesh, "classification", m.classification, 1,
+  apf::MeshTag* tc = setMappedTag(mesh, "classification", m.classification, 1,
       m.localNumVerts, outMap);
   setClassification(model,mesh,tc);
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
  
-  apf::MeshTag* tf = setIntTag(mesh, "fathers2D", m.fathers2D, 1,
-       m.localNumVerts, outMap);
+  apf::MeshTag* tf = setMappedTag(mesh, "fathers2D", m.fathers2D, 1,
+      m.localNumVerts, outMap);
   (void) tf;
+  //mesh->destroyTag(tf);
+
+  apf::MeshTag* ts = setMappedTag(mesh, "solution", m.solution, 1,
+      m.localNumVerts, outMap);
+  (void) ts;
   //mesh->destroyTag(tf);
 
 
@@ -844,8 +849,8 @@ int main(int argc, char** argv)
   mesh->verify();
 
   outMap.clear();
-  gmi_write_dmg(model, argv[6]);
-  mesh->writeNative(argv[7]);
+  gmi_write_dmg(model, argv[7]);
+  mesh->writeNative(argv[8]);
   apf::writeVtkFiles("rendered",mesh);
 
   mesh->destroyNative();
