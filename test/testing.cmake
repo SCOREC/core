@@ -452,6 +452,10 @@ mpi_test(constructThenGhost 4
   ./constructThenGhost
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(construct_bottom_up 1
+  ./construct_bottom_up
+  "${MDIR}/bottom_up_constructed_cube.smb"
+  "${MDIR}/cube.dmg")
 set(MDIR ${MESHES}/embeddedEdges)
 mpi_test(embedded_edges 1
   ./embedded_edges
