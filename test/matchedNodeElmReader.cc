@@ -362,7 +362,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     }
     int imax=0;  
     int imin=0;  
-    for(size_t i=0; i<nverts; i++) {
+    for(int i=0; i<nverts; i++) {
       if(ctri[i]==cmax) imax++;
       if(ctri[i]==cmin) imin++;
     }
@@ -373,7 +373,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     } else if (imin>=2 ) { // >=2 but not all with min
        cmid=cmin;
     } else { // not 2 of either so mid is distinct
-      for(size_t i=0; i<nverts; i++) { // find it
+      for(int i=0; i<nverts; i++) { // find it
         if((ctri[i] != cmin) && (ctri[i] != cmax)) cmid=std::max(cmid,ctri[i]);  // max is to catch lowest dim/highest code for quads....actually not necessary since either of the other two will follow switches as noted below.
       }
     }
