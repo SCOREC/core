@@ -60,7 +60,6 @@ void construct(Mesh2* m, const int* conn, int nelem, int etype,
 void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert);
 
-
 /** \brief Assign matching to the mesh
   * \details
   * Each peer provides a set of the matched entity global ids. An id set

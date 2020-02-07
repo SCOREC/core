@@ -78,7 +78,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     m = loadMesh(g, in);
   else
     apf::printStats(m);
-  m->verify();
+// Need to set a flag to enable avoiding this when short on time  m->verify();
   if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else

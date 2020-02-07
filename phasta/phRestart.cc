@@ -283,13 +283,16 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "wssbar",
     "pressure projection vectors",
     "projection vectors",
-    "vorticity"
+    "vorticity",
+    "BCs",
+    "cdelsq"
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",
     "meshQ",
     "meshCFL",
-    "material_type"
+    "material_type",
+    "lesnut"
   };
   static char const* const known_rand_fields[] = {
     "rbParams"
@@ -507,6 +510,10 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
     detachAndWriteField(in, m, f, "dc_lag");
   if (m->findField("pressure projection vectors"))
     detachAndWriteField(in, m, f, "pressure projection vectors");
+  if (m->findField("BCs"))
+    detachAndWriteField(in, m, f, "BCs");
+  if (m->findField("cdelsq"))
+    detachAndWriteField(in, m, f, "cdelsq");
   if (in.displacementMigration)
     detachAndWriteField(in, m, f, "displacement");
   if (in.dwalMigration)
