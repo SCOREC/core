@@ -79,7 +79,9 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
   else
     apf::printStats(m);
 // Need to set a flag to enable avoiding this when short on time  m->verify();
-  if (in.solutionMigration && !in.useAttachedFields)
+  if (in.useAttachedFields) 
+     lion_eprint(1,"because useAttachedFields set restart not read\n");
+  else if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);

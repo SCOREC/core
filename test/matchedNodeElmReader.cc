@@ -337,7 +337,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   */
   while( (f = mesh->iterate(it)) ) {
     mesh->getAdjacent(f, 0, verts);
-    int nverts = verts.size();
+    size_t nverts = verts.size();
 /* 
     Centroid=apf::getLinearCentroid(mesh,f);
     dx1=xd1-Centroid;
@@ -362,7 +362,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     }
     int imax=0;  
     int imin=0;  
-    for(int i=0; i<nverts; i++) {
+    for(size_t i=0; i<nverts; i++) {
       if(ctri[i]==cmax) imax++;
       if(ctri[i]==cmin) imin++;
     }
@@ -373,7 +373,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     } else if (imin>=2 ) { // >=2 but not all with min
        cmid=cmin;
     } else { // not 2 of either so mid is distinct
-      for(int i=0; i<nverts; i++) { // find it
+      for(size_t i=0; i<nverts; i++) { // find it
         if((ctri[i] != cmin) && (ctri[i] != cmax)) cmid=std::max(cmid,ctri[i]);  // max is to catch lowest dim/highest code for quads....actually not necessary since either of the other two will follow switches as noted below.
       }
     }
@@ -623,16 +623,16 @@ void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordi
 void readSolution(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** solution) {
   long firstVtx, lastVtx;
   getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
-  *solution = new double[localnumvtx*4];
+  *solution = new double[localnumvtx*5];
   rewind(f);
   int vidx = 0;
   for(unsigned i=0; i<numvtx; i++) {
-    int id;
-    double pos[4];
-    gmi_fscanf(f, 5, "%d %lf %lf %lf %lf", &id, pos+0, pos+1, pos+2, pos+3);
+    double pos[5];
+    pos[4]=0; //temperature
+    gmi_fscanf(f, 4, "%lf %lf %lf %lf", pos+0, pos+1, pos+2, pos+3);
     if( i >= firstVtx && i < lastVtx ) {
-      for(unsigned j=0; j<4; j++)
-        (*solution)[vidx*4+j] = pos[j];
+      for(unsigned j=0; j<5; j++)
+        (*solution)[vidx*5+j] = pos[j];
       vidx++;
     }
   }
@@ -727,7 +727,7 @@ void readMesh(const char* meshfilename,
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
  
-  if(0==1) {
+  if(1==1) {
   FILE* fs = fopen(solutionfilename, "r");
   PCU_ALWAYS_ASSERT(fs);
   readSolution(fs, mesh.numVerts, mesh.localNumVerts, &(mesh.solution));
@@ -766,13 +766,14 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  if( argc != 8 ) {
+  if( argc != 9 ) {
     if( !PCU_Comm_Self() ) {
       printf("Usage: %s <ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
           "<ascii vertex matching flag .match> "
           "<ascii vertex classification flag .class> "
           "<ascii vertex fathers2D flag .fathers2D> "
+          "<ascii solution flag .soln> "
           "<output model .dmg> <output mesh .smb>\n",
           argv[0]);
     }
@@ -812,16 +813,17 @@ int main(int argc, char** argv)
     mesh->acceptChanges();
     delete [] m.matches;
   }
-  apf::MeshTag* tc = setMappedTag(mesh, "classification", m.classification, 1,
+  apf::MeshTag* tc = setIntTag(mesh, "classification", m.classification, 1,
       m.localNumVerts, outMap);
   setClassification(model,mesh,tc);
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
  
-  apf::MeshTag* tf = setMappedTag(mesh, "fathers2D", m.fathers2D, 1,
-      m.localNumVerts, outMap);
+  apf::MeshTag* tf = setIntTag(mesh, "fathers2D", m.fathers2D, 1,
+       m.localNumVerts, outMap);
   (void) tf;
   //mesh->destroyTag(tf);
+
 
   /* // Print the father2D tags
   apf::MeshEntity* v;
