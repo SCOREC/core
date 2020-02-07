@@ -958,8 +958,8 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
     o.arrays.nsonsArr = new int[nfather]; //initialize nsonsArr
     for (int i=0; i<nfather; i++) { // fill nsonsArr
       /* set each entry in nsonsArr[nfather] to equal nsons */
-      o.arrays.nsonsArr[i] = nsons; // if structured set nsons in adapt.inp and use,
-                                    // if unstructured input a zero and compute below
+      o.arrays.nsonsArr[i] = nsons; // if fixed nz set nsons in adapt.inp and use,
+                                    // if variable nz input a zero and compute below
     }
     apf::MeshEntity* v;
     apf::MeshIterator* it = m->begin(0);
