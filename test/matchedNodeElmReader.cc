@@ -3,6 +3,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apfConvert.h>
+#include <apfConvertTags.h>
 #include <apf.h>
 #include <PCU.h>
 #include <lionPrint.h>
@@ -627,10 +628,10 @@ int main(int argc, char** argv)
     mesh->acceptChanges();
     delete [] m.matches;
   }
-  apf::MeshTag* t = setIntTag(mesh, m.classification, 1,
-      m.localNumVerts, outMap);
-  apf::MeshTag* tfathers2D = setIntTag(mesh, m.fathers2D, 1,
-      m.localNumVerts, outMap);
+  apf::MeshTag* t = setMappedTag(mesh, m.classification, 1,
+      m.localNumVerts, outMap, "mner_classification");
+  apf::MeshTag* tfathers2D = setMappedTag(mesh, m.fathers2D, 1,
+      m.localNumVerts, outMap, "mner_fathers2D");
   outMap.clear();
   setClassification(model,mesh,t);
   apf::removeTagFromDimension(mesh, t, 0);
