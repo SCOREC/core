@@ -8,17 +8,8 @@
 
 namespace crv{
 
-class ObjFunction
-{
-  public:
-  ObjFunction(){};
-  
-  public:  
-  virtual double getValue(std::vector<double> &x) = 0;
-  virtual std::vector<double> getGrad(std::vector<double> &x) = 0;
-  //virtual int getVectorDim() = 0;
-  virtual int getSpaceDim() = 0;
-};
+// forward declare ObjFunction so the type is known to the following classes
+class ObjFunction;
 
 class LBFGS
 {
