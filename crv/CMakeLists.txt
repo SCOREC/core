@@ -21,6 +21,7 @@ set(SOURCES
   crvTables.cc
   crvQuality.cc
   crvVtk.cc
+  LBFGS.cc
   crvOptimizations.cc
   crvObjectiveFunctions.cc
 )
@@ -45,13 +46,6 @@ target_include_directories(crv INTERFACE
     $<INSTALL_INTERFACE:include>
     )
 
-# TODO: Add these to the higher lever cmake file in a proper form
-target_include_directories(crv PUBLIC
-  "/lore/hakimm2/opt/eigen/include/eigen3"
-  )
-target_include_directories(crv PUBLIC
-  "/lore/hakimm2/opt/LBFGSpp/include"
-  )
 # Link this package to these libraries
 target_link_libraries(crv
     PUBLIC

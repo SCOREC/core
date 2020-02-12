@@ -12,12 +12,6 @@
 #include "crvObjectiveFunctions.h"
 
 
-/* #include <Eigen/Core> */
-/* #include <LBFGS.h> */
-
-/* using Eigen::VectorXd; */
-/* using namespace LBFGSpp; */
-
 namespace crv {
 
 class CrvEntityOptim

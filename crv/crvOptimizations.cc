@@ -1,5 +1,4 @@
-/* #include "crvEdgeOptim.h" */
-/* #include "LBFGS.h" */
+#include "LBFGS.h"
 #include "crvOptimizations.h"
 #include "crv.h"
 #include "gmi.h"
@@ -11,16 +10,11 @@
 #include "crvDBG.h"
 #include <iostream>
 #include "apfMatrix.h"
-#include <Eigen/Core>
-#include <LBFGS.h>
 
 /* static int global_counter = 0; */
 /* static apf::MeshEntity* tetra[100]; */
 /* static int number = 0; */
 
-
-using Eigen::VectorXd;
-using namespace LBFGSpp;
 
 
 static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEntity* edge, int nat)
@@ -42,27 +36,6 @@ static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEn
   }
 }
 
-class LBFGSFunctor
-{
-  private:
-    int n;
-    crv::ObjFunction* obj;
-  public:
-    LBFGSFunctor(int _n, crv::ObjFunction* _obj) : n(_n), obj(_obj) {}
-    double operator () (const VectorXd &x, VectorXd &grad)
-    {
-      std::vector<double> x_vec;
-      x_vec.clear();
-      for (int i = 0; i < n; i++)
-        x_vec.push_back(x[i]);
-      std::vector<double> g_vec;
-      g_vec = obj->getGrad(x_vec);
-      for (int i = 0; i < n; i++)
-        grad[i] = g_vec[i];
-
-      return obj->getValue(x_vec);
-    }
-};
 
 namespace crv{
 
@@ -102,23 +75,8 @@ bool CrvInternalEdgeOptim :: run(int &invaliditySize)
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
-  LBFGSFunctor fun(x0.size(), objF);
-  LBFGSParam<double> param;
-  param.epsilon = 1e-6;
-  param.max_iterations = 100;
-  LBFGSSolver<double> solver(param);
-  VectorXd x_init = VectorXd::Zero(x0.size());
-  for (int i = 0; i < x0.size(); i++) {
-    x_init[i] = x0[i];
-    finalX.push_back(0);
-  }
 
-  double fx;
-  int niter = solver.minimize(fun, x_init, fx);
-
-  printf("niter and fx are %d and %f\n", niter, fx);
-
-  /* LBFGS *l = new LBFGS(tol, iter, x0, objF); */
+  LBFGS *l = new LBFGS(tol, iter, x0, objF);
 
   apf::MeshEntity* ed[6];
   int thisTETnum = 0;
@@ -135,10 +93,9 @@ bool CrvInternalEdgeOptim :: run(int &invaliditySize)
   bool hasDecreased = false;
   invaliditySize = 0;
 
-  if (niter <= param.max_iterations && thisTetSize > 0) {
-    for (int i = 0; i < x0.size(); i++)
-      finalX[i] = x_init[i];
-    fval = fx;
+  if (l->run() && thisTetSize > 1) {
+    finalX = l->currentX;
+    fval = l->fValAfter;
     objF->setNodes(finalX);
 
 
@@ -215,27 +172,11 @@ bool CrvBoundaryEdgeOptim :: run(int &invaliditySize)
   BoundaryEdgeReshapeObjFunc *objF = new BoundaryEdgeReshapeObjFunc(mesh, edge, tet);
   std::vector<double> x0 = objF->getInitialGuess();
 
-  LBFGSFunctor fun(x0.size(), objF);
-  LBFGSParam<double> param;
-  param.epsilon = 1e-6;
-  param.max_iterations = 100;
-  LBFGSSolver<double> solver(param);
-  VectorXd x_init = VectorXd::Zero(x0.size());
-  for (int i = 0; i < x0.size(); i++) {
-    x_init[i] = x0[i];
-    finalX.push_back(0);
-  }
-
-  double fx;
-  int niter = solver.minimize(fun, x_init, fx);
-
-  printf("niter and fx are %d and %f\n", niter, fx);
-
 
 
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
-  /* LBFGS *l = new LBFGS(tol, iter, x0, objF); */
+  LBFGS *l = new LBFGS(tol, iter, x0, objF);
   apf::MeshEntity* ed[6];
   int thisTETnum = 0;
 
@@ -251,10 +192,9 @@ bool CrvBoundaryEdgeOptim :: run(int &invaliditySize)
   bool hasDecreased = false;
   invaliditySize = 0;
 
-  if (niter < param.max_iterations && thisTetSize > 0) {
-    for (int i = 0; i < x0.size(); i++)
-      finalX[i] = x_init[i];
-    fval = fx;
+  if (l->run() && thisTetSize > 0) {
+    finalX = l->currentX;
+    fval = l->fValAfter;
     objF->setNodes(finalX);
 
     for (int i = 0; i < adj.getSize(); i++) {
@@ -326,24 +266,7 @@ bool CrvFaceOptim :: run(int &invaliditySize)
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
-  /* LBFGS *l = new LBFGS(tol, iter, x0, objF); */
-
-  LBFGSFunctor fun(x0.size(), objF);
-  LBFGSParam<double> param;
-  param.epsilon = 1e-6;
-  param.max_iterations = 100;
-  LBFGSSolver<double> solver(param);
-  VectorXd x_init = VectorXd::Zero(x0.size());
-  for (int i = 0; i < x0.size(); i++) {
-    x_init[i] = x0[i];
-    finalX.push_back(0);
-  }
-
-  double fx;
-  int niter = solver.minimize(fun, x_init, fx);
-
-  printf("niter and fx are %d and %f\n", niter, fx);
-
+  LBFGS *l = new LBFGS(tol, iter, x0, objF);
 
 
   apf::MeshEntity* fc[4];
@@ -362,10 +285,9 @@ bool CrvFaceOptim :: run(int &invaliditySize)
   //invaliditySize = 0;
 
   //if (l->run() && thisTetSize > 0) {
-  if (niter < param.max_iterations && invaliditySize > 0) {
-    for (int i = 0; i < x0.size(); i++)
-      finalX[i] = x_init[i];
-    fval = fx;
+  if (l->run() && invaliditySize > 0) {
+    finalX = l->currentX;
+    fval = l->fValAfter;
     objF->setNodes(finalX);
 
     std::vector<int> aiNew = crv::getAllInvalidities(mesh, tet);
