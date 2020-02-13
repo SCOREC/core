@@ -136,6 +136,11 @@ FieldShape* getIPFitShape(int dimension, int order);
  */
 FieldShape* getHierarchic(int order);
 
+/** \brief Get the Nedelec shape function of a given order
+  \details TODO: complete later
+ */
+FieldShape* getNedelec(int order);
+
 /** \brief Project a hierarchic field */
 void projectHierarchicField(Field* to, Field* from);
 

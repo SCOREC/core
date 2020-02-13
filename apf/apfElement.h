@@ -25,6 +25,8 @@ class Element
     virtual ~Element();
     void getGlobalGradients(Vector3 const& local,
                             NewArray<Vector3>& globalGradients);
+    void getGlobalVectorGradients(Vector3 const& local,
+                            NewArray<Matrix3x3>& globalGradients);
     int getType() {return mesh->getType(entity);}
     int getDimension() {return Mesh::typeDimension[getType()];}
     int getOrder() {return field->getShape()->getOrder();}

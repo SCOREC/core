@@ -410,6 +410,18 @@ void getShapeGrads(Element* e, Vector3 const& local,
   e->getGlobalGradients(local,grads);
 }
 
+void getVectorShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values)
+{
+  e->getShape()->getVectorValues(e->getMesh(), e->getEntity(), local,values);
+}
+
+void getVectorShapeGrads(Element* e, Vector3 const& local,
+    NewArray<Matrix3x3>& grads)
+{
+  e->getGlobalVectorGradients(local,grads);
+}
+
 FieldShape* getShape(Field* f)
 {
   return f->getShape();
