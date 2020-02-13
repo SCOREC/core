@@ -25,6 +25,7 @@ set(SOURCES
   apfShape.cc
   apfIPShape.cc
   apfHierarchic.cc
+  apfNedelec.cc
   apfVector.cc
   apfVectorElement.cc
   apfVectorField.cc
