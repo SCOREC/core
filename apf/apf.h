@@ -603,6 +603,19 @@ void getShapeValues(Element* e, Vector3 const& local,
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads);
 
+/** \brief Returns the vector shape function values at a point
+ *  \details used only for Nedelec shapes
+  */
+void getVectorShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
+
+/** \brief Returns the vector shape function gradients at a point
+  *
+  * \details used only for Nedelec shapes
+  */
+void getVectorShapeGrads(Element* e, Vector3 const& local,
+    NewArray<Matrix3x3>& grads);
+
 
 /** \brief Retrieve the apf::FieldShape used by a field
   */
