@@ -16,6 +16,102 @@ static double getAr(apf::Vector3 p0, apf::Vector3 p1, apf::Vector3 p2)
   return (area/2.0);
 }
 
+static double getLinearVolPhys(apf::Mesh2* m, apf::MeshEntity* e)
+{
+  apf::MeshEntity* vs[12];
+  int n = m->getDownward(e, 0, vs);
+  apf::Vector3 coords[12];
+  for (int i = 0; i < n; i++) {
+    m->getPoint(vs[i], 0, coords[i]);
+  }
+
+  if (m->getType(e) == apf::Mesh::TRIANGLE)
+  {
+    return apf::cross(coords[1]-coords[0], coords[2]-coords[0]).getLength()/2.;
+  }
+  else if (m->getType(e) == apf::Mesh::TET)
+  {
+    apf::Matrix3x3 J;
+    J[0] = coords[1] - coords[0];
+    J[1] = coords[2] - coords[0];
+    J[2] = coords[3] - coords[0];
+    return apf::getDeterminant(J) / 6.;
+  }
+  else
+    PCU_ALWAYS_ASSERT_VERBOSE(0,
+    	"Not implemented for entities of type other than tri or tet!");
+  return 0.;
+}
+
+static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s = 0)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(s == 0, "Not implemented for non-zero sizefield!");
+
+  apf::NewArray<apf::Vector3> nodes;
+  apf::Element* el = apf::createElement(m->getCoordinateField(), e);
+  apf::getVectorNodes(el, nodes);
+  apf::destroyElement(el);
+
+  double volm = getLinearVolPhys(m, e);
+
+  int weight = 1;
+  double sumf = 0;
+  if (d == 3) {
+    for (int I = 0; I <= d*(P-1); I++) {
+      for (int J = 0; J <= d*(P-1); J++) {
+	for (int K = 0; K <= d*(P-1); K++) {
+	  for (int L = 0; L <= d*(P-1); L++) {
+	    if ((I == J && J == K && I == 0) ||
+	    	(J == K && K == L && J == 0) ||
+	    	(I == K && K == L && I == 0) ||
+	    	(I == J && J == L && I == 0))
+	      weight = 4;
+	    else if ((I == J && I == 0) ||
+	    	     (I == K && I == 0) ||
+	    	     (I == L && I == 0) ||
+	    	     (J == K && J == 0) ||
+	    	     (J == L && J == 0) ||
+	    	     (K == L && K == 0))
+	      weight = 2;
+	    else
+	      weight = 1;
+	    if (I + J + K + L == d*(P-1)) {
+	      double f = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
+	      sumf = sumf + weight*f*f;
+	    }
+	  }
+	}
+      }
+    }
+  }
+
+  if (d == 2) {
+    for (int I = 0; I <= d*(P-1); I++) {
+      for (int J = 0; J <= d*(P-1); J++) {
+	for (int K = 0; K <= d*(P-1); K++) {
+	  if ((I == J && I == 0) ||
+	      (J == K && J == 0) ||
+	      (I == K && I == 0))
+	    weight = 2;
+	  else
+	    weight = 1;
+	  if (I + J + K == d*(P-1)) {
+	    double f = Nijk(nodes,P,I,J)/(4.0*volm) - 1.0;
+	    sumf = sumf + weight*f*f;
+	  }
+	}
+      }
+    }
+  }
+  return sumf;
+}
+
+static double computeFValDetJ(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s)
+{
+  // TODO: To be completed
+  return 0;
+}
+
 
 namespace crv
 {
@@ -34,10 +130,7 @@ double InternalEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 2, adjF);
     for (std::size_t i = 0; i < adjF.getSize(); i++) {
-      apf::Element* el = apf::createElement(mesh->getCoordinateField(), adjF[i]);
-      apf::getVectorNodes(el, allNodes);
-      sum = sum + computeFValOfElement(allNodes, vol[i]);
-      apf::destroyElement(el);
+      sum = sum + computeFValNIJKL(mesh, adjF[i]);
     }
     restoreInitialNodes();
   }
@@ -46,10 +139,7 @@ double InternalEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      apf::Element* el = apf::createElement(mesh->getCoordinateField(), adjT[i]);
-      apf::getVectorNodes(el, allNodes);
-      sum = sum + computeFValOfElement(allNodes, vol[i]);
-      apf::destroyElement(el);
+      sum = sum + computeFValNIJKL(mesh, adjT[i]);
     }
     // TODO: In the original code this line is commented. Why?
     restoreInitialNodes();
@@ -310,106 +400,8 @@ void InternalEdgeReshapeObjFunc :: updateNodes(
   }
 }
 
-std::vector<double> InternalEdgeReshapeObjFunc :: getVolume()
-{
-  if (d == 3) {
-    apf::Adjacent adjT;
-    apf::Matrix3x3 m;
-    mesh->getAdjacent(edge, 3, adjT);
-    apf::Vector3 point0, point;
-    for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      apf::Adjacent adjV;
-      mesh->getAdjacent(adjT[i], 0, adjV);
-      for (std::size_t j = 0; j < adjV.getSize(); j++) {
-  if ( j == 0)
-    mesh->getPoint(adjV[j], 0, point0);
-  else {
-    mesh->getPoint(adjV[j], 0, point);
-    for (int k = 0; k < 3; k++)
-      m[j-1][k] = point[k] - point0[k];
-  }
-      }
-      double v = getDeterminant(m)/6.0;
-      vol.push_back(v);
-    }
-  }
-  if (d == 2) {
-    apf::Adjacent adjF;
-    apf::Matrix3x3 m;
-    mesh->getAdjacent(edge, 2, adjF);
-    apf::Vector3 point;
-    for (std::size_t i = 0; i < adjF.getSize(); i++) {
-      apf::Adjacent adjV;
-      mesh->getAdjacent(adjF[i], 0, adjV);
-      for (std::size_t j = 0; j < adjV.getSize(); j++) {
-  mesh->getPoint(adjV[j], 0, point);
-  for (int k = 0; k < 3; k++) {
-    if (k < 2) m[j][k] = point[k];
-    else m[j][2] = 1.0;
-  }
-      }
-      double v = getDeterminant(m);
-      vol.push_back(v);
-    }
-  }
-  return vol;
-}
 
-double InternalEdgeReshapeObjFunc :: computeFValOfElement(
-    apf::NewArray<apf::Vector3> &nodes, double volm)
-{
-  int weight = 1;
-  double sumf = 0;
-  if (d == 3) {
-    for (int I = 0; I <= d*(P-1); I++) {
-      for (int J = 0; J <= d*(P-1); J++) {
-	for (int K = 0; K <= d*(P-1); K++) {
-	  for (int L = 0; L <= d*(P-1); L++) {
-	    if ((I == J && J == K && I == 0) ||
-	    	(J == K && K == L && J == 0) ||
-	    	(I == K && K == L && I == 0) ||
-	    	(I == J && J == L && I == 0))
-	      weight = 4;
-	    else if ((I == J && I == 0) ||
-	    	     (I == K && I == 0) ||
-	    	     (I == L && I == 0) ||
-	    	     (J == K && J == 0) ||
-	    	     (J == L && J == 0) ||
-	    	     (K == L && K == 0))
-	      weight = 2;
-	    else
-	      weight = 1;
-	    if (I + J + K + L == d*(P-1)) {
-	      double f = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
-	      //std::cout<<"["<<I<<","<<J<<","<<K<<","<<L<<"]   "<<f<<std::endl;
-	      sumf = sumf + weight*f*f;
-	    }
-	  }
-	}
-      }
-    }
-  }
 
-  if (d == 2) {
-    for (int I = 0; I <= d*(P-1); I++) {
-      for (int J = 0; J <= d*(P-1); J++) {
-	for (int K = 0; K <= d*(P-1); K++) {
-	  if ((I == J && I == 0) ||
-	      (J == K && J == 0) ||
-	      (I == K && I == 0))
-	    weight = 2;
-	  else
-	    weight = 1;
-	  if (I + J + K == d*(P-1)) {
-	    double f = Nijk(nodes,P,I,J)/(4.0*volm) - 1.0;
-	    sumf = sumf + weight*f*f;
-	  }
-	}
-      }
-    }
-  }
-  return sumf;
-}
 
 
 // Boundary Edge Objective Functions Impl
@@ -429,10 +421,7 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 2, adjF);
     for (std::size_t i = 0; i < adjF.getSize(); i++) {
-      apf::Element* el = apf::createElement(mesh->getCoordinateField(), adjF[i]);
-      apf::getVectorNodes(el, allNodes);
-      sum = sum + computeFValOfElement(allNodes, vol[i]);
-      apf::destroyElement(el);
+      sum = sum + computeFValNIJKL(mesh, adjF[i]);
     }
     restoreInitialNodes();
   }
@@ -442,10 +431,7 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      apf::Element* el = apf::createElement(mesh->getCoordinateField(), adjT[i]);
-      apf::getVectorNodes(el, allNodes);
-      sum = sum + computeFValOfElement(allNodes, vol[i]);
-      apf::destroyElement(el);
+      sum = sum + computeFValNIJKL(mesh, adjT[i]);
     }
 
     double ad = 0.0;
@@ -922,107 +908,9 @@ void BoundaryEdgeReshapeObjFunc :: updateNodes(
   apf::synchronize(mesh->getCoordinateField());
 }
 
-std::vector<double> BoundaryEdgeReshapeObjFunc :: getVolume()
-{
-  if (d == 3) {
-    apf::Adjacent adjT;
-    apf::Matrix3x3 m;
-    mesh->getAdjacent(edge, 3, adjT);
-    apf::Vector3 point0, point;
-    for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      apf::Adjacent adjV;
-      mesh->getAdjacent(adjT[i], 0, adjV);
-      for (std::size_t j = 0; j < adjV.getSize(); j++) {
-	if ( j == 0)
-	  mesh->getPoint(adjV[j], 0, point0);
-	else {
-	  mesh->getPoint(adjV[j], 0, point);
-	  for (int k = 0; k < 3; k++)
-	    m[j-1][k] = point[k] - point0[k];
-	}
-      }
-      double v = getDeterminant(m)/6.0;
-      vol.push_back(std::abs(v));
-    }
-  }
-  if (d == 2) {
-    apf::Adjacent adjF;
-    apf::Matrix3x3 m;
-    mesh->getAdjacent(edge, 2, adjF);
-    apf::Vector3 point;
-    for (std::size_t i = 0; i < adjF.getSize(); i++) {
-      apf::Adjacent adjV;
-      mesh->getAdjacent(adjF[i], 0, adjV);
-      for (std::size_t j = 0; j < adjV.getSize(); j++) {
-	mesh->getPoint(adjV[j], 0, point);
-	for (int k = 0; k < 3; k++) {
-	  if (k < 2) m[j][k] = point[k];
-	  else m[j][2] = 1.0;
-	}
-      }
-      double v = getDeterminant(m);
-      vol.push_back(v);
-    }
-  }
-  return vol;
-}
 
 
-double BoundaryEdgeReshapeObjFunc :: computeFValOfElement(
-    apf::NewArray<apf::Vector3> &nodes, double volm)
-{
-  int weight = 1;
-  double sumf = 0;
-  if (d == 3) {
-    for (int I = 0; I <= d*(P-1); I++) {
-      for (int J = 0; J <= d*(P-1); J++) {
-	for (int K = 0; K <= d*(P-1); K++) {
-	  for (int L = 0; L <= d*(P-1); L++) {
-	    if ((I == J && J == K && I == 0) ||
-		(J == K && K == L && J == 0) ||
-		(I == K && K == L && I == 0) ||
-		(I == J && J == L && I == 0))
-	      weight = 4;
-	    else if ((I == J && I == 0) ||
-		    (I == K && I == 0) ||
-		    (I == L && I == 0) ||
-		    (J == K && J == 0) ||
-		    (J == L && J == 0) ||
-		    (K == L && K == 0))
-	      weight = 2;
-	    else
-	      weight = 1;
-	    if (I + J + K + L == d*(P-1)) {
-	      double f = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
-	      //std::cout<<"["<<I<<","<<J<<","<<K<<","<<L<<"]   "<<f<<std::endl;
-	      sumf = sumf + weight*f*f;
-	    }
-	  }
-	}
-      }
-    }
-  }
 
-  if (d == 2) {
-    for (int I = 0; I <= d*(P-1); I++) {
-      for (int J = 0; J <= d*(P-1); J++) {
-	for (int K = 0; K <= d*(P-1); K++) {
-	  if ((I == J && I == 0) ||
-	      (J == K && J == 0) ||
-	      (I == K && I == 0))
-	    weight = 2;
-	  else
-	    weight = 1;
-	  if (I + J + K == d*(P-1)) {
-	    double f = Nijk(nodes,P,I,J)/(4.0*volm) - 1.0;
-	    sumf = sumf + weight*f*f;
-	  }
-	}
-      }
-    }
-  }
-  return sumf;
-}
 
 // Face Reshape Objective Function
 int FaceReshapeObjFunc :: getSpaceDim()
@@ -1041,10 +929,7 @@ double FaceReshapeObjFunc :: getValue(const std::vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(face, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      apf::Element* el = apf::createElement(mesh->getCoordinateField(), adjT[i]);
-      apf::getVectorNodes(el, allNodes);
-      sum = sum + computeFValOfElement(allNodes, vol[i]);
-      apf::destroyElement(el);
+      sum = sum + computeFValNIJKL(mesh, adjT[i]);
     }
     restoreInitialNodes();
   }
@@ -1209,68 +1094,6 @@ void FaceReshapeObjFunc :: updateNodes(
   mesh->setPoint(adjT[i], j, te[numTNodes*i + j]);
     }
   }
-}
-
-vector<double> FaceReshapeObjFunc :: getVolume()
-{
-  if (d == 3) {
-    apf::Adjacent adjT;
-    apf::Matrix3x3 m;
-    mesh->getAdjacent(face, 3, adjT);
-    apf::Vector3 point0, point;
-    for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      apf::Adjacent adjV;
-      mesh->getAdjacent(adjT[i], 0, adjV);
-      for (std::size_t j = 0; j < adjV.getSize(); j++) {
-  if ( j == 0)
-    mesh->getPoint(adjV[j], 0, point0);
-  else {
-    mesh->getPoint(adjV[j], 0, point);
-    for (int k = 0; k < 3; k++)
-      m[j-1][k] = point[k] - point0[k];
-  }
-      }
-      double v = getDeterminant(m)/6.0;
-      vol.push_back(v);
-    }
-  }
-  return vol;
-}
-
-double FaceReshapeObjFunc :: computeFValOfElement(apf::NewArray<apf::Vector3> &nodes, double volm)
-{
-  int weight = 1;
-  double sumf = 0;
-  if (d == 3) {
-    for (int I = 0; I <= d*(P-1); I++) {
-      for (int J = 0; J <= d*(P-1); J++) {
-	for (int K = 0; K <= d*(P-1); K++) {
-	  for (int L = 0; L <= d*(P-1); L++) {
-	    if ((I == J && J == K && I == 0) ||
-		(J == K && K == L && J == 0) ||
-		(I == K && K == L && I == 0) ||
-		(I == J && J == L && I == 0))
-	      weight = 6;
-	    else if ((I == J && I == 0) ||
-		    (I == K && I == 0) ||
-		    (I == L && I == 0) ||
-		    (J == K && J == 0) ||
-		    (J == L && J == 0) ||
-		    (K == L && K == 0))
-	      weight = 3;
-	    else
-	      weight = 1;
-	    if (I + J + K + L == d*(P-1)) {
-	      double fun = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
-	      //std::cout<<"["<<I<<","<<J<<","<<K<<","<<L<<"]   "<<f<<std::endl;
-	      sumf = sumf + weight*fun*fun;
-	    }
-	  }
-	}
-      }
-    }
-  }
-  return sumf;
 }
 
 }

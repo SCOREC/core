@@ -32,9 +32,6 @@ class ObjFunction
 /* void getInitFaceN(); */
 /* void getInitTetN(); */
 
-// TODO can this be reused
-// computeFValOfElement
-
 // Internal Edge Objective Functions
 class InternalEdgeReshapeObjFunc : public ObjFunction
 {
@@ -45,7 +42,6 @@ class InternalEdgeReshapeObjFunc : public ObjFunction
       P = mesh->getShape()->getOrder();
       d = mesh->getDimension();
       getSpaceDim();
-      getVolume();
       getInitEdgeN();
       getInitFaceN();
       getInitTetN();
@@ -79,14 +75,10 @@ class InternalEdgeReshapeObjFunc : public ObjFunction
     	const vector<apf::Vector3> &ed,
     	const vector<apf::Vector3> &fa,
     	const vector<apf::Vector3> &te);
-    vector<double> getVolume();
-    double computeFValOfElement(
-    	apf::NewArray<apf::Vector3> &nodes, double volm);
   protected:
     apf::Mesh2* mesh;
     apf::MeshEntity* edge;
     apf::MeshEntity* tet;
-    vector<double> vol;
     vector<apf::Vector3> ien;
     vector<apf::Vector3> ifn;
     vector<apf::Vector3> itn;
@@ -106,7 +98,6 @@ class BoundaryEdgeReshapeObjFunc : public ObjFunction
       P = mesh->getShape()->getOrder();
       d = mesh->getDimension();
       getSpaceDim();
-      getVolume();
       getInitEdgeN();
       getInitFaceN();
       getInitTetN();
@@ -143,14 +134,10 @@ class BoundaryEdgeReshapeObjFunc : public ObjFunction
     	const vector<apf::Vector3> &fa,
     	const vector<apf::Vector3> &te,
     	bool isInitialX);
-    vector<double> getVolume();
-    double computeFValOfElement(
-    	apf::NewArray<apf::Vector3> &nodes, double volm);
   protected:
     apf::Mesh2* mesh;
     apf::MeshEntity* edge;
     apf::MeshEntity* tet;
-    vector<double> vol;
     vector<apf::Vector3> ien;
     vector<apf::Vector3> ifn;
     vector<apf::Vector3> itpfn;
@@ -166,7 +153,6 @@ class FaceReshapeObjFunc : public ObjFunction
       P = mesh->getShape()->getOrder();
       d = mesh->getDimension();
       getSpaceDim();
-      getVolume();
       getInitFaceN();
       getInitTetN();
     }
@@ -188,14 +174,10 @@ class FaceReshapeObjFunc : public ObjFunction
     void updateNodes(
     	const vector<apf::Vector3> &fa,
     	const vector<apf::Vector3> &te);
-    vector<double> getVolume();
-    double computeFValOfElement(
-    	apf::NewArray<apf::Vector3> &nodes, double volm);
   protected:
     apf::Mesh2* mesh;
     apf::MeshEntity* face;
     apf::MeshEntity* tet;
-    vector<double> vol;
     vector<apf::Vector3> ifn;
     vector<apf::Vector3> itn;
 };
