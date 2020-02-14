@@ -16,36 +16,39 @@ static double getAr(apf::Vector3 p0, apf::Vector3 p1, apf::Vector3 p2)
   return (area/2.0);
 }
 
-static double getLinearVolPhys(apf::Mesh2* m, apf::MeshEntity* e)
-{
-  apf::MeshEntity* vs[12];
-  int n = m->getDownward(e, 0, vs);
-  apf::Vector3 coords[12];
-  for (int i = 0; i < n; i++) {
-    m->getPoint(vs[i], 0, coords[i]);
-  }
+/* static double getLinearVolPhys(apf::Mesh2* m, apf::MeshEntity* e) */
+/* { */
+/*   apf::MeshEntity* vs[12]; */
+/*   int n = m->getDownward(e, 0, vs); */
+/*   apf::Vector3 coords[12]; */
+/*   for (int i = 0; i < n; i++) { */
+/*     m->getPoint(vs[i], 0, coords[i]); */
+/*   } */
 
-  if (m->getType(e) == apf::Mesh::TRIANGLE)
-  {
-    return apf::cross(coords[1]-coords[0], coords[2]-coords[0]).getLength()/2.;
-  }
-  else if (m->getType(e) == apf::Mesh::TET)
-  {
-    apf::Matrix3x3 J;
-    J[0] = coords[1] - coords[0];
-    J[1] = coords[2] - coords[0];
-    J[2] = coords[3] - coords[0];
-    return apf::getDeterminant(J) / 6.;
-  }
-  else
-    PCU_ALWAYS_ASSERT_VERBOSE(0,
-    	"Not implemented for entities of type other than tri or tet!");
-  return 0.;
-}
+/*   if (m->getType(e) == apf::Mesh::TRIANGLE) */
+/*   { */
+/*     return apf::cross(coords[1]-coords[0], coords[2]-coords[0]).getLength()/2.; */
+/*   } */
+/*   else if (m->getType(e) == apf::Mesh::TET) */
+/*   { */
+/*     apf::Matrix3x3 J; */
+/*     J[0] = coords[1] - coords[0]; */
+/*     J[1] = coords[2] - coords[0]; */
+/*     J[2] = coords[3] - coords[0]; */
+/*     return apf::getDeterminant(J) / 6.; */
+/*   } */
+/*   else */
+/*     PCU_ALWAYS_ASSERT_VERBOSE(0, */
+/*     	"Not implemented for entities of type other than tri or tet!"); */
+/*   return 0.; */
+/* } */
 
 static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s = 0)
 {
   PCU_ALWAYS_ASSERT_VERBOSE(s == 0, "Not implemented for non-zero sizefield!");
+
+  int d = m->getDimension();
+  int P = m->getShape()->getOrder();
 
   apf::NewArray<apf::Vector3> nodes;
   apf::Element* el = apf::createElement(m->getCoordinateField(), e);
@@ -76,7 +79,7 @@ static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField*
 	    else
 	      weight = 1;
 	    if (I + J + K + L == d*(P-1)) {
-	      double f = Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
+	      double f = crv::Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
 	      sumf = sumf + weight*f*f;
 	    }
 	  }
@@ -96,7 +99,7 @@ static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField*
 	  else
 	    weight = 1;
 	  if (I + J + K == d*(P-1)) {
-	    double f = Nijk(nodes,P,I,J)/(4.0*volm) - 1.0;
+	    double f = crv::Nijk(nodes,P,I,J)/(4.0*volm) - 1.0;
 	    sumf = sumf + weight*f*f;
 	  }
 	}
@@ -148,65 +151,65 @@ double InternalEdgeReshapeObjFunc :: getValue(const vector<double> &x)
 }
 
 
-vector<double> InternalEdgeReshapeObjFunc :: getGrad(const vector<double> &_x)
-{
-  vector<double> x;
-  for (int i = 0; i < _x.size(); i++)
-    x.push_back(_x[i]);
+/* vector<double> InternalEdgeReshapeObjFunc :: getGrad(const vector<double> &_x) */
+/* { */
+/*   vector<double> x; */
+/*   for (int i = 0; i < _x.size(); i++) */
+/*     x.push_back(_x[i]); */
 
-  // TODO: Why these values?
-  double eps = 1.0e-5;
-  double delta = 1.0;
-  double h = eps;
+/*   // TODO: Why these values? */
+/*   double eps = 1.0e-5; */
+/*   double delta = 1.0; */
+/*   double h = eps; */
 
-  vector<double> g;
-  double xmx = x[0];
-  double xmn = x[0];
-  double ymx = x[1];
-  double ymn = x[1];
-  double zmx = x[2];
-  double zmn = x[2];
-  double df = 0.0, dff = 0.0, dbb = 0.0;
+/*   vector<double> g; */
+/*   double xmx = x[0]; */
+/*   double xmn = x[0]; */
+/*   double ymx = x[1]; */
+/*   double ymn = x[1]; */
+/*   double zmx = x[2]; */
+/*   double zmn = x[2]; */
+/*   double df = 0.0, dff = 0.0, dbb = 0.0; */
 
-  for (std::size_t i = 0; i < x.size(); i+=3) {
-    if (x[i] >= xmx) xmx = x[i];
-    if (x[i] <= xmn) xmn = x[i];
-  }
+/*   for (std::size_t i = 0; i < x.size(); i+=3) { */
+/*     if (x[i] >= xmx) xmx = x[i]; */
+/*     if (x[i] <= xmn) xmn = x[i]; */
+/*   } */
 
-  for (std::size_t i = 1; i < x.size(); i+=3) {
-    if (x[i] >= ymx) ymx = x[i];
-    if (x[i] <= ymn) ymn = x[i];
-  }
+/*   for (std::size_t i = 1; i < x.size(); i+=3) { */
+/*     if (x[i] >= ymx) ymx = x[i]; */
+/*     if (x[i] <= ymn) ymn = x[i]; */
+/*   } */
 
-  for (std::size_t i = 2; i < x.size(); i+=3) {
-    if (x[i] >= zmx) zmx = x[i];
-    if (x[i] <= zmn) zmn = x[i];
-  }
+/*   for (std::size_t i = 2; i < x.size(); i+=3) { */
+/*     if (x[i] >= zmx) zmx = x[i]; */
+/*     if (x[i] <= zmn) zmn = x[i]; */
+/*   } */
 
-  double delx = std::abs(xmx - xmn);
-  double dely = std::abs(ymx - ymn);
-  double delz = std::abs(zmx - zmn);
+/*   double delx = std::abs(xmx - xmn); */
+/*   double dely = std::abs(ymx - ymn); */
+/*   double delz = std::abs(zmx - zmn); */
 
-  for (std::size_t i = 0; i < x.size(); i++) {
-    if (i % 3 == 0) delta = delx;
-    if (i % 3 == 1) delta = dely;
-    if (i % 3 == 2) delta = delz;
+/*   for (std::size_t i = 0; i < x.size(); i++) { */
+/*     if (i % 3 == 0) delta = delx; */
+/*     if (i % 3 == 1) delta = dely; */
+/*     if (i % 3 == 2) delta = delz; */
 
-    h = eps * delta;
+/*     h = eps * delta; */
 
-    x[i] = x[i] + h;
-    double ff = getValue(x);
-    x[i] = x[i] - h;
+/*     x[i] = x[i] + h; */
+/*     double ff = getValue(x); */
+/*     x[i] = x[i] - h; */
 
-    x[i] = x[i] - h;
-    double fb = getValue(x);
-    x[i] = x[i] + h;
+/*     x[i] = x[i] - h; */
+/*     double fb = getValue(x); */
+/*     x[i] = x[i] + h; */
 
-    df = (ff - fb)/(2.0 * h);
-    g.push_back(df);
-  }
-  return g;
-}
+/*     df = (ff - fb)/(2.0 * h); */
+/*     g.push_back(df); */
+/*   } */
+/*   return g; */
+/* } */
 
 vector<double> InternalEdgeReshapeObjFunc :: getInitialGuess()
 {
@@ -527,35 +530,35 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
   return sum;
 }
 
-vector<double> BoundaryEdgeReshapeObjFunc :: getGrad(const vector<double> &_x)
-{
-  vector<double> x;
-  for (int i = 0; i < _x.size(); i++) {
-    x[i] = _x[i];
-  }
+/* vector<double> BoundaryEdgeReshapeObjFunc :: getGrad(const vector<double> &_x) */
+/* { */
+/*   vector<double> x; */
+/*   for (int i = 0; i < _x.size(); i++) { */
+/*     x[i] = _x[i]; */
+/*   } */
 
-  //double fold = getValue(x);
-  double eps = 1.0e-5;
-  double h = eps;
-  vector<double> g;
-  for (std::size_t i = 0; i < x.size(); i++) {
-    if (std::abs(x[i]) > eps)
-      h = eps * std::abs(x[i]);
-    else
-      h = eps;
+/*   //double fold = getValue(x); */
+/*   double eps = 1.0e-5; */
+/*   double h = eps; */
+/*   vector<double> g; */
+/*   for (std::size_t i = 0; i < x.size(); i++) { */
+/*     if (std::abs(x[i]) > eps) */
+/*       h = eps * std::abs(x[i]); */
+/*     else */
+/*       h = eps; */
 
-    x[i] = x[i] + h;
-    double ff = getValue(x);
-    x[i] = x[i] - h;
+/*     x[i] = x[i] + h; */
+/*     double ff = getValue(x); */
+/*     x[i] = x[i] - h; */
 
-    x[i] = x[i] - h;
-    double fb = getValue(x);
-    x[i] = x[i] + h;
-    double df = (ff - fb)/(2.0 * h);
-    g.push_back(df);
-  }
-  return g;
-}
+/*     x[i] = x[i] - h; */
+/*     double fb = getValue(x); */
+/*     x[i] = x[i] + h; */
+/*     double df = (ff - fb)/(2.0 * h); */
+/*     g.push_back(df); */
+/*   } */
+/*   return g; */
+/* } */
 
 vector<double> BoundaryEdgeReshapeObjFunc :: getInitialGuess()
 {
@@ -936,69 +939,69 @@ double FaceReshapeObjFunc :: getValue(const std::vector<double> &x)
   return sum;
 }
 
-vector<double> FaceReshapeObjFunc :: getGrad(const vector<double> &_x)
-{
-  vector<double> x;
-  for (int i = 0; i < _x.size(); i++) {
-    x[i] = _x[i];
-  }
+/* vector<double> FaceReshapeObjFunc :: getGrad(const vector<double> &_x) */
+/* { */
+/*   vector<double> x; */
+/*   for (int i = 0; i < _x.size(); i++) { */
+/*     x[i] = _x[i]; */
+/*   } */
 
-  //double fold = getValue(x);
-  // TODO : Why the following value
-  double eps = 1.0e-4;
-  double h = eps;
-  std::vector<double> g;
-  double xmx = x[0];
-  double xmn = x[0];
-  double ymx = x[1];
-  double ymn = x[1];
-  double zmx = x[2];
-  double zmn = x[2];
-  double df = 0.0, dff = 0.0, dbb = 0.0;
+/*   //double fold = getValue(x); */
+/*   // TODO : Why the following value */
+/*   double eps = 1.0e-4; */
+/*   double h = eps; */
+/*   std::vector<double> g; */
+/*   double xmx = x[0]; */
+/*   double xmn = x[0]; */
+/*   double ymx = x[1]; */
+/*   double ymn = x[1]; */
+/*   double zmx = x[2]; */
+/*   double zmn = x[2]; */
+/*   double df = 0.0, dff = 0.0, dbb = 0.0; */
 
-  for (std::size_t i = 0; i < x.size(); i+=3) {
-    if (x[i] >= xmx) xmx = x[i];
-    if (x[i] <= xmn) xmn = x[i];
-  }
+/*   for (std::size_t i = 0; i < x.size(); i+=3) { */
+/*     if (x[i] >= xmx) xmx = x[i]; */
+/*     if (x[i] <= xmn) xmn = x[i]; */
+/*   } */
 
-  for (std::size_t i = 1; i < x.size(); i+=3) {
-    if (x[i] >= ymx) ymx = x[i];
-    if (x[i] <= ymn) ymn = x[i];
-  }
+/*   for (std::size_t i = 1; i < x.size(); i+=3) { */
+/*     if (x[i] >= ymx) ymx = x[i]; */
+/*     if (x[i] <= ymn) ymn = x[i]; */
+/*   } */
 
-  for (std::size_t i = 2; i < x.size(); i+=3) {
-    if (x[i] >= zmx) zmx = x[i];
-    if (x[i] <= zmn) zmn = x[i];
-  }
+/*   for (std::size_t i = 2; i < x.size(); i+=3) { */
+/*     if (x[i] >= zmx) zmx = x[i]; */
+/*     if (x[i] <= zmn) zmn = x[i]; */
+/*   } */
 
-  double delx = std::abs(xmx - xmn);
-  double dely = std::abs(ymx - ymn);
-  double delz = std::abs(zmx - zmn);
-  double delta = 1.0;
+/*   double delx = std::abs(xmx - xmn); */
+/*   double dely = std::abs(ymx - ymn); */
+/*   double delz = std::abs(zmx - zmn); */
+/*   double delta = 1.0; */
 
-  for (std::size_t i = 0; i < x.size(); i++) {
-    if (i % 3 == 0) delta = delx;
-    if (i % 3 == 1) delta = dely;
-    if (i % 3 == 2) delta = delz;
+/*   for (std::size_t i = 0; i < x.size(); i++) { */
+/*     if (i % 3 == 0) delta = delx; */
+/*     if (i % 3 == 1) delta = dely; */
+/*     if (i % 3 == 2) delta = delz; */
 
-    if (delta < eps)
-      h = eps * std::abs(x[i]);
-    else
-      h = eps * delta;
+/*     if (delta < eps) */
+/*       h = eps * std::abs(x[i]); */
+/*     else */
+/*       h = eps * delta; */
 
-    x[i] = x[i] + h;
-    double ff = getValue(x);
-    x[i] = x[i] - h;
+/*     x[i] = x[i] + h; */
+/*     double ff = getValue(x); */
+/*     x[i] = x[i] - h; */
 
-    x[i] = x[i] - h;
-    double fb = getValue(x);
-    x[i] = x[i] + h;
+/*     x[i] = x[i] - h; */
+/*     double fb = getValue(x); */
+/*     x[i] = x[i] + h; */
 
-    df = (ff - fb)/(2.0 * h);
-    g.push_back(df);
-  }
-  return g;
-}
+/*     df = (ff - fb)/(2.0 * h); */
+/*     g.push_back(df); */
+/*   } */
+/*   return g; */
+/* } */
 
 vector<double> FaceReshapeObjFunc :: getInitialGuess()
 {
