@@ -1,4 +1,5 @@
 #include "LBFGS.h"
+#include "crvObjectiveFunctions.h"
 #include <PCU.h>
 #include "apfMatrix.h"
 

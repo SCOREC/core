@@ -1,6 +1,7 @@
 # Package sources
 set(SOURCES
   crv.cc
+  crvDBG.cc
   crvAdapt.cc
   crvBernstein.cc
   crvBezier.cc
@@ -21,18 +22,16 @@ set(SOURCES
   crvQuality.cc
   crvVtk.cc
   LBFGS.cc
-  crvEdgeOptim.cc
-  crvModelEdgeOptim.cc
-  crvFaceOptim.cc
+  crvOptimizations.cc
+  crvObjectiveFunctions.cc
 )
 
 # Package headers
 set(HEADERS
   crv.h
-  crvEdgeOptim.h
-  crvModelEdgeOptim.h
-  crvFaceOptim.h
-  LBFGS.h
+  crvDBG.h
+  crvOptimizations.h
+  crvObjectiveFunctions.h
   crvBezier.h
   crvTables.h
   crvQuality.h
