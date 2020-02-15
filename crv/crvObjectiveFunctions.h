@@ -72,6 +72,7 @@ class ObjFunction
 
 	g.push_back( (ff - fb) / 2./ h );
       }
+      return(g);
     }
 };
 
