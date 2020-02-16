@@ -5,6 +5,7 @@
 #include "crvBezier.h"
 #include "crvQuality.h"
 #include "crvMath.h"
+#include "apfIntegrate.h"
 
 
 
@@ -111,8 +112,27 @@ static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField*
 
 static double computeFValDetJ(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s)
 {
-  // TODO: To be completed
-  return 0;
+  apf::EntityIntegration *eInt = new apf::EntityIntegration();
+  apf::Integration *ir = eInt->getIntegration(m->getType(e));
+  int nip = eInt->countIntegrations();
+
+  apf::MeshElement* me = apf::createMeshElement(m, e);
+  Matrix3x3 J, T, Jm;
+
+  double jDet, sum = 0.;
+
+  for (int i = 0; i < nip; i++) {
+    IntegrationPoint *ip = ir->getPoint(i);
+    Vector3 qp = ip->param;
+    double w = ip->weight;
+    apf::getJacobian(me, qp, J);
+
+    s->getTransform(me, qp, T);
+    Jm = J*T; // Jacobian in metric space
+    determinant(Jm, jDet);
+    sum += (jDet - 1.) * (jDet - 1);
+  }
+  return sum;
 }
 
 
