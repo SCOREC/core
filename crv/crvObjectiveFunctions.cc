@@ -5,8 +5,6 @@
 #include "crvBezier.h"
 #include "crvQuality.h"
 #include "crvMath.h"
-#include "apfIntegrate.h"
-
 
 
 static double getAr(apf::Vector3 p0, apf::Vector3 p1, apf::Vector3 p2)
@@ -16,125 +14,6 @@ static double getAr(apf::Vector3 p0, apf::Vector3 p1, apf::Vector3 p2)
   double area = (apf::cross(p1, p2)).getLength();
   return (area/2.0);
 }
-
-/* static double getLinearVolPhys(apf::Mesh2* m, apf::MeshEntity* e) */
-/* { */
-/*   apf::MeshEntity* vs[12]; */
-/*   int n = m->getDownward(e, 0, vs); */
-/*   apf::Vector3 coords[12]; */
-/*   for (int i = 0; i < n; i++) { */
-/*     m->getPoint(vs[i], 0, coords[i]); */
-/*   } */
-
-/*   if (m->getType(e) == apf::Mesh::TRIANGLE) */
-/*   { */
-/*     return apf::cross(coords[1]-coords[0], coords[2]-coords[0]).getLength()/2.; */
-/*   } */
-/*   else if (m->getType(e) == apf::Mesh::TET) */
-/*   { */
-/*     apf::Matrix3x3 J; */
-/*     J[0] = coords[1] - coords[0]; */
-/*     J[1] = coords[2] - coords[0]; */
-/*     J[2] = coords[3] - coords[0]; */
-/*     return apf::getDeterminant(J) / 6.; */
-/*   } */
-/*   else */
-/*     PCU_ALWAYS_ASSERT_VERBOSE(0, */
-/*     	"Not implemented for entities of type other than tri or tet!"); */
-/*   return 0.; */
-/* } */
-
-static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s = 0)
-{
-  PCU_ALWAYS_ASSERT_VERBOSE(s == 0, "Not implemented for non-zero sizefield!");
-
-  int d = m->getDimension();
-  int P = m->getShape()->getOrder();
-
-  apf::NewArray<apf::Vector3> nodes;
-  apf::Element* el = apf::createElement(m->getCoordinateField(), e);
-  apf::getVectorNodes(el, nodes);
-  apf::destroyElement(el);
-
-  double volm = getLinearVolPhys(m, e);
-
-  int weight = 1;
-  double sumf = 0;
-  if (d == 3) {
-    for (int I = 0; I <= d*(P-1); I++) {
-      for (int J = 0; J <= d*(P-1); J++) {
-	for (int K = 0; K <= d*(P-1); K++) {
-	  for (int L = 0; L <= d*(P-1); L++) {
-	    if ((I == J && J == K && I == 0) ||
-	    	(J == K && K == L && J == 0) ||
-	    	(I == K && K == L && I == 0) ||
-	    	(I == J && J == L && I == 0))
-	      weight = 4;
-	    else if ((I == J && I == 0) ||
-	    	     (I == K && I == 0) ||
-	    	     (I == L && I == 0) ||
-	    	     (J == K && J == 0) ||
-	    	     (J == L && J == 0) ||
-	    	     (K == L && K == 0))
-	      weight = 2;
-	    else
-	      weight = 1;
-	    if (I + J + K + L == d*(P-1)) {
-	      double f = crv::Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
-	      sumf = sumf + weight*f*f;
-	    }
-	  }
-	}
-      }
-    }
-  }
-
-  if (d == 2) {
-    for (int I = 0; I <= d*(P-1); I++) {
-      for (int J = 0; J <= d*(P-1); J++) {
-	for (int K = 0; K <= d*(P-1); K++) {
-	  if ((I == J && I == 0) ||
-	      (J == K && J == 0) ||
-	      (I == K && I == 0))
-	    weight = 2;
-	  else
-	    weight = 1;
-	  if (I + J + K == d*(P-1)) {
-	    double f = crv::Nijk(nodes,P,I,J)/(4.0*volm) - 1.0;
-	    sumf = sumf + weight*f*f;
-	  }
-	}
-      }
-    }
-  }
-  return sumf;
-}
-
-static double computeFValDetJ(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s)
-{
-  apf::EntityIntegration *eInt = new apf::EntityIntegration();
-  apf::Integration *ir = eInt->getIntegration(m->getType(e));
-  int nip = eInt->countIntegrations();
-
-  apf::MeshElement* me = apf::createMeshElement(m, e);
-  Matrix3x3 J, T, Jm;
-
-  double jDet, sum = 0.;
-
-  for (int i = 0; i < nip; i++) {
-    IntegrationPoint *ip = ir->getPoint(i);
-    Vector3 qp = ip->param;
-    double w = ip->weight;
-    apf::getJacobian(me, qp, J);
-
-    s->getTransform(me, qp, T);
-    Jm = J*T; // Jacobian in metric space
-    determinant(Jm, jDet);
-    sum += (jDet - 1.) * (jDet - 1);
-  }
-  return sum;
-}
-
 
 namespace crv
 {
@@ -153,7 +32,7 @@ double InternalEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 2, adjF);
     for (std::size_t i = 0; i < adjF.getSize(); i++) {
-      sum = sum + computeFValNIJKL(mesh, adjF[i]);
+      sum = sum + f(mesh, adjF[i], size);
     }
     restoreInitialNodes();
   }
@@ -162,7 +41,7 @@ double InternalEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      sum = sum + computeFValNIJKL(mesh, adjT[i]);
+      sum = sum + f(mesh, adjT[i], size);
     }
     // TODO: In the original code this line is commented. Why?
     restoreInitialNodes();
@@ -444,7 +323,7 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 2, adjF);
     for (std::size_t i = 0; i < adjF.getSize(); i++) {
-      sum = sum + computeFValNIJKL(mesh, adjF[i]);
+      sum = sum + f(mesh, adjF[i], size);
     }
     restoreInitialNodes();
   }
@@ -454,7 +333,7 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(edge, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      sum = sum + computeFValNIJKL(mesh, adjT[i]);
+      sum = sum + f(mesh, adjT[i], size);
     }
 
     double ad = 0.0;
@@ -952,7 +831,7 @@ double FaceReshapeObjFunc :: getValue(const std::vector<double> &x)
     apf::NewArray<apf::Vector3> allNodes;
     mesh->getAdjacent(face, 3, adjT);
     for (std::size_t i = 0; i < adjT.getSize(); i++) {
-      sum = sum + computeFValNIJKL(mesh, adjT[i]);
+      sum = sum + f(mesh, adjT[i], size);
     }
     restoreInitialNodes();
   }

@@ -10,6 +10,7 @@
 #include <apfMDS.h>
 #include <apfShape.h>
 #include <apfNumbering.h>
+#include "crvAdapt.h"
 
 using namespace std;
 
@@ -86,16 +87,22 @@ class ObjFunction
 class InternalEdgeReshapeObjFunc : public ObjFunction
 {
   public:
-    InternalEdgeReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* e, apf::MeshEntity* t) :
-    mesh(m), edge(e), tet(t)
+    InternalEdgeReshapeObjFunc(
+	crv::Adapt* a,
+	apf::MeshEntity* e,
+	apf::MeshEntity* t,
+	double (*fPtr)(apf::Mesh2*, apf::MeshEntity*, ma::SizeField*)) :
+    adapt(a), edge(e), tet(t), f(fPtr)
     {
+      mesh = adapt->mesh;
+      size = adapt->sizeField;
       P = mesh->getShape()->getOrder();
       d = mesh->getDimension();
       getSpaceDim();
       getInitEdgeN();
       getInitFaceN();
       getInitTetN();
-      tol = cbrt(getLinearVolPhys(m, t)) * 1.e-3;
+      tol = cbrt(getLinearVolPhys(mesh, t)) * 1.e-3;
     }
     ~InternalEdgeReshapeObjFunc(){}
     int getSpaceDim();
@@ -128,9 +135,12 @@ class InternalEdgeReshapeObjFunc : public ObjFunction
     	const vector<apf::Vector3> &fa,
     	const vector<apf::Vector3> &te);
   protected:
-    apf::Mesh2* mesh;
+    crv::Adapt* adapt;
     apf::MeshEntity* edge;
     apf::MeshEntity* tet;
+    double (*f)(apf::Mesh2*, apf::MeshEntity*, ma::SizeField*);
+    apf::Mesh2* mesh;
+    ma::SizeField* size;
     vector<apf::Vector3> ien;
     vector<apf::Vector3> ifn;
     vector<apf::Vector3> itn;
@@ -143,18 +153,21 @@ class BoundaryEdgeReshapeObjFunc : public ObjFunction
 {
   public:
     BoundaryEdgeReshapeObjFunc(
-    	apf::Mesh2* m,
+	crv::Adapt* a,
     	apf::MeshEntity* e,
-    	apf::MeshEntity* t) :
-    mesh(m), edge(e), tet(t)
+    	apf::MeshEntity* t,
+	double (*fPtr)(apf::Mesh2*, apf::MeshEntity*, ma::SizeField*)) :
+    adapt(a), edge(e), tet(t), f(fPtr)
     {
+      mesh = adapt->mesh;
+      size = adapt->sizeField;
       P = mesh->getShape()->getOrder();
       d = mesh->getDimension();
       getSpaceDim();
       getInitEdgeN();
       getInitFaceN();
       getInitTetN();
-      tol = cbrt(getLinearVolPhys(m, t)) * 1.e-3;
+      tol = cbrt(getLinearVolPhys(mesh, t)) * 1.e-3;
     }
     ~BoundaryEdgeReshapeObjFunc(){}
     int getSpaceDim();
@@ -190,9 +203,12 @@ class BoundaryEdgeReshapeObjFunc : public ObjFunction
     	const vector<apf::Vector3> &te,
     	bool isInitialX);
   protected:
-    apf::Mesh2* mesh;
+    crv::Adapt* adapt;
     apf::MeshEntity* edge;
     apf::MeshEntity* tet;
+    double (*f)(apf::Mesh2*, apf::MeshEntity*, ma::SizeField*);
+    apf::Mesh2* mesh;
+    ma::SizeField* size;
     vector<apf::Vector3> ien;
     vector<apf::Vector3> ifn;
     vector<apf::Vector3> itpfn;
@@ -203,15 +219,21 @@ class BoundaryEdgeReshapeObjFunc : public ObjFunction
 class FaceReshapeObjFunc : public ObjFunction
 {
   public:
-    FaceReshapeObjFunc(apf::Mesh2* m, apf::MeshEntity* f, apf::MeshEntity* t) :
-    mesh(m), face(f), tet(t)
+    FaceReshapeObjFunc(
+	crv::Adapt* a,
+	apf::MeshEntity* f,
+	apf::MeshEntity* t,
+	double (*fPtr)(apf::Mesh2*, apf::MeshEntity*, ma::SizeField*)) :
+    adapt(a), face(f), tet(t), f(fPtr)
     {
+      mesh = adapt->mesh;
+      size = adapt->sizeField;
       P = mesh->getShape()->getOrder();
       d = mesh->getDimension();
       getSpaceDim();
       getInitFaceN();
       getInitTetN();
-      tol = cbrt(getLinearVolPhys(m, t)) * 1.e-3;
+      tol = cbrt(getLinearVolPhys(mesh, t)) * 1.e-3;
     }
     ~FaceReshapeObjFunc() {}
     int getSpaceDim();
@@ -233,9 +255,12 @@ class FaceReshapeObjFunc : public ObjFunction
     	const vector<apf::Vector3> &fa,
     	const vector<apf::Vector3> &te);
   protected:
-    apf::Mesh2* mesh;
+    crv::Adapt* adapt;
     apf::MeshEntity* face;
     apf::MeshEntity* tet;
+    double (*f)(apf::Mesh2*, apf::MeshEntity*, ma::SizeField*);
+    apf::Mesh2* mesh;
+    ma::SizeField* size;
     vector<apf::Vector3> ifn;
     vector<apf::Vector3> itn;
     double tol;

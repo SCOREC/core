@@ -1,15 +1,15 @@
-#include "LBFGS.h"
+#include <apfMatrix.h>
+#include <apfMDS.h>
+#include <apfNumbering.h>
+#include <apfIntegrate.h>
+#include <gmi.h>
 #include "crvOptimizations.h"
 #include "crv.h"
-#include "gmi.h"
-#include "apfMDS.h"
-#include "apfNumbering.h"
 #include "crvQuality.h"
 #include "crvBezier.h"
 #include "crvMath.h"
 #include "crvDBG.h"
 #include <iostream>
-#include "apfMatrix.h"
 
 /* static int global_counter = 0; */
 /* static apf::MeshEntity* tetra[100]; */
@@ -36,9 +36,97 @@ static void printInvalidities(apf::Mesh2* m, apf::MeshEntity* e[99], apf::MeshEn
   }
 }
 
+static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s = 0)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(s == 0, "Not implemented for non-zero sizefield!");
+
+  int d = m->getDimension();
+  int P = m->getShape()->getOrder();
+
+  apf::NewArray<apf::Vector3> nodes;
+  apf::Element* el = apf::createElement(m->getCoordinateField(), e);
+  apf::getVectorNodes(el, nodes);
+  apf::destroyElement(el);
+
+  double volm = getLinearVolPhys(m, e);
+
+  int weight = 1;
+  double sumf = 0;
+  if (d == 3) {
+    for (int I = 0; I <= d*(P-1); I++) {
+      for (int J = 0; J <= d*(P-1); J++) {
+  for (int K = 0; K <= d*(P-1); K++) {
+    for (int L = 0; L <= d*(P-1); L++) {
+      if ((I == J && J == K && I == 0) ||
+	(J == K && K == L && J == 0) ||
+	(I == K && K == L && I == 0) ||
+	(I == J && J == L && I == 0))
+        weight = 4;
+      else if ((I == J && I == 0) ||
+	     (I == K && I == 0) ||
+	     (I == L && I == 0) ||
+	     (J == K && J == 0) ||
+	     (J == L && J == 0) ||
+	     (K == L && K == 0))
+        weight = 2;
+      else
+        weight = 1;
+      if (I + J + K + L == d*(P-1)) {
+        double f = crv::Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
+        sumf = sumf + weight*f*f;
+      }
+    }
+  }
+      }
+    }
+  }
+
+  if (d == 2) {
+    for (int I = 0; I <= d*(P-1); I++) {
+      for (int J = 0; J <= d*(P-1); J++) {
+  for (int K = 0; K <= d*(P-1); K++) {
+    if ((I == J && I == 0) ||
+        (J == K && J == 0) ||
+        (I == K && I == 0))
+      weight = 2;
+    else
+      weight = 1;
+    if (I + J + K == d*(P-1)) {
+      double f = crv::Nijk(nodes,P,I,J)/(4.0*volm) - 1.0;
+      sumf = sumf + weight*f*f;
+    }
+  }
+      }
+    }
+  }
+  return sumf;
+}
+
+static double computeFValDetJ(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField* s)
+{
+  int order = m->getShape()->getOrder();
+  apf::MeshElement* me = apf::createMeshElement(m, e);
+  apf::Matrix3x3 J;
+  apf::Matrix3x3 T;
+  apf::Matrix3x3 Jm;
+
+  double jDet, sum = 0.;
+  for (int i = 0; i < apf::countIntPoints(me, order) ; i++) {
+    apf::Vector3 qp;
+    double w = apf::getIntWeight(me, order, i);
+    apf::getIntPoint(me, order, i, qp);
+
+    apf::getJacobian(me, qp, J);
+    s->getTransform(me, qp, T);
+    Jm = J*T; // Jacobian in metric space
+    jDet = apf::getDeterminant(Jm);
+    sum += w * (jDet - 1.) * (jDet - 1.);
+  }
+  return sum;
+}
+
 
 namespace crv{
-
 
 void CrvInternalEdgeOptim :: setMaxIter(int n)
 {
@@ -71,12 +159,21 @@ bool CrvInternalEdgeOptim :: run(int &invaliditySize)
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
   /* printTetNumber(mesh, tet); */
   /* printInvalidities(mesh, adj_array, edge, adj.getSize()); */
-  InternalEdgeReshapeObjFunc *objF = new InternalEdgeReshapeObjFunc(mesh, edge, tet);
+  switch (mode) {
+    case NIJK:
+      objF = new InternalEdgeReshapeObjFunc(adapt, edge, tet, computeFValNIJKL);
+      break;
+    case DETJ:
+      objF = new InternalEdgeReshapeObjFunc(adapt, edge, tet, computeFValDetJ);
+      break;
+    default:
+      break;
+  }
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
 
-  LBFGS *l = new LBFGS(tol, iter, x0, objF);
+  l = new LBFGS(tol, iter, x0, objF);
 
   apf::MeshEntity* ed[6];
   int thisTETnum = 0;
@@ -168,15 +265,23 @@ bool CrvBoundaryEdgeOptim :: run(int &invaliditySize)
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, edge, "before_cavity_indv_tet_of_edge_", adj.getSize());
   /* printTetNumber(mesh, tet); */
   /* printInvalidities(mesh, adj_array, edge, adj.getSize()); */
-
-  BoundaryEdgeReshapeObjFunc *objF = new BoundaryEdgeReshapeObjFunc(mesh, edge, tet);
+  switch (mode) {
+    case NIJK:
+      objF = new BoundaryEdgeReshapeObjFunc(adapt, edge, tet, computeFValNIJKL);
+      break;
+    case DETJ:
+      objF = new BoundaryEdgeReshapeObjFunc(adapt, edge, tet, computeFValDetJ);
+      break;
+    default:
+      break;
+  }
   std::vector<double> x0 = objF->getInitialGuess();
 
 
 
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
-  LBFGS *l = new LBFGS(tol, iter, x0, objF);
+  l = new LBFGS(tol, iter, x0, objF);
   apf::MeshEntity* ed[6];
   int thisTETnum = 0;
 
@@ -262,11 +367,20 @@ bool CrvFaceOptim :: run(int &invaliditySize)
   //makeIndividualTetsFromFacesOrEdges(mesh, adj_array, face, "before_cavity_indv_tet_of_face_", adj.getSize());
   /* printTetNumber(mesh, tet); */
   printInvalidities(mesh, adj_array, face, adj.getSize());
-  FaceReshapeObjFunc *objF = new FaceReshapeObjFunc(mesh, face, tet);
+  switch (mode) {
+    case NIJK:
+      objF = new FaceReshapeObjFunc(adapt, face, tet, computeFValNIJKL);
+      break;
+    case DETJ:
+      objF = new FaceReshapeObjFunc(adapt, face, tet, computeFValDetJ);
+      break;
+    default:
+      break;
+  }
   std::vector<double> x0 = objF->getInitialGuess();
   //double f0 = objF->getValue(x0);
   //std::cout<< "fval at x0 " << f0<<std::endl;
-  LBFGS *l = new LBFGS(tol, iter, x0, objF);
+  l = new LBFGS(tol, iter, x0, objF);
 
 
   apf::MeshEntity* fc[4];
