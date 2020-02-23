@@ -17,6 +17,16 @@ static std::string buildGeomBCFileName(std::string timestep_or_dat)
   return ss.str();
 }
 
+/* abandoned 
+static std::string buildCoordsFileName()
+{
+  std::stringstream ss;
+  int rank = PCU_Comm_Self() + 1;
+  ss << "coords."  << "." << rank;
+  return ss.str();
+}
+*/
+
 enum {
   MAX_PARAMS = 12
 };
@@ -350,11 +360,28 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     ph_write_doubles(f, "m2g parametric coordinate", o.arrays.m2gParCoord,
       params[0] * params[1], 2, params);
   }
-
   params[0] = m->count(0);
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
       params[0] * params[1], 2, params);
+// start effort to write coords to a flat ascii file for each part
+  int npts=params[0];
+  char coordfilename[64];
+  bzero((void*)coordfilename,64);
+  int rank = PCU_Comm_Self() + 1;
+  sprintf(coordfilename, "coords.%d",rank);
+  FILE* fc = fopen(coordfilename, "w");
+  fprintf ( fc, "%d \n", npts );
+  double x,y,z;
+      
+  for  (int j = 0; j < npts; j++) {
+     x=o.arrays.coordinates[j];
+     y=o.arrays.coordinates[j+npts];
+     z=o.arrays.coordinates[j+2*npts];
+    fprintf ( fc, "%.15E,%.15E,%.15E,\n", x,y,z);
+  }
+  fclose(fc);
+
   writeInt(f, "number of processors", PCU_Comm_Peers());
   writeInt(f, "size of ilwork array", o.nlwork);
   if (o.nlwork)

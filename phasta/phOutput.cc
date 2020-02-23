@@ -966,9 +966,11 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
     o.arrays.ifather = new int[nnodes]; //initialize ifath
     apf::MeshTag* t = m->findTag("fathers2D");
     if (t==NULL) {
-        std::cout<<"Did not find tag fathers2D"<<std::endl;
+      if (!PCU_Comm_Self())
+       lion_oprint(1,"Did not find tag fathers2D\n");
     } else if (t != NULL) {
-        std::cout<<"Found tag fathers2D"<<std::endl;
+      if (!PCU_Comm_Self())
+       lion_oprint(1,"Found tag fathers2D\n");
     }
     int tagNum; 
     int count = 0;
