@@ -184,7 +184,7 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
-set(MDIR ${MESHES}/fun3d)
+set(MDIR ${MESHES}/ugrid)
 mpi_test(inviscid_ugrid 4
   ./from_ugrid
   "${MDIR}/inviscid_egg.b8.ugrid"
