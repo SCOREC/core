@@ -103,16 +103,41 @@ void getVertexT(struct gmi_model* m, struct gmi_ent* to, struct gmi_ent* from, d
     diff = sqrt(pow(vtx_pnt[0] - t_pnt[0], 2) + 
                 pow(vtx_pnt[1] - t_pnt[1], 2) + 
                 pow(vtx_pnt[2] - t_pnt[2], 2));
-    printf("diff (if here should be small): %f", diff);
+    printf("diff (if here should be small): %f\n", diff);
     *t = t_range[1];
   }
   return;
 }
 
-// void getVertexUV(const ego to, const ego from, double to_p[2])
-// {
+/// function to reparameterize a vertex onto a face
+/// (get the u,v parametric coodinates associated with the vertex)
+void getVertexUV(struct gmi_model* m, struct gmi_ent* to,
+                 struct gmi_ent* from, double to_p[2])
+{
+  struct gmi_set* adj_faces;
+  struct gmi_set* adj_edges = gmi_adjacent(m, from, 1);
 
-// }
+  for (int i = 0; i < adj_edges->n; ++i)
+  {
+    adj_faces = gmi_adjacent(m, adj_edges->e[i], 2);
+    for (int j = 0; j < adj_faces->n; ++j)
+    {
+      if (adj_faces->e[j] == to)
+      {
+        double t;
+        getVertexT(m, adj_edges->e[i], from, &t);
+        m->ops->reparam(m, adj_edges->e[i], &t, to, to_p);
+        goto cleanup;
+      }
+    }
+    gmi_free_set(adj_faces);
+  }
+
+  cleanup:
+    gmi_free_set(adj_faces);
+    gmi_free_set(adj_edges);
+    return;
+}
 
 struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
@@ -244,7 +269,7 @@ void eval(struct gmi_model* m,
   ego ego_ent = eg_ent->ego_ent;
   int dim = m->ops->dim(m, e);
   // printf("dim: %d\n", dim);
-  if (dim > 0)
+  if (dim > 0 && dim < 3)
   {
     EG_evaluate(ego_ent, p, results);
     x[0] = results[0];
@@ -265,6 +290,10 @@ void eval(struct gmi_model* m,
     x[0] = data[0];
     x[1] = data[1];
     x[2] = data[2];
+  }
+  else if (dim == 3)
+  {
+    gmi_fail("cannot eval 3D entity!");
   }
 }
 
@@ -287,18 +316,21 @@ void reparam(struct gmi_model* m,
 
   if ((from_dim == 1) && (to_dim == 2))
   {
+    printf("reparam from %d to %d\n", from_dim, to_dim);
     EG_getEdgeUV(ego_to, ego_from, 1, from_p[0], to_p);
     return;
   }
   if ((from_dim == 0) && (to_dim == 2))
   {
-    printf("reparam from %d to %d not implemented\n", from_dim, to_dim);
+    printf("reparam from %d to %d\n", from_dim, to_dim);
     // getVertexUV(*ego_to, *ego_from, to_p);
-    gmi_fail("From node to surface reparam not implemented");
+    getVertexUV(m, to, from, to_p);
+    // gmi_fail("From node to surface reparam not implemented");
     return;
   }
   if ((from_dim == 0) && (to_dim == 1))
   {
+    printf("reparam from %d to %d\n", from_dim, to_dim);
     getVertexT(m, to, from, &to_p[0]);
     return;
   }
