@@ -63,16 +63,16 @@ static double computeFValNIJKL(apf::Mesh2* m, apf::MeshEntity* e, ma::SizeField*
 	(J == K && K == L && J == 0) ||
 	(I == K && K == L && I == 0) ||
 	(I == J && J == L && I == 0))
-        weight = 1;
+        weight = 4;
       else if ((I == J && I == 0) ||
 	     (I == K && I == 0) ||
 	     (I == L && I == 0) ||
 	     (J == K && J == 0) ||
 	     (J == L && J == 0) ||
 	     (K == L && K == 0))
-        weight = 0;
+        weight = 2;
       else
-        weight = 0;
+        weight = 1;
       if (I + J + K + L == d*(P-1)) {
         double f = crv::Nijkl(nodes,P,I,J,K)/(6.0*volm) - 1.0;
         sumf = sumf + weight*f*f;
