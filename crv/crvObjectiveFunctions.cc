@@ -373,7 +373,7 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     }
 
     //sum = sum*(1 + beta);
-    /* apf::destroyElement(Edl); */
+    // apf::destroyElement(Edl); 
 
     apf::Adjacent adjF;
     mesh->getAdjacent(edge, 2, adjF);
@@ -422,7 +422,7 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
 	}
       }
     }
-    /* double gamma = 0.0; */
+    // double gamma = 0.0;
     sum = sum*(1 + beta + 0.3*gamma);
     restoreInitialNodes();
   }

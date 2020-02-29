@@ -35,6 +35,9 @@ set(HEADERS
   crvBezier.h
   crvTables.h
   crvQuality.h
+  crvAdapt.h
+  LBFGS.h
+  crvMath.h
 )
 
 # Add the crv library

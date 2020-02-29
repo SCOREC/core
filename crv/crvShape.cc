@@ -1138,7 +1138,8 @@ public:
     if (numf == 0) return;
     for (int i = 0; i < numf; i++ ) {
       if (mesh->getModelType(mesh->toModel(faces[i])) != 3) continue;
-      CrvFaceOptim *cfo = new CrvFaceOptim(adapter, faces[i], simplex, DETJ);
+      //CrvFaceOptim *cfo = new CrvFaceOptim(adapter, faces[i], simplex, DETJ);
+      CrvFaceOptim *cfo = new CrvFaceOptim(adapter, faces[i], simplex, NIJK);
       cfo->setMaxIter(100);
       cfo->setTol(1e-8);
       if (cfo->run(invaliditySize)) {
@@ -1210,10 +1211,14 @@ public:
       bool hasDecreased = false;
       CrvEntityOptim* ceo;
 
-      if (mesh->getModelType(mesh->toModel(edges[i])) == 3)
-      	ceo = new CrvInternalEdgeOptim(adapter, edges[i], simplex, DETJ);
-      else
-      	ceo = new CrvBoundaryEdgeOptim(adapter, edges[i], simplex, DETJ);
+      if (mesh->getModelType(mesh->toModel(edges[i])) == 3) {
+      	//ceo = new CrvInternalEdgeOptim(adapter, edges[i], simplex, DETJ);
+      	ceo = new CrvInternalEdgeOptim(adapter, edges[i], simplex, NIJK);
+      }
+      else {
+      	//ceo = new CrvBoundaryEdgeOptim(adapter, edges[i], simplex, DETJ);
+      	ceo = new CrvBoundaryEdgeOptim(adapter, edges[i], simplex, NIJK);
+      }
 
       ceo->setMaxIter(100);
       ceo->setTol(1e-8);

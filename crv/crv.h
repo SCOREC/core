@@ -21,7 +21,7 @@
 /** \namespace crv
   * \brief the curving functions are contained in this namespace */
 namespace crv {
-enum {NIJK, DETJ};
+enum {NIJK, DETJ, DETJNIJK};
 
 /** \brief actually 1 greater than max order */
 static unsigned const MAX_ORDER = 19;
