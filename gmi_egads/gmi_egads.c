@@ -671,12 +671,23 @@ int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 void destroy(struct gmi_model* m)
 {
   printf("destroy!\n");
-  free(m);
   for (int i = 0; i < 4; ++i)
   {
     EG_free(egads_global_ents[i]);
   }
 
+  int sizes[] = {m->n[3], m->n[3], m->n[3],
+                 m->n[0], m->n[1], m->n[2]};
+  for (int i = 0; i < 6; ++i)
+  {
+    for (int j = 0; j < sizes[i]; ++j)
+    {
+      EG_free(adjacency_table[i][j]);
+    }
+    EG_free(adjacency_table[i]);
+  }
+
+  free(m);
 }
 
 struct gmi_model_ops ops;
