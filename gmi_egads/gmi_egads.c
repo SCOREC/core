@@ -8,6 +8,8 @@
 
 *******************************************************************************/
 #include <math.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "egads.h"
 
@@ -45,7 +47,62 @@ struct egads_iter
 
 /// adjacency table to be used for the "dummy" 3D elements that EGADS doesn't
 /// natively track
-int ***adjacency_table;
+int **adjacency_table[6];
+
+/// read adjacency table from binary file
+void read_adj_table(const char* filename,
+                    int *nregions)
+{
+  char *sup_filename;
+  sup_filename = EG_alloc(strlen(filename)+4+1);
+  if (sup_filename == NULL)
+  {
+    gmi_fail("failed to allocate memory for new string");
+  }
+  sup_filename[0] = '\0';
+  strcat(sup_filename,filename);
+  strcat(sup_filename, ".sup");
+
+  FILE *adj_table_file = fopen(sup_filename, "rb");
+  if (adj_table_file == NULL)
+  {
+    gmi_fail("failed to open supplementary EGADS model file!");
+  }
+
+  int header[6];
+  fread(header, sizeof(int), 6, adj_table_file);
+
+  *nregions = header[0];
+
+  for (int i = 0; i < 6; ++i)
+  {
+    adjacency_table[i] = (int**)EG_alloc(sizeof(*(adjacency_table[i]))
+                                         * header[i]);
+    if (adjacency_table[i] == NULL) {
+      char fail[50];
+      sprintf(fail, "failed to alloc memory for adjacency_table[%d]", i);
+      /// TODO: this could cause memory leak
+      gmi_fail(fail);
+    }
+    for (int j = 0; j < header[i]; ++j) {
+      int nadjacent = -1;
+      fread(&nadjacent, sizeof(int), 1, adj_table_file);
+      adjacency_table[i][j] = (int*)EG_alloc(sizeof(*(adjacency_table[i][j]))
+                                             * (nadjacent+1));
+      if (adjacency_table[i][j] == NULL) {
+        char fail[50];
+        sprintf(fail, "failed to alloc memory for "
+                "adjacency_table[%d][%d]", i,j);
+        /// TODO: this could cause memory leak
+        gmi_fail(fail);
+      }
+      adjacency_table[i][j][0] = nadjacent;
+      fread(&(adjacency_table[i][j][1]), sizeof(int), nadjacent,
+              adj_table_file);
+    }
+  }
+  fclose(adj_table_file);
+}
 
 
 /// TODO: consider optimizing adjacency tables and access
@@ -126,6 +183,7 @@ void getVertexT(struct gmi_model* m, struct gmi_ent* to, struct gmi_ent* from, d
   return;
 }
 
+/// TODO: handle degenerate edges (cant eval on them)
 /// function to reparameterize a vertex onto a face
 /// (get the u,v parametric coodinates associated with the vertex)
 void getVertexUV(struct gmi_model* m, struct gmi_ent* to,
@@ -609,6 +667,7 @@ int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
   gmi_fail("is_discrete_ent not implemented");
 }
 
+/// TODO: free adjacency table too
 void destroy(struct gmi_model* m)
 {
   printf("destroy!\n");
@@ -654,6 +713,8 @@ struct gmi_model* gmi_egads_load(const char* filename)
     gmi_fail("EGADS model should only have one body");
   }
 
+  int nregions = 1; // read adjacency file to find this number
+  read_adj_table(filename, &nregions);
   // eg_body = eg_bodies[0];
 
   // struct gmi_model *model;
@@ -666,7 +727,6 @@ struct gmi_model* gmi_egads_load(const char* filename)
   // // I believe this should be shell, but always seems to result in 1 shell
   // EG_getBodyTopos(eg_body, NULL, SHELL, &(model->n[3]), NULL); // BODY?
 
-  int nregions = 1; // read adjacency file to find this number
   return gmi_egads_init(eg_bodies[0], nregions);
 }
 #else
@@ -763,7 +823,10 @@ struct gmi_model* gmi_egads_init(ego body, int nregions)
 
 void gmi_egads_init_adjacency(int ***adjacency)
 {
-  adjacency_table = adjacency;
+  for (int i = 0; i < 6; ++i)
+  {
+    adjacency_table[i] = adjacency[i];
+  }
 }
 
 void gmi_egads_start(void)
