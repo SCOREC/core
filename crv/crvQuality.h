@@ -45,10 +45,7 @@ double Nijkl(apf::NewArray<apf::Vector3>& nodes, int d, int I, int J, int K);
 std::vector<int> getAllInvalidities(
     apf::Mesh* mesh,
     apf::MeshEntity* e);
-std::vector<int> validityByAlgo(
-    apf::Mesh* mesh,
-    apf::MeshEntity* e,
-    int algorithm);
+
 }
 
 #endif

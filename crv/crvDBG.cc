@@ -49,7 +49,7 @@ void visualizeCavityMesh(apf::Mesh2* m, apf::MeshEntity* ent,
 
   apf::MeshEntity* newEnt[99];
 
-  for (int ii = 0; ii < e.getSize(); ii++) {
+  for (std::size_t ii = 0; ii < e.getSize(); ii++) {
     // Verts
     apf::MeshEntity* vs[12];
     apf::MeshEntity* newVs[12];
@@ -94,7 +94,7 @@ void visualizeCavityMesh(apf::Mesh2* m, apf::MeshEntity* ent,
     }
 
     // Regions
-    apf::MeshEntity* tet;
+    apf::MeshEntity* tet = 0;
     if (dim == 3) {
       tet = outMesh->createEntity(apf::Mesh::TET, 0, newFs);
     }
@@ -107,7 +107,7 @@ void visualizeCavityMesh(apf::Mesh2* m, apf::MeshEntity* ent,
   apf::changeMeshShape(outMesh, crv::getBezier(3), true);
   outMesh->acceptChanges();
 
-  for (int ii = 0; ii < e.getSize(); ii++) {
+  for (std::size_t ii = 1; ii < e.getSize(); ii++) {
     for (int d = 1; d <= dim; d++)
     {
       if (!m->getShape()->hasNodesIn(d)) continue;
@@ -204,7 +204,7 @@ void visualizeIndividualCavityEntities(apf::Mesh2* m, apf::MeshEntity* ent,
     }
 
     // Regions
-    apf::MeshEntity* tet;
+    apf::MeshEntity* tet = 0;
     if (dim == 3) {
       tet = outMesh[ii]->createEntity(apf::Mesh::TET, 0, newFs);
     }

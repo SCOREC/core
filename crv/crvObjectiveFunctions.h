@@ -48,9 +48,13 @@ class ObjFunction
 {
   public:
     ObjFunction(){};
+    virtual ~ObjFunction(){};
     virtual int getSpaceDim() = 0;
     virtual double getTol() = 0;
     virtual double getValue(const vector<double> &x) = 0;
+    /* virtual std::vector<double> getInitialGuess() = 0; */
+    /* virtual void setNodes(const vector<double> &x) = 0; */
+    /* virtual void restoreInitialNodes() = 0; */
     // TODO :: can we do this once for all the objective functions?
     vector<double> getGrad(const vector<double> &_x)
     {

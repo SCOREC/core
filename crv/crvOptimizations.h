@@ -19,11 +19,11 @@ class CrvEntityOptim
 {
   public:
     CrvEntityOptim() {}
+    virtual ~CrvEntityOptim() {}
     virtual void setMaxIter(int n) = 0;
     virtual void setTol(double tolerance) = 0;
     virtual bool run(int &invaliditySize) = 0;
   protected:
-    LBFGS* l;
 };
 
 class CrvInternalEdgeOptim : public CrvEntityOptim
@@ -40,10 +40,7 @@ class CrvInternalEdgeOptim : public CrvEntityOptim
     }
     ~CrvInternalEdgeOptim()
     {
-      delete objF;
-      delete l;
     }
-
   public:
     void setMaxIter(int n);
     void setTol(double tolerance);
@@ -54,7 +51,6 @@ class CrvInternalEdgeOptim : public CrvEntityOptim
     apf::MeshEntity* tet;
     int mode;
     apf::Mesh2* mesh;
-    InternalEdgeReshapeObjFunc* objF;
     int iter;
     double tol;
     std::vector<double> finalX;
@@ -75,8 +71,6 @@ class CrvBoundaryEdgeOptim : public CrvEntityOptim
     }
     ~CrvBoundaryEdgeOptim()
     {
-      delete objF;
-      delete l;
     }
 
   public:
@@ -89,7 +83,6 @@ class CrvBoundaryEdgeOptim : public CrvEntityOptim
     apf::MeshEntity* tet;
     int mode;
     apf::Mesh2* mesh;
-    BoundaryEdgeReshapeObjFunc* objF;
     int iter;
     double tol;
     std::vector<double> finalX;
@@ -110,8 +103,6 @@ class CrvFaceOptim : public CrvEntityOptim
     }
     ~CrvFaceOptim()
     {
-      delete objF;
-      delete l;
     }
 
   public:
@@ -124,7 +115,6 @@ class CrvFaceOptim : public CrvEntityOptim
     apf::MeshEntity* tet;
     int mode;
     apf::Mesh2* mesh;
-    FaceReshapeObjFunc* objF;
     int iter;
     double tol;
     std::vector<double> finalX;

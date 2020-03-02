@@ -354,14 +354,14 @@ double BoundaryEdgeReshapeObjFunc :: getValue(const vector<double> &x)
     xis.push_back(apf::Vector3(+1.0, 0.0, 0.0));
 
     apf::MeshElement* me = apf::createMeshElement(mesh, edge);
-    for (int i = 0; i < xis.size(); i++) {
+    for (std::size_t i = 0; i < xis.size(); i++) {
       apf::Vector3 scord;
       apf::mapLocalToGlobal(me, xis[i], scord);
       xs.push_back(scord);
     }
     apf::destroyMeshElement(me);
 
-    for (int i = 1; i < xs.size()-1; i++) {
+    for (std::size_t i = 1; i < xs.size()-1; i++) {
 
       xr = (xs[i] - xs[0]).getLength() /
 	   (xs[xs.size()-1] - xs[0]).getLength();
@@ -477,7 +477,6 @@ void BoundaryEdgeReshapeObjFunc :: setNodes(const vector<double> &x)
 
   apf::Adjacent adjF;
   mesh->getAdjacent(edge, 2, adjF);
-  int kk = 0;
   int nFN = mesh->getShape()->countNodesOn(mesh->TRIANGLE);
 
   for (std::size_t i = 0; i < adjF.getSize(); i++) {
