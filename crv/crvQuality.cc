@@ -480,7 +480,7 @@ int Quality3D::checkValidity(apf::MeshEntity* e)
   int validityTag = computeJacDetNodes(e,nodes,true);
   if (validityTag > 1)
     return validityTag;
-  else return 1;
+  else return 1; // TODO: Make sure this is actually needed here!
 // check verts
   apf::Downward verts;
   mesh->getDownward(e,0,verts);
@@ -489,7 +489,6 @@ int Quality3D::checkValidity(apf::MeshEntity* e)
       return 2+i;
     }
   }
- // std::cout<<"reached here"<<std::endl;
 
   apf::MeshEntity* edges[6];
   mesh->getDownward(e,1,edges);
@@ -628,8 +627,6 @@ std::vector<int> validityByAlgo(apf::Mesh* mesh, apf::MeshEntity* e, int algorit
   int order = mesh->getShape()->getOrder();
   int n = getNumControlPoints(apf::Mesh::TET, 3*(order-1));
   apf::NewArray<double> subdivisionCoeffs[4];
- // apf::NewArray<apf::Vector3> xi;
- // xi.allocate(n);
   if (algorithm == 0 || algorithm == 2){
     for (int d = 1; d <= 3; ++d)
       getBezierJacobianDetSubdivisionCoefficients(
@@ -639,7 +636,7 @@ std::vector<int> validityByAlgo(apf::Mesh* mesh, apf::MeshEntity* e, int algorit
   apf::NewArray<double> nodes(n);
 
   std::vector<int> ai = getAllInvaliditiesWNodes(mesh, e, nodes);
-  
+
   std::vector<int> ainvA;
 
   if (ai.size()==0) {
@@ -665,13 +662,13 @@ std::vector<int> validityByAlgo(apf::Mesh* mesh, apf::MeshEntity* e, int algorit
     apf::MeshEntity* edges[6];
     mesh->getDownward(e,1,edges);
     // Vertices will already be flagged in the first check
-    
+
     for (int edge = 0; edge < 6; ++edge){
       for (int i = 0; i < 3*(order-1)-1; ++i){
         if (nodes[4+edge*(3*(order-1)-1)+i] < minAcceptable){
           minJ = -1e10;
           apf::NewArray<double> edgeNodes(3*(order-1)+1);
- 
+
           if(algorithm < 2){
             edgeNodes[0] = nodes[apf::tet_edge_verts[edge][0]];
             edgeNodes[3*(order-1)] = nodes[apf::tet_edge_verts[edge][1]];
@@ -691,7 +688,7 @@ std::vector<int> validityByAlgo(apf::Mesh* mesh, apf::MeshEntity* e, int algorit
             edgeNodes[1] = nodes[apf::tet_edge_verts[edge][1]];
             for (int j = 0; j < 3*(order-1)-1; ++j)
               edgeNodes[j+2] = nodes[4+edge*(3*(order-1)-1)+j];
- 
+
             bool done = false;
             bool quality = false;
             getJacDetBySubdivisionMatrices(apf::Mesh::EDGE,3*(order-1),
@@ -760,82 +757,6 @@ std::vector<int> validityByAlgo(apf::Mesh* mesh, apf::MeshEntity* e, int algorit
   return ainvA;
 }
 
-std::vector<int> getAllInvaliditiesWNodes(apf::Mesh* mesh,apf::MeshEntity* e, apf::NewArray<double>& nodes)
-{
-  int order = mesh->getShape()->getOrder();
-  int n = getNumControlPoints(apf::Mesh::TET, 3*(order-1));
-
-  apf::NewArray<apf::Vector3> xi;
-  xi.allocate(n);
-
-  collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
-      elem_vert_xi[apf::Mesh::TET], xi);
-  std::vector<int> ai;
-  apf::NewArray<double> interNodes(n);
-  apf::MeshElement* me = apf::createMeshElement(mesh,e);
-  
-  for (int i = 0; i < (3*order-4)*(3*order-5)*(3*order-6)/6; ++i){
-    int index = 18*order*order-36*order+20+i;
-    interNodes[index] = apf::getDV(me,xi[index]);
-    if(interNodes[index] < 1e-10){
-      ai.push_back(20);      
-    }
-  }
-
-  for (int face = 0; face < 4; ++face){
-    for (int i = 0; i < (3*order-4)*(3*order-5)/2; ++i){
-      int index = 18*order-20+face*(3*order-4)*(3*order-5)/2+i;
-      interNodes[index] = apf::getDV(me,xi[index]);
-      if(interNodes[index] < 1e-10){
-        ai.push_back(face+14);
-        break;
-      }
-    }
-  }
-
-  for (int edge = 0; edge < 6; ++edge){
-    for (int i = 0; i < 3*(order-1)-1; ++i){
-      int index = 4+edge*(3*(order-1)-1)+i;
-      interNodes[index] = apf::getDV(me,xi[index]);
-      if(interNodes[index] < 1e-10){
-        ai.push_back(edge+8);
-        break;
-      }
-    }
-  }
-
-  for (int i = 0; i < 4; ++i){
-    interNodes[i] = apf::getDV(me,xi[i]);
-    if(interNodes[i] < 1e-10){
-      ai.push_back(i+2);
-    }
-  }
-  apf::destroyMeshElement(me);
-
-  //collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
-  //    elem_vert_xi[apf::Mesh::TET], xi);
-  //for (int i = 0; i < n; i++) {
-  //  std::cout<<"Determinant value at "<< xi[i] <<" "<< interNodes[i]<<std::endl;
-  //}
-
-  mth::Matrix<double> transformationMatrix;
-  mth::Matrix<double> A(n,n);
-  transformationMatrix.resize(n,n);
-  //collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
-  //    elem_vert_xi[apf::Mesh::TET], xi);
-  getBezierTransformationMatrix(apf::Mesh::TET, 3*(order-1), A,
-      elem_vert_xi[apf::Mesh::TET]);
-  invertMatrixWithPLU(n, A, transformationMatrix);
-
-  for (int i = 0; i < n; i++) {
-    nodes[i] = 0;
-    for (int j = 0; j < n; j++)
-      nodes[i] += interNodes[j]*transformationMatrix(i,j);
-  }
-
-  return ai;
-}
-
 std::vector<int> getAllInvalidities(apf::Mesh* mesh,apf::MeshEntity* e)
 {
   int order = mesh->getShape()->getOrder();
@@ -844,12 +765,12 @@ std::vector<int> getAllInvalidities(apf::Mesh* mesh,apf::MeshEntity* e)
   apf::NewArray<apf::Vector3> xi;
   xi.allocate(n);
 
-  collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1), 
+  collectNodeXi(apf::Mesh::TET, apf::Mesh::TET, 3*(order-1),
       elem_vert_xi[apf::Mesh::TET], xi);
   std::vector<int> ai;
   apf::NewArray<double> interNodes(n);
   apf::MeshElement* me = apf::createMeshElement(mesh,e);
-  
+
   for (int i = 0; i < 4; ++i){
     interNodes[i] = apf::getDV(me,xi[i]);
     if(interNodes[i] < 1e-10){

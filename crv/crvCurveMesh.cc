@@ -171,7 +171,7 @@ void BezierCurver::convertInterpolatingToBezier()
   synchronize();
 }
 
-bool BezierCurver::run(bool flag)
+bool BezierCurver::run()
 {
   std::string name = m_mesh->getShape()->getName();
   if(m_order < 1 || m_order > 6){
@@ -186,9 +186,6 @@ bool BezierCurver::run(bool flag)
     apf::changeMeshShape(m_mesh, getBezier(m_order),true);
   }
 
-  //writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 8, "mesh_after_shape_change");
-  //writeCurvedWireFrame(m_mesh, 16, "mesh_after_shape_change");
-
   if (m_mesh->canSnap()){
     for(int d = 1; d <= 2; ++d)
       snapToInterpolate(d);
@@ -197,15 +194,10 @@ bool BezierCurver::run(bool flag)
 
   convertInterpolatingToBezier();
 
-  writeCurvedVtuFiles(m_mesh, apf::Mesh::TET, 16, "mesh_after_inflate");
-  writeCurvedWireFrame(m_mesh, 16, "mesh_after_inflate");
-
-  if (flag == 1) {
-    if(m_mesh->getDimension() >= 2) {
-      if (m_order == 2 || m_order == 3) {
-      	ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
-      	crv::adapt(shapeFixer);
-      }
+  if(m_mesh->getDimension() >= 2) {
+    if (m_order == 2 || m_order == 3) {
+      ma::Input* shapeFixer = configureShapeCorrection(m_mesh);
+      crv::adapt(shapeFixer);
     }
   }
 

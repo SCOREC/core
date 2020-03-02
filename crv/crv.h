@@ -21,7 +21,14 @@
 /** \namespace crv
   * \brief the curving functions are contained in this namespace */
 namespace crv {
-enum {NIJK, DETJ, DETJNIJK};
+
+
+/** \brief choices of objective function for reshape*/
+enum {
+  NIJK, // based on Jacobian coefficients
+  DETJ, // based on Jacobian Determinant Values at Integration Points
+  DETJNIJK // based on TODO : to be decided
+};
 
 /** \brief actually 1 greater than max order */
 static unsigned const MAX_ORDER = 19;
@@ -48,16 +55,13 @@ class MeshCurver
   public:
     MeshCurver(apf::Mesh2* m, int P) : m_mesh(m), m_order(P) {};
     virtual ~MeshCurver() {};
-    virtual bool run(bool flag) = 0;
+    virtual bool run() = 0;
 
     /** \brief snaps points to interpolating locations */
     void snapToInterpolate(int dim);
 
     /** \brief wrapper around synchronizeFieldData */
     void synchronize();
-    
-  //public:
-  //  bool flag = 1;
 
   protected:
     apf::Mesh2* m_mesh;
@@ -92,11 +96,9 @@ class BezierCurver : public MeshCurver
     /** \brief curves a mesh using bezier curves of chosen order
       \details finds interpolating points, then converts to control points
       see crvBezier.cc */
-    virtual bool run(bool flag);
+    virtual bool run();
     /** \brief converts interpolating points to bezier control points */
     void convertInterpolatingToBezier();
-  //public: 
-  //  bool flag = true;
 };
 
 /** \brief this curves a mesh with 4th order G1 Patches
