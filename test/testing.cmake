@@ -184,7 +184,13 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
-set(MDIR ${MESHES}/fun3d)
+set(MDIR ${MESHES}/ugrid)
+mpi_test(naca_ugrid 2
+  ./from_ugrid
+  "${MDIR}/inviscid_egg.b8.ugrid"
+  "${MDIR}/naca.dmg"
+  "${MDIR}/2/"
+  "2")
 mpi_test(inviscid_ugrid 4
   ./from_ugrid
   "${MDIR}/inviscid_egg.b8.ugrid"
@@ -239,6 +245,7 @@ mpi_test(uniform_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "pipe_unif.smb")
+mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
 smoke_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.${GXT}"
@@ -367,6 +374,8 @@ mpi_test(gap 4
   "${MDIR}/torusBal4p/"
   "1.08"
   "${MDIR}/torusOpt4p/")
+mpi_test(applyMatrixFunc 1
+  ./applyMatrixFunc)
 if(ENABLE_ZOLTAN)
   mpi_test(zbalance 4
     ./zbalance
@@ -445,6 +454,14 @@ mpi_test(construct 4
   ./construct
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(constructThenGhost 4
+  ./constructThenGhost
+  "${MDIR}/cube.dmg"
+  "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(construct_bottom_up 1
+  ./construct_bottom_up
+  "${MDIR}/bottom_up_constructed_cube.smb"
+  "${MDIR}/cube.dmg")
 set(MDIR ${MESHES}/embeddedEdges)
 mpi_test(embedded_edges 1
   ./embedded_edges

@@ -498,6 +498,31 @@ static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
   return n;
 }
 
+static apf::Vector3 getTriOrientation(apf::Mesh2* m, apf::MeshEntity* tri)
+{
+  PCU_ALWAYS_ASSERT(m->getType(tri) == apf::Mesh::TRIANGLE);
+
+  apf::MeshEntity* vs[3];
+  m->getDownward(tri, 0, vs);
+  apf::Vector3 ps[3];
+  for (int i = 0; i < 3; i++) {
+    m->getPoint(vs[i], 0, ps[i]);
+  }
+  apf::Vector3 e0 = ps[1] - ps[0];
+  apf::Vector3 e1 = ps[2] - ps[1];
+  apf::Vector3 n0 = apf::cross(e0, e1);
+  return n0/n0.getLength();
+}
+
+static int getEdgeIdInSimplex(apf::Mesh2* m, apf::MeshEntity* tri, apf::MeshEntity* edge)
+{
+  PCU_ALWAYS_ASSERT(m->getType(tri) == apf::Mesh::TRIANGLE);
+  PCU_ALWAYS_ASSERT(m->getType(edge) == apf::Mesh::EDGE);
+  apf::MeshEntity* es[3];
+  m->getDownward(tri, 1, es);
+  return apf::findIn(es, 3, edge);
+}
+
 class EdgeSwapper : public ma::Operator
 {
 public:
@@ -634,17 +659,40 @@ private:
       pivotIndex = apf::findIn(verts,4,edgeVerts[0]);
       PCU_ALWAYS_ASSERT(pivotIndex >= 0);
 
-      ma::Vector xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
+      ma::Vector xi;
+      if (md == 3)
+      	xi = crv::elem_vert_xi[apf::Mesh::TET][pivotIndex];
+      else if (md == 2)
+      	xi = crv::elem_vert_xi[apf::Mesh::TRIANGLE][pivotIndex];
+      else
+      	PCU_ALWAYS_ASSERT(0);
+
       apf::getJacobian(me,xi,J);
 
-      double j = apf::getJacobianDeterminant(J,3);
+      double j;
+      if (md == 3)
+      	j = apf::getJacobianDeterminant(J,3);
+      else if (md == 2)
+      	j = apf::getJacobianDeterminant(J,2);
+      else
+      	PCU_ALWAYS_ASSERT(0);
+
       pivotVert = edgeVerts[0];
 
       int index = apf::findIn(verts,4,edgeVerts[1]);
       PCU_ALWAYS_ASSERT(index >= 0);
-      xi = crv::elem_vert_xi[apf::Mesh::TET][index];
+      if (md == 3)
+      	xi = crv::elem_vert_xi[apf::Mesh::TET][index];
+      else if (md == 2)
+      	xi = crv::elem_vert_xi[apf::Mesh::TRIANGLE][index];
+      else
+      	PCU_ALWAYS_ASSERT(0);
+
+
       apf::getJacobian(me,xi,J);
-      if (apf::getJacobianDeterminant(J,3) < j){
+
+      if ((md == 3 && apf::getJacobianDeterminant(J,3) < j) ||
+      	  (md == 2 && apf::getJacobianDeterminant(J,2) < j)){
         pivotVert = edgeVerts[1];
         pivotIndex = index;
       }
@@ -656,49 +704,174 @@ private:
     // local, of edges around vert, [0,2]
     int edgeIndex = 0;
 
-    for (int i = 0; i < 3; ++i){
+    for (int i = 0; i < md; ++i){
       // theres only one point, so reuse this...
-      edgeVectors[i] = ma::getPosition(mesh,edges[vertEdges[pivotIndex][i]])
-                     - pivotPoint;
-      if (edges[vertEdges[pivotIndex][i]] == edge)
+      if (md == 3)
+	edgeVectors[i] = ma::getPosition(mesh,edges[tetVertEdges[pivotIndex][i]])
+		      - pivotPoint;
+      else if (md == 2)
+	edgeVectors[i] = ma::getPosition(mesh,edges[triVertEdges[pivotIndex][i]])
+		      - pivotPoint;
+      else
+      	PCU_ALWAYS_ASSERT(0);
+
+      if ((md == 3 && edges[tetVertEdges[pivotIndex][i]] == edge) ||
+	  (md == 2 && edges[triVertEdges[pivotIndex][i]] == edge))
         edgeIndex = i;
     }
 
     PCU_ALWAYS_ASSERT(edgeIndex >= 0);
 
-    ma::Entity* edge1 = edges[vertEdges[pivotIndex][(edgeIndex+1)%3]];
-    ma::Entity* edge2 = edges[vertEdges[pivotIndex][(edgeIndex+2)%3]];
+    ma::Entity* edge1;
+    ma::Entity* edge2;
+    // For 3D meshes get the other 2 edges to form a reflection plane
+    // Note that the order does not matter
+    if (md == 3) {
+      edge1 = edges[tetVertEdges[pivotIndex][(edgeIndex+1)%3]];
+      edge2 = edges[tetVertEdges[pivotIndex][(edgeIndex+2)%3]];
+    }
+    // For 2D meshes the invalid edge has to be reflected wrt the
+    // other edge connected to the pivot vertex
+    // So let:
+    // edge1 = edge
+    // edge2 = other edge
+    else if (md == 2) {
+      edge1 = edge;
+      edge2 = edges[triVertEdges[pivotIndex][(edgeIndex+1)%2]];
+    }
 
-    ma::Vector t1 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
-    ma::Vector t2 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
 
-    ma::Vector normal = apf::cross(t1, t2);
-    double length = normal.getLength();
-    double validity = edgeVectors[edgeIndex]*normal;
+    if (md == 3) {
+      // Find the normal to the plane of edge1 and edge2 by first computing the edge
+      // tangents at the pivotVert
+      ma::Vector t1 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      ma::Vector t2 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      ma::Vector normal = apf::cross(t1, t2);
+      double length = normal.getLength();
+      double validity = edgeVectors[edgeIndex]*normal;
 
-    if(validity > 1e-10)
-      return false;
-    ma::Vector oldPoint = ma::getPosition(mesh,edge);
-    apf::Adjacent adjacent;
-    mesh->getAdjacent(edge,3,adjacent);
+      if(validity > 1e-10)
+	return false;
+      ma::Vector oldPoint = ma::getPosition(mesh,edge);
+      apf::Adjacent adjacent;
+      mesh->getAdjacent(edge,3,adjacent);
 
-    /* mirror the vector edgeVectors[edgeIndex] with respect to the plane
-     * perpendicular to the normal. The parameter alpha scales the normal
-     * (to the plane) component of the mirrored vector.
-     */
-    double alpha = 0.5;
+      /* mirror the vector edgeVectors[edgeIndex] with respect to the plane
+      * perpendicular to the normal. The parameter alpha scales the normal
+      * (to the plane) component of the mirrored vector.
+      */
+      double alpha = 0.5;
 
-    ma::Vector newPoint = pivotPoint + edgeVectors[edgeIndex] -
-      normal * (normal * edgeVectors[edgeIndex]) * (1 + alpha) / length / length;
+      ma::Vector newPoint = pivotPoint + edgeVectors[edgeIndex] -
+	normal * (normal * edgeVectors[edgeIndex]) * (1 + alpha) / length / length;
 
-    mesh->setPoint(edge,0,newPoint);
+      mesh->setPoint(edge,0,newPoint);
 
-    for (std::size_t i = 0; i < adjacent.getSize(); ++i){
-      if (qual->checkValidity(adjacent[i]) < 0){
-        mesh->setPoint(edge,0,oldPoint);
-        return false;
+      for (std::size_t i = 0; i < adjacent.getSize(); ++i){
+	if (qual->checkValidity(adjacent[i]) < 0){
+	  mesh->setPoint(edge,0,oldPoint);
+	  return false;
+	}
       }
     }
+    else if (md == 2) {
+      // edge1 which should be the same as edge needs to be modified
+      PCU_ALWAYS_ASSERT(edge1 == edge);
+      // get the orientation of the simplex using its vertex coordinates
+      apf::Vector3 normal = getTriOrientation(mesh, simplex);
+      int edge1Idx, edge2Idx;
+      edge1Idx = getEdgeIdInSimplex(mesh, simplex, edge1);
+      PCU_ALWAYS_ASSERT(edge1Idx > -1);
+      edge2Idx = getEdgeIdInSimplex(mesh, simplex, edge2);
+      PCU_ALWAYS_ASSERT(edge2Idx > -1);
+      ma::Vector t1 = ma::Vector(0.0, 0.0, 0.0);
+      ma::Vector t2 = ma::Vector(0.0, 0.0, 0.0);
+      switch(pivotIndex) {
+      	case 0:
+      	  if (edge1Idx == 0 && edge2Idx == 2) {
+      	    t1 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      	    t2 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+	  }
+	  else if (edge1Idx == 2 && edge2Idx == 0) {
+      	    t1 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      	    t2 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+	  }
+	  else
+	    PCU_ALWAYS_ASSERT(0);
+      	  break;
+	case 1:
+      	  if (edge1Idx == 1 && edge2Idx == 0) {
+      	    t1 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      	    t2 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+	  }
+	  else if (edge1Idx == 0 && edge2Idx == 1) {
+      	    t1 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      	    t2 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+	  }
+	  else
+	    PCU_ALWAYS_ASSERT(0);
+	  break;
+	case 2:
+      	  if (edge1Idx == 2 && edge2Idx == 1) {
+      	    t1 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      	    t2 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+	  }
+	  else if (edge1Idx == 1 && edge2Idx == 2) {
+      	    t1 = computeEdgeTangentAtVertex(mesh, edge2, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+      	    t2 = computeEdgeTangentAtVertex(mesh, edge1, pivotVert, ma::Matrix(1,0,0,0,1,0,0,0,1));
+	  }
+	  else
+	    PCU_ALWAYS_ASSERT(0);
+	  break;
+	default:
+	  break;
+      }
+
+      // At this point if t1xt2 is in the same direction as the normal the triangle is valid
+      apf::Vector3 normal2 = apf::cross(t1, t2);
+      if (normal * normal2 > 0)
+      	return false;
+
+      ma::Vector oldPoint = ma::getPosition(mesh,edge);
+      apf::Adjacent adjacent;
+      mesh->getAdjacent(edge,md,adjacent);
+
+      /* mirror the vector edgeVectors[edgeIndex] with respect the other edge2 */
+      double alpha = 0.5;
+
+      apf::MeshEntity* edge1OppV = 0;
+      apf::MeshEntity* edge2OppV = 0;
+      apf::MeshEntity* vs[2];
+
+      mesh->getDownward(edge1, 0, vs);
+      edge1OppV = (vs[0] == pivotVert) ? vs[1] : vs[0];
+      PCU_ALWAYS_ASSERT(edge1OppV);
+
+      mesh->getDownward(edge2, 0, vs);
+      edge2OppV = (vs[0] == pivotVert) ? vs[1] : vs[0];
+      PCU_ALWAYS_ASSERT(edge2OppV);
+
+      apf::Vector3 L    = ma::getPosition(mesh, edge1OppV) - ma::getPosition(mesh, pivotVert);
+      apf::Vector3 refL = ma::getPosition(mesh, edge2OppV) - ma::getPosition(mesh, pivotVert);
+      refL = refL/refL.getLength(); // refL is unit
+
+      // get the part of L that is perpendicular to refL
+      apf::Vector3 x = L - refL * (refL * L);
+      // make sure x is in the plane of edge1 and edge2
+      x = x - normal * (normal * x);
+      apf::Vector3 deltaX = L - x * alpha * 2;
+      ma::Vector newPoint = pivotPoint + deltaX;
+
+      mesh->setPoint(edge,0,newPoint);
+      for (std::size_t i = 0; i < adjacent.getSize(); ++i){
+	if (qual->checkValidity(adjacent[i]) < 0){
+	  mesh->setPoint(edge,0,oldPoint);
+	  return false;
+	}
+      }
+    }
+    else
+      PCU_ALWAYS_ASSERT(0);
 
     return true;
   }

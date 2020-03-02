@@ -43,7 +43,7 @@ static int const tet_tri_edges[4][3] =
     corresponding to tet_tri_edges, 0 -> it is correctly oriented,
     1 -> it is flipped canonically */
 static bool const flip_tet_tri_edges[4][3] =
-{{0,0,0},{0,0,1},{0,0,1},{1,0,1}};
+{{1,0,0},{0,0,1},{0,0,1},{1,0,1}};
 
 /** \brief edge indices connected to a vertex of a tet, this does not
     comment on their orientation wrt to the vertex

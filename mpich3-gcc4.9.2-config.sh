@@ -1,6 +1,8 @@
 PREFIX=/lore/seol/mpich3-gcc4.9.2-install
-SIM_VER=12.0-181124
-SIM_ARCHOS=x64_rhel7_gcc48
+SIM_VER=14.0-190513dev
+SIM_ARCHOS=x64_rhel6_gcc44
+PARMETIS_INSTALL_DIR=/usr/local/parmetis/4.0.3/mpich3.1.2 
+ZOLTAN_INSTALL_DIR=/lore/seol/mpich3-gcc4.9.2-install
 cmake .. \
   -DCMAKE_C_COMPILER="/usr/local/mpich3/latest/bin/mpicc" \
   -DCMAKE_CXX_COMPILER="/usr/local/mpich3/latest/bin/mpicxx" \

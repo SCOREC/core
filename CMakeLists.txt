@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.0)
 
-project(SCOREC VERSION 2.2.0 LANGUAGES CXX C)
+project(SCOREC VERSION 2.2.2 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -52,6 +52,8 @@ message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 option(PUMI_FORTRAN_INTERFACE "enable fortran interface" OFF)
 message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
 
+option(PUMI_PYTHON_INTERFACE "enable python interface" OFF)
+message(STATUS "PUMI_PYTHON_INTERFACE: ${PUMI_PYTHON_INTERFACE}")
 
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
@@ -84,6 +86,7 @@ endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
+option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
@@ -143,6 +146,10 @@ scorec_export_library(core)
 
 if(BUILD_EXES)
   add_subdirectory(test)
+endif()
+
+if(PUMI_PYTHON_INTERFACE)
+  add_subdirectory(python_wrappers)
 endif()
 
 bob_end_package()

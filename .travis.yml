@@ -36,17 +36,15 @@ before_install:
   - which cmake
   - cmake --version
   - export PATH=/usr/local/bin:${PATH}
-  - cd ${DEVROOT}
-  - git clone https://github.com/SCOREC/pumi-meshes.git meshes
 
 script:
   - cd ${DEVROOT}/SCOREC/core
   - mkdir -p ${DEVROOT}/SCOREC/core/build
   - cd build
-  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Release -DMESHES=${DEVROOT}/meshes
+  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Release -DMESHES=${DEVROOT}/SCOREC/core/pumi-meshes
   - make -j ${NP}
   - ctest
-  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Debug -DMESHES=${DEVROOT}/meshes
+  - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Debug -DMESHES=${DEVROOT}/SCOREC/core/pumi-meshes
   - make -j ${NP}
   - ctest
 

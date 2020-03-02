@@ -36,22 +36,38 @@ gEntity* gModel::getGeomEnt(int d, gmi_ent* ge)
 
 pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
 {
-  double t0 = PCU_Time();
   if (!strcmp(model_type,"null"))
   {
-    filename=".null";
     gmi_register_null();
-    pumi::instance()->model = new gModel(gmi_load(filename));
+    return pumi_geom_load(gmi_load(".null"), model_type);
   }
   else if (!strcmp(model_type,"mesh"))
   {
     gmi_register_mesh();
-    pumi::instance()->model = new gModel(gmi_load(filename));
-    pumi_geom_freeze(pumi::instance()->model);
+    return pumi_geom_load(gmi_load(filename));
   }
   else if (!strcmp(model_type,"analytic")) 
+    return pumi_geom_load(gmi_make_analytic(), model_type, filename, geom_load_fp);
+  else
+    if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
+  
+  return NULL;
+}
+
+pGeom pumi_geom_load(gmi_model* gm, const char* model_type, 
+      const char* filename, void (*geom_load_fp)(const char*))
+{
+  double t0 = PCU_Time();
+  if (!strcmp(model_type,"null"))
+    pumi::instance()->model = new gModel(gm);
+  else if (!strcmp(model_type,"mesh"))
   {
-    pumi::instance()->model = new gModel(gmi_make_analytic());
+    pumi::instance()->model = new gModel(gm);
+    pumi_geom_freeze(pumi::instance()->model);
+  }
+  else if (!strcmp(model_type,"analytic"))
+  {
+    pumi::instance()->model = new gModel(gm);
     if (geom_load_fp)
     {
       geom_load_fp(filename);
@@ -72,9 +88,15 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
 
 void pumi_geom_delete(pGeom g)
 {
+  pTag id_tag=pumi_geom_findTag(g, "ID");
+
   for (int i=0; i<4; ++i)
     for (pGeomIter gent_it = g->begin(i); gent_it!=g->end(i);++gent_it)
+    {
+      if (id_tag) pumi_gent_deleteTag(*gent_it, id_tag);
       delete *gent_it;
+    }
+   pumi_geom_deleteTag(g, id_tag);
 }
 
 void pumi_geom_freeze(pGeom g)
@@ -89,6 +111,18 @@ void pumi_geom_freeze(pGeom g)
       g->add(i, new gEntity(gent));
     gmi_end(g->getGmi(), giter);
   }
+}
+
+void pumi_geom_createID(pGeom g) // ID starts from 1
+{
+  pTag id_tag = pumi_geom_createTag(g, "ID", PUMI_INT, 1);
+  int id;
+  for (int i=0; i<4; ++i)
+  {
+    id=1;
+    for (pGeomIter gent_it = g->begin(i); gent_it!=g->end(i);++gent_it)
+      pumi_gent_setIntTag(*gent_it, id_tag, id++);
+  } 
 }
 
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id)

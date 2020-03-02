@@ -81,13 +81,14 @@ static void setDefaults(Input& in)
   in.gammaDist = 3e-6;
   in.gammaSize = 3e-5;
   in.nRigidBody = 0;
-  in.nRBParam = 12;
+  in.nRBParam = 14;
   in.gradingFactor = 2.0;
   in.simCooperation = 1;
-  in.simAdaptDesiredErrorMass = 1.0e16;
-  in.simAdaptDesiredErrorMomt = 1.0e16;
-  in.simAdaptDesiredErrorEnrg = 1.0e16;
   in.writeSimLog = 0;
+  in.simCFLUpperBound = 1.0e16;
+  in.simSizeLowerBound = 0.0;
+  in.simSizeUpperBound = 1.0e16;
+  in.simMaxAdaptMeshElements = 1.0e16;
 }
 
 Input::Input()
@@ -170,10 +171,11 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["nRBParam"] = &in.nRBParam;
   dblMap["gradingFactor"] = &in.gradingFactor;
   intMap["simCooperation"] = &in.simCooperation;
-  dblMap["simAdaptDesiredErrorMass"] = &in.simAdaptDesiredErrorMass;
-  dblMap["simAdaptDesiredErrorMomt"] = &in.simAdaptDesiredErrorMomt;
-  dblMap["simAdaptDesiredErrorEnrg"] = &in.simAdaptDesiredErrorEnrg;
   intMap["writeSimLog"] = &in.writeSimLog;
+  dblMap["simCFLUpperBound"] = &in.simCFLUpperBound;
+  dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
+  dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
+  dblMap["simMaxAdaptMeshElements"] = &in.simMaxAdaptMeshElements;
 }
 
 template <class T>

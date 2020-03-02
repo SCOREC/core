@@ -25,6 +25,7 @@ For more information, start at our
 * PHASTA: Tools and file formats related to the PHASTA fluid solver
 * MTH: Math containers and routines
 * CRV: Support for curved meshes with Bezier Shapes
+* PYCORE: Python Wrappers (see python_wrappers/README.md for build instructions)
 
 ### How do I get set up? ###
 

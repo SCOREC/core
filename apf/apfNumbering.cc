@@ -46,10 +46,12 @@ void NumberingOf<T>::init(
 }
 
 template <class T>
-void NumberingOf<T>::init(Field* f)
+void NumberingOf<T>::init(Field* f, bool global)
 {
   field = f;
   std::string nm = f->getName();
+  if(global)
+    nm += "_global";
   nm += "_num";
   init(nm.c_str(),
       f->getMesh(),
@@ -123,8 +125,11 @@ Numbering* createNumbering(
 
 void destroyNumbering(Numbering* n)
 {
-  n->getMesh()->removeNumbering(n);
-  delete n;
+  if(n)
+  {
+    n->getMesh()->removeNumbering(n);
+    delete n;
+  }
 }
 
 void fix(Numbering* n, MeshEntity* e, int node, int component, bool fixed)
@@ -148,7 +153,6 @@ bool isNumbered(Numbering* n, MeshEntity* e, int node, int component)
 void number(Numbering* n, MeshEntity* e, int node, int component, int number)
 {
   PCU_ALWAYS_ASSERT( ! isFixed(n,e,node,component));
-  PCU_ALWAYS_ASSERT(number >= 0);
   n->set(e,node,component,number);
 }
 
@@ -471,7 +475,7 @@ GlobalNumbering* createGlobalNumbering(
 GlobalNumbering* createGlobalNumbering(Field* f)
 {
   GlobalNumbering* n = new GlobalNumbering();
-  n->init(f);
+  n->init(f, true);
   f->getMesh()->addGlobalNumbering(n);
   return n;
 }
@@ -613,8 +617,11 @@ void synchronize(GlobalNumbering* n, Sharing* shr)
 
 void destroyGlobalNumbering(GlobalNumbering* n)
 {
-  n->getMesh()->removeGlobalNumbering(n);
-  delete n;
+  if(n)
+  {
+    n->getMesh()->removeGlobalNumbering(n);
+    delete n;
+  }
 }
 
 void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes)

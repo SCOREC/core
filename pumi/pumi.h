@@ -125,11 +125,17 @@ void pumi_printTimeMem(const char* msg, double time, double memory);
 //************************************
 
 // Geometric Model
+// create a model from gmi_model object
+pGeom pumi_geom_load(gmi_model* gm,
+                     const char* model_type="mesh",
+                     const char* fileName=NULL, 
+                     void (*fp)(const char*)=NULL);
 // create a model from a file
 pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh", 
                       void (*fp)(const char*)=NULL);
 void pumi_geom_delete(pGeom g);
 void pumi_geom_freeze(pGeom g); // shall be called after modifying model entities
+void pumi_geom_createID(pGeom g); // generate sequential ID starting from 1
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 
@@ -142,6 +148,8 @@ int pumi_gent_getDim(pGeomEnt ge);
 int pumi_gent_getID(pGeomEnt ge);
 void pumi_gent_getRevClas (pGeomEnt g, std::vector<pMeshEnt>& ents);
 int pumi_gent_getNumAdj (pGeomEnt g, int target_dim);
+void gmi_getAdj (gmi_model*, gmi_ent* ge, int tgt_dim, std::set<gmi_ent*>& result);
+void gmi_get2ndAdj(gmi_model*, gmi_ent* ge, int brg_dim, int tgt_dim, std::set<gmi_ent*>& result);
 void pumi_gent_getAdj (pGeomEnt g, int target_dim, std::vector<pGeomEnt>& ents);
 void pumi_gent_get2ndAdj (pGeomEnt e, int brgType, int tgtType, std::vector<pGeomEnt>& ents);
 
@@ -201,6 +209,9 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type
 
 // load a mesh from a file. Do static partitioning if num_in_part==1
 pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
+
+// load a mesh from a an existing partitioned apf mesh
+pMesh pumi_mesh_load(pMesh mesh);
 
 // load a serial mesh on all processes and set up comm links and ptn classification 
 // note that the default owning PID is 0
