@@ -12,6 +12,7 @@
   \brief algorithms for mesh format conversion */
 
 #include <map>
+#include <vector>
 
 namespace apf {
 
