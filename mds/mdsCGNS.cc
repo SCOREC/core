@@ -31,6 +31,7 @@
 #include <utility>
 #include <vector>
 #include <list>
+#include <algorithm>
 #include <unordered_set>
 #include <utility>
 //
@@ -963,14 +964,14 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
         cgsize_t el_end = -1;
         int num_bndry = -1;
         int parent_flag = -1;
-        cgsize_t numElements = -1;
+        //cgsize_t numElements = -1;
         int verticesPerElement = -1;
 
         cg_section_read(cgid, base, zone, section, &sectionName[0],
                         &elementType, &el_start, &el_end,
                         &num_bndry, &parent_flag);
 
-        numElements = el_end - el_start + 1;
+        //numElements = el_end - el_start + 1;
 
         cg_npe(elementType, &verticesPerElement);
 
@@ -1690,8 +1691,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   // https://github.com/SNLComputation/Albany/blob/master/src/disc/pumi/Albany_APFDiscretization.cpp @ various place throughout file
   // https://github.com/SCOREC/core/issues/249
   {
-    apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberElements(mesh, "elem Idx"));
+    apf::makeGlobal(apf::numberElements(mesh, "elem Idx"));
   }
 
   for (auto &bc : bcInfos)

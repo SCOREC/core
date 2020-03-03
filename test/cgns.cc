@@ -10,6 +10,7 @@
 #include <cstdlib>
 //
 #include <iostream>
+#include <functional>
 //
 #include <parma.h>
 #include <apfShape.h>
@@ -83,8 +84,7 @@ void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
   // https://github.com/SNLComputation/Albany/blob/master/src/disc/pumi/Albany_APFDiscretization.cpp @ various place throughout file
   // https://github.com/SCOREC/core/issues/249
   {
-    apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberElements(m, "elem Idx_preOrder"));
+    apf::makeGlobal(apf::numberElements(m, "elem Idx_preOrder"));
   }
 
   //apf::MeshTag *order = Parma_BfsReorder(m);
@@ -100,8 +100,7 @@ void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
   // https://github.com/SNLComputation/Albany/blob/master/src/disc/pumi/Albany_APFDiscretization.cpp @ various place throughout file
   // https://github.com/SCOREC/core/issues/249
   {
-    apf::GlobalNumbering *gn = nullptr;
-    gn = apf::makeGlobal(apf::numberElements(m, "elem Idx_pstOrder"));
+    apf::makeGlobal(apf::numberElements(m, "elem Idx_pstOrder"));
   }
 
   const std::string name = prefix + "_reorder_" + std::to_string(PCU_Comm_Peers()) + "procs";
@@ -440,7 +439,7 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
     {
       apf::Field *field = nullptr;
       const std::string name = "displace";
-      field = field = apf::createFieldOn(m, name.c_str(), apf::VECTOR);
+      field = apf::createFieldOn(m, name.c_str(), apf::VECTOR);
       apf::MeshIterator *it = m->begin(0);
       apf::MeshEntity *elm = nullptr;
       while ((elm = m->iterate(it)))
