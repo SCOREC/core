@@ -1629,6 +1629,12 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
     }
   }
 
+  // free up memory
+  if (PCU_Comm_Initialized())
+    cgp_close(cgid);
+  else
+    cg_close(cgid);
+
   {
     apf::MeshTag *tag = nullptr;
     tag = mesh->createIntTag("origCGNSGlobalVertID", 1);       // 1 is size of tag
@@ -1668,11 +1674,12 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
       }
     }
   }
+  // not sure of the order of these three
+  // and with reference to:
+
   apf::finalise(mesh, globalToVert);
-  apf::alignMdsRemotes(mesh);
-  apf::deriveMdsModel(mesh);
   mesh->acceptChanges();
-  apf::verify(mesh, true);
+  apf::alignMdsRemotes(mesh);
 
   {
     apf::GlobalNumbering *gn = nullptr;
@@ -1697,10 +1704,8 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
     bc.TagBCEntities(cgid, mesh, cgnsBCMap);
   }
 
-  if (PCU_Comm_Initialized())
-    cgp_close(cgid);
-  else
-    cg_close(cgid);
+  apf::deriveMdsModel(mesh);
+  apf::verify(mesh, true);
 
   return mesh;
 } // namespace
