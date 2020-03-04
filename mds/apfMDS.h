@@ -32,7 +32,7 @@
 
 #include <map>
 //
-// AJP: for single define CGNSBCMap
+// AJP: including apf.h for single define: CGNSBCMap
 // AJP: alternative is to allow common cgns base header
 //      but trying to avoid that since it's not core functionality
 #include <apf.h> 
