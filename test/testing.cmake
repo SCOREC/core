@@ -462,22 +462,22 @@ set(CGNSDIR ${MESHES}/cgns/basic)
 #
 mpi_test(cgns_2d_1 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/2D/4quads.adf.hdf.cgns"
+  "${CGNSDIR}/2D/4quads.cgns"
   4quads.smb
   additional)
 mpi_test(cgns_2d_2 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/2D/5quad1Tri.adf.hdf.cgns"
+  "${CGNSDIR}/2D/5quad1Tri.cgns"
   5quad1Tri.smb
   additional)
 mpi_test(cgns_2d_3 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/2D/5quad2Tri.adf.hdf.cgns"
+  "${CGNSDIR}/2D/5quad2Tri.cgns"
   5quad2Tri.smb
   additional)
 mpi_test(cgns_2d_4 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/2D/9tris.adf.hdf.cgns"
+  "${CGNSDIR}/2D/9tris.cgns"
   9tris.smb
   additional)
 #
@@ -485,12 +485,12 @@ mpi_test(cgns_2d_4 ${numProcs}
 #
 mpi_test(cgns_3d_1 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/3D/tets_pyra.adf.hdf.cgns"
+  "${CGNSDIR}/3D/tets_pyra.cgns"
   tets_pyra.smb
   additional)
 mpi_test(cgns_3d_2 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/3D/hexs.adf.hdf.cgns"
+  "${CGNSDIR}/3D/hexs.cgns"
   hexs.smb
   additional)
 #
@@ -502,13 +502,13 @@ set(CGNSDIR ${MESHES}/cgns/withBCS/3D)
 #
 mpi_test(cgns_bcs_1 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/Mesh_3.adf.hdf.cgns"
+  "${CGNSDIR}/mixed.cgns"
   bcs1.smb
   additional)
 
 mpi_test(cgns_bcs_hex ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/8hexs.adf.hdf.cgns"
+  "${CGNSDIR}/8hexs.cgns"
   bcshex.smb
   additional)
 #
@@ -520,7 +520,7 @@ set(CGNSDIR ${MESHES}/cgns/withBCS/2D)
 #
 mpi_test(cgns_bcs_2 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/Mesh_4.adf.hdf.cgns"
+  "${CGNSDIR}/4quads.cgns"
   bcs2.smb
   additional)
 #
@@ -532,7 +532,7 @@ set(CGNSDIR ${MESHES}/cgns/withBCS/1D)
 #
 mpi_test(cgns_bcs_3 ${numProcs}
   ./from_cgns
-  "${CGNSDIR}/Mesh_5.adf.hdf.cgns"
+  "${CGNSDIR}/edges.cgns"
   bcs3.smb
   additional)
 
