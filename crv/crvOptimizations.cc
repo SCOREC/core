@@ -20,6 +20,7 @@
 
 static void printInvalidities(apf::Mesh2* m, apf::Adjacent e, apf::MeshEntity* edge)
 {
+  return;
   int nat = e.getSize();
   apf::Numbering* n = m->findNumbering("debug_num_edge");
   PCU_ALWAYS_ASSERT(n);
@@ -335,7 +336,7 @@ bool CrvInternalEdgeOptim :: run(int &invaliditySize)
   bool hasDecreased = false;
   invaliditySize = 0;
 
-  if (l->run() && thisTetSize > 1) {
+  if (l->run() && thisTetSize > 0) {
     finalX = l->currentX;
     fval = l->fValAfter;
     objF->setNodes(finalX);
