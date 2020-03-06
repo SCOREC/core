@@ -29,6 +29,12 @@ set(SOURCES
 # Package headers
 set(HEADERS
   crv.h
+  crvAdapt.h
+  crvBezier.h
+  crvQuality.h
+  crvOptimizations.h
+  crvObjectiveFunctions.h
+  LBFGS.h
 )
 
 # Add the crv library
