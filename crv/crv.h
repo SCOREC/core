@@ -37,6 +37,9 @@ int getBlendingOrder(const int type);
 /** \brief count invalid elements of the mesh */
 int countNumberInvalidElements(apf::Mesh2* m);
 
+/** \brief converts filed f, which is interpolating to Bezier */
+void convertInterpolatingFieldToBezier(apf::Mesh2* m, apf::Field* f);
+
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D

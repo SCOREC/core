@@ -20,6 +20,7 @@ set(SOURCES
   crvTables.cc
   crvQuality.cc
   crvVtk.cc
+  crvBezierFields.cc
 )
 
 # Package headers
