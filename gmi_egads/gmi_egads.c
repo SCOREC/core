@@ -90,7 +90,7 @@ void read_adj_table(const char* filename,
       adjacency_table[i][j] = (int*)EG_alloc(sizeof(*(adjacency_table[i][j]))
                                              * (nadjacent+1));
       if (adjacency_table[i][j] == NULL) {
-        char fail[50];
+        char fail[100];
         sprintf(fail, "failed to alloc memory for "
                 "adjacency_table[%d][%d]", i,j);
         /// TODO: this could cause memory leak
@@ -190,7 +190,7 @@ void getVertexT(struct gmi_model* m, struct gmi_ent* to, struct gmi_ent* from, d
 void getVertexUV(struct gmi_model* m, struct gmi_ent* to,
                  struct gmi_ent* from, double to_p[2])
 {
-  struct gmi_set* adj_faces;
+  struct gmi_set* adj_faces = NULL;
   struct gmi_set* adj_edges = gmi_adjacent(m, from, 1);
 
   for (int i = 0; i < adj_edges->n; ++i)
@@ -210,7 +210,8 @@ void getVertexUV(struct gmi_model* m, struct gmi_ent* to,
   }
 
   cleanup:
-    gmi_free_set(adj_faces);
+    if (adj_faces != NULL)
+      gmi_free_set(adj_faces);
     gmi_free_set(adj_edges);
     return;
 }
@@ -251,7 +252,7 @@ struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
 
 void end(struct gmi_model* m, struct gmi_iter* i)
 {
-//   printf("end\n");
+  // printf("egads end!\n");
   (void)m;
 
   struct egads_iter *eg_iter = (struct egads_iter*)i;
