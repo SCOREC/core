@@ -6,6 +6,7 @@ set(SOURCES
   crvBezier.cc
   crvBezierPoints.cc
   crvBezierShapes.cc
+  crvBezierFields.cc
   crvBlended.cc
   crvCurveMesh.cc
   crvElevation.cc
