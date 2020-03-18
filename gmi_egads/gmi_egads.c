@@ -147,6 +147,7 @@ void get_3D_bounding_box(egads_ent *ent, double *box)
 {
   (void)ent;
   (void)box;
+  gmi_fail("3D bounding box not implemented!\n");
 }
 
 /// reparameterize a vertex onto an edge
@@ -155,18 +156,18 @@ void getVertexT(struct gmi_model* m, struct gmi_ent* to, struct gmi_ent* from, d
   double diff;
   double t_range[2];
   m->ops->range(m, to, 0, &(t_range[0]));
-  printf("got range\n");
+  // printf("got range\n");
   double vtx_pnt[3];
   double p[] = {0, 0};
   m->ops->eval(m, from, p, &(vtx_pnt[0]));
-  printf("eval 1\n");
+  // printf("eval 1\n");
   double t_pnt[3];
   m->ops->eval(m, to, &(t_range[0]), &(t_pnt[0]));
-  printf("eval 2\n");
+  // printf("eval 2\n");
   diff = sqrt(pow(vtx_pnt[0] - t_pnt[0], 2) + 
               pow(vtx_pnt[1] - t_pnt[1], 2) + 
               pow(vtx_pnt[2] - t_pnt[2], 2));
-  printf("diff 1: %f\n", diff);
+  // printf("diff 1: %f\n", diff);
   if (diff < 0.001)
   {
     *t = t_range[0];
@@ -177,7 +178,7 @@ void getVertexT(struct gmi_model* m, struct gmi_ent* to, struct gmi_ent* from, d
     diff = sqrt(pow(vtx_pnt[0] - t_pnt[0], 2) + 
                 pow(vtx_pnt[1] - t_pnt[1], 2) + 
                 pow(vtx_pnt[2] - t_pnt[2], 2));
-    printf("diff (if here should be small): %f\n", diff);
+    // printf("diff (if here should be small): %f\n", diff);
     *t = t_range[1];
   }
   return;
@@ -216,7 +217,7 @@ void getVertexUV(struct gmi_model* m, struct gmi_ent* to,
 
 struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
-  printf("begin\n");
+//   printf("begin\n");
   
   struct egads_iter *eg_iter;
   if (dim >= 0 && dim <= 3)
@@ -238,7 +239,7 @@ struct gmi_iter* begin(struct gmi_model* m, int dim)
 
 struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
 {
-  printf("next\n");
+//   printf("next\n");
   (void)m;
   struct egads_iter *eg_iter = (struct egads_iter*)i;
   if (eg_iter->idx < eg_iter->nelem)
@@ -250,7 +251,7 @@ struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
 
 void end(struct gmi_model* m, struct gmi_iter* i)
 {
-  printf("end\n");
+//   printf("end\n");
   (void)m;
 
   struct egads_iter *eg_iter = (struct egads_iter*)i;
@@ -263,7 +264,7 @@ void end(struct gmi_model* m, struct gmi_iter* i)
 
 int get_dim(struct gmi_model* m, struct gmi_ent* e)
 {
-  printf("get dim\n");
+//   printf("get dim\n");
   (void)m;
   egads_ent* eg_ent = (egads_ent*)e;
   return eg_ent->dim;
@@ -271,7 +272,7 @@ int get_dim(struct gmi_model* m, struct gmi_ent* e)
 
 int get_tag(struct gmi_model* m, struct gmi_ent* e)
 {
-  printf("get tag\n");
+//   printf("get tag\n");
   (void)m;
   egads_ent* eg_ent = (egads_ent*)e;
   return eg_ent->tag;
@@ -279,7 +280,7 @@ int get_tag(struct gmi_model* m, struct gmi_ent* e)
 
 struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
-  printf("find\n");
+//   printf("find\n");
   (void)m;
   return (struct gmi_ent*)&(egads_global_ents[dim][tag-1]);
 }
@@ -290,7 +291,7 @@ struct gmi_set* adjacent(struct gmi_model* m,
                          int dim)
 {
   egads_ent *eg_ent = (egads_ent*)e;
-  printf("adjacent! dim: %d, ent dim: %d, ent tag: %d\n", dim, eg_ent->dim, eg_ent->tag);
+  // printf("adjacent! dim: %d, ent dim: %d, ent tag: %d\n", dim, eg_ent->dim, eg_ent->tag);
 
   int num_adjacent = 0;
 
@@ -339,7 +340,7 @@ void eval(struct gmi_model* m,
           double const p[2],
           double x[3])
 {
-  printf("eval\n");
+  // printf("eval\n");
   // (void)m;
   double results[18];
   egads_ent *eg_ent = (egads_ent*)e;
@@ -381,7 +382,7 @@ void reparam(struct gmi_model* m,
              struct gmi_ent* to,
              double to_p[2])
 {
-  printf("reparam\n");
+  // printf("reparam\n");
   int from_dim, to_dim;
   from_dim = get_dim(m, from);
   to_dim = get_dim(m, to);
@@ -393,13 +394,13 @@ void reparam(struct gmi_model* m,
 
   if ((from_dim == 1) && (to_dim == 2))
   {
-    printf("reparam from %d to %d\n", from_dim, to_dim);
+    // printf("reparam from %d to %d\n", from_dim, to_dim);
     EG_getEdgeUV(ego_to, ego_from, 1, from_p[0], to_p);
     return;
   }
   if ((from_dim == 0) && (to_dim == 2))
   {
-    printf("reparam from %d to %d\n", from_dim, to_dim);
+    // printf("reparam from %d to %d\n", from_dim, to_dim);
     // getVertexUV(*ego_to, *ego_from, to_p);
     getVertexUV(m, to, from, to_p);
     // gmi_fail("From node to surface reparam not implemented");
@@ -407,11 +408,11 @@ void reparam(struct gmi_model* m,
   }
   if ((from_dim == 0) && (to_dim == 1))
   {
-    printf("reparam from %d to %d\n", from_dim, to_dim);
+    // printf("reparam from %d to %d\n", from_dim, to_dim);
     getVertexT(m, to, from, &to_p[0]);
     return;
   }
-  printf("attempted reparam from %d to %d\n", from_dim, to_dim);
+  // printf("attempted reparam from %d to %d\n", from_dim, to_dim);
   gmi_fail("bad dimensions in gmi_egads reparam");
 }
 
@@ -420,7 +421,7 @@ int periodic(struct gmi_model* m,
              struct gmi_ent* e,
              int dir)
 {
-  printf("periodic\n");
+  // printf("periodic\n");
   int ent_dim = get_dim(m, e);
   int periodic;
   egads_ent *eg_ent = (egads_ent*)e;
@@ -452,7 +453,7 @@ void range(struct gmi_model* m,
            int dir,
            double r[2])
 {
-  printf("range\n");
+  // printf("range\n");
   int ent_dim = get_dim(m, e);
   double range[4];
   int periodic;
@@ -460,7 +461,7 @@ void range(struct gmi_model* m,
   ego ego_ent = eg_ent->ego_ent;
 
   EG_getRange(ego_ent, range, &periodic);
-  printf("after EG_getRange\n");
+  // printf("after EG_getRange\n");
   if (dir == 1)
   {
     if (ent_dim == 2)
@@ -485,7 +486,7 @@ void closest_point(struct gmi_model* m,
                    double to[3],
                    double to_p[2])
 {
-  printf("closest point\n");
+  // printf("closest point\n");
   (void)m;
   egads_ent *eg_ent = (egads_ent*)e;
   ego ego_ent = eg_ent->ego_ent;
@@ -499,7 +500,7 @@ void normal(struct gmi_model* m,
             double const p[2],
             double n[3])
 {
-  printf("normal\n");
+  // printf("normal\n");
   double du[3], dv[3];
   m->ops->first_derivative(m, e, p, du, dv);
   // cross du and dv to get n
@@ -532,7 +533,7 @@ void first_derivative(struct gmi_model* m,
                       double t0[3],
                       double t1[3])
 {
-  printf("first derivative\n");
+  // printf("first derivative\n");
   int ent_dim = get_dim(m, e);
   double results[18];
   egads_ent *eg_ent = (egads_ent*)e;
@@ -554,7 +555,7 @@ int is_point_in_region(struct gmi_model* m,
                        struct gmi_ent* e,
                        double p[3])
 {
-  printf("is in region\n");
+  // printf("is in region\n");
   (void)m;
   egads_ent *eg_ent = (egads_ent*)e;
   if (eg_ent->ego_ent == NULL)
@@ -579,7 +580,7 @@ void bbox(struct gmi_model* m,
           double bmin[3],
           double bmax[3])
 {
-  printf("bbox\n");
+  // printf("bbox\n");
   (void)m;
   double box[6];
   egads_ent *eg_ent = (egads_ent*)e;
@@ -609,7 +610,7 @@ int is_in_closure_of(struct gmi_model* m,
                      struct gmi_ent* e,
                      struct gmi_ent* et)
 {
-  printf("in closure of\n");
+  // printf("in closure of\n");
   egads_ent *eg_ent = (egads_ent*)e;
   ego ego_ent = eg_ent->ego_ent;
 
@@ -670,7 +671,7 @@ int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 /// TODO: free adjacency table too
 void destroy(struct gmi_model* m)
 {
-  printf("destroy!\n");
+  // printf("destroy!\n");
   for (int i = 0; i < 4; ++i)
   {
     EG_free(egads_global_ents[i]);
@@ -809,10 +810,10 @@ struct gmi_model* gmi_egads_init(ego body, int nregions)
 
       egads_global_ents[dim][i].dim = dim;
       egads_global_ents[dim][i].tag = i+1;
-      if (dim < 3) {
-        printf("ent dim: %d and tag: %d, magic number: %d\n", dim, i+1, (*egads_global_ents[dim][i].ego_ent).magicnumber);
-        printf("actual dim: %d, tag: %d\n", egads_global_ents[dim][i].dim, egads_global_ents[dim][i].tag);
-      }
+//       if (dim < 3) {
+//         printf("ent dim: %d and tag: %d, magic number: %d\n", dim, i+1, (*egads_global_ents[dim][i].ego_ent).magicnumber);
+//         printf("actual dim: %d, tag: %d\n", egads_global_ents[dim][i].dim, egads_global_ents[dim][i].tag);
+//       }
     }
   }
 
