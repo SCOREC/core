@@ -159,6 +159,7 @@ class Nedelec: public FieldShape {
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "getValues not implemented for Nedelec Edges. Aborting()!"
 	// TODO inform the user that this is not implemented and abort()
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -177,8 +178,8 @@ class Nedelec: public FieldShape {
       {
       	// TODO: to be completed
       }
-      void getLocalVectorGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const&, apf::NewArray<apf::Matrix3x3>&) const
+      void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	// TODO: to be completed
       }
@@ -203,11 +204,12 @@ class Nedelec: public FieldShape {
 	(void)order;
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>&) const
+	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& y) const
       {
       	const int pm1 = P - 1;
         const int p = P;
 
+	apf::NewArray<double> shape_x(p);
         double* shape_x = new double[p];
         double* shape_y = new double[p];
         double* shape_l = new double[p];
@@ -217,7 +219,7 @@ class Nedelec: public FieldShape {
 
         double x = xi[0]; double y = xi[1];
 
-        getChebyshevT(pm1, x, shape_x);
+        getChebyshevT(pm1, x, &shape_x[0]);
         getChebyshevT(pm1, y, shape_y);
         getChebyshevT(pm1, 1. - x - y, shape_l);
 
@@ -235,10 +237,17 @@ class Nedelec: public FieldShape {
           u(n,0) = s*(y - c);  u(n,1) = -s*(x - c); n++;
         }
 
+
       	computeTi(); // TODO multiply u and QR in a for loop to compute vector shapes
+
+	// let s = Ti x u
+        y.allocate(dof);
+        for (int i = 0; i < dof; i++) {
+	  y(i) = apf::Vector3(s(i,0),s(i,1),0.0);
+        }
       }
-      void getLocalVectorGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const&, apf::NewArray<apf::Matrix3x3>&) const
+      void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	// TODO: to be completed
       }
@@ -392,8 +401,8 @@ class Nedelec: public FieldShape {
 
       	computeTi(); // TODO multiply u and QR in a for loop to compute vector shapes
       }
-      void getLocalVectorGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const&, apf::NewArray<apf::Matrix3x3>&) const
+      void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	// TODO: to be completed
       }
