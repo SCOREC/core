@@ -10,6 +10,7 @@
 #include "crvShape.h"
 #include "crvTables.h"
 #include "crvQuality.h"
+#include <apfField.h>
 #include <lionPrint.h>
 #include <cstdlib>
 
@@ -50,8 +51,10 @@ void convertInterpolationFieldPoints(apf::MeshEntity* e,
 
   apf::NewArray<apf::Vector3> l, b(ne);
   apf::NewArray<double> ls, bs(ne);
+  apf::MeshElement* me =
+      apf::createMeshElement(f->getMesh(),e);
   apf::Element* elem =
-      apf::createElement(f,e);
+      apf::createElement(f,me);
 
   if (apf::getValueType(f) == apf::VECTOR) {
     apf::getVectorNodes(elem,l);
@@ -67,20 +70,29 @@ void convertInterpolationFieldPoints(apf::MeshEntity* e,
   }
   else
     printf("Field type not implemented\n");
-
   apf::destroyElement(elem);
+  apf::destroyMeshElement(me);
 }
 
 void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f)
 {
   // TODO: to be completed
+  // Zero out the blending orders (since they are used internally
+  // in Bezier shapes (triangles and tets) but save the old ones to
+  // revert back to at the end of this (so the rest of Bezier related
+  // procedures work as intended)
+  int oldBlendings[apf::Mesh::TYPES];
+  for (int i = 0; i < apf::Mesh::TYPES; i++)
+    oldBlendings[i] = getBlendingOrder(i);
+  setBlendingOrder(apf::Mesh::TYPES, 0);
+
   apf::FieldShape * fs = apf::getShape(f);
   int order = fs->getOrder();
 
   int md = m_mesh->getDimension();
   int blendingOrder = getBlendingOrder(apf::Mesh::simplexTypes[md]);
   // go downward, and convert interpolating to control points
-  int startDim = md - (blendingOrder > 0); 
+  int startDim = md - (blendingOrder > 0);
 
   for(int d = startDim; d >= 1; --d){
     if(!fs->hasNodesIn(d)) continue;
@@ -97,24 +109,9 @@ void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f)
     }
     m_mesh->end(it);
   }
-  // if we have a full representation, we need to place internal nodes on
-  // triangles and tetrahedra
-  for(int d = 2; d <= md; ++d){
-    if(!fs->hasNodesIn(d) ||
-        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
-    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-    apf::NewArray<double> c;
-    getInternalBezierTransformationCoefficients(m_mesh,order,1,
-        apf::Mesh::simplexTypes[d],c);
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m_mesh->begin(d);
-    while ((e = m_mesh->iterate(it))){
-      if(!isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
-        convertInterpolationFieldPoints(e,f,n-ne,ne,c);
-    }
-    m_mesh->end(it);
-  }
+
+  for (int i = 0; i < apf::Mesh::TYPES; i++)
+    setBlendingOrder(i, oldBlendings[i]);
 
   //synchronize();
 
