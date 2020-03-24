@@ -42,6 +42,15 @@ class EntityShape
         MeshEntity* e,
         Vector3 const& xi,
         NewArray<Vector3>& grads) const = 0;
+/** \brief evaluate element vector shape functions
+ \details this is use only for Nedelc
+ \param xi the parent element coordinates
+ \param values each entry is the vector shape function value for one node */
+    virtual void getVectorValues(
+        Mesh* m,
+        MeshEntity* e,
+        Vector3 const& xi,
+        NewArray<apf::Vector3>& values) const;
 /** \brief return the number of nodes affecting this element
     \details in a linear mesh, there are two nodes affecting
              and edge, three nodes affecting a triangle,
