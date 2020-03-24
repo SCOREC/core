@@ -150,6 +150,7 @@ void BezierCurver::convertInterpolatingToBezier()
   }
   // if we have a full representation, we need to place internal nodes on
   // triangles and tetrahedra
+
   for(int d = 2; d <= md; ++d){
     if(!fs->hasNodesIn(d) ||
         getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
