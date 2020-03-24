@@ -13,6 +13,7 @@
 #include "mth.h"
 #include <pcu_util.h>
 #include <mthQR.h>
+#include <PCU.h>
 
 #include <iostream>
 
@@ -128,6 +129,56 @@ static void getChebyshevT(int order, double xi, double* u)
   }
 }
 
+static void getChebyshevT(int order, double xi, double* u, double* d)
+{
+  // recursive definition, z in [-1,1]
+  // T_0(z) = 1,  T_1(z) = z
+  // T_{n+1}(z) = 2*z*T_n(z) - T_{n-1}(z)
+  // T'_n(z) = n*U_{n-1}(z)
+  // U_0(z) = 1  U_1(z) = 2*z
+  // U_{n+1}(z) = 2*z*U_n(z) - U_{n-1}(z)
+  // U_n(z) = z*U_{n-1}(z) + T_n(z) = z*T'_n(z)/n + T_n(z)
+  // T'_{n+1}(z) = (n + 1)*(z*T'_n(z)/n + T_n(z))
+  double z;
+  u[0] = 1.;
+  d[0] = 0.;
+  if (order == 0) { return; }
+  u[1] = z = 2.*xi - 1.;
+  d[1] = 2.;
+  for (int n = 1; n < order; n++)
+  {
+     u[n+1] = 2*z*u[n] - u[n-1];
+     d[n+1] = (n + 1)*(z*d[n]/n + 2*u[n]);
+  }
+}
+
+static void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
+{
+  // recursive definition, z in [-1,1]
+  // T_0(z) = 1,  T_1(z) = z
+  // T_{n+1}(z) = 2*z*T_n(z) - T_{n-1}(z)
+  // T'_n(z) = n*U_{n-1}(z)
+  // U_0(z) = 1  U_1(z) = 2*z
+  // U_{n+1}(z) = 2*z*U_n(z) - U_{n-1}(z)
+  // U_n(z) = z*U_{n-1}(z) + T_n(z) = z*T'_n(z)/n + T_n(z)
+  // T'_{n+1}(z) = (n + 1)*(z*T'_n(z)/n + T_n(z))
+  // T''_{n+1}(z) = (n + 1)*(2*(n + 1)*T'_n(z) + z*T''_n(z)) / n
+  double z;
+  u[0] = 1.;
+  d[0] = 0.;
+  dd[0]= 0.;
+  if (order == 0) { return; }
+  u[1] = z = 2.*xi - 1.;
+  d[1] = 2.;
+  dd[1] = 0;
+  for (int n = 1; n < order; n++)
+  {
+     u[n+1] = 2*z*u[n] - u[n-1];
+     d[n+1] = (n + 1)*(z*d[n]/n + 2*u[n]);
+     dd[n+1] = (n + 1)*(2.*(n + 1)*d[n] + z*dd[n])/n;
+  }
+}
+
 class Nedelec: public FieldShape {
   public:
     const char* getName() const { return "Nedelec"; }
@@ -159,13 +210,12 @@ class Nedelec: public FieldShape {
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
-      	PCU_ALWAYS_ASSERT_VERBOSE(0, "getValues not implemented for Nedelec Edges. Aborting()!"
-	// TODO inform the user that this is not implemented and abort()
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for Nedelec Edges. Aborting()!");
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-	// TODO inform the user that this is not implemented and abort()
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Edges. Aborting()!");
       }
       int countNodes() const {return 0; /* TODO update this*/}
       void alignSharedNodes(apf::Mesh*,
@@ -187,15 +237,16 @@ class Nedelec: public FieldShape {
     class Triangle : public apf::EntityShape
     {
     public:
+      int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
-	// TODO inform the user that this is not implemented and abort()
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for Nedelec Triangle. Try getVectorValues. Aborting()!");
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-	// TODO inform the user that this is not implemented and abort()
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Triangle. Aborting()!");
       }
       int countNodes() const {return P*(P+2);}
       void alignSharedNodes(apf::Mesh*,
@@ -204,15 +255,14 @@ class Nedelec: public FieldShape {
 	(void)order;
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& y) const
+	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
       {
       	const int pm1 = P - 1;
         const int p = P;
 
-	apf::NewArray<double> shape_x(p);
-        double* shape_x = new double[p];
-        double* shape_y = new double[p];
-        double* shape_l = new double[p];
+      	apf::NewArray<double> shape_x(p);
+      	apf::NewArray<double> shape_y(p);
+      	apf::NewArray<double> shape_l(p);
 
         int dof = countNodes();
         mth::Matrix<double> u(dof, dim);
@@ -220,8 +270,8 @@ class Nedelec: public FieldShape {
         double x = xi[0]; double y = xi[1];
 
         getChebyshevT(pm1, x, &shape_x[0]);
-        getChebyshevT(pm1, y, shape_y);
-        getChebyshevT(pm1, 1. - x - y, shape_l);
+        getChebyshevT(pm1, y, &shape_y[0]);
+        getChebyshevT(pm1, 1. - x - y, &shape_l[0]);
 
         int n = 0;
         for (int j = 0; j <= pm1; j++)
@@ -238,26 +288,77 @@ class Nedelec: public FieldShape {
         }
 
 
-      	computeTi(); // TODO multiply u and QR in a for loop to compute vector shapes
+      	computeTi();
+        mth::Matrix<double> S(dof, dim);
+      	for(int i = 0; i < dim; i++) // S = Ti * u
+        {
+          apf::Vector<dof> B;
+          apf::Vector<double> X(dof);
+          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
+          mth::solveFromQR(Q, R, B, X);
+          for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
+        }
 
-	// let s = Ti x u
-        y.allocate(dof);
-        for (int i = 0; i < dof; i++) {
-	  y(i) = apf::Vector3(s(i,0),s(i,1),0.0);
+        shapes.allocate(dof);
+        for (int i = 0; i < dof; i++) // populate y
+        {
+      	  shapes(i) = apf::Vector3( S(i,0), S(i,1), 0.0 );
         }
       }
       void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>&) const
       {
-      	// TODO: to be completed
+      	const int pm1 = P - 1;
+        const int p = P;
+
+      	apf::NewArray<double> shape_x(p);
+      	apf::NewArray<double> shape_y(p);
+      	apf::NewArray<double> shape_l(p);
+      	apf::NewArray<double> dshape_x(p);
+      	apf::NewArray<double> dshape_y(p);
+      	apf::NewArray<double> dshape_l(p);
+
+      	int dof = countNodes();
+        apf::Vector<double> curlu(dof);
+
+        double x = xi[0]; double y = xi[1];
+
+        getChebyshevT(pm1, x, &shape_x[0], &dshape_x[0]);
+        getChebyshevT(pm1, y, &shape_y[0], &dshape_y[0]);
+        getChebyshevT(pm1, 1. - x - y, &shape_l[0], &dshape_l[0]);
+
+        int n = 0;
+        for (int j = 0; j <= pm1; j++)
+          for (int i = 0; i + j <= pm1; i++)
+          {
+            int l = pm1-i-j;
+            const double dx = (dshape_x[i]*shape_l[l] -
+                          shape_x(i)*dshape_l(l)) * shape_y(j);
+            const double dy = (dshape_y[j]*shape_l[l] -
+                          shape_y[j]*dshape_l[l]) * shape_x[i];
+
+            curlu(n++) = -dy;
+            curlu(n++) =  dx;
+          }
+        for (int j = 0; j <= pm1; j++)
+        {
+          int i = pm1 - j;
+          // curl of shape_x(i)*shape_y(j) * (ip.y - c, -(ip.x - c), 0):
+          curlu(n++) = -((dshape_x[i]*(x - c) + shape_x[i]) * shape_y[j] +
+                     (dshape_y[j]*(y - c) + shape_y[j]) * shape_x[i]);
+        }
+
+        computeTi();
+        apf::Vector<double> X(dof);
+        mth::solveFromQR(Q, R, curlu, X);
       }
     private:
-      //mth::Matrix<double> Ti;
+      int P; // polyonmial order
+      int dim = 2; // reference element dim
+      double c = 1./3.; // center of tri
+      const double tk[8] = {1.,0.,  -1.,1.,  0.,-1.,  0.,1.};
       mth::Matrix<double> Q;
       mth::Matrix<double> R;
-      const double tk[8] = {1.,0.,  -1.,1.,  0.,-1.,  0.,1.}; // TODO
-      const double c = 1./3.;
-      const int dim = 2; // reference space dim
       void computeTi()
       {
      	  int non = countNodes();
@@ -265,30 +366,30 @@ class Nedelec: public FieldShape {
         const double *eop = getOpenPoints(P - 1);
         const double *iop = (P > 1) ? getOpenPoints(P - 2) : NULL;
 
-        const int pm1 = P - 1, pm2 = P - 2;
+        const int p = P, pm1 = P - 1, pm2 = P - 2;
 
-        double* shape_x = new double[P];
-        double* shape_y = new double[P];
-        double* shape_l = new double[P];
+      	apf::NewArray<double> shape_x(p);
+      	apf::NewArray<double> shape_y(p);
+      	apf::NewArray<double> shape_l(p);
 
-       	apf::DynamicArray<apf::Vector<2> > nodes (non); // TODO syntax question
+       	apf::DynamicArray<apf::Vector3> nodes (non);
       	apf::DynamicArray<int> dof2tk (non);
 
         int o = 0;
       	// Edge loops to get nodes and dof2tk for edges
         for (int i = 0; i < P; i++)  // (0,1)
         {
-          nodes[o][0] = eop[i];  nodes[o][1] = 0.;
+          nodes[o][0] = eop[i];  nodes[o][1] = 0.;  nodes[o][2] = 0.;
           dof2tk[o++] = 0;
         }
         for (int i = 0; i < P; i++)  // (1,2)
         {
-          nodes[o][0] = eop[pm1-i];  nodes[o][1] = eop[i];
+          nodes[o][0] = eop[pm1-i];  nodes[o][1] = eop[i];  nodes[o][2] = 0.;
           dof2tk[o++] = 1;
         }
         for (int i = 0; i < P; i++)  // (2,0)
         {
-          nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];
+          nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = 0.;
           dof2tk[o++] = 2;
         }
 
@@ -297,9 +398,9 @@ class Nedelec: public FieldShape {
           for (int i = 0; i + j <= pm2; i++)
               {
                 double w = iop[i] + iop[j] + iop[pm2-i-j];
-                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;
+                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = 0.;
                 dof2tk[o++] = 0;
-                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;
+                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = 0.;
                 dof2tk[o++] = 3;
               }
 
@@ -312,9 +413,9 @@ class Nedelec: public FieldShape {
 
           double x = nodes[o][0]; double y = nodes[o][1];
 
-          getChebyshevT(pm1, x, shape_x);
-          getChebyshevT(pm1, y, shape_y);
-          getChebyshevT(pm1, 1. - x - y, shape_l);
+          getChebyshevT(pm1, x, &shape_x[0]);
+          getChebyshevT(pm1, y, &shape_y[0]);
+          getChebyshevT(pm1, 1. - x - y, &shape_l[0]);
 
           for (int j = 0; j <= pm1; j++)
             for (int i = 0; i + j <= pm1; i++)
@@ -332,22 +433,20 @@ class Nedelec: public FieldShape {
 
         unsigned rank = mth::decomposeQR(T, Q, R);
       }
-      int getOrder() {return P;}
-    private:
-      int P;
     };
     class Tetrahedron : public apf::EntityShape
     {
     public:
+      int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
-	// TODO inform the user that this is not implemented and abort()
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for Nedelec Tetrahedron. Try getVectorValues. Aborting()!");
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-	// TODO inform the user that this is not implemented and abort()
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Tetrahedron. Aborting()!");
       }
       int countNodes() const {return (P+3)*(P+2)*P/2;}
       void alignSharedNodes(apf::Mesh*,
@@ -355,26 +454,26 @@ class Nedelec: public FieldShape {
       {
 	(void)order;
       }
-      void getVectorValues(apf::Mesh* m, apf::MeshEntity* e,
-	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& u) const
+      void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
       {
         const int pm1 = P - 1;
         const int p = P;
 
-        double* shape_x = new double[p];
-        double* shape_y = new double[p];
-        double* shape_z = new double[p];
-        double* shape_l = new double[p];
+      	apf::NewArray<double> shape_x(p);
+      	apf::NewArray<double> shape_y(p);
+      	apf::NewArray<double> shape_z(p);
+      	apf::NewArray<double> shape_l(p);
 
         int dof = countNodes();
         mth::Matrix<double> u(dof, dim);
 
         double x = xi[0]; double y = xi[1]; double z = xi[2];
 
-        getChebyshevT(pm1, x, shape_x);
-        getChebyshevT(pm1, y, shape_y);
-        getChebyshevT(pm1, z, shape_z);
-        getChebyshevT(pm1, 1. - x - y - z, shape_l);
+        getChebyshevT(pm1, x, &shape_x[0]);
+        getChebyshevT(pm1, y, &shape_y[0]);
+        getChebyshevT(pm1, z, &shape_z[0]);
+        getChebyshevT(pm1, 1. - x - y - z, &shape_l[0]);
 
         int n = 0;
         for (int k = 0; k <= pm1; k++)
@@ -399,20 +498,117 @@ class Nedelec: public FieldShape {
           u(n,0) = 0.;  u(n,1) = s*(z - c);  u(n,2) = -s*(y - c);  n++;
         }
 
-      	computeTi(); // TODO multiply u and QR in a for loop to compute vector shapes
+      	computeTi();
+        mth::Matrix<double> S(dof, dim);
+      	for(int i = 0; i < dim; i++) // S = Ti * u
+        {
+          apf::Vector<double> B(dof);
+          apf::Vector<double> X(dof);
+          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
+          mth::solveFromQR(Q, R, B, X);
+          for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
+        }
+
+        shapes.allocate(dof);
+        for (int i = 0; i < dof; i++) // populate y
+        {
+      	  shapes(i) = apf::Vector3( S(i,0), S(i,1), S(i,2) );
+        }
       }
       void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& curl_shapes) const
       {
-      	// TODO: to be completed
+      	const int pm1 = P - 1;
+        const int p = P;
+
+      	apf::NewArray<double> shape_x(p);
+      	apf::NewArray<double> shape_y(p);
+      	apf::NewArray<double> shape_z(p);
+      	apf::NewArray<double> shape_l(p);
+      	apf::NewArray<double> dshape_x(p);
+      	apf::NewArray<double> dshape_y(p);
+      	apf::NewArray<double> dshape_z(p);
+      	apf::NewArray<double> dshape_l(p);
+
+      	int dof = countNodes();
+        mth::Matrix<double> u(dof, dim);
+
+        double x = xi[0]; double y = xi[1]; double z = xi[2];
+
+        getChebyshevT(pm1, x, &shape_x[0], &dshape_x[0]);
+        getChebyshevT(pm1, y, &shape_y[0], &dshape_y[0]);
+        getChebyshevT(pm1, z, &shape_z[0], &dshape_z[0]);
+        getChebyshevT(pm1, 1. - x - y - z, &shape_l[0], &dshape_l[0]);
+
+        int n = 0;
+        for (int k = 0; k <= pm1; k++)
+          for (int j = 0; j + k <= pm1; j++)
+            for (int i = 0; i + j + k <= pm1; i++)
+            {
+              int l = pm1-i-j-k;
+              const double dx = (dshape_x[i]*shape_l[l] -
+                             shape_x[i]*dshape_l[l])*shape_y[j]*shape_z[k];
+              const double dy = (dshape_y[j]*shape_l[l] -
+                             shape_y[j]*dshape_l[l])*shape_x[i]*shape_z[k];
+              const double dz = (dshape_z[k]*shape_l[l] -
+                             shape_z[k]*dshape_l[l])*shape_x[i]*shape_y[j];
+
+              u(n,0) =  0.;  u(n,1) =  dz;  u(n,2) = -dy;  n++;
+              u(n,0) = -dz;  u(n,1) =  0.;  u(n,2) =  dx;  n++;
+              u(n,0) =  dy;  u(n,1) = -dx;  u(n,2) =  0.;  n++;
+            }
+        for (int k = 0; k <= pm1; k++)
+          for (int j = 0; j + k <= pm1; j++)
+          {
+            int i = pm1 - j - k;
+            // s = shape_x(i)*shape_y(j)*shape_z(k);
+            // curl of s*(ip.y - c, -(ip.x - c), 0):
+            u(n,0) =  shape_x[i]*(x - c)*shape_y[j]*dshape_z[k];
+            u(n,1) =  shape_x[i]*shape_y[j]*(y - c)*dshape_z[k];
+            u(n,2) =  -((dshape_x[i]*(x - c) + shape_x[i])*shape_y[j]*shape_z[k] +
+                      (dshape_y(j)*(y - c) + shape_y[j])*shape_x[i]*shape_z[k]);
+            n++;
+            // curl of s*(ip.z - c, 0, -(ip.x - c)):
+            u(n,0) = -shape_x[i]*(x - c)*dshape_y[j]*shape_z[k];
+            u(n,1) = (shape_x[i]*shape_y[j]*(dshape_z[k]*(z - c) + shape_z[k]) +
+                     (dshape_x[i]*(x - c) + shape_x[i])*shape_y[j]*shape_z[k]);
+            u(n,2) = -shape_x[i]*dshape_y[j]*shape_z[k]*(z - c);
+            n++;
+          }
+        for (int k = 0; k <= pm1; k++)
+        {
+          int j = pm1 - k;
+          // curl of shape_y(j)*shape_z(k)*(0, ip.z - c, -(ip.y - c)):
+          u(n,0) = -((dshape_y[j]*(y - c) + shape_y[j])*shape_z[k] +
+                   shape_y[j]*(dshape_z[k]*(z - c) + shape_z[k]));
+          u(n,1) = 0.;
+          u(n,2) = 0.;  n++;
+        }
+
+        computeTi();
+        mth::Matrix<double> S(dof, dim);
+      	for(int i = 0; i < dim; i++) // S = Ti * u
+        {
+          apf::Vector<dof> B;
+          apf::Vector<double> X(dof);
+          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
+          mth::solveFromQR(Q, R, B, X);
+          for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
+        }
+
+        curl_shapes.allocate(dof);
+        for (int i = 0; i < dof; i++) // populate y
+        {
+      	  curl_shapes(i) = apf::Vector3( S(i,0), S(i,1), S(i,2) );
+        }
       }
     private:
-      //mth::Matrix<double> Ti;
+      int P;
+      int dim = 3;
+      double c = 1./4.;
+      const double tk[18] = {1.,0.,0.,  -1.,1.,0.,  0.,-1.,0.,  0.,0.,1.,  -1.,0.,1.,  0.,-1.,1.}; // edge directions
       mth::Matrix<double> Q;
       mth::Matrix<double> R;
-      const double tk[18] = {1.,0.,0.,  -1.,1.,0.,  0.,-1.,0.,  0.,0.,1.,  -1.,0.,1.,  0.,-1.,1.}; // edge directions
-      const double c = 1./4.;
-      const int dim = 3;
       void computeTi()
       {
      	  int non = countNodes();
@@ -421,12 +617,12 @@ class Nedelec: public FieldShape {
         const double *fop = (P > 1) ? getOpenPoints(P - 2) : NULL;
         const double *iop = (P > 2) ? getOpenPoints(P - 3) : NULL;
 
-        const int pm1 = P - 1, pm2 = P - 2, pm3 = P - 3;
+        const int p = P, pm1 = P - 1, pm2 = P - 2, pm3 = P - 3;
 
-        double* shape_x = new double[P];
-        double* shape_y = new double[P];
-        double* shape_z = new double[P];
-        double* shape_l = new double[P];
+      	apf::NewArray<double> shape_x(p);
+      	apf::NewArray<double> shape_y(p);
+      	apf::NewArray<double> shape_z(p);
+      	apf::NewArray<double> shape_l(p);
 
        	apf::DynamicArray<apf::Vector3> nodes (non);
       	apf::DynamicArray<int> dof2tk (non);
@@ -527,10 +723,10 @@ class Nedelec: public FieldShape {
 
           double x = nodes[o][0]; double y = nodes[o][1]; double z = nodes[o][2];
 
-          getChebyshevT(pm1, x, shape_x);
-          getChebyshevT(pm1, y, shape_y);
-          getChebyshevT(pm1, z, shape_z);
-          getChebyshevT(pm1, 1. - x - y - z, shape_l);
+          getChebyshevT(pm1, x, &shape_x[0]);
+          getChebyshevT(pm1, y, &shape_y[0]);
+          getChebyshevT(pm1, z, &shape_z[0]);
+          getChebyshevT(pm1, 1. - x - y - z, &shape_l[0]);
 
           for (int k = 0; k <= pm1; k++)
             for (int j = 0; j + k <= pm1; j++)
@@ -558,9 +754,6 @@ class Nedelec: public FieldShape {
         unsigned rank = mth::decomposeQR(T, Q, R);
       }
     };
-    int getOrder() {return P;}
-    private:
-      int P;
 };
 
 };
