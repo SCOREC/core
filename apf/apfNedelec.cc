@@ -180,10 +180,13 @@ static void getChebyshevT(int order, double xi, double* u, double* d, double* dd
 }
 
 class Nedelec: public FieldShape {
+  private:
+    int P;
   public:
+    static int getFieldOrder() {return P;}
     const char* getName() const { return "Nedelec"; }
-    Nedelec(int order) : P(order) {
-    }
+    Nedelec(int order) : P(order)
+    {}
     class Vertex : public apf::EntityShape
     {
     public:
@@ -237,7 +240,7 @@ class Nedelec: public FieldShape {
     class Triangle : public apf::EntityShape
     {
     public:
-      int getOrder() {return P;}
+      int getOrder() {return Nedelec::getFieldOrder();}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
@@ -353,7 +356,6 @@ class Nedelec: public FieldShape {
         mth::solveFromQR(Q, R, curlu, X);
       }
     private:
-      int P; // polyonmial order
       int dim = 2; // reference element dim
       double c = 1./3.; // center of tri
       const double tk[8] = {1.,0.,  -1.,1.,  0.,-1.,  0.,1.};
@@ -431,13 +433,13 @@ class Nedelec: public FieldShape {
           }
         }
 
-        unsigned rank = mth::decomposeQR(T, Q, R);
+        mth::decomposeQR(T, Q, R);
       }
     };
     class Tetrahedron : public apf::EntityShape
     {
     public:
-      int getOrder() {return P;}
+      int getOrder() {return Nedelec::getFieldOrder();}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
@@ -603,7 +605,6 @@ class Nedelec: public FieldShape {
         }
       }
     private:
-      int P;
       int dim = 3;
       double c = 1./4.;
       const double tk[18] = {1.,0.,0.,  -1.,1.,0.,  0.,-1.,0.,  0.,0.,1.,  -1.,0.,1.,  0.,-1.,1.}; // edge directions
@@ -751,9 +752,15 @@ class Nedelec: public FieldShape {
           }
         }
 
-        unsigned rank = mth::decomposeQR(T, Q, R);
+        mth::decomposeQR(T, Q, R);
       }
     };
 };
+
+apf::FieldShape* getNedelec(int order)
+{
+  static Nedelec nedelec(order);
+  return &nedelec;
+}
 
 };
