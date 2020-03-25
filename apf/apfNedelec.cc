@@ -180,12 +180,13 @@ void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
 }
 
 class Nedelec: public FieldShape {
-  private:
-    int P;
   public:
-    static int getFieldOrder() {return P;}
+    static int P;
     const char* getName() const { return "Nedelec"; }
-    Nedelec(int order) : P(order)
+    int getOrder() {return P;}
+    /* Nedelec(int order) : P(order) */
+    /* {} */
+    Nedelec()
     {}
     class Vertex : public apf::EntityShape
     {
@@ -240,7 +241,8 @@ class Nedelec: public FieldShape {
     class Triangle : public apf::EntityShape
     {
     public:
-      int getOrder() {return Nedelec::getFieldOrder();}
+      /* int getOrder() {return Nedelec::getFieldOrder();} */
+      int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
@@ -439,7 +441,8 @@ class Nedelec: public FieldShape {
     class Tetrahedron : public apf::EntityShape
     {
     public:
-      int getOrder() {return Nedelec::getFieldOrder();}
+      /* int getOrder() {return Nedelec::getFieldOrder();} */
+      int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
@@ -755,11 +758,39 @@ class Nedelec: public FieldShape {
         mth::decomposeQR(T, Q, R);
       }
     };
+    EntityShape* getEntityShape(int type)
+    {
+      static Edge edge;
+      static Triangle triangle;
+      static Tetrahedron tet;
+      static EntityShape* shapes[apf::Mesh::TYPES] =
+      {NULL,       //vertex
+       &edge,      //edge
+       &triangle,  //triangle
+       NULL,       //quad
+       &tet,       //tetrahedron
+       NULL,       //hex
+       NULL,       //prism
+       NULL        //pyramid
+      };
+      return shapes[type];
+    }
+    bool hasNodesIn(int)
+    {
+      // TODO complete this
+      return true;
+    }
+    int countNodesOn(int)
+    {
+      // TODO complete this
+      return 0;
+    }
 };
 
 apf::FieldShape* getNedelec(int order)
 {
-  static Nedelec nedelec(order);
+  Nedelec::P = order;
+  static Nedelec nedelec;
   return &nedelec;
 }
 
