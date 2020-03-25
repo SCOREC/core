@@ -24,7 +24,7 @@ enum {
   GAUSS_LOBATTO
 };
 
-static void getGaussLegendrePoints(int np, double* pts)
+void getGaussLegendrePoints(int np, double* pts)
 {
   switch (np)
   {
@@ -79,11 +79,11 @@ static void getGaussLegendrePoints(int np, double* pts)
   }
 }
 
-static void getGaussLobattoPoints(int /*np*/, double* /*pts*/)
+void getGaussLobattoPoints(int /*np*/, double* /*pts*/)
 { /* TODO implement Gauss Lobatto points. Later when needed. */
 };
 
-static const double* getPoints(int order, const int type)
+const double* getPoints(int order, const int type)
 {
   int np = order + 1;
   double* points = new double[np];
@@ -103,17 +103,17 @@ static const double* getPoints(int order, const int type)
   return points;
 }
 
-static const double* getOpenPoints(int order, const int type = GAUSS_LEGENDRE)
+const double* getOpenPoints(int order, const int type = GAUSS_LEGENDRE)
 {
   return getPoints(order, type);
 }
 
-static const double* getClosedPoints(int order, const int type = GAUSS_LOBATTO)
+const double* getClosedPoints(int order, const int type = GAUSS_LOBATTO)
 {
     return getPoints(order, type);
 }
 
-static void getChebyshevT(int order, double xi, double* u)
+void getChebyshevT(int order, double xi, double* u)
 {
   // TODO implement Chebyshev
   // recursive definition, z in [-1,1]
@@ -129,7 +129,7 @@ static void getChebyshevT(int order, double xi, double* u)
   }
 }
 
-static void getChebyshevT(int order, double xi, double* u, double* d)
+void getChebyshevT(int order, double xi, double* u, double* d)
 {
   // recursive definition, z in [-1,1]
   // T_0(z) = 1,  T_1(z) = z
@@ -152,7 +152,7 @@ static void getChebyshevT(int order, double xi, double* u, double* d)
   }
 }
 
-static void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
+void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
 {
   // recursive definition, z in [-1,1]
   // T_0(z) = 1,  T_1(z) = z
@@ -295,9 +295,9 @@ class Nedelec: public FieldShape {
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
         {
-          apf::Vector<dof> B;
-          apf::Vector<double> X(dof);
-          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
+          mth::Vector<double> B (dof);
+          mth::Vector<double> X (dof);
+          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b in QR x = b
           mth::solveFromQR(Q, R, B, X);
           for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
         }
@@ -322,7 +322,7 @@ class Nedelec: public FieldShape {
       	apf::NewArray<double> dshape_l(p);
 
       	int dof = countNodes();
-        apf::Vector<double> curlu(dof);
+        mth::Vector<double> curlu(dof);
 
         double x = xi[0]; double y = xi[1];
 
@@ -336,7 +336,7 @@ class Nedelec: public FieldShape {
           {
             int l = pm1-i-j;
             const double dx = (dshape_x[i]*shape_l[l] -
-                          shape_x(i)*dshape_l(l)) * shape_y(j);
+                          shape_x[i]*dshape_l[l]) * shape_y[j];
             const double dy = (dshape_y[j]*shape_l[l] -
                           shape_y[j]*dshape_l[l]) * shape_x[i];
 
@@ -352,7 +352,7 @@ class Nedelec: public FieldShape {
         }
 
         computeTi();
-        apf::Vector<double> X(dof);
+        mth::Vector<double> X(dof);
         mth::solveFromQR(Q, R, curlu, X);
       }
     private:
@@ -504,8 +504,8 @@ class Nedelec: public FieldShape {
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
         {
-          apf::Vector<double> B(dof);
-          apf::Vector<double> X(dof);
+          mth::Vector<double> B (dof);
+          mth::Vector<double> X (dof);
           for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
           mth::solveFromQR(Q, R, B, X);
           for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
@@ -591,8 +591,8 @@ class Nedelec: public FieldShape {
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
         {
-          apf::Vector<dof> B;
-          apf::Vector<double> X(dof);
+          mth::Vector<double> B(dof);
+          mth::Vector<double> X(dof);
           for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
           mth::solveFromQR(Q, R, B, X);
           for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
