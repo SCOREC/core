@@ -305,7 +305,7 @@ class Nedelec: public FieldShape {
         shapes.allocate(dof);
         for (int i = 0; i < dof; i++) // populate y
         {
-      	  shapes(i) = apf::Vector3( S(i,0), S(i,1), 0.0 );
+      	  shapes[i] = apf::Vector3( S(i,0), S(i,1), 0.0 );
         }
       }
       void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -514,7 +514,7 @@ class Nedelec: public FieldShape {
         shapes.allocate(dof);
         for (int i = 0; i < dof; i++) // populate y
         {
-      	  shapes(i) = apf::Vector3( S(i,0), S(i,1), S(i,2) );
+      	  shapes[i] = apf::Vector3( S(i,0), S(i,1), S(i,2) );
         }
       }
       void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -568,7 +568,7 @@ class Nedelec: public FieldShape {
             u(n,0) =  shape_x[i]*(x - c)*shape_y[j]*dshape_z[k];
             u(n,1) =  shape_x[i]*shape_y[j]*(y - c)*dshape_z[k];
             u(n,2) =  -((dshape_x[i]*(x - c) + shape_x[i])*shape_y[j]*shape_z[k] +
-                      (dshape_y(j)*(y - c) + shape_y[j])*shape_x[i]*shape_z[k]);
+                      (dshape_y[j]*(y - c) + shape_y[j])*shape_x[i]*shape_z[k]);
             n++;
             // curl of s*(ip.z - c, 0, -(ip.x - c)):
             u(n,0) = -shape_x[i]*(x - c)*dshape_y[j]*shape_z[k];
@@ -601,7 +601,7 @@ class Nedelec: public FieldShape {
         curl_shapes.allocate(dof);
         for (int i = 0; i < dof; i++) // populate y
         {
-      	  curl_shapes(i) = apf::Vector3( S(i,0), S(i,1), S(i,2) );
+      	  curl_shapes[i] = apf::Vector3( S(i,0), S(i,1), S(i,2) );
         }
       }
     private:
