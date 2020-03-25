@@ -179,9 +179,9 @@ void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
   }
 }
 
+template<int P>
 class Nedelec: public FieldShape {
   public:
-    static int P;
     const char* getName() const { return "Nedelec"; }
     int getOrder() {return P;}
     /* Nedelec(int order) : P(order) */
@@ -241,7 +241,6 @@ class Nedelec: public FieldShape {
     class Triangle : public apf::EntityShape
     {
     public:
-      /* int getOrder() {return Nedelec::getFieldOrder();} */
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -441,7 +440,6 @@ class Nedelec: public FieldShape {
     class Tetrahedron : public apf::EntityShape
     {
     public:
-      /* int getOrder() {return Nedelec::getFieldOrder();} */
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -789,9 +787,23 @@ class Nedelec: public FieldShape {
 
 apf::FieldShape* getNedelec(int order)
 {
-  Nedelec::P = order;
-  static Nedelec nedelec;
-  return &nedelec;
+  PCU_ALWAYS_ASSERT_VERBOSE(order >= 1,
+      "order is expected to be bigger than or equal to 1!");
+  PCU_ALWAYS_ASSERT_VERBOSE(order <= 10,
+      "order is expected to be less than or equal to 10!");
+  static Nedelec<1>  ND1;
+  static Nedelec<2>  ND2;
+  static Nedelec<3>  ND3;
+  static Nedelec<4>  ND4;
+  static Nedelec<5>  ND5;
+  static Nedelec<6>  ND6;
+  static Nedelec<7>  ND7;
+  static Nedelec<8>  ND8;
+  static Nedelec<9>  ND9;
+  static Nedelec<10> ND10;
+  static FieldShape* const nedelecShapes[10] =
+  {&ND1, &ND2, &ND3, &ND4, &ND5, &ND6, &ND7, &ND8, &ND9, &ND10};
+  return nedelecShapes[order];
 }
 
 };
