@@ -19,6 +19,7 @@
 
 namespace apf {
 
+static unsigned const MAX_ND_ORDER = 10;
 enum {
   GAUSS_LEGENDRE,
   GAUSS_LOBATTO
@@ -179,6 +180,300 @@ void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
   }
 }
 
+static inline int countTriNodes(int P)
+{
+  return P*(P+2);
+}
+static inline int countTetNodes(int P)
+{
+  return (P+3)*(P+2)*P/2;
+}
+
+static void computeTriangleTi(
+    int P, /*order*/
+    mth::Matrix<double>& Q, /*Q in QR factorization of Ti*/
+    mth::Matrix<double>& R) /*R in QR factorization of Ti*/
+{
+  const double tk[8] = {1.,0.,  -1.,1.,  0.,-1.,  0.,1.};
+  const double c = 1./3.;
+  int non = countTriNodes(P);
+
+  const double *eop = getOpenPoints(P - 1);
+  const double *iop = (P > 1) ? getOpenPoints(P - 2) : NULL;
+
+  const int p = P, pm1 = P - 1, pm2 = P - 2;
+  apf::NewArray<double> shape_x(p);
+  apf::NewArray<double> shape_y(p);
+  apf::NewArray<double> shape_l(p);
+
+  apf::DynamicArray<apf::Vector3> nodes (non);
+  apf::DynamicArray<int> dof2tk (non);
+
+  int o = 0;
+  // Edge loops to get nodes and dof2tk for edges
+  for (int i = 0; i < P; i++)  // (0,1)
+  {
+    nodes[o][0] = eop[i];  nodes[o][1] = 0.;  nodes[o][2] = 0.;
+    dof2tk[o++] = 0;
+  }
+  for (int i = 0; i < P; i++)  // (1,2)
+  {
+    nodes[o][0] = eop[pm1-i];  nodes[o][1] = eop[i];  nodes[o][2] = 0.;
+    dof2tk[o++] = 1;
+  }
+  for (int i = 0; i < P; i++)  // (2,0)
+  {
+    nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = 0.;
+    dof2tk[o++] = 2;
+  }
+
+  // Face loops to get nodes and dof2tk for faces
+  for (int j = 0; j <= pm2; j++) {
+    for (int i = 0; i + j <= pm2; i++)
+      {
+        double w = iop[i] + iop[j] + iop[pm2-i-j];
+        nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = 0.;
+        dof2tk[o++] = 0;
+        nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = 0.;
+        dof2tk[o++] = 3;
+      }
+  }
+
+  // Populate T
+  mth::Matrix<double> T(non,non); // T(i,j)
+  for (int m = 0; m < non; m++)
+  {
+    const double *tm = tk + 2*dof2tk[m];
+    o = 0;
+
+    double x = nodes[o][0]; double y = nodes[o][1];
+
+    getChebyshevT(pm1, x, &shape_x[0]);
+    getChebyshevT(pm1, y, &shape_y[0]);
+    getChebyshevT(pm1, 1. - x - y, &shape_l[0]);
+
+    for (int j = 0; j <= pm1; j++)
+      for (int i = 0; i + j <= pm1; i++)
+      {
+        double s = shape_x[i]*shape_y[j]*shape_l[pm1-i-j];
+        T(o++, m) = s * tm[0];
+        T(o++, m) = s * tm[1];
+      }
+    for (int j = 0; j <= pm1; j++)
+    {
+      T(o++, m) =
+        shape_x[pm1-j]*shape_y[j]*((y - c)*tm[0] - (x - c)*tm[1]);
+    }
+  }
+  mth::decomposeQR(T, Q, R);
+}
+
+static void computeTetTi(
+    int P, /*order*/
+    mth::Matrix<double>& Q, /*Q in QR factorization of Ti*/
+    mth::Matrix<double>& R) /*R in QR factorization of Ti*/
+{
+  int non = countTetNodes(P);
+  const double c = 1./4.;
+  const double tk[18] = { /* edge directions in a tet */
+     1. ,  0.,  0.,
+    -1. ,  1.,  0.,
+     0. , -1.,  0.,
+     0. ,  0.,  1.,
+    -1. ,  0.,  1.,
+     0.,  -1.,  1.};
+  const double *eop = getOpenPoints(P - 1);
+  const double *fop = (P > 1) ? getOpenPoints(P - 2) : NULL;
+  const double *iop = (P > 2) ? getOpenPoints(P - 3) : NULL;
+
+  const int p = P, pm1 = P - 1, pm2 = P - 2, pm3 = P - 3;
+
+  apf::NewArray<double> shape_x(p);
+  apf::NewArray<double> shape_y(p);
+  apf::NewArray<double> shape_z(p);
+  apf::NewArray<double> shape_l(p);
+
+  apf::DynamicArray<apf::Vector3> nodes (non);
+  apf::DynamicArray<int> dof2tk (non);
+  nodes.setSize(non);
+  dof2tk.setSize(non);
+
+  int o = 0;
+  // Edge loops to get nodes and dof2tk for edges
+  for (int i = 0; i < P; i++)  // (0,1)
+  {
+    nodes[o][0] = eop[i];  nodes[o][1] = 0.;  nodes[o][2] = 0.;
+    dof2tk[o++] = 0;
+  }
+  for (int i = 0; i < P; i++)  // (1,2)
+  {
+    nodes[o][0] = eop[pm1-i];  nodes[o][1] = eop[i];  nodes[o][2] = 0.;
+    dof2tk[o++] = 1;
+  }
+  for (int i = 0; i < P; i++)  // (2,0)
+  {
+    nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = 0.;
+    dof2tk[o++] = 2;
+  }
+  for (int i = 0; i < P; i++)  // (0,3)
+  {
+    nodes[o][0] = 0.;  nodes[o][1] = 0.;  nodes[o][2] = eop[i];
+    dof2tk[o++] = 3;
+  }
+  for (int i = 0; i < P; i++)  // (1,3)
+  {
+    nodes[o][0] = eop[pm1-i];  nodes[o][1] = 0.;  nodes[o][2] = eop[i];
+    dof2tk[o++] = 4;
+  }
+  for (int i = 0; i < P; i++)  // (2,3)
+  {
+    nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = eop[i];
+    dof2tk[o++] = 5;
+  }
+
+  // Face loops to get nodes and dof2tk for faces
+  // (0,1,2)
+  for (int j = 0; j <= pm2; j++) {
+    for (int i = 0; i + j <= pm2; i++)
+    {
+      double w = fop[i] + fop[j] + fop[pm2-i-j];
+      nodes[o][0] = fop[i]/w;  nodes[o][1] = fop[j]/w;  nodes[o][2] = 0.;
+      dof2tk[o++] = 0;
+      nodes[o][0] = fop[i]/w;  nodes[o][1] = fop[j]/w;  nodes[o][2] = 0.;
+      dof2tk[o++] = 2;
+    }
+  }
+  // (0,1,3)
+  for (int j = 0; j <= pm2; j++) {
+    for (int i = 0; i + j <= pm2; i++)
+    {
+      double w = fop[i] + fop[j] + fop[pm2-i-j];
+      nodes[o][0] = fop[i]/w;  nodes[o][1] = 0.;  nodes[o][2] = fop[j]/w;
+      dof2tk[o++] = 0;
+      nodes[o][0] = fop[i]/w;  nodes[o][1] = 0.;  nodes[o][2] = fop[j]/w;
+      dof2tk[o++] = 3;
+    }
+  }
+  // (1,2,3)
+  for (int j = 0; j <= pm2; j++) {
+    for (int i = 0; i + j <= pm2; i++)
+    {
+      double w = fop[i] + fop[j] + fop[pm2-i-j];
+      nodes[o][0] = fop[pm2-i-j]/w;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
+      dof2tk[o++] = 1;
+      nodes[o][0] = fop[pm2-i-j]/w;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
+      dof2tk[o++] = 4;
+    }
+  }
+  // (0,2,3)
+  for (int j = 0; j <= pm2; j++) {
+    for (int i = 0; i + j <= pm2; i++)
+    {
+      double w = fop[i] + fop[j] + fop[pm2-i-j];
+      nodes[o][0] = 0.;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
+      dof2tk[o++] = 2;
+      nodes[o][0] = 0.;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
+      dof2tk[o++] = 3;
+    }
+  }
+
+  // Region loops to get nodes and dof2tk for regions
+  for (int k = 0; k <= pm3; k++) {
+    for (int j = 0; j + k <= pm3; j++) {
+      for (int i = 0; i + j + k <= pm3; i++) {
+        double w = iop[i] + iop[j] + iop[k] + iop[pm3-i-j-k];
+        nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
+        dof2tk[o++] = 0;
+        nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
+        dof2tk[o++] = 2;
+        nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
+        dof2tk[o++] = 3;
+      }
+    }
+  }
+
+  // Populate T
+  mth::Matrix<double> T(non,non); // T(i,j)
+  for (int m = 0; m < non; m++)
+  {
+    const double *tm = tk + 3*dof2tk[m];
+    o = 0;
+
+    double x = nodes[o][0]; double y = nodes[o][1]; double z = nodes[o][2];
+
+    getChebyshevT(pm1, x, &shape_x[0]);
+    getChebyshevT(pm1, y, &shape_y[0]);
+    getChebyshevT(pm1, z, &shape_z[0]);
+    getChebyshevT(pm1, 1. - x - y - z, &shape_l[0]);
+
+    for (int k = 0; k <= pm1; k++) {
+      for (int j = 0; j + k <= pm1; j++) {
+        for (int i = 0; i + j + k <= pm1; i++)
+        {
+          double s = shape_x[i]*shape_y[j]*shape_z[k]*shape_l[pm1-i-j-k];
+          T(o++, m) = s * tm[0];
+          T(o++, m) = s * tm[1];
+          T(o++, m) = s * tm[2];
+        }
+      }
+    }
+    for (int k = 0; k <= pm1; k++) {
+      for (int j = 0; j + k <= pm1; j++) {
+        {
+          double s = shape_x[pm1-j-k]*shape_y[j]*shape_z[k];
+          T(o++, m) = s*((y - c)*tm[0] - (x - c)*tm[1]);
+          T(o++, m) = s*((z - c)*tm[0] - (x - c)*tm[2]);
+        }
+      }
+    }
+    for (int k = 0; k <= pm1; k++)
+    {
+      T(o++, m) =
+        shape_y[pm1-k]*shape_z[k]*((z - c)*tm[1] - (y - c)*tm[2]);
+    }
+  }
+  mth::decomposeQR(T, Q, R);
+}
+
+static void getTi(
+    int P,
+    int type,
+    mth::Matrix<double>& Q,
+    mth::Matrix<double>& R)
+{
+
+  bool cond = (type == apf::Mesh::TRIANGLE || type == apf::Mesh::TET);
+  PCU_ALWAYS_ASSERT_VERBOSE(cond,
+      "type should be either apf::Mesh::TRIANGLE or apf::Mesh::TET!");
+
+  static apf::NewArray<double> transformQ[apf::Mesh::TYPES][MAX_ND_ORDER+1];
+  static apf::NewArray<double> transformR[apf::Mesh::TYPES][MAX_ND_ORDER+1];
+  int n = type == apf::Mesh::TRIANGLE ? countTriNodes(P) : countTetNodes(P);
+
+  // get the transform matrices if the are not already computed
+  if (!transformQ[type][P].allocated()) {
+    mth::Matrix<double> LQ(n,n);
+    mth::Matrix<double> LR(n,n);
+    type == apf::Mesh::TRIANGLE ?
+    	  computeTriangleTi(P, LQ, LR) : computeTetTi(P, LQ, LR);
+
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+	transformQ[type][P][i*n+j] = LQ(i,j);
+	transformR[type][P][i*n+j] = LR(i,j);
+      }
+    }
+  }
+
+  // set Q and R using transformQ and transformR
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      Q(i,j) = transformQ[type][P][i*n+j];
+      R(i,j) = transformR[type][P][i*n+j];
+    }
+  }
+}
+
 template<int P>
 class Nedelec: public FieldShape {
   public:
@@ -240,6 +535,9 @@ class Nedelec: public FieldShape {
     };
     class Triangle : public apf::EntityShape
     {
+    private:
+      const int dim = 2; // reference element dim
+      const double c = 1./3.; // center of tri
     public:
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -252,7 +550,7 @@ class Nedelec: public FieldShape {
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Triangle. Aborting()!");
       }
-      int countNodes() const {return P*(P+2);}
+      int countNodes() const {return countTriNodes(P);}
       void alignSharedNodes(apf::Mesh*,
 	  apf::MeshEntity*, apf::MeshEntity*, int order[])
       {
@@ -292,7 +590,10 @@ class Nedelec: public FieldShape {
         }
 
 
-      	computeTi();
+	mth::Matrix<double> Q(dof, dof);
+	mth::Matrix<double> R(dof, dof);
+	getTi(P, apf::Mesh::TRIANGLE, Q, R);
+
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
         {
@@ -352,93 +653,19 @@ class Nedelec: public FieldShape {
                      (dshape_y[j]*(y - c) + shape_y[j]) * shape_x[i]);
         }
 
-        computeTi();
+	mth::Matrix<double> Q(dof, dof);
+	mth::Matrix<double> R(dof, dof);
+	getTi(P, apf::Mesh::TRIANGLE, Q, R);
+
         mth::Vector<double> X(dof);
         mth::solveFromQR(Q, R, curlu, X);
-      }
-    private:
-      int dim = 2; // reference element dim
-      double c = 1./3.; // center of tri
-      const double tk[8] = {1.,0.,  -1.,1.,  0.,-1.,  0.,1.};
-      mth::Matrix<double> Q;
-      mth::Matrix<double> R;
-      void computeTi()
-      {
-     	  int non = countNodes();
-
-        const double *eop = getOpenPoints(P - 1);
-        const double *iop = (P > 1) ? getOpenPoints(P - 2) : NULL;
-
-        const int p = P, pm1 = P - 1, pm2 = P - 2;
-
-      	apf::NewArray<double> shape_x(p);
-      	apf::NewArray<double> shape_y(p);
-      	apf::NewArray<double> shape_l(p);
-
-       	apf::DynamicArray<apf::Vector3> nodes (non);
-      	apf::DynamicArray<int> dof2tk (non);
-
-        int o = 0;
-      	// Edge loops to get nodes and dof2tk for edges
-        for (int i = 0; i < P; i++)  // (0,1)
-        {
-          nodes[o][0] = eop[i];  nodes[o][1] = 0.;  nodes[o][2] = 0.;
-          dof2tk[o++] = 0;
-        }
-        for (int i = 0; i < P; i++)  // (1,2)
-        {
-          nodes[o][0] = eop[pm1-i];  nodes[o][1] = eop[i];  nodes[o][2] = 0.;
-          dof2tk[o++] = 1;
-        }
-        for (int i = 0; i < P; i++)  // (2,0)
-        {
-          nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = 0.;
-          dof2tk[o++] = 2;
-        }
-
-      	// Region loops to get nodes and dof2tk for regions
-        for (int j = 0; j <= pm2; j++)
-          for (int i = 0; i + j <= pm2; i++)
-              {
-                double w = iop[i] + iop[j] + iop[pm2-i-j];
-                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = 0.;
-                dof2tk[o++] = 0;
-                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = 0.;
-                dof2tk[o++] = 3;
-              }
-
-      	// Populate T
-      	mth::Matrix<double> T(non,non); // T(i,j)
-        for (int m = 0; m < non; m++)
-        {
-          const double *tm = tk + 2*dof2tk[m];
-          o = 0;
-
-          double x = nodes[o][0]; double y = nodes[o][1];
-
-          getChebyshevT(pm1, x, &shape_x[0]);
-          getChebyshevT(pm1, y, &shape_y[0]);
-          getChebyshevT(pm1, 1. - x - y, &shape_l[0]);
-
-          for (int j = 0; j <= pm1; j++)
-            for (int i = 0; i + j <= pm1; i++)
-            {
-              double s = shape_x[i]*shape_y[j]*shape_l[pm1-i-j];
-              T(o++, m) = s * tm[0];
-              T(o++, m) = s * tm[1];
-            }
-          for (int j = 0; j <= pm1; j++)
-          {
-            T(o++, m) =
-              shape_x[pm1-j]*shape_y[j]*((y - c)*tm[0] - (x - c)*tm[1]);
-          }
-        }
-
-        mth::decomposeQR(T, Q, R);
       }
     };
     class Tetrahedron : public apf::EntityShape
     {
+    private:
+      const int dim = 3;
+      const double c = 1./4.;
     public:
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -451,7 +678,7 @@ class Nedelec: public FieldShape {
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Tetrahedron. Aborting()!");
       }
-      int countNodes() const {return (P+3)*(P+2)*P/2;}
+      int countNodes() const {return countTetNodes(P);}
       void alignSharedNodes(apf::Mesh*,
 	  apf::MeshEntity*, apf::MeshEntity*, int order[])
       {
@@ -501,7 +728,10 @@ class Nedelec: public FieldShape {
           u(n,0) = 0.;  u(n,1) = s*(z - c);  u(n,2) = -s*(y - c);  n++;
         }
 
-      	computeTi();
+	mth::Matrix<double> Q(dof, dof);
+	mth::Matrix<double> R(dof, dof);
+	getTi(P, apf::Mesh::TET, Q, R);
+
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
         {
@@ -588,7 +818,11 @@ class Nedelec: public FieldShape {
           u(n,2) = 0.;  n++;
         }
 
-        computeTi();
+
+	mth::Matrix<double> Q(dof, dof);
+	mth::Matrix<double> R(dof, dof);
+	getTi(P, apf::Mesh::TET, Q, R);
+
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
         {
@@ -604,156 +838,6 @@ class Nedelec: public FieldShape {
         {
       	  curl_shapes[i] = apf::Vector3( S(i,0), S(i,1), S(i,2) );
         }
-      }
-    private:
-      int dim = 3;
-      double c = 1./4.;
-      const double tk[18] = {1.,0.,0.,  -1.,1.,0.,  0.,-1.,0.,  0.,0.,1.,  -1.,0.,1.,  0.,-1.,1.}; // edge directions
-      mth::Matrix<double> Q;
-      mth::Matrix<double> R;
-      void computeTi()
-      {
-     	  int non = countNodes();
-
-        const double *eop = getOpenPoints(P - 1);
-        const double *fop = (P > 1) ? getOpenPoints(P - 2) : NULL;
-        const double *iop = (P > 2) ? getOpenPoints(P - 3) : NULL;
-
-        const int p = P, pm1 = P - 1, pm2 = P - 2, pm3 = P - 3;
-
-      	apf::NewArray<double> shape_x(p);
-      	apf::NewArray<double> shape_y(p);
-      	apf::NewArray<double> shape_z(p);
-      	apf::NewArray<double> shape_l(p);
-
-       	apf::DynamicArray<apf::Vector3> nodes (non);
-      	apf::DynamicArray<int> dof2tk (non);
-	      nodes.setSize(non);
-      	dof2tk.setSize(non);
-
-        int o = 0;
-      	// Edge loops to get nodes and dof2tk for edges
-        for (int i = 0; i < P; i++)  // (0,1)
-        {
-          nodes[o][0] = eop[i];  nodes[o][1] = 0.;  nodes[o][2] = 0.;
-          dof2tk[o++] = 0;
-        }
-        for (int i = 0; i < P; i++)  // (1,2)
-        {
-          nodes[o][0] = eop[pm1-i];  nodes[o][1] = eop[i];  nodes[o][2] = 0.;
-          dof2tk[o++] = 1;
-        }
-        for (int i = 0; i < P; i++)  // (2,0)
-        {
-          nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = 0.;
-          dof2tk[o++] = 2;
-        }
-        for (int i = 0; i < P; i++)  // (0,3)
-        {
-          nodes[o][0] = 0.;  nodes[o][1] = 0.;  nodes[o][2] = eop[i];
-          dof2tk[o++] = 3;
-        }
-        for (int i = 0; i < P; i++)  // (1,3)
-        {
-          nodes[o][0] = eop[pm1-i];  nodes[o][1] = 0.;  nodes[o][2] = eop[i];
-          dof2tk[o++] = 4;
-        }
-        for (int i = 0; i < P; i++)  // (2,3)
-        {
-          nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = eop[i];
-          dof2tk[o++] = 5;
-        }
-
-      	// Face loops to get nodes and dof2tk for faces
-        for (int j = 0; j <= pm2; j++)  // (0,1,2)
-          for (int i = 0; i + j <= pm2; i++)
-          {
-            double w = fop[i] + fop[j] + fop[pm2-i-j];
-            nodes[o][0] = fop[i]/w;  nodes[o][1] = fop[j]/w;  nodes[o][2] = 0.;
-            dof2tk[o++] = 0;
-            nodes[o][0] = fop[i]/w;  nodes[o][1] = fop[j]/w;  nodes[o][2] = 0.;
-            dof2tk[o++] = 2;
-          }
-        for (int j = 0; j <= pm2; j++)  // (0,1,3)
-          for (int i = 0; i + j <= pm2; i++)
-          {
-            double w = fop[i] + fop[j] + fop[pm2-i-j];
-            nodes[o][0] = fop[i]/w;  nodes[o][1] = 0.;  nodes[o][2] = fop[j]/w;
-            dof2tk[o++] = 0;
-            nodes[o][0] = fop[i]/w;  nodes[o][1] = 0.;  nodes[o][2] = fop[j]/w;
-            dof2tk[o++] = 3;
-          }
-        for (int j = 0; j <= pm2; j++)  // (1,2,3)
-          for (int i = 0; i + j <= pm2; i++)
-          {
-            double w = fop[i] + fop[j] + fop[pm2-i-j];
-            nodes[o][0] = fop[pm2-i-j]/w;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
-            dof2tk[o++] = 1;
-            nodes[o][0] = fop[pm2-i-j]/w;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
-            dof2tk[o++] = 4;
-          }
-        for (int j = 0; j <= pm2; j++)  // (0,2,3)
-          for (int i = 0; i + j <= pm2; i++)
-          {
-            double w = fop[i] + fop[j] + fop[pm2-i-j];
-            nodes[o][0] = 0.;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
-            dof2tk[o++] = 2;
-            nodes[o][0] = 0.;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
-            dof2tk[o++] = 3;
-          }
-
-      	// Region loops to get nodes and dof2tk for regions
-        for (int k = 0; k <= pm3; k++)
-          for (int j = 0; j + k <= pm3; j++)
-            for (int i = 0; i + j + k <= pm3; i++)
-              {
-                double w = iop[i] + iop[j] + iop[k] + iop[pm3-i-j-k];
-                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
-                dof2tk[o++] = 0;
-                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
-                dof2tk[o++] = 2;
-                nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
-                dof2tk[o++] = 3;
-              }
-
-      	// Populate T
-      	mth::Matrix<double> T(non,non); // T(i,j)
-        for (int m = 0; m < non; m++)
-        {
-          const double *tm = tk + 3*dof2tk[m];
-          o = 0;
-
-          double x = nodes[o][0]; double y = nodes[o][1]; double z = nodes[o][2];
-
-          getChebyshevT(pm1, x, &shape_x[0]);
-          getChebyshevT(pm1, y, &shape_y[0]);
-          getChebyshevT(pm1, z, &shape_z[0]);
-          getChebyshevT(pm1, 1. - x - y - z, &shape_l[0]);
-
-          for (int k = 0; k <= pm1; k++)
-            for (int j = 0; j + k <= pm1; j++)
-              for (int i = 0; i + j + k <= pm1; i++)
-              {
-                double s = shape_x[i]*shape_y[j]*shape_z[k]*shape_l[pm1-i-j-k];
-                T(o++, m) = s * tm[0];
-                T(o++, m) = s * tm[1];
-                T(o++, m) = s * tm[2];
-              }
-          for (int k = 0; k <= pm1; k++)
-            for (int j = 0; j + k <= pm1; j++)
-              {
-                double s = shape_x[pm1-j-k]*shape_y[j]*shape_z[k];
-                T(o++, m) = s*((y - c)*tm[0] - (x - c)*tm[1]);
-                T(o++, m) = s*((z - c)*tm[0] - (x - c)*tm[2]);
-              }
-          for (int k = 0; k <= pm1; k++)
-          {
-            T(o++, m) =
-              shape_y[pm1-k]*shape_z[k]*((z - c)*tm[1] - (y - c)*tm[2]);
-          }
-        }
-
-        mth::decomposeQR(T, Q, R);
       }
     };
     EntityShape* getEntityShape(int type)
