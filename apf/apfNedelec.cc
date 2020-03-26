@@ -116,7 +116,6 @@ const double* getClosedPoints(int order, const int type = GAUSS_LOBATTO)
 
 void getChebyshevT(int order, double xi, double* u)
 {
-  // TODO implement Chebyshev
   // recursive definition, z in [-1,1]
   // T_0(z) = 1,  T_1(z) = z
   // T_{n+1}(z) = 2*z*T_n(z) - T_{n-1}(z)
@@ -180,13 +179,31 @@ void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
   }
 }
 
+// This is all nodes, including the nodes associated with bounding edges
 static inline int countTriNodes(int P)
 {
-  return P*(P+2);
+  // each node on an edge has 1 dof
+  // each node on a face has 2 dofs
+  // each term in the following can be understood as follows
+  // e*dofs*nodes
+  // e      := # of entities of that dimension
+  // dofs   := # of dofs associated with entities of that dimension
+  // nodes  := # of nodes associated with entities of that dimension
+  return 3*1*P + 1*2*P*(P-1)/2;
 }
+// This is all nodes, including the nodes associated with bounding edges and faces
 static inline int countTetNodes(int P)
 {
-  return (P+3)*(P+2)*P/2;
+  // each node on an edge has 1 dof
+  // each node on a face has 2 dofs
+  // each node on a tet has 3 dofs
+  // each term in the following can be understood as follows
+  // e*dofs*nodes
+  // e      := # of entities of that dimension
+  // dofs   := # of dofs associated with entities of that dimension
+  // nodes  := # of nodes associated with entities of that dimension
+  if (P<2) return 6*1*P + 4*2*P*(P-1)/2;
+  return 6*1*P + 4*2*P*(P-1)/2 + 1*3*P*(P-1)*(P-2)/6;
 }
 
 static void computeTriangleTi(
@@ -857,14 +874,27 @@ class Nedelec: public FieldShape {
       };
       return shapes[type];
     }
-    bool hasNodesIn(int)
+    // For the following to member functions we only need to
+    // consider the interior nodes, i.e.,
+    // Faces: no need to count the nodes associated with bounding edges
+    // Tets: no need to count the nodes associated with bounding edges/faces
+    // TODO: The above description is consistent with how things are done
+    // for other fields in pumi. We need to make sure this will not cause
+    // any problems for Nedelec fields
+    bool hasNodesIn(int dimension)
     {
-      // TODO complete this
-      return true;
+      if (dimension == 1) return true;
+      if (dimension == 2) return P > 1;
+      if (dimension == 3) return P > 2;
+      // if not returned by now dimension should be 0, so return false
+      return false;
     }
-    int countNodesOn(int)
+    int countNodesOn(int type)
     {
-      // TODO complete this
+      if (type == apf::Mesh::EDGE) return P;
+      if (type == apf::Mesh::TRIANGLE) return 2*P*(P-1)/2;
+      if (type == apf::Mesh::TET && P>2) return 3*P*(P-1)*(P-2)/6;
+      // for any other case (type and P combination) return 0;
       return 0;
     }
 };
