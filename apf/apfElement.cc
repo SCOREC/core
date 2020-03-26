@@ -85,14 +85,6 @@ void Element::getGlobalGradients(Vector3 const& local,
     globalGradients[i] = jinv * localGradients[i];
 }
 
-void Element::getGlobalVectorGradients(Vector3 const& local,
-                                 NewArray<Matrix3x3>& globalGradients)
-{
-  // TODO
-  // the same as above but for vector shape functions
-  // using getLocalVectorGradients in apfNedelec.cc
-}
-
 void Element::getComponents(Vector3 const& xi, double* c)
 {
   NewArray<double> shapeValues;
