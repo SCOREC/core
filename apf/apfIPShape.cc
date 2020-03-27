@@ -162,6 +162,12 @@ class VoronoiShape : public IPBase
         {
           fail("gradients not defined for Voronoi shapes");
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&,
+            NewArray<Vector3>&) const
+        {
+          fail("getVectorValues not defined for Voronoi shapes");
+        }
         int countNodes() const
         {
           return points.size();
@@ -227,6 +233,12 @@ class ConstantIPFit : public IPBase
           grads.allocate(1);
           grads[0] = Vector3(0,0,0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&,
+            NewArray<Vector3>&) const
+        {
+          fail("getVectorValues not defined for ConstantIPFit shapes");
+        }
         int countNodes() const {return 1;}
     };
     class Tetrahedron : public EntityShape
@@ -243,6 +255,12 @@ class ConstantIPFit : public IPBase
         {
           grads.allocate(1);
           grads[0] = Vector3(0,0,0);
+        }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&,
+            NewArray<Vector3>&) const
+        {
+          fail("getVectorValues not defined for ConstantIPFit shapes");
         }
         int countNodes() const {return 1;}
     };
@@ -308,6 +326,12 @@ class LinearIPFit : public IPBase
         {
           fail("grads not implemented yet");
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&,
+            NewArray<Vector3>&) const
+        {
+          fail("getVectorValues not defined for LinearIPFit shapes");
+        }
         int countNodes() const {return 3;}
     };
     class Tetrahedron : public EntityShape
@@ -337,6 +361,12 @@ class LinearIPFit : public IPBase
             Vector3 const&, NewArray<Vector3>&) const
         {
           fail("grads not implemented yet");
+        }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&,
+            NewArray<Vector3>&) const
+        {
+          fail("getVectorValues not defined for LinearIPFit shapes");
         }
         int countNodes() const {return 4;}
     };

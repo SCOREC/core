@@ -50,7 +50,7 @@ class EntityShape
         Mesh* m,
         MeshEntity* e,
         Vector3 const& xi,
-        NewArray<apf::Vector3>& values) const;
+        NewArray<apf::Vector3>& values) const = 0;
 /** \brief return the number of nodes affecting this element
     \details in a linear mesh, there are two nodes affecting
              and edge, three nodes affecting a triangle,
