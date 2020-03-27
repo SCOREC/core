@@ -32,6 +32,8 @@ class HVertex : public EntityShape {
     }
     void getLocalGradients(
         Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
+    void getVectorValues(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
     int countNodes() const { return 1; }
 };
 
@@ -51,6 +53,8 @@ class HEdge2 : public EntityShape {
       dN[1] = Vector3(0.5, 0.0, 0.0);
       dN[2] = Vector3(-0.5 * c0 * xi[0], 0.0, 0.0);
     }
+    void getVectorValues(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
     int countNodes() const { return 3; }
 };
 
@@ -72,6 +76,8 @@ class HEdge3 : public EntityShape {
       dN[2] = Vector3(-0.5 * c0 * xi[0], 0.0, 0.0);
       dN[3] = Vector3(0.25 * c0 * (1.0 - 3.0*xi[0]*xi[0]), 0.0, 0.0);
     }
+    void getVectorValues(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
     int countNodes() const { return 4; }
 };
 
@@ -105,6 +111,8 @@ class HTriangle2 : public EntityShape {
       dN[4] = Vector3(c0 * xi[1], c0 * xi[0], 0.0);
       dN[5] = Vector3(-c0 * xi[1], c0 * (1.0 - xi[0] - 2.0*xi[1]), 0.0);
     }
+    void getVectorValues(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
     int countNodes() const { return 6; }
 };
 
@@ -152,7 +160,7 @@ class HTriangle3 : public EntityShape {
       N[9] = l0*l1*l2;
     }
     void getLocalGradients(
-        Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& dN) const {
+        Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& dN) const    {
       dN.allocate(10);
 
       /* edge orientations */
@@ -197,6 +205,8 @@ class HTriangle3 : public EntityShape {
       /* face */
       dN[9] = dl0*l1*l2 + dl1*l0*l2 + dl2*l0*l1;
     }
+    void getVectorValues(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
     void alignSharedNodes(Mesh*, MeshEntity*, MeshEntity*, int order[])
     {
       /* unlike Lagrange shape functions, hierarchic 'modes' do not
@@ -247,6 +257,8 @@ class HTetrahedron2 : public EntityShape {
       dN[8] = Vector3( xi[2], 0.0, xi[0] ) * c0;
       dN[9] = Vector3( 0.0, xi[2], xi[1] ) * c0;
     }
+    void getVectorValues(
+        Mesh*, MeshEntity*, Vector3 const&, NewArray<Vector3>&) const {}
     int countNodes() const {return 10;}
 };
 
