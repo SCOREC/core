@@ -16,6 +16,7 @@
 #include <PCU.h>
 
 #include <iostream>
+using namespace std;
 
 namespace apf {
 
@@ -263,7 +264,7 @@ static void computeTriangleTi(
     const double *tm = tk + 2*dof2tk[m];
     o = 0;
 
-    double x = nodes[o][0]; double y = nodes[o][1];
+    double x = nodes[m][0]; double y = nodes[m][1];
 
     getChebyshevT(pm1, x, &shape_x[0]);
     getChebyshevT(pm1, y, &shape_y[0]);
@@ -317,32 +318,32 @@ static void computeTetTi(
 
   int o = 0;
   // Edge loops to get nodes and dof2tk for edges
-  for (int i = 0; i < P; i++)  // (0,1)
+  for (int i = 0; i < p; i++)  // (0,1)
   {
     nodes[o][0] = eop[i];  nodes[o][1] = 0.;  nodes[o][2] = 0.;
     dof2tk[o++] = 0;
   }
-  for (int i = 0; i < P; i++)  // (1,2)
+  for (int i = 0; i < p; i++)  // (1,2)
   {
     nodes[o][0] = eop[pm1-i];  nodes[o][1] = eop[i];  nodes[o][2] = 0.;
     dof2tk[o++] = 1;
   }
-  for (int i = 0; i < P; i++)  // (2,0)
+  for (int i = 0; i < p; i++)  // (2,0)
   {
     nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = 0.;
     dof2tk[o++] = 2;
   }
-  for (int i = 0; i < P; i++)  // (0,3)
+  for (int i = 0; i < p; i++)  // (0,3)
   {
     nodes[o][0] = 0.;  nodes[o][1] = 0.;  nodes[o][2] = eop[i];
     dof2tk[o++] = 3;
   }
-  for (int i = 0; i < P; i++)  // (1,3)
+  for (int i = 0; i < p; i++)  // (1,3)
   {
     nodes[o][0] = eop[pm1-i];  nodes[o][1] = 0.;  nodes[o][2] = eop[i];
     dof2tk[o++] = 4;
   }
-  for (int i = 0; i < P; i++)  // (2,3)
+  for (int i = 0; i < p; i++)  // (2,3)
   {
     nodes[o][0] = 0.;  nodes[o][1] = eop[pm1-i];  nodes[o][2] = eop[i];
     dof2tk[o++] = 5;
@@ -416,7 +417,7 @@ static void computeTetTi(
     const double *tm = tk + 3*dof2tk[m];
     o = 0;
 
-    double x = nodes[o][0]; double y = nodes[o][1]; double z = nodes[o][2];
+    double x = nodes[m][0]; double y = nodes[m][1]; double z = nodes[m][2];
 
     getChebyshevT(pm1, x, &shape_x[0]);
     getChebyshevT(pm1, y, &shape_y[0]);
@@ -449,6 +450,7 @@ static void computeTetTi(
         shape_y[pm1-k]*shape_z[k]*((z - c)*tm[1] - (y - c)*tm[2]);
     }
   }
+
   mth::decomposeQR(T, Q, R);
 }
 
@@ -474,10 +476,13 @@ static void getTi(
     type == apf::Mesh::TRIANGLE ?
     	  computeTriangleTi(P, LQ, LR) : computeTetTi(P, LQ, LR);
 
+    transformQ[type][P].allocate(n*n);
+    transformR[type][P].allocate(n*n);
+
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
-	transformQ[type][P][i*n+j] = LQ(i,j);
-	transformR[type][P][i*n+j] = LR(i,j);
+	      transformQ[type][P][i*n+j] = LQ(i,j);
+      	transformR[type][P][i*n+j] = LR(i,j);
       }
     }
   }
@@ -616,9 +621,9 @@ class Nedelec: public FieldShape {
         {
           mth::Vector<double> B (dof);
           mth::Vector<double> X (dof);
-          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b in QR x = b
+          for (int j = 0; j < dof; j++) B[j] = u(j,i); // populate b in QR x = b
           mth::solveFromQR(Q, R, B, X);
-          for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
+          for (int j = 0; j < dof; j++)  S(j,i) = X[j]; // populate S with x
         }
 
         shapes.allocate(dof);
@@ -745,18 +750,18 @@ class Nedelec: public FieldShape {
           u(n,0) = 0.;  u(n,1) = s*(z - c);  u(n,2) = -s*(y - c);  n++;
         }
 
-	mth::Matrix<double> Q(dof, dof);
-	mth::Matrix<double> R(dof, dof);
-	getTi(P, apf::Mesh::TET, Q, R);
+      	mth::Matrix<double> Q(dof, dof);
+      	mth::Matrix<double> R(dof, dof);
+      	getTi(P, apf::Mesh::TET, Q, R);
 
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
         {
           mth::Vector<double> B (dof);
           mth::Vector<double> X (dof);
-          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
+          for (int j = 0; j < dof; j++) B[j] = u(j,i); // populate b
           mth::solveFromQR(Q, R, B, X);
-          for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
+          for (int j = 0; j < dof; j++)  S(j,i) = X[j]; // populate S with x
         }
 
         shapes.allocate(dof);
@@ -845,9 +850,9 @@ class Nedelec: public FieldShape {
         {
           mth::Vector<double> B(dof);
           mth::Vector<double> X(dof);
-          for (int j = 0; j < dof; j++) B[j] = u(i,j); // populate b
+          for (int j = 0; j < dof; j++) B[j] = u(j,i); // populate b
           mth::solveFromQR(Q, R, B, X);
-          for (int j = 0; j < dof; j++)  S(i,j) = X[j]; // populate S with x
+          for (int j = 0; j < dof; j++)  S(j,i) = X[j]; // populate S with x
         }
 
         curl_shapes.allocate(dof);
@@ -917,7 +922,7 @@ apf::FieldShape* getNedelec(int order)
   static Nedelec<10> ND10;
   static FieldShape* const nedelecShapes[10] =
   {&ND1, &ND2, &ND3, &ND4, &ND5, &ND6, &ND7, &ND8, &ND9, &ND10};
-  return nedelecShapes[order];
+  return nedelecShapes[order-1];
 }
 
 };
