@@ -43,7 +43,7 @@ class EntityShape
         Vector3 const& xi,
         NewArray<Vector3>& grads) const = 0;
 /** \brief evaluate element vector shape functions
- \details this is use only for Nedelc
+ \details this is used only for Nedelec
  \param xi the parent element coordinates
  \param values each entry is the vector shape function value for one node */
     virtual void getVectorValues(
