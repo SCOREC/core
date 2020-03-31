@@ -32,7 +32,6 @@ util_exe_func(mktopomodel mktopomodel.cc)
 util_exe_func(modelInfo modelInfo.cc)
 
 # Mesh generation utilities
-util_exe_func(box box.cc)
 util_exe_func(uniform uniform.cc)
 util_exe_func(refine2x refine2x.cc)
 util_exe_func(serialize serialize.cc)
