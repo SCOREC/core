@@ -979,4 +979,83 @@ int countElementNodes(FieldShape* s, int type)
   return s->getEntityShape(type)->countNodes();
 }
 
+void getElementNodeXis(FieldShape* s, int type,
+    apf::NewArray<apf::Vector3>& xis)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplex(type),
+      "Only implemented for simplex types!");
+
+  static apf::Vector3 const vert_vert_xi[1] = {
+      apf::Vector3(0,0,0)
+  };
+  static apf::Vector3 const edge_vert_xi[2] = {
+      apf::Vector3(-1,0,0),
+      apf::Vector3(1,0,0),
+  };
+  static apf::Vector3 const tri_vert_xi[3] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+  };
+  static apf::Vector3 const tet_vert_xi[4] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1),
+  };
+
+  static apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
+      vert_vert_xi,
+      edge_vert_xi,
+      tri_vert_xi,
+      0, /* quad */
+      tet_vert_xi,
+      0, /* hex */
+      0, /* prism */
+      0  /* pyramid */
+  };
+
+  if (!xis.allocated())
+    xis.allocate(countElementNodes(s, type));
+  else
+    xis.resize(countElementNodes(s, type));
+
+  int td = apf::Mesh::typeDimension[type];
+  apf::Vector3 childXi, parentXi;
+  int evi = 0;
+
+  int row = 0;
+  for(int d = 0; d <= td; ++d){
+    int nDown = apf::Mesh::adjacentCount[type][d];
+    int bt = apf::Mesh::simplexTypes[d];
+    apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+    int non = s->countNodesOn(bt);
+    for(int j = 0; j < nDown; ++j){
+      for(int x = 0; x < non; ++x){
+        s->getNodeXi(bt, x, childXi);
+        apf::NewArray<double> shape_vals;
+
+        shape->getValues(0, 0, childXi, shape_vals);
+        parentXi.zero();
+        evi = j;
+        for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+          printf("i,x,j,bt,d    %d,%d,%d,%d,%d\n", i, x, j, bt, d);
+          if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
+            evi = apf::tri_edge_verts[j][i];
+          else if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
+            evi = apf::tet_edge_verts[j][i];
+          else if(bt == apf::Mesh::TRIANGLE && type == apf::Mesh::TET)
+            evi = apf::tet_tri_verts[j][i];
+          else if(bt == type)
+            evi = i;
+          parentXi += elem_vert_xi[type][evi] * shape_vals[i];
+        }
+        xis[row] = parentXi;
+        ++row;
+      }
+    }
+  }
+  PCU_ALWAYS_ASSERT(row == s->getEntityShape(type)->countNodes());
+}
+
 }//namespace apf
