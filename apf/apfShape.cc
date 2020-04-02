@@ -39,6 +39,11 @@ void FieldShape::getNodeXi(int, int, Vector3&)
   fail("unimplemented getNodeXi called");
 }
 
+bool FieldShape::isVectorShape()
+{
+  return false;
+}
+
 void FieldShape::registerSelf(const char* name_)
 {
   std::string name = name_;

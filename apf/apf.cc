@@ -10,6 +10,8 @@
 #include "apfScalarElement.h"
 #include "apfVectorField.h"
 #include "apfVectorElement.h"
+#include "apfMixedVectorField.h"
+#include "apfMixedVectorElement.h"
 #include "apfMatrixField.h"
 #include "apfMatrixElement.h"
 #include "apfPackedField.h"
@@ -71,16 +73,24 @@ Field* makeField(
 {
   PCU_ALWAYS_ASSERT( ! m->findField(name));
   Field* f = 0;
-  if (valueType == SCALAR)
-    f = new ScalarField();
-  else if (valueType == VECTOR)
-    f = new VectorField();
-  else if (valueType == MATRIX)
-    f = new MatrixField();
-  else if (valueType == PACKED)
-    f = new PackedField(components);
-  else
-    fail("invalid valueType in field construction\n");
+  // Cases with Vector shape functions
+  if (shape->isVectorShape()) {
+    PCU_ALWAYS_ASSERT(valueType == SCALAR);
+    f = new MixedVectorField();
+  }
+  // Cases with Scalar shahpe funtions
+  else {
+    if (valueType == SCALAR)
+      f = new ScalarField();
+    else if (valueType == VECTOR)
+      f = new VectorField();
+    else if (valueType == MATRIX)
+      f = new MatrixField();
+    else if (valueType == PACKED)
+      f = new PackedField(components);
+    else
+      fail("invalid valueType in field construction\n");
+  }
   f->init(name,m,shape,data);
   m->addField(f);
   return f;
@@ -166,16 +176,29 @@ void destroyField(Field* f)
 
 void setScalar(Field* f, MeshEntity* e, int node, double value)
 {
-  ScalarField* field = static_cast<ScalarField*>(f);
-  double tmp[1] = {value};
-  field->setNodeValue(e,node,tmp);
+  if (f->getShape()->isVectorShape()) {
+    MixedVectorField* field = static_cast<MixedVectorField*>(f);
+    double tmp[1] = {value};
+    field->setNodeValue(e,node,tmp);
+  }
+  else {
+    ScalarField* field = static_cast<ScalarField*>(f);
+    double tmp[1] = {value};
+    field->setNodeValue(e,node,tmp);
+  }
 }
 
 double getScalar(Field* f, MeshEntity* e, int node)
 {
-  ScalarField* field = static_cast<ScalarField*>(f);
   double value[1];
-  field->getNodeValue(e,node,value);
+  if (f->getShape()->isVectorShape()) {
+    MixedVectorField* field = static_cast<MixedVectorField*>(f);
+    field->getNodeValue(e,node,value);
+  }
+  else {
+    ScalarField* field = static_cast<ScalarField*>(f);
+    field->getNodeValue(e,node,value);
+  }
   return value[0];
 }
 
@@ -258,24 +281,46 @@ void getGrad(Element* e, Vector3 const& param, Vector3& g)
 
 void getVector(Element* e, Vector3 const& param, Vector3& value)
 {
-  VectorElement* element = static_cast<VectorElement*>(e);
-  value = element->getValue(param);
+  // Cases with vector shape functions first
+  if (e->getFieldShape()->isVectorShape()) {
+    MixedVectorElement* element = static_cast<MixedVectorElement*>(e);
+    value = element->getValue(param);
+  }
+  // Cases with scalar shape functions
+  else {
+    VectorElement* element = static_cast<VectorElement*>(e);
+    value = element->getValue(param);
+  }
 }
 
 double getDiv(Element* e, Vector3 const& param)
 {
+  // Make sure this in not called for cases with vector shapes
+  PCU_ALWAYS_ASSERT_VERBOSE(!e->getFieldShape()->isVectorShape(),
+      "Not implemented for fields with vector shape functions.");
   VectorElement* element = static_cast<VectorElement*>(e);
   return element->div(param);
 }
 
 void getCurl(Element* e, Vector3 const& param, Vector3& c)
 {
-  VectorElement* element = static_cast<VectorElement*>(e);
-  return element->curl(param,c);
+  // Cases with vector shape functions first
+  if (e->getFieldShape()->isVectorShape()) {
+    MixedVectorElement* element = static_cast<MixedVectorElement*>(e);
+    return element->curl(param,c);
+  }
+  // Cases with scalar shape functions
+  else {
+    VectorElement* element = static_cast<VectorElement*>(e);
+    return element->curl(param,c);
+  }
 }
 
 void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv)
 {
+  // Make sure this in not called for cases with vector shapes
+  PCU_ALWAYS_ASSERT_VERBOSE(!e->getFieldShape()->isVectorShape(),
+      "Not implemented for fields with vector shape functions.");
   VectorElement* element = static_cast<VectorElement*>(e);
   return element->grad(param,deriv);
 }

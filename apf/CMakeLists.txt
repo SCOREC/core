@@ -29,6 +29,8 @@ set(SOURCES
   apfVector.cc
   apfVectorElement.cc
   apfVectorField.cc
+  apfMixedVectorElement.cc
+  apfMixedVectorField.cc
   apfPackedField.cc
   apfNumbering.cc
   apfMixedNumbering.cc

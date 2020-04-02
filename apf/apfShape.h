@@ -103,6 +103,8 @@ class FieldShape
   \param node index from element node ordering
   \param xi parent element coordinates */
     virtual void getNodeXi(int type, int node, Vector3& xi);
+/** \brief Returns true if the shape functions are vectors */
+    virtual bool isVectorShape();
 /** \brief Get a unique string for this shape function scheme */
     virtual const char* getName() const = 0;
     void registerSelf(const char* name);
