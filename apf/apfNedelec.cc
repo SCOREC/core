@@ -501,6 +501,7 @@ class Nedelec: public FieldShape {
   public:
     const char* getName() const { return "Nedelec"; }
     int getOrder() {return P;}
+    bool isVectorShape() {return true;}
     /* Nedelec(int order) : P(order) */
     /* {} */
     Nedelec()

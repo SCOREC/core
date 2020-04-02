@@ -14,22 +14,22 @@
 
 namespace apf {
 
-template <class T>
+template <class T, class S = T>
 class ElementOf : public Element
 {
   public:
-    ElementOf(FieldOf<T>* f, MeshEntity* e):
+    ElementOf(FieldOf<S>* f, MeshEntity* e):
       Element(f,e)
     {
     }
-    ElementOf(FieldOf<T>* f, VectorElement* p):
+    ElementOf(FieldOf<S>* f, VectorElement* p):
       Element(f,p)
     {
     }
     virtual ~ElementOf() {}
-    T* getNodeValues()
+    S* getNodeValues()
     {
-      return reinterpret_cast<T*>(&(this->nodeData[0]));
+      return reinterpret_cast<S*>(&(this->nodeData[0]));
     }
     T getValue(Vector3 const& local)
     {
@@ -37,10 +37,10 @@ class ElementOf : public Element
       getComponents(local, reinterpret_cast<double*>(value));
       return value[0];
     }
-    void getValues(NewArray<T>& values)
+    void getValues(NewArray<S>& values)
     {
       values.allocate(nen);
-      T* nodeValues = getNodeValues();
+      S* nodeValues = getNodeValues();
       for (int i=0; i < nen; ++i)
         values[i] = nodeValues[i];
     }
