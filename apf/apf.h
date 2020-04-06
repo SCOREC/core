@@ -43,7 +43,7 @@ template <class T> class ReductionOp;
 template <class T> class ReductionSum;
 
 /** \brief Base class for applying operations to make a Field consistent
-  * in parallel 
+  * in parallel
   * \details This function gets applied pairwise to the Field values
   * from every partition, resulting in a single unique value.  No guarantees
   * are made about the order in which this function is applied to the
