@@ -574,10 +574,19 @@ class Nedelec: public FieldShape {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Triangle. Aborting()!");
       }
       int countNodes() const {return countTriNodes(P);}
-      void alignSharedNodes(apf::Mesh*,
-	  apf::MeshEntity*, apf::MeshEntity*, int order[])
+      void alignSharedNodes(apf::Mesh* m,
+	  apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
       {
-	(void)order;
+	      int which, rotate;
+	      bool flip;
+        getAlignment(m,elem,shared,which,flip,rotate);
+        int n = getOrder();
+        if(!flip)
+          for(int i = 0; i < n; ++i)
+            order[i] = i;
+        else
+          for(int i = 0; i < n; ++i)
+            order[i] = n-1-i;
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
@@ -702,10 +711,85 @@ class Nedelec: public FieldShape {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Tetrahedron. Aborting()!");
       }
       int countNodes() const {return countTetNodes(P);}
-      void alignSharedNodes(apf::Mesh*,
-	  apf::MeshEntity*, apf::MeshEntity*, int order[])
+      void alignSharedNodes(apf::Mesh* m,
+	  apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
       {
-	(void)order;
+	      int which, rotate;
+	      bool flip;
+        getAlignment(m,elem,shared,which,flip,rotate);
+        if(m->getType(shared) == apf::Mesh::EDGE)
+        {
+          int n = countNodes();
+          if(!flip)
+            for(int i = 0; i < n; ++i)
+              order[i] = i;
+          else
+            for(int i = 0; i < n; ++i)
+              order[i] = n-1-i;
+          return;
+        }
+        //must be a triangle
+        int k = getOrder();
+        int non = k*(k-1); // nodes on the face only
+        int unique_non = non/2; // bc 2 dofs per node on the face
+        if ( k > 1 ) // face nodes appear for k > 1
+        {
+          int i = 0; int size = 1; // Determine size of nodes matrix
+          while(i < unique_non) {
+            i = i + size;
+            size++;
+          }
+          size--;
+
+          mth::Matrix<double> Nodes(size,size); // populate nodes matrix
+          Nodes.zero();
+          int num = 0;
+          for ( int r = size-1; r >= 0; r--)
+            for ( int c = size - r -1; c < size; c++)
+              Nodes(r,c) = (num++);
+
+          // CASES
+          if(rotate == 1) {
+            for (int r = size-1; r >= 0; r--) {    // horizontal swaps
+              int left = size-r-1; int right = size-1;
+              for(int range = left; range <= left + (right-left)/2; range++) {
+                            std::swap( Nodes(r,range), Nodes(r,left+right-range) );
+              }
+            }
+            mth::Matrix<double> temp(size, size);
+            mth::transpose(Nodes,temp);
+            for (int r = 0; r < size; r++)
+              for(int c = 0; c < size; c++)
+                Nodes(r,c) = temp(r,c);
+          }
+          if(rotate == 2) {
+            for (int c = size-1; c >= 0; c--) {    // vertical swaps
+                    int left = size-c-1; int right = size-1;
+                    for(int range = left; range <= left + (right-left)/2; range++) {
+                            std::swap( Nodes(range,c), Nodes(left+right-range,c) );
+                    }
+            }
+            mth::Matrix<double> temp(size, size);
+            mth::transpose(Nodes,temp);
+            for (int r = 0; r < size; r++)
+              for(int c = 0; c < size; c++)
+                Nodes(r,c) = temp(r,c);
+          }
+          if(flip)
+          {
+            mth::Matrix<double> temp(size, size);
+            mth::transpose(Nodes,temp);
+            for (int r = 0; r < size; r++)
+              for(int c = 0; c < size; c++)
+                Nodes(r,c) = temp(r,c);
+          }
+          // get the ordered list
+          int index = 0;
+          for ( int r = size-1; r >= 0; r--)
+            for (int c = size-r-1 ; c < size; c++) {
+              order[i++] = Nodes(r,c)*2;    order[i++] = Nodes(r,c)*2 + 1;
+            }
+        }
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
