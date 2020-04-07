@@ -37,7 +37,11 @@ int getBlendingOrder(const int type);
 /** \brief count invalid elements of the mesh */
 int countNumberInvalidElements(apf::Mesh2* m);
 
-/** \brief converts filed f, which is interpolating to Bezier */
+/** \ brief converts field f to Bezier entity wise */
+void convertInterpolationFieldPoints(apf::MeshEntity* e,
+    apf::Field* f, int n, int ne, apf::NewArray<double> &c);
+
+/** \brief converts field f, which is interpolating to Bezier */
 void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f);
 
 /** \brief Base Mesh curving object
