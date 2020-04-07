@@ -734,12 +734,7 @@ class Nedelec: public FieldShape {
         int unique_non = non/2; // bc 2 dofs per node on the face
         if ( k > 1 ) // face nodes appear for k > 1
         {
-          int i = 0; int size = 1; // Determine size of nodes matrix
-          while(i < unique_non) {
-            i = i + size;
-            size++;
-          }
-          size--;
+          int size = (-1 + sqrt(1+8*unique_non) )/2;
 
           mth::Matrix<double> Nodes(size,size); // populate nodes matrix
           Nodes.zero();
@@ -784,7 +779,7 @@ class Nedelec: public FieldShape {
                 Nodes(r,c) = temp(r,c);
           }
           // get the ordered list
-          int index = 0;
+          int i = 0;
           for ( int r = size-1; r >= 0; r--)
             for (int c = size-r-1 ; c < size; c++) {
               order[i++] = Nodes(r,c)*2;    order[i++] = Nodes(r,c)*2 + 1;
