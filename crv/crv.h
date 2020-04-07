@@ -11,6 +11,7 @@
 #include "apfMesh2.h"
 #include "apfShape.h"
 #include <ma.h>
+#include <maSolutionTransfer.h>
 #include <mth.h>
 #include <stdio.h>
 #include <vector>
@@ -209,6 +210,10 @@ void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief publically accessible functions */
 int getTriNodeIndex(int P, int i, int j);
 int getTetNodeIndex(int P, int i, int j, int k);
+
+/** \brief adds bezier solution transfers */
+ma::SolutionTransfer* setBezierSolutionTransfers(
+    const std::vector<apf::Field*>& fields);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));

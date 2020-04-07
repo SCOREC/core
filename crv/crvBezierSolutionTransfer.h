@@ -5,17 +5,17 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef CRVBEZIERSHAPES_H
-#define CRVBEZIERSHAPES_H
+#ifndef CRVBEZIERSOLUTIONTRANSFER_H
+#define CRVBEZIERSOLUTIONTRANSFER_H
 
 /** \file crvBezierShapes.h
   * \brief main file for bezier shape functions */
 
 namespace crv {
-class CrvBezierFieldTransfer
+class CrvBezierSolutionTransfer
 {
   public:
-    virtual ~CrvBezierFieldTransfer();
+    virtual ~CrvBezierSolutionTransfer();
 
     virtual bool hasNodesOn(int dimension) = 0;
 
@@ -37,7 +37,7 @@ class CrvBezierFieldTransfer
         EntityArray &newEntities);
 }
 
-CrvBezierFieldTransfer* createFieldTransfer(f);
+CrvBezierSolutionTransfer* createFieldTransfer(f);
 
 
 #endif

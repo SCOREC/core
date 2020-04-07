@@ -13,6 +13,7 @@
 #include "crvQuality.h"
 #include "crvShape.h"
 #include "crvTables.h"
+#include "crvBezierSolutionTransfer.h"
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
 #include <maShape.h>
@@ -21,38 +22,15 @@
 #include <pcu_util.h>
 
 namespace crv {
-class LinearTransfer;
-class CavityTransfer;
+class ma::LinearTransfer;
+class ma::CavityTransfer;
 
-CrvBezierFieldTransfer::~CrvBezierFieldTransfer()
-{
-}
-
-void CrvBezierFieldTransfer::onVertex(
-        apf::MeshElement*,
-        Vector const&, 
-        Entity*)
-{
-}
-
-void CrvBezierFieldTransfer::onRefine(
-    Entity*,
-    EntityArray&)
-{
-}
-
-void CrvBezierFieldTransfer::onCavity(
-    EntityArray&,
-    EntityArray&)
-{
-}
-
-class HigherOrderTransfer : public CrvBezierField
+class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 {
   public:
-    LinearTransfer verts;
-    CavityTransfer others;
-    HighOrderTransfer(apf::Field* f):
+    ma::LinearTransfer verts;
+    ma::CavityTransfer others;
+    CrvBezierSolutionTransfer(apf::Field* f):
       verts(f),others(f)
     {
     }
@@ -79,13 +57,15 @@ class HigherOrderTransfer : public CrvBezierField
     {
       others.onCavity(oldElements,newEntities);
     }
-    virtual void convertToBezierFields(
+  protected:
+    void convertToBezierFields(
         int dimension,
         EntityArray& newEntities)
     {
       //apf::FieldShape *fs = others.shape;
       //std::string name = fs->getName();
       //if (name == std::string("Bezier")) {
+      int td = apf::Mesh::typeDimension[]
       int order = shape->getOrder();
       int n = shape->getEntityShape(
           apf::Mesh::simplexTypes[dimension])->countNodes();
@@ -102,16 +82,19 @@ class HigherOrderTransfer : public CrvBezierField
     }
 };
 
-CrvBezierFieldTransfer::CrvBezierFieldTransfer(Mesh* m)
+static ma::SolutionTransfer* createBezierSolutionTransfer(apf::Field* f)
 {
-  for (int i = 0; i < m->countFields(); ++i)
-  {
-    apf::Field* f = m->getField(i);
-    printf("Fields considered, %s\n", apf::getName(f));
-    this->add(createFieldTransfer(f));
+  return new CrvBezierSolutionTransfer(f);
+}
+
+ma::SolutionTransfer* setBezierSolutionTransfers(
+    const std::vector<apf::Field*>& fields)
+{
+  ma::SolutionTransfer* st = new ma::SolutionTransfers();
+  for (std::size_t i = 0; i < fields.size(); i++) {
+    st->add(createBezierSolutionTransfer(fields[i]));
   }
+  return st;
 }
 
-
 }
-
