@@ -500,7 +500,6 @@ template<int P>
 class Nedelec: public FieldShape {
   public:
     const char* getName() const { return "Nedelec"; }
-    int getOrder() {return P;}
     bool isVectorShape() {return true;}
     /* Nedelec(int order) : P(order) */
     /* {} */
@@ -529,6 +528,7 @@ class Nedelec: public FieldShape {
     class Edge : public apf::EntityShape
     {
     public:
+      int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
@@ -539,7 +539,7 @@ class Nedelec: public FieldShape {
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Edges. Aborting()!");
       }
-      int countNodes() const {return 0; /* TODO update this*/}
+      int countNodes() const {return P;}
       void alignSharedNodes(apf::Mesh*,
 	  apf::MeshEntity*, apf::MeshEntity*, int order[])
       {
@@ -981,6 +981,54 @@ class Nedelec: public FieldShape {
       if (type == apf::Mesh::TET && P>2) return 3*P*(P-1)*(P-2)/6;
       // for any other case (type and P combination) return 0;
       return 0;
+    }
+    int getOrder() {return P;}
+    void getNodeXi(int type, int node, Vector3& xi)
+    {
+      if(type == Mesh::EDGE)
+      {
+        const double *eop = (P > 0) ? getOpenPoints(P-1) : NULL;
+        xi = Vector3( -1 + 2*eop[node], 0., 0. ); // map from [0,1] to [-1,1]
+        return;
+      }
+      else if (type == Mesh::TRIANGLE)
+      {
+        const double *iop = (P > 1) ? getOpenPoints(P - 2) : NULL;
+        int pm2 = P - 2; int c = 0;
+
+        for (int j = 0; j <= pm2; j++) {
+          for (int i = 0; i + j <= pm2; i++) {
+            if (node/2 == c) {  // since 2 dofs per node on the face
+              double w = iop[i] + iop[j] + iop[pm2-i-j];
+              xi = Vector3( iop[i]/w, iop[j]/w, 0. );
+              return;
+            }
+            else
+              c++;
+          }
+        }
+      }
+      else if (type == Mesh::TET)
+      {
+        const double *iop = (P > 2) ? getOpenPoints(P - 3) : NULL;
+        int pm3 = P - 3; int c = 0;
+
+        for (int k = 0; k <= pm3; k++) {
+          for (int j = 0; j + k <= pm3; j++) {
+            for (int i = 0; i + j + k <= pm3; i++) {
+              if( node/3 == c) {  // since 3 dofs per node on interior tet
+                double w = iop[i] + iop[j] + iop[k] + iop[pm3-i-j-k];
+                xi = Vector3( iop[i]/w, iop[j]/w,  iop[k]/w );
+                return;
+              }
+              else
+                c++;
+            }
+          }
+        }
+      }
+      else
+        xi = Vector3(0,0,0);
     }
 };
 
