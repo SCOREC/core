@@ -285,6 +285,7 @@ void getVector(Element* e, Vector3 const& param, Vector3& value)
   if (e->getFieldShape()->isVectorShape()) {
     MixedVectorElement* element = static_cast<MixedVectorElement*>(e);
     value = element->getValue(param);
+    // TODO: do we need to apply Piola Transform here?
   }
   // Cases with scalar shape functions
   else {
