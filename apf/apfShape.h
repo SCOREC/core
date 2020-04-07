@@ -103,6 +103,12 @@ class FieldShape
   \param node index from element node ordering
   \param xi parent element coordinates */
     virtual void getNodeXi(int type, int node, Vector3& xi);
+/** \brief Get the parent element tangent vector of an element node
+  \param type element type, select from apf::Mesh::Type
+  \param node index from element node ordering
+  \param t parent element tangent
+  \details this is only applicable for vector shapes */
+    virtual void getNodeTangent(int type, int node, Vector3& t);
 /** \brief Returns true if the shape functions are vectors */
     virtual bool isVectorShape();
 /** \brief Get a unique string for this shape function scheme */
