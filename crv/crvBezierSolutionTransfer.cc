@@ -6,6 +6,7 @@
  */
 #include <apfElement.h>
 
+#include "crv.h"
 #include "crvAdapt.h"
 #include "crvBezier.h"
 #include "crvBezierShapes.h"
@@ -13,7 +14,6 @@
 #include "crvQuality.h"
 #include "crvShape.h"
 #include "crvTables.h"
-#include "crvBezierSolutionTransfer.h"
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
 #include <maShape.h>
@@ -50,6 +50,23 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
         EntityArray& newEntities)
     {
       others.onRefine(parent,newEntities);
+      apf::FieldShape *shape = others.shape;
+      apf::Mesh *m = others.mesh;
+      int type = m->getType(newEntitites[0]);
+      int td = apf::Mesh::typeDimension[type];
+      int order = shape->getOrder();
+      int n = shape->getEntityShape(
+          apf::Mesh::simplexTypes[td])->countNodes();
+      int ne = shape->countNodesOn(
+          apf::Mesh::simplexTypes[td]);
+      apf::NewArray<double> c;
+      crv::getBezierTransformationCoefficients(order,
+          apf::Mesh::simplexTypes[td], c);
+
+      for( size_t i = 0; i < newEntities.getSize(); i++) {
+        crv::convertInterpolationFieldPoints(newEntities[i],
+            field, n, ne, c);
+      }
     }
     virtual void onCavity(
         EntityArray& oldElements,
@@ -57,6 +74,7 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
     {
       others.onCavity(oldElements,newEntities);
     }
+    /*
   protected:
     void convertToBezierFields(
         int dimension,
@@ -80,6 +98,7 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
             field, n, ne, c);
       }
     }
+    */
 };
 
 static ma::SolutionTransfer* createBezierSolutionTransfer(apf::Field* f)

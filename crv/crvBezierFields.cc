@@ -83,9 +83,9 @@ void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f)
   // in Bezier shapes (triangles and tets) but save the old ones to
   // revert back to at the end of this (so the rest of Bezier related
   // procedures work as intended)
-  int oldBlendings[apf::Mesh::TYPES];
-  for (int i = 0; i < apf::Mesh::TYPES; i++)
-    oldBlendings[i] = getBlendingOrder(i);
+  //int oldBlendings[apf::Mesh::TYPES];
+  //for (int i = 0; i < apf::Mesh::TYPES; i++)
+  //  oldBlendings[i] = getBlendingOrder(i);
   setBlendingOrder(apf::Mesh::TYPES, 0);
 
   apf::FieldShape * fs = apf::getShape(f);
