@@ -605,6 +605,7 @@ void getShapeGrads(Element* e, Vector3 const& local,
 
 /** \brief Returns the vector shape function values at a point
  *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
   */
 void getVectorShapeValues(Element* e, Vector3 const& local,
     NewArray<Vector3>& values);

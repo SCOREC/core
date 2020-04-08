@@ -94,7 +94,8 @@ void Element::getComponents(Vector3 const& xi, double* c)
   // handle cases with vector shape functions
   if (field->getShape()->isVectorShape()) {
     NewArray<Vector3> shapeValues;
-    shape->getVectorValues(mesh, entity, xi, shapeValues);
+    //shape->getVectorValues(mesh, entity, xi, shapeValues); //TODO remove this
+    getVectorShapeValues(this, xi, shapeValues);
     for (int ci = 0; ci < 3; ci++)
       c[ci] = 0.;
     for (int ni = 0; ni < nen; ni++)

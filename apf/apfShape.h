@@ -74,6 +74,9 @@ class EntityShape
     help of apf::getAlignment */
     virtual void alignSharedNodes(Mesh* m,
         MeshEntity* elem, MeshEntity* shared, int order[]);
+/** \brief Get the parent element dimension
+ * \details this is not always applicable */
+    virtual int getRefDim();
 };
 
 /** \brief Describes field distribution and shape functions
