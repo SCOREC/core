@@ -44,6 +44,11 @@ void FieldShape::getNodeTangent(int, int, Vector3&)
   fail("unimplemented getNodeTangent called");
 }
 
+int EntityShape::getRefDim()
+{
+  fail("unimplemented getRefDim called");
+}
+
 bool FieldShape::isVectorShape()
 {
   return false;

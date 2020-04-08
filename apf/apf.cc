@@ -459,7 +459,30 @@ void getShapeGrads(Element* e, Vector3 const& local,
 void getVectorShapeValues(Element* e, Vector3 const& local,
     NewArray<Vector3>& values)
 {
-  e->getShape()->getVectorValues(e->getMesh(), e->getEntity(), local,values);
+  NewArray<Vector3> vvals(values.size());
+  e->getShape()->getVectorValues(e->getMesh(), e->getEntity(), local, vvals);
+
+  // Perform Piola transformation
+  apf::MeshElement* me = apf::createMeshElement( e->getMesh(), e->getEntity() );
+  if( e->getShape()->getRefDim()  ==  e->getDimension() ) // i.e. J is square
+  {
+    apf::Matrix3x3 Jinv;
+    apf::getJacobianInv(me, local, Jinv);
+
+    // u(x_hat) * J(x_hat)^{-1}
+    for( size_t i = 0; i < values.size(); i++ ) {
+      for ( int j = 0; j < 3; j++ ) {
+        values[i][j] = 0.;
+        for ( int k = 0; k < 3; k++ )
+          values[i][j] += vvals[i][k] * Jinv[k][j];
+      }
+    }
+  }
+  else
+  {
+    // TODO
+  }
+  apf::destroyMeshElement(me);
 }
 
 FieldShape* getShape(Field* f)
