@@ -14,9 +14,14 @@
   \brief MeshAdapt solution transfer interface */
 
 #include <apf.h>
+#include <apfShape.h>
+#include <apfNumbering.h>
+#include <float.h>
 #include "maMesh.h"
 
 namespace ma {
+
+class Affine;
 
 /** \brief user-defined solution transfer base
  \details one of these classes should be defined for
@@ -72,6 +77,62 @@ class SolutionTransfer
     /** \brief for internal MeshAdapt use */
     int getTransferDimension();
 };
+
+class FieldTransfer : public SolutionTransfer
+{
+  public:
+    FieldTransfer(apf::Field* f);
+    virtual bool hasNodesOn(int dimension);
+    apf::Field* field;
+    apf::Mesh* mesh;
+    apf::FieldShape* shape;
+    apf::NewArray<double> value;
+};
+
+class LinearTransfer : public FieldTransfer
+{
+  public:
+    LinearTransfer(apf::Field* f):
+      FieldTransfer(f) {}
+    virtual void onVertex(
+	apf::MeshElement* parent,
+	Vector const& xi,
+	Entity* vert);
+};
+
+class CavityTransfer : public FieldTransfer
+{
+  public:
+    CavityTransfer(apf::Field* f);
+    void transferToNodeIn(
+	apf::Element* elem,
+	apf::Node const& node,
+	Vector const& elemXi);
+    int getBestElement(
+	int n,
+	apf::Element** elems,
+	Affine* elemInvMaps,
+	Vector const& point,
+	Vector& bestXi);
+    void transferToNode(
+	int n,
+	apf::Element** elems,
+	Affine* elemInvMaps,
+	apf::Node const& node);
+    void transfer(
+	int n,
+	Entity** cavity,
+	EntityArray& newEntities);
+    virtual void onRefine(
+	Entity* parent,
+	EntityArray& newEntities);
+    virtual void onCavity(
+	EntityArray& oldElements,
+	EntityArray& newEntities);
+  private:
+    int minDim;
+};
+
 
 /** \brief Creates a default solution transfer object for a field
   \details MeshAdapt has good algorithms for transferring
