@@ -39,6 +39,11 @@ void FieldShape::getNodeXi(int, int, Vector3&)
   fail("unimplemented getNodeXi called");
 }
 
+void FieldShape::getNodeTangent(int, int, Vector3&)
+{
+  fail("unimplemented getNodeTangent called");
+}
+
 bool FieldShape::isVectorShape()
 {
   return false;

@@ -1030,6 +1030,32 @@ class Nedelec: public FieldShape {
       else
         xi = Vector3(0,0,0);
     }
+    void getNodeTangent(int type, int node, Vector3& t)
+    {
+      if(type == Mesh::EDGE)
+      {
+        t = Vector3( 1., 0., 0.);
+        return;
+      }
+      else if(type == Mesh::TRIANGLE)
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(P >= 2,
+            "face nodes appear only for order bigger than or equal to 2!");
+        (node % 2 == 0) ? t = Vector3(1., 0., 0.) : t = Vector3(0., 1., 0.);
+        return;
+      }
+      else if(type == Mesh::TET)
+      {
+        PCU_ALWAYS_ASSERT_VERBOSE(P >= 3,
+            "volume nodes appear only for order bigger than or equal to 3!");
+       if (node % 3 == 0) t = Vector3(1., 0., 0.);
+       else if (node % 3 == 1) t = Vector3(0., -1., 0.);
+       else t = Vector3(0., 0., 1.);
+       return;
+      }
+      else
+        t = Vector3(0, 0, 0);
+    }
 };
 
 apf::FieldShape* getNedelec(int order)
