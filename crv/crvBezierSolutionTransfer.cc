@@ -14,6 +14,7 @@
 #include "crvQuality.h"
 #include "crvShape.h"
 #include "crvTables.h"
+#include <maMesh.h>
 #include <maShapeHandler.h>
 #include <maSolutionTransfer.h>
 #include <maShape.h>
@@ -22,8 +23,6 @@
 #include <pcu_util.h>
 
 namespace crv {
-class ma::LinearTransfer;
-class ma::CavityTransfer;
 
 class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 {
@@ -40,19 +39,19 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
     }
     virtual void onVertex(
         apf::MeshElement* parent,
-        Vector const& xi,
-        Entity* vert)
+        ma::Vector const& xi,
+        ma::Entity* vert)
     {
       verts.onVertex(parent,xi,vert);
     }
     virtual void onRefine(
-        Entity* parent,
-        EntityArray& newEntities)
+        ma::Entity* parent,
+        ma::EntityArray& newEntities)
     {
       others.onRefine(parent,newEntities);
       apf::FieldShape *shape = others.shape;
       apf::Mesh *m = others.mesh;
-      int type = m->getType(newEntitites[0]);
+      int type = m->getType(newEntities[0]);
       int td = apf::Mesh::typeDimension[type];
       int order = shape->getOrder();
       int n = shape->getEntityShape(
@@ -65,12 +64,12 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 
       for( size_t i = 0; i < newEntities.getSize(); i++) {
         crv::convertInterpolationFieldPoints(newEntities[i],
-            field, n, ne, c);
+            others.field, n, ne, c);
       }
     }
     virtual void onCavity(
-        EntityArray& oldElements,
-        EntityArray& newEntities)
+        ma::EntityArray& oldElements,
+        ma::EntityArray& newEntities)
     {
       others.onCavity(oldElements,newEntities);
     }
@@ -109,7 +108,7 @@ static ma::SolutionTransfer* createBezierSolutionTransfer(apf::Field* f)
 ma::SolutionTransfer* setBezierSolutionTransfers(
     const std::vector<apf::Field*>& fields)
 {
-  ma::SolutionTransfer* st = new ma::SolutionTransfers();
+  ma::SolutionTransfers* st = new ma::SolutionTransfers();
   for (std::size_t i = 0; i < fields.size(); i++) {
     st->add(createBezierSolutionTransfer(fields[i]));
   }
