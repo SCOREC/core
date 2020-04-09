@@ -610,6 +610,13 @@ void getShapeGrads(Element* e, Vector3 const& local,
 void getVectorShapeValues(Element* e, Vector3 const& local,
     NewArray<Vector3>& values);
 
+/** \brief Returns the vector curl shape function values at a point
+ *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
+  */
+void getCurlShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
+
 /** \brief Retrieve the apf::FieldShape used by a field
   */
 FieldShape* getShape(Field* f);

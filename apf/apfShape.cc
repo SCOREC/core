@@ -34,6 +34,12 @@ FieldShape::~FieldShape()
 {
 }
 
+void EntityShape::getLocalVectorCurls(Mesh* , MeshEntity* ,
+	  Vector3 const&, NewArray<Vector3>&) const
+{
+  fail("unimplemented getLocalVectorCurls called");
+}
+
 void FieldShape::getNodeXi(int, int, Vector3&)
 {
   fail("unimplemented getNodeXi called");
@@ -42,11 +48,6 @@ void FieldShape::getNodeXi(int, int, Vector3&)
 void FieldShape::getNodeTangent(int, int, Vector3&)
 {
   fail("unimplemented getNodeTangent called");
-}
-
-int EntityShape::getRefDim()
-{
-  fail("unimplemented getRefDim called");
 }
 
 bool FieldShape::isVectorShape()

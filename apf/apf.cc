@@ -27,6 +27,10 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 
+#include "mth.h"
+#include "mth_def.h"
+
+using namespace std;
 namespace apf {
 
 void destroyMesh(Mesh* m)
@@ -285,7 +289,6 @@ void getVector(Element* e, Vector3 const& param, Vector3& value)
   if (e->getFieldShape()->isVectorShape()) {
     MixedVectorElement* element = static_cast<MixedVectorElement*>(e);
     value = element->getValue(param);
-    // TODO: do we need to apply Piola Transform here?
   }
   // Cases with scalar shape functions
   else {
@@ -463,28 +466,66 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
   e->getShape()->getVectorValues(e->getMesh(), e->getEntity(), local, vvals);
 
   // Perform Piola transformation
-  apf::MeshElement* me = apf::createMeshElement( e->getMesh(), e->getEntity() );
-  if( e->getShape()->getRefDim()  ==  e->getDimension() ) // i.e. J is square
+  if( e->getDimension() == e->getMesh()->getDimension() ) // i.e. J is square
   {
     apf::Matrix3x3 Jinv;
-    apf::getJacobianInv(me, local, Jinv);
+    apf::getJacobianInv( e->getParent(), local, Jinv );
+    apf::Matrix3x3 JinvT = apf::transpose(Jinv); 
 
     // u(x_hat) * J(x_hat)^{-1}
     for( size_t i = 0; i < values.size(); i++ ) {
       for ( int j = 0; j < 3; j++ ) {
         values[i][j] = 0.;
         for ( int k = 0; k < 3; k++ )
-          values[i][j] += vvals[i][k] * Jinv[k][j];
+          values[i][j] += vvals[i][k] * JinvT[k][j];
       }
     }
   }
   else
   {
-    // TODO
+    // TODO when reference dimension != mesh space dimension. Psedoinverse needed.
   }
-  apf::destroyMeshElement(me);
 }
 
+void getCurlShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values)
+{
+  NewArray<Vector3> cvals(values.size());
+  e->getShape()->getLocalVectorCurls(e->getMesh(), e->getEntity(), local, cvals);
+
+  // Perform Piola transformation
+  if (e->getDimension() == 3)
+  {
+    apf::Matrix3x3 J;
+    apf::getJacobian( e->getParent(), local, J);
+    double jdet = apf::getJacobianDeterminant(J, e->getDimension() );
+
+    // mult J * cvals^T and divide by jdet
+    mth::Matrix <double> cvalsT(e->getDimension(), cvals.size()); // cvals transpose
+    for (int i = 0; i < e->getDimension(); i++)
+      for (size_t j = 0; j < cvals.size(); j++)
+        cvalsT(i,j) = cvals[j][i];
+
+    mth::Matrix <double> JT(e->getDimension(), e->getDimension()); // J transpose
+    for (int i = 0; i < e->getDimension(); i++)
+      for (int j = 0; j < e->getDimension(); j++)
+        JT(i,j) = J[j][i];
+
+    mth::Matrix <double> physCurlShapes(e->getDimension(), cvals.size());
+    mth::multiply(JT, cvalsT, physCurlShapes);
+    physCurlShapes *= 1./jdet;
+
+    for (size_t i = 0; i < values.size(); i++)
+      for (int j = 0; j < e->getDimension(); j++)
+        values[i][j] = physCurlShapes(j,i);
+  }
+  else
+  {
+    // TODO for 2d
+  }
+
+
+}
 FieldShape* getShape(Field* f)
 {
   return f->getShape();
