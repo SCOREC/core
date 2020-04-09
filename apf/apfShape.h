@@ -51,6 +51,15 @@ class EntityShape
         MeshEntity* e,
         Vector3 const& xi,
         NewArray<apf::Vector3>& values) const = 0;
+/** \brief evaluate element vector curl shape functions
+ \details this is used only for Nedelec
+ \param xi the parent element coordinates
+ \param values each entry is the vector shape function value for one node */
+    virtual void getLocalVectorCurls(
+        Mesh* m,
+        MeshEntity* e,
+        Vector3 const& xi,
+        NewArray<apf::Vector3>& values) const;
 /** \brief return the number of nodes affecting this element
     \details in a linear mesh, there are two nodes affecting
              and edge, three nodes affecting a triangle,
@@ -74,9 +83,6 @@ class EntityShape
     help of apf::getAlignment */
     virtual void alignSharedNodes(Mesh* m,
         MeshEntity* elem, MeshEntity* shared, int order[]);
-/** \brief Get the parent element dimension
- * \details this is not always applicable */
-    virtual int getRefDim();
 };
 
 /** \brief Describes field distribution and shape functions

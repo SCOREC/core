@@ -532,7 +532,6 @@ class Nedelec: public FieldShape {
       const double c = 0.; // center of edge
     public:
       int getOrder() {return P;}
-      int getRefDim() {return dim;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
@@ -567,7 +566,6 @@ class Nedelec: public FieldShape {
       const double c = 1./3.; // center of tri
     public:
       int getOrder() {return P;}
-      int getRefDim() {return dim;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
@@ -704,7 +702,6 @@ class Nedelec: public FieldShape {
       const int dim = 3;
       const double c = 1./4.;
     public:
-      int getRefDim() {return dim;}
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -927,9 +924,9 @@ class Nedelec: public FieldShape {
         }
 
 
-	mth::Matrix<double> Q(dof, dof);
-	mth::Matrix<double> R(dof, dof);
-	getTi(P, apf::Mesh::TET, Q, R);
+      	mth::Matrix<double> Q(dof, dof);
+	      mth::Matrix<double> R(dof, dof);
+	      getTi(P, apf::Mesh::TET, Q, R);
 
         mth::Matrix<double> S(dof, dim);
       	for(int i = 0; i < dim; i++) // S = Ti * u
