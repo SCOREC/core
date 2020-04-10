@@ -198,13 +198,18 @@ void FieldDataOf<T>::getNodeComponents(MeshEntity* e, int node, T* components)
     components[i] = allComponents[node*nc+i];
 }
 
+// Note that the values in the array "order" are allowed to be negative
+// for cases with vector shape functions such as Nedelec Shapes.
+// For such cases the absolute value is used to locate the data,
+// and the sign is multiplied to the data value at that location.
 template <class T>
 void reorderData(T const dataIn[], T dataOut[], int const order[], int nc, int nn)
 {
   for (int i = 0; i < nn; ++i) {
-    int oi = order[i];
+    int oi = order[i] >= 0 ? order[i] : -order[i];
     for (int j = 0; j < nc; ++j)
-      dataOut[oi * nc + j] = dataIn[i * nc + j];
+      dataOut[oi * nc + j] =
+      	order[i] >= 0 ? dataIn[i * nc + j] : -dataIn[i * nc + j];
   }
 }
 
