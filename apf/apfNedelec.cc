@@ -583,13 +583,12 @@ class Nedelec: public FieldShape {
 	      int which, rotate;
 	      bool flip;
         getAlignment(m,elem,shared,which,flip,rotate);
-        int n = getOrder();
         if(!flip)
-          for(int i = 0; i < n; ++i)
+          for(int i = 0; i < P; ++i)
             order[i] = i;
         else
-          for(int i = 0; i < n; ++i)
-            order[i] = n-1-i;
+          for(int i = 0; i < P; ++i)
+            order[i] = P-1-i;
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
@@ -722,20 +721,18 @@ class Nedelec: public FieldShape {
         getAlignment(m,elem,shared,which,flip,rotate);
         if(m->getType(shared) == apf::Mesh::EDGE)
         {
-          int n = countNodes();
           if(!flip)
-            for(int i = 0; i < n; ++i)
+            for(int i = 0; i < P; ++i)
               order[i] = i;
           else
-            for(int i = 0; i < n; ++i)
-              order[i] = n-1-i;
+            for(int i = 0; i < P; ++i)
+              order[i] = P-1-i;
           return;
         }
         //must be a triangle
-        int k = getOrder();
-        int non = k*(k-1); // nodes on the face only
+        int non = P*(P-1); // nodes on the face only
         int unique_non = non/2; // bc 2 dofs per node on the face
-        if ( k > 1 ) // face nodes appear for k > 1
+        if ( P > 1 ) // face nodes appear for k > 1
         {
           int size = (-1 + sqrt(1+8*unique_non) )/2;
 
