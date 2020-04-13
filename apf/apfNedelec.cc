@@ -588,7 +588,7 @@ class Nedelec: public FieldShape {
             order[i] = i;
         else
           for(int i = 0; i < P; ++i)
-            order[i] = -(P-1-i);
+            order[i] = -(P-1-i)-1; //following MFEM ordering
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
@@ -726,7 +726,7 @@ class Nedelec: public FieldShape {
               order[i] = i;
           else
             for(int i = 0; i < P; ++i)
-              order[i] = -(P-1-i);
+              order[i] = -(P-1-i)-1; //following MFEM ordering
           return;
         }
         //must be a triangle
