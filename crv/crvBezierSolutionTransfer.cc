@@ -75,6 +75,25 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
         ma::EntityArray& newEntities)
     {
       others.onCavity(oldElements,newEntities);
+      apf::Mesh *m = others.mesh;
+      for (size_t i = 0; i <newEntities.getSize(); i++) {
+      	int type = m->getType(newEntities[i]);
+      	apf::FieldShape *shape = others.shape;
+      	int order = shape->getOrder();
+      	if (type != 0 && getNumInternalControlPoints(type, order) > 0) {
+      	  int td = apf::Mesh::typeDimension[type];
+      	  int n = shape->getEntityShape(
+      	      apf::Mesh::simplexTypes[td])->countNodes();
+      	  int ne = shape->countNodesOn(
+      	      apf::Mesh::simplexTypes[td]);
+      	  apf::NewArray<double> c;
+      	  crv::getBezierTransformationCoefficients(order,
+      	      apf::Mesh::simplexTypes[td], c);
+
+      	  crv::convertInterpolationFieldPoints(newEntities[i],
+              others.field, n, ne, c);
+        }
+      }
     }
     /*
   protected:
