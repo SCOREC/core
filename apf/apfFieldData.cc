@@ -240,10 +240,16 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
         // for vector shapes (i.e., nedelec) direction matters for nan>=1
         if (fs->isVectorShape()) {
 	  if (nan >= 1 && ed != d) {
-	    order.setSize(nen);
+	    // The first  nen ints would tell you the first component
+	    // The second nen ints would tell you the second component
+	    // The last   nen ints would tell you the whether to add them
+	    order.setSize(3*nen);
 	    adata.setSize(nen);
+	    // TODO: alignSharedNodes need to be updated for this extra info
 	    es->alignSharedNodes(mesh, entity, a[i], &order[0]);
 	    get(a[i], &adata[0]);
+	    // TODO: We would want to have a different reorder here to handle
+	    // the fact that order now includes some extra info
 	    reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
 	  }
 	}
