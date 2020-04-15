@@ -1034,7 +1034,10 @@ class Nedelec: public FieldShape {
     {
       if(type == Mesh::EDGE)
       {
-        t = Vector3( 1., 0., 0.);
+      	// Edges are parametrized from -1 to 1.
+      	// Having the 2 here enables us to avoid multiplying dofs by 2 for
+      	// when computing them for edges
+        t = Vector3( 2., 0., 0.);
         return;
       }
       else if(type == Mesh::TRIANGLE)
