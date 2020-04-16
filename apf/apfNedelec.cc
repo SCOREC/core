@@ -20,6 +20,152 @@ using namespace std;
 
 namespace apf {
 
+int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
+{
+  int size = 4*nodes;
+  int* final_order = new int[size];
+
+  if (r == 0 && !f)     // CASE 1
+  {
+    int ind = 0;
+    for (int i = 0; i < nodes; i++)
+      final_order[i] = init_order[i];
+    ind += nodes;
+    for (int i = 0 ; i < nodes; i++)
+      final_order[i+ind] = init_order[i];
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 1;
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 0;
+  }
+  else if (r == 1 && !f) // CASE 2
+  {
+    int ind = 0;
+    int offset = 0;
+    for (int i = 0; i < nodes; i++)
+    {
+      final_order[i] = -init_order[offset] - 1;
+      final_order[i+1] = -init_order[offset] - 1;
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    offset = 1;
+    for (int i = 0 ; i < nodes; i++)
+    {
+      final_order[i+ind] = init_order[offset];
+      final_order[i+1+ind] = init_order[offset];
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 1;
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = (i%2) ? 0 : 1;
+  }
+  else if (r == 2 && !f) // CASE 3
+  {
+    int ind = 0;
+    int offset = 0;
+    for (int i = 0; i < nodes; i++)
+    {
+      final_order[i] = init_order[offset];
+      final_order[i+1] = init_order[offset];
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    offset = 1;
+    for (int i = 0 ; i < nodes; i++)
+    {
+      final_order[i+ind] = -init_order[offset]-1;
+      final_order[i+1+ind] = -init_order[offset]-1;
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = (i%2) ? 1 : 0;
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 1;
+  }
+  else if (r == 0 && f)  // CASE 4
+  {
+    int ind = 0;
+    int offset = 0;
+    for (int i = 0; i < nodes; i++)
+    {
+      final_order[i] = init_order[offset];
+      final_order[i+1] = init_order[offset];
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    offset = 1;
+    for (int i = 0 ; i < nodes; i++)
+    {
+      final_order[i+ind] = -init_order[offset]-1;
+      final_order[i+1+ind] = -init_order[offset]-1;
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = (i%2) ? 0 : 1;
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 1;
+  }
+  else if (r == 1 && f)  // CASE 5
+  {
+    int ind = 0;
+    int offset = 0;
+    for (int i = 0; i < nodes; i++)
+    {
+      final_order[i] = -init_order[offset]-1;
+      final_order[i+1] = -init_order[offset]-1;
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    offset = 1;
+    for (int i = 0 ; i < nodes; i++)
+    {
+      final_order[i+ind] = init_order[offset];
+      final_order[i+1+ind] = init_order[offset];
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 1;
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = (i%2) ? 1 : 0;
+  }
+  else if (r == 2 && f)  // CASE 6
+  {
+    int ind = 0;
+    for (int i = 0; i < nodes; i++)
+      final_order[i] = init_order[nodes-1-i];
+    ind += nodes;
+    for (int i = 0 ; i < nodes; i++)
+      final_order[i+ind] = init_order[nodes-1-i];
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 0;
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = 1;
+  }
+  return final_order;
+}
+
 static unsigned const MAX_ND_ORDER = 10;
 enum {
   GAUSS_LEGENDRE,
@@ -781,12 +927,17 @@ class Nedelec: public FieldShape {
               for(int c = 0; c < size; c++)
                 Nodes(r,c) = temp(r,c);
           }
-          // get the ordered list
+          // get the init ordered list with all face nodes
+          int init_order[non];
           int i = 0;
           for ( int r = size-1; r >= 0; r--)
             for (int c = size-r-1 ; c < size; c++) {
-              order[i++] = Nodes(r,c)*2;    order[i++] = Nodes(r,c)*2 + 1;
+              init_order[i++] = Nodes(r,c)*2;    init_order[i++] = Nodes(r,c)*2 + 1;
             }
+
+          int* final_order = alignFaceNodes(init_order, non, rotate, flip);
+          for (int i = 0; i < 4*non; i++)
+            order[i] = final_order[i];
         }
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
