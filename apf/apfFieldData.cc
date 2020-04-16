@@ -3,7 +3,8 @@
 #include "apfShape.h"
 #include <pcu_util.h>
 #include <cstdlib>
-
+using namespace std;
+#include <iostream>
 namespace apf {
 
 FieldData::~FieldData()
@@ -213,6 +214,26 @@ void reorderData(T const dataIn[], T dataOut[], int const order[], int nc, int n
   }
 }
 
+// This is only used to reorder the data for interior face nodes on a face of
+// a Nedelec tet, where each node on the face contains 2 dof values.
+template <class T>
+void reorderFaceData(T const dataIn[], T dataOut[], int const order[], int nc, int nn)
+{
+  for (int i = 0; i < nn; ++i) {
+    if(order[2*nn+i])
+    {
+      dataOut[i*nc] = (order[i] >= 0) ? dataIn[ order[i] ] : -dataIn[ -(order[i]+1) ];
+    }
+    else
+      dataOut[i*nc] = 0.;
+
+    if(order[3*nn+i])
+    {
+      dataOut[i*nc] += (order[1*nn+i] >= 0) ? dataIn[ order[1*nn+i] ] : -dataIn[ -(order[1*nn+i]+1) ];
+    }
+  }
+}
+
 template <class T>
 int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 {
@@ -243,14 +264,17 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 	    // The first  nen ints would tell you the first component
 	    // The second nen ints would tell you the second component
 	    // The last   nen ints would tell you the whether to add them
-	    order.setSize(3*nen);
+	    order.setSize(4*nen);
 	    adata.setSize(nen);
 	    // TODO: alignSharedNodes need to be updated for this extra info
 	    es->alignSharedNodes(mesh, entity, a[i], &order[0]);
 	    get(a[i], &adata[0]);
 	    // TODO: We would want to have a different reorder here to handle
 	    // the fact that order now includes some extra info
-	    reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
+      if (mesh->getType(a[i]) == apf::Mesh::TRIANGLE)
+        reorderFaceData<T>(&adata[0], &data[n], &order[0], nc, nan);
+      else
+	      reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
 	  }
 	}
         // for non vector shapes direction matters for nan>1

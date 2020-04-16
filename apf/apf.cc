@@ -470,7 +470,7 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
   {
     apf::Matrix3x3 Jinv;
     apf::getJacobianInv( e->getParent(), local, Jinv );
-    apf::Matrix3x3 JinvT = apf::transpose(Jinv); 
+    apf::Matrix3x3 JinvT = apf::transpose(Jinv);
 
     // u(x_hat) * J(x_hat)^{-1}
     for( size_t i = 0; i < values.size(); i++ ) {
