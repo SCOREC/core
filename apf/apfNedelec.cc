@@ -293,13 +293,16 @@ static void computeTetTi(
 {
   int non = countTetNodes(P);
   const double c = 1./4.;
-  const double tk[18] = { /* edge directions in a tet */
+  const double tk[21] = { /* edge directions in a tet */
      1. ,  0.,  0.,
     -1. ,  1.,  0.,
      0. , -1.,  0.,
      0. ,  0.,  1.,
     -1. ,  0.,  1.,
-     0.,  -1.,  1.};
+     0.,  -1.,  1.,
+     // this last one is the negative of the third one
+     // and it is used for face and tet tangents only
+     0.,   1.,  0.};
   const double *eop = getOpenPoints(P - 1);
   const double *fop = (P > 1) ? getOpenPoints(P - 2) : NULL;
   const double *iop = (P > 2) ? getOpenPoints(P - 3) : NULL;
@@ -358,7 +361,7 @@ static void computeTetTi(
       nodes[o][0] = fop[i]/w;  nodes[o][1] = fop[j]/w;  nodes[o][2] = 0.;
       dof2tk[o++] = 0;
       nodes[o][0] = fop[i]/w;  nodes[o][1] = fop[j]/w;  nodes[o][2] = 0.;
-      dof2tk[o++] = 2;
+      dof2tk[o++] = 6;
     }
   }
   // (0,1,3)
@@ -389,7 +392,7 @@ static void computeTetTi(
     {
       double w = fop[i] + fop[j] + fop[pm2-i-j];
       nodes[o][0] = 0.;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
-      dof2tk[o++] = 2;
+      dof2tk[o++] = 6;
       nodes[o][0] = 0.;  nodes[o][1] = fop[i]/w;  nodes[o][2] = fop[j]/w;
       dof2tk[o++] = 3;
     }
@@ -403,7 +406,7 @@ static void computeTetTi(
         nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
         dof2tk[o++] = 0;
         nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
-        dof2tk[o++] = 2;
+        dof2tk[o++] = 6;
         nodes[o][0] = iop[i]/w;  nodes[o][1] = iop[j]/w;  nodes[o][2] = iop[k]/w;
         dof2tk[o++] = 3;
       }
@@ -1052,7 +1055,7 @@ class Nedelec: public FieldShape {
         PCU_ALWAYS_ASSERT_VERBOSE(P >= 3,
             "volume nodes appear only for order bigger than or equal to 3!");
        if (node % 3 == 0) t = Vector3(1., 0., 0.);
-       else if (node % 3 == 1) t = Vector3(0., -1., 0.);
+       else if (node % 3 == 1) t = Vector3(0., 1., 0.);
        else t = Vector3(0., 0., 1.);
        return;
       }
