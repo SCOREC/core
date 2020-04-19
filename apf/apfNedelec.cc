@@ -28,19 +28,58 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   if (r == 0 && !f)     // CASE 1
   {
     int ind = 0;
+    int offset = 0;
     for (int i = 0; i < nodes; i++)
-      final_order[i] = init_order[i];
+    {
+      final_order[i] = init_order[offset];
+      final_order[i+1] = init_order[offset];
+      offset += 2;
+      i++;
+    }
     ind += nodes;
+    offset = 1;
     for (int i = 0 ; i < nodes; i++)
-      final_order[i+ind] = init_order[i];
+    {
+      final_order[i+ind] = init_order[offset];
+      final_order[i+1+ind] = init_order[offset];
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = (i%2) ? 0 : 1;
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = (i%2) ? 1 : 0;
+  }
+  else if (r == 1 && !f) // CASE 2
+  {
+    int ind = 0;
+    int offset = 0;
+    for (int i = 0; i < nodes; i++)
+    {
+      final_order[i] = init_order[offset];
+      final_order[i+1] = init_order[offset];
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    offset = 1;
+    for (int i = 0 ; i < nodes; i++)
+    {
+      final_order[i+ind] = -init_order[offset] - 1;
+      final_order[i+1+ind] = -init_order[offset] - 1;
+      offset += 2;
+      i++;
+    }
+    ind += nodes;
+    for (int i = 0; i < nodes; i++)
+      final_order[i+ind] = (i%2) ? 1 : 0;
     ind += nodes;
     for (int i = 0; i < nodes; i++)
       final_order[i+ind] = 1;
-    ind += nodes;
-    for (int i = 0; i < nodes; i++)
-      final_order[i+ind] = 0;
   }
-  else if (r == 1 && !f) // CASE 2
+  else if (r == 2 && !f) // CASE 3
   {
     int ind = 0;
     int offset = 0;
@@ -67,33 +106,6 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
     for (int i = 0; i < nodes; i++)
       final_order[i+ind] = (i%2) ? 0 : 1;
   }
-  else if (r == 2 && !f) // CASE 3
-  {
-    int ind = 0;
-    int offset = 0;
-    for (int i = 0; i < nodes; i++)
-    {
-      final_order[i] = init_order[offset];
-      final_order[i+1] = init_order[offset];
-      offset += 2;
-      i++;
-    }
-    ind += nodes;
-    offset = 1;
-    for (int i = 0 ; i < nodes; i++)
-    {
-      final_order[i+ind] = -init_order[offset]-1;
-      final_order[i+1+ind] = -init_order[offset]-1;
-      offset += 2;
-      i++;
-    }
-    ind += nodes;
-    for (int i = 0; i < nodes; i++)
-      final_order[i+ind] = (i%2) ? 1 : 0;
-    ind += nodes;
-    for (int i = 0; i < nodes; i++)
-      final_order[i+ind] = 1;
-  }
   else if (r == 0 && f)  // CASE 4
   {
     int ind = 0;
@@ -109,17 +121,17 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
     offset = 1;
     for (int i = 0 ; i < nodes; i++)
     {
-      final_order[i+ind] = -init_order[offset]-1;
-      final_order[i+1+ind] = -init_order[offset]-1;
+      final_order[i+ind] = init_order[offset];
+      final_order[i+1+ind] = init_order[offset];
       offset += 2;
       i++;
     }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
-      final_order[i+ind] = (i%2) ? 0 : 1;
+      final_order[i+ind] = (i%2) ? 1 : 0;
     ind += nodes;
     for (int i = 0; i < nodes; i++)
-      final_order[i+ind] = 1;
+      final_order[i+ind] = (i%2) ? 0 : 1;
   }
   else if (r == 1 && f)  // CASE 5
   {
@@ -151,14 +163,26 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   else if (r == 2 && f)  // CASE 6
   {
     int ind = 0;
+    int offset = 0;
     for (int i = 0; i < nodes; i++)
-      final_order[i] = init_order[nodes-1-i];
+    {
+      final_order[i] = init_order[offset];
+      final_order[i+1] = init_order[offset];
+      offset += 2;
+      i++;
+    }
     ind += nodes;
+    offset = 1;
     for (int i = 0 ; i < nodes; i++)
-      final_order[i+ind] = init_order[nodes-1-i];
+    {
+      final_order[i+ind] = -init_order[offset]-1;
+      final_order[i+1+ind] = -init_order[offset]-1;
+      offset += 2;
+      i++;
+    }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
-      final_order[i+ind] = 0;
+      final_order[i+ind] = (i%2) ? 0 : 1;
     ind += nodes;
     for (int i = 0; i < nodes; i++)
       final_order[i+ind] = 1;
@@ -893,40 +917,61 @@ class Nedelec: public FieldShape {
               Nodes(r,c) = (num++);
 
           // CASES
-          if(rotate == 1) {
+          if (rotate == 1  &&  !flip) // CASE 2
+          {
             for (int r = size-1; r >= 0; r--) {    // horizontal swaps
               int left = size-r-1; int right = size-1;
               for(int range = left; range <= left + (right-left)/2; range++) {
-                            std::swap( Nodes(r,range), Nodes(r,left+right-range) );
+                          std::swap( Nodes(r,range), Nodes(r,left+right-range) );
               }
             }
-            mth::Matrix<double> temp(size, size);
+            mth::Matrix<double> temp(size, size);  // transpose
             mth::transpose(Nodes,temp);
             for (int r = 0; r < size; r++)
               for(int c = 0; c < size; c++)
                 Nodes(r,c) = temp(r,c);
           }
-          if(rotate == 2) {
-            for (int c = size-1; c >= 0; c--) {    // vertical swaps
-                    int left = size-c-1; int right = size-1;
-                    for(int range = left; range <= left + (right-left)/2; range++) {
-                            std::swap( Nodes(range,c), Nodes(left+right-range,c) );
-                    }
-            }
-            mth::Matrix<double> temp(size, size);
-            mth::transpose(Nodes,temp);
-            for (int r = 0; r < size; r++)
-              for(int c = 0; c < size; c++)
-                Nodes(r,c) = temp(r,c);
-          }
-          if(flip)
+          else if (rotate == 2  &&  !flip) // CASE 3
           {
-            mth::Matrix<double> temp(size, size);
+            for (int c = size-1; c >= 0; c--) {    // vertical swaps
+              int left = size-c-1; int right = size-1;
+              for(int range = left; range <= left + (right-left)/2; range++) {
+                          std::swap( Nodes(range,c), Nodes(left+right-range,c) );
+              }
+            }
+            mth::Matrix<double> temp(size, size);  // transpose
             mth::transpose(Nodes,temp);
             for (int r = 0; r < size; r++)
               for(int c = 0; c < size; c++)
                 Nodes(r,c) = temp(r,c);
           }
+          else if (!rotate  &&  flip) // CASE 4
+          {
+            for (int c = size-1; c >= 0; c--) {    // vertical swaps
+              int left = size-c-1; int right = size-1;
+              for(int range = left; range <= left + (right-left)/2; range++) {
+                          std::swap( Nodes(range,c), Nodes(left+right-range,c) );
+              }
+            }
+          }
+          else if (rotate == 1  &&  flip) // CASE 5
+          {
+            for (int r = size-1; r >= 0; r--) {    // horizontal swaps
+              int left = size-r-1; int right = size-1;
+              for(int range = left; range <= left + (right-left)/2; range++) {
+                          std::swap( Nodes(r,range), Nodes(r,left+right-range) );
+              }
+            }
+          }
+          else if (rotate == 2  &&  flip) // CASE 6
+          {
+            mth::Matrix<double> temp(size, size);  // transpose
+            mth::transpose(Nodes,temp);
+            for (int r = 0; r < size; r++)
+              for(int c = 0; c < size; c++)
+                Nodes(r,c) = temp(r,c);
+          }
+
           // get the init ordered list with all face nodes
           int init_order[non];
           int i = 0;
@@ -934,8 +979,8 @@ class Nedelec: public FieldShape {
             for (int c = size-r-1 ; c < size; c++) {
               init_order[i++] = Nodes(r,c)*2;    init_order[i++] = Nodes(r,c)*2 + 1;
             }
-
           int* final_order = alignFaceNodes(init_order, non, rotate, flip);
+
           for (int i = 0; i < 4*non; i++)
             order[i] = final_order[i];
         }
