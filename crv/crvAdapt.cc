@@ -194,6 +194,10 @@ static void flagCleaner(crv::Adapt* a)
   }
 }
 
+void getAllBezierFields(ma::Mesh* m, std::vector<apf::Field*>& fields)
+{
+}
+
 void adapt(ma::Input* in)
 {
   std::string name = in->mesh->getShape()->getName();
@@ -205,6 +209,14 @@ void adapt(ma::Input* in)
   double t0 = PCU_Time();
   ma::validateInput(in);
   Adapt* a = new Adapt(in);
+
+  // Setting up bezier field transfer for all fields with Bezier shapes
+  // This is not the cleanest way of doing this!
+  std::vector<apf::Field*> allFields;
+  getAllBezierFields(a->mesh, allFields);
+  in->solutionTransfer = crv::setBezierSolutionTransfer(allFields, a);
+  a->solutionTransfer = in->solutionTransfer;
+
   ma::preBalance(a);
 
   fixInvalidElements(a);

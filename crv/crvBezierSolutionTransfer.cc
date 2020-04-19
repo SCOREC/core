@@ -28,10 +28,11 @@ namespace crv {
 class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 {
   public:
+    Adapt* adapt;
     ma::LinearTransfer verts;
     ma::CavityTransfer others;
-    CrvBezierSolutionTransfer(apf::Field* f):
-      verts(f),others(f)
+    CrvBezierSolutionTransfer(apf::Field* f, Adapt* a):
+      adapt(a),verts(f),others(f)
     {
       mesh = others.mesh;
       shape = others.shape;
