@@ -31,11 +31,13 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
     Adapt* adapt;
     ma::LinearTransfer verts;
     ma::CavityTransfer others;
-    CrvBezierSolutionTransfer(apf::Field* f, Adapt* a):
+    CrvBezierSolutionTransfer(apf::Field* field, Adapt* a):
       adapt(a),verts(f),others(f)
     {
-      mesh = others.mesh;
-      shape = others.shape;
+      f = field;
+      refine = adapt->refine;
+      mesh = adapt->mesh;
+      shape = apf::getShape(f);
       int P = mesh->getShape()->getOrder();
       for (int d = 1; d <= mesh->getDimension(); d++) {
       	int type = apf::Mesh::simplexTypes[d];
@@ -50,6 +52,7 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 	//crv::getBezierTransformationCoeddicients(P,type,coeffs[d]);
 	//crv::getInternalBezierTransformationCoefficients(mesh, P, 1,
 	//  apf::Mesh::simplexTypes[d],internalCoeffs[d]);
+      }
     }
     virtual bool hasNodesOn(int dimension)
     {
@@ -117,46 +120,41 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
           midEdgeVerts[i] = 0;
       }
 
-     apf::Element* elem = apf::createElement(f, parent);
-     apf::NewArray<apf::Vector3> nodes;
+      int np = shape->getEntityShape(parentType)->countNodes();
 
-     //TODO scalar field values
-     apf::getVectorNodes(elem,nodes);
+      apf::Element* elem = apf::createElement(f, parent);
+      apf::NewArray<apf::Vector3> nodes;
 
-     int n = getNumControlPoints(childType,P);
-     apf::Vector3 vp[4];
-     getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i], vp);
+      //TODO scalar field values
+      apf::getVectorNodes(elem,nodes);
 
-     mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
-     for (int j = 0; j < ni; ++j){
-     	apf::Vector3 value(0,0,0);
-     	for (int k = 0; k < np; ++k)
-     	  value += nodes[k]*B(j+n-ni,k);
-     	mesh->setVector(newEntities[i],j,value);
-     }
+      for (int d = 1; d <= apf::Mesh::typeDimension[parentType]; d++) {
+        if (!shape->hasNodesIn(d)) continue;
+        for (size_t i = 0; i < newEntities.getSize(); i++) {
+          int childType = mesh->getType(newEntities[i]);
+          if (d != apf::Mesh::typeDimension[childType])
+            continue;
 
-   /*
-      Mesh *m = others.mesh;
-      for (size_t i = 0; i <newEntities.getSize(); i++) {
-      	int type = m->getType(newEntities[i]);
-      	apf::FieldShape *shape = others.shape;
-      	int order = shape->getOrder();
-      	if (type != 0 && getNumInternalControlPoints(type, order) > 0) {
-      	  int td = apf::Mesh::typeDimension[type];
-      	  int n = shape->getEntityShape(
-      	      apf::Mesh::simplexTypes[td])->countNodes();
-      	  int ne = shape->countNodesOn(
-      	      apf::Mesh::simplexTypes[td]);
-      	  apf::NewArray<double> c;
-      	  crv::getBezierTransformationCoefficients(order,
-      	      apf::Mesh::simplexTypes[td], c);
+          int ni = shape->countNodesOn(childType);
+          int n = getNumControlPoints(childType,P);
+          apf::Vector3 vp[4];
+          getVertParams(parentType,parentVerts,
+              midEdgeVerts,newEntities[i], vp);
 
-      	  crv::convertInterpolationFieldPoints(newEntities[i],
-              others.field, n, ne, c);
+          mth::Matrix<double> A(n,np),B(n,n);
+          getBezierTransformationMatrix(parentType, childType, P,A, vp);
+          mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
+
+          for (int j = 0; j < ni; ++j){
+            apf::Vector3 value(0,0,0);
+            for (int k = 0; k < np; ++k)
+              value += nodes[k]*B(j+n-ni,k);
+	    apf::setVector(f,newEntities[i],j,value);
+          }
         }
       }
-      */
     }
+
     virtual void onCavity(
         ma::EntityArray& oldElements,
         ma::EntityArray& newEntities)
@@ -183,50 +181,29 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
       }
     }
   protected:
+    apf::Field* f;
     ma::Mesh* mesh;
+    ma::Refine* refine;
     apf::FieldShape* shape;
     mth::Matrix<double> Ai[4];
-  public:
+  //public:
     //apf::NewArray<double> coeffs[4];
     //apf::NewArray<double> internalCoeffs[4];
     /*
-  protected:
-    void convertToBezierFields(
-        int dimension,
-        EntityArray& newEntities)
-    {
-      //apf::FieldShape *fs = others.shape;
-      //std::string name = fs->getName();
-      //if (name == std::string("Bezier")) {
-      int td = apf::Mesh::typeDimension[]
-      int order = shape->getOrder();
-      int n = shape->getEntityShape(
-          apf::Mesh::simplexTypes[dimension])->countNodes();
-      int ne = shape->countNodesOn(
-          apf::Mesh::simplexTypes[dimension]);
-      apf::NewArray<double> c;
-      crv::getBezierTransformationCoefficients(order,
-          apf::Mesh::simplexTypes[dimension], c);
-
-      for( size_t i = 0; i < newEntities.getSize(); i++) {
-        crv::convertInterpolationFieldPoints(newEntities[i],
-            field, n, ne, c);
-      }
-    }
     */
 };
 
-static ma::SolutionTransfer* createBezierSolutionTransfer(apf::Field* f)
+static ma::SolutionTransfer* createBezierSolutionTransfer(apf::Field* f, Adapt* a)
 {
-  return new CrvBezierSolutionTransfer(f);
+  return new CrvBezierSolutionTransfer(f, a);
 }
 
 ma::SolutionTransfer* setBezierSolutionTransfers(
-    const std::vector<apf::Field*>& fields)
+    const std::vector<apf::Field*>& fields, Adapt* a)
 {
   ma::SolutionTransfers* st = new ma::SolutionTransfers();
   for (std::size_t i = 0; i < fields.size(); i++) {
-    st->add(createBezierSolutionTransfer(fields[i]));
+    st->add(createBezierSolutionTransfer(fields[i], a));
   }
   return st;
 }

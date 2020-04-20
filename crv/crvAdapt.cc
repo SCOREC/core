@@ -7,6 +7,7 @@
 
 #include "crvAdapt.h"
 #include "crvShape.h"
+#include "crvBezierSolutionTransfer.h"
 #include <apf.h>
 #include <apfMesh.h>
 #include <maBalance.h>
@@ -196,6 +197,12 @@ static void flagCleaner(crv::Adapt* a)
 
 void getAllBezierFields(ma::Mesh* m, std::vector<apf::Field*>& fields)
 {
+  for (int i = 0; i < m->countFields(); i++) {
+    apf::FieldShape* fs = apf::getShape(m->getField(i));
+    std::string name = fs->getName();
+    if (name == std::string("Bezier"))
+      fields.push_back(m->getField(i));
+  }
 }
 
 void adapt(ma::Input* in)
@@ -214,7 +221,7 @@ void adapt(ma::Input* in)
   // This is not the cleanest way of doing this!
   std::vector<apf::Field*> allFields;
   getAllBezierFields(a->mesh, allFields);
-  in->solutionTransfer = crv::setBezierSolutionTransfer(allFields, a);
+  in->solutionTransfer = crv::setBezierSolutionTransfers(allFields, a);
   a->solutionTransfer = in->solutionTransfer;
 
   ma::preBalance(a);

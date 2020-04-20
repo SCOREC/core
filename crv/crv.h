@@ -212,8 +212,8 @@ int getTriNodeIndex(int P, int i, int j);
 int getTetNodeIndex(int P, int i, int j, int k);
 
 /** \brief adds bezier solution transfers */
-ma::SolutionTransfer* setBezierSolutionTransfers(
-    const std::vector<apf::Field*>& fields);
+//ma::SolutionTransfer* setBezierSolutionTransfers(
+//    const std::vector<apf::Field*>& fields, crv::Adapt* a);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
