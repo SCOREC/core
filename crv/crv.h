@@ -23,6 +23,9 @@
   * \brief the curving functions are contained in this namespace */
 namespace crv {
 
+// forward declaration of the crv::Adapt
+class Adapt;
+
 /** \brief actually 1 greater than max order */
 static unsigned const MAX_ORDER = 19;
 
@@ -212,8 +215,8 @@ int getTriNodeIndex(int P, int i, int j);
 int getTetNodeIndex(int P, int i, int j, int k);
 
 /** \brief adds bezier solution transfers */
-//ma::SolutionTransfer* setBezierSolutionTransfers(
-//    const std::vector<apf::Field*>& fields, crv::Adapt* a);
+ma::SolutionTransfer* setBezierSolutionTransfers(
+    const std::vector<apf::Field*>& fields, crv::Adapt* a);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
