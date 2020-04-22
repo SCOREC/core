@@ -207,31 +207,49 @@ template <class T>
 void reorderData(T const dataIn[], T dataOut[], int const order[], int nc, int nn)
 {
   for (int i = 0; i < nn; ++i) {
-    int oi = order[i] >= 0 ? order[i] : -(order[i]+1);
+    int oi = order[i];
     for (int j = 0; j < nc; ++j)
-      dataOut[oi * nc + j] =
-      	order[i] >= 0 ? dataIn[i * nc + j] : -dataIn[i * nc + j];
+      dataOut[oi * nc + j] = dataIn[i * nc + j];
   }
 }
 
 // This is only used to reorder the data for interior face nodes on a face of
 // a Nedelec tet, where each node on the face contains 2 dof values.
 template <class T>
-void reorderFaceData(T const dataIn[], T dataOut[], int const order[], int nc, int nn)
+void reorderDataNedelec(
+    T const dataIn[],
+    T dataOut[],
+    int const order[],
+    int nc,
+    int nn,
+    int type)
 {
-  for (int i = 0; i < nn; ++i) {
-    if(order[2*nn+i])
-    {
-      dataOut[i*nc] = (order[i] >= 0) ? dataIn[ order[i] ] : -dataIn[ -(order[i]+1) ];
-    }
-    else
-      dataOut[i*nc] = 0.;
+  if (type == Mesh::TRIANGLE)
+    for (int i = 0; i < nn; ++i) {
+      if(order[2*nn+i])
+      {
+	dataOut[i*nc] = (order[i] >= 0) ?
+	  dataIn[ order[i] ] : -dataIn[ -(order[i]+1) ];
+      }
+      else
+	dataOut[i*nc] = 0.;
 
-    if(order[3*nn+i])
-    {
-      dataOut[i*nc] += (order[1*nn+i] >= 0) ? dataIn[ order[1*nn+i] ] : -dataIn[ -(order[1*nn+i]+1) ];
+      if(order[3*nn+i])
+      {
+	dataOut[i*nc] += (order[1*nn+i] >= 0) ?
+	  dataIn[ order[1*nn+i] ] : -dataIn[ -(order[1*nn+i]+1) ];
+      }
     }
-  }
+  else if (type == Mesh::EDGE)
+    for (int i = 0; i < nn; ++i) {
+      int oi = order[i] >= 0 ? order[i] : -(order[i]+1);
+      for (int j = 0; j < nc; ++j)
+	dataOut[oi * nc + j] =
+	  order[i] >= 0 ? dataIn[i * nc + j] : -dataIn[i * nc + j];
+    }
+  else
+    PCU_ALWAYS_ASSERT_VERBOSE(0,
+    	"type has to be Mesh::EDGE or Mesh::TRIANGLE!");
 }
 
 template <class T>
@@ -261,20 +279,18 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
         // for vector shapes (i.e., nedelec) direction matters for nan>=1
         if (fs->isVectorShape()) {
 	  if (nan >= 1 && ed != d) {
-	    // The first  nen ints would tell you the first component
-	    // The second nen ints would tell you the second component
-	    // The last   nen ints would tell you the whether to add them
+	    // The 1st nen ints is the 1st contribution
+	    // The 2nd nen ints is the 2nd contribution
+	    // The 3rd nen ints tells whether to add 1st contribution
+	    // The 4th nen ints tells whether to add 2st contribution
 	    order.setSize(4*nen);
 	    adata.setSize(nen);
-	    // TODO: alignSharedNodes need to be updated for this extra info
 	    es->alignSharedNodes(mesh, entity, a[i], &order[0]);
 	    get(a[i], &adata[0]);
-	    // TODO: We would want to have a different reorder here to handle
+	    // We would want to have a different reorder here to handle
 	    // the fact that order now includes some extra info
-            if (mesh->getType(a[i]) == apf::Mesh::TRIANGLE)
-              reorderFaceData<T>(&adata[0], &data[n], &order[0], nc, nan);
-	    else
-	      reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
+	    int dtype = mesh->getType(a[i]);
+	    reorderDataNedelec<T>(&adata[0], &data[n], &order[0], nc, nan, dtype);
 	  }
 	  // this else is required to add the dofs associated with the tet
 	  else
