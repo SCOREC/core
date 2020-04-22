@@ -271,11 +271,14 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 	    get(a[i], &adata[0]);
 	    // TODO: We would want to have a different reorder here to handle
 	    // the fact that order now includes some extra info
-      if (mesh->getType(a[i]) == apf::Mesh::TRIANGLE)
-        reorderFaceData<T>(&adata[0], &data[n], &order[0], nc, nan);
-      else
+            if (mesh->getType(a[i]) == apf::Mesh::TRIANGLE)
+              reorderFaceData<T>(&adata[0], &data[n], &order[0], nc, nan);
+	    else
 	      reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
 	  }
+	  // this else is required to add the dofs associated with the tet
+	  else
+	    get(a[i], &data[n]);
 	}
         // for non vector shapes direction matters for nan>1
 	else {
