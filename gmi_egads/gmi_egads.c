@@ -297,7 +297,6 @@ struct gmi_set* adjacent(struct gmi_model* m,
   int num_adjacent = 0;
 
   egads_ent **adjacent_ents = NULL;
-  ego *adjacent_egos;
 
   if (eg_ent->dim == 3 || dim == 3)
   {
@@ -305,6 +304,7 @@ struct gmi_set* adjacent(struct gmi_model* m,
   }
   else // only dealing with egos
   {
+    ego *adjacent_egos;
     if (dim == 0)
       EG_getBodyTopos(eg_body, (eg_ent->ego_ent), 20, &num_adjacent, &adjacent_egos);
     else if (dim == 1)
@@ -321,6 +321,7 @@ struct gmi_set* adjacent(struct gmi_model* m,
       // adjacent_ents[i].tag = adj_ent_tag;
       adjacent_ents[i] = (egads_ent*)m->ops->find(m, dim, adj_ent_tag);
     }
+    EG_free(adjacent_egos);
   }
 
   struct gmi_set *gmi_adj_ent = gmi_make_set(num_adjacent);
@@ -673,9 +674,15 @@ int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 void destroy(struct gmi_model* m)
 {
   // printf("destroy!\n");
-  for (int i = 0; i < 4; ++i)
+  for (int dim = 0; dim < 4; ++dim)
   {
-    EG_free(egads_global_ents[i]);
+    // for (int i = 0; i < m->n[dim]; ++i)
+    // {
+    //   egads_ent ent = egads_global_ents[dim][i];
+    //   // if (ent.ego_ent != NULL)
+    //   //   EG_free(ent.ego_ent);
+    // }
+    EG_free(egads_global_ents[dim]);
   }
 
   int sizes[] = {m->n[3], m->n[3], m->n[3],
