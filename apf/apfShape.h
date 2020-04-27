@@ -176,6 +176,12 @@ FieldShape* getShapeByName(const char* name);
   \param type select from apf::Mesh::Type */
 int countElementNodes(FieldShape* s, int type);
 
+/** \brief gets the xi coordinates for all the nodes
+  \details order follows downward adjacency
+  \param type select from apf::Mesh::Type */
+void getElementNodeXis(FieldShape* s, int type,
+    apf::NewArray<apf::Vector3>& xis);
+
 /** \brief Reparameterize from boundary entity to element
   \details This function converts a point in the local
   parametric space of a boundary mesh entity into the
