@@ -129,6 +129,9 @@ if(SIMMODSUITE_SimAdvMeshing_FOUND)
   target_compile_definitions(cut_interface PRIVATE -DHAVE_SIMADVMESHING)
 endif()
 
+#PUMIPic print partition utility
+util_exe_func(print_pumipic_partition print_pumipic_partition.cc)
+
 # Unit tests / functionality regression tests
 test_exe_func(qr qr.cc)
 test_exe_func(eigen_test eigen_test.cc)
