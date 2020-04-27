@@ -60,6 +60,7 @@ void rotateEntity(apf::Mesh* m, Entity* e, int n, Entity** v);
 
 int findTetRotation(Mesh* m, Entity* tet, Entity** v);
 void unrotateTetXi(Vector& xi, int rotation);
+void rotateTetXi(Vector& xi, int rotation);
 
 void rotateOct(Entity** iv, int n, Entity** ov);
 
