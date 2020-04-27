@@ -252,7 +252,7 @@ void getGaussLegendrePoints(int np, double* pts)
 }
 
 void getGaussLobattoPoints(int /*np*/, double* /*pts*/)
-{ /* TODO implement Gauss Lobatto points. Later when needed. */
+{ /* implement Gauss Lobatto points. Later when needed. */
 };
 
 const double* getPoints(int order, const int type)
@@ -428,7 +428,7 @@ static void computeTriangleTi(
   }
 
   // Populate T
-  mth::Matrix<double> T(non,non); // T(i,j)
+  mth::Matrix<double> T(non,non);
   for (int m = 0; m < non; m++)
   {
     const double *tm = tk + 2*dof2tk[m];
@@ -584,7 +584,7 @@ static void computeTetTi(
   }
 
   // Populate T
-  mth::Matrix<double> T(non,non); // T(i,j)
+  mth::Matrix<double> T(non,non);
   for (int m = 0; m < non; m++)
   {
     const double *tm = tk + 3*dof2tk[m];
@@ -674,8 +674,6 @@ class Nedelec: public FieldShape {
   public:
     const char* getName() const { return "Nedelec"; }
     bool isVectorShape() {return true;}
-    /* Nedelec(int order) : P(order) */
-    /* {} */
     Nedelec()
     {}
     class Vertex : public apf::EntityShape
@@ -685,11 +683,12 @@ class Nedelec: public FieldShape {
 	  apf::Vector3 const&, apf::NewArray<double>& values) const
       {
 	(void)values;
-	// TODO inform the user that this is not implemented and abort()
       }
       void getLocalGradients(apf::Mesh*, apf::MeshEntity*,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
+        PCU_ALWAYS_ASSERT_VERBOSE(0, "error: Nedelec shapes are not \
+            implemented for vertices. Aborting()!");
       }
       int countNodes() const {return 0;}
       void alignSharedNodes(apf::Mesh*,
@@ -708,12 +707,14 @@ class Nedelec: public FieldShape {
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
-      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for Nedelec Edges. Aborting()!");
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for \
+      	    Nedelec Edges. Aborting()!");
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Edges. Aborting()!");
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
+      	    implemented for Nedelec Edges. Aborting()!");
       }
       int countNodes() const {return P;}
       void alignSharedNodes(apf::Mesh*,
@@ -724,12 +725,12 @@ class Nedelec: public FieldShape {
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-      	// TODO: to be completed
+      	// : to be completed
       }
       void getLocalVectorCurls(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-      	// TODO: to be completed
+      	// : to be completed
       }
     };
     class Triangle : public apf::EntityShape
@@ -742,12 +743,14 @@ class Nedelec: public FieldShape {
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
-      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for Nedelec Triangle. Try getVectorValues. Aborting()!");
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented \
+      	    for Nedelec Triangle. Try getVectorValues. Aborting()!");
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Triangle. Aborting()!");
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
+      	    implemented for Nedelec Triangle. Aborting()!");
       }
       int countNodes() const {return countTriNodes(P);}
       void alignSharedNodes(apf::Mesh* m,
@@ -761,7 +764,7 @@ class Nedelec: public FieldShape {
             order[i] = i;
         else
           for(int i = 0; i < P; ++i)
-            order[i] = -(P-1-i)-1; //following MFEM ordering
+            order[i] = -(P-1-i)-1;
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
@@ -878,12 +881,14 @@ class Nedelec: public FieldShape {
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
       {
-      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for Nedelec Tetrahedron. Try getVectorValues. Aborting()!");
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getValues not implemented for \
+      	    Nedelec Tetrahedron. Try getVectorValues. Aborting()!");
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
-      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not implemented for Nedelec Tetrahedron. Aborting()!");
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
+      	    implemented for Nedelec Tetrahedron. Aborting()!");
       }
       int countNodes() const {return countTetNodes(P);}
       void alignSharedNodes(apf::Mesh* m,
@@ -899,7 +904,7 @@ class Nedelec: public FieldShape {
               order[i] = i;
           else
             for(int i = 0; i < P; ++i)
-              order[i] = -(P-1-i)-1; //following MFEM ordering
+              order[i] = -(P-1-i)-1;
           return;
         }
         //must be a triangle
@@ -972,89 +977,18 @@ class Nedelec: public FieldShape {
             }
           }
 
-
-
-
-
-
-          /*========
-          if (rotate == 1  &&  !flip) // CASE 2
-          {
-            for (int r = size-1; r >= 0; r--) {    // horizontal swaps
-              int left = size-r-1; int right = size-1;
-              for(int range = left; range <= left + (right-left)/2; range++) {
-                          std::swap( Nodes(r,range), Nodes(r,left+right-range) );
-              }
-            }
-            mth::Matrix<double> temp(size, size);  // transpose
-            mth::transpose(Nodes,temp);
-            for (int r = 0; r < size; r++)
-              for(int c = 0; c < size; c++)
-                Nodes(r,c) = temp(r,c);
-          }
-          else if (rotate == 2  &&  !flip) // CASE 3
-          {
-            for (int c = size-1; c >= 0; c--) {    // vertical swaps
-              int left = size-c-1; int right = size-1;
-              for(int range = left; range <= left + (right-left)/2; range++) {
-                          std::swap( Nodes(range,c), Nodes(left+right-range,c) );
-              }
-            }
-            mth::Matrix<double> temp(size, size);  // transpose
-            mth::transpose(Nodes,temp);
-            for (int r = 0; r < size; r++)
-              for(int c = 0; c < size; c++)
-                Nodes(r,c) = temp(r,c);
-          }
-          else if (!rotate  &&  flip) // CASE 4
-          {
-            for (int c = size-1; c >= 0; c--) {    // vertical swaps
-              int left = size-c-1; int right = size-1;
-              for(int range = left; range <= left + (right-left)/2; range++) {
-                          std::swap( Nodes(range,c), Nodes(left+right-range,c) );
-              }
-            }
-          }
-          else if (rotate == 1  &&  flip) // CASE 5
-          {
-            for (int r = size-1; r >= 0; r--) {    // horizontal swaps
-              int left = size-r-1; int right = size-1;
-              for(int range = left; range <= left + (right-left)/2; range++) {
-                          std::swap( Nodes(r,range), Nodes(r,left+right-range) );
-              }
-            }
-          }
-          else if (rotate == 2  &&  flip) // CASE 6
-          {
-            mth::Matrix<double> temp(size, size);  // transpose
-            mth::transpose(Nodes,temp);
-            for (int r = 0; r < size; r++)
-              for(int c = 0; c < size; c++)
-                Nodes(r,c) = temp(r,c);
-          }*/
-
           // get the init ordered list with all face nodes
           int init_order[non];
           int i = 0;
           for ( int r = size-1; r >= 0; r--)
             for (int c = size-r-1 ; c < size; c++) {
-              init_order[i++] = Nodes(r,c)*2;    init_order[i++] = Nodes(r,c)*2 + 1;
+              init_order[i++] = Nodes(r,c)*2;
+              init_order[i++] = Nodes(r,c)*2 + 1;
             }
           int* final_order = alignFaceNodes(init_order, non, rotate, flip);
 
           for (int i = 0; i < 4*non; i++)
             order[i] = final_order[i];
-
-          /* TEST
-          cout << "Initial Order " << " r " << rotate << " f " << flip << endl;
-          for (int i = 0; i < non; i++)
-            cout << init_order[i] << " ";
-          cout << endl;
-          cout << "Final Order " << " r " << rotate << " f " << flip << endl;
-          for (int i = 0; i < 4*non; i++)
-            cout << order[i] << " ";
-          cout << endl;
-          cout << endl;*/
         }
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -1234,9 +1168,6 @@ class Nedelec: public FieldShape {
     // consider the interior nodes, i.e.,
     // Faces: no need to count the nodes associated with bounding edges
     // Tets: no need to count the nodes associated with bounding edges/faces
-    // TODO: The above description is consistent with how things are done
-    // for other fields in pumi. We need to make sure this will not cause
-    // any problems for Nedelec fields
     bool hasNodesIn(int dimension)
     {
       if (dimension == 1) return true;
