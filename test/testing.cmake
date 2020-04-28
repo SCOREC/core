@@ -509,6 +509,11 @@ mpi_test(hierarchic_2p_3D 1
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb"
   2)
+set(MDIR ${MESHES}/cube/pumi24)
+mpi_test(nedelec 1
+  ./nedelecShapes
+  "${MDIR}/cube.dmg"
+  "${MDIR}/cube.smb")
 set(MDIR ${MESHES}/cube)
 mpi_test(test_verify 4
   ./test_verify
