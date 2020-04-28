@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   if ( argc != 5 && argc != 6) {
     if ( !PCU_Comm_Self() )
-      printf("Usage: %s <model> <mesh> <number of ranks> <partition file prefix>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <number of output parts> <partition file prefix>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }

@@ -28,6 +28,14 @@ mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
 mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
+mpi_test(print_pumipic_partion 1
+         ./print_pumipic_partition
+         ${MESHES}/cube/cube.dmg
+         ${MESHES}/cube/pumi11/cube.smb
+         4
+         pumipic_cube
+         )
+
 mpi_test(align 1 ./align)
 mpi_test(eigen_test 1 ./eigen_test)
 mpi_test(integrate 1 ./integrate)
@@ -480,7 +488,7 @@ mpi_test(mixedNumbering 4
   out)
 set(MDIR ${MESHES}/square)
 mpi_test(hierarchic_2p_2D 1
-  ./hierarchic 
+  ./hierarchic
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   2)
