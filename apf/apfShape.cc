@@ -1149,7 +1149,6 @@ void getElementNodeXis(FieldShape* s, int type,
         parentXi.zero();
         evi = j;
         for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
-          printf("i,x,j,bt,d    %d,%d,%d,%d,%d\n", i, x, j, bt, d);
           if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
             evi = apf::tri_edge_verts[j][i];
           else if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
