@@ -1085,6 +1085,10 @@ int countElementNodes(FieldShape* s, int type)
   return s->getEntityShape(type)->countNodes();
 }
 
+// TODO this need to be revisited.
+// Currently it gives the nodes as they appear in the type.
+// Sometimes what we need is to give them in the order they
+// appear in the downward adjacent entities.
 void getElementNodeXis(FieldShape* s, int type,
     apf::NewArray<apf::Vector3>& xis)
 {
