@@ -177,9 +177,19 @@ FieldShape* getShapeByName(const char* name);
 int countElementNodes(FieldShape* s, int type);
 
 /** \brief gets the xi coordinates for all the nodes
-  \details order follows downward adjacency
+  \details order follows canonical notation. See tables
+  apf::Mesh::tri_edge_verts, apf::Mesh::tet_edge_verts, and
+  apf::Mesh::tet_tri_verts
   \param type select from apf::Mesh::Type */
 void getElementNodeXis(FieldShape* s, int type,
+    apf::NewArray<apf::Vector3>& xis);
+
+/** \brief gets the xi coordinates for all the nodes
+  \details order follows downward adjacency and global
+  directions for the bounding entities. xi coordinates
+  will be with respect to the entity e
+  \param type select from apf::Mesh::Type */
+void getElementNodeXis(FieldShape* s, MeshEntity*e,
     apf::NewArray<apf::Vector3>& xis);
 
 /** \brief Reparameterize from boundary entity to element
