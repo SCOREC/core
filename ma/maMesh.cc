@@ -132,6 +132,22 @@ void unrotateTetXi(Vector& xi, int rotation)
   xi[0] = b[1]; xi[1] = b[2]; xi[2] = b[3];
 }
 
+/* given a set of element-local coordinates computed
+   based on the original set of vertices, this function
+   takes the rotation code and gives the coordinates
+   that match the coordinates computed based on a rotated
+   set of vertices */
+void rotateTetXi(Vector& xi, int rotation)
+{
+  double b[4];
+  b[0] = 1-xi[0]-xi[1]-xi[2]; b[1] = xi[0]; b[2] = xi[1]; b[3] = xi[2];
+  int const* originalIndexOf = tet_rotation[rotation];
+  double a[4];
+  for (int i = 0; i < 4; i++)
+    a[ originalIndexOf[i] ] = b[i];
+  xi[0] = a[1]; xi[1] = a[2]; xi[2] = a[3];
+}
+
 void rotateOct(Entity** iv, int n, Entity** ov)
 {
   for (int i=0; i < 6; ++i)
