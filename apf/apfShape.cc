@@ -1085,10 +1085,6 @@ int countElementNodes(FieldShape* s, int type)
   return s->getEntityShape(type)->countNodes();
 }
 
-// TODO this need to be revisited.
-// Currently it gives the nodes as they appear in the type.
-// Sometimes what we need is to give them in the order they
-// appear in the downward adjacent entities.
 void getElementNodeXis(FieldShape* s, int type,
     apf::NewArray<apf::Vector3>& xis)
 {
@@ -1160,6 +1156,37 @@ void getElementNodeXis(FieldShape* s, int type,
           parentXi += elem_vert_xi[type][evi] * shape_vals[i];
         }
         xis[row] = parentXi;
+        ++row;
+      }
+    }
+  }
+  PCU_ALWAYS_ASSERT(row == s->getEntityShape(type)->countNodes());
+}
+
+void getElementNodeXis(FieldShape* s, Mesh* m, MeshEntity* e,
+    apf::NewArray<apf::Vector3>& xis)
+{
+  int type = m->getType(e);
+  if (!xis.allocated())
+    xis.allocate(countElementNodes(s, type));
+  else
+    xis.resize(countElementNodes(s, type));
+
+  int td = apf::Mesh::typeDimension[type];
+  apf::Vector3 childXi, parentXi;
+
+  int row = 0;
+  for(int d = 0; d <= td; ++d){
+    MeshEntity* down[12];
+    int nDown = m->getDownward(e, d, down);
+    int bt = apf::Mesh::simplexTypes[d];
+    int non = s->countNodesOn(bt);
+    if (!non) continue;
+    for(int j = 0; j < nDown; ++j){
+      for(int x = 0; x < non; ++x){
+        s->getNodeXi(bt, x, childXi);
+        xis[row] = (bt != type) ?
+          boundaryToElementXi(m, down[j], e, childXi) : childXi;
         ++row;
       }
     }
