@@ -30,21 +30,19 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   {
     int ind = 0;
     int offset = 0;
-    for (int i = 0; i < nodes; i++)
+    for (int i = 0; i < nodes; i+=2)
     {
       final_order[i] = init_order[offset];
       final_order[i+1] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     offset = 1;
-    for (int i = 0 ; i < nodes; i++)
+    for (int i = 0 ; i < nodes; i+=2)
     {
       final_order[i+ind] = init_order[offset];
       final_order[i+1+ind] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
@@ -57,21 +55,19 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   {
     int ind = 0;
     int offset = 0;
-    for (int i = 0; i < nodes; i++)
+    for (int i = 0; i < nodes; i+=2)
     {
       final_order[i] = -init_order[offset]-1;
       final_order[i+1] = -init_order[offset]-1;
       offset += 2;
-      i++;
     }
     ind += nodes;
     offset = 1;
-    for (int i = 0 ; i < nodes; i++)
+    for (int i = 0 ; i < nodes; i+=2)
     {
       final_order[i+ind] = init_order[offset];
       final_order[i+1+ind] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
@@ -84,21 +80,19 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   {
     int ind = 0;
     int offset = 0;
-    for (int i = 0; i < nodes; i++)
+    for (int i = 0; i < nodes; i+=2)
     {
       final_order[i] = init_order[offset];
       final_order[i+1] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     offset = 1;
-    for (int i = 0 ; i < nodes; i++)
+    for (int i = 0 ; i < nodes; i+=2)
     {
       final_order[i+ind] = -init_order[offset]-1;
       final_order[i+1+ind] = -init_order[offset]-1;
       offset += 2;
-      i++;
     }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
@@ -111,21 +105,19 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   {
     int ind = 0;
     int offset = 0;
-    for (int i = 0; i < nodes; i++)
+    for (int i = 0; i < nodes; i+=2)
     {
       final_order[i] = init_order[offset];
       final_order[i+1] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     offset = 1;
-    for (int i = 0 ; i < nodes; i++)
+    for (int i = 0 ; i < nodes; i+=2)
     {
       final_order[i+ind] = -init_order[offset]-1;
       final_order[i+1+ind] = -init_order[offset]-1;
       offset += 2;
-      i++;
     }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
@@ -138,21 +130,19 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   {
     int ind = 0;
     int offset = 0;
-    for (int i = 0; i < nodes; i++)
+    for (int i = 0; i < nodes; i+=2)
     {
       final_order[i] = -init_order[offset]-1;
       final_order[i+1] = -init_order[offset]-1;
       offset += 2;
-      i++;
     }
     ind += nodes;
     offset = 1;
-    for (int i = 0 ; i < nodes; i++)
+    for (int i = 0 ; i < nodes; i+=2)
     {
       final_order[i+ind] = init_order[offset];
       final_order[i+1+ind] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
@@ -165,21 +155,19 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
   {
     int ind = 0;
     int offset = 0;
-    for (int i = 0; i < nodes; i++)
+    for (int i = 0; i < nodes; i+=2)
     {
       final_order[i] = init_order[offset];
       final_order[i+1] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     offset = 1;
-    for (int i = 0 ; i < nodes; i++)
+    for (int i = 0 ; i < nodes; i+=2)
     {
       final_order[i+ind] = init_order[offset];
       final_order[i+1+ind] = init_order[offset];
       offset += 2;
-      i++;
     }
     ind += nodes;
     for (int i = 0; i < nodes; i++)
