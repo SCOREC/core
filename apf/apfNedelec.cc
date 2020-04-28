@@ -10,9 +10,10 @@
 #include "apfFieldOf.h"
 #include "apfElement.h"
 #include "apfVectorElement.h"
-#include "mth.h"
-#include <pcu_util.h>
+#include <mth.h>
+#include <mth_def.h>
 #include <mthQR.h>
+#include <pcu_util.h>
 #include <PCU.h>
 
 #include <iostream>
