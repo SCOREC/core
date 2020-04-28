@@ -109,7 +109,7 @@ util_exe_func(reorder reorder.cc)
 util_exe_func(fixshape fixshape.cc)
 util_exe_func(fixlayer fixlayer.cc)
 util_exe_func(fixDisconnected fixDisconnected.cc)
-util_exe_func(scale scale.cc) 
+util_exe_func(scale scale.cc)
 
 # Phasta utilities
 util_exe_func(chef ../phasta/chef.cc)
@@ -128,6 +128,9 @@ if(SIMMODSUITE_SimAdvMeshing_FOUND)
   target_compile_definitions(chef PRIVATE -DHAVE_SIMADVMESHING)
   target_compile_definitions(cut_interface PRIVATE -DHAVE_SIMADVMESHING)
 endif()
+
+#PUMIPic print partition utility
+util_exe_func(print_pumipic_partition print_pumipic_partition.cc)
 
 # Unit tests / functionality regression tests
 test_exe_func(qr qr.cc)
