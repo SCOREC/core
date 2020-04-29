@@ -483,7 +483,9 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
   }
   else
   {
-    // TODO when reference dimension != mesh space dimension. Psedoinverse needed.
+    // TODO when ref dim != mesh space dim. Pseudo-inverse needed.
+    PCU_ALWAYS_ASSERT_VERBOSE(false,
+    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");
   }
 }
 
@@ -521,7 +523,9 @@ void getCurlShapeValues(Element* e, Vector3 const& local,
   }
   else
   {
-    // TODO for 2d
+    // TODO when ref dim != mesh space dim. Pseudo-inverse needed.
+    PCU_ALWAYS_ASSERT_VERBOSE(false,
+    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");
   }
 
 
