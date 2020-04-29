@@ -43,7 +43,7 @@ template <class T> class ReductionOp;
 template <class T> class ReductionSum;
 
 /** \brief Base class for applying operations to make a Field consistent
-  * in parallel 
+  * in parallel
   * \details This function gets applied pairwise to the Field values
   * from every partition, resulting in a single unique value.  No guarantees
   * are made about the order in which this function is applied to the
@@ -603,6 +603,19 @@ void getShapeValues(Element* e, Vector3 const& local,
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads);
 
+/** \brief Returns the vector shape function values at a point
+ *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
+  */
+void getVectorShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
+
+/** \brief Returns the vector curl shape function values at a point
+ *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
+  */
+void getCurlShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
 
 /** \brief Retrieve the apf::FieldShape used by a field
   */
