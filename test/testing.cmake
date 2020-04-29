@@ -28,6 +28,7 @@ mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
 mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
+if(ENABLE_ZOLTAN)
 mpi_test(print_pumipic_partion 1
          ./print_pumipic_partition
          ${MESHES}/cube/cube.dmg
@@ -35,6 +36,7 @@ mpi_test(print_pumipic_partion 1
          4
          pumipic_cube
          )
+endif()
 
 mpi_test(align 1 ./align)
 mpi_test(eigen_test 1 ./eigen_test)
