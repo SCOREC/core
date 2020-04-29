@@ -30,7 +30,6 @@
 #include "mth.h"
 #include "mth_def.h"
 
-using namespace std;
 namespace apf {
 
 void destroyMesh(Mesh* m)
