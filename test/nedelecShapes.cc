@@ -114,11 +114,11 @@ void testNedelec(
     while( (ent = m->iterate(it)) ) {
       int type = m->getType(ent);
       int non = ndField->getShape()->countNodesOn(type);
+      apf::MeshElement* me = apf::createMeshElement(m, ent);
       for (int i = 0; i < non; i++)
       {
         apf::Vector3 xi, p, value;
         ndField->getShape()->getNodeXi(type, i, xi);
-        apf::MeshElement* me = apf::createMeshElement(m, ent);
         apf::mapLocalToGlobal(me, xi, p);
         E_exact(p, value, exactOrder);
 
@@ -136,6 +136,7 @@ void testNedelec(
         double dof = temp * t;
       	apf::setScalar(ndField, ent, i, dof);
       }
+      apf::destroyMeshElement(me);
       count++;
     }
     m->end(it);

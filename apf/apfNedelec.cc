@@ -21,11 +21,11 @@ using namespace std;
 
 namespace apf {
 
-int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
+static void alignFaceNodes(
+    int init_order[],
+    int final_order[],
+    int nodes, int r, bool f)
 {
-  int size = 4*nodes;
-  int* final_order = new int[size];
-
   if (r == 0 && !f)     // CASE 1
   {
     int ind = 0;
@@ -176,10 +176,10 @@ int* alignFaceNodes(int init_order[], int nodes, int r, bool f)
     for (int i = 0; i < nodes; i++)
       final_order[i+ind] = (i%2) ? 0 : 1;
   }
-  return final_order;
 }
 
 static unsigned const MAX_ND_ORDER = 10;
+
 enum {
   GAUSS_LEGENDRE,
   GAUSS_LOBATTO
@@ -244,34 +244,45 @@ void getGaussLobattoPoints(int /*np*/, double* /*pts*/)
 { /* implement Gauss Lobatto points. Later when needed. */
 };
 
-const double* getPoints(int order, const int type)
+static void getPoints(
+    int order,
+    apf::NewArray<double>& points,
+    int type)
 {
   int np = order + 1;
-  double* points = new double[np];
+  points.allocated() ? points.resize(np) : points.allocate(np);
   switch (type)
   {
     case GAUSS_LEGENDRE:
     {
-      getGaussLegendrePoints(np, points);
+      getGaussLegendrePoints(np, &points[0]);
       break;
     }
     case GAUSS_LOBATTO:
     {
-        getGaussLobattoPoints(np, points);
+      getGaussLobattoPoints(np, &points[0]);
       break;
     }
+    default:
+      PCU_ALWAYS_ASSERT_VERBOSE(false,
+      	  "type should be either GAUSS_LEGENDRE or GAUSS_LOBATTO!");
   }
-  return points;
 }
 
-const double* getOpenPoints(int order, const int type = GAUSS_LEGENDRE)
+void getOpenPoints(
+    int order,
+    apf::NewArray<double>& op,
+    int type = GAUSS_LEGENDRE)
 {
-  return getPoints(order, type);
+  getPoints(order, op, type);
 }
 
-const double* getClosedPoints(int order, const int type = GAUSS_LOBATTO)
+void getClosedPoints(
+    int order,
+    apf::NewArray<double>& cp,
+    int type = GAUSS_LOBATTO)
 {
-    return getPoints(order, type);
+    getPoints(order, cp, type);
 }
 
 void getChebyshevT(int order, double xi, double* u)
@@ -375,8 +386,12 @@ static void computeTriangleTi(
   const double c = 1./3.;
   int non = countTriNodes(P);
 
-  const double *eop = getOpenPoints(P - 1);
-  const double *iop = (P > 1) ? getOpenPoints(P - 2) : NULL;
+  apf::NewArray<double> eop;
+  apf::NewArray<double> iop;
+  getOpenPoints(P - 1, eop);
+  if (P > 1)
+    getOpenPoints(P - 2, iop);
+
 
   const int p = P, pm1 = P - 1, pm2 = P - 2;
   apf::NewArray<double> shape_x(p);
@@ -462,9 +477,16 @@ static void computeTetTi(
      // this last one is the negative of the third one
      // and it is used for face and tet tangents only
      0.,   1.,  0.};
-  const double *eop = getOpenPoints(P - 1);
-  const double *fop = (P > 1) ? getOpenPoints(P - 2) : NULL;
-  const double *iop = (P > 2) ? getOpenPoints(P - 3) : NULL;
+
+
+  apf::NewArray<double> eop;
+  apf::NewArray<double> fop;
+  apf::NewArray<double> iop;
+  getOpenPoints(P - 1, eop);
+  if (P > 1)
+    getOpenPoints(P - 2, fop);
+  if (P > 2)
+    getOpenPoints(P - 3, iop);
 
   const int p = P, pm1 = P - 1, pm2 = P - 2, pm3 = P - 3;
 
@@ -968,13 +990,14 @@ class Nedelec: public FieldShape {
 
           // get the init ordered list with all face nodes
           int init_order[non];
+          int final_order[4*non];
           int i = 0;
           for ( int r = size-1; r >= 0; r--)
             for (int c = size-r-1 ; c < size; c++) {
               init_order[i++] = Nodes(r,c)*2;
               init_order[i++] = Nodes(r,c)*2 + 1;
             }
-          int* final_order = alignFaceNodes(init_order, non, rotate, flip);
+          alignFaceNodes(init_order, final_order, non, rotate, flip);
 
           for (int i = 0; i < 4*non; i++)
             order[i] = final_order[i];
@@ -1176,22 +1199,25 @@ class Nedelec: public FieldShape {
     int getOrder() {return P;}
     void getNodeXi(int type, int node, Vector3& xi)
     {
+      apf::NewArray<double> op;
       if(type == Mesh::EDGE)
       {
-        const double *eop = (P > 0) ? getOpenPoints(P-1) : NULL;
-        xi = Vector3( -1 + 2*eop[node], 0., 0. ); // map from [0,1] to [-1,1]
+      	if (P > 0)
+      	  getOpenPoints(P-1, op);
+        xi = Vector3( -1 + 2*op[node], 0., 0. ); // map from [0,1] to [-1,1]
         return;
       }
       else if (type == Mesh::TRIANGLE)
       {
-        const double *iop = (P > 1) ? getOpenPoints(P - 2) : NULL;
+      	if (P > 1)
+      	  getOpenPoints(P-2, op);
         int pm2 = P - 2; int c = 0;
 
         for (int j = 0; j <= pm2; j++) {
           for (int i = 0; i + j <= pm2; i++) {
             if (node/2 == c) {  // since 2 dofs per node on the face
-              double w = iop[i] + iop[j] + iop[pm2-i-j];
-              xi = Vector3( iop[i]/w, iop[j]/w, 0. );
+              double w = op[i] + op[j] + op[pm2-i-j];
+              xi = Vector3( op[i]/w, op[j]/w, 0. );
               return;
             }
             else
@@ -1201,15 +1227,16 @@ class Nedelec: public FieldShape {
       }
       else if (type == Mesh::TET)
       {
-        const double *iop = (P > 2) ? getOpenPoints(P - 3) : NULL;
+      	if (P>2)
+      	  getOpenPoints(P-3, op);
         int pm3 = P - 3; int c = 0;
 
         for (int k = 0; k <= pm3; k++) {
           for (int j = 0; j + k <= pm3; j++) {
             for (int i = 0; i + j + k <= pm3; i++) {
               if( node/3 == c) {  // since 3 dofs per node on interior tet
-                double w = iop[i] + iop[j] + iop[k] + iop[pm3-i-j-k];
-                xi = Vector3( iop[i]/w, iop[j]/w,  iop[k]/w );
+                double w = op[i] + op[j] + op[k] + op[pm3-i-j-k];
+                xi = Vector3( op[i]/w, op[j]/w,  op[k]/w );
                 return;
               }
               else
