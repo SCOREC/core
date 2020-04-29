@@ -3,8 +3,8 @@
 #include "apfShape.h"
 #include <pcu_util.h>
 #include <cstdlib>
-using namespace std;
 #include <iostream>
+
 namespace apf {
 
 FieldData::~FieldData()
@@ -271,46 +271,45 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
   apf::DynamicArray<T> adata;
   int n = 0;
   for (int d = 0; d <= ed; ++d) {
-    if (fs->hasNodesIn(d)) {
-      Downward a;
-      int na = mesh->getDownward(entity,d,a);
-      for (int i = 0; i < na; ++i) {
-        int nan = fs->countNodesOn(mesh->getType(a[i]));
-        // for vector shapes (i.e., nedelec) direction matters for nan>=1
-        if (fs->isVectorShape()) {
-	  if (nan >= 1 && ed != d) {
-	    // The 1st nen ints is the 1st contribution
-	    // The 2nd nen ints is the 2nd contribution
-	    // The 3rd nen ints tells whether to add 1st contribution
-	    // The 4th nen ints tells whether to add 2st contribution
-	    order.setSize(4*nen);
-	    adata.setSize(nen);
-	    es->alignSharedNodes(mesh, entity, a[i], &order[0]);
-	    get(a[i], &adata[0]);
-	    // We would want to have a different reorder here to handle
-	    // the fact that order now includes some extra info
-	    int dtype = mesh->getType(a[i]);
-	    reorderDataNedelec<T>(&adata[0], &data[n], &order[0], nc, nan, dtype);
-	  }
-	  // this else is required to add the dofs associated with the tet
-	  else
-	    get(a[i], &data[n]);
-	}
-        // for non vector shapes direction matters for nan>1
-	else {
-	  if (nan > 1 && ed != d) { /* multiple shared nodes, check alignment */
-	    order.setSize(nen); /* nen >= nan */
-	    adata.setSize(nen); /* setSize is no-op for the same size */
-	    es->alignSharedNodes(mesh, entity, a[i], &order[0]);
-	    get(a[i], &adata[0]);
-	    reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
-	  } else if (nan) { /* non-zero set of nodes, either one
-			      or not shared */
-	    get(a[i], &data[n]);
-	  }
-	}
-        n += nc * nan;
+    if (!fs->hasNodesIn(d)) continue;
+    Downward a;
+    int na = mesh->getDownward(entity,d,a);
+    for (int i = 0; i < na; ++i) {
+      int nan = fs->countNodesOn(mesh->getType(a[i]));
+      // for vector shapes (i.e., nedelec) direction matters for nan>=1
+      if (fs->isVectorShape()) {
+        if (nan >= 1 && ed != d) {
+          // The 1st nen ints is the 1st contribution
+          // The 2nd nen ints is the 2nd contribution
+          // The 3rd nen ints tells whether to add 1st contribution
+          // The 4th nen ints tells whether to add 2st contribution
+          order.setSize(4*nen);
+          adata.setSize(nen);
+          es->alignSharedNodes(mesh, entity, a[i], &order[0]);
+          get(a[i], &adata[0]);
+          // We would want to have a different reorder here to handle
+          // the fact that order now includes some extra info
+          int dtype = mesh->getType(a[i]);
+          reorderDataNedelec<T>(&adata[0], &data[n], &order[0], nc, nan, dtype);
+        }
+        // this else is required to add the dofs associated with the tet
+        else
+          get(a[i], &data[n]);
       }
+      // for non vector shapes direction matters for nan>1
+      else {
+	if (nan > 1 && ed != d) { /* multiple shared nodes, check alignment */
+	  order.setSize(nen); /* nen >= nan */
+	  adata.setSize(nen); /* setSize is no-op for the same size */
+	  es->alignSharedNodes(mesh, entity, a[i], &order[0]);
+	  get(a[i], &adata[0]);
+	  reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
+	} else if (nan) { /* non-zero set of nodes, either one
+			    or not shared */
+	  get(a[i], &data[n]);
+	}
+      }
+      n += nc * nan;
     }
   }
   PCU_ALWAYS_ASSERT(n == nc * nen);
