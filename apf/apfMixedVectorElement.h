@@ -15,6 +15,11 @@ namespace apf {
 
 class MixedVectorField;
 
+/* Fields with vector shapes are a bit peculiar, in that
+ * the shapes functions are vectors but the dof holders are
+ * scalars. Hence the need for this Mixed class. An example of
+ * such fields are Nedelec fields.
+ */
 class MixedVectorElement : public ElementOf<Vector3, double>
 {
   public:

@@ -160,7 +160,7 @@ class HTriangle3 : public EntityShape {
       N[9] = l0*l1*l2;
     }
     void getLocalGradients(
-        Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& dN) const    {
+        Mesh* m, MeshEntity* e, Vector3 const& xi, NewArray<Vector3>& dN) const {
       dN.allocate(10);
 
       /* edge orientations */
