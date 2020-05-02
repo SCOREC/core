@@ -14,7 +14,17 @@
  */
 #include "apf.h"
 
+namespace em {
 
+void equilibrateResiduals(apf::Field* f);
+
+
+
+
+
+
+
+}
 
 
 
