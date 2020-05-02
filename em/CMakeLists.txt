@@ -21,7 +21,7 @@ target_include_directories(em INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(em PUBLIC apf pcu)
+target_link_libraries(em PUBLIC apf pcu crv)
 
 scorec_export_library(em)
 
