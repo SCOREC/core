@@ -62,10 +62,13 @@ struct EdgePatch {
      is centered. a patch collects entities
      (faces & tets) around this edge entity */
   apf::MeshEntity* entity;
+  bool isOnBdry;
   EntitySet tets;
   EntitySet faces;
   mth::Matrix<double> A;
+  mth::Vector<double> b;
   QRDecomp qr;
+
 };
 
 static void setupEdgePatch(EdgePatch* p, Equilibration* eq)
@@ -80,6 +83,7 @@ static void startEdgePatch(EdgePatch* p, apf::MeshEntity* e)
   p->tets.clear();
   p->faces.clear();
   p->entity = e;
+  p->isOnBdry = crv::isBoundaryEntity(p->mesh, p->entity);
 }
 
 static void addEntityToPatch(EdgePatch* p, apf::MeshEntity* e)
@@ -156,6 +160,48 @@ static void assembleLHS(EdgePatch* p)
   }
 }
 
+// computes local bilinear form integral restricted to
+// an edge of an element
+static int getLocalBLFIntegral(EdgePatch* p, apf::MeshEntity* tet)
+{
+  // find position of edge in downward edges of element
+  apf::Downward e;
+  int ne = p->mesh->getDownward(tet, 1, e);
+  int ei = apf::findIn(e, ne, p->entity);
+  // get Element Dofs
+  //
+  // assemble curl curl element matrix
+  // assemble vector mass element matrix
+  // add element matrices
+  // multiply element matrix with element dofs
+  // pick edge index from the resulting vector
+}
+
+
+static void assembleRHS(EdgePatch* p)
+{
+  if (p->isOnBdry) {
+    p->b.resize(p->tets.size() + p->faces.size());
+    p->b.zero();
+  }
+  else {
+    p->b.resize(p->tets.size());
+    p->b.zero();
+  }
+
+  apf::MeshEntity* edge = p->entity[i];
+  int ne = p->tets.size();
+  for (int i = 0; i < ne; i++) {
+    apf::MeshEntity* tet = p->tets[i];
+    int blfIntegral = getLocalBLFIntegral(p, tet);
+  }
+  // TODO computeBilinearFormIntegral
+  // TODO computeLinearFormIntegral
+  // TODO computeFluxTermIntegral
+
+
+}
+
 // The following two functions help order tets and faces in a cavity in a
 // clockwise (or ccw) direction.
 static apf::MeshEntity* getTetOppFaceSharingEdge(
@@ -173,7 +219,7 @@ static apf::MeshEntity* getTetOppFaceSharingEdge(
   return 0;
 }
 static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
-     std::vector<apf::MeshEntity*>& tets, std::vector<apf::MeshEntity*>& faces)
+     EntitySet& tets, EntitySet& faces)
 {
   tets.clear();
   faces.clear();
@@ -184,14 +230,14 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
     PCU_ALWAYS_ASSERT(up.n == 2);
     apf::MeshEntity* firstTet = up.e[0];
     apf::MeshEntity* nextTet  = up.e[1];
-    tets.push_back(firstTet);
+    tets.insert(firstTet);
     apf::MeshEntity* firstFace = getTetOppFaceSharingEdge(mesh, firstTet,
         currentFace, edge);
-    faces.push_back(firstFace);
+    faces.insert(firstFace);
 
     while (nextTet != firstTet) {
-      tets.push_back(nextTet);
-      faces.push_back(currentFace);
+      tets.insert(nextTet);
+      faces.insert(currentFace);
       currentFace = getTetOppFaceSharingEdge(mesh, nextTet, currentFace, edge);
       PCU_ALWAYS_ASSERT(currentFace);
       apf::Up up;
@@ -212,37 +258,41 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
         firstFace = up.e[i]; break;
       }
     }
-    faces.push_back(firstFace);
+    faces.insert(firstFace);
     mesh->getUp(firstFace, up);
     PCU_ALWAYS_ASSERT(up.n == 1);
     apf::MeshEntity* firstTet = up.e[0];
-    tets.push_back(firstTet);
+    tets.insert(firstTet);
 
     apf::MeshEntity* nextFace = getTetOppFaceSharingEdge(mesh, firstTet,
         firstFace, edge);
     apf::MeshEntity* nextTet = firstTet;
     mesh->getUp(nextFace, up);
     while( up.n == 2) {
-      faces.push_back(nextFace);
+      faces.insert(nextFace);
       if (nextTet != up.e[0])
         nextTet = up.e[0];
       else
         nextTet = up.e[1];
-      tets.push_back(nextTet);
+      tets.insert(nextTet);
 
       nextFace = getTetOppFaceSharingEdge(mesh, nextTet, nextFace, edge);
       mesh->getUp(nextFace, up);
     }
-    faces.push_back(nextFace);
+    faces.insert(nextFace);
   }
 }
 
 static void runErm(EdgePatch* p)
 {
   assembleLHS(p);
-  std::vector<apf::MeshEntity*> otets; // ordered tets
-  std::vector<apf::MeshEntity*> ofaces; // ordered faces
-  getOrderedTetsandFaces(p->mesh, p->entity, otets, ofaces);
+  // TODO decompose A into Q and R
+  //std::vector<apf::MeshEntity*> otets; // ordered tets // TODO remove these two
+  //std::vector<apf::MeshEntity*> ofaces; // ordered faces
+  getOrderedTetsandFaces(p->mesh, p->entity, p->tets, p->faces); // TODO maybe use p->tets, p->faces
+
+
+  // TODO assemble RHS
 }
 
 
