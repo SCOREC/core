@@ -189,7 +189,7 @@ void getElementNodeXis(FieldShape* s, int type,
   directions for the bounding entities. xi coordinates
   will be with respect to the entity e
   \param type select from apf::Mesh::Type */
-void getElementNodeXis(FieldShape* s, MeshEntity*e,
+void getElementNodeXis(FieldShape* s, Mesh* m, MeshEntity* e,
     apf::NewArray<apf::Vector3>& xis);
 
 /** \brief Reparameterize from boundary entity to element
