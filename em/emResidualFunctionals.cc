@@ -156,9 +156,93 @@ static void assembleLHS(EdgePatch* p)
   }
 }
 
+// The following two functions help order tets and faces in a cavity in a
+// clockwise (or ccw) direction.
+static apf::MeshEntity* getTetOppFaceSharingEdge(
+    apf::Mesh* m, apf::MeshEntity* t, apf::MeshEntity* f, apf::MeshEntity* e)
+{
+  apf::MeshEntity* fs[4];
+  m->getDownward(t, 2, fs);
+  for (int i = 0; i < 4; i++) {
+    if (fs[i] == f) continue;
+    apf::MeshEntity* es[3];
+    m->getDownward(fs[i], 1, es);
+    if (apf::findIn(es, 3, e) > -1)
+      return fs[i];
+  }
+  return 0;
+}
+static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
+     std::vector<apf::MeshEntity*>& tets, std::vector<apf::MeshEntity*>& faces)
+{
+  tets.clear();
+  faces.clear();
+  if( ! crv::isBoundaryEntity(mesh, edge) ) { // interior edge patches
+    apf::MeshEntity* currentFace = mesh->getUpward(edge, 0);
+    apf::Up up;
+    mesh->getUp(currentFace, up);
+    PCU_ALWAYS_ASSERT(up.n == 2);
+    apf::MeshEntity* firstTet = up.e[0];
+    apf::MeshEntity* nextTet  = up.e[1];
+    tets.push_back(firstTet);
+    apf::MeshEntity* firstFace = getTetOppFaceSharingEdge(mesh, firstTet,
+        currentFace, edge);
+    faces.push_back(firstFace);
+
+    while (nextTet != firstTet) {
+      tets.push_back(nextTet);
+      faces.push_back(currentFace);
+      currentFace = getTetOppFaceSharingEdge(mesh, nextTet, currentFace, edge);
+      PCU_ALWAYS_ASSERT(currentFace);
+      apf::Up up;
+      mesh->getUp(currentFace, up);
+      PCU_ALWAYS_ASSERT(up.n == 2);
+      if (nextTet != up.e[0])
+        nextTet = up.e[0];
+      else
+        nextTet = up.e[1];
+    }
+  }
+  else { // boundary edge patches
+    apf::Up up;
+    mesh->getUp(edge, up);
+    apf::MeshEntity* firstFace;
+    for (int i = 0; i < up.n; i++) {
+      if ( crv::isBoundaryEntity(mesh, up.e[i]) ) {
+        firstFace = up.e[i]; break;
+      }
+    }
+    faces.push_back(firstFace);
+    mesh->getUp(firstFace, up);
+    PCU_ALWAYS_ASSERT(up.n == 1);
+    apf::MeshEntity* firstTet = up.e[0];
+    tets.push_back(firstTet);
+
+    apf::MeshEntity* nextFace = getTetOppFaceSharingEdge(mesh, firstTet,
+        firstFace, edge);
+    apf::MeshEntity* nextTet = firstTet;
+    mesh->getUp(nextFace, up);
+    while( up.n == 2) {
+      faces.push_back(nextFace);
+      if (nextTet != up.e[0])
+        nextTet = up.e[0];
+      else
+        nextTet = up.e[1];
+      tets.push_back(nextTet);
+
+      nextFace = getTetOppFaceSharingEdge(mesh, nextTet, nextFace, edge);
+      mesh->getUp(nextFace, up);
+    }
+    faces.push_back(nextFace);
+  }
+}
+
 static void runErm(EdgePatch* p)
 {
   assembleLHS(p);
+  std::vector<apf::MeshEntity*> otets; // ordered tets
+  std::vector<apf::MeshEntity*> ofaces; // ordered faces
+  getOrderedTetsandFaces(p->mesh, p->entity, otets, ofaces);
 }
 
 
