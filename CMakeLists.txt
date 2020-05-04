@@ -17,6 +17,11 @@ message(STATUS "SCOREC_ENABLE_CXX11: ${SCOREC_ENABLE_CXX11}")
 option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
 message(STATUS "USE_XSDK_DEFAULTS: ${USE_XSDK_DEFAULTS}")
 
+# this compiler definition is needed to silence warnings caused by the openmpi CXX
+# bindings that are depreciated. This is needed on gcc 8 forward.
+# see: https://github.com/open-mpi/ompi/issues/5157
+add_definitions(-DOMPI_SKIP_MPICXX)
+
 xsdk_begin_package()
 bob_begin_package()
 
