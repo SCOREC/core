@@ -12,9 +12,6 @@
 #include "apfField.h"
 #include "apfShape.h"
 
-#include <mth.h>
-#include <mth_def.h>
-
 namespace apf {
 
 class EntityShape;

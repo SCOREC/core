@@ -12,9 +12,6 @@
 #include "apfMesh.h"
 #include "apfVectorElement.h"
 
-#include <mth.h>
-#include <mth_def.h>
-
 namespace apf {
 
 void Element::init(Field* f, MeshEntity* e, VectorElement* p)
