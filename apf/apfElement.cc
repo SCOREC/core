@@ -12,6 +12,9 @@
 #include "apfMesh.h"
 #include "apfVectorElement.h"
 
+#include <mth.h>
+#include <mth_def.h>
+
 namespace apf {
 
 void Element::init(Field* f, MeshEntity* e, VectorElement* p)
@@ -117,6 +120,13 @@ void Element::getComponents(Vector3 const& xi, double* c)
 void Element::getNodeData()
 {
   field->getData()->getElementData(entity,nodeData);
+}
+
+void Element::getElementDofs(NewArray<double>& d)
+{
+  d.allocated() ? d.resize(nen) : d.allocate(nen);
+  for (int i = 0; i < nen; i++)
+    d[i] = nodeData[i];
 }
 
 }//namespace apf
