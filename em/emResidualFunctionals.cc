@@ -5,7 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include <iostream>
-
+#include <cstdlib>
 #include <apf.h>
 #include <PCU.h>
 #include <lionPrint.h>
@@ -110,8 +110,32 @@ static bool getInitialEdgePatch(EdgePatch* p, apf::CavityOp* o)
   apf::DynamicArray<apf::MeshEntity*> adjacent;
   p->mesh->getAdjacent(p->entity, 3, adjacent);
   addEntitiesToPatch(p, adjacent);
+  // REMOVE ALL
+  int ne = adjacent.size();
+  std::cout << " Unordered Tets, ne: " << ne << std::endl; // REMOVE
+  std::cout << " Center of Unordered tets" << std::endl;
+  for (int i = 0; i < ne; i++) {
+    apf::MeshEntity* tet = adjacent[i];;
+    apf::Vector3 center = apf::getLinearCentroid(p->mesh, tet);
+    std::cout << i << ":  " << center << std::endl;
+  } //////////
+
+
+
   p->mesh->getAdjacent(p->entity, 2, adjacent);
   addEntitiesToPatch(p, adjacent);
+
+  // REMOVE ALL
+  int nf = adjacent.size();
+  std::cout << " Unordered Faces, nf: " << nf << std::endl; // REMOVE
+  std::cout << " Center of Unordered Faces" << std::endl;
+  for (int i = 0; i < nf; i++) {
+    apf::MeshEntity* face = adjacent[i];
+    apf::Vector3 center = apf::getLinearCentroid(p->mesh, face);
+    std::cout << i << ":  " << center << std::endl;
+  }
+  std::cout << "----------------" << std::endl;
+
   return true;
 }
 
@@ -125,7 +149,7 @@ static void assembleLHS(EdgePatch* p)
 {
   int ne = p->tets.size();
   int nf = p->faces.size();
-  printf("ne %d nf %d \n", ne, nf); // REMOVE
+  //printf("ne %d nf %d \n", ne, nf); // REMOVE
   if( crv::isBoundaryEntity(p->mesh, p->entity) ) {
     p->A.resize(ne+nf, ne+nf);
     p->A.zero();
@@ -138,8 +162,8 @@ static void assembleLHS(EdgePatch* p)
     p->A(ne+nf-1, ne-1) = 1.; p->A(ne+nf-1, ne) = 1.;
     p->A(ne-1, ne+nf-1) = 1.; p->A(ne, ne+nf-1) = 1.;
 
-    std::cout << "boundary" << std::endl; // REMOVE
-    std::cout << p->A << std::endl; // REMOVE
+    //std::cout << "boundary" << std::endl; // REMOVE
+    //std::cout << p->A << std::endl; // REMOVE
   }
   else if( ! crv::isBoundaryEntity(p->mesh, p->entity) ) {
     mth::Matrix<double> m(ne, nf);
@@ -158,14 +182,14 @@ static void assembleLHS(EdgePatch* p)
     for (int i = 0; i < ne; i++)
       for (int j = 0; j < ne; j++)
         p->A(i,j) += 1.;
-    std::cout << "interior" << std::endl; // REMOVE
-    std::cout << p->A << std::endl; // REMOVE
+    //std::cout << "interior" << std::endl; // REMOVE
+    //std::cout << p->A << std::endl; // REMOVE
   }
   mth::decomposeQR(p->A, p->qr.Q, p->qr.R);
-  std::cout << "Q" << std::endl;
+  /*std::cout << "Q" << std::endl;
   std::cout << p->qr.Q << std::endl;
   std::cout << "R" << std::endl;
-  std::cout << p->qr.R << std::endl;
+  std::cout << p->qr.R << std::endl;*/
 }
 
 static void assembleCurlCurlElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
@@ -310,6 +334,10 @@ static double getLocalBLFIntegral(EdgePatch* p, apf::MeshEntity* tet)
   apf::destroyMeshElement(me);
 
   // pick edge index from the resulting vector
+  int which, rotate; bool flip;
+  apf::getAlignment(p->mesh, tet, p->entity, which, flip, rotate);
+  if (flip)
+    return -1*integrals(ei);
   return integrals(ei);
 }
 
@@ -362,7 +390,9 @@ void assembleDomainLFElementVector(apf::Mesh* mesh, apf::MeshEntity* e,
     w = weight * jdet;
 
     apf::getVectorShapeValues(el, p, vectorshape);
-    pumiUserFunction(p, val, e, apf::getMesh(f)); // eval vector function
+    apf::Vector3 global;
+    apf::mapLocalToGlobal(me, p, global);
+    pumiUserFunction(global, val, e, apf::getMesh(f)); // eval vector function
     val *= w;
 
     mth::Matrix<double> vectorShape (nd, dim);
@@ -388,6 +418,10 @@ static double getLocalLFIntegral(EdgePatch* p, apf::MeshEntity* tet)
   mth::Vector<double> elvect;
   assembleDomainLFElementVector(p->mesh, tet,
       p->equilibration->ef, elvect);
+  int which, rotate; bool flip;
+  apf::getAlignment(p->mesh, tet, p->entity, which, flip, rotate);
+  if (flip)
+    return -1*elvect(ei);
   return elvect(ei);
 }
 
@@ -504,7 +538,9 @@ static void assembleRHS(EdgePatch* p)
     p->b.resize(p->tets.size());
     p->b.zero();
   }
-  printf("RHS \n");
+  printf("RHS B\n");
+  double testlfblf = 0.0; // REMOVE
+  double testflux = 0.0; // REMOVE
   int ne = p->tets.size();
   int nf = p->faces.size();
   for (int i = 0; i < ne; i++) {
@@ -513,12 +549,17 @@ static void assembleRHS(EdgePatch* p)
     double blfIntegral = getLocalBLFIntegral(p, tet);
     double lfIntegral = getLocalLFIntegral(p, tet);
     double fluxIntegral = getFluxIntegral(p, tet);
+    testlfblf += blfIntegral - lfIntegral;
+    testflux += fluxIntegral;
     if(p->isOnBdry)
       p->b(nf+i) = blfIntegral - lfIntegral - fluxIntegral;
     else
       p->b(i) = blfIntegral - lfIntegral - fluxIntegral;
   }
   std::cout << p->b << std::endl; // REMOVE
+  std::cout << "Sum of bilinear - linear integrals " << testlfblf << std::endl; // want this to be zero
+  if (abs(testlfblf) > 0.0001 && (!p->isOnBdry)) std::cout << "nonzero" << std::endl;
+  std::cout << "Sum of flux integrals over the edge patch " << testflux << std::endl; // want this to be zero
 }
 
 // The following two functions help order tets and faces in a cavity in a
@@ -608,6 +649,26 @@ static void runErm(EdgePatch* p)
   assembleLHS(p);
   assembleRHS(p);
   mth::solveFromQR(p->qr.Q, p->qr.R, p->b, p->x);
+
+  // REMOVE ALL BELOW
+  int ne = p->tets.size();
+  int nf = p->faces.size();
+  std::cout << " Reordered Tets, ne: " << ne << " nf " << nf << std::endl; // REMOVE
+  std::cout << " Center of Reordered tets" << std::endl;
+  for (int i = 0; i < ne; i++) {
+    EntitySet::iterator it = std::next(p->tets.begin(), i);
+    apf::MeshEntity* tet = *it;
+    apf::Vector3 center = apf::getLinearCentroid(p->mesh, tet);
+    std::cout << i << ":  " << center << std::endl;
+  }
+  std::cout << " Center of Reordered Faces" << std::endl;
+  for (int i = 0; i < nf; i++) {
+    EntitySet::iterator it = std::next(p->faces.begin(), i);
+    apf::MeshEntity* face = *it;
+    apf::Vector3 center = apf::getLinearCentroid(p->mesh, face);
+    std::cout << i << ":  " << center << std::endl;
+  }
+  std::cout << "----------------" << std::endl;
 
   std::cout << "x" << std::endl; // REMOVE
   std::cout << p->x << std::endl; // REMOVE
