@@ -38,7 +38,7 @@ Vector<T,N> reject(Vector<T,N> const& a, Vector<T,N> const& b);
 
 /** \brief transpose of a static matrix */
 template <class T, unsigned M, unsigned N>
-Matrix<T,M,N> transpose(Matrix<T,M,N> const& a);
+void transpose(Matrix<T,M,N> const& a, Matrix<T,N,M>& b);
 
 /** \brief determinant of a 2 by 2 matrix */
 template <class T>
