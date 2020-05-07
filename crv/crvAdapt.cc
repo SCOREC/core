@@ -7,7 +7,6 @@
 
 #include "crvAdapt.h"
 #include "crvShape.h"
-/* #include "crvBezierSolutionTransfer.h" */
 #include <apf.h>
 #include <apfMesh.h>
 #include <maBalance.h>
