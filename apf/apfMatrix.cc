@@ -141,6 +141,10 @@ template Matrix<1,1> getMinor(Matrix<2,2> const& A, std::size_t i, std::size_t j
 template Matrix<2,2> getMinor(Matrix<3,3> const& A, std::size_t i, std::size_t j);
 template Matrix<3,3> getMinor(Matrix<4,4> const& A, std::size_t i, std::size_t j);
 
+template double getCofactor(Matrix<2,2> const& A, std::size_t i, std::size_t);
+template double getCofactor(Matrix<3,3> const& A, std::size_t i, std::size_t);
+template double getCofactor(Matrix<4,4> const& A, std::size_t i, std::size_t);
+
 template double getDeterminant(Matrix<2,2> const& A);
 template double getDeterminant(Matrix<3,3> const& A);
 template double getDeterminant(Matrix<4,4> const& A);
