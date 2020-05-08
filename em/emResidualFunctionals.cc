@@ -425,6 +425,66 @@ static double getLocalLFIntegral(EdgePatch* p, apf::MeshEntity* tet)
   return elvect(ei);
 }
 
+// Given a tet and one of its faces, the vertex of the tet
+// opposite to the face is returned.
+static apf::MeshEntity* getTetOppVert(
+    apf::Mesh* m, apf::MeshEntity* t, apf::MeshEntity* f)
+{
+  apf::Downward fvs;
+  int fnv = m->getDownward(f, 0, fvs);
+  apf::Downward tvs;
+  int tnv = m->getDownward(t, 0, tvs);
+  PCU_ALWAYS_ASSERT(tnv == 4 && fnv == 3);
+  for (int i = 0; i < tnv; i++) {
+    if (apf::findIn(fvs, fnv, tvs[i]) == -1)
+      return tvs[i];
+  }
+  return 0;
+}
+
+static apf::Vector3 computeFaceNormal(apf::Mesh* m,
+    apf::MeshEntity* f, apf::Vector3 const& p)
+{
+  // Compute face normal using face Jacobian
+  apf::MeshElement* me = apf::createMeshElement(m, f);
+  apf::Matrix3x3 J;
+  apf::getJacobian(me, p, J);
+  apf::destroyMeshElement(me);
+
+  apf::Vector3 g1 = J[0];
+  apf::Vector3 g2 = J[1];
+  apf::Vector3 n = apf::cross( g1, g2 );
+  return n.normalize();
+}
+
+static apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
+    apf::MeshEntity* t, apf::MeshEntity* f, apf::Vector3 const& p)
+{
+  apf::Vector3 n = computeFaceNormal(m, f, p);
+
+  // Orient the normal outwards from the tet
+  apf::MeshEntity* oppVert = getTetOppVert(m, t, f);
+  apf::Vector3 vxi = apf::Vector3(0.,0.,0.);
+
+  // get global coordinates of the vertex
+  apf::Vector3 txi;
+  m->getPoint(oppVert, 0, txi);
+
+  // get global coordinates of the point on the face
+  apf::MeshElement* fme = apf::createMeshElement(m, f);
+  apf::Vector3 pxi;
+  apf::mapLocalToGlobal(fme, p, pxi);
+  apf::destroyMeshElement(fme);
+
+  apf::Vector3 pxiTotxi = txi - pxi;
+  //std::cout << "dot product " << pxiTotxi*n << std::endl;
+  if (pxiTotxi*n > 0) {
+    n = n*-1.;
+  }
+  return n;
+}
+
+
 static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
 {
   double fluxIntegral = 0.0;
@@ -444,6 +504,7 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
   PCU_ALWAYS_ASSERT(patchFaces.size() == 2);
   //  3. loop over the patch faces
   for (unsigned int i = 0; i < patchFaces.size(); i++) {
+    double fluxFaceIntegral = 0.0;
     // 4. get upward tets of the current face
     apf::Up up;
     apf::MeshEntity* currentFace = patchFaces[i];
@@ -460,26 +521,36 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
 
     // 5. count integration points for flux face integral
     apf::FieldShape* fs = ep->equilibration->ef->getShape();
+    int order = 2 * fs->getOrder() - 2;
     apf::MeshElement* fme = apf::createMeshElement(ep->mesh, currentFace);
-    apf::Element* fel = apf::createElement(ep->equilibration->ef, fme);
-    int order = 2 * fs->getOrder();
-    int np = apf::countIntPoints(fme, order); // int points required
+    int np = apf::countIntPoints(fme, order);
+    std::cout << "np " << np << std::endl;
 
     // loop over integration points
-    apf::Vector3 p, tet1xi, tet2xi, curl1, curl2, curl, fnormal, tk, vshape;
+    apf::Vector3 p, tet1xi, tet2xi, curl1, curl2, curl,
+      fnormal1, fnormal2, tk, vshape;
     for (int n = 0; n < np; n++) {
       apf::getIntPoint(fme, order, n, p);
       double weight = apf::getIntWeight(fme, order, n);
-
-      // compute face normal
       apf::Matrix3x3 fJ;
       apf::getJacobian(fme, p, fJ);
       double jdet = apf::getJacobianDeterminant(
           fJ, apf::getDimension(ep->mesh, currentFace));
-      apf::Vector3 r1 = fJ[0];
-      apf::Vector3 r2 = fJ[1];
-      fnormal = apf::cross( r1, r2 );
-      fnormal = fnormal.normalize();
+
+      // compute face outward normals wrt tets
+      if (tet == firstTet)
+        fnormal1 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
+      else
+        fnormal1 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
+      if (up.n == 2) {
+        if (tet == firstTet)
+          fnormal2 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
+        else
+          fnormal2 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
+        std::cout << "normal1 " << fnormal1 << std::endl;
+        std::cout << "normal2 " << fnormal2 << std::endl;
+      }
+
 
       curl.zero();
       // compute curl1
@@ -487,7 +558,9 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       apf::MeshElement* me1 = apf::createMeshElement(ep->mesh, firstTet);
       apf::Element* el1 = apf::createElement(ep->equilibration->ef, me1);
       apf::getCurl(el1, tet1xi, curl1);
-      curl += curl1;
+      //curl += curl1;
+      apf::Vector3 temp1 = apf::cross(fnormal1, curl1); //
+      curl += temp1; //
       apf::destroyElement(el1);
       apf::destroyMeshElement(me1);
 
@@ -497,14 +570,17 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
         apf::MeshElement* me2 = apf::createMeshElement(ep->mesh, secondTet);
         apf::Element* el2 = apf::createElement(ep->equilibration->ef, me2);
         apf::getCurl(el2, tet2xi, curl2);
-        curl += curl2;
+        //curl += curl2;
+        apf::Vector3 temp2 = apf::cross(fnormal2, curl2); //
+        curl += (temp2 * -1.); //
         apf::destroyElement(el2);
         apf::destroyMeshElement(me2);
       }
 
       // compute tk (inter-element averaged flux)
-      tk = apf::cross(fnormal, curl);
-      tk = tk * 1./2.;
+      //tk = apf::cross(fnormal, curl);
+      tk = curl * 1./2.;
+      std::cout << "tk " << tk << std::endl;
 
       // compute vector shape
       int type = ep->mesh->getType(tet);
@@ -512,16 +588,32 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       apf::NewArray<apf::Vector3> vectorshapes (nd);
       apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
       apf::Element* el = apf::createElement(ep->equilibration->ef, me);
-      apf::getVectorShapeValues(el, p, vectorshapes);
+      apf::Vector3 tetxi = apf::boundaryToElementXi(ep->mesh, currentFace, tet, p);
+      apf::getVectorShapeValues(el, tetxi, vectorshapes);
+      std::cout << "p " << p << std::endl;
+      std::cout << "tetxi " << tetxi << std::endl;
       vshape = vectorshapes[ei];
       apf::destroyElement(el);
       apf::destroyMeshElement(me);
 
+      // negate if edge is flipped
+      int which, rotate; bool flip;
+      apf::getAlignment(ep->mesh, tet, ep->entity, which, flip, rotate);
+      if (flip) {
+        vshape = vshape * -1.;
+        std::cout << "flip " << flip << std::endl;
+        std::cout << "vshape " << vshape << std::endl;
+      }
+
+
+
+
       // compute integral
-      fluxIntegral += tk * vshape * weight * jdet;
+      fluxFaceIntegral += (tk * vshape) * weight * jdet;
     }
-    apf::destroyElement(fel);
     apf::destroyMeshElement(fme);
+    fluxIntegral += fluxFaceIntegral;
+    std::cout << "flux Face integral " << fluxFaceIntegral << std::endl; // REMOVE
   }
   return fluxIntegral;
 }
@@ -558,8 +650,9 @@ static void assembleRHS(EdgePatch* p)
   }
   std::cout << p->b << std::endl; // REMOVE
   std::cout << "Sum of bilinear - linear integrals " << testlfblf << std::endl; // want this to be zero
-  if (abs(testlfblf) > 0.0001 && (!p->isOnBdry)) std::cout << "nonzero" << std::endl;
+  if (abs(testlfblf) > 1e-08 && (!p->isOnBdry)) std::cout << "nonzero" << std::endl;
   std::cout << "Sum of flux integrals over the edge patch " << testflux << std::endl; // want this to be zero
+  if (abs(testflux) > 1e-08 && (!p->isOnBdry)) std::cout << "nonzero" << std::endl;
 }
 
 // The following two functions help order tets and faces in a cavity in a
