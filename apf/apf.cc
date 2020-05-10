@@ -4,7 +4,7 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-
+#include <iostream>
 #include "apf.h"
 #include "apfScalarField.h"
 #include "apfScalarElement.h"
@@ -482,9 +482,40 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
   }
   else
   {
-    // TODO when ref dim != mesh space dim. Pseudo-inverse needed.
-    PCU_ALWAYS_ASSERT_VERBOSE(false,
-    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");
+    // TODO clean up
+    apf::Matrix3x3 J;
+    apf::getJacobian(e->getParent(), local, J);
+    std::cout << "J (3x3) last row zero expected" << std::endl;
+    std::cout << J << std::endl;
+    apf::Matrix3x3 JT = apf::transpose(J);
+    apf::Matrix3x3 JJT = J * JT;
+    // take inverse of JTJ and transpose it
+    apf::Matrix<2,2> jjt;
+    for (int i = 0; i < 2; i++)
+      for (int j = 0; j < 2; j++)
+        jjt[i][j] = JJT[i][j];
+    apf::Matrix<2,2> JJTinv = apf::invert(jjt);
+    apf::Matrix<2,2> JJTinvT = apf::transpose(JJTinv);
+    std::cout << "JJTinvT (2x2)" << std::endl;
+    std::cout << JJTinvT << std::endl;
+    apf::Matrix<2,3> JJTinvTJ; // JJTinvT * J
+    for( int i = 0; i < 2; i++ ) {
+      for ( int j = 0; j < 3; j++ ) {
+        JJTinvTJ[i][j] = 0.;
+        for ( int k = 0; k < 2; k++ )
+          JJTinvTJ[i][j] += JJTinvT[i][k] * J[k][j];
+      }
+    }
+    // u(x_hat) * J(x_hat)^{-1}
+    for( size_t i = 0; i < values.size(); i++ ) {
+      for ( int j = 0; j < 3; j++ ) {
+        values[i][j] = 0.;
+        for ( int k = 0; k < 2; k++ )
+          values[i][j] += vvals[i][k] * JJTinvTJ[k][j];
+      }
+    }
+    /*PCU_ALWAYS_ASSERT_VERBOSE(false,
+    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");*/
   }
 }
 
