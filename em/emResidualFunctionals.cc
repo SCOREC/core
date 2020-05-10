@@ -253,7 +253,7 @@ static void assembleCurlCurlElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
   apf::destroyMeshElement(me);
 }
 
-void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
+static void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
   apf::FieldShape* fs = f->getShape();
@@ -282,9 +282,9 @@ void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
 
     apf::getVectorShapeValues(el, p, vectorshape);
     mth::Matrix<double> vectorShape (nd, dim);
-    for (int i = 0; i < nd; i++)
-      for (int j = 0; j < dim; j++)
-        vectorShape(i,j) = vectorshape[i][j];
+    for (int j = 0; j < nd; j++)
+      for (int k = 0; k < dim; k++)
+        vectorShape(j,k) = vectorshape[j][k];
 
     mth::Matrix<double> vectorShapeT (dim, nd);
     mth::transpose(vectorShape, vectorShapeT);

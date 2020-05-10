@@ -20,8 +20,6 @@
 
 namespace em {
 
-void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
-    apf::Field* f, mth::Matrix<double>& elmat);
 
 apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g);
 
