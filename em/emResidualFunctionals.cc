@@ -40,14 +40,17 @@ struct Equilibration {
   int order;
   /* input scalar field containing Nedelec dofs for electric field */
   apf::Field* ef;
+  /* output field containing correction values */
+  apf::Field* g; 
 };
 
-static void setupEquilibration(Equilibration* eq, apf::Field* f)
+static void setupEquilibration(Equilibration* eq, apf::Field* f, apf::Field* g)
 {
   eq->mesh = apf::getMesh(f);
   eq->dim = eq->mesh->getDimension();
   eq->ef = f;
   eq->order = f->getShape()->getOrder();
+  eq->g = g;
 }
 
 struct QRDecomp {
@@ -250,7 +253,7 @@ static void assembleCurlCurlElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
   apf::destroyMeshElement(me);
 }
 
-static void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
+void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
   apf::FieldShape* fs = f->getShape();
@@ -743,9 +746,27 @@ static void runErm(EdgePatch* p)
   assembleRHS(p);
   mth::solveFromQR(p->qr.Q, p->qr.R, p->b, p->x);
 
+  int nf = p->faces.size();
+  for(int i = 0; i < nf; i++) {
+    // get face entitiy
+    EntitySet::iterator it = std::next(p->faces.begin(), i);
+    apf::MeshEntity* face = *it;
+    // get ei of edge in face downward edges
+    apf::Downward e;
+    int ned = p->mesh->getDownward(face, 1, e);
+    int ei = apf::findIn(e, ned, p->entity);
+    PCU_ALWAYS_ASSERT(ned == 3 && ei != -1);
+    // save the g value at that index on that face in the g field
+    double components[3];
+    apf::getComponents(p->equilibration->g, face, 0, components);
+    components[ei] = p->x(i);
+    apf::setComponents(p->equilibration->g, face, 0, components);
+  }
+
+
   // REMOVE ALL BELOW
   int ne = p->tets.size();
-  int nf = p->faces.size();
+  //int nf = p->faces.size();
   std::cout << " Reordered Tets, ne: " << ne << " nf " << nf << std::endl; // REMOVE
   std::cout << " Center of Reordered tets" << std::endl;
   for (int i = 0; i < ne; i++) {
@@ -791,12 +812,24 @@ public:
   EdgePatch edgePatch;
 };
 
-void equilibrateResiduals(apf::Field* f)
+apf::Field* equilibrateResiduals(apf::Field* f)
 {
+  // initialize the field 'g' with zeros
+  apf::Field* g = createPackedField( apf::getMesh(f), "g", 3, apf::getConstant(2) );
+  double zeros[3] = {0., 0., 0.};
+  apf::MeshEntity* face;
+  apf::MeshIterator* it = apf::getMesh(f)->begin(2);
+  while ((face = apf::getMesh(f)->iterate(it))) {
+    apf::setComponents(g, face, 0, zeros);
+  }
+  apf::getMesh(f)->end(it);
+
+
   Equilibration equilibration;
-  setupEquilibration(&equilibration, f);
+  setupEquilibration(&equilibration, f, g);
   EdgePatchOp op(&equilibration);
   op.applyToDimension(1); // edges
+  return g;
 }
 
 
