@@ -14,9 +14,21 @@
  */
 #include "apf.h"
 
+#include <mthQR.h>
+#include <mth.h>
+#include <mth_def.h>
+
 namespace em {
 
-void equilibrateResiduals(apf::Field* f);
+void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
+    apf::Field* f, mth::Matrix<double>& elmat);
+
+apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g);
+
+apf::Field* equilibrateResiduals(apf::Field* f);
+
+
+
 
 
 
