@@ -27,6 +27,7 @@ set(SOURCES
   apfHierarchic.cc
 	apfPolyBasis1D.cc
   apfNedelec.cc
+	apfL2Shapes.cc
   apfVector.cc
   apfVectorElement.cc
   apfVectorField.cc
