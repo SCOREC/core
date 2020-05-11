@@ -19,6 +19,7 @@ class MatrixField : public FieldOf<Matrix3x3>
     virtual ~MatrixField() {}
     virtual Element* getElement(VectorElement* e);
     virtual int getValueType() const {return MATRIX;}
+    virtual int getShapeType() const {return SCALAR;}
     virtual int countComponents() const;
 };
 

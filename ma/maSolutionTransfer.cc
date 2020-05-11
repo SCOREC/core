@@ -10,9 +10,6 @@
 #include "maSolutionTransfer.h"
 #include "maAffine.h"
 #include "maMap.h"
-#include <apfShape.h>
-#include <apfNumbering.h>
-#include <float.h>
 
 namespace ma {
 
@@ -63,142 +60,120 @@ int SolutionTransfer::getTransferDimension()
   return transferDimension;
 }
 
-class FieldTransfer : public SolutionTransfer
-{
-  public:
-    FieldTransfer(apf::Field* f)
-    {
-      field = f;
-      mesh = apf::getMesh(f);
-      shape = apf::getShape(f);
-      value.allocate(apf::countComponents(f));
-    }
-    /* hmm... in vs. on ... probably the ma:: signature
-       should change, it has the least users */
-    virtual bool hasNodesOn(int dimension)
-    {
-      return shape->hasNodesIn(dimension);
-    }
-    apf::Field* field;
-    apf::Mesh* mesh;
-    apf::FieldShape* shape;
-    apf::NewArray<double> value;
-};
 
-class LinearTransfer : public FieldTransfer
+FieldTransfer::FieldTransfer(apf::Field* f)
 {
-  public:
-    LinearTransfer(apf::Field* f):
-      FieldTransfer(f)
-    {
-    }
-    virtual void onVertex(
-        apf::MeshElement* parent,
-        Vector const& xi, 
-        Entity* vert)
-    {
-      apf::Element* e = apf::createElement(field,parent);
-      apf::getComponents(e,xi,&(value[0]));
-      apf::setComponents(field,vert,0,&(value[0]));
-      apf::destroyElement(e);
-    }
-};
+  field = f;
+  mesh = apf::getMesh(f);
+  shape = apf::getShape(f);
+  value.allocate(apf::countComponents(f));
+}
 
-class CavityTransfer : public FieldTransfer
+bool FieldTransfer::hasNodesOn(int dimension)
 {
-  public:
-    CavityTransfer(apf::Field* f):
-      FieldTransfer(f)
+  return shape->hasNodesIn(dimension);
+}
+
+void LinearTransfer::onVertex(
+    apf::MeshElement* parent,
+    Vector const& xi,
+    Entity* vert)
+{
+  apf::Element* e = apf::createElement(field,parent);
+  apf::getComponents(e,xi,&(value[0]));
+  apf::setComponents(field,vert,0,&(value[0]));
+  apf::destroyElement(e);
+}
+
+CavityTransfer::CavityTransfer(apf::Field* f):
+  FieldTransfer(f)
+{
+  minDim = getMinimumDimension(getShape(f));
+}
+void CavityTransfer::transferToNodeIn(
+    apf::Element* elem,
+    apf::Node const& node,
+    Vector const& elemXi)
+{
+  apf::getComponents(elem,elemXi,&(value[0]));
+  apf::setComponents(field,node.entity,node.node,&(value[0]));
+}
+int CavityTransfer::getBestElement(
+    int n,
+    apf::Element** elems,
+    Affine* elemInvMaps,
+    Vector const& point,
+    Vector& bestXi)
+{
+  double bestValue = -DBL_MAX;
+  int bestI = 0;
+  for (int i = 0; i < n; ++i)
+  {
+    Vector xi = elemInvMaps[i] * point;
+    double value = getInsideness(mesh,apf::getMeshEntity(elems[i]),xi);
+    if (value > bestValue)
     {
-      minDim = getMinimumDimension(getShape(f));
+      bestValue = value;
+      bestI = i;
+      bestXi = xi;
     }
-    void transferToNodeIn(
-        apf::Element* elem,
-        apf::Node const& node,
-        Vector const& elemXi)
+  }
+  return bestI;
+}
+void CavityTransfer::transferToNode(
+    int n,
+    apf::Element** elems,
+    Affine* elemInvMaps,
+    apf::Node const& node)
+{
+  Vector xi;
+  shape->getNodeXi(mesh->getType(node.entity),node.node,xi);
+  Affine childMap = getMap(mesh,node.entity);
+  Vector point = childMap * xi;
+  Vector elemXi;
+  int i = getBestElement(n,elems,elemInvMaps,point,elemXi);
+  transferToNodeIn(elems[i],node,elemXi);
+}
+void CavityTransfer::transfer(
+    int n,
+    Entity** cavity,
+    EntityArray& newEntities)
+{
+  if (getDimension(mesh, cavity[0]) < minDim)
+    return;
+  apf::NewArray<apf::Element*> elems(n);
+  for (int i = 0; i < n; ++i)
+    elems[i] = apf::createElement(field,cavity[i]);
+  apf::NewArray<Affine> elemInvMaps(n);
+  for (int i = 0; i < n; ++i)
+    elemInvMaps[i] = invert(getMap(mesh,cavity[i]));
+  for (size_t i = 0; i < newEntities.getSize(); ++i)
+  {
+    int type = mesh->getType(newEntities[i]);
+    if (type == apf::Mesh::VERTEX)
+      continue; //vertices will have been handled specially beforehand
+    int nnodes = shape->countNodesOn(type);
+    for (int j = 0; j < nnodes; ++j)
     {
-      apf::getComponents(elem,elemXi,&(value[0]));
-      apf::setComponents(field,node.entity,node.node,&(value[0]));
+      apf::Node node(newEntities[i],j);
+      transferToNode(n,&(elems[0]),&(elemInvMaps[0]),node);
     }
-    int getBestElement(
-        int n,
-        apf::Element** elems,
-        Affine* elemInvMaps,
-        Vector const& point,
-        Vector& bestXi)
-    {
-      double bestValue = -DBL_MAX;
-      int bestI = 0;
-      for (int i = 0; i < n; ++i)
-      {
-        Vector xi = elemInvMaps[i] * point;
-        double value = getInsideness(mesh,apf::getMeshEntity(elems[i]),xi);
-        if (value > bestValue)
-        {
-          bestValue = value;
-          bestI = i;
-          bestXi = xi;
-        }
-      }
-      return bestI;
-    }
-    void transferToNode(
-        int n,
-        apf::Element** elems,
-        Affine* elemInvMaps,
-        apf::Node const& node)
-    {
-      Vector xi;
-      shape->getNodeXi(mesh->getType(node.entity),node.node,xi);
-      Affine childMap = getMap(mesh,node.entity);
-      Vector point = childMap * xi;
-      Vector elemXi;
-      int i = getBestElement(n,elems,elemInvMaps,point,elemXi);
-      transferToNodeIn(elems[i],node,elemXi);
-    }
-    void transfer(
-        int n,
-        Entity** cavity,
-        EntityArray& newEntities)
-    {
-      if (getDimension(mesh, cavity[0]) < minDim)
-        return;
-      apf::NewArray<apf::Element*> elems(n);
-      for (int i = 0; i < n; ++i)
-        elems[i] = apf::createElement(field,cavity[i]);
-      apf::NewArray<Affine> elemInvMaps(n);
-      for (int i = 0; i < n; ++i)
-        elemInvMaps[i] = invert(getMap(mesh,cavity[i]));
-      for (size_t i = 0; i < newEntities.getSize(); ++i)
-      {
-        int type = mesh->getType(newEntities[i]);
-        if (type == apf::Mesh::VERTEX)
-          continue; //vertices will have been handled specially beforehand
-        int nnodes = shape->countNodesOn(type);
-        for (int j = 0; j < nnodes; ++j)
-        {
-          apf::Node node(newEntities[i],j);
-          transferToNode(n,&(elems[0]),&(elemInvMaps[0]),node);
-        }
-      }
-      for (int i = 0; i < n; ++i)
-        apf::destroyElement(elems[i]);
-    }
-    virtual void onRefine(
-        Entity* parent,
-        EntityArray& newEntities)
-    {
-      transfer(1,&parent,newEntities);
-    }
-    virtual void onCavity(
-        EntityArray& oldElements,
-        EntityArray& newEntities)
-    {
-      transfer(oldElements.getSize(),&(oldElements[0]),newEntities);
-    }
-  private:
-    int minDim;
-};
+  }
+  for (int i = 0; i < n; ++i)
+    apf::destroyElement(elems[i]);
+}
+void CavityTransfer::onRefine(
+    Entity* parent,
+    EntityArray& newEntities)
+{
+  transfer(1,&parent,newEntities);
+}
+void CavityTransfer::onCavity(
+    EntityArray& oldElements,
+    EntityArray& newEntities)
+{
+  transfer(oldElements.getSize(),&(oldElements[0]),newEntities);
+}
 
 /* hmm... could use multiple inheritance here, but that creates
    a "diamond problem":

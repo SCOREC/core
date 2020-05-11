@@ -28,6 +28,16 @@ mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
 mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
+if(ENABLE_ZOLTAN)
+mpi_test(print_pumipic_partion 1
+         ./print_pumipic_partition
+         ${MESHES}/cube/cube.dmg
+         ${MESHES}/cube/pumi11/cube.smb
+         4
+         pumipic_cube
+         )
+endif()
+
 mpi_test(align 1 ./align)
 mpi_test(eigen_test 1 ./eigen_test)
 mpi_test(integrate 1 ./integrate)
@@ -131,6 +141,7 @@ if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     WORKING_DIRECTORY ${MDIR})
 endif()
 
+
 if(ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
     ./test_pumi
@@ -185,6 +196,12 @@ mpi_test(create_misSquare 1
   mis_test)
 
 set(MDIR ${MESHES}/ugrid)
+mpi_test(naca_ugrid 2
+  ./from_ugrid
+  "${MDIR}/inviscid_egg.b8.ugrid"
+  "${MDIR}/naca.dmg"
+  "${MDIR}/2/"
+  "2")
 mpi_test(inviscid_ugrid 4
   ./from_ugrid
   "${MDIR}/inviscid_egg.b8.ugrid"
@@ -480,7 +497,7 @@ mpi_test(mixedNumbering 4
   out)
 set(MDIR ${MESHES}/square)
 mpi_test(hierarchic_2p_2D 1
-  ./hierarchic 
+  ./hierarchic
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   2)
@@ -495,6 +512,15 @@ mpi_test(hierarchic_2p_3D 1
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb"
   2)
+set(MDIR ${MESHES}/cube/pumi24)
+mpi_test(nedelec 1
+  ./nedelecShapes
+  "${MDIR}/cube.dmg"
+  "${MDIR}/cube.smb")
+mpi_test(pumiLoadMesh-1p 1
+  ./pumiLoadMesh
+  ${MDIR}/cube.dmg
+  ${MDIR}/cube.smb)
 set(MDIR ${MESHES}/cube)
 mpi_test(test_verify 4
   ./test_verify

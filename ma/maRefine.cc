@@ -345,14 +345,20 @@ void transferElements(Refine* r)
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
   SolutionTransfer* st = a->solutionTransfer;
-  int td = st->getTransferDimension();
+  int td = a->shape->getTransferDimension();
+  for (int d = td; d <= m->getDimension(); ++d)
+    for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
+      a->shape->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
+  td = st->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
     for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
       st->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
+  /*
   td = a->shape->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
     for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
       a->shape->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
+      */
 }
 
 void forgetNewEntities(Refine* r)
