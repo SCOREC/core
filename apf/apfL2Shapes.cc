@@ -269,23 +269,22 @@ class L2ShapeTri: public FieldShape {
     int getOrder() {return P;}
     void getNodeXi(int type, int node, Vector3& xi)
     {
-    	PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
-    			"getNodeXi for L2ShapeTri can be called only for TRIANGLEs");
+      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
+      	  "getNodeXi for L2ShapeTri can be called only for TRIANGLEs");
       apf::NewArray<double> op;
-			getOpenPoints(P, op);
-			int c = 0;
-
-			for (int j = 0; j <= P; j++) {
-				for (int i = 0; i + j <= P; i++) {
-					if (node == c) { 
-						double w = op[i] + op[j] + op[P-i-j];
-						xi = Vector3( op[i]/w, op[j]/w, 0. );
-						return;
-					}
-					else
-						c++;
-				}
-			}
+      getOpenPoints(P, op);
+      int c = 0;
+      for (int j = 0; j <= P; j++) {
+      	for (int i = 0; i + j <= P; i++) {
+      	  if (node == c) {
+      	    double w = op[i] + op[j] + op[P-i-j];
+      	    xi = Vector3( op[i]/w, op[j]/w, 0. );
+      	    return;
+      	  }
+      	  else
+      	    c++;
+      	}
+      }
     }
 };
 
@@ -363,8 +362,8 @@ class L2ShapeTet: public FieldShape {
     };
     EntityShape* getEntityShape(int type)
     {
-    	PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
-    			"L2ShapeTet only has entity shapes for TETs");
+      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TET,
+      	  "L2ShapeTet only has entity shapes for TETs");
       static Tetrahedron tet;
       return &tet;
     }
@@ -386,25 +385,24 @@ class L2ShapeTet: public FieldShape {
     int getOrder() {return P;}
     void getNodeXi(int type, int node, Vector3& xi)
     {
-    	PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
-    			"getNodeXi for L2ShapeTet can be called only for TETs");
+      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TET,
+      	  "getNodeXi for L2ShapeTet can be called only for TETs");
       apf::NewArray<double> op;
-			getOpenPoints(P, op);
-			int c = 0;
-
-			for (int k = 0; k <= P; k++) {
-				for (int j = 0; j + k <= P; j++) {
-					for (int i = 0; i + j + k <= P; i++) {
-						if( node == c) { 
-							double w = op[i] + op[j] + op[k] + op[P-i-j-k];
-							xi = Vector3( op[i]/w, op[j]/w,  op[k]/w );
-							return;
-						}
-						else
-							c++;
-					}
-				}
-			}
+      getOpenPoints(P, op);
+      int c = 0;
+      for (int k = 0; k <= P; k++) {
+      	for (int j = 0; j + k <= P; j++) {
+      	  for (int i = 0; i + j + k <= P; i++) {
+      	    if( node == c) {
+      	      double w = op[i] + op[j] + op[k] + op[P-i-j-k];
+      	      xi = Vector3( op[i]/w, op[j]/w,  op[k]/w );
+      	      return;
+      	    }
+      	    else
+      	      c++;
+      	  }
+      	}
+      }
     }
 };
 
@@ -457,12 +455,12 @@ static apf::FieldShape* getL2ShapeTet(int order)
 apf::FieldShape* getL2Shapes(int order, int type)
 {
   if (type == Mesh::TRIANGLE)
-  	return getL2ShapeTri(order);
-	else if (type == Mesh::TET)
-  	return getL2ShapeTet(order);
-	else
-		PCU_ALWAYS_ASSERT_VERBOSE(0,
-				"L2Shapes are only implemented for tris and tets");
+    return getL2ShapeTri(order);
+  else if (type == Mesh::TET)
+    return getL2ShapeTet(order);
+  else
+    PCU_ALWAYS_ASSERT_VERBOSE(0,
+    	"L2Shapes are only implemented for tris and tets");
 }
 
 };
