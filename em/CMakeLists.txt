@@ -6,7 +6,8 @@ endif()
 # Package sources
 set(SOURCES
   emResidualFunctionals.cc
-  emFluxCorrection.cc)
+  emFluxCorrection.cc
+  emEstimateError.cc)
 
 # Package headers
 set(HEADERS
