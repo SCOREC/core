@@ -38,6 +38,7 @@ set(SOURCES
   apfMixedNumbering.cc
   apfAdjReorder.cc
   apfVtk.cc
+  apfVtkPieceWiseFields.cc
   apfFieldData.cc
   apfTagData.cc
   apfCoordData.cc

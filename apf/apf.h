@@ -679,6 +679,12 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m);
 void writeASCIIVtkFiles(const char* prefix, Mesh* m,
     std::vector<std::string> writeFields);
 
+/** \brief Output .vtk files with ASCII encoding for this part.
+  \details this function is useful for debugging meshes with Nedelec 
+  fields on them.
+  */
+void writeNedelecVtkFiles(const char* prefix, Mesh* m);
+
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType
   \param order the order of the integration rule
