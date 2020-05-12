@@ -195,7 +195,7 @@ static void assembleLHS(EdgePatch* p)
   std::cout << p->qr.R << std::endl;*/
 }
 
-static void assembleCurlCurlElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
+void assembleCurlCurlElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
   apf::FieldShape* fs = f->getShape();
@@ -253,7 +253,7 @@ static void assembleCurlCurlElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
   apf::destroyMeshElement(me);
 }
 
-static void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
+void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
   apf::FieldShape* fs = f->getShape();
@@ -296,6 +296,19 @@ static void assembleVectorMassElementMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
   }
   apf::destroyElement(el);
   apf::destroyMeshElement(me);
+}
+
+void assembleElementMatrix(apf::Mesh* mesh, apf::MeshEntity*e,
+    apf::Field* f, mth::Matrix<double>& elmat)
+{
+  mth::Matrix<double> curl_elmat, mass_elmat;
+  assembleCurlCurlElementMatrix(mesh, e, f, curl_elmat);
+  assembleVectorMassElementMatrix(mesh, e, f, mass_elmat);
+  
+  elmat.resize(curl_elmat.rows(), curl_elmat.cols());
+  elmat.zero();
+  elmat += curl_elmat;
+  elmat += mass_elmat;
 }
 
 // computes local bilinear form integral restricted to
@@ -344,24 +357,6 @@ static double getLocalBLFIntegral(EdgePatch* p, apf::MeshEntity* tet)
   return integrals(ei);
 }
 
-// TODO QUESTION redo this to allow user access from outside
-static void pumiUserFunction(const apf::Vector3& x, mth::Vector<double>& f,
-    apf::MeshEntity* tet, apf::Mesh* mesh)
-{
-  double freq = 1.;
-  double kappa = freq * M_PI;
-  int dim = apf::getDimension(mesh, tet);
-  if (dim == 3) {
-      f(0) = (1. + kappa * kappa) * sin(kappa * x[1]);
-      f(1) = (1. + kappa * kappa) * sin(kappa * x[2]);
-      f(2) = (1. + kappa * kappa) * sin(kappa * x[0]);
-  }
-  else {
-     f(0) = (1. + kappa * kappa) * sin(kappa * x[1]);
-     f(1) = (1. + kappa * kappa) * sin(kappa * x[0]);
-     f(2) = 0.0;
-  }
-}
 
 void assembleDomainLFElementVector(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Vector<double>& elvect)
