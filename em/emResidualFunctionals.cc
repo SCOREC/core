@@ -455,7 +455,7 @@ static apf::Vector3 computeFaceNormal(apf::Mesh* m,
   return n.normalize();
 }
 
-static apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
+apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
     apf::MeshEntity* t, apf::MeshEntity* f, apf::Vector3 const& p)
 {
   apf::Vector3 n = computeFaceNormal(m, f, p);
@@ -545,8 +545,8 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
           fnormal2 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
         else
           fnormal2 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
-        std::cout << "normal1 " << fnormal1 << std::endl;
-        std::cout << "normal2 " << fnormal2 << std::endl;
+        std::cout << "normal1 " << fnormal1 << std::endl; // REMOVE
+        std::cout << "normal2 " << fnormal2 << std::endl; // REMOVE
       }
 
 
@@ -556,8 +556,7 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       apf::MeshElement* me1 = apf::createMeshElement(ep->mesh, firstTet);
       apf::Element* el1 = apf::createElement(ep->equilibration->ef, me1);
       apf::getCurl(el1, tet1xi, curl1);
-      //curl += curl1;
-      apf::Vector3 temp1 = apf::cross(fnormal1, curl1); //
+      apf::Vector3 temp1 = apf::cross(fnormal1, curl1); // TODO clean
       curl += temp1; //
       apf::destroyElement(el1);
       apf::destroyMeshElement(me1);
@@ -568,8 +567,7 @@ static double getFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
         apf::MeshElement* me2 = apf::createMeshElement(ep->mesh, secondTet);
         apf::Element* el2 = apf::createElement(ep->equilibration->ef, me2);
         apf::getCurl(el2, tet2xi, curl2);
-        //curl += curl2;
-        apf::Vector3 temp2 = apf::cross(fnormal2, curl2); //
+        apf::Vector3 temp2 = apf::cross(fnormal2, curl2); // TODO clean
         curl += (temp2 * -1.); //
         apf::destroyElement(el2);
         apf::destroyMeshElement(me2);
