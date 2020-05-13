@@ -194,9 +194,9 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
       int n = Mesh::adjacentCount[type][0];
       MeshElement* me = createMeshElement(m, e);
       Element* el = createElement(f, me);
-      for(int i=0; i<n; i++) {
+      for(int j=0; j<n; j++) {
 	Vector3 fVal;
-	getVector(el, xis[i], fVal);
+	getVector(el, xis[j], fVal);
 	buf << fVal[0] << ' ' << fVal[1] << ' ' << fVal[2] << '\n';
       }
       destroyElement(el);
