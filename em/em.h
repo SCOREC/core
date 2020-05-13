@@ -43,7 +43,7 @@ void assembleElementMatrix(apf::Mesh* mesh, apf::MeshEntity*e,
     apf::Field* f, mth::Matrix<double>& elmat);
 
 void assembleDomainLFElementVector(apf::Mesh* mesh, apf::MeshEntity* e,
-    apf::Field* f, mth::Vector<double>& elvect)
+    apf::Field* f, mth::Vector<double>& elvect);
 
 // TODO QUESTION redo this to allow user access from outside
 void pumiUserFunction(const apf::Vector3& x, mth::Vector<double>& f,
@@ -63,6 +63,9 @@ void pumiUserFunction(const apf::Vector3& x, mth::Vector<double>& f,
      f(2) = 0.0;
   }
 }
+
+apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
+    apf::MeshEntity* t, apf::MeshEntity* f, apf::Vector3 const& p);
 
 
 }
