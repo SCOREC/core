@@ -31,6 +31,7 @@
   \brief Interface to the compact Mesh Data Structure */
 
 #include <map>
+#include <vector>
 
 struct gmi_model;
 
