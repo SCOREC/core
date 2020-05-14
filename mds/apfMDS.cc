@@ -1156,6 +1156,7 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
 void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 			     int nBEdges, int (*bEdges)[4],
+                 std::vector<int> regionIDs,
 			     GlobalToVert &globalToVert,
 			     std::map<int, apf::MeshEntity*> &globalToFace)
 {
@@ -1216,6 +1217,13 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
         mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
       }
     }
+  }
+
+  for (std::vector<int>::iterator it = regionIDs.begin() ; it != regionIDs.end(); ++it)
+  {
+    tagData[0] = 2;
+    tagData[1] = regionIDs[*it];
+    mesh->setIntTag(globalToFace[*it],classifnTag,tagData);
   }
 
   // TODO: Use classifnTag to classify

@@ -167,7 +167,7 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
  *  \param globalToFace Maps mesh face ID to the mesh face
  */
 void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
-			     int nBEdges, int (*bEdges)[4],
+			     int nBEdges, int (*bEdges)[4], int* regionIDs,
 			     GlobalToVert &globalToVert,
 			     std::map<int, apf::MeshEntity*> &globalToFace);
 
