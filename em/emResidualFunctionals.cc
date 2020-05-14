@@ -6,28 +6,10 @@
  */
 #include <iostream>
 #include <cstdlib>
-#include <apf.h>
-#include <PCU.h>
-#include <lionPrint.h>
+
+#include <apfCavityOp.h>
 
 #include "em.h"
-
-#include <apfMesh.h>
-#include <apfShape.h>
-#include <apfField.h>
-#include <apfElement.h>
-#include <apfCavityOp.h>
-#include "crv.h"
-#include "crvShape.h"
-
-#include <mthQR.h>
-#include <mth.h>
-#include <mth_def.h>
-
-#include <limits>
-
-#include <set>
-#include <pcu_util.h>
 
 namespace em {
 

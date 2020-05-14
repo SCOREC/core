@@ -15,6 +15,15 @@
 #include "apf.h"
 #include <apfMesh.h>
 
+#include <PCU.h>
+#include <lionPrint.h>
+
+#include "apfShape.h"
+#include "apfField.h"
+#include "apfElement.h"
+#include "crv.h"
+#include "crvShape.h"
+
 #include <mthQR.h>
 #include <mth.h>
 #include <mth_def.h>
