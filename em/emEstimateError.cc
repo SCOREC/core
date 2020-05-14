@@ -64,7 +64,7 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
     double weight = apf::getIntWeight(me, order, i);
     apf::Matrix3x3 J;
     apf::getJacobian(me, p, J);
-    double jdet = apf::getJacobianDeterminant(J, dim);
+    //double jdet = apf::getJacobianDeterminant(J, dim);
     w = weight; // TODO check why do not need division by jdet
 
     // get curl vector
@@ -140,7 +140,6 @@ static void computeLambdaVector(apf::Mesh* mesh, apf::MeshEntity* e,
   int etype = mesh->getType(e);
   PCU_ALWAYS_ASSERT(etype == apf::Mesh::TET);
   int nedofs = apf::countElementNodes(fp1s, etype);
-  int edim = apf::getDimension(mesh, e);
   lambda.resize(nedofs);
 
   // create a 2D nedelec field 
@@ -179,12 +178,15 @@ static void computeLambdaVector(apf::Mesh* mesh, apf::MeshEntity* e,
     // 3. get theta coeffs on the face
     double components[3];
     apf::getComponents(THETA, face, 0, components);
-    mth::Vector<double> theta_coeffs(components); // TODO Warning make this work
+    //mth::Vector<double> theta_coeffs(components); // TODO clean
+    mth::Vector<double> theta_coeffs(*components); // TODO clean
+    /*theta_coeffs(0) = components[0];
+    theta_coeffs(1) = components[1];
+    theta_coeffs(2) = components[2];*/
 
     int ftype = mesh->getType(face);
     PCU_ALWAYS_ASSERT(ftype == apf::Mesh::TRIANGLE);
     int nfdofs = apf::countElementNodes(faceNDFieldShape, ftype);
-    int fdim = apf::getDimension(mesh, face);
     apf::NewArray<apf::Vector3> vectorshape(nfdofs);
 
     apf::MeshElement* fme = apf::createMeshElement(mesh, face);
@@ -206,10 +208,10 @@ static void computeLambdaVector(apf::Mesh* mesh, apf::MeshEntity* e,
       // evaluate theta vector using theta coeffs
       apf::Vector3 theta_vector;
       theta_vector.zero();
-      apf::NewArray<apf::Vector3> vector2Dshapes (nfdods);
+      apf::NewArray<apf::Vector3> vector2Dshapes (nfdofs);
       apf::getVectorShapeValues(fel, p, vector2Dshapes);
       int which, rotate; bool flip; // negative ND dofs
-      for (int i = 0; i < theta_coeffs.size(); i++) {
+      for (int i = 0; i < nedges; i++) {
         apf::getAlignment(mesh, face, edges[i], which, flip, rotate);
         apf::Vector3 v = vector2Dshapes[i];
         if (flip) { v = v * -1.; }
@@ -268,9 +270,9 @@ static void computeLambdaVector(apf::Mesh* mesh, apf::MeshEntity* e,
       // TODO take care of negative ND dofs
       apf::destroyMeshElement(me); 
       // compute integral
-      apf::Vector3 theta_plus_tk = theta_vec + tk;
+      apf::Vector3 theta_plus_tk = theta_vector + tk;
       double w = weight * jdet;
-      theta_plus_tk *= w;
+      theta_plus_tk = theta_plus_tk * w;
 
       // matrix vector multiplication
       for (int i = 0; i < nedofs; i++)
@@ -313,7 +315,7 @@ static void getEssentialBdrElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
   for (int i = 0; i < nfaces; i++) {
     int nodesOnFace = fs->countNodesOn(mesh->getType(faces[i]));
     if ( crv::isBoundaryEntity(mesh, faces[i]) ) {
-      for (int n = 0; n < nodesOnEdge; n++) {
+      for (int n = 0; n < nodesOnFace; n++) {
         marker_list[(nodesOnEdges + i*nodesOnFace)+n] = -1;
       }
     }
@@ -336,7 +338,7 @@ static void getEssentialBdrElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
     if(marker_list[i])
       ess_dofs[ess_dof_counter++] = i;
     else
-      uness_dofs[uness_dofs_counter++] = i;
+      uness_dofs[uness_dof_counter++] = i;
   }
 }
  
@@ -345,13 +347,13 @@ static void getEssentialBdrElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
  * Output: reduced matrix A, reduced rhs B.
  */
 static void eliminateDBCs(
-    mth::Matrix<double> const A,
-    mth::Vector<double> const X,
-    mth::Vector<double> const B, 
-    apf::NewArray<int> ess_dofs,
-    apf::NewArray<int> uness_dofs,
-    mth::Matrix<double>& Anew,
-    mth::Vector<double>& Bnew)
+    mth::Matrix<double> const &A,
+    mth::Vector<double> const &X,
+    mth::Vector<double> const &B,
+    apf::NewArray<int>  const &ess_dofs,
+    apf::NewArray<int>  const &uness_dofs,
+    mth::Matrix<double> &Anew,
+    mth::Vector<double> &Bnew)
 {
   int num_ess_dofs = ess_dofs.size();
   int num_uness_dofs = uness_dofs.size();
@@ -364,11 +366,11 @@ static void eliminateDBCs(
     for(int cc = 0; cc < num_uness_dofs; cc++) {
       int j = uness_dofs[cc];
       Anew(rr,cc) = A(i,j);
-    }    
+    }
   }
 
 	// 2. Assemble new B
-	Bnew.resize(num_uness_dofs, num_uness_dofs);
+	Bnew.resize(num_uness_dofs);
   for(int i = 0; i < num_uness_dofs; i++) {
     Bnew(i) = B(uness_dofs[i]);
   }
@@ -412,6 +414,7 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
 
   apf::NewArray<apf::Vector3> vectorshape(nd);
 
+  apf::Vector3 p;
   for (int i = 0; i < np; i++) {
     apf::getIntPoint(me, order, i, p);
     double weight = apf::getIntWeight(me, order, i);
@@ -427,7 +430,7 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
       for (int k = 0; k < dim; k++)
         vectorShape(j,k) = vectorshape[j][k];
 
-		apf::Matrix<double> vectorShapeT (dim, nd);
+    mth::Matrix<double> vectorShapeT (dim, nd);
     mth::transpose(vectorShape, vectorShapeT);
 		
 		mth::Vector<double> err_func;
@@ -450,7 +453,7 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
 	// 1. Create per-element SCALAR error field
   apf::Field* error_field = apf::createIPField(
 		apf::getMesh(ef), "residual_error_field", apf::SCALAR, 1); // TODO maybe use getConstant here
-	
+
   // 2. Create one order higher ND field
   int order = ef->getShape()->getOrder();
   int orderp1 = order+1;
@@ -467,59 +470,64 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
     assembleElementMatrix( apf::getMesh(ef), el, efp1, A);
     // TODO Take care of negative dofs in lhs
 
-    // 2(b). Compute Bilinear Form Vector 
+    // 2(b). Compute Bilinear Form Vector
     mth::Vector<double> blf;
-    computeResidualBLF(apf::getMesh(efp1), e, efp1, blf);
+    computeResidualBLF(apf::getMesh(efp1), el, efp1, blf);
     // TODO Take care of negative dofs in blf
 
     // 2(c). Compute Linear Form Vector
     mth::Vector<double> lf;
-    assembleDomainLFElementVector(apf::getMesh(efp1), e, efp1, lf);
+    assembleDomainLFElementVector(apf::getMesh(efp1), el, efp1, lf);
     // TODO Take care of negative dofs in lf
-    
+
     // 2(d). Compute Lamda Vector
     mth::Vector<double> lambda;
-    computeLambdaVector(apf::getMesh(efp1), e, ef, efp1, correctedFlux, lambda);
+    computeLambdaVector(apf::getMesh(ef), el, ef, efp1, correctedFlux, lambda);
     // TODO Take care of negative dofs in lambda
-    
+
     // 2(e). Assemble RHS element vector = blf - lf - lambda
-    mth::Vector<double> B = blf - lf - lambda; // TODO syntax
+    mth::Vector<double> B(blf.size());
+    B.zero();
+    B += blf; B -= lf; B -= lambda;
 
     // 2(f). Get List of Essential Dofs
     apf::NewArray<int> ess_dofs, uness_dofs;
     getEssentialBdrElementNDDofs(
-        apf::getMesh(efp1), e, efp1, ess_dofs, uness_dofs);
+        apf::getMesh(efp1), el, efp1, ess_dofs, uness_dofs);
 
     // 2(g). eliminate Dirichlet (Essential) Boundary Conditions
-		mth::Vector<double> X, Anew, Bnew;
+		mth::Vector<double> X, Bnew;
+    mth::Matrix<double> Anew;
 		X.resize(B.size());
 		X.zero(); // initialize X with exact DBC (e = 0.0)
 		eliminateDBCs(A, X, B, ess_dofs, uness_dofs, Anew, Bnew);
 
 		// 2(h). Solve the reduced system
 	  mth::Matrix<double> Q, R;
-		mth::decompose(Anew, Q, R);
+		mth::decomposeQR(Anew, Q, R);
 		mth::Vector<double> Xnew;
 		mth::solveFromQR(Q, R, Bnew, Xnew);
 
 		// 2(i). Recover the solution
 		mth::Vector<double> error_dofs(B.size());
-    for(int i = 0; i < ess_dofs.size(); i++) {
+    for(unsigned int i = 0; i < ess_dofs.size(); i++) {
     	int index = ess_dofs[i];
       error_dofs(index) = X(index);
     }
-    for(int i = 0; i < uness_dofs.size(); i++) {
+    for(unsigned int i = 0; i < uness_dofs.size(); i++) {
       int index = uness_dofs[i];
       error_dofs(index) = Xnew(i);
     }
 
 		// 2(j). Compute L2 Norm Error
-		double l2_error = computeL2Error(mesh, e, efp1, error_dofs);
-		apf::setScalar(error_field, e, 0, l2_error);
+		double l2_error = computeL2Error(apf::getMesh(ef), el, efp1, error_dofs);
+		apf::setScalar(error_field, el, 0, l2_error);
   }
   apf::getMesh(ef)->end(it);
 
 	apf::destroyField(efp1);
 
 	return error_field;
+}
+
 }

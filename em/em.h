@@ -13,6 +13,7 @@
  *  \brief The Elegtromagnetics Equilibrated Residual error estimator inteface
  */
 #include "apf.h"
+#include <apfMesh.h>
 
 #include <mthQR.h>
 #include <mth.h>
