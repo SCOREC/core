@@ -1219,11 +1219,11 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
     }
   }
 
-  for (std::vector<int>::iterator it = regionIDs.begin() ; it != regionIDs.end(); ++it)
+  for(unsigned int i=0; i<regionIDs.size();i++)
   {
     tagData[0] = 2;
-    tagData[1] = regionIDs[*it];
-    mesh->setIntTag(globalToFace[*it],classifnTag,tagData);
+    tagData[1] = regionIDs[i];
+    mesh->setIntTag(globalToFace[i],classifnTag,tagData);
   }
 
   // TODO: Use classifnTag to classify
