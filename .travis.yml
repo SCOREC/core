@@ -43,8 +43,8 @@ script:
   - cd build
   - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Release -DMESHES=${DEVROOT}/SCOREC/core/pumi-meshes
   - make -j ${NP}
-  - ctest
+  - ctest --output-on-failure
   - cmake .. -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_INSTALL_PREFIX=${DEVROOT}/install/core -DIS_TESTING=ON -DBUILD_EXES=ON -DCMAKE_BUILD_TYPE=Debug -DMESHES=${DEVROOT}/SCOREC/core/pumi-meshes
   - make -j ${NP}
-  - ctest
+  - ctest --output-on-failure
 

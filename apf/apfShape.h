@@ -42,6 +42,24 @@ class EntityShape
         MeshEntity* e,
         Vector3 const& xi,
         NewArray<Vector3>& grads) const = 0;
+/** \brief evaluate element vector shape functions
+ \details this is used only for Nedelec
+ \param xi the parent element coordinates
+ \param values each entry is the vector shape function value for one node */
+    virtual void getVectorValues(
+        Mesh* m,
+        MeshEntity* e,
+        Vector3 const& xi,
+        NewArray<apf::Vector3>& values) const = 0;
+/** \brief evaluate element vector curl shape functions
+ \details this is used only for Nedelec
+ \param xi the parent element coordinates
+ \param values each entry is the vector shape function value for one node */
+    virtual void getLocalVectorCurls(
+        Mesh* m,
+        MeshEntity* e,
+        Vector3 const& xi,
+        NewArray<apf::Vector3>& values) const;
 /** \brief return the number of nodes affecting this element
     \details in a linear mesh, there are two nodes affecting
              and edge, three nodes affecting a triangle,
@@ -94,6 +112,14 @@ class FieldShape
   \param node index from element node ordering
   \param xi parent element coordinates */
     virtual void getNodeXi(int type, int node, Vector3& xi);
+/** \brief Get the parent element tangent vector of an element node
+  \param type element type, select from apf::Mesh::Type
+  \param node index from element node ordering
+  \param t parent element tangent
+  \details this is only applicable for vector shapes */
+    virtual void getNodeTangent(int type, int node, Vector3& t);
+/** \brief Returns true if the shape functions are vectors */
+    virtual bool isVectorShape();
 /** \brief Get a unique string for this shape function scheme */
     virtual const char* getName() const = 0;
     void registerSelf(const char* name);
@@ -136,6 +162,11 @@ FieldShape* getIPFitShape(int dimension, int order);
  */
 FieldShape* getHierarchic(int order);
 
+/** \brief Get the Nedelec shape function of a given order
+  \details TODO: complete later
+ */
+FieldShape* getNedelec(int order);
+
 /** \brief Project a hierarchic field */
 void projectHierarchicField(Field* to, Field* from);
 
@@ -144,6 +175,22 @@ FieldShape* getShapeByName(const char* name);
 /** \brief count the number of nodes affecting an element type
   \param type select from apf::Mesh::Type */
 int countElementNodes(FieldShape* s, int type);
+
+/** \brief gets the xi coordinates for all the nodes
+  \details order follows canonical notation. See tables
+  apf::Mesh::tri_edge_verts, apf::Mesh::tet_edge_verts, and
+  apf::Mesh::tet_tri_verts
+  \param type select from apf::Mesh::Type */
+void getElementNodeXis(FieldShape* s, int type,
+    apf::NewArray<apf::Vector3>& xis);
+
+/** \brief gets the xi coordinates for all the nodes
+  \details order follows downward adjacency and global
+  directions for the bounding entities. xi coordinates
+  will be with respect to the entity e
+  \param type select from apf::Mesh::Type */
+void getElementNodeXis(FieldShape* s, Mesh* m, MeshEntity* e,
+    apf::NewArray<apf::Vector3>& xis);
 
 /** \brief Reparameterize from boundary entity to element
   \details This function converts a point in the local

@@ -19,6 +19,7 @@ class VectorField : public FieldOf<Vector3>
     virtual ~VectorField() {}
     virtual Element* getElement(VectorElement* e);
     virtual int getValueType() const {return VECTOR;}
+    virtual int getShapeType() const {return SCALAR;}
     virtual int countComponents() const;
 };
 

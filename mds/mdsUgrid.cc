@@ -145,7 +145,6 @@ namespace {
       r->nodeMap[id] = makeVtx(r,p,0);
     }
     free(xyz);
-    lion_eprint(1, "read %d vtx\n", h->nvtx);
   }
 
   void setNodeIds(Reader* r, header* h) {
@@ -232,8 +231,6 @@ namespace {
     }
     free(vtx);
     free(tags);
-    lion_eprint(1, "set %d %s face tags\n",
-        nfaces, apf::Mesh::typeName[apfType]);
   }
 
   void setFaceTags(Reader* r, header* h) {
@@ -258,8 +255,6 @@ namespace {
       int val = tags[id];
       r->mesh->setIntTag(f, t, &val);
     }
-    lion_eprint(1, "set %d %s face tags\n",
-        nbdry, apf::Mesh::typeName[apfType]);
   }
 
   void setBoundaryTags(Reader* r, header* h) {
@@ -287,8 +282,6 @@ namespace {
     }
     free(vtx);
     free(tags);
-    lion_eprint(1, "set %d %s face tags\n",
-        nbdry, apf::Mesh::typeName[apfType]);
   }
 
   void classifyBoundaryElms(Reader* r, header* h) {
@@ -438,7 +431,6 @@ namespace {
       PCU_ALWAYS_ASSERT(elm);
     }
     free(vtx);
-    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void readElms(Reader* r, header* h) {
@@ -471,7 +463,6 @@ namespace {
     }
     free(vtx);
     free(elm_model_id);
-    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void read2DElms(Reader* r, header* h) {
@@ -561,7 +552,6 @@ namespace {
         }
         numparts++; //we want count, not rank
         fclose(f);
-        lion_eprint(1, "read ptn for %d parts\n", numparts);
       }
       ~ptnstats() {
         delete [] ptn;
@@ -620,7 +610,6 @@ namespace {
       }
     }
     free(vtx);
-    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void printPtnStats(apf::Mesh2* m, const char* ufile, const char* ptnFile,
