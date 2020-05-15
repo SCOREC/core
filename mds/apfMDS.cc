@@ -1040,6 +1040,7 @@ void deriveMdsModel(Mesh2* in)
 
 void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
                            int nBFaces, int (*bFaces)[5],
+                           std::vector<int> regionIDs,
                            GlobalToVert &globalToVert,
                            std::map<int, apf::MeshEntity*> &globalToRegion)
 {
@@ -1129,6 +1130,14 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
       }
     }
   }
+
+  for(unsigned int i=0; i<regionIDs.size();i++)
+  {
+    tagData[0] = 3;
+    tagData[1] = regionIDs[i];
+    mesh->setIntTag(globalToRegion[i],classifnTag,tagData);
+  }
+
 
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
   if ((classifnTag)) {

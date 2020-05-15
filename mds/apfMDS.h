@@ -138,12 +138,14 @@ void deriveMdsModel(Mesh2* in);
  *  \param bFaces 2D Array of size (n_bfaces x 5). For each face, the row is
  *         [model_face_tag, adj_region_tag, global_vtx_id_1,
  *         global_vtx_id_2, global_vtx_id_3]
+ *  \param regionIDs is a vector of the region classification for each mesh region
  *  \param globalToVert Maps mesh vertex ID to the mesh vertex. Typically
  *         output from apf::construct
  *  \param globalToRegion Maps mesh region ID to the mesh region
  */
 void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 			   int nBFaces, int (*bFaces)[5],
+               std::vector<int> regionIDs,
 			   GlobalToVert &globalToVert,
 			   std::map<int, apf::MeshEntity*> &globalToRegion);
 
@@ -163,6 +165,7 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
  *  \param nBEdges number of boundary faces
  *  \param bEdges 2D Array of size (nBEdges x 4). For each face, the row is
  *         [model_edge_tag, adj_face_tag, global_vtx_id_1, global_vtx_id_2]
+ *  \param regionIDs is a vector of the region classification for each mesh region
  *  \param globalToVert Maps mesh vertex ID to the mesh vertex. Typically
  *         output from apf::construct
  *  \param globalToFace Maps mesh face ID to the mesh face
