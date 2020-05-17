@@ -485,8 +485,7 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
     // TODO clean up
     apf::Matrix3x3 J;
     apf::getJacobian(e->getParent(), local, J);
-    std::cout << "J (3x3) last row zero expected" << std::endl;
-    std::cout << J << std::endl;
+
     apf::Matrix3x3 JT = apf::transpose(J);
     apf::Matrix3x3 JJT = J * JT;
     // take inverse of JTJ and transpose it
@@ -496,8 +495,7 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
         jjt[i][j] = JJT[i][j];
     apf::Matrix<2,2> JJTinv = apf::invert(jjt);
     apf::Matrix<2,2> JJTinvT = apf::transpose(JJTinv);
-    std::cout << "JJTinvT (2x2)" << std::endl;
-    std::cout << JJTinvT << std::endl;
+
     apf::Matrix<2,3> JJTinvTJ; // JJTinvT * J
     for( int i = 0; i < 2; i++ ) {
       for ( int j = 0; j < 3; j++ ) {
@@ -506,6 +504,7 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
           JJTinvTJ[i][j] += JJTinvT[i][k] * J[k][j];
       }
     }
+
     // u(x_hat) * J(x_hat)^{-1}
     for( size_t i = 0; i < values.size(); i++ ) {
       for ( int j = 0; j < 3; j++ ) {
@@ -514,8 +513,6 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
           values[i][j] += vvals[i][k] * JJTinvTJ[k][j];
       }
     }
-    /*PCU_ALWAYS_ASSERT_VERBOSE(false,
-    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");*/
   }
 }
 
