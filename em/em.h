@@ -20,9 +20,6 @@
 
 #include "apfShape.h"
 #include "apfField.h"
-#include "apfElement.h"
-#include "crv.h"
-#include "crvShape.h"
 
 #include <mthQR.h>
 #include <mth.h>
@@ -55,24 +52,6 @@ void assembleElementMatrix(apf::Mesh* mesh, apf::MeshEntity*e,
 void assembleDomainLFElementVector(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Vector<double>& elvect);
 
-// TODO QUESTION redo this to allow user access from outside
-void pumiUserFunction(const apf::Vector3& x, mth::Vector<double>& f,
-    apf::MeshEntity* e, apf::Mesh* mesh)
-{
-  double freq = 1.;
-  double kappa = freq * M_PI;
-  int dim = apf::getDimension(mesh, e);
-  if (dim == 3) {
-      f(0) = (1. + kappa * kappa) * sin(kappa * x[1]);
-      f(1) = (1. + kappa * kappa) * sin(kappa * x[2]);
-      f(2) = (1. + kappa * kappa) * sin(kappa * x[0]);
-  }
-  else {
-     f(0) = (1. + kappa * kappa) * sin(kappa * x[1]);
-     f(1) = (1. + kappa * kappa) * sin(kappa * x[0]);
-     f(2) = 0.0;
-  }
-}
 
 apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
     apf::MeshEntity* t, apf::MeshEntity* f, apf::Vector3 const& p);
