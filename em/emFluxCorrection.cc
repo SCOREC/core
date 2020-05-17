@@ -7,8 +7,12 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "em.h"
+#include "crv.h"
+#include "crvShape.h"
+#include "apfElement.h"
 
+#include "em.h"
+using namespace std;
 namespace em {
 
 struct QRDecomp {
@@ -16,58 +20,61 @@ struct QRDecomp {
   mth::Matrix<double> R;
 };
 
-static void assembleFaceMassMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
+static void assembleFaceMassMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
   apf::FieldShape* fs = f->getShape();
   int type = mesh->getType(e);
   int nd = apf::countElementNodes(fs, type);
   int dim = apf::getDimension(mesh, e);
+  int sdim = mesh->getDimension();
+  PCU_ALWAYS_ASSERT(type == apf::Mesh::TRIANGLE && dim == 2);
   double w;
 
-  apf::NewArray<apf::Vector3> vectorshape(nd);
+  apf::NewArray<apf::Vector3> vectorshapes(nd);
   elmat.resize(nd,nd);
 
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
   apf::Element* el = apf::createElement(f, me);
-  int order = 2 * fs->getOrder();
-  int np = apf::countIntPoints(me, order); // int points required
+  int int_order = 2 * fs->getOrder();
+  int np = apf::countIntPoints(me, int_order); // int points required
 
   apf::Downward edges;
   int ned =  mesh->getDownward(e, 1, edges);
-  PCU_ALWAYS_ASSERT(ned == 3);
   int which, rotate; bool flip;
 
   elmat.zero();
   apf::Vector3 p;
   for (int i = 0; i < np; i++) {
-    apf::getIntPoint(me, order, i, p);
-    double weight = apf::getIntWeight(me, order, i);
+    apf::getIntPoint(me, int_order, i, p);
+    double weight = apf::getIntWeight(me, int_order, i);
     apf::Matrix3x3 J;
     apf::getJacobian(me, p, J);
     double jdet = apf::getJacobianDeterminant(J, dim);
     w = weight * jdet;
 
-    apf::getVectorShapeValues(el, p, vectorshape);
-    mth::Matrix<double> vectorShape (nd, dim);
+    apf::getVectorShapeValues(el, p, vectorshapes);
+    mth::Matrix<double> vectorShapes (nd, sdim);
     for (int j = 0; j < nd; j++)
-      for (int k = 0; k < dim; k++)
-        vectorShape(j,k) = vectorshape[j][k];
+      for (int k = 0; k < sdim; k++)
+        vectorShapes(j,k) = vectorshapes[j][k];
 
-    // negate negatve dof indices
+    // negate negative dof indices
+    // TODO maybe can do this outside the function and therfore
+    // merge this function with assembleVectorMassElementMatrix
     for (int ei = 0; ei < ned; ei++) {
       apf::getAlignment(mesh, e, edges[ei], which, flip, rotate);
       if(flip) {
-        for (int j = 0; j < dim; j++)
-          vectorShape(ei, j) = -1*vectorShape(ei, j);
+        for (int j = 0; j < sdim; j++)
+          vectorShapes(ei, j) = -1*vectorShapes(ei, j);
       }
     }
 
-    mth::Matrix<double> vectorShapeT (dim, nd);
-    mth::transpose(vectorShape, vectorShapeT);
+    mth::Matrix<double> vectorShapesT (sdim, nd);
+    mth::transpose(vectorShapes, vectorShapesT);
     mth::Matrix<double> M (nd,nd);
     M.zero();
-    mth::multiply(vectorShape, vectorShapeT, M);
+    mth::multiply(vectorShapes, vectorShapesT, M);
     M *= w;
     elmat += M;
   }
@@ -81,33 +88,41 @@ static void assembleFaceMassMatrix(apf::Mesh* mesh,apf::MeshEntity* e,
 apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g)
 {
   int order = ef->getShape()->getOrder();
-  apf::Field* faceNedelecField = apf::createField(
-      apf::getMesh(g), "face_nedelec_field", apf::SCALAR, apf::getNedelec(order));
-  apf::zeroField(faceNedelecField);
-
+  cout << "tri_field_order " << order << endl; // REMOVE
+  apf::Field* triNedelecField = apf::createField(
+      apf::getMesh(ef), "tri_nedelec_field", apf::SCALAR, apf::getNedelec(order));
+  apf::zeroField(triNedelecField);
 
   apf::Field* correctedFluxField =  createPackedField(
-      apf::getMesh(g), "corrected_flux_field", 3, apf::getConstant(2));
+      apf::getMesh(ef), "corrected_flux_field", 3, apf::getConstant(2));
 
   // iterate over all faces of the mesh
   apf::MeshEntity* face;
-  apf::MeshIterator* it = apf::getMesh(g)->begin(2);
-  while ((face = apf::getMesh(g)->iterate(it))) {
-    // assemble RHS vector
+  apf::MeshIterator* it = apf::getMesh(ef)->begin(2);
+  while ((face = apf::getMesh(ef)->iterate(it))) {
+    // 1. assemble RHS vector
     double components[3];
     apf::getComponents(g, face, 0, components);
     mth::Vector<double> rhs(3);
     rhs(0) = components[0]; rhs(1) = components[1]; rhs(2) = components[2];
 
-    // assemlbe face mass matrix
+    bool debug = true;
+    if (debug) {
+      cout << "RHS VECTOR" << endl;
+      cout << components[0] << " " << components[1] << " " << components[2] << endl;
+      cout << rhs << endl;
+      cout << "==============" << endl;
+    }
+
+    // 2. assemble face mass matrix
     mth::Matrix<double> M;
     assembleFaceMassMatrix(
-        apf::getMesh(g), face, faceNedelecField, M);
+        apf::getMesh(ef), face, triNedelecField, M);
 
-    // solve the system
+    // 3. solve the system
     QRDecomp qr;
     mth::decomposeQR(M, qr.Q, qr.R);
-    std::cout << "M" << std::endl;
+    std::cout << "M" << std::endl; // REMOVE DEBUG
     std::cout << M << std::endl;
     std::cout << "Q" << std::endl;
     std::cout << qr.Q << std::endl;
@@ -122,14 +137,16 @@ apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g)
     std::cout << theta << std::endl;
 
     // set solution vector on face field
-    //theta.toArray(components);
+    //theta.toArray(components); TODO clean
     components[0] = theta(0);
     components[1] = theta(1);
     components[2] = theta(2);
     apf::setComponents(
         correctedFluxField, face, 0, components);
   }
-  apf::getMesh(g)->end(it);
+  apf::getMesh(ef)->end(it);
+
+  apf::destroyField(triNedelecField);
 
   return correctedFluxField;
 }
