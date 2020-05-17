@@ -52,7 +52,6 @@ void assembleElementMatrix(apf::Mesh* mesh, apf::MeshEntity*e,
 void assembleDomainLFElementVector(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Vector<double>& elvect);
 
-
 apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
     apf::MeshEntity* t, apf::MeshEntity* f, apf::Vector3 const& p);
 

@@ -29,22 +29,22 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
   apf::NewArray<apf::Vector3> curlshape(nd);
   apf::NewArray<apf::Vector3> vectorshape(nd);
   mth::Matrix<double> phys_curlshape(nd, dim);
-  mth::Matrix<double> Vectorshape(nd, dim);
+  mth::Matrix<double> vectorShape(nd, dim);
   mth::Vector<double> curlcurl_vec (nd);
   mth::Vector<double> mass_vec (nd);
   blf.resize(nd);
 
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
   apf::Element* el = apf::createElement(f, me);
-  int order = 2 * fs->getOrder() - 2;
-  int np = apf::countIntPoints(me, order); // int points required
+  int int_order = 2 * fs->getOrder();
+  int np = apf::countIntPoints(me, int_order); // int points required
 
   // 1. Compute Curl Curl Integration
   curlcurl_vec.zero();
   apf::Vector3 p, curl;
   for (int i = 0; i < np; i++) {
-    apf::getIntPoint(me, order, i, p);
-    double weight = apf::getIntWeight(me, order, i);
+    apf::getIntPoint(me, int_order, i, p);
+    double weight = apf::getIntWeight(me, int_order, i);
     apf::Matrix3x3 J;
     apf::getJacobian(me, p, J);
     //double jdet = apf::getJacobianDeterminant(J, dim);
@@ -52,8 +52,8 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
 
     // get curl vector
     apf::getCurl(el, p, curl);
-    
-    // get curlshape values
+
+    // get curlshape values // TODO CLEAN use getCurlShapeValues
     el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
     phys_curlshape.zero();
     for (int i = 0; i < nd; i++)
@@ -62,23 +62,25 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
           phys_curlshape(i,j) += curlshape[i][k] * J[k][j];
 
     // multiply
-    mth::Vector<double> temp (nd);
-    temp.zero();
+    mth::Vector<double> V (nd);
+    V.zero();
     mth::Vector<double> c (dim);
     c(0) = curl[0]; c(1) = curl[1]; c(2) = curl[2];
-    mth::multiply(phys_curlshape, c, temp);
-    temp *= w;
-    
-    curlcurl_vec += temp;
+    mth::multiply(phys_curlshape, c, V);
+    V *= w;
 
+    curlcurl_vec += V;
   }
-    
+
   // 2. Compute Vector Mass Integration
+  int_order = 2 * fs->getOrder();
+  np = apf::countIntPoints(me, int_order); // int points required
+
   mass_vec.zero();
   apf::Vector3 vvalue;
   for (int i = 0; i < np; i++) {
-    apf::getIntPoint(me, order, i, p);
-    double weight = apf::getIntWeight(me, order, i);
+    apf::getIntPoint(me, int_order, i, p);
+    double weight = apf::getIntWeight(me, int_order, i);
     apf::Matrix3x3 J;
     apf::getJacobian(me, p, J);
     double jdet = apf::getJacobianDeterminant(J, dim);
@@ -88,20 +90,20 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::getVector(el, p, vvalue);
 
     apf::getVectorShapeValues(el, p, vectorshape);
-    Vectorshape.zero();
+    vectorShape.zero();
     for (int i = 0; i < nd; i++)
       for (int j = 0; j < dim; j++)
-        Vectorshape(i,j) = vectorshape[i][j];
+        vectorShape(i,j) = vectorshape[i][j];
 
 
-    mth::Vector<double> temp (nd);
-    temp.zero();
+    mth::Vector<double> V (nd);
+    V.zero();
     mth::Vector<double> v (dim);
     v(0) = vvalue[0]; v(1) = vvalue[1]; v(2) = vvalue[2];
-    mth::multiply(Vectorshape, v, temp);
-    temp *= w;
+    mth::multiply(vectorShape, v, V);
+    V *= w;
 
-    mass_vec += temp;
+    mass_vec += V;
   }
 
   // 3. get result
@@ -109,7 +111,7 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
   blf += curlcurl_vec;
   blf += mass_vec;
 
-  // TODO Take care of Negative Dofs 
+  // TODO Take care of Negative Dofs
 }
 
 // @ apf::Field* f --> input p-order tet ND field
@@ -120,7 +122,7 @@ static void computeLambdaVector(
     apf::MeshEntity* e,
     apf::Field* f,
     apf::Field* fp1,
-    apf::Field* faceNDField,
+    apf::Field* tri_nedelec_field,
     apf::Field* THETA,
     mth::Vector<double>& lambda)
 {
@@ -130,14 +132,14 @@ static void computeLambdaVector(
   int nedofs = apf::countElementNodes(fp1s, etype);
   lambda.resize(nedofs);
 
-  // create a 2D nedelec field 
+  // create a 2D nedelec field
   int order = fp1s->getOrder();
-  apf::FieldShape* faceNDFieldShape = faceNDField->getShape();
+  apf::FieldShape* tri_nedelec_fieldShape = tri_nedelec_field->getShape();
 
   // get the downward faces of the element
   apf::Downward faces;
   int nf = mesh->getDownward(e, 2, faces);
-  
+
   lambda.zero();
   // assemble lambda vector LOOP OVER DOWNWARD FACES
   for (int ii = 0; ii < nf; ii++) {
@@ -159,7 +161,7 @@ static void computeLambdaVector(
     // 2. get downward edges of the face
     apf::Downward edges;
     int nedges = mesh->getDownward(face, 1, edges);
-    
+
     // 3. get theta coeffs on the face
     double components[3];
     apf::getComponents(THETA, face, 0, components);
@@ -172,11 +174,11 @@ static void computeLambdaVector(
 
     int ftype = mesh->getType(face);
     PCU_ALWAYS_ASSERT(ftype == apf::Mesh::TRIANGLE);
-    int nfdofs = apf::countElementNodes(faceNDFieldShape, ftype);
+    int nfdofs = apf::countElementNodes(tri_nedelec_fieldShape, ftype);
     apf::NewArray<apf::Vector3> vectorshape(nfdofs);
 
     apf::MeshElement* fme = apf::createMeshElement(mesh, face);
-    apf::Element* fel = apf::createElement(faceNDField, fme);
+    apf::Element* fel = apf::createElement(tri_nedelec_field, fme);
     int np = apf::countIntPoints(fme, 2*order); // int points required
 
     // 4. Compute integral on the face
@@ -194,12 +196,12 @@ static void computeLambdaVector(
       // evaluate theta vector using theta coeffs
       apf::Vector3 theta_vector;
       theta_vector.zero();
-      apf::NewArray<apf::Vector3> vector2Dshapes (nfdofs);
-      apf::getVectorShapeValues(fel, p, vector2Dshapes);
+      apf::NewArray<apf::Vector3> triVectorShapes (nfdofs);
+      apf::getVectorShapeValues(fel, p, triVectorShapes);
       int which, rotate; bool flip; // negative ND dofs
       for (int i = 0; i < nedges; i++) {
         apf::getAlignment(mesh, face, edges[i], which, flip, rotate);
-        apf::Vector3 v = vector2Dshapes[i];
+        apf::Vector3 v = triVectorShapes[i];
         if (flip) { v = v * -1.; }
 
         v = v * theta_coeffs[i];
@@ -226,8 +228,8 @@ static void computeLambdaVector(
       apf::MeshElement* me1 = apf::createMeshElement(mesh, firstTet);
       apf::Element* el1 = apf::createElement(f, me1);
       apf::getCurl(el1, tet1xi, curl1);
-      apf::Vector3 temp1 = apf::cross(fnormal1, curl1); // TODO clean
-      curl += temp1; //
+      apf::Vector3 temp1 = apf::cross(fnormal1, curl1);
+      curl += temp1;
       apf::destroyElement(el1);
       apf::destroyMeshElement(me1);
 
@@ -237,24 +239,26 @@ static void computeLambdaVector(
         apf::MeshElement* me2 = apf::createMeshElement(mesh, secondTet);
         apf::Element* el2 = apf::createElement(f, me2);
         apf::getCurl(el2, tet2xi, curl2);
-        apf::Vector3 temp2 = apf::cross(fnormal2, curl2); // TODO clean
-        curl += (temp2 * -1.); //
+        apf::Vector3 temp2 = apf::cross(fnormal2, curl2);
+        curl += (temp2 * -1.);
         apf::destroyElement(el2);
         apf::destroyMeshElement(me2);
       }
 
       // compute tk (inter-element averaged flux)
       tk = curl * 1./2.;
-      std::cout << "tk " << tk << std::endl;
+      std::cout << "tk " << tk << std::endl; // REMOVE
 
       // compute p+1 order 3D vector shapes
-      apf::NewArray<apf::Vector3> vector3dshapes (nedofs);
+      apf::NewArray<apf::Vector3> tetVectorShapes (nedofs);
       apf::MeshElement* me = apf::createMeshElement(mesh, e);
       apf::Element* el = apf::createElement(fp1, me);
       apf::Vector3 tetxi = apf::boundaryToElementXi(mesh, face, e, p);
-      apf::getVectorShapeValues(el, tetxi, vector3dshapes);
+      apf::getVectorShapeValues(el, tetxi, tetVectorShapes);
       // TODO take care of negative ND dofs
-      apf::destroyMeshElement(me); 
+      apf::destroyElement(el);
+      apf::destroyMeshElement(me);
+
       // compute integral
       apf::Vector3 theta_plus_tk = theta_vector + tk;
       double w = weight * jdet;
@@ -262,14 +266,14 @@ static void computeLambdaVector(
 
       // matrix vector multiplication
       for (int i = 0; i < nedofs; i++)
-        lambda(i) += theta_plus_tk * vector3dshapes[i];
+        lambda(i) += theta_plus_tk * tetVectorShapes[i];
 
     } // end integral loop
     apf::destroyMeshElement(fme);
   } // end face loop
 }
 
-static void getEssentialBdrElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
+static void getEssentialElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, apf::NewArray<int>& ess_dofs, apf::NewArray<int>& uness_dofs)
 {
   apf::FieldShape* fs = f->getShape();
@@ -293,7 +297,7 @@ static void getEssentialBdrElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
       }
     }
   }
-  int nodesOnEdges = fs->countNodesOn(apf::Mesh::TRIANGLE) * nedges;
+  int nodesOnEdges = fs->countNodesOn(apf::Mesh::EDGE) * nedges;
 
   apf::Downward faces;
   int nfaces = mesh->getDownward(e, 2, faces);
@@ -327,7 +331,7 @@ static void getEssentialBdrElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
       uness_dofs[uness_dof_counter++] = i;
   }
 }
- 
+
 /**
  * Inputs: Matrix A, Vector X, Vector B, essential dofs, not essential dofs.
  * Output: reduced matrix A, reduced rhs B.
@@ -344,7 +348,7 @@ static void eliminateDBCs(
   int num_ess_dofs = ess_dofs.size();
   int num_uness_dofs = uness_dofs.size();
 
-  // 1. Remove rows and cols of A corresponding to
+  // 1. Remove rows of A corresponding to
 	// ess_dofs by copying into Anew
   Anew.resize(num_uness_dofs, num_uness_dofs);
 	for(int rr = 0; rr < num_uness_dofs; rr++) {
@@ -410,7 +414,7 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::getJacobian(me, p, J);
     double jdet = apf::getJacobianDeterminant(J, dim);
     w = weight * jdet;
-	
+
     apf::getVectorShapeValues(el, p, vectorshape);
 		// TODO take care of negative dof values
     mth::Matrix<double> vectorShape (nd, dim);
@@ -420,7 +424,7 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
 
     mth::Matrix<double> vectorShapeT (dim, nd);
     mth::transpose(vectorShape, vectorShapeT);
-		
+
 		mth::Vector<double> err_func;
 		mth::multiply(vectorShapeT, error_dofs, err_func);
 
@@ -442,7 +446,7 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
   apf::Field* error_field = apf::createIPField(
 		apf::getMesh(ef), "residual_error_field", apf::SCALAR, 1); // TODO maybe use getConstant here
 
-  cout << "ELEMENT ERROR FIELD CREATED" << endl;
+  cout << "ELEMENT ERROR FIELD CREATED" << endl; // REMOVE
 
   // 2. Create p+1 order tet ND field
   // and p order triangle ND field
@@ -452,11 +456,11 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
 	 "orderp1_nedelec_field", apf::SCALAR, apf::getNedelec(orderp1));
   apf::zeroField(efp1);
 
-  apf::Field* faceNDField = apf::createField(apf::getMesh(ef),
+  apf::Field* tri_nedelec_field = apf::createField(apf::getMesh(ef),
       "face_nedelec_field", apf::SCALAR, apf::getNedelec(order));
-  apf::zeroField(faceNDField);;
+  apf::zeroField(tri_nedelec_field);;
 
-  cout << "P+1 ORDER FIELD CREATED" << endl;
+  cout << "P+1 ORDER FIELD CREATED" << endl; // REMOVE
 
   // 2. iterate over all elements of the mesh
   apf::MeshEntity* el;
@@ -483,7 +487,7 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
     // 2(d). Compute Lamda Vector
     mth::Vector<double> lambda;
     computeLambdaVector(
-        apf::getMesh(ef), el, ef, efp1, faceNDField, correctedFlux, lambda);
+        apf::getMesh(ef), el, ef, efp1, tri_nedelec_field, correctedFlux, lambda);
     // TODO Take care of negative dofs in lambda
     cout << "RHS lambda vector assembled" << endl;
 
@@ -495,7 +499,7 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
 
     // 2(f). Get List of Essential Dofs
     apf::NewArray<int> ess_dofs, uness_dofs;
-    getEssentialBdrElementNDDofs(
+    getEssentialElementNDDofs(
         apf::getMesh(efp1), el, efp1, ess_dofs, uness_dofs);
     cout << "Get list of Essential Dofs" << endl;
 
@@ -536,7 +540,7 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
   apf::getMesh(ef)->end(it);
   cout << "End loop over elements" << endl;
 	apf::destroyField(efp1);
-  apf::destroyField(faceNDField);
+  apf::destroyField(tri_nedelec_field);
 
 	return error_field;
 }
