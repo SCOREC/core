@@ -1230,9 +1230,45 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
   for(unsigned int i=0; i<regionIDs.size();i++)
   {
-    tagData[0] = 2;
-    tagData[1] = regionIDs[i];
+    tagData[0] = newTagData[0] = 2;
+    tagData[1] = newTagData[1] = regionIDs[i];
+
     mesh->setIntTag(globalToFace[i],classifnTag,tagData);
+
+    //check edge adjacency and classify if not classified already
+    mesh->getDownward(globalToFace[i], 1, edgesAdjToFace);
+    for (int k = 0; k <2; ++k) {
+        if (mesh->hasTag(edgesAdjToFace[k], classifnTag)) 
+        {
+            mesh->getIntTag(edgesAdjToFace[k], classifnTag, tagData);
+            if (tagData[0] > newTagData[0]) 
+            {
+	             mesh->setIntTag(edgesAdjToFace[k], classifnTag, newTagData);
+            }
+        } 
+        else 
+        {
+            // Edge has no classification, use the region's
+            mesh->setIntTag(edgesAdjToFace[k], classifnTag, newTagData);
+        }
+        
+
+        //get vertices in the meantime
+        mesh->getDownward(edgesAdjToFace[k], 0, vertsAdjToEdge);
+        for (int k = 0; k <2; ++k) {
+            if (mesh->hasTag(vertsAdjToEdge[k], classifnTag)) {
+	            mesh->getIntTag(vertsAdjToEdge[k], classifnTag, tagData);
+                if (tagData[0] > newTagData[0]) {
+	                mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+                }
+            } else {
+                // Vertex has no classification, use the edge's
+                mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+            }
+        }
+
+    }
+
   }
 
   // TODO: Use classifnTag to classify
