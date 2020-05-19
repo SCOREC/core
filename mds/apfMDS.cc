@@ -1237,7 +1237,7 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
     //check edge adjacency and classify if not classified already
     mesh->getDownward(globalToFace[i], 1, edgesAdjToFace);
-    for (int k = 0; k <2; ++k) {
+    for (int k = 0; k < 3; ++k) {
         if (mesh->hasTag(edgesAdjToFace[k], classifnTag)) 
         {
             mesh->getIntTag(edgesAdjToFace[k], classifnTag, tagData);
@@ -1255,7 +1255,7 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
         //get vertices in the meantime
         mesh->getDownward(edgesAdjToFace[k], 0, vertsAdjToEdge);
-        for (int k = 0; k <2; ++k) {
+        for (int k = 0; k < 2; ++k) {
             if (mesh->hasTag(vertsAdjToEdge[k], classifnTag)) {
 	            mesh->getIntTag(vertsAdjToEdge[k], classifnTag, tagData);
                 if (tagData[0] > newTagData[0]) {
