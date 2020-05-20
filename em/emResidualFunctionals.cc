@@ -6,6 +6,7 @@
  */
 #include <iostream>
 #include <cstdlib>
+#include <algorithm>
 
 #include <apfCavityOp.h>
 #include "apfElement.h"
@@ -53,7 +54,7 @@ struct QRDecomp {
   mth::Matrix<double> R;
 };
 
-typedef std::set<apf::MeshEntity*> EntitySet;
+typedef std::vector<apf::MeshEntity*> EntityVector;
 
 struct EdgePatch {
   apf::Mesh* mesh;
@@ -63,8 +64,8 @@ struct EdgePatch {
      (faces & tets) around this edge entity */
   apf::MeshEntity* entity;
   bool isOnBdry;
-  EntitySet tets;
-  EntitySet faces;
+  EntityVector tets;
+  EntityVector faces;
   mth::Matrix<double> A;
   mth::Vector<double> b;
   mth::Vector<double> x;
@@ -89,9 +90,9 @@ static void startEdgePatch(EdgePatch* p, apf::MeshEntity* e)
 static void addEntityToPatch(EdgePatch* p, apf::MeshEntity* e)
 {
   if(p->mesh->getType(e) == apf::Mesh::TRIANGLE)
-    p->faces.insert(e);
+    p->faces.push_back(e);
   if(p->mesh->getType(e) == apf::Mesh::TET)
-    p->tets.insert(e);
+    p->tets.push_back(e);
 }
 
 static void addEntitiesToPatch(EdgePatch* p, apf::DynamicArray<apf::MeshEntity*>& es)
@@ -508,7 +509,7 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
   PCU_ALWAYS_ASSERT(nf == 4);
   std::vector<apf::MeshEntity*> patchFaces;
   for (int i = 0; i < nf; i++) {
-    if(ep->faces.count(f[i]))
+    if(std::find(ep->faces.begin(), ep->faces.end(), f[i]) != ep->faces.end())
       patchFaces.push_back(f[i]);
   }
   PCU_ALWAYS_ASSERT(patchFaces.size() == 2);
@@ -630,8 +631,7 @@ static void assembleEdgePatchRHS(EdgePatch* p)
   int ne = p->tets.size();
   int nf = p->faces.size();
   for (int i = 0; i < ne; i++) {
-    EntitySet::iterator it = std::next(p->tets.begin(), i);
-    apf::MeshEntity* tet = *it;
+    apf::MeshEntity* tet = p->tets[i];
     double blfIntegral = getLocalEdgeBLF(p, tet);
     double lfIntegral = getLocalEdgeLF(p, tet);
     double fluxIntegral = getLocalFluxIntegral(p, tet);
@@ -663,7 +663,7 @@ static apf::MeshEntity* getTetOppFaceSharingEdge(
   return 0;
 }
 static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
-     EntitySet& tets, EntitySet& faces)
+     EntityVector& tets, EntityVector& faces)
 {
   tets.clear();
   faces.clear();
@@ -674,14 +674,14 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
     PCU_ALWAYS_ASSERT(up.n == 2);
     apf::MeshEntity* firstTet = up.e[0];
     apf::MeshEntity* nextTet  = up.e[1];
-    tets.insert(firstTet);
+    tets.push_back(firstTet);
     apf::MeshEntity* firstFace = getTetOppFaceSharingEdge(mesh, firstTet,
         currentFace, edge);
-    faces.insert(firstFace);
+    faces.push_back(firstFace);
 
     while (nextTet != firstTet) {
-      tets.insert(nextTet);
-      faces.insert(currentFace);
+      tets.push_back(nextTet);
+      faces.push_back(currentFace);
       currentFace = getTetOppFaceSharingEdge(mesh, nextTet, currentFace, edge);
       PCU_ALWAYS_ASSERT(currentFace);
       apf::Up up;
@@ -702,28 +702,28 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
         firstFace = up.e[i]; break;
       }
     }
-    faces.insert(firstFace);
+    faces.push_back(firstFace);
     mesh->getUp(firstFace, up);
     PCU_ALWAYS_ASSERT(up.n == 1);
     apf::MeshEntity* firstTet = up.e[0];
-    tets.insert(firstTet);
+    tets.push_back(firstTet);
 
     apf::MeshEntity* nextFace = getTetOppFaceSharingEdge(mesh, firstTet,
         firstFace, edge);
     apf::MeshEntity* nextTet = firstTet;
     mesh->getUp(nextFace, up);
     while( up.n == 2) {
-      faces.insert(nextFace);
+      faces.push_back(nextFace);
       if (nextTet != up.e[0])
         nextTet = up.e[0];
       else
         nextTet = up.e[1];
-      tets.insert(nextTet);
+      tets.push_back(nextTet);
 
       nextFace = getTetOppFaceSharingEdge(mesh, nextTet, nextFace, edge);
       mesh->getUp(nextFace, up);
     }
-    faces.insert(nextFace);
+    faces.push_back(nextFace);
   }
 }
 
@@ -757,8 +757,7 @@ static void runErm(EdgePatch* p)
   int nf = p->faces.size();
   for(int i = 0; i < nf; i++) {
     // get face entitiy
-    EntitySet::iterator it = std::next(p->faces.begin(), i);
-    apf::MeshEntity* face = *it;
+    apf::MeshEntity* face = p->faces[i];
     // get ei of edge in face downward edges
     apf::Downward e;
     int ned = p->mesh->getDownward(face, 1, e);
@@ -777,15 +776,13 @@ static void runErm(EdgePatch* p)
   std::cout << " Reordered Tets, ne: " << ne << " nf " << nf << std::endl; // REMOVE
   std::cout << " Center of Reordered tets" << std::endl;
   for (int i = 0; i < ne; i++) {
-    EntitySet::iterator it = std::next(p->tets.begin(), i);
-    apf::MeshEntity* tet = *it;
+    apf::MeshEntity* tet = p->tets[i];
     apf::Vector3 center = apf::getLinearCentroid(p->mesh, tet);
     std::cout << i << ":  " << center << std::endl;
   }
   std::cout << " Center of Reordered Faces" << std::endl;
   for (int i = 0; i < nf; i++) {
-    EntitySet::iterator it = std::next(p->faces.begin(), i);
-    apf::MeshEntity* face = *it;
+    apf::MeshEntity* face = p->faces[i];
     apf::Vector3 center = apf::getLinearCentroid(p->mesh, face);
     std::cout << i << ":  " << center << std::endl;
   }
