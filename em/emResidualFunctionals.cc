@@ -340,10 +340,12 @@ static double getLocalEdgeBLF(EdgePatch* p, apf::MeshEntity* tet)
 
   // pick edge index from the resulting vector
   // negation of negative ND dofs
-  int which, rotate; bool flip;
+  /*int which, rotate; bool flip;
   apf::getAlignment(p->mesh, tet, p->entity, which, flip, rotate);
   if (flip)
-    blf_integrals(ei) = -1*blf_integrals(ei);
+    blf_integrals(ei) = -1*blf_integrals(ei);*/
+
+  cout << "local blf " << blf_integrals(ei) << endl;
   return blf_integrals(ei);
 }
 
@@ -428,10 +430,11 @@ static double getLocalEdgeLF(EdgePatch* p, apf::MeshEntity* tet)
   mth::Vector<double> elvect;
   assembleDomainLFElementVector(p->mesh, tet,
       p->equilibration->ef, elvect);
-  int which, rotate; bool flip;
+  /*int which, rotate; bool flip;
   apf::getAlignment(p->mesh, tet, p->entity, which, flip, rotate);
   if (flip)
-    elvect(ei) = -1*elvect(ei);
+    elvect(ei) = -1*elvect(ei);*/
+  cout << "local lf " << elvect(ei) << endl;
   return elvect(ei);
 }
 
@@ -499,12 +502,7 @@ apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
 static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
 {
   double fluxIntegral = 0.0;
-  // 1. findIn edge in downward edges of tet
-  apf::Downward e;
-  int ne = ep->mesh->getDownward(tet, 1, e);
-  PCU_ALWAYS_ASSERT(ne == 6);
-  int ei = apf::findIn(e, ne, ep->entity);
-  // 2. get faces of the tet in the patch
+  // 1. get faces of the tet in the patch
   apf::Downward f;
   int nf = ep->mesh->getDownward(tet, 2, f);
   PCU_ALWAYS_ASSERT(nf == 4);
@@ -514,10 +512,11 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       patchFaces.push_back(f[i]);
   }
   PCU_ALWAYS_ASSERT(patchFaces.size() == 2);
-  //  3. loop over the patch faces
+
+  //  2. loop over the patch faces
   for (unsigned int i = 0; i < patchFaces.size(); i++) {
     double fluxFaceIntegral = 0.0;
-    // 4. get upward tets of the current face
+    // 3. get upward tets of the current face
     apf::Up up;
     apf::MeshEntity* currentFace = patchFaces[i];
     ep->mesh->getUp(currentFace, up);
@@ -531,10 +530,17 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
     if (up.n == 2)
       secondTet  = up.e[1];
 
+    // 4. findIn edge in downward edges of current face
+    apf::Downward e;
+    int ne = ep->mesh->getDownward(currentFace, 1, e);
+    PCU_ALWAYS_ASSERT(ne == 3);
+    int ei = apf::findIn(e, ne, ep->entity);
+
     // 5. count integration points for flux face integral
     apf::FieldShape* fs = ep->equilibration->ef->getShape();
     int int_order = 2 * fs->getOrder();
     apf::MeshElement* fme = apf::createMeshElement(ep->mesh, currentFace);
+    apf::Element* fel = apf::createElement(ep->equilibration->ef, fme);
     int np = apf::countIntPoints(fme, int_order);
     std::cout << "np " << np << std::endl; // REMOVE
 
@@ -592,32 +598,16 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       std::cout << "tk " << tk << std::endl; // REMOVE
 
       // compute vector shape
-      int type = ep->mesh->getType(tet);
-      PCU_ALWAYS_ASSERT(type == apf::Mesh::TET);
+      int type = apf::Mesh::TRIANGLE;
       int nd = apf::countElementNodes(fs, type);
       apf::NewArray<apf::Vector3> vectorshapes (nd);
-      apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
-      apf::Element* el = apf::createElement(ep->equilibration->ef, me);
-      apf::Vector3 tetxi = apf::boundaryToElementXi(ep->mesh, currentFace, tet, p);
-      apf::getVectorShapeValues(el, tetxi, vectorshapes);
-      std::cout << "p " << p << std::endl; // REMOVE
-      std::cout << "tetxi " << tetxi << std::endl; // REMOVE
+      apf::getVectorShapeValues(fel, p, vectorshapes);
       vshape = vectorshapes[ei];
-      apf::destroyElement(el);
-      apf::destroyMeshElement(me);
-
-      // negate if edge is flipped
-      int which, rotate; bool flip;
-      apf::getAlignment(ep->mesh, tet, ep->entity, which, flip, rotate);
-      if (flip) {
-        vshape = vshape * -1.;
-        std::cout << "flip " << flip << std::endl; // REMOVE
-        std::cout << "vshape " << vshape << std::endl; // REMOVE
-      }
 
       // compute integral
       fluxFaceIntegral += (tk * vshape) * weight * jdet;
     }
+    apf::destroyElement(fel);
     apf::destroyMeshElement(fme);
     fluxIntegral += fluxFaceIntegral;
     std::cout << "flux Face integral " << fluxFaceIntegral << std::endl; // REMOVE
@@ -635,6 +625,8 @@ static void assembleEdgePatchRHS(EdgePatch* p)
     p->b.resize(p->tets.size());
     p->b.zero();
   }
+  double testblflf = 0.0; // REMOVE
+  double testflux = 0.0; // REMOVE
   int ne = p->tets.size();
   int nf = p->faces.size();
   for (int i = 0; i < ne; i++) {
@@ -643,11 +635,15 @@ static void assembleEdgePatchRHS(EdgePatch* p)
     double blfIntegral = getLocalEdgeBLF(p, tet);
     double lfIntegral = getLocalEdgeLF(p, tet);
     double fluxIntegral = getLocalFluxIntegral(p, tet);
+    testblflf += (blfIntegral - lfIntegral);
+    testflux += fluxIntegral;
     if(p->isOnBdry)
       p->b(nf+i) = blfIntegral - lfIntegral - fluxIntegral;
     else
       p->b(i) = blfIntegral - lfIntegral - fluxIntegral;
   }
+  std::cout << "Blf - lf integrals = " << testblflf << std::endl;
+  std::cout << "Flux Integral Sum  = " << testflux << std::endl;
 }
 
 // The following two functions help order tets and faces in a cavity in a
