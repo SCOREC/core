@@ -302,9 +302,9 @@ void assembleElementMatrix(apf::Mesh* mesh, apf::MeshEntity*e,
 
 // computes local bilinear form integral restricted to
 // an edge of a tet element
-static double getLocalEdgeBLF(EdgePatch* p, apf::MeshEntity* tet)
+static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
 {
-  // findIn edge in downward edges of tet
+  /* findIn edge in downward edges of tet
   apf::Downward e;
   int ne = p->mesh->getDownward(tet, 1, e);
   PCU_ALWAYS_ASSERT(ne == 6);
@@ -315,7 +315,7 @@ static double getLocalEdgeBLF(EdgePatch* p, apf::MeshEntity* tet)
   int type = p->mesh->getType(tet);
   int nd = apf::countElementNodes(el->getFieldShape(), type);
   apf::NewArray<double> d (nd);
-  el->getElementDofs(d);
+  el-getElementDofs(d);
   mth::Vector<double> dofs (nd);
   for (int i = 0; i < nd; i++) // TODO cleanup
     dofs(i) = d[i];
@@ -337,7 +337,7 @@ static double getLocalEdgeBLF(EdgePatch* p, apf::MeshEntity* tet)
   mth::multiply(elmat, dofs, blf_integrals);
 
   apf::destroyElement(el);
-  apf::destroyMeshElement(me);
+  apf::destroyMeshElement(me);*/
 
   // pick edge index from the resulting vector
   // negation of negative ND dofs
@@ -346,8 +346,97 @@ static double getLocalEdgeBLF(EdgePatch* p, apf::MeshEntity* tet)
   if (flip)
     blf_integrals(ei) = -1*blf_integrals(ei);*/
 
-  cout << "local blf " << blf_integrals(ei) << endl;
-  return blf_integrals(ei);
+  /*cout << "local blf " << blf_integrals(ei) << endl;
+  return blf_integrals(ei);*/
+  // 0. findIn edge in downward edges of tet
+  apf::Downward e;
+  int ne = ep->mesh->getDownward(tet, 1, e);
+  PCU_ALWAYS_ASSERT(ne == 6);
+  int ei = apf::findIn(e, ne, ep->entity);
+
+
+  apf::FieldShape* fs = ep->equilibration->ef->getShape();
+  int type = ep->mesh->getType(tet);
+  int dim = apf::getDimension(ep->mesh, tet);
+
+
+  apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
+  apf::Element* el = apf::createElement(ep->equilibration->ef, me);
+  int nd = apf::countElementNodes(el->getFieldShape(), type);
+  int int_order = 2 * fs->getOrder();
+  int np = apf::countIntPoints(me, int_order);
+  double w;
+
+
+  apf::NewArray<apf::Vector3> curlshapes(nd);
+  apf::NewArray<apf::Vector3> vectorshapes(nd);
+  mth::Matrix<double> phys_curlshapes(nd, dim);  // TODO clean
+
+
+  // 1. Curl Curl Integration
+  double curlcurl = 0.0;
+
+  apf::Vector3 p, curl;
+  for (int i = 0; i < np; i++) {
+    apf::getIntPoint(me, int_order, i, p);
+    double weight = apf::getIntWeight(me, int_order, i);
+    apf::Matrix3x3 J;
+    apf::getJacobian(me, p, J);
+    //double jdet = apf::getJacobianDeterminant(J, dim);
+    w = weight; // TODO check why do not need division by jdet
+
+    // get curl vector
+    apf::getCurl(el, p, curl);
+
+    // get curlshape values // TODO CLEAN use getCurlShapeValues
+    el->getShape()->getLocalVectorCurls(ep->mesh, tet, p, curlshapes);
+    phys_curlshapes.zero();
+    for (int i = 0; i < nd; i++)
+      for (int j = 0; j < dim; j++)
+        for (int k = 0; k < dim; k++)
+          phys_curlshapes(i,j) += curlshapes[i][k] * J[k][j];
+
+    // pick the ei curlshape // TODO Clean apf::Vector
+    apf::Vector3 cshape;
+    cshape[0] = phys_curlshapes(ei, 0);
+    cshape[1] = phys_curlshapes(ei, 1);
+    cshape[2] = phys_curlshapes(ei, 2);
+
+    // multiply
+    curlcurl += (curl * cshape) * w;
+  }
+
+  // 2. Vector Mass Integration
+  int_order = 2 * fs->getOrder();
+  np = apf::countIntPoints(me, int_order); // int points required
+
+  double vectormass = 0.0;
+  apf::Vector3 vvalue;
+  for (int i = 0; i < np; i++) {
+    apf::getIntPoint(me, int_order, i, p);
+    double weight = apf::getIntWeight(me, int_order, i);
+    apf::Matrix3x3 J;
+    apf::getJacobian(me, p, J);
+    double jdet = apf::getJacobianDeterminant(J, dim);
+
+    w = weight * jdet;
+
+    apf::getVector(el, p, vvalue);
+
+    apf::getVectorShapeValues(el, p, vectorshapes);
+    apf::Vector3 vshape = vectorshapes[ei];
+
+    vectormass += (vvalue * vshape) * w;
+  }
+
+  double blf_integral = curlcurl + vectormass;
+
+  int which, rotate; bool flip;
+  apf::getAlignment(ep->mesh, tet, ep->entity, which, flip, rotate);
+  if (flip)
+    blf_integral = -1*blf_integral;
+  cout << "local blf " << blf_integral << endl;
+  return blf_integral;
 }
 
 
@@ -431,10 +520,10 @@ static double getLocalEdgeLF(EdgePatch* p, apf::MeshEntity* tet)
   mth::Vector<double> elvect;
   assembleDomainLFElementVector(p->mesh, tet,
       p->equilibration->ef, elvect);
-  /*int which, rotate; bool flip;
+  int which, rotate; bool flip;
   apf::getAlignment(p->mesh, tet, p->entity, which, flip, rotate);
   if (flip)
-    elvect(ei) = -1*elvect(ei);*/
+    elvect(ei) = -1*elvect(ei);
   cout << "local lf " << elvect(ei) << endl;
   return elvect(ei);
 }
@@ -637,6 +726,8 @@ static void assembleEdgePatchRHS(EdgePatch* p)
     double fluxIntegral = getLocalFluxIntegral(p, tet);
     testblflf += (blfIntegral - lfIntegral);
     testflux += fluxIntegral;
+    cout << "Blf Integral" << blfIntegral << endl;
+    cout << "Lf Integral" << lfIntegral << endl;
     if(p->isOnBdry)
       p->b(nf+i) = blfIntegral - lfIntegral - fluxIntegral;
     else
