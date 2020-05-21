@@ -37,11 +37,7 @@ static void assembleFaceMassMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
   apf::Element* el = apf::createElement(f, me);
   int int_order = 2 * fs->getOrder();
-  int np = apf::countIntPoints(me, int_order); // int points required
-
-  apf::Downward edges;
-  int ned =  mesh->getDownward(e, 1, edges);
-  int which, rotate; bool flip;
+  int np = apf::countIntPoints(me, int_order);
 
   elmat.zero();
   apf::Vector3 p;
@@ -58,17 +54,6 @@ static void assembleFaceMassMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     for (int j = 0; j < nd; j++)
       for (int k = 0; k < sdim; k++)
         vectorShapes(j,k) = vectorshapes[j][k];
-
-    // negate negative dof indices
-    // TODO maybe can do this outside the function and therfore
-    // merge this function with assembleVectorMassElementMatrix
-    for (int ei = 0; ei < ned; ei++) {
-      apf::getAlignment(mesh, e, edges[ei], which, flip, rotate);
-      if(flip) {
-        for (int j = 0; j < sdim; j++)
-          vectorShapes(ei, j) = -1*vectorShapes(ei, j);
-      }
-    }
 
     mth::Matrix<double> vectorShapesT (sdim, nd);
     mth::transpose(vectorShapes, vectorShapesT);
@@ -87,53 +72,62 @@ static void assembleFaceMassMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
 // correction vectors on faces and stores them in a field
 apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g)
 {
+  apf::Mesh* mesh = apf::getMesh(ef);
   int order = ef->getShape()->getOrder();
-  cout << "tri_field_order " << order << endl; // REMOVE
+
   apf::Field* triNedelecField = apf::createField(
-      apf::getMesh(ef), "tri_nedelec_field", apf::SCALAR, apf::getNedelec(order));
+      mesh, "tri_nedelec_field", apf::SCALAR, apf::getNedelec(order));
   apf::zeroField(triNedelecField);
 
   apf::Field* correctedFluxField =  createPackedField(
-      apf::getMesh(ef), "corrected_flux_field", 3, apf::getConstant(2));
+      mesh, "corrected_flux_field", 3, apf::getConstant(2));
 
-  // iterate over all faces of the mesh
   apf::MeshEntity* face;
-  apf::MeshIterator* it = apf::getMesh(ef)->begin(2);
-  while ((face = apf::getMesh(ef)->iterate(it))) {
+  apf::MeshIterator* it = mesh->begin(2);
+  while ((face = mesh->iterate(it))) {
+
     // 1. assemble RHS vector
     double components[3];
     apf::getComponents(g, face, 0, components);
-    mth::Vector<double> rhs(3);
-    rhs(0) = components[0]; rhs(1) = components[1]; rhs(2) = components[2];
+    cout << "initial gs without negation" << endl; // REMOVE
+    cout << components[0] << " " << components[1] << " " << components[2] << endl; // REMOVE
 
-    bool debug = true;
-    if (debug) {
-      cout << "RHS VECTOR" << endl;
-      cout << components[0] << " " << components[1] << " " << components[2] << endl;
-      cout << rhs << endl;
-      cout << "==============" << endl;
+    apf::Downward edges;
+    int ne = mesh->getDownward(face, 1, edges);
+    for (int i = 0; i < ne; i++) {
+      apf::setScalar(triNedelecField, edges[i], 0, components[i]);
     }
 
-    // 2. assemble face mass matrix
+    apf::MeshElement* me = apf::createMeshElement(mesh, face);
+    apf::Element* el = apf::createElement(triNedelecField, me);
+    apf::NewArray<double> facegs;
+    el->getElementDofs(facegs);
+
+    mth::Vector<double> rhs(facegs.size()); // TODO clean
+    for (size_t i = 0; i < facegs.size(); i++) {
+      rhs(i) = facegs[i];
+    }
+    cout << "final gs with negation" << endl; // REMOVE
+    cout << rhs << endl; // REMOVE
+
+    apf::destroyElement(el);
+    apf::destroyMeshElement(me);
+
+    // 2. assemble LHS face mass matrix
     mth::Matrix<double> M;
     assembleFaceMassMatrix(
-        apf::getMesh(ef), face, triNedelecField, M);
+        mesh, face, triNedelecField, M);
 
     // 3. solve the system
     QRDecomp qr;
     mth::decomposeQR(M, qr.Q, qr.R);
-    std::cout << "M" << std::endl; // REMOVE DEBUG
-    std::cout << M << std::endl;
-    std::cout << "Q" << std::endl;
-    std::cout << qr.Q << std::endl;
-    std::cout << "R" << std::endl;
-    std::cout << qr.R << std::endl;
-    std::cout << "RHS" << std::endl;
-    std::cout << rhs << std::endl;
-    
     mth::Vector<double> theta;
     mth::solveFromQR(qr.Q, qr.R, rhs, theta);
-    std::cout << "theta" << std::endl;
+    std::cout << "LHS Face Mass Matrix" << std::endl; // REMOVE DEBUG
+    std::cout << M << std::endl;
+    std::cout << "RHS Vector" << std::endl;
+    std::cout << rhs << std::endl;
+    std::cout << "theta coeffs" << std::endl;
     std::cout << theta << std::endl;
 
     // set solution vector on face field
@@ -144,7 +138,7 @@ apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g)
     apf::setComponents(
         correctedFluxField, face, 0, components);
   }
-  apf::getMesh(ef)->end(it);
+  mesh->end(it);
 
   apf::destroyField(triNedelecField);
 
