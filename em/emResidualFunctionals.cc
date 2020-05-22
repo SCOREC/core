@@ -67,6 +67,8 @@ struct EdgePatch {
   EntityVector tets;
   EntityVector faces;
   mth::Matrix<double> A;
+  mth::Matrix<double> At;
+  mth::Matrix<double> T; // T = A*At + 1
   mth::Vector<double> b;
   mth::Vector<double> x;
   QRDecomp qr;
@@ -148,36 +150,35 @@ static void assembleEdgePatchLHS(EdgePatch* p)
   int ne = p->tets.size();
   int nf = p->faces.size();
   if( crv::isBoundaryEntity(p->mesh, p->entity) ) {
-    p->A.resize(ne+nf, ne+nf);
-    p->A.zero();
+    p->T.resize(ne+nf, ne+nf);
+    p->T.zero();
     for (int i = 0; i < nf; i++)
-      p->A(i,i) = 2.;
+      p->T(i,i) = 2.;
     for (int i = 0; i < ne-1; i++) {
-      p->A(i+nf,i) = 1.; p->A(i+nf,i+1) = -1.;
-      p->A(i,i+nf) = 1.; p->A(i+1,i+nf) = -1.;
+      p->T(i+nf,i) = 1.; p->T(i+nf,i+1) = -1.;
+      p->T(i,i+nf) = 1.; p->T(i+1,i+nf) = -1.;
     }
-    p->A(ne+nf-1, ne-1) = 1.; p->A(ne+nf-1, ne) = 1.;
-    p->A(ne-1, ne+nf-1) = 1.; p->A(ne, ne+nf-1) = 1.;
+    p->T(ne+nf-1, ne-1) = 1.; p->T(ne+nf-1, ne) = 1.;
+    p->T(ne-1, ne+nf-1) = 1.; p->T(ne, ne+nf-1) = 1.;
   }
   else if( ! crv::isBoundaryEntity(p->mesh, p->entity) ) {
-    mth::Matrix<double> m(ne, nf);
-    m.zero();
+    p->A.resize(ne, nf);
+    p->A.zero();
     for (int i = 0; i < ne-1; i++) {
-      m(i,i) = 1.;  m(i,i+1) = -1.;
+      p->A(i,i) = 1.;  p->A(i,i+1) = -1.;
     }
-    m(ne-1,0) = -1.; m(ne-1,ne-1) = 1.;
-
-    // m is singular so do (m*mt) + 1.0
+    p->A(ne-1,0) = -1.; p->A(ne-1,ne-1) = 1.;
+    // A is singular so do (A*At) + 1.0
     // to pick a particular solution
-    mth::Matrix<double> mt(nf,ne);
-    mth::transpose(m, mt);
-    mth::multiply(m, mt, p->A);
+    p->At.resize(nf,ne);
+    mth::transpose(p->A, p->At);
+    mth::multiply(p->A, p->At, p->T);
 
     for (int i = 0; i < ne; i++)
       for (int j = 0; j < ne; j++)
-        p->A(i,j) += 1.;
+        p->T(i,j) += 1.;
   }
-  mth::decomposeQR(p->A, p->qr.Q, p->qr.R);
+  mth::decomposeQR(p->T, p->qr.Q, p->qr.R);
 }
 
 void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
@@ -304,29 +305,30 @@ void assembleElementMatrix(apf::Mesh* mesh, apf::MeshEntity*e,
 // an edge of a tet element
 static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
 {
-  /* findIn edge in downward edges of tet
+  // findIn edge in downward edges of tet
   apf::Downward e;
-  int ne = p->mesh->getDownward(tet, 1, e);
+  int ne = ep->mesh->getDownward(tet, 1, e);
   PCU_ALWAYS_ASSERT(ne == 6);
-  int ei = apf::findIn(e, ne, p->entity);
+  int ei = apf::findIn(e, ne, ep->entity);
   // get Element Dofs
-  apf::MeshElement* me = apf::createMeshElement(p->mesh, tet);
-  apf::Element* el = apf::createElement(p->equilibration->ef, me);
-  int type = p->mesh->getType(tet);
+  apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
+  apf::Element* el = apf::createElement(ep->equilibration->ef, me);
+  int type = ep->mesh->getType(tet);
   int nd = apf::countElementNodes(el->getFieldShape(), type);
   apf::NewArray<double> d (nd);
-  el-getElementDofs(d);
+  el->getElementDofs(d);
   mth::Vector<double> dofs (nd);
   for (int i = 0; i < nd; i++) // TODO cleanup
     dofs(i) = d[i];
+  cout << "Element Dofs "<< dofs << endl;
   // assemble curl curl element matrix
   mth::Matrix<double> curl_elmat;
-  assembleCurlCurlElementMatrix(p->mesh, tet,
-      p->equilibration->ef, curl_elmat);
+  assembleCurlCurlElementMatrix(ep->mesh, tet,
+      ep->equilibration->ef, curl_elmat);
   // assemble vector mass element matrix
   mth::Matrix<double> mass_elmat;
-  assembleVectorMassElementMatrix(p->mesh, tet,
-      p->equilibration->ef, mass_elmat);
+  assembleVectorMassElementMatrix(ep->mesh, tet,
+      ep->equilibration->ef, mass_elmat);
   // add element matrices
   mth::Matrix<double> elmat(nd, nd);
   elmat.zero();
@@ -337,18 +339,19 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   mth::multiply(elmat, dofs, blf_integrals);
 
   apf::destroyElement(el);
-  apf::destroyMeshElement(me);*/
+  apf::destroyMeshElement(me);
 
   // pick edge index from the resulting vector
   // negation of negative ND dofs
-  /*int which, rotate; bool flip;
-  apf::getAlignment(p->mesh, tet, p->entity, which, flip, rotate);
+  int which, rotate; bool flip;
+  apf::getAlignment(ep->mesh, tet, ep->entity, which, flip, rotate);
   if (flip)
-    blf_integrals(ei) = -1*blf_integrals(ei);*/
+    blf_integrals(ei) = -1*blf_integrals(ei);
 
-  /*cout << "local blf " << blf_integrals(ei) << endl;
-  return blf_integrals(ei);*/
-  // 0. findIn edge in downward edges of tet
+  cout << "local blf " << blf_integrals(ei) << endl;
+  return blf_integrals(ei);
+
+  /* 0. findIn edge in downward edges of tet
   apf::Downward e;
   int ne = ep->mesh->getDownward(tet, 1, e);
   PCU_ALWAYS_ASSERT(ne == 6);
@@ -436,7 +439,7 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   if (flip)
     blf_integral = -1*blf_integral;
   cout << "local blf " << blf_integral << endl;
-  return blf_integral;
+  return blf_integral;*/
 }
 
 
@@ -694,6 +697,14 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       apf::getVectorShapeValues(fel, p, vectorshapes);
       vshape = vectorshapes[ei];
 
+      int which, rotate; bool flip;
+      apf::getAlignment(
+          ep->mesh, currentFace, ep->entity, which, flip, rotate);
+      if (flip) {
+      vshape = vshape * -1.;
+      }
+
+
       // compute integral
       fluxFaceIntegral += (tk * vshape) * weight * jdet;
     }
@@ -820,10 +831,29 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
 
 static void runErm(EdgePatch* p)
 {
+  // DEBUG
+  cout << "PUMI edge vertex coordinates" << endl;
+  apf::Downward ev;
+  int nev = p->mesh->getDownward(p->entity, 0, ev);
+  PCU_ALWAYS_ASSERT(nev == 2);
+  for (int i = 0; i < nev; i++) {
+    apf::Vector3 pt;
+    p->mesh->getPoint(ev[i], 0, pt);
+    cout << pt << endl;
+  } // REMOVE DEBUG
+
   getOrderedTetsandFaces(p->mesh, p->entity, p->tets, p->faces);
   assembleEdgePatchLHS(p);
   assembleEdgePatchRHS(p);
   mth::solveFromQR(p->qr.Q, p->qr.R, p->b, p->x);
+
+  if (!p->isOnBdry) { // solve At*mu = g for g
+    mth::Vector<double> temp(p->tets.size());
+    mth::multiply(p->At, p->x, temp);
+    for (size_t i = 0; i < p->tets.size(); i++) {
+      p->x(i) = temp(i);
+    }
+  }
 
   bool debug = true; // REMOVE DEBUG
   if (debug) {
@@ -833,7 +863,7 @@ static void runErm(EdgePatch* p)
       cout << "Interior Patch" << endl;
     cout << "ne " << p->tets.size() << " nf " << p->faces.size() << endl;
     cout << "LHS Matrix" << endl;
-    cout << p->A << endl;
+    cout << p->T << endl;
 
     cout << "RHS Vector" << endl;
     cout << p->b << endl;
@@ -881,6 +911,8 @@ static void runErm(EdgePatch* p)
 
   std::cout << "x" << std::endl; // REMOVE
   std::cout << p->x << std::endl; // REMOVE
+
+  cout << "======================================================" << endl;
 }
 
 
