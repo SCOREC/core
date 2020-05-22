@@ -681,13 +681,13 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
         apf::getCurl(el2, tet2xi, curl2);
         apf::Vector3 temp2 = apf::cross(fnormal2, curl2);
         curl += (temp2 * -1.);
+        curl = curl * 1./2.; //
         apf::destroyElement(el2);
         apf::destroyMeshElement(me2);
       }
 
       // compute tk (inter-element averaged flux)
-      //tk = apf::cross(fnormal, curl);
-      tk = curl * 1./2.;
+      tk = curl;
       std::cout << "tk " << tk << std::endl; // REMOVE
 
       // compute vector shape
