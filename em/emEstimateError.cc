@@ -241,13 +241,16 @@ static void computeLambdaVector(
         apf::getCurl(el2, tet2xi, curl2);
         apf::Vector3 temp2 = apf::cross(fnormal2, curl2);
         curl += (temp2 * -1.);
+        curl = curl * 1./2.; //
         apf::destroyElement(el2);
         apf::destroyMeshElement(me2);
       }
 
       // compute tk (inter-element averaged flux)
-      tk = curl * 1./2.;
-      std::cout << "tk " << tk << std::endl; // REMOVE
+      tk = curl;
+      std::cout << "tk           " << tk << std::endl; // REMOVE
+      std::cout << "theta_coeffs " << theta_coeffs << std::endl; // REMOVE
+      std::cout << "theta_vector " << theta_vector << std::endl; // REMOVE
 
       // compute p+1 order 3D vector shapes
       apf::NewArray<apf::Vector3> tetVectorShapes (nedofs);
@@ -465,7 +468,9 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
   // 2. iterate over all elements of the mesh
   apf::MeshEntity* el;
   apf::MeshIterator* it = apf::getMesh(ef)->begin(3);
+  int elemNo = 0; // remove
   while ((el = apf::getMesh(ef)->iterate(it))) {
+    cout << "elemNo " << elemNo << endl;
     // 2(a). Assemble LHS element matrix
     mth::Matrix<double> A;
     assembleElementMatrix( apf::getMesh(ef), el, efp1, A);
@@ -536,6 +541,8 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
 
 		apf::setScalar(error_field, el, 0, l2_error);
     cout << "Write the L2 error to error_field" << endl;
+
+    elemNo++;
   }
   apf::getMesh(ef)->end(it);
   cout << "End loop over elements" << endl;
