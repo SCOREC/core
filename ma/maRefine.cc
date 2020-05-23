@@ -20,7 +20,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <pcu_util.h>
-
+#include <iostream>
 namespace ma {
 
 void addEdgePreAllocation(Refine* r, Entity* e, int counts[4])
@@ -347,18 +347,16 @@ void transferElements(Refine* r)
   SolutionTransfer* st = a->solutionTransfer;
   int td = a->shape->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
-    for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
+    for (size_t i=0; i < r->toSplit[d].getSize(); ++i) {
+      std::cout<<" doing mesh refinement for dimension "<<d<<std::endl;
       a->shape->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
+    }
   td = st->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
-    for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
+    for (size_t i=0; i < r->toSplit[d].getSize(); ++i) {
+      std::cout<<" doing solution transfer for dimension "<<d<<std::endl;
       st->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
-  /*
-  td = a->shape->getTransferDimension();
-  for (int d = td; d <= m->getDimension(); ++d)
-    for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
-      a->shape->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
-      */
+    }
 }
 
 void forgetNewEntities(Refine* r)
