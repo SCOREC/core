@@ -348,13 +348,11 @@ void transferElements(Refine* r)
   int td = a->shape->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
     for (size_t i=0; i < r->toSplit[d].getSize(); ++i) {
-      std::cout<<" doing mesh refinement for dimension "<<d<<std::endl;
       a->shape->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
     }
   td = st->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
     for (size_t i=0; i < r->toSplit[d].getSize(); ++i) {
-      std::cout<<" doing solution transfer for dimension "<<d<<std::endl;
       st->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
     }
 }

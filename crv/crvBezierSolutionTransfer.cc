@@ -109,10 +109,12 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 {
   public:
     Adapt* adapt;
-    ma::LinearTransfer verts;
+    //ma::LinearTransfer verts;
     ma::CavityTransfer others;
+
     CrvBezierSolutionTransfer(apf::Field* field, Adapt* a):
-      adapt(a),verts(field),others(field)
+      adapt(a),others(field)
+      //adapt(a),verts(field),others(field)
     {
       f = field;
       refine = adapt->refine;
@@ -136,6 +138,11 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
       return others.hasNodesOn(dimension);
     }
 
+    virtual const char* getTransferFieldName() {
+      return apf::getName(f);
+    }
+
+    /*
     virtual void onVertex(
         apf::MeshElement* parent,
         ma::Vector const& xi,
@@ -143,12 +150,11 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
     {
       verts.onVertex(parent,xi,vert);
     }
-
+*/
     virtual void onRefine(
         ma::Entity* parent,
         ma::EntityArray& newEntities)
     {
-      std::cout<<" Inside On Redine of crvSolutionTransfer"<<std::endl;
       int P = shape->getOrder();
       int parentType = mesh->getType(parent);
       apf::Downward parentVerts, parentEdges;
@@ -174,7 +180,6 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
           midEdgeVerts[i] = 0;
       }
 
-      std::cout<<" Inside On Refine -- done new nodes due refine "<<std::endl;
       int np = shape->getEntityShape(parentType)->countNodes();
 
       apf::Element* elem = apf::createElement(f, parent);
@@ -317,6 +322,11 @@ ma::SolutionTransfer* setBezierSolutionTransfers(
 
   for (std::size_t i = 0; i < fields.size(); i++) {
     st->add(createBezierSolutionTransfer(fields[i], a));
+  }
+  std::vector<ma::SolutionTransfer*> trans = st->transfers;
+  for (std::size_t i = 0; i < trans.size(); i++) {
+    const char* name = trans[i]->getTransferFieldName();
+    std::cout<<" field name added "<< name<<std::endl;
   }
   return st;
 }

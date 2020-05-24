@@ -10,7 +10,8 @@
 #include "maSolutionTransfer.h"
 #include "maAffine.h"
 #include "maMap.h"
-
+#include "apfField.h"
+#include <iostream>
 namespace ma {
 
 SolutionTransfer::~SolutionTransfer()
@@ -60,6 +61,10 @@ int SolutionTransfer::getTransferDimension()
   return transferDimension;
 }
 
+const char* SolutionTransfer::getTransferFieldName()
+{
+  return 0;
+}
 
 FieldTransfer::FieldTransfer(apf::Field* f)
 {
@@ -72,6 +77,11 @@ FieldTransfer::FieldTransfer(apf::Field* f)
 bool FieldTransfer::hasNodesOn(int dimension)
 {
   return shape->hasNodesIn(dimension);
+}
+
+const char* FieldTransfer::getTransferFieldName()
+{
+  return apf::getName(field);
 }
 
 void LinearTransfer::onVertex(
@@ -172,7 +182,45 @@ void CavityTransfer::onCavity(
     EntityArray& oldElements,
     EntityArray& newEntities)
 {
+  apf::FieldShape *fs = apf::getShape(field);
+  std::string name = fs->getName();
+  std::cout<<" field name inside oncavity "<<name<<std::endl;
+  bool fConstant = false;
+  if (name == std::string("Constant_3"))
+    fConstant = true;
+
+  double sumOld = 0.;
+  if (fConstant) {
+    for (size_t i = 0; i < oldElements.getSize(); i++) {
+      double val = apf::getScalar(field, oldElements[i], 0);
+      sumOld += val;
+    }
+  }
+  std::cout<<" value before adapt "<<sumOld<<std::endl;
+
   transfer(oldElements.getSize(),&(oldElements[0]),newEntities);
+
+  double sumNew = 0.;
+  if (fConstant) {
+    for (size_t i = 0; i < newEntities.getSize(); i++) {
+      int type = mesh->getType(newEntities[i]);
+      if (type == 4) {
+      	double val = apf::getScalar(field, newEntities[i], 0);
+      	//double val = apf::measure(mesh, newEntities[i]);
+      	sumNew += val;
+      }
+    }
+    for (size_t i = 0; i < newEntities.getSize(); i++) {
+      int type = mesh->getType(newEntities[i]);
+      if (type == 4) {
+      	double val = apf::getScalar(field, newEntities[i], 0);
+      	//double val = apf::measure(mesh, newEntities[i]);
+	//apf::setScalar(field, newEntities[i], 0, val*sumOld/sumNew);
+	apf::setScalar(field, newEntities[i], 0, val*sumOld/sumNew);
+      }
+    }
+  }
+  std::cout<<" value after adapt "<<sumNew<<std::endl;
 }
 
 /* hmm... could use multiple inheritance here, but that creates
@@ -218,6 +266,10 @@ class HighOrderTransfer : public SolutionTransfer
         EntityArray& newEntities)
     {
       others.onCavity(oldElements,newEntities);
+    }
+    const char* getTransferFieldName()
+    {
+      return verts.getTransferFieldName();
     }
 };
 
@@ -288,7 +340,9 @@ AutoSolutionTransfer::AutoSolutionTransfer(Mesh* m)
   for (int i = 0; i < m->countFields(); ++i)
   {
     apf::Field* f = m->getField(i);
-    this->add(createFieldTransfer(f));
+    std::string name = f->getShape()->getName();
+    if (name != std::string("Bezier"))
+      this->add(createFieldTransfer(f));
   }
 }
 

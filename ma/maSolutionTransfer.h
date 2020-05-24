@@ -15,6 +15,7 @@
 
 #include <apf.h>
 #include <apfShape.h>
+#include <apfField.h>
 #include <apfNumbering.h>
 #include <float.h>
 #include "maMesh.h"
@@ -76,6 +77,7 @@ class SolutionTransfer
         EntityArray& newEntities);
     /** \brief for internal MeshAdapt use */
     int getTransferDimension();
+    virtual const char* getTransferFieldName();
 };
 
 class FieldTransfer : public SolutionTransfer
@@ -87,6 +89,7 @@ class FieldTransfer : public SolutionTransfer
     apf::Mesh* mesh;
     apf::FieldShape* shape;
     apf::NewArray<double> value;
+    virtual const char* getTransferFieldName();
 };
 
 class LinearTransfer : public FieldTransfer
@@ -94,6 +97,7 @@ class LinearTransfer : public FieldTransfer
   public:
     LinearTransfer(apf::Field* f):
       FieldTransfer(f) {}
+    apf::Field* field;
     virtual void onVertex(
 	apf::MeshElement* parent,
 	Vector const& xi,
@@ -161,7 +165,7 @@ class SolutionTransfers : public SolutionTransfer
     virtual void onCavity(
         EntityArray& oldElements,
         EntityArray& newEntities);
-  private:
+  //private
     typedef std::vector<SolutionTransfer*> Transfers;
     Transfers transfers;
 };
