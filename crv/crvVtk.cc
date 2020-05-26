@@ -311,6 +311,7 @@ static void writeEdgeJacobianDet(std::ostream& file, apf::Mesh* m, int n)
   file << "</DataArray>\n";
 }
 
+
 static void writeTriJacobianDet(std::ostream& file, apf::Mesh* m, int n)
 {
   file << "<DataArray type=\"Float64\" Name=\"detJacobian\" "
