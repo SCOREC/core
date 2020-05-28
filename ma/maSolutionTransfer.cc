@@ -184,7 +184,6 @@ void CavityTransfer::onCavity(
 {
   apf::FieldShape *fs = apf::getShape(field);
   std::string name = fs->getName();
-  std::cout<<" field name inside oncavity "<<name<<std::endl;
   bool fConstant = false;
   if (name == std::string("Constant_3"))
     fConstant = true;
@@ -193,21 +192,21 @@ void CavityTransfer::onCavity(
   if (fConstant) {
     for (size_t i = 0; i < oldElements.getSize(); i++) {
       double val = apf::getScalar(field, oldElements[i], 0);
-      sumOld += val;
+      sumOld += val*apf::measure(mesh, oldElements[i]);
     }
   }
-  std::cout<<" value before adapt "<<sumOld<<std::endl;
 
   transfer(oldElements.getSize(),&(oldElements[0]),newEntities);
 
   double sumNew = 0.;
+  double sumNewVal = 0.;
   if (fConstant) {
     for (size_t i = 0; i < newEntities.getSize(); i++) {
       int type = mesh->getType(newEntities[i]);
       if (type == 4) {
       	double val = apf::getScalar(field, newEntities[i], 0);
       	//double val = apf::measure(mesh, newEntities[i]);
-      	sumNew += val;
+      	sumNew += val*apf::measure(mesh, newEntities[i]);
       }
     }
     for (size_t i = 0; i < newEntities.getSize(); i++) {
@@ -219,8 +218,15 @@ void CavityTransfer::onCavity(
 	apf::setScalar(field, newEntities[i], 0, val*sumOld/sumNew);
       }
     }
+    for (size_t i = 0; i < newEntities.getSize(); i++) {
+      int type = mesh->getType(newEntities[i]);
+      if (type == 4) {
+      	double val = apf::getScalar(field, newEntities[i], 0);
+      	//double val = apf::measure(mesh, newEntities[i]);
+      	sumNewVal += val*apf::measure(mesh, newEntities[i]);
+      }
+    }
   }
-  std::cout<<" value after adapt "<<sumNew<<std::endl;
 }
 
 /* hmm... could use multiple inheritance here, but that creates

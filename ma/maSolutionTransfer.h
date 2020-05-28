@@ -97,7 +97,6 @@ class LinearTransfer : public FieldTransfer
   public:
     LinearTransfer(apf::Field* f):
       FieldTransfer(f) {}
-    apf::Field* field;
     virtual void onVertex(
 	apf::MeshElement* parent,
 	Vector const& xi,
