@@ -1136,7 +1136,61 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
     tagData[0] = 3;
     tagData[1] = regionIDs[i];
     mesh->setIntTag(globalToRegion[i],classifnTag,tagData);
-  }
+
+    //check face adjacency and classify if not classified already
+    mesh->getDownward(globalToRegion[i], 1, facesAdjToRegion);
+    for (int k = 0; k < 4; ++k) {
+        if (mesh->hasTag(facesAdjToRegion[k], classifnTag)) 
+        {
+            mesh->getIntTag(facesAdjToRegion[k], classifnTag, tagData);
+            if (tagData[0] > newTagData[0]) 
+            {
+	             mesh->setIntTag(facesAdjToRegion[k], classifnTag, newTagData);
+            }
+        } 
+        else 
+        {
+            // Edge has no classification, use the region's
+            mesh->setIntTag(facesAdjToRegion[k], classifnTag, newTagData);
+        }
+        
+        //check edge adjacency and classify if not classified already
+        mesh->getDownward(facesAdjToRegion[k], 1, edgesAdjToFace);
+        for (int l = 0; l < 3; ++l) {
+            if (mesh->hasTag(edgesAdjToFace[l], classifnTag)) 
+            {
+                mesh->getIntTag(edgesAdjToFace[l], classifnTag, tagData);
+                if (tagData[0] > newTagData[0]) 
+                {
+	                 mesh->setIntTag(edgesAdjToFace[l], classifnTag, newTagData);
+                }
+            } 
+            else 
+            {
+                // Edge has no classification, use the region's
+                mesh->setIntTag(edgesAdjToFace[l], classifnTag, newTagData);
+            }
+        
+
+            //get vertices in the meantime
+            mesh->getDownward(edgesAdjToFace[l], 0, vertsAdjToEdge);
+            for (int m = 0; m < 2; ++m) {
+                if (mesh->hasTag(vertsAdjToEdge[m], classifnTag)) {
+	                mesh->getIntTag(vertsAdjToEdge[m], classifnTag, tagData);
+                    if (tagData[0] > newTagData[0]) {
+	                    mesh->setIntTag(vertsAdjToEdge[m], classifnTag, newTagData);
+                    }
+                } else {
+                    // Vertex has no classification, use the edge's
+                    mesh->setIntTag(vertsAdjToEdge[m], classifnTag, newTagData);
+                }
+            }
+        }
+
+    }
+
+
+  } //end region loop
 
 
   MeshMDS* m = static_cast<MeshMDS*>(mesh);
@@ -1255,15 +1309,15 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
         //get vertices in the meantime
         mesh->getDownward(edgesAdjToFace[k], 0, vertsAdjToEdge);
-        for (int k = 0; k < 2; ++k) {
-            if (mesh->hasTag(vertsAdjToEdge[k], classifnTag)) {
-	            mesh->getIntTag(vertsAdjToEdge[k], classifnTag, tagData);
+        for (int l = 0; l < 2; ++l) {
+            if (mesh->hasTag(vertsAdjToEdge[l], classifnTag)) {
+	            mesh->getIntTag(vertsAdjToEdge[l], classifnTag, tagData);
                 if (tagData[0] > newTagData[0]) {
-	                mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+	                mesh->setIntTag(vertsAdjToEdge[l], classifnTag, newTagData);
                 }
             } else {
                 // Vertex has no classification, use the edge's
-                mesh->setIntTag(vertsAdjToEdge[k], classifnTag, newTagData);
+                mesh->setIntTag(vertsAdjToEdge[l], classifnTag, newTagData);
             }
         }
 
@@ -1284,8 +1338,9 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
         if (m->hasTag(ent, classifnTag)) {
           m->getIntTag(ent, classifnTag, tagData);
           mds_update_model_for_entity(m->mesh, id, tagData[0], tagData[1]);
-        } else {
-          mds_update_model_for_entity(m->mesh, id, m->getDimension(),
+        }       
+        else {
+          mds_update_model_for_entity(m->mesh, id, m->getDimension(), 
               DEFAULT_REGION_ID);
         }
       }
