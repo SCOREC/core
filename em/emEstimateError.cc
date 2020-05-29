@@ -17,12 +17,12 @@ namespace em {
 //TODO destroy all fields created inside functions to prevent memory leaks.
 
 static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
-  apf::Field* f, mth::Vector<double>& blf)
+  apf::Field* f, apf::Field* fp1, mth::Vector<double>& blf)
 {
-  apf::FieldShape* fs = f->getShape();
+  apf::FieldShape* fp1s = fp1->getShape();
   int type = mesh->getType(e);
   PCU_ALWAYS_ASSERT(type == apf::Mesh::TET);
-  int nd = apf::countElementNodes(fs, type);
+  int nd = apf::countElementNodes(fp1s, type);
   int dim = apf::getDimension(mesh, e);
   double w;
 
@@ -35,8 +35,9 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
   blf.resize(nd);
 
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
-  apf::Element* el = apf::createElement(f, me);
-  int int_order = 2 * fs->getOrder();
+  apf::Element* fp1el = apf::createElement(fp1, me);
+  apf::Element* fel = apf::createElement(f, me);
+  int int_order = 2 * fp1s->getOrder();
   int np = apf::countIntPoints(me, int_order); // int points required
 
   // 1. Compute Curl Curl Integration
@@ -51,10 +52,10 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
     w = weight; // TODO check why do not need division by jdet
 
     // get curl vector
-    apf::getCurl(el, p, curl);
+    apf::getCurl(fel, p, curl);
 
     // get curlshape values // TODO CLEAN use getCurlShapeValues
-    el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
+    fp1el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
     phys_curlshape.zero();
     for (int i = 0; i < nd; i++)
       for (int j = 0; j < dim; j++)
@@ -66,14 +67,16 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
     V.zero();
     mth::Vector<double> c (dim);
     c(0) = curl[0]; c(1) = curl[1]; c(2) = curl[2];
+    cout << "curl " << c << endl;
     mth::multiply(phys_curlshape, c, V);
+    cout << "V " << V << endl;
     V *= w;
 
     curlcurl_vec += V;
   }
 
   // 2. Compute Vector Mass Integration
-  int_order = 2 * fs->getOrder();
+  int_order = 2 * fp1s->getOrder();
   np = apf::countIntPoints(me, int_order); // int points required
 
   mass_vec.zero();
@@ -87,9 +90,9 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
 
     w = weight * jdet;
 
-    apf::getVector(el, p, vvalue);
+    apf::getVector(fel, p, vvalue);
 
-    apf::getVectorShapeValues(el, p, vectorshape);
+    apf::getVectorShapeValues(fp1el, p, vectorshape);
     vectorShape.zero();
     for (int i = 0; i < nd; i++)
       for (int j = 0; j < dim; j++)
@@ -110,6 +113,10 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
   blf.zero();
   blf += curlcurl_vec;
   blf += mass_vec;
+
+  apf::destroyMeshElement(me);
+  apf::destroyElement(fp1el);
+  apf::destroyElement(fel);
 
   // TODO Take care of Negative Dofs
 }
@@ -198,11 +205,11 @@ static void computeLambdaVector(
       theta_vector.zero();
       apf::NewArray<apf::Vector3> triVectorShapes (nfdofs);
       apf::getVectorShapeValues(fel, p, triVectorShapes);
-      int which, rotate; bool flip; // negative ND dofs
+      //int which, rotate; bool flip; // negative ND dofs
       for (int i = 0; i < nedges; i++) {
-        apf::getAlignment(mesh, face, edges[i], which, flip, rotate);
         apf::Vector3 v = triVectorShapes[i];
-        if (flip) { v = v * -1.; }
+        /*apf::getAlignment(mesh, face, edges[i], which, flip, rotate);
+        if (flip) { v = v * -1.; }*/
 
         v = v * theta_coeffs[i];
         theta_vector += v;
@@ -216,8 +223,10 @@ static void computeLambdaVector(
       if (up.n == 2) {
         if (e == firstTet)
           fnormal2 = computeFaceOutwardNormal(mesh, secondTet, face, p);
-        else
+        else {
           fnormal2 = computeFaceOutwardNormal(mesh, firstTet, face, p);
+          theta_vector = theta_vector * -1.;
+        }
         std::cout << "normal1 " << fnormal1 << std::endl; // REMOVE
         std::cout << "normal2 " << fnormal2 << std::endl; // REMOVE
       }
@@ -430,8 +439,11 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
 
 		mth::Vector<double> err_func;
 		mth::multiply(vectorShapeT, error_dofs, err_func);
+		cout << "vshape   " << vectorShape << endl;
+		cout << "err_func " << err_func << endl;
 
 		error += w * (err_func * err_func);
+	  cout << "error squared " << error << endl;
 	}
 	if (error < 0.0)
 		error = -error;
@@ -476,23 +488,33 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
     assembleElementMatrix( apf::getMesh(ef), el, efp1, A);
     // TODO Take care of negative dofs in lhs
     cout << "LHS matrix assembled" << endl;
+    cout << A << endl;
 
     // 2(b). Compute Bilinear Form Vector
     mth::Vector<double> blf;
-    computeResidualBLF(apf::getMesh(efp1), el, efp1, blf);
+    computeResidualBLF(apf::getMesh(efp1), el, ef, efp1, blf);
     // TODO Take care of negative dofs in blf
     cout << "RHS bilinear form vector assembled" << endl;
+    cout << blf << endl;
 
     // 2(c). Compute Linear Form Vector
     mth::Vector<double> lf;
     assembleDomainLFElementVector(apf::getMesh(efp1), el, efp1, lf);
     // TODO Take care of negative dofs in lf
     cout << "RHS linear form vector assembled" << endl;
+    cout << lf << endl;
 
     // 2(d). Compute Lamda Vector
     mth::Vector<double> lambda;
     computeLambdaVector(
         apf::getMesh(ef), el, ef, efp1, tri_nedelec_field, correctedFlux, lambda);
+    cout << "lambda vector " << lambda << endl;
+    double lambda_sum = 0.;
+    for(size_t i = 0; i < lambda.size(); i++) {
+      lambda_sum += lambda(i);
+    }
+    cout << "lambda_sum " << lambda_sum << endl;
+
     // TODO Take care of negative dofs in lambda
     cout << "RHS lambda vector assembled" << endl;
 
@@ -534,10 +556,11 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
       error_dofs(index) = Xnew(i);
     }
     cout << "Recover the solution" << endl;
+    cout << error_dofs << endl;
 
 		// 2(j). Compute L2 Norm Error
 		double l2_error = computeL2Error(apf::getMesh(ef), el, efp1, error_dofs);
-		cout << "Compute L2 element error" << endl;
+		cout << "Compute L2 element error" << l2_error << endl;
 
 		apf::setScalar(error_field, el, 0, l2_error);
     cout << "Write the L2 error to error_field" << endl;
