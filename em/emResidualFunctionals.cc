@@ -348,7 +348,9 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   if (flip)
     blf_integrals(ei) = -1*blf_integrals(ei);
 
-  cout << "local blf " << blf_integrals(ei) << endl;
+  cout << "local blf " << blf_integrals(ei);
+  if (flip) { cout << ". local blf before negation " << -1*blf_integrals(ei);}
+  cout << endl;
   return blf_integrals(ei);
 
   /* 0. findIn edge in downward edges of tet
@@ -548,6 +550,20 @@ static apf::MeshEntity* getTetOppVert(
   return 0;
 }
 
+static apf::MeshEntity* getFaceOppVert(
+    apf::Mesh* m, apf::MeshEntity* f, apf::MeshEntity* e)
+{
+  apf::Downward evs;
+  int env = m->getDownward(e, 0, evs);
+  apf::Downward fvs;
+  int fnv = m->getDownward(f, 0, fvs);
+  PCU_ALWAYS_ASSERT(env == 2 && fnv == 3);
+  for (int i = 0; i < fnv; i++) {
+    if (apf::findIn(evs, env, fvs[i]) == -1)
+      return fvs[i];
+  }
+  return 0;
+}
 static apf::Vector3 computeFaceNormal(apf::Mesh* m,
     apf::MeshEntity* f, apf::Vector3 const& p)
 {
@@ -743,6 +759,12 @@ static void assembleEdgePatchRHS(EdgePatch* p)
       p->b(nf+i) = blfIntegral - lfIntegral - fluxIntegral;
     else
       p->b(i) = blfIntegral - lfIntegral - fluxIntegral;
+
+    //DEBUG
+    apf::Downward tetedges;
+    int ntedges = p->mesh->getDownward(tet, 1, tetedges);
+    int ei = apf::findIn(tetedges, ntedges, p->entity);
+    cout << "ei in tet " << ei << endl;
   }
   std::cout << "Blf - lf integrals = " << testblflf << std::endl;
   std::cout << "Flux Integral Sum  = " << testflux << std::endl;
@@ -829,6 +851,120 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
   }
 }
 
+void getClockwiseTetsandFaces(EdgePatch* p)
+{
+  if (p->isOnBdry) {
+    if (p->tets.size() > 1) {
+      apf::MeshEntity* secondFace = p->faces[1];
+      apf::MeshEntity* firstTet = p->tets[0];
+      apf::MeshEntity* secondTet = p->tets[1];
+
+      apf::Downward firstTetFaces, secondTetFaces;
+      int n_firstTetFaces = p->mesh->getDownward(firstTet, 2, firstTetFaces);
+      int n_secondTetFaces = p->mesh->getDownward(secondTet, 2, secondTetFaces);
+      int fi1 = apf::findIn(firstTetFaces, n_firstTetFaces, secondFace);
+      int fi2 = apf::findIn(secondTetFaces, n_secondTetFaces, secondFace);
+      PCU_ALWAYS_ASSERT(fi1 != -1 && fi2 != -1);
+
+      // first tet opp vertex crd
+      apf::MeshEntity* firstTetOppVert = getTetOppVert(
+        p->mesh, firstTet, secondFace);
+      apf::Vector3 firstTetOppVertCrd;
+      p->mesh->getPoint(firstTetOppVert, 0, firstTetOppVertCrd);
+
+      // second tet opp vertex crd
+      apf::MeshEntity* secondTetOppVert = getTetOppVert(
+        p->mesh, secondTet, secondFace);
+      apf::Vector3 secondTetOppVertCrd;
+      p->mesh->getPoint(secondTetOppVert, 0, secondTetOppVertCrd);
+
+      // normal to the face
+      apf::Downward edge_vertices;
+      p->mesh->getDownward(p->entity, 0, edge_vertices);
+      apf::Vector3 p0, p1, p2;
+      p->mesh->getPoint(edge_vertices[0], 0, p0);
+      p->mesh->getPoint(edge_vertices[1], 0, p1);
+      apf::MeshEntity* faceOppVert = getFaceOppVert(
+        p->mesh, secondFace, p->entity);
+      p->mesh->getPoint(faceOppVert, 0, p2);
+
+      apf::Vector3 normal = apf::cross(p1-p0, p2-p0);
+
+      // direction vectors from p0 to opp tet verts
+      apf::Vector3 vFirst = firstTetOppVertCrd - p0;
+      apf::Vector3 vLast = secondTetOppVertCrd - p0;
+
+      if ((vFirst * normal > 0)  && (vLast * normal < 0)) {
+        // reverse list of tets and faces
+        std::reverse(p->tets.begin(), p->tets.end());
+        std::reverse(p->faces.begin(), p->faces.begin());
+      }
+      else if ((vFirst * normal < 0)  && (vLast * normal > 0)) {
+        cout << "already clockwise" << endl;
+      }
+      else if ((vFirst * normal < 0)  && (vLast * normal < 0)) {
+        cout << "failed clockwise. ABORT" << endl;
+      }
+      else if ((vFirst * normal > 0)  && (vLast * normal > 0)) {
+        cout << "failed clockwise. ABORT" << endl;
+      }
+    }
+  }
+  else {
+    apf::MeshEntity* firstFace = p->faces[0];
+    apf::MeshEntity* firstTet = p->tets[0];
+    apf::MeshEntity* lastTet = p->tets[p->tets.size()-1];
+
+    apf::Downward firstTetFaces, lastTetFaces;
+    int n_firstTetFaces = p->mesh->getDownward(firstTet, 2, firstTetFaces);
+    int n_lastTetFaces = p->mesh->getDownward(lastTet, 2, lastTetFaces);
+    int fi1 = apf::findIn(firstTetFaces, n_firstTetFaces, firstFace);
+    int filast = apf::findIn(lastTetFaces, n_lastTetFaces, firstFace);
+    PCU_ALWAYS_ASSERT(fi1 != -1 && filast != -1);
+
+    // first tet opp vertex crd
+    apf::MeshEntity* firstTetOppVert = getTetOppVert(
+        p->mesh, firstTet, firstFace);
+    apf::Vector3 firstTetOppVertCrd;
+    p->mesh->getPoint(firstTetOppVert, 0, firstTetOppVertCrd);
+
+    // last tet opp vertex crd
+    apf::MeshEntity* lastTetOppVert = getTetOppVert(
+        p->mesh, lastTet, firstFace);
+    apf::Vector3 lastTetOppVertCrd;
+    p->mesh->getPoint(lastTetOppVert, 0, lastTetOppVertCrd);
+
+    // normal to the face
+    apf::Downward edge_vertices;
+    p->mesh->getDownward(p->entity, 0, edge_vertices);
+    apf::Vector3 p0, p1, p2;
+    p->mesh->getPoint(edge_vertices[0], 0, p0);
+    p->mesh->getPoint(edge_vertices[1], 0, p1);
+    apf::MeshEntity* faceOppVert = getFaceOppVert(
+        p->mesh, firstFace, p->entity);
+    p->mesh->getPoint(faceOppVert, 0, p2);
+
+    apf::Vector3 normal = apf::cross(p1-p0, p2-p0);
+
+    // direction vectors from p0 to opp tet verts
+    apf::Vector3 vFirst = firstTetOppVertCrd - p0;
+    apf::Vector3 vLast = lastTetOppVertCrd - p0;
+
+    if ((vFirst * normal > 0)  && (vLast * normal < 0)) {
+      // reverse list of tets and faces
+      std::reverse(p->tets.begin(), p->tets.end());
+      std::reverse(p->faces.begin(), p->faces.begin());
+    }
+    else if ((vFirst * normal < 0)  && (vLast * normal > 0)) {
+    }
+    else if ((vFirst * normal < 0)  && (vLast * normal < 0)) {
+      cout << "failed clockwise. ABORT" << endl;
+    }
+    else if ((vFirst * normal > 0)  && (vLast * normal > 0)) {
+      cout << "failed clockwise. ABORT" << endl;
+    }
+  }
+}
 static void runErm(EdgePatch* p)
 {
   // DEBUG
@@ -843,6 +979,7 @@ static void runErm(EdgePatch* p)
   } // REMOVE DEBUG
 
   getOrderedTetsandFaces(p->mesh, p->entity, p->tets, p->faces);
+  //getClockwiseTetsandFaces(p);
   assembleEdgePatchLHS(p);
   assembleEdgePatchRHS(p);
   mth::solveFromQR(p->qr.Q, p->qr.R, p->b, p->x);

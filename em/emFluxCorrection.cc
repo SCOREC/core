@@ -54,6 +54,20 @@ static void assembleFaceMassMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     for (int j = 0; j < nd; j++)
       for (int k = 0; k < sdim; k++)
         vectorShapes(j,k) = vectorshapes[j][k];
+    cout << "Face Tri Shapes" << endl;
+    cout << vectorShapes << endl;
+
+    /*apf::Downward edges;
+    int nedges = mesh->getDownward(e, 1, edges);
+    int which, rotate; bool flip; // negative ND dofs
+    for (int i = 0; i < nedges; i++) {
+      apf::getAlignment(mesh, e, edges[i], which, flip, rotate);
+        if (flip) {
+          for (int j = 0; j < sdim; j++) {
+            vectorShapes(i, j) = -1. * vectorShapes(i,j);
+          }
+        }
+    }*/
 
     mth::Matrix<double> vectorShapesT (sdim, nd);
     mth::transpose(vectorShapes, vectorShapesT);
@@ -82,9 +96,22 @@ apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g)
   apf::Field* correctedFluxField =  createPackedField(
       mesh, "corrected_flux_field", 3, apf::getConstant(2));
 
+  int faceNo = 0;
   apf::MeshEntity* face;
   apf::MeshIterator* it = mesh->begin(2);
   while ((face = mesh->iterate(it))) {
+
+    cout << "FaceNo " << faceNo++ << endl;
+    apf::Downward face_vertices;
+    mesh->getDownward(face, 0, face_vertices);
+    apf::Vector3 pt;
+    mesh->getPoint(face_vertices[0], 0, pt);
+    cout << "  v0 " << pt << endl;
+    mesh->getPoint(face_vertices[1], 0, pt);
+    cout << "  v1 " << pt << endl;
+    mesh->getPoint(face_vertices[2], 0, pt);
+    cout << "  v2 " << pt << endl;
+    cout << endl;
 
     // 1. assemble RHS vector
     double components[3];
@@ -103,10 +130,18 @@ apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g)
     apf::NewArray<double> facegs;
     el->getElementDofs(facegs);
 
-    mth::Vector<double> rhs(facegs.size()); // TODO clean
-    for (size_t i = 0; i < facegs.size(); i++) {
+    mth::Vector<double> rhs(3); // TODO clean
+    for (size_t i = 0; i < 3; i++) {
       rhs(i) = facegs[i];
+      //rhs(i) = components[i];
     }
+    cout << "Face Edges Orientations ";
+    for (int i = 0; i < ne; i++) {
+      int which, rotate; bool flip;
+      apf::getAlignment(mesh, face, edges[i], which, flip, rotate);
+      cout << flip << " ";
+    }
+    cout << endl;
     cout << "final gs with negation" << endl; // REMOVE
     cout << rhs << endl; // REMOVE
 
@@ -129,6 +164,7 @@ apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g)
     std::cout << rhs << std::endl;
     std::cout << "theta coeffs" << std::endl;
     std::cout << theta << std::endl;
+    cout << "====================" << endl;
 
     // set solution vector on face field
     //theta.toArray(components); TODO clean

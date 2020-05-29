@@ -433,13 +433,16 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
     for (int j = 0; j < nd; j++)
       for (int k = 0; k < dim; k++)
         vectorShape(j,k) = vectorshape[j][k];
+    cout << "vector shapes" << vectorShape << endl;
 
     mth::Matrix<double> vectorShapeT (dim, nd);
     mth::transpose(vectorShape, vectorShapeT);
+    cout << "transpose vector shapes" << vectorShapeT << endl;
 
 		mth::Vector<double> err_func;
 		mth::multiply(vectorShapeT, error_dofs, err_func);
 		cout << "vshape   " << vectorShape << endl;
+		cout << "error dofs " << error_dofs << endl;
 		cout << "err_func " << err_func << endl;
 
 		error += w * (err_func * err_func);
@@ -529,6 +532,15 @@ apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux)
     getEssentialElementNDDofs(
         apf::getMesh(efp1), el, efp1, ess_dofs, uness_dofs);
     cout << "Get list of Essential Dofs" << endl;
+    for(size_t i = 0; i < ess_dofs.size(); i++) {
+      cout << ess_dofs[i] << " ";
+    }
+    cout << endl;
+    cout << "Get list of UnEssential Dofs" << endl;
+    for(size_t i = 0; i < uness_dofs.size(); i++) {
+      cout << uness_dofs[i] << " ";
+    }
+    cout << endl;
 
     // 2(g). eliminate Dirichlet (Essential) Boundary Conditions
 		mth::Vector<double> X, Bnew;
