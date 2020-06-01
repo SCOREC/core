@@ -242,6 +242,7 @@ void assembleVectorMassElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
   PCU_ALWAYS_ASSERT(type == apf::Mesh::TET || type == apf::Mesh::TRIANGLE);
   int nd = apf::countElementNodes(fs, type);
   int dim = apf::getDimension(mesh, e);
+  int sdim = mesh->getDimension();
   double w;
 
   apf::NewArray<apf::Vector3> vectorshapes(nd);
@@ -263,12 +264,12 @@ void assembleVectorMassElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     w = weight * jdet;
 
     apf::getVectorShapeValues(el, p, vectorshapes);
-    mth::Matrix<double> vectorShapes (nd, dim);
+    mth::Matrix<double> vectorShapes (nd, sdim);
     for (int j = 0; j < nd; j++)
-      for (int k = 0; k < dim; k++)
+      for (int k = 0; k < sdim; k++)
         vectorShapes(j,k) = vectorshapes[j][k];
 
-    mth::Matrix<double> vectorShapesT (dim, nd);
+    mth::Matrix<double> vectorShapesT (sdim, nd);
     mth::transpose(vectorShapes, vectorShapesT);
 
     mth::Matrix<double> M (nd,nd);
@@ -277,6 +278,7 @@ void assembleVectorMassElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     M *= w;
     elmat += M;
   }
+
   apf::destroyElement(el);
   apf::destroyMeshElement(me);
 }
