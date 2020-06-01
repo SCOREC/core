@@ -26,9 +26,11 @@ struct Equilibration {
   int dim;
   /* polynomial order of Nedelec space */
   int order;
-  /* input scalar field containing Nedelec dofs for electric field */
+  /* input scalar field containing Nedelec dofs for solution electric field */
   apf::Field* ef;
-  /* output field containing correction values */
+  /* output field containing correction values.
+   * currently 3 scalar values are stored on each face
+   * in order corresponding to downward edges of the face */
   apf::Field* g;
 };
 
@@ -42,11 +44,11 @@ static void setupEquilibration(Equilibration* eq, apf::Field* f, apf::Field* g)
 
   double zeros[3] = {0., 0., 0.};
   apf::MeshEntity* face;
-  apf::MeshIterator* it = apf::getMesh(f)->begin(2);
-  while ((face = apf::getMesh(f)->iterate(it))) {
+  apf::MeshIterator* it = eq->mesh->begin(2);
+  while ((face = eq->mesh->iterate(it))) {
     apf::setComponents(eq->g, face, 0, zeros);
   }
-  apf::getMesh(f)->end(it);
+  eq->mesh->end(it);
 }
 
 struct QRDecomp {
@@ -59,7 +61,7 @@ typedef std::vector<apf::MeshEntity*> EntityVector;
 struct EdgePatch {
   apf::Mesh* mesh;
   Equilibration* equilibration;
-  /* the entity around which the patch
+  /* the edge entity around which the patch
      is centered. a patch collects entities
      (faces & tets) around this edge entity */
   apf::MeshEntity* entity;
@@ -74,113 +76,101 @@ struct EdgePatch {
   QRDecomp qr;
 };
 
-static void setupEdgePatch(EdgePatch* p, Equilibration* eq)
+static void setupEdgePatch(EdgePatch* ep, Equilibration* eq)
 {
-  p->mesh = eq->mesh;
-  p->equilibration = eq;
-  p->entity = 0;
+  ep->mesh = eq->mesh;
+  ep->equilibration = eq;
+  ep->entity = 0;
 }
 
-static void startEdgePatch(EdgePatch* p, apf::MeshEntity* e)
+static void startEdgePatch(EdgePatch* ep, apf::MeshEntity* e)
 {
-  p->tets.clear();
-  p->faces.clear();
-  p->entity = e;
-  p->isOnBdry = crv::isBoundaryEntity(p->mesh, p->entity);
+  ep->tets.clear();
+  ep->faces.clear();
+  ep->entity = e;
+  ep->isOnBdry = crv::isBoundaryEntity(ep->mesh, ep->entity);
 }
 
-static void addEntityToPatch(EdgePatch* p, apf::MeshEntity* e)
+static void addEntityToPatch(EdgePatch* ep, apf::MeshEntity* e)
 {
-  if(p->mesh->getType(e) == apf::Mesh::TRIANGLE)
-    p->faces.push_back(e);
-  if(p->mesh->getType(e) == apf::Mesh::TET)
-    p->tets.push_back(e);
+  if(ep->mesh->getType(e) == apf::Mesh::TRIANGLE)
+    ep->faces.push_back(e);
+  if(ep->mesh->getType(e) == apf::Mesh::TET)
+    ep->tets.push_back(e);
 }
 
-static void addEntitiesToPatch(EdgePatch* p, apf::DynamicArray<apf::MeshEntity*>& es)
+static void addEntitiesToPatch(
+    EdgePatch* ep, apf::DynamicArray<apf::MeshEntity*>& es)
 {
   for (std::size_t i=0; i < es.getSize(); ++i)
-    addEntityToPatch(p, es[i]);
+    addEntityToPatch(ep, es[i]);
 }
 
-static bool getInitialEdgePatch(EdgePatch* p, apf::CavityOp* o)
+static bool getInitialEdgePatch(EdgePatch* ep, apf::CavityOp* o)
 {
-  if ( ! o->requestLocality(&p->entity,1))
+  if ( ! o->requestLocality(&ep->entity,1))
     return false;
   apf::DynamicArray<apf::MeshEntity*> adjacent;
-  p->mesh->getAdjacent(p->entity, 3, adjacent);
-  addEntitiesToPatch(p, adjacent);
-  // REMOVE ALL
-  int ne = adjacent.size();
-  std::cout << " Unordered Tets, ne: " << ne << std::endl; // REMOVE
-  std::cout << " Center of Unordered tets" << std::endl;
-  for (int i = 0; i < ne; i++) {
-    apf::MeshEntity* tet = adjacent[i];;
-    apf::Vector3 center = apf::getLinearCentroid(p->mesh, tet);
-    std::cout << i << ":  " << center << std::endl;
-  } //////////
+  ep->mesh->getAdjacent(ep->entity, 3, adjacent);
+  addEntitiesToPatch(ep, adjacent);
 
-
-
-  p->mesh->getAdjacent(p->entity, 2, adjacent);
-  addEntitiesToPatch(p, adjacent);
-
-  // REMOVE ALL
-  int nf = adjacent.size();
-  std::cout << " Unordered Faces, nf: " << nf << std::endl; // REMOVE
-  std::cout << " Center of Unordered Faces" << std::endl;
-  for (int i = 0; i < nf; i++) {
-    apf::MeshEntity* face = adjacent[i];
-    apf::Vector3 center = apf::getLinearCentroid(p->mesh, face);
-    std::cout << i << ":  " << center << std::endl;
-  }
-  std::cout << "----------------" << std::endl;
+  ep->mesh->getAdjacent(ep->entity, 2, adjacent);
+  addEntitiesToPatch(ep, adjacent);
 
   return true;
 }
 
-static bool buildEdgePatch(EdgePatch* p, apf::CavityOp* o)
+static bool buildEdgePatch(EdgePatch* ep, apf::CavityOp* o)
 {
-  if (!getInitialEdgePatch(p, o)) return false;
+  if (!getInitialEdgePatch(ep, o)) return false;
   return true;
 }
 
-static void assembleEdgePatchLHS(EdgePatch* p)
+/*
+ * Reference: Leszek Demkowicz, Computing with hp-adaptive
+ * finite elements, vol2, equation (11.118, 11.119, 11.122).
+ */
+static void assembleEdgePatchLHS(EdgePatch* ep)
 {
-  int ne = p->tets.size();
-  int nf = p->faces.size();
-  if( crv::isBoundaryEntity(p->mesh, p->entity) ) {
-    p->T.resize(ne+nf, ne+nf);
-    p->T.zero();
+  int ne = ep->tets.size();
+  int nf = ep->faces.size();
+  if( crv::isBoundaryEntity(ep->mesh, ep->entity) ) {
+    ep->T.resize(ne+nf, ne+nf);
+    ep->T.zero();
     for (int i = 0; i < nf; i++)
-      p->T(i,i) = 2.;
+      ep->T(i,i) = 2.;
     for (int i = 0; i < ne-1; i++) {
-      p->T(i+nf,i) = 1.; p->T(i+nf,i+1) = -1.;
-      p->T(i,i+nf) = 1.; p->T(i+1,i+nf) = -1.;
+      ep->T(i+nf,i) = 1.; ep->T(i+nf,i+1) = -1.;
+      ep->T(i,i+nf) = 1.; ep->T(i+1,i+nf) = -1.;
     }
-    p->T(ne+nf-1, ne-1) = 1.; p->T(ne+nf-1, ne) = 1.;
-    p->T(ne-1, ne+nf-1) = 1.; p->T(ne, ne+nf-1) = 1.;
+    ep->T(ne+nf-1, ne-1) = 1.; ep->T(ne+nf-1, ne) = 1.;
+    ep->T(ne-1, ne+nf-1) = 1.; ep->T(ne, ne+nf-1) = 1.;
   }
-  else if( ! crv::isBoundaryEntity(p->mesh, p->entity) ) {
-    p->A.resize(ne, nf);
-    p->A.zero();
+  else if( ! crv::isBoundaryEntity(ep->mesh, ep->entity) ) {
+    ep->A.resize(ne, nf);
+    ep->A.zero();
     for (int i = 0; i < ne-1; i++) {
-      p->A(i,i) = 1.;  p->A(i,i+1) = -1.;
+      ep->A(i,i) = 1.;  ep->A(i,i+1) = -1.;
     }
-    p->A(ne-1,0) = -1.; p->A(ne-1,ne-1) = 1.;
+    ep->A(ne-1,0) = -1.; ep->A(ne-1,ne-1) = 1.;
     // A is singular so do (A*At) + 1.0
     // to pick a particular solution
-    p->At.resize(nf,ne);
-    mth::transpose(p->A, p->At);
-    mth::multiply(p->A, p->At, p->T);
+    ep->At.resize(nf,ne);
+    mth::transpose(ep->A, ep->At);
+    mth::multiply(ep->A, ep->At, ep->T);
 
     for (int i = 0; i < ne; i++)
       for (int j = 0; j < ne; j++)
-        p->T(i,j) += 1.;
+        ep->T(i,j) += 1.;
   }
-  mth::decomposeQR(p->T, p->qr.Q, p->qr.R);
+  mth::decomposeQR(ep->T, ep->qr.Q, ep->qr.R);
 }
 
+/*
+ * Performs Curl Curl integration using curl vector Nedelec shapes
+ * TODO Add 2D curl curl integration
+ * TODO CLEANUP.
+ */
 void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
@@ -214,10 +204,10 @@ void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     if (dim == 3) { // TODO this is Piola transformation. Put it in apfNedelec
       el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
       phys_curlshape.zero();
-      for (int i = 0; i < nd; i++)
-        for (int j = 0; j < dim; j++)
-          for (int k = 0; k < dim; k++)
-            phys_curlshape(i,j) += curlshape[i][k] * J[k][j];
+      for (int j = 0; j < nd; j++)
+        for (int k = 0; k < dim; k++)
+          for (int l = 0; l < dim; l++)
+            phys_curlshape(j,k) += curlshape[j][l] * J[l][k];
     }
     else {
       /*
@@ -241,6 +231,9 @@ void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
   apf::destroyMeshElement(me);
 }
 
+/*
+ * Performs Vector Vector Mass integration using vector Nedelec shapes
+ */
 void assembleVectorMassElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
@@ -257,7 +250,7 @@ void assembleVectorMassElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
   apf::Element* el = apf::createElement(f, me);
   int int_order = 2 * fs->getOrder();
-  int np = apf::countIntPoints(me, int_order); // int points required
+  int np = apf::countIntPoints(me, int_order);
 
   elmat.zero();
   apf::Vector3 p;
@@ -270,7 +263,7 @@ void assembleVectorMassElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     w = weight * jdet;
 
     apf::getVectorShapeValues(el, p, vectorshapes);
-    mth::Matrix<double> vectorShapes (nd, dim); // TODO opt clean
+    mth::Matrix<double> vectorShapes (nd, dim);
     for (int j = 0; j < nd; j++)
       for (int k = 0; k < dim; k++)
         vectorShapes(j,k) = vectorshapes[j][k];
@@ -301,14 +294,16 @@ void assembleElementMatrix(apf::Mesh* mesh, apf::MeshEntity*e,
   elmat += mass_elmat;
 }
 
-// computes local bilinear form integral restricted to
-// an edge of a tet element
+/*
+ * computes local bilinear form integral restricted to
+ * an edge of a tet element
+ */
 static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
 {
+  PCU_ALWAYS_ASSERT(ep->mesh->getType(tet) == apf::Mesh::TET);
   // findIn edge in downward edges of tet
   apf::Downward e;
   int ne = ep->mesh->getDownward(tet, 1, e);
-  PCU_ALWAYS_ASSERT(ne == 6);
   int ei = apf::findIn(e, ne, ep->entity);
   // get Element Dofs
   apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
@@ -318,9 +313,8 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   apf::NewArray<double> d (nd);
   el->getElementDofs(d);
   mth::Vector<double> dofs (nd);
-  for (int i = 0; i < nd; i++) // TODO cleanup
+  for (int i = 0; i < nd; i++)
     dofs(i) = d[i];
-  cout << "Element Dofs "<< dofs << endl;
   // assemble curl curl element matrix
   mth::Matrix<double> curl_elmat;
   assembleCurlCurlElementMatrix(ep->mesh, tet,
@@ -347,107 +341,13 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   apf::getAlignment(ep->mesh, tet, ep->entity, which, flip, rotate);
   if (flip)
     blf_integrals(ei) = -1*blf_integrals(ei);
-
-  cout << "local blf " << blf_integrals(ei);
-  if (flip) { cout << ". local blf before negation " << -1*blf_integrals(ei);}
-  cout << endl;
   return blf_integrals(ei);
-
-  /* 0. findIn edge in downward edges of tet
-  apf::Downward e;
-  int ne = ep->mesh->getDownward(tet, 1, e);
-  PCU_ALWAYS_ASSERT(ne == 6);
-  int ei = apf::findIn(e, ne, ep->entity);
-
-
-  apf::FieldShape* fs = ep->equilibration->ef->getShape();
-  int type = ep->mesh->getType(tet);
-  int dim = apf::getDimension(ep->mesh, tet);
-
-
-  apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
-  apf::Element* el = apf::createElement(ep->equilibration->ef, me);
-  int nd = apf::countElementNodes(el->getFieldShape(), type);
-  int int_order = 2 * fs->getOrder();
-  int np = apf::countIntPoints(me, int_order);
-  double w;
-
-
-  apf::NewArray<apf::Vector3> curlshapes(nd);
-  apf::NewArray<apf::Vector3> vectorshapes(nd);
-  mth::Matrix<double> phys_curlshapes(nd, dim);  // TODO clean
-
-
-  // 1. Curl Curl Integration
-  double curlcurl = 0.0;
-
-  apf::Vector3 p, curl;
-  for (int i = 0; i < np; i++) {
-    apf::getIntPoint(me, int_order, i, p);
-    double weight = apf::getIntWeight(me, int_order, i);
-    apf::Matrix3x3 J;
-    apf::getJacobian(me, p, J);
-    //double jdet = apf::getJacobianDeterminant(J, dim);
-    w = weight; // TODO check why do not need division by jdet
-
-    // get curl vector
-    apf::getCurl(el, p, curl);
-
-    // get curlshape values // TODO CLEAN use getCurlShapeValues
-    el->getShape()->getLocalVectorCurls(ep->mesh, tet, p, curlshapes);
-    phys_curlshapes.zero();
-    for (int i = 0; i < nd; i++)
-      for (int j = 0; j < dim; j++)
-        for (int k = 0; k < dim; k++)
-          phys_curlshapes(i,j) += curlshapes[i][k] * J[k][j];
-
-    // pick the ei curlshape // TODO Clean apf::Vector
-    apf::Vector3 cshape;
-    cshape[0] = phys_curlshapes(ei, 0);
-    cshape[1] = phys_curlshapes(ei, 1);
-    cshape[2] = phys_curlshapes(ei, 2);
-
-    // multiply
-    curlcurl += (curl * cshape) * w;
-  }
-
-  // 2. Vector Mass Integration
-  int_order = 2 * fs->getOrder();
-  np = apf::countIntPoints(me, int_order); // int points required
-
-  double vectormass = 0.0;
-  apf::Vector3 vvalue;
-  for (int i = 0; i < np; i++) {
-    apf::getIntPoint(me, int_order, i, p);
-    double weight = apf::getIntWeight(me, int_order, i);
-    apf::Matrix3x3 J;
-    apf::getJacobian(me, p, J);
-    double jdet = apf::getJacobianDeterminant(J, dim);
-
-    w = weight * jdet;
-
-    apf::getVector(el, p, vvalue);
-
-    apf::getVectorShapeValues(el, p, vectorshapes);
-    apf::Vector3 vshape = vectorshapes[ei];
-
-    vectormass += (vvalue * vshape) * w;
-  }
-
-  double blf_integral = curlcurl + vectormass;
-
-  int which, rotate; bool flip;
-  apf::getAlignment(ep->mesh, tet, ep->entity, which, flip, rotate);
-  if (flip)
-    blf_integral = -1*blf_integral;
-  cout << "local blf " << blf_integral << endl;
-  return blf_integral;*/
 }
 
 
 // TODO QUESTION redo this to allow user access from outside
-void pumiUserFunction(const apf::Vector3& x, mth::Vector<double>& f,
-    apf::MeshEntity* e, apf::Mesh* mesh)
+void pumiUserFunction(apf::Mesh* mesh, apf::MeshEntity* e,
+    const apf::Vector3& x, mth::Vector<double>& f)
 {
   double freq = 1.;
   double kappa = freq * M_PI;
@@ -496,45 +396,49 @@ void assembleDomainLFElementVector(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::getVectorShapeValues(el, p, vectorshapes);
     apf::Vector3 global;
     apf::mapLocalToGlobal(me, p, global);
-    pumiUserFunction(global, val, e, apf::getMesh(f)); // eval vector function
+    pumiUserFunction(mesh, e, global, val);
     val *= w;
 
     mth::Matrix<double> vectorShapes (nd, dim);
-    for (int i = 0; i < nd; i++)
-      for (int j = 0; j < dim; j++)
-        vectorShapes(i,j) = vectorshapes[i][j];
+    for (int j = 0; j < nd; j++)
+      for (int k = 0; k < dim; k++)
+        vectorShapes(j,k) = vectorshapes[j][k];
     mth::Vector<double> V (nd);
     V.zero();
     mth::multiply(vectorShapes, val, V);
     elvect += V;
   }
+
   apf::destroyElement(el);
   apf::destroyMeshElement(me);
 }
 
-// computes local linear form integral restricted to
-// an edge of a tet element
-static double getLocalEdgeLF(EdgePatch* p, apf::MeshEntity* tet)
+/*
+ * computes local linear form integral restricted to
+ * an edge of a tet element
+ */
+static double getLocalEdgeLF(EdgePatch* ep, apf::MeshEntity* tet)
 {
+  PCU_ALWAYS_ASSERT(ep->mesh->getType(tet) == apf::Mesh::TET);
   // findIn edge in downward edges of tet
   apf::Downward e;
-  int ne = p->mesh->getDownward(tet, 1, e);
-  PCU_ALWAYS_ASSERT(ne == 6);
-  int ei = apf::findIn(e, ne, p->entity);
+  int ne = ep->mesh->getDownward(tet, 1, e);
+  int ei = apf::findIn(e, ne, ep->entity);
   // assemble Domain LF Vector
   mth::Vector<double> elvect;
-  assembleDomainLFElementVector(p->mesh, tet,
-      p->equilibration->ef, elvect);
+  assembleDomainLFElementVector(ep->mesh, tet,
+      ep->equilibration->ef, elvect);
   int which, rotate; bool flip;
-  apf::getAlignment(p->mesh, tet, p->entity, which, flip, rotate);
+  apf::getAlignment(ep->mesh, tet, ep->entity, which, flip, rotate);
   if (flip)
     elvect(ei) = -1*elvect(ei);
-  cout << "local lf " << elvect(ei) << endl;
   return elvect(ei);
 }
 
-// Given a tet and one of its faces, the vertex of the tet
-// opposite to the face is returned.
+/*
+ * Given a tet and one of its faces, the vertex of the tet
+ * opposite to the given face is returned.
+ */
 static apf::MeshEntity* getTetOppVert(
     apf::Mesh* m, apf::MeshEntity* t, apf::MeshEntity* f)
 {
@@ -550,6 +454,10 @@ static apf::MeshEntity* getTetOppVert(
   return 0;
 }
 
+/*
+ * Given a face and one of its edges, the vertex of the face
+ * opposite to the given edge is returned.
+ */
 static apf::MeshEntity* getFaceOppVert(
     apf::Mesh* m, apf::MeshEntity* f, apf::MeshEntity* e)
 {
@@ -564,10 +472,12 @@ static apf::MeshEntity* getFaceOppVert(
   }
   return 0;
 }
-static apf::Vector3 computeFaceNormal(apf::Mesh* m,
-    apf::MeshEntity* f, apf::Vector3 const& p)
+
+static apf::Vector3 computeFaceNormal(
+    apf::Mesh* m, apf::MeshEntity* f, apf::Vector3 const& p)
 {
-  // Compute face normal using face Jacobian
+  // Compute face normal using face Jacobian,
+  // so it can also be used for curved mesh elements
   apf::MeshElement* me = apf::createMeshElement(m, f);
   apf::Matrix3x3 J;
   apf::getJacobian(me, p, J);
@@ -584,37 +494,37 @@ apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
 {
   apf::Vector3 n = computeFaceNormal(m, f, p);
 
-  // Orient the normal outwards from the tet
+  // orient the normal outwards from the tet
   apf::MeshEntity* oppVert = getTetOppVert(m, t, f);
   apf::Vector3 vxi = apf::Vector3(0.,0.,0.);
 
-  // get global coordinates of the vertex
   apf::Vector3 txi;
   m->getPoint(oppVert, 0, txi);
 
-  // get global coordinates of the point on the face
   apf::MeshElement* fme = apf::createMeshElement(m, f);
   apf::Vector3 pxi;
   apf::mapLocalToGlobal(fme, p, pxi);
   apf::destroyMeshElement(fme);
 
   apf::Vector3 pxiTotxi = txi - pxi;
-  //std::cout << "dot product " << pxiTotxi*n << std::endl;
   if (pxiTotxi*n > 0) {
     n = n*-1.;
   }
   return n;
 }
 
-// computes local flux integral restricted to
-// an edge of a tet element
+/*
+ * computes local flux integral restricted to
+ * an edge of a tet element
+ */
 static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
 {
+  PCU_ALWAYS_ASSERT(ep->mesh->getType(tet) == apf::Mesh::TET);
+
   double fluxIntegral = 0.0;
   // 1. get faces of the tet in the patch
   apf::Downward f;
   int nf = ep->mesh->getDownward(tet, 2, f);
-  PCU_ALWAYS_ASSERT(nf == 4);
   std::vector<apf::MeshEntity*> patchFaces;
   for (int i = 0; i < nf; i++) {
     if(std::find(ep->faces.begin(), ep->faces.end(), f[i]) != ep->faces.end())
@@ -651,11 +561,10 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
     apf::MeshElement* fme = apf::createMeshElement(ep->mesh, currentFace);
     apf::Element* fel = apf::createElement(ep->equilibration->ef, fme);
     int np = apf::countIntPoints(fme, int_order);
-    std::cout << "np " << np << std::endl; // REMOVE
 
     // loop over integration points
     apf::Vector3 p, tet1xi, tet2xi, curl1, curl2, curl,
-      fnormal1, fnormal2, tk, vshape;
+      fn1, fn2, tk, vshape;
     for (int n = 0; n < np; n++) {
       apf::getIntPoint(fme, int_order, n, p);
       double weight = apf::getIntWeight(fme, int_order, n);
@@ -666,16 +575,14 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
 
       // compute face outward normals wrt tets
       if (tet == firstTet)
-        fnormal1 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
+        fn1 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
       else
-        fnormal1 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
+        fn1 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
       if (up.n == 2) {
         if (tet == firstTet)
-          fnormal2 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
+          fn2 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
         else
-          fnormal2 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
-        std::cout << "normal1 " << fnormal1 << std::endl; // REMOVE
-        std::cout << "normal2 " << fnormal2 << std::endl; // REMOVE
+          fn2 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
       }
 
       curl.zero();
@@ -684,7 +591,7 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       apf::MeshElement* me1 = apf::createMeshElement(ep->mesh, firstTet);
       apf::Element* el1 = apf::createElement(ep->equilibration->ef, me1);
       apf::getCurl(el1, tet1xi, curl1);
-      apf::Vector3 temp1 = apf::cross(fnormal1, curl1);
+      apf::Vector3 temp1 = apf::cross(fn1, curl1);
       curl += temp1;
       apf::destroyElement(el1);
       apf::destroyMeshElement(me1);
@@ -695,16 +602,15 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
         apf::MeshElement* me2 = apf::createMeshElement(ep->mesh, secondTet);
         apf::Element* el2 = apf::createElement(ep->equilibration->ef, me2);
         apf::getCurl(el2, tet2xi, curl2);
-        apf::Vector3 temp2 = apf::cross(fnormal2, curl2);
+        apf::Vector3 temp2 = apf::cross(fn2, curl2);
         curl += (temp2 * -1.);
-        curl = curl * 1./2.; //
+        curl = curl * 1./2.;
         apf::destroyElement(el2);
         apf::destroyMeshElement(me2);
       }
 
       // compute tk (inter-element averaged flux)
       tk = curl;
-      std::cout << "tk " << tk << std::endl; // REMOVE
 
       // compute vector shape
       int type = apf::Mesh::TRIANGLE;
@@ -713,6 +619,7 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       apf::getVectorShapeValues(fel, p, vectorshapes);
       vshape = vectorshapes[ei];
 
+      // TODO why?
       int which, rotate; bool flip;
       apf::getAlignment(
           ep->mesh, currentFace, ep->entity, which, flip, rotate);
@@ -720,14 +627,13 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       vshape = vshape * -1.;
       }
 
-
       // compute integral
       fluxFaceIntegral += (tk * vshape) * weight * jdet;
     }
     apf::destroyElement(fel);
     apf::destroyMeshElement(fme);
+
     fluxIntegral += fluxFaceIntegral;
-    std::cout << "flux Face integral " << fluxFaceIntegral << std::endl; // REMOVE
   }
   return fluxIntegral;
 }
@@ -742,8 +648,6 @@ static void assembleEdgePatchRHS(EdgePatch* p)
     p->b.resize(p->tets.size());
     p->b.zero();
   }
-  double testblflf = 0.0; // REMOVE
-  double testflux = 0.0; // REMOVE
   int ne = p->tets.size();
   int nf = p->faces.size();
   for (int i = 0; i < ne; i++) {
@@ -751,27 +655,13 @@ static void assembleEdgePatchRHS(EdgePatch* p)
     double blfIntegral = getLocalEdgeBLF(p, tet);
     double lfIntegral = getLocalEdgeLF(p, tet);
     double fluxIntegral = getLocalFluxIntegral(p, tet);
-    testblflf += (blfIntegral - lfIntegral);
-    testflux += fluxIntegral;
-    cout << "Blf Integral" << blfIntegral << endl;
-    cout << "Lf Integral" << lfIntegral << endl;
     if(p->isOnBdry)
       p->b(nf+i) = blfIntegral - lfIntegral - fluxIntegral;
     else
       p->b(i) = blfIntegral - lfIntegral - fluxIntegral;
-
-    //DEBUG
-    apf::Downward tetedges;
-    int ntedges = p->mesh->getDownward(tet, 1, tetedges);
-    int ei = apf::findIn(tetedges, ntedges, p->entity);
-    cout << "ei in tet " << ei << endl;
   }
-  std::cout << "Blf - lf integrals = " << testblflf << std::endl;
-  std::cout << "Flux Integral Sum  = " << testflux << std::endl;
 }
 
-// The following two functions help order tets and faces in a cavity in a
-// clockwise (or ccw) direction.
 static apf::MeshEntity* getTetOppFaceSharingEdge(
     apf::Mesh* m, apf::MeshEntity* t, apf::MeshEntity* f, apf::MeshEntity* e)
 {
@@ -786,12 +676,17 @@ static apf::MeshEntity* getTetOppFaceSharingEdge(
   }
   return 0;
 }
+
+/*
+ * Orders tets and faces in an edge cavity in a
+ * clockwise (or ccw) direction around the edge.
+ */
 static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
      EntityVector& tets, EntityVector& faces)
 {
   tets.clear();
   faces.clear();
-  if( ! crv::isBoundaryEntity(mesh, edge) ) { // interior edge patches
+  if( ! crv::isBoundaryEntity(mesh, edge) ) {
     apf::MeshEntity* currentFace = mesh->getUpward(edge, 0);
     apf::Up up;
     mesh->getUp(currentFace, up);
@@ -817,7 +712,7 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
         nextTet = up.e[1];
     }
   }
-  else { // boundary edge patches
+  else {
     apf::Up up;
     mesh->getUp(edge, up);
     apf::MeshEntity* firstFace;
@@ -965,91 +860,37 @@ void getClockwiseTetsandFaces(EdgePatch* p)
     }
   }
 }
-static void runErm(EdgePatch* p)
+
+static void runErm(EdgePatch* ep)
 {
-  // DEBUG
-  cout << "PUMI edge vertex coordinates" << endl;
-  apf::Downward ev;
-  int nev = p->mesh->getDownward(p->entity, 0, ev);
-  PCU_ALWAYS_ASSERT(nev == 2);
-  for (int i = 0; i < nev; i++) {
-    apf::Vector3 pt;
-    p->mesh->getPoint(ev[i], 0, pt);
-    cout << pt << endl;
-  } // REMOVE DEBUG
+  getOrderedTetsandFaces(ep->mesh, ep->entity, ep->tets, ep->faces);
+  //getClockwiseTetsandFaces(ep);
+  assembleEdgePatchLHS(ep);
+  assembleEdgePatchRHS(ep);
+  mth::solveFromQR(ep->qr.Q, ep->qr.R, ep->b, ep->x);
 
-  getOrderedTetsandFaces(p->mesh, p->entity, p->tets, p->faces);
-  //getClockwiseTetsandFaces(p);
-  assembleEdgePatchLHS(p);
-  assembleEdgePatchRHS(p);
-  mth::solveFromQR(p->qr.Q, p->qr.R, p->b, p->x);
-
-  if (!p->isOnBdry) { // solve At*mu = g for g
-    mth::Vector<double> temp(p->tets.size());
-    mth::multiply(p->At, p->x, temp);
-    for (size_t i = 0; i < p->tets.size(); i++) {
-      p->x(i) = temp(i);
+  if (!ep->isOnBdry) { // solve At*mu = g for g
+    mth::Vector<double> temp(ep->tets.size());
+    mth::multiply(ep->At, ep->x, temp);
+    for (size_t i = 0; i < ep->tets.size(); i++) {
+      ep->x(i) = temp(i);
     }
   }
 
-  bool debug = true; // REMOVE DEBUG
-  if (debug) {
-    if (p->isOnBdry)
-      cout << "Boundary Patch" << endl;
-    else
-      cout << "Interior Patch" << endl;
-    cout << "ne " << p->tets.size() << " nf " << p->faces.size() << endl;
-    cout << "LHS Matrix" << endl;
-    cout << p->T << endl;
-
-    cout << "RHS Vector" << endl;
-    cout << p->b << endl;
-    double rhs_sum = 0.0;
-    for(unsigned int i = 0; i < p->b.size(); i++)
-      rhs_sum += p->b(i);
-    cout << "rhs_sum " << rhs_sum << endl;
-    if ( (abs(rhs_sum) > 1e-8) && (!p->isOnBdry) )
-      cout << "nonzero! error" << endl;
-  }
-
-  int nf = p->faces.size();
+  int nf = ep->faces.size();
   for(int i = 0; i < nf; i++) {
-    // get face entitiy
-    apf::MeshEntity* face = p->faces[i];
-    // get ei of edge in face downward edges
+    apf::MeshEntity* face = ep->faces[i];
+
     apf::Downward e;
-    int ned = p->mesh->getDownward(face, 1, e);
-    int ei = apf::findIn(e, ned, p->entity);
+    int ned = ep->mesh->getDownward(face, 1, e);
+    int ei = apf::findIn(e, ned, ep->entity);
     PCU_ALWAYS_ASSERT(ned == 3 && ei != -1);
-    // save the g value at that index on that face in the g field
+
     double components[3];
-    apf::getComponents(p->equilibration->g, face, 0, components);
-    components[ei] = p->x(i);
-    apf::setComponents(p->equilibration->g, face, 0, components);
+    apf::getComponents(ep->equilibration->g, face, 0, components);
+    components[ei] = ep->x(i);
+    apf::setComponents(ep->equilibration->g, face, 0, components);
   }
-
-  // REMOVE ALL BELOW
-  int ne = p->tets.size();
-  //int nf = p->faces.size();
-  std::cout << " Reordered Tets, ne: " << ne << " nf " << nf << std::endl; // REMOVE
-  std::cout << " Center of Reordered tets" << std::endl;
-  for (int i = 0; i < ne; i++) {
-    apf::MeshEntity* tet = p->tets[i];
-    apf::Vector3 center = apf::getLinearCentroid(p->mesh, tet);
-    std::cout << i << ":  " << center << std::endl;
-  }
-  std::cout << " Center of Reordered Faces" << std::endl;
-  for (int i = 0; i < nf; i++) {
-    apf::MeshEntity* face = p->faces[i];
-    apf::Vector3 center = apf::getLinearCentroid(p->mesh, face);
-    std::cout << i << ":  " << center << std::endl;
-  }
-  std::cout << "----------------" << std::endl;
-
-  std::cout << "x" << std::endl; // REMOVE
-  std::cout << p->x << std::endl; // REMOVE
-
-  cout << "======================================================" << endl;
 }
 
 
@@ -1078,18 +919,14 @@ public:
 
 apf::Field* equilibrateResiduals(apf::Field* f)
 {
-  apf::Field* g = createPackedField( apf::getMesh(f), "g", 3, apf::getConstant(2) );
+  apf::Field* g = createPackedField(
+      apf::getMesh(f), "g", 3, apf::getConstant(2) );
   Equilibration equilibration;
   setupEquilibration(&equilibration, f, g);
   EdgePatchOp op(&equilibration);
   op.applyToDimension(1); // edges
   return g;
 }
-
-
-
-
-
 
 
 }
