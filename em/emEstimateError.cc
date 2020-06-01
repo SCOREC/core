@@ -505,4 +505,16 @@ apf::Field* computeErrorField(apf::Field* ef, apf::Field* THETA_Field)
 	return error_field;
 }
 
+apf::Field* estimateError(apf::Field* f)
+{
+  apf::Field* g = em::equilibrateResiduals(f);
+  apf::Field* THETA = em::computeFluxCorrection(f, g);
+  apf::destroyField(g);
+
+  apf::Field* error_field = em::computeErrorField(f, THETA);
+  apf::destroyField(THETA);
+
+  return error_field;
+}
+
 }
