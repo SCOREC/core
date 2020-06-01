@@ -27,17 +27,23 @@
 
 namespace em {
 
-// Takes the solution electric field and corrected flux field and solves
-// local element level BVPs to estimate the error.
-// Returns a per-element scalar error field.
-apf::Field* emEstimateError(apf::Field* ef, apf::Field* correctedFlux);
+/* Takes the solution electric field and corrected flux field and solves
+ * local element level BVPs to estimate the error.
+ * Returns a per-element scalar error field.
+ */
+apf::Field* computeErrorField(apf::Field* ef, apf::Field* THETA_Field);
 
-// Takes the solution electric field and equilibrated field (of face vectors)
-// and computes the 'correction' to the flux vectors on each face.
+/*
+ * Takes the solution electric field and equilibrated field (of face vectors)
+ * and computes the 'correction' to the flux vectors on each face.
+ */
 apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g);
 
-// Takes the solution electric field and computes edge equilibrations.
+/*
+ * Takes the solution electric field and computes edge equilibrations.
+ */
 apf::Field* equilibrateResiduals(apf::Field* f);
+
 
 
 void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
