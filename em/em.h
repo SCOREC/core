@@ -28,6 +28,14 @@
 namespace em {
 
 /*
+ * Computes nodal size field // TODO currently only element size field
+ */
+apf::Field* getTargetEMSizeField(
+    apf::Field* ef,
+    apf::Field* error_field,
+    double alpha,
+    double beta);
+/*
  * Takes the solution electric field and computes edge equilibrations.
  */
 apf::Field* equilibrateResiduals(apf::Field* f);

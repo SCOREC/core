@@ -7,7 +7,8 @@ endif()
 set(SOURCES
   emResidualFunctionals.cc
   emFluxCorrection.cc
-  emEstimateError.cc)
+  emEstimateError.cc
+  emSizeField.cc)
 
 # Package headers
 set(HEADERS

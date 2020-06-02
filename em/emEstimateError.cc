@@ -517,4 +517,27 @@ apf::Field* estimateError(apf::Field* f)
   return error_field;
 }
 
+
+/*class SizeFieldOp : public apf::CavityOp
+{
+public:
+  SizeFieldOpOp(apf::Field* error_field):
+    apf::CavityOp(error_field->getMesh())
+  {}
+  virtual Outcome setEntity(apf::MeshEntity* e)
+  {
+    entity = e;
+    if (apf::hasEntity(error_field, entity))
+      return SKIP;
+    if ( !requestLocality(&entity,1))
+      return REQUEST;
+    return OK;
+  }
+  virtual void apply()
+  {
+
+  }
+  apf::MeshEntity* e;
+};*/
+
 }
