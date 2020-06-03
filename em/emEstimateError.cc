@@ -507,6 +507,7 @@ apf::Field* computeErrorField(apf::Field* ef, apf::Field* THETA_Field)
 
 apf::Field* estimateError(apf::Field* f)
 {
+  double t0 = PCU_Time();
   apf::Field* g = em::equilibrateResiduals(f);
   apf::Field* THETA = em::computeFluxCorrection(f, g);
   apf::destroyField(g);
@@ -514,30 +515,11 @@ apf::Field* estimateError(apf::Field* f)
   apf::Field* error_field = em::computeErrorField(f, THETA);
   apf::destroyField(THETA);
 
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    lion_eprint(1,"EM: Error estimated in %f seconds\n",t1-t0);
+
   return error_field;
 }
-
-
-/*class SizeFieldOp : public apf::CavityOp
-{
-public:
-  SizeFieldOpOp(apf::Field* error_field):
-    apf::CavityOp(error_field->getMesh())
-  {}
-  virtual Outcome setEntity(apf::MeshEntity* e)
-  {
-    entity = e;
-    if (apf::hasEntity(error_field, entity))
-      return SKIP;
-    if ( !requestLocality(&entity,1))
-      return REQUEST;
-    return OK;
-  }
-  virtual void apply()
-  {
-
-  }
-  apf::MeshEntity* e;
-};*/
 
 }
