@@ -33,8 +33,9 @@ namespace em {
 apf::Field* getTargetEMSizeField(
     apf::Field* ef,
     apf::Field* error_field,
-    double alpha,
-    double beta);
+    int n,
+    double alpha = 0.25,
+    double beta = 2.0);
 /*
  * Takes the solution electric field and computes edge equilibrations.
  */
