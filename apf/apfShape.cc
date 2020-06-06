@@ -78,6 +78,7 @@ FieldShape* getShapeByName(const char* name)
   getIPShape(2,1);
   getVoronoiShape(2,1);
   getIPFitShape(2,1);
+  getNedelec(1);
   std::string s(name);
   if (registry.count(s))
     return registry[s];
