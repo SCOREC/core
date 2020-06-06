@@ -198,7 +198,7 @@ class BezierTransfer : public ma::SolutionTransfer
                 mesh->setPoint(newEntities[i],j,point);
               }
             } else {
-              mth::Matrix<double> A(n,np),B(n,n);
+              mth::Matrix<double> A(n,np),B(n,np);
               getBezierTransformationMatrix(parentType,childType,P,A,vp);
               mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
               for (int j = 0; j < ni; ++j){
