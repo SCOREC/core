@@ -683,10 +683,15 @@ static void getTi(
 template<int P>
 class Nedelec: public FieldShape {
   public:
-    const char* getName() const { return "Nedelec"; }
-    bool isVectorShape() {return true;}
     Nedelec()
-    {}
+    {
+      std::stringstream ss;
+      ss << "Nedelec_" << P;
+      name = ss.str();
+      registerSelf(name.c_str());
+    }
+    const char* getName() const { return name.c_str(); }
+    bool isVectorShape() {return true;}
     class Vertex : public apf::EntityShape
     {
     public:
@@ -1277,6 +1282,8 @@ class Nedelec: public FieldShape {
       else
         t = Vector3(0, 0, 0);
     }
+  private:
+    std::string name;
 };
 
 apf::FieldShape* getNedelec(int order)

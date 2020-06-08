@@ -78,6 +78,7 @@ FieldShape* getShapeByName(const char* name)
   getIPShape(2,1);
   getVoronoiShape(2,1);
   getIPFitShape(2,1);
+  getNedelec(1);
   std::string s(name);
   if (registry.count(s))
     return registry[s];
@@ -1065,6 +1066,20 @@ class Constant : public FieldShape
         return 0;
    }
     int getOrder() {return 0;}
+    void getNodeXi(int type, int node, Vector3& xi)
+    {
+      PCU_ALWAYS_ASSERT(node == 0);
+      if (type == Mesh::VERTEX)
+        xi = Vector3(0., 0., 0.);
+      else if (type == Mesh::EDGE)
+        xi = Vector3(0., 0., 0.);
+      else if (type == Mesh::TRIANGLE)
+        xi = Vector3(1./3., 1./3., 0);
+      else if (type == Mesh::TET)
+        xi = Vector3(1./4., 1./4., 1./4.);
+      else
+        PCU_ALWAYS_ASSERT_VERBOSE(0, "non implemented for non simplex types!");
+    }
   private:
     std::string name;
 };

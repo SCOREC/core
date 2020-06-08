@@ -86,7 +86,10 @@ class pumi
 public:
   pumi();
   ~pumi();
-  static pumi* instance();
+  static pumi* instance() {
+    static pumi _instance;
+    return &_instance;
+  };
 
   pMesh mesh;
   pGeom model;  
@@ -97,8 +100,6 @@ public:
   pMeshTag ghost_tag;
   std::vector<pMeshEnt> ghost_vec[4];
   std::vector<pMeshEnt> ghosted_vec[4];
-private:
-  static pumi* _instance;
 };
 
 //************************************

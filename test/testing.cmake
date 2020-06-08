@@ -141,6 +141,7 @@ if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     WORKING_DIRECTORY ${MDIR})
 endif()
 
+
 if(ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
     ./test_pumi
@@ -516,6 +517,10 @@ mpi_test(nedelec 1
   ./nedelecShapes
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb")
+mpi_test(pumiLoadMesh-1p 1
+  ./pumiLoadMesh
+  ${MDIR}/cube.dmg
+  ${MDIR}/cube.smb)
 set(MDIR ${MESHES}/cube)
 mpi_test(test_verify 4
   ./test_verify

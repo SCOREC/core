@@ -24,10 +24,7 @@ gModel::gModel(gmi_model* model) : TagHolder()
   g = model;
 }
 
-gModel::~gModel()
-{
-  delete g;
-}
+gModel::~gModel() {}
 
 gEntity* gModel::getGeomEnt(int d, gmi_ent* ge)
 {
@@ -90,13 +87,18 @@ void pumi_geom_delete(pGeom g)
 {
   pTag id_tag=pumi_geom_findTag(g, "ID");
 
-  for (int i=0; i<4; ++i)
+  for (int i=0; i<4; ++i) {
+    std::vector<pGeomEnt> vge(g->size(i));
     for (pGeomIter gent_it = g->begin(i); gent_it!=g->end(i);++gent_it)
     {
       if (id_tag) pumi_gent_deleteTag(*gent_it, id_tag);
-      delete *gent_it;
+      vge.push_back(*gent_it);
     }
-   pumi_geom_deleteTag(g, id_tag);
+    for(size_t j=0; j<vge.size(); j++)
+      delete vge[j];
+  }
+  pumi_geom_deleteTag(g, id_tag);
+  delete g;
 }
 
 void pumi_geom_freeze(pGeom g)
