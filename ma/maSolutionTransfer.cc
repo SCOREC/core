@@ -176,8 +176,21 @@ void CavityTransfer::onRefine(
     Entity* parent,
     EntityArray& newEntities)
 {
-  transfer(1,&parent,newEntities);
+  apf::FieldShape *fs = apf::getShape(field);
+  std::string name = fs->getName();
+  if (name != std::string("Constant_3"))
+    transfer(1,&parent,newEntities);
+  else {
+    for (size_t i = 0; i < newEntities.getSize(); i++) {
+      int type = mesh->getType(newEntities[i]);
+      if (type == 4) {
+      	double val = apf::getScalar(field, parent, 0);
+	apf::setScalar(field, newEntities[i], 0, val);
+      }
+    }
+  }
 }
+
 void CavityTransfer::onCavity(
     EntityArray& oldElements,
     EntityArray& newEntities)
@@ -193,9 +206,9 @@ void CavityTransfer::onCavity(
     for (size_t i = 0; i < oldElements.getSize(); i++) {
       double val = apf::getScalar(field, oldElements[i], 0);
       sumOld += val*apf::measure(mesh, oldElements[i]);
+      //sumOld += val;
     }
   }
-
   transfer(oldElements.getSize(),&(oldElements[0]),newEntities);
 
   double sumNew = 0.;
@@ -207,6 +220,7 @@ void CavityTransfer::onCavity(
       	double val = apf::getScalar(field, newEntities[i], 0);
       	//double val = apf::measure(mesh, newEntities[i]);
       	sumNew += val*apf::measure(mesh, newEntities[i]);
+      	//sumNew += val;
       }
     }
     for (size_t i = 0; i < newEntities.getSize(); i++) {
