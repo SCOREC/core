@@ -1309,121 +1309,58 @@ apf::FieldShape* getNedelec(int order)
 
 void projectNedelecField(Field* to, Field* from)
 {
-	// checks on the from field
-	// checks on the to field
-	apf::FieldShape* tShape = getShape(to);
-	std::string      tName  = tShape->getName();
-	int              tOrder = tShape->getOrder();
-	PCU_ALWAYS_ASSERT_VERBOSE(tName == std::string("Linear"),
-			"The to field needs to be 1st order Lagrange!");
+  // checks on the from field
+  // checks on the to field
+  apf::FieldShape* tShape = getShape(to);
+  std::string      tName  = tShape->getName();
+  int              tOrder = tShape->getOrder();
+  PCU_ALWAYS_ASSERT_VERBOSE(tName == std::string("Linear"),
+  		"The to field needs to be 1st order Lagrange!");
 
-	Mesh* m = getMesh(from);
-	// auxiliary count fields
-	Field* count = createField(m, "counter", SCALAR, getLagrange(1));
-	double xis[4][3] = {{0., 0., 0.},
-		                  {1., 0., 0.},
-		                  {0., 1., 0.},
-		                  {0., 0., 1.}};
+  Mesh* m = getMesh(from);
+  // auxiliary count fields
+  Field* count = createField(m, "counter", SCALAR, getLagrange(1));
+  double xis[4][3] = {{0., 0., 0.},
+  	              {1., 0., 0.},
+  	              {0., 1., 0.},
+  	              {0., 0., 1.}};
   // zero out the fields
-	zeroField(to);
-	zeroField(count);
+  zeroField(to);
+  zeroField(count);
 
-	MeshEntity* e;
-	MeshIterator* it = m->begin(m->getDimension());
-	while( (e = m->iterate(it)) ) {
-		MeshElement* me = createMeshElement(m, e);
-		Element* el = createElement(from, me);
-		MeshEntity* dvs[4];
-		m->getDownward(e, 0, dvs);
-		for (int i=0; i<4; i++) {
-			Vector3 atXi;
-			getVector(el, Vector3(xis[i]), atXi);
-		  Vector3 currentVal;	
-			getVector(to, dvs[i], 0, currentVal);
-			double currentCount = getScalar(count, dvs[i], 0);
-			currentVal += atXi;
-			currentCount += 1.;
-			setVector(to, dvs[i], 0, currentVal);
-			setScalar(count, dvs[i], 0, currentCount);
-		}
-		destroyElement(el);
-		destroyMeshElement(me);
-	}
-	m->end(it);
+  MeshEntity* e;
+  MeshIterator* it = m->begin(m->getDimension());
+  while( (e = m->iterate(it)) ) {
+    MeshElement* me = createMeshElement(m, e);
+    Element* el = createElement(from, me);
+    MeshEntity* dvs[4];
+    m->getDownward(e, 0, dvs);
+    for (int i=0; i<4; i++) {
+      Vector3 atXi;
+      getVector(el, Vector3(xis[i]), atXi);
+      Vector3 currentVal;
+      getVector(to, dvs[i], 0, currentVal);
+      double currentCount = getScalar(count, dvs[i], 0);
+      currentVal += atXi;
+      currentCount += 1.;
+      setVector(to, dvs[i], 0, currentVal);
+      setScalar(count, dvs[i], 0, currentCount);
+    }
+    destroyElement(el);
+    destroyMeshElement(me);
+  }
+  m->end(it);
 
-	it = m->begin(0);
-	while( (e = m->iterate(it)) ) {
-		Vector3 sum;
-		double cnt;
-		getVector(to, e, 0, sum);
-		setVector(to, e, 0, sum/getScalar(count, e, 0));
-	}
-	m->end(it);
-	m->removeField(count);
-	destroyField(count);
+  it = m->begin(0);
+  while( (e = m->iterate(it)) ) {
+    Vector3 sum;
+    double cnt;
+    getVector(to, e, 0, sum);
+    setVector(to, e, 0, sum/getScalar(count, e, 0));
+  }
+  m->end(it);
+  m->removeField(count);
+  destroyField(count);
 }
-
-/* void projectNedelecCurlField(Field* to, Field* from) */
-/* { */
-/* 	// checks on the from field */
-/* 	apf::FieldShape* fShape = getShape(from); */
-/* 	std::string      fName  = fShape->getName(); */
-/* 	PCU_ALWAYS_ASSERT_VERBOSE(fName == std::string("Nedelec"), */
-/* 			"The from field needs to be Nedelec!"); */
-
-/* 	// checks on the to field */
-/* 	apf::FieldShape* tShape = getShape(to); */
-/* 	std::string      tName  = tShape->getName(); */
-/* 	int              tOrder = tShape->getOrder(); */
-/* 	PCU_ALWAYS_ASSERT_VERBOSE(tName == std::string("Lagrange"), */
-/* 			"The to field needs to be Lagrange!"); */
-/* 	PCU_ALWAYS_ASSERT_VERBOSE(tOrder == 1, */
-/* 			"The to field needs to be 1st order!"); */
-
-/* 	/1* Mesh* m = getMesh(from); *1/ */
-/* 	/1* // auxiliary count fields *1/ */
-/* 	/1* Field* count = createField(m, "counter", SCALAR, getLagrange(1)); *1/ */
-/* 	/1* double xis[4][3] = {{0., 0., 0.}, *1/ */
-/* 	/1* 	                  {1., 0., 0.}, *1/ */
-/* 	/1* 	                  {0., 1., 0.}, *1/ */
-/* 	/1* 	                  {0., 0., 1.}}; *1/ */
-/*   /1* // zero out the fields *1/ */
-/* 	/1* zeroField(to); *1/ */
-/* 	/1* zeroField(count); *1/ */
-
-/* 	/1* MeshEntity* e; *1/ */
-/* 	/1* MeshIterator* it = m->begin(m->getDimension()); *1/ */
-/* 	/1* while( (e = m->iterate(it)) ) { *1/ */
-/* 	/1* 	MeshElement* me = createMeshElement(m, e); *1/ */
-/* 	/1* 	Element* el = createElement(from, me); *1/ */
-/* 	/1* 	MeshEntity* dvs[4]; *1/ */
-/* 	/1* 	m->getDownward(e, 0, dvs); *1/ */
-/* 	/1* 	for (int i=0; i<4; i++) { *1/ */
-/* 	/1* 		Vector3 atXi; *1/ */
-/* 	/1* 		getVector(el, Vector3(xis[i]), atXi); *1/ */
-/* 	/1* 	  Vector3 currentVal; *1/ */	
-/* 	/1* 		getVector(to, dvs[i], 0, currentVal); *1/ */
-/* 	/1* 		double currentCount = getScalar(count, dvs[i], 0); *1/ */
-/* 	/1* 		currentVal += atXi; *1/ */
-/* 	/1* 		currentCount += 1.; *1/ */
-/* 	/1* 		setVector(to, dvs[i], 0, currentVal); *1/ */
-/* 	/1* 		setScalar(count, dvs[i], 0, currentCount); *1/ */
-/* 	/1* 	} *1/ */
-/* 	/1* 	destroyElement(el); *1/ */
-/* 	/1* 	destroyMeshElement(me); *1/ */
-/* 	/1* } *1/ */
-/* 	/1* m->end(it); *1/ */
-
-/* 	/1* it = m->begin(0); *1/ */
-/* 	/1* while( (e = m->iterate(it)) ) { *1/ */
-/* 	/1* 	Vector3 sum; *1/ */
-/* 	/1* 	double cnt; *1/ */
-/* 	/1* 	getVector(to, e, 0, sum); *1/ */
-/* 	/1* 	getScalar(count, e, 0); *1/ */
-/* 	/1* 	setVector(to, e, 0, sum/getScalar(count, e, 0)); *1/ */
-/* 	/1* } *1/ */
-/* 	/1* m->end(it); *1/ */
-/* 	/1* destroyField(count); *1/ */
-/* } */
 
 };
