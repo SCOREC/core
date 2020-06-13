@@ -1314,7 +1314,7 @@ void projectNedelecField(Field* to, Field* from)
   apf::FieldShape* tShape = getShape(to);
   std::string      tName  = tShape->getName();
   int              tOrder = tShape->getOrder();
-  PCU_ALWAYS_ASSERT_VERBOSE(tName == std::string("Linear"),
+  PCU_ALWAYS_ASSERT_VERBOSE((tName == std::string("Linear")) && (tOrder == 1),
   		"The to field needs to be 1st order Lagrange!");
 
   Mesh* m = getMesh(from);
@@ -1354,7 +1354,6 @@ void projectNedelecField(Field* to, Field* from)
   it = m->begin(0);
   while( (e = m->iterate(it)) ) {
     Vector3 sum;
-    double cnt;
     getVector(to, e, 0, sum);
     setVector(to, e, 0, sum/getScalar(count, e, 0));
   }
