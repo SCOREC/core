@@ -1307,4 +1307,59 @@ apf::FieldShape* getNedelec(int order)
   return nedelecShapes[order-1];
 }
 
+void projectNedelecField(Field* to, Field* from)
+{
+  // checks on the from field
+  // checks on the to field
+  apf::FieldShape* tShape = getShape(to);
+  std::string      tName  = tShape->getName();
+  int              tOrder = tShape->getOrder();
+  PCU_ALWAYS_ASSERT_VERBOSE((tName == std::string("Linear")) && (tOrder == 1),
+  		"The to field needs to be 1st order Lagrange!");
+
+  Mesh* m = getMesh(from);
+  // auxiliary count fields
+  Field* count = createField(m, "counter", SCALAR, getLagrange(1));
+  double xis[4][3] = {{0., 0., 0.},
+  	              {1., 0., 0.},
+  	              {0., 1., 0.},
+  	              {0., 0., 1.}};
+  // zero out the fields
+  zeroField(to);
+  zeroField(count);
+
+  MeshEntity* e;
+  MeshIterator* it = m->begin(m->getDimension());
+  while( (e = m->iterate(it)) ) {
+    MeshElement* me = createMeshElement(m, e);
+    Element* el = createElement(from, me);
+    MeshEntity* dvs[4];
+    m->getDownward(e, 0, dvs);
+    for (int i=0; i<4; i++) {
+      Vector3 atXi;
+      getVector(el, Vector3(xis[i]), atXi);
+      Vector3 currentVal;
+      getVector(to, dvs[i], 0, currentVal);
+      double currentCount = getScalar(count, dvs[i], 0);
+      currentVal += atXi;
+      currentCount += 1.;
+      setVector(to, dvs[i], 0, currentVal);
+      setScalar(count, dvs[i], 0, currentCount);
+    }
+    destroyElement(el);
+    destroyMeshElement(me);
+  }
+  m->end(it);
+
+  it = m->begin(0);
+  while( (e = m->iterate(it)) ) {
+    Vector3 sum;
+    getVector(to, e, 0, sum);
+    setVector(to, e, 0, sum/getScalar(count, e, 0));
+  }
+  m->end(it);
+  m->removeField(count);
+  destroyField(count);
+}
+
 };
