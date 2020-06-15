@@ -216,14 +216,14 @@ namespace crv {
 		apf::Vector3 Vvalue(0,0,0);
 		for (int k = 0; k < np; ++k)
 		  Vvalue += Vnodes[k]*B(j+n-ni,k);
-		apf::setVector(f,newEntities[i],ni-j-1,Vvalue);
+		apf::setVector(f,newEntities[i],j,Vvalue);
 	      }
 	      else if (apf::getValueType(f) == apf::SCALAR) {
 		double Svalue = 0.;
 
 		for (int k = 0; k < np; ++k)
 		  Svalue += Snodes[k]*B(j+n-ni,k);
-		apf::setScalar(f,newEntities[i],ni-j-1,Svalue);
+		apf::setScalar(f,newEntities[i],j,Svalue);
 	      }
 	    }
 	  }
