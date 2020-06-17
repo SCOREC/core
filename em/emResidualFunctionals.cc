@@ -168,22 +168,21 @@ static void assembleEdgePatchLHS(EdgePatch* ep)
 
 /*
  * Performs Curl Curl integration using curl vector Nedelec shapes
- * TODO Add 2D curl curl integration
- * TODO CLEANUP.
+ * TODO Add 2D curl curl integration. not needed right now.
  */
 void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
 {
   apf::FieldShape* fs = f->getShape();
   int type = mesh->getType(e);
-  PCU_ALWAYS_ASSERT(type == apf::Mesh::TET); // TODO add Triangle
+  PCU_ALWAYS_ASSERT(type == apf::Mesh::TET);
   int nd = apf::countElementNodes(fs, type);
   int dim = apf::getDimension(mesh, e);
   int dimc = (dim == 3) ? 3 : 1;
   double w;
 
   apf::NewArray<apf::Vector3> curlshape(nd);
-  mth::Matrix<double> phys_curlshape(nd, dimc); // TODO remove once curl Piola is in place in apfNedelec
+  mth::Matrix<double> phys_curlshape(nd, dimc);
   elmat.resize(nd,nd);
 
   apf::MeshElement* me = apf::createMeshElement(mesh, e);
@@ -201,7 +200,7 @@ void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     double jdet = apf::getJacobianDeterminant(J, dim);
     w = weight / jdet;
 
-    if (dim == 3) { // TODO this is Piola transformation. Put it in apfNedelec
+    if (dim == 3) {
       el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
       phys_curlshape.zero();
       for (int j = 0; j < nd; j++)
@@ -211,7 +210,7 @@ void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     }
     else {
       /*
-      TODO 2D TODO in apfNedelec.cc
+      TODO 2D in apfNedelec.cc
       el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
       phys_curlshape.zero();
       for (int i = 0; i < nd; i++)
@@ -358,6 +357,9 @@ void pumiUserFunction(apf::Mesh* mesh, apf::MeshEntity* e,
       f(0) = (1. + kappa * kappa) * sin(kappa * x[1]);
       f(1) = (1. + kappa * kappa) * sin(kappa * x[2]);
       f(2) = (1. + kappa * kappa) * sin(kappa * x[0]);
+      /*f(0) = 0.;
+      f(1) = 0.;
+      f(2) = 0.;*/
   }
   else {
      f(0) = (1. + kappa * kappa) * sin(kappa * x[1]);

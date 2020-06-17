@@ -87,7 +87,7 @@ static double getDesiredSize(Sizefield* sz, apf::MeshEntity* entity)
   int d = sz->mesh->getDimension();
   sz->size_factor = pow(sz->target_error/element_error, (2. / (2.*p + d)));
 
-  double h_new = h * element_error * sz->size_factor;
+  double h_new = h * sz->size_factor;
   if (h_new < sz->alpha*h) h_new = sz->alpha*h;
   if (h_new > sz->beta*h) h_new = sz->beta*h;
   return h_new;

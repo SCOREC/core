@@ -47,10 +47,8 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
     double weight = apf::getIntWeight(me, int_order, i);
     apf::Matrix3x3 J;
     apf::getJacobian(me, p, J);
-    //double jdet = apf::getJacobianDeterminant(J, dim);
-    w = weight; // TODO check why do not need division by jdet
+    w = weight;
 
-    // get curl vector
     apf::getCurl(fel, p, curl);
 
     // get curlshape values // TODO CLEAN use getCurlShapeValues
@@ -74,7 +72,7 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
 
   // 2. Compute Vector Mass Integration
   int_order = 2 * fp1s->getOrder();
-  np = apf::countIntPoints(me, int_order); // int points required
+  np = apf::countIntPoints(me, int_order);
 
   mass_vec.zero();
   apf::Vector3 vvalue;
