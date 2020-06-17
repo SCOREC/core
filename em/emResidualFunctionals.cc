@@ -210,7 +210,7 @@ void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     }
     else {
       /*
-      TODO 2D in apfNedelec.cc
+      2D in apfNedelec.cc
       el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
       phys_curlshape.zero();
       for (int i = 0; i < nd; i++)
@@ -622,14 +622,6 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       apf::NewArray<apf::Vector3> vectorshapes (nd);
       apf::getVectorShapeValues(fel, p, vectorshapes);
       vshape = vectorshapes[ei];
-
-      // TODO why?
-      int which, rotate; bool flip;
-      apf::getAlignment(
-          ep->mesh, currentFace, ep->entity, which, flip, rotate);
-      if (flip) {
-      vshape = vshape * -1.;
-      }
 
       // compute integral
       fluxFaceIntegral += (tk * vshape) * weight * jdet;
