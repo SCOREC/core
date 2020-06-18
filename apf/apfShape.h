@@ -170,6 +170,9 @@ FieldShape* getNedelec(int order);
 /** \brief Project a hierarchic field */
 void projectHierarchicField(Field* to, Field* from);
 
+/** \brief Project a Nedelec field */
+void projectNedelecField(Field* to, Field* from);
+
 FieldShape* getShapeByName(const char* name);
 
 /** \brief count the number of nodes affecting an element type
