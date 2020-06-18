@@ -170,7 +170,7 @@ FieldShape* getNedelec(int order);
 /** \brief Get the L2 shapes of a given order and entity type
   \details
  */
-FieldShape* getL2Shapes(int order, int type);
+FieldShape* getL2Shape(int order, int type);
 
 /** \brief Project a hierarchic field */
 void projectHierarchicField(Field* to, Field* from);

@@ -79,6 +79,8 @@ FieldShape* getShapeByName(const char* name)
   getVoronoiShape(2,1);
   getIPFitShape(2,1);
   getNedelec(1);
+  getL2Shape(0, apf::Mesh::TRIANGLE);
+  getL2Shape(0, apf::Mesh::TET);
   std::string s(name);
   if (registry.count(s))
     return registry[s];

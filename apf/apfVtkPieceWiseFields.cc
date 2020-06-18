@@ -77,9 +77,8 @@ static std::string getFileNameAndPathVtu(const char* prefix,
     std::string fileName,
     int id)
 {
-  int dirNum = id/1024;
   std::stringstream ss;
-  ss << prefix << '/' << prefix << '_' << fileName;
+  ss << prefix << '/' << prefix << '_' << id << '_' << fileName;
   return ss.str();
 }
 

@@ -86,7 +86,7 @@ void testL2(
   // Loop over all nodes and set scalar dofs.
   int dim = m->getDimension();
   apf::Field* l2Field = apf::createField(
-      m, "l2_test", apf::VECTOR, apf::getL2Shapes(ndOrder, apf::Mesh::simplexTypes[dim]));
+      m, "l2_test", apf::VECTOR, apf::getL2Shape(ndOrder, apf::Mesh::simplexTypes[dim]));
   apf::MeshEntity* ent;
   apf::MeshIterator* it;
 

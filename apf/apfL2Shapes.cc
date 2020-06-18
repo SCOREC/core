@@ -179,10 +179,15 @@ static void getTi(
 template<int P>
 class L2ShapeTri: public FieldShape {
   public:
-    const char* getName() const { return "L2ShapeTri"; }
-    bool isVectorShape() {return false;}
     L2ShapeTri()
-    {}
+    {
+      std::stringstream ss;
+      ss << "L2ShapeTri" << P;
+      name = ss.str();
+      registerSelf(name.c_str());
+    }
+    const char* getName() const { return name.c_str(); }
+    bool isVectorShape() {return false;}
     class Triangle : public apf::EntityShape
     {
     public:
@@ -256,9 +261,9 @@ class L2ShapeTri: public FieldShape {
     // Faces: no need to count the nodes associated with bounding edges
     // Tets: no need to count the nodes associated with bounding edges/faces
     bool hasNodesIn(int dimension)
-    { 
-    	if (dimension == Mesh::typeDimension[Mesh::TRIANGLE])
-    		return true;
+    {
+      if (dimension == Mesh::typeDimension[Mesh::TRIANGLE])
+      	return true;
       return false;
     }
     int countNodesOn(int type)
@@ -286,15 +291,22 @@ class L2ShapeTri: public FieldShape {
       	}
       }
     }
+  private:
+    std::string name;
 };
 
 template<int P>
 class L2ShapeTet: public FieldShape {
   public:
-    const char* getName() const { return "L2ShapeTet"; }
-    bool isVectorShape() {return false;}
     L2ShapeTet()
-    {}
+    {
+      std::stringstream ss;
+      ss << "L2ShapeTet_" << P;
+      name = ss.str();
+      registerSelf(name.c_str());
+    }
+    const char* getName() const { return name.c_str(); }
+    bool isVectorShape() {return false;}
     class Tetrahedron : public apf::EntityShape
     {
     public:
@@ -354,7 +366,7 @@ class L2ShapeTet: public FieldShape {
       }
       int countNodes() const {return countTetNodes(P);}
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const& xi, apf::NewArray<apf::Vector3>& shapes) const
+	  apf::Vector3 const& /*xi*/, apf::NewArray<apf::Vector3>& /*shapes*/) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getVectorValues not implemented for \
       	    L2ShapeTet. Try getValues. Aborting()!");
@@ -404,6 +416,8 @@ class L2ShapeTet: public FieldShape {
       	}
       }
     }
+  private:
+    std::string name;
 };
 
 
@@ -424,8 +438,17 @@ static apf::FieldShape* getL2ShapeTri(int order)
   static L2ShapeTri<8>  l2_8;
   static L2ShapeTri<9>  l2_9;
   static L2ShapeTri<10> l2_10;
-  static FieldShape* const l2Shapes[11] =
-  {&l2_0, &l2_1, &l2_2, &l2_3, &l2_4, &l2_5, &l2_6, &l2_7, &l2_8, &l2_9, &l2_10};
+  static FieldShape* const l2Shapes[11] = {&l2_0,
+                                           &l2_1,
+                                           &l2_2,
+                                           &l2_3,
+                                           &l2_4,
+                                           &l2_5,
+                                           &l2_6,
+                                           &l2_7,
+                                           &l2_8,
+                                           &l2_9,
+                                           &l2_10};
   return l2Shapes[order];
 }
 
@@ -446,13 +469,22 @@ static apf::FieldShape* getL2ShapeTet(int order)
   static L2ShapeTet<8>  l2_8;
   static L2ShapeTet<9>  l2_9;
   static L2ShapeTet<10> l2_10;
-  static FieldShape* const l2Shapes[11] =
-  {&l2_0, &l2_1, &l2_2, &l2_3, &l2_4, &l2_5, &l2_6, &l2_7, &l2_8, &l2_9, &l2_10};
+  static FieldShape* const l2Shapes[11] = {&l2_0,
+                                           &l2_1,
+                                           &l2_2,
+                                           &l2_3,
+                                           &l2_4,
+                                           &l2_5,
+                                           &l2_6,
+                                           &l2_7,
+                                           &l2_8,
+                                           &l2_9,
+                                           &l2_10};
   return l2Shapes[order];
 }
 
 
-apf::FieldShape* getL2Shapes(int order, int type)
+apf::FieldShape* getL2Shape(int order, int type)
 {
   if (type == Mesh::TRIANGLE)
     return getL2ShapeTri(order);
