@@ -30,7 +30,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
 
-  lion_set_verbosity(1);
+  lion_set_verbosity(0);
 
   if (argc != 3) {
     if(0==PCU_Comm_Self())
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     testL2(
     	m, /* mesh */
 	apf::Vector3(1./7., 1./11., 1./3.), /* test point */
-	i, /* order of Nedelec field */
+	i, /* order of l2 field */
 	i); /* order of test field */
   }
 
@@ -135,8 +135,8 @@ void testL2(
     apf::Vector3 eFieldValue;
     apf::getVector(el, testXi, eFieldValue);
 
-    double err = ((eFieldValue - eFieldExact) * (eFieldValue - eFieldExact))
-      / (eFieldExact * eFieldExact); // normalization factor
+    double err = ((eFieldValue - eFieldExact) * (eFieldValue - eFieldExact));
+    err /= (eFieldExact * eFieldExact); // normalization factor
     L2ErrorE += err;
     apf::destroyMeshElement(me);
     apf::destroyElement(el);
@@ -145,6 +145,7 @@ void testL2(
   m->end(it);
 
   // check for field interpolation
+  lion_oprint(1, "L2ErrorE is %e\n", L2ErrorE);
   PCU_ALWAYS_ASSERT_VERBOSE(L2ErrorE < 1.e-16,
       "Fields were not interpolated correctly!");
 
