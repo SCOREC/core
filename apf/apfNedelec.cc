@@ -1182,6 +1182,10 @@ void projectNedelecField(Field* to, Field* from)
   }
   m->end(it);
 
+  // take care of entities on part boundary
+  accumulate(to);
+  accumulate(count);
+
   it = m->begin(0);
   while( (e = m->iterate(it)) ) {
     Vector3 sum;
@@ -1189,6 +1193,10 @@ void projectNedelecField(Field* to, Field* from)
     setVector(to, e, 0, sum/getScalar(count, e, 0));
   }
   m->end(it);
+
+  // take care of entities on part boundary
+  synchronize(to);
+
   m->removeField(count);
   destroyField(count);
 }
