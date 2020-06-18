@@ -178,6 +178,9 @@ void projectHierarchicField(Field* to, Field* from);
 /** \brief Project a Nedelec field */
 void projectNedelecField(Field* to, Field* from);
 
+/** \brief Project a L2 field */
+void projectL2Field(Field* to, Field* from);
+
 FieldShape* getShapeByName(const char* name);
 
 /** \brief count the number of nodes affecting an element type
