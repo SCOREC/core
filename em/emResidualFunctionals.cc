@@ -549,7 +549,7 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
       PCU_ALWAYS_ASSERT( up.n == 2);
 
     apf::MeshEntity* firstTet = up.e[0];
-    apf::MeshEntity* secondTet;
+    apf::MeshEntity* secondTet = nullptr;
     if (up.n == 2)
       secondTet  = up.e[1];
 
@@ -578,10 +578,14 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
           fJ, apf::getDimension(ep->mesh, currentFace));
 
       // compute face outward normals wrt tets
-      if (tet == firstTet)
+      if (tet == firstTet) {
         fn1 = computeFaceOutwardNormal(ep->mesh, firstTet, currentFace, p);
-      else
+        fn2 = apf::Vector3(0.,0.,0.);
+      }
+      else {
         fn1 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);
+        fn2 = apf::Vector3(0.,0.,0.);
+      }
       if (up.n == 2) {
         if (tet == firstTet)
           fn2 = computeFaceOutwardNormal(ep->mesh, secondTet, currentFace, p);

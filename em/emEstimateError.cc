@@ -148,7 +148,7 @@ static void computeLambdaVector(
       PCU_ALWAYS_ASSERT( up.n == 2);
 
     apf::MeshEntity* firstTet = up.e[0];
-    apf::MeshEntity* secondTet;
+    apf::MeshEntity* secondTet = nullptr;
     if (up.n == 2)
       secondTet  = up.e[1];
 
@@ -197,10 +197,14 @@ static void computeLambdaVector(
       }
 
       // compute face outward normals wrt tets
-      if (e == firstTet)
+      if (e == firstTet) {
         fnormal1 = computeFaceOutwardNormal(mesh, firstTet, face, p);
-      else
+        fnormal2 = apf::Vector3(0.,0.,0.);
+      }
+      else {
         fnormal1 = computeFaceOutwardNormal(mesh, secondTet, face, p);
+        fnormal2 = apf::Vector3(0.,0.,0.);
+      }
       if (up.n == 2) {
         if (e == firstTet)
           fnormal2 = computeFaceOutwardNormal(mesh, secondTet, face, p);
