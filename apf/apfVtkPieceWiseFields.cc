@@ -52,18 +52,6 @@ static void safe_mkdir(const char* path)
  * before writing it to file, the others are to maintain the
  * templated design of writeCornerCoords and others */
 
-/* static float workaround(double v) */
-/* { */
-/*   return static_cast<float>(v); */
-/* } */
-/* static int workaround(int v) */
-/* { */
-/*   return v; */
-/* } */
-/* static long workaround(long v) */
-/* { */
-/*   return v; */
-/* } */
 
 static std::string getPieceFileName(int id)
 {
@@ -71,7 +59,6 @@ static std::string getPieceFileName(int id)
   ss << id << ".vtk";
   return ss.str();
 }
-
 
 static std::string getFileNameAndPathVtu(const char* prefix,
     std::string fileName,
