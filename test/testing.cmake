@@ -517,6 +517,16 @@ mpi_test(nedelec 1
   ./nedelecShapes
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb")
+set(MDIR ${MESHES}/cube/pumi670)
+mpi_test(l2_shape_tet_serial 1
+  ./L2Shapes
+  ".null"
+  "${MDIR}/cube.smb")
+mpi_test(l2_shape_tet_parallel 4
+  ./L2Shapes
+  ".null"
+  "${MDIR}/4/cube.smb")
+set(MDIR ${MESHES}/cube/pumi24)
 mpi_test(pumiLoadMesh-1p 1
   ./pumiLoadMesh
   ${MDIR}/cube.dmg

@@ -167,11 +167,19 @@ FieldShape* getHierarchic(int order);
  */
 FieldShape* getNedelec(int order);
 
+/** \brief Get the L2 shapes of a given order and entity type
+  \details
+ */
+FieldShape* getL2Shape(int order, int type);
+
 /** \brief Project a hierarchic field */
 void projectHierarchicField(Field* to, Field* from);
 
 /** \brief Project a Nedelec field */
 void projectNedelecField(Field* to, Field* from);
+
+/** \brief Project a L2 field */
+void projectL2Field(Field* to, Field* from);
 
 FieldShape* getShapeByName(const char* name);
 
