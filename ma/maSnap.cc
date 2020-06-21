@@ -66,7 +66,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     param[periodicAxes] = candidatePeriodicParam;
     param[degenAxes] = candidateDegenParam;
     Vector p(param[0], param[1], 0.0);
-    m->getFirstDerivative(g, param, uTan, vTan);
+    m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
 #ifdef HAVE_CAPSTONE
