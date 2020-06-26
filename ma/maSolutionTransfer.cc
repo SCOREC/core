@@ -229,7 +229,7 @@ void CavityTransfer::onCavity(
       	double val = apf::getScalar(field, newEntities[i], 0);
       	//double val = apf::measure(mesh, newEntities[i]);
 	//apf::setScalar(field, newEntities[i], 0, val*sumOld/sumNew);
-	if (val == 0) continue;
+	if (sumNew == 0) continue;
 	apf::setScalar(field, newEntities[i], 0, val*sumOld/sumNew);
       }
     }

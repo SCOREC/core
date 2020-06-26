@@ -24,6 +24,7 @@
 #include <pcu_util.h>
 
 #include <iostream>
+#include <string.h>
 namespace crv {
 
   static void getVertParams(apf::Mesh* mesh, int ptype,
@@ -64,46 +65,86 @@ namespace crv {
       apf::MeshElement **elems,
       apf::Vector3 point, apf::Vector3 &xi)
   {
-    int iter = 50;
+    int iter = 1000;
     double tol = 1e-4;
 
     int elemNum = 0;
-    double value, value2, bestValue = -DBL_MAX;
+    double value2, bestValue = -DBL_MAX;
 
     apf::Vector3 initialGuess = apf::Vector3(1./4., 1./4., 1./4.);
     apf::Vector3 xinew, xyz;
     apf::Matrix3x3 Jinv;
+    apf::Vector3 fval;
 
+    //printf(" inside find best element loop %d \n", n);
     for (int i = 0; i < n; i++) {
       apf::Vector3 xin = initialGuess;
+      apf::Element* e = apf::createElement(mesh->getCoordinateField(), elems[i]);
 
       for (int j = 0; j < iter; j++) {
 	apf::getJacobianInv(elems[i], xin, Jinv);
-	mapLocalToGlobal(elems[i], xin, xyz);
-	apf::Vector3 fval = (xyz-point);
+	//mapLocalToGlobal(elems[i], xin, xyz);
+	apf::getVector(e, xin, xyz);
+	fval = (xyz-point);
 
-	xinew = xin - Jinv*fval;
-
-	if (j > 0 && fval.getLength() > value) break;
+	xinew = xin - transpose(Jinv)*fval;
 
 	if ( (xinew-xin).getLength() < tol ) {
+	  //elemNum = i;
+	  //xi = xinew;
+	  //if ( ((xinew[0] + xinew[1] + xinew[2]) < 1) &&
+	  //    (xinew[0] > 0) && (xinew[1] > 0) && (xinew[2] > 0) ) {
+
 	  value2 = ma::getInsideness(mesh, apf::getMeshEntity(elems[i]), xinew);
 	  if ( value2 > bestValue) {
 	    bestValue = value2;
 	    elemNum = i;
 	    xi = xinew;
+	    //std::cout<<" converged fval "<<fval<<"with xi"<<xi<<std::endl;
 	    break;
 	  }
+	  else xin = xinew;
 	}
 	else {
-	  value = fval.getLength();
 	  xin = xinew;
 	}
       }
+	apf::destroyElement(e);
     }
+
     return (elemNum);
   }
 
+  static bool getBetterXiApproximate(apf::Mesh* mesh,
+      apf::MeshElement* me,
+      apf::Vector3 point, apf::Vector3 &xi)
+  {
+    int iter = 1000;
+    double tol = 1e-8;
+
+    apf::Vector3 xin = xi;
+    apf::Vector3 xinew, xyz;
+    apf::Matrix3x3 Jinv;
+    apf::Element* e = apf::createElement(mesh->getCoordinateField(), me);
+
+    for (int j = 0; j < iter; j++) {
+      apf::getJacobianInv(me, xin, Jinv);
+      //mapLocalToGlobal(me, xin, xyz);
+      apf::getVector(e, xin, xyz);
+      apf::Vector3 fval = (xyz-point);
+
+      xinew = xin - transpose(Jinv)*fval;
+
+      if ( fval.getLength() < tol ) {
+      	xi = xinew;
+	//std::cout<<" fval "<<fval<<" with xi "<<xi<<std::endl;
+      	return true;
+      }
+      else
+      	xin = xinew;
+    }
+    return false;
+  }
 
   class CrvBezierSolutionTransfer : public ma::SolutionTransfer
   {
@@ -264,8 +305,17 @@ namespace crv {
 	int n = oldElements.getSize();
 
 	apf::NewArray<apf::MeshElement*> elems(n);
-	for (int i = 0; i < n; i++)
+	apf::NewArray<apf::Element*> elemsF(n);
+	for (int i = 0; i < n; i++) {
 	  elems[i] = apf::createMeshElement(mesh, oldElements[i]);
+	  for (int j = 0; j < mesh->countFields(); j++) {
+	    apf::Field* fCrd = mesh->getField(j);
+	    if (apf::getName(fCrd) == "CoordField") {
+	      elemsF[i] = apf::createElement(fCrd, elems[i]);
+	    }
+	  }
+	}
+
 	// For a point outside the cavity getBestElement routine
 	// returns an extrapolated xi
 	// should perform a check for negative xi values
@@ -273,11 +323,40 @@ namespace crv {
 	    &elems[0], xyz, xi);
 
 	PCU_ALWAYS_ASSERT(entNum >= 0);
+	apf::Vector3 xiBetter = xi;
+	bool betterXi = getBetterXiApproximate(mesh, elems[entNum],xyz, xiBetter);
+	if (betterXi) xi = xiBetter;
+/*
+	apf::MeshElement* meshElemP = apf::createMeshElement(
+	    mesh, oldElements[entNum]);
+	apf::Vector3 xxyy, xxzz, val2;
+	apf::mapLocalToGlobal(meshElemP, xi, xxyy);
+	const char* namef = apf::getName(f);
+	std::cout<<" xi "<<xi<<" new entity on "<<
+	  mesh->getModelType(mesh->toModel(newEnt))<<std::endl;
+	std::cout<<" diff "<<betterXi<<" "<<namef<<" "<< (xyz - xxyy) << std::endl;
+	if (strcmp(namef,"CoordField") == 0) {
+	  apf::Element* elemPC = apf::createElement(f, meshElemP);
+	  apf::NewArray<double> val1;
+	  val1.allocate(apf::countComponents(f));
+	  if (apf::getValueType(f) == apf::VECTOR) {
+	    apf::mapLocalToGlobal(meshElemP, xi, xxzz);
+	    apf::getVector(elemPC, xi, val2);
+
+	    apf::getComponents(elemPC, xi, &(val1[0]));
+	    std::cout<<" Allocated values ("<< val2[0]-xxzz[0]<<","<<
+	      val2[1]-xxzz[1]<<","<<val2[2]-xxzz[2]<<")"<<std::endl;
+	    std::cout<<" Allocated values ("<< xyz-xxzz<<std::endl;
+	    std::cout<<" Allocated values ("<< xyz-val2<<std::endl;
+	  }
+	}
+*/
 
 	apf::Element* elemP = apf::createElement(f, oldElements[entNum]);
 	apf::NewArray<double> val;
 	val.allocate(apf::countComponents(field));
 	apf::getComponents(elemP, xi, &(val[0]));
+
 	apf::setComponents(f, newEnt, nodeNum, &(val[0]));
 
 	for (int i = 0; i < n; i++)
@@ -300,27 +379,43 @@ namespace crv {
 	    int td = apf::Mesh::typeDimension[type];
 	    if (td != d) continue;
 
-	    int order = shape->getOrder();
 	    int ne = shape->countNodesOn(apf::Mesh::simplexTypes[td]);
 
 	    if (!ne) continue;
 
 	    apf::MeshElement* me = apf::createMeshElement(mesh, newEntities[i]);
+	    apf::Element* e = apf::createElement(mesh->getCoordinateField(), me);
 	    apf::Vector3 point, xinew;
-	    int n = shape->getEntityShape(type)->countNodes();
 
 	    for (int j = 0; j < ne; j++) {
 	      shape->getNodeXi(type, j, xinew);
-	      apf::mapLocalToGlobal(me, xinew, point);
+	      apf::getVector(e, xinew, point);
+	      //apf::mapLocalToGlobal(me, xinew, point);
 	      setInterpolatingFieldValues(mesh, oldElements,
 		  newEntities[i], j, point, f);
 	    }
+	    apf::destroyMeshElement(me);
+	  }
+	}
+	// convert interpolating values to control points in the
+	// decreasing order of entity dimension
+	for (int d = 3; d <= 1; d++) {
+	  for(size_t i = 0; i < newEntities.getSize(); i++) {
+	    int type = mesh->getType(newEntities[i]);
+	    int td = apf::Mesh::typeDimension[type];
+	    if (td != d) continue;
+
+	    int order = shape->getOrder();
+	    int ne = shape->countNodesOn(apf::Mesh::simplexTypes[td]);
+
+	    if (!ne) continue;
+
+	    int n = shape->getEntityShape(type)->countNodes();
 	    apf::NewArray<double> c;
 	    crv::getBezierTransformationCoefficients(order,
 		apf::Mesh::simplexTypes[td], c);
 
 	    crv::convertInterpolationFieldPoints(newEntities[i], f, n, ne, c);
-	    apf::destroyMeshElement(me);
 	  }
 	}
       }
