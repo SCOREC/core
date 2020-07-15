@@ -131,11 +131,9 @@ if(ENABLE_OMEGA_H)
 endif()
 
 if(ENABLE_CGNS)
-  find_package(CGNS)
+  find_package(CGNS REQUIRED)
   include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
-  #
-  find_package(HDF5) 
-  #
+  find_package(HDF5 REQUIRED COMPONENTS HL C)
   add_definitions(-DHAVE_CGNS)
 endif()
 
@@ -166,6 +164,7 @@ add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
 if(ENABLE_CGNS)
   target_link_libraries(core INTERFACE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+  target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
 endif()
 scorec_export_library(core)
 
