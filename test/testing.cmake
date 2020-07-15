@@ -451,7 +451,7 @@ if(ENABLE_ZOLTAN)
   )
 endif()
 
-if(ENABLE_CGNS)
+if(ENABLE_CGNS AND ENABLE_ZOLTAN)
 #
 # sort of an arbitrary choice
 set(numProcs 4)
@@ -536,7 +536,7 @@ mpi_test(cgns_bcs_3 ${numProcs}
   bcs3.smb
   additional)
 
-endif(ENABLE_CGNS)
+endif(ENABLE_CGNS AND ENABLE_ZOLTAN)
 
 mpi_test(construct 4
   ./construct
