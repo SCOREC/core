@@ -825,8 +825,8 @@ class Nedelec: public FieldShape {
           }
 
           // get the init ordered list with all face nodes
-          int init_order[non];
-          int final_order[4*non];
+          int* init_order = new int[non];
+          int* final_order = new int[4*non];
           int i = 0;
           for ( int r = size-1; r >= 0; r--)
             for (int c = size-r-1 ; c < size; c++) {
@@ -837,6 +837,8 @@ class Nedelec: public FieldShape {
 
           for (int i = 0; i < 4*non; i++)
             order[i] = final_order[i];
+          delete [] init_order;
+          delete [] final_order;
         }
       }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -1201,4 +1203,4 @@ void projectNedelecField(Field* to, Field* from)
   destroyField(count);
 }
 
-};
+}

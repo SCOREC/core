@@ -566,4 +566,4 @@ void projectL2Field(Field* to, Field* from)
   destroyField(count);
 }
 
-};
+}
