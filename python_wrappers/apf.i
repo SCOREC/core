@@ -61,6 +61,7 @@ void PCU_ALWAYS_ASSERT_VERBOSE(int cond, const char* msg);
 #ifdef HAVE_SIMMETRIX
   void start_sim(const char* logfile = 0);
   void stop_sim();
+  bool is_sim_started();
 #endif
 
 /* GMI RELATED WRAPPERS */
