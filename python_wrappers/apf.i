@@ -71,6 +71,8 @@ void gmi_register_null(void);
   void gmi_register_sim(void);
   void gmi_sim_start(void);
   void gmi_sim_stop(void);
+  void gmi_sim_stop(void);
+  gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile);
 #endif
 
 
@@ -171,6 +173,7 @@ void lion_set_verbosity(int lvl);
 namespace apf {
   apf::Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
   apf::Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
+  apf::Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
   void writeASCIIVtkFiles(const char* prefix, apf::Mesh2* m);
   /* void writeVtkFiles(const char* prefix, apf::Mesh* m, int cellDim = -1); */
   /* void writeVtkFiles(const char* prefix, apf::Mesh* m, */
