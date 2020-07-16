@@ -97,7 +97,7 @@ void getGaussLegendrePoints(int np, double* pts)
 
 void getGaussLobattoPoints(int /*np*/, double* /*pts*/)
 { /* implement Gauss Lobatto points. Later when needed. */
-};
+}
 
 
 void getOpenPoints(
