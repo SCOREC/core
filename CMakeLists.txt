@@ -125,9 +125,12 @@ if(ENABLE_OMEGA_H)
 endif()
 
 if(ENABLE_CGNS)
-  find_package(CGNS REQUIRED)
+  set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(CGNS)
+  #CGNS does not provide cmake targets :(
   include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
-  find_package(HDF5 REQUIRED COMPONENTS HL C)
+  set(SCOREC_USE_HDF5_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(HDF5)
   add_definitions(-DHAVE_CGNS)
 endif()
 
@@ -157,7 +160,6 @@ add_subdirectory(omega_h)
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
 if(ENABLE_CGNS)
-  target_link_libraries(core INTERFACE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
   target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
 endif()
 scorec_export_library(core)

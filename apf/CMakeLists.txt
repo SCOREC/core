@@ -98,12 +98,6 @@ target_link_libraries(apf
      mth
    )
 
-
-if(ENABLE_CGNS)
-  message(STATUS ${CGNS_LIBRARIES})
-  target_link_libraries(apf PRIVATE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-endif(ENABLE_CGNS)
-
 scorec_export_library(apf)
 
 bob_end_subdir()
