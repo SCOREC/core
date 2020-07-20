@@ -53,6 +53,7 @@ apf::Field* getTestField(apf::Mesh* m, const char* fname, double addval)
       double val = getValue(coords, addval);
       apf::setScalar(f, e, 0, val);
     }  // end while
+    m->end(it);
   }  // end for
 
   return f;
@@ -133,8 +134,10 @@ bool testReduce(apf::Mesh* m, int casenum)
 
       }  // end if ntimes
     } // end while
+    m->end(it);
   }  // end for
 
+  delete shr;
   return failflag;
 }
 
