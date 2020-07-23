@@ -342,7 +342,7 @@ void TEST_GENT_SETGET_TAG (pGeom g, pGeomEnt ent)
 
   // pumi_gent_set/getPtrTag 
   pumi_gent_setPtrTag (ent, pointer_tag, (void*)(data));
-  void* void_data = (void*)calloc(strlen(data), sizeof(char)); //this memory is leaked
+  void* void_data; // pumi_gent_getPtrTag will point void_data at the stored address
   pumi_gent_getPtrTag (ent, pointer_tag, &void_data);
   PCU_ALWAYS_ASSERT(!strcmp((char*)void_data, data));
 
