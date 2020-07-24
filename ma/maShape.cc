@@ -652,6 +652,7 @@ class LargeAngleTriFixer : public Operator
       apf::MeshElement* me = apf::createMeshElement(mesh, tri);
       Vector center(1./3.,1./3.,1./3.);
       sf->getTransform(me,center,Q);
+      apf::destroyMeshElement(me);
 
       // pick the edge opposite to the largest angle (in metric) for swap
       Entity* edges[3];
