@@ -19,7 +19,7 @@
 #include <mth_def.h>
 #include <math.h>
 #include <pcu_util.h>
-
+#include <iostream>
 namespace crv {
 
 static double measureLinearTriArea(ma::Mesh* m, ma::Entity* tri)
@@ -189,6 +189,7 @@ class BezierTransfer : public ma::SolutionTransfer
             int n = getNumControlPoints(childType,P);
             apf::Vector3 vp[4];
             getVertParams(parentType,parentVerts,midEdgeVerts,newEntities[i],vp);
+
             if(getBlendingOrder(childType) > 0){
               apf::NewArray<apf::Vector3> childXi(n);
               collectNodeXi(parentType,childType,P,vp,childXi);
@@ -203,8 +204,11 @@ class BezierTransfer : public ma::SolutionTransfer
               mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
               for (int j = 0; j < ni; ++j){
                 apf::Vector3 point(0,0,0);
-                for (int k = 0; k < np; ++k)
+                for (int k = 0; k < np; ++k) {
                   point += nodes[k]*B(j+n-ni,k);
+		}
+		//std::cout<<" shape ("<<j<<") "<<
+		//  point<<std::endl;
                 mesh->setPoint(newEntities[i],j,point);
               }
             }
