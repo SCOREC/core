@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstdlib>
 
+#include <apfCavityOp.h>
 #include "apfElement.h"
 #include "crv.h"
 #include "crvShape.h"
@@ -119,7 +120,7 @@ static void computeLambdaVector(
     apf::MeshEntity* e,
     apf::Field* f,
     apf::Field* fp1,
-    apf::Field* THETA_Field,
+    apf::Field* flux_field,
     mth::Vector<double>& lambda)
 {
   apf::FieldShape* fp1s = fp1->getShape();
@@ -129,6 +130,7 @@ static void computeLambdaVector(
   int nedofs = apf::countElementNodes(fp1s, etype);
   lambda.resize(nedofs);
 
+  int nc = apf::countComponents(flux_field);
 
   // get the downward faces of the element
   apf::Downward faces;
@@ -139,107 +141,33 @@ static void computeLambdaVector(
   for (int ii = 0; ii < nf; ii++) {
     apf::MeshEntity* face = faces[ii];
 
-    // 1. get upward tets of the current face
-    apf::Up up;
-    mesh->getUp(face, up);
-    if (crv::isBoundaryEntity(mesh, face))
-      PCU_ALWAYS_ASSERT( up.n == 1);
-    else
-      PCU_ALWAYS_ASSERT( up.n == 2);
-
-    apf::MeshEntity* firstTet = up.e[0];
-    apf::MeshEntity* secondTet = nullptr;
-    if (up.n == 2)
-      secondTet  = up.e[1];
-
-    // 2. get downward edges of the face
-    apf::Downward edges;
-    int nedges = mesh->getDownward(face, 1, edges);
-
-    // 3. get theta coeffs on the face
-    double components[3];
-    apf::getComponents(THETA_Field, face, 0, components);
-    mth::Vector<double> theta_coeffs(3);
-    theta_coeffs(0) = components[0];
-    theta_coeffs(1) = components[1];
-    theta_coeffs(2) = components[2];
-
     int ftype = mesh->getType(face);
     PCU_ALWAYS_ASSERT(ftype == apf::Mesh::TRIANGLE);
     int nfdofs = apf::countElementNodes(f->getShape(), ftype);
     apf::NewArray<apf::Vector3> vectorshape(nfdofs);
 
     apf::MeshElement* fme = apf::createMeshElement(mesh, face);
-    apf::Element* fel = apf::createElement(f, fme);
-    int np = apf::countIntPoints(fme, 2*order);
+    int np = apf::countIntPoints(fme, 2*order-1); // TODO 2*order
 
     // 4. Compute integral on the face
-    apf::Vector3 p, tet1xi, tet2xi, curl1, curl2, curl,
-      fnormal1, fnormal2, tk, vshape;
+    apf::Vector3 p;
     for (int n = 0; n < np; n++) {
 
-      apf::getIntPoint(fme, 2*order, n, p);
-      double weight = apf::getIntWeight(fme, 2*order, n);
+      apf::getIntPoint(fme, 2*order-1, n, p); // TODO 2*order
+      double weight = apf::getIntWeight(fme, 2*order-1, n); // TODO 2*order
       apf::Matrix3x3 fJ;
       apf::getJacobian(fme, p, fJ);
       double jdet = apf::getJacobianDeterminant(
           fJ, apf::getDimension(mesh, face));
 
-      // evaluate theta vector using theta coeffs
-      apf::Vector3 theta_vector;
-      theta_vector.zero();
-      apf::NewArray<apf::Vector3> triVectorShapes (nfdofs);
-      apf::getVectorShapeValues(fel, p, triVectorShapes);
-      for (int i = 0; i < nedges; i++) {
-        apf::Vector3 v = triVectorShapes[i];
-        v = v * theta_coeffs[i];
-        theta_vector += v;
-      }
-
-      // compute face outward normals wrt tets
-      if (e == firstTet) {
-        fnormal1 = computeFaceOutwardNormal(mesh, firstTet, face, p);
-        fnormal2 = apf::Vector3(0.,0.,0.);
-      }
-      else {
-        fnormal1 = computeFaceOutwardNormal(mesh, secondTet, face, p);
-        fnormal2 = apf::Vector3(0.,0.,0.);
-      }
-      if (up.n == 2) {
-        if (e == firstTet)
-          fnormal2 = computeFaceOutwardNormal(mesh, secondTet, face, p);
-        else {
-          fnormal2 = computeFaceOutwardNormal(mesh, firstTet, face, p);
-          theta_vector = theta_vector * -1.;
-        }
-      }
-
-      curl.zero();
-      // compute curl1
-      tet1xi = apf::boundaryToElementXi(mesh, face, firstTet, p);
-      apf::MeshElement* me1 = apf::createMeshElement(mesh, firstTet);
-      apf::Element* el1 = apf::createElement(f, me1);
-      apf::getCurl(el1, tet1xi, curl1);
-      apf::Vector3 temp1 = apf::cross(fnormal1, curl1);
-      curl += temp1;
-      apf::destroyElement(el1);
-      apf::destroyMeshElement(me1);
-
-      // compute curl2
-      if (up.n == 2) {
-        tet2xi = apf::boundaryToElementXi(mesh, face, secondTet, p);
-        apf::MeshElement* me2 = apf::createMeshElement(mesh, secondTet);
-        apf::Element* el2 = apf::createElement(f, me2);
-        apf::getCurl(el2, tet2xi, curl2);
-        apf::Vector3 temp2 = apf::cross(fnormal2, curl2);
-        curl += (temp2 * -1.);
-        curl = curl * 1./2.;
-        apf::destroyElement(el2);
-        apf::destroyMeshElement(me2);
-      }
-
-      // compute tk (inter-element averaged flux)
-      tk = curl;
+      // obtain corrected flux vector
+      double comp[nc];
+      apf::getComponents(flux_field, e, n, comp);
+      apf::Vector3 theta_plus_tk;
+      int index = ii*3;
+      theta_plus_tk[0] = comp[index];
+      theta_plus_tk[1] = comp[index+1];
+      theta_plus_tk[2] = comp[index+2];
 
       // compute p+1 order 3D vector shapes
       apf::NewArray<apf::Vector3> tetVectorShapes (nedofs);
@@ -252,7 +180,6 @@ static void computeLambdaVector(
       apf::destroyMeshElement(me);
 
       // compute integral
-      apf::Vector3 theta_plus_tk = theta_vector + tk;
       double w = weight * jdet;
       theta_plus_tk = theta_plus_tk * w;
 
@@ -427,7 +354,7 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
 	return sqrt(error);
 }
 
-apf::Field* computeErrorField(apf::Field* ef, apf::Field* THETA_Field)
+apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux)
 {
 
 	// 1. Create per-element SCALAR error field
@@ -461,7 +388,7 @@ apf::Field* computeErrorField(apf::Field* ef, apf::Field* THETA_Field)
     // 2(d). Compute Lambda Vector
     mth::Vector<double> lambda;
     computeLambdaVector(
-        apf::getMesh(ef), el, ef, efp1, THETA_Field, lambda);
+        apf::getMesh(ef), el, ef, efp1, correctedFlux, lambda);
 
     // 2(e). Assemble RHS element vector = blf - lf - lambda
     mth::Vector<double> B(blf.size());
@@ -511,17 +438,26 @@ apf::Field* estimateError(apf::Field* f)
 {
   double t0 = PCU_Time();
   apf::Field* g = em::equilibrateResiduals(f);
-  apf::Field* THETA = em::computeFluxCorrection(f, g);
+  lion_eprint(1,"1/4: residuals equilibrated \n");
+  apf::Field* theta = em::computeFluxCorrection(f, g);
+  lion_eprint(1,"2/4: flux corrections computed \n");
   apf::destroyField(g);
+  PCU_Barrier(); // TODO remove
 
-  apf::Field* error_field = em::computeErrorField(f, THETA);
-  apf::destroyField(THETA);
+  apf::Field* correctedFlux = em::computeCorrectedFlux(f, theta);
+  lion_eprint(1,"3/4: corrected flux field computed\n");
+  apf::destroyField(theta);
+
+  apf::Field* error_field = em::computeErrorField(f, correctedFlux);
+  lion_eprint(1,"4/4: error computed \n");
+  apf::destroyField(correctedFlux);
 
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     lion_eprint(1,"EM: Error estimated in %f seconds\n",t1-t0);
 
   return error_field;
+  //return correctedFlux;
 }
 
 }

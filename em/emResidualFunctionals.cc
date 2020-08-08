@@ -19,6 +19,8 @@ using namespace std;
 
 namespace em {
 
+enum {VISITED};
+
 /* overall information useful during equilibration */
 struct Equilibration {
   apf::Mesh* mesh;
@@ -28,6 +30,8 @@ struct Equilibration {
   int order;
   /* input scalar field containing Nedelec dofs for solution electric field */
   apf::Field* ef;
+  /* tags each edge once it has been visited during the equilibration process */
+  apf::MeshTag* tag;
   /* output field containing correction values.
    * currently 3 scalar values are stored on each face
    * in order corresponding to downward edges of the face */
@@ -37,6 +41,7 @@ struct Equilibration {
 static void setupEquilibration(Equilibration* eq, apf::Field* f, apf::Field* g)
 {
   eq->mesh = apf::getMesh(f);
+  eq->tag = eq->mesh->createIntTag("isVisited", 1);
   eq->dim = eq->mesh->getDimension();
   eq->ef = f;
   eq->order = f->getShape()->getOrder();
@@ -306,6 +311,8 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   apf::Downward e;
   int ne = ep->mesh->getDownward(tet, 1, e);
   int ei = apf::findIn(e, ne, ep->entity);
+  if (PCU_Comm_Self() == 0)
+    cout << "ei " << ei << endl;
   // get Element Dofs
   apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
   apf::Element* el = apf::createElement(ep->equilibration->ef, me);
@@ -655,6 +662,13 @@ static void assembleEdgePatchRHS(EdgePatch* p)
     double blfIntegral = getLocalEdgeBLF(p, tet);
     double lfIntegral = getLocalEdgeLF(p, tet);
     double fluxIntegral = getLocalFluxIntegral(p, tet);
+    if (PCU_Comm_Self() == 0) {
+      apf::Vector3 center = apf::getLinearCentroid(p->mesh, tet);
+      cout << center << endl;
+      cout << "bilinear integral " << blfIntegral << endl;
+      cout << "linear integral " << lfIntegral << endl;
+      cout << "flux integral " << fluxIntegral << endl;
+    }
     if(p->isOnBdry)
       p->b(nf+i) = blfIntegral - lfIntegral - fluxIntegral;
     else
@@ -891,6 +905,56 @@ static void runErm(EdgePatch* ep)
     components[ei] = ep->x(i);
     apf::setComponents(ep->equilibration->g, face, 0, components);
   }
+  // debug
+  if (PCU_Comm_Self() == 0) {
+    cout << "Part " << PCU_Comm_Self() << ": ";
+    apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->entity);
+    cout << center << endl;
+
+    cout << "LHS: ";
+    for (size_t i = 0; i < ep->T.rows(); i++) {
+      for (size_t j = 0; j < ep->T.cols(); j++) {
+        cout << ep->T(i,j) << " ";
+      }
+      cout << endl;
+    }
+
+    cout << "RHS: ";
+    for (size_t i = 0; i < ep->b.size(); i++)
+      cout << ep->b[i] << " ";
+    cout << endl;
+
+    cout << "gs: ";
+    for (size_t i = 0; i < ep->x.size(); i++)
+      cout << ep->x[i] << " ";
+    cout << endl;
+
+    cout << "Ordered tets" << endl;
+    for (size_t i = 0; i < ep->tets.size(); i++) {
+      apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->tets[i]);
+      cout << center << endl;
+    }
+    cout << "Ordered faces" << endl;
+    for (size_t i = 0; i < ep->faces.size(); i++) {
+      apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->faces[i]);
+      cout << center << endl;
+    }
+
+
+    cout << "==================" << endl;
+
+
+  }
+  /*if (PCU_Comm_Self() == 1) {
+    cout << "Part " << PCU_Comm_Self() << ": ";
+    apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->entity);
+    cout << center << endl;
+
+    cout << "RHS: ";
+    for (size_t i = 0; i < ep->faces.size(); i++)
+      cout << ep->b[i] << " ";
+    cout << endl;
+  }*/
 }
 
 
@@ -904,15 +968,19 @@ public:
   }
   virtual Outcome setEntity(apf::MeshEntity* e)
   {
+    if (edgePatch.mesh->hasTag(e, edgePatch.equilibration->tag))
+      return SKIP;
     startEdgePatch(&edgePatch, e);
     if ( ! buildEdgePatch(&edgePatch, this))
       return REQUEST;
     return OK;
-    return SKIP;
   }
   virtual void apply()
   {
     runErm(&edgePatch);
+    int n = VISITED;
+    edgePatch.mesh->setIntTag(
+        edgePatch.entity, edgePatch.equilibration->tag, &n);
   }
   EdgePatch edgePatch;
 };
@@ -925,6 +993,15 @@ apf::Field* equilibrateResiduals(apf::Field* f)
   setupEquilibration(&equilibration, f, g);
   EdgePatchOp op(&equilibration);
   op.applyToDimension(1); // edges
+
+  apf::MeshEntity* ent;
+  apf::MeshIterator* it = apf::getMesh(f)->begin(1);
+  while ((ent = apf::getMesh(f)->iterate(it))) {
+    apf::getMesh(f)->removeTag(ent, equilibration.tag);
+  }
+  apf::getMesh(f)->end(it);
+  apf::getMesh(f)->destroyTag(equilibration.tag);
+
   return g;
 }
 

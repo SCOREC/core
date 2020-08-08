@@ -7,6 +7,7 @@ endif()
 set(SOURCES
   emResidualFunctionals.cc
   emFluxCorrection.cc
+  emCorrectedFlux.cc
   emEstimateError.cc
   emSizeField.cc)
 
