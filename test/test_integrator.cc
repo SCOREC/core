@@ -44,6 +44,7 @@ int main(int argc, char ** argv) {
     PCU_ALWAYS_ASSERT(mesh->count(i) == countInt->getCount());
   }
 
+  delete countInt;
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   PCU_Comm_Free();

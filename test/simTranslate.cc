@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string>
 
+/* hack to get SIMMODSUITE_MAJOR_VERSION and SIMMODSUITE_MINOR_VERSION */
+#include "../apf_sim/apf_simConfig.h"
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
@@ -96,7 +98,12 @@ void translateModel(std::string mdlName, pGModel* simmodel, pProgress& progress)
   PList_delete(modelErrors);
 
   // translate the model
+#if SIMMODSUITE_MAJOR_VERSION >= 15 && SIMMODSUITE_MINOR_VERSION >= 200714
+  const int keepAnalyticSurfaces = 1;
+  *simmodel = GM_translateModel(model, NULL, keepAnalyticSurfaces);
+#else 
   *simmodel = GM_translateModel(model, NULL);
+#endif
   GM_release(model);
 }
 
