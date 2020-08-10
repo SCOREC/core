@@ -30,6 +30,9 @@ extern CodeMatch const* code_match[apf::Mesh::TYPES];
 /* this table defines the mapping from new to old
    vertex indices for one of the 12 rotations. */
 extern int const tet_rotation[12][4];
+/* this table defines the inverse mapping from new to old
+   vertex indices for one of the 12 rotations. */
+extern int const tet_inv_rotation[12][4];
 extern int const prism_rotation[6][6];
 extern int const pyramid_rotation[4][5];
 

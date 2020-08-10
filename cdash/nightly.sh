@@ -25,3 +25,8 @@ touch $d/startedCoreNightly
 #run nightly.cmake script
 ctest -V --script $d/repos/core/cdash/nightly.cmake
 touch $d/doneCoreNightly
+
+#create doxygen docs
+cd build/master
+make doc
+cp -r doc/html/* /net/web/scorec/scorec-web/htdocs/pumi/doxygen/.

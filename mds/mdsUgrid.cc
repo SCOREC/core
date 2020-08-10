@@ -145,7 +145,6 @@ namespace {
       r->nodeMap[id] = makeVtx(r,p,0);
     }
     free(xyz);
-    lion_eprint(1, "read %d vtx\n", h->nvtx);
   }
 
   void setNodeIds(Reader* r, header* h) {
@@ -232,8 +231,6 @@ namespace {
     }
     free(vtx);
     free(tags);
-    lion_eprint(1, "set %d %s face tags\n",
-        nfaces, apf::Mesh::typeName[apfType]);
   }
 
   void setFaceTags(Reader* r, header* h) {
@@ -438,7 +435,6 @@ namespace {
       PCU_ALWAYS_ASSERT(elm);
     }
     free(vtx);
-    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void readElms(Reader* r, header* h) {
@@ -464,9 +460,6 @@ namespace {
         verts[mdsIdx] = lookupVert(r, vtx[i*nverts+j]);
       }
       apf::ModelEntity* g = r->mesh->findModelEntity(2, elm_model_id[i]);
-      std::cout << "found ent w dim: " << r->mesh->getModelType(g) << "\n";
-      std::cout << "found ent w tag: " << r->mesh->getModelTag(g) << "\n";
-      std::cout << "actual tag: " << elm_model_id[i] << "\n";
       apf::MeshEntity* elm = apf::buildElement(r->mesh, g, apfType, verts);
       PCU_ALWAYS_ASSERT(elm);
 
@@ -564,7 +557,6 @@ namespace {
         }
         numparts++; //we want count, not rank
         fclose(f);
-        lion_eprint(1, "read ptn for %d parts\n", numparts);
       }
       ~ptnstats() {
         delete [] ptn;
@@ -623,7 +615,6 @@ namespace {
       }
     }
     free(vtx);
-    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void printPtnStats(apf::Mesh2* m, const char* ufile, const char* ptnFile,

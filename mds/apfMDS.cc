@@ -595,6 +595,8 @@ class MeshMDS : public Mesh2
         apf::destroyField(this->getField(0));
       while (this->countNumberings())
         apf::destroyNumbering(this->getNumbering(0));
+      while (this->countGlobalNumberings())
+        apf::destroyGlobalNumbering(this->getGlobalNumbering(0));
       apf::destroyField(coordinateField);
       coordinateField = 0;
       gmi_model* model = static_cast<gmi_model*>(mesh->user_model);

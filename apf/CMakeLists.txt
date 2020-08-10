@@ -25,14 +25,20 @@ set(SOURCES
   apfShape.cc
   apfIPShape.cc
   apfHierarchic.cc
+  apfPolyBasis1D.cc
+  apfNedelec.cc
+  apfL2Shapes.cc
   apfVector.cc
   apfVectorElement.cc
   apfVectorField.cc
+  apfMixedVectorElement.cc
+  apfMixedVectorField.cc
   apfPackedField.cc
   apfNumbering.cc
   apfMixedNumbering.cc
   apfAdjReorder.cc
   apfVtk.cc
+  apfVtkPieceWiseFields.cc
   apfFieldData.cc
   apfTagData.cc
   apfCoordData.cc

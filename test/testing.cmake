@@ -28,6 +28,16 @@ mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
 mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
+if(ENABLE_ZOLTAN)
+mpi_test(print_pumipic_partion 1
+         ./print_pumipic_partition
+         ${MESHES}/cube/cube.dmg
+         ${MESHES}/cube/pumi11/cube.smb
+         4
+         pumipic_cube
+         )
+endif()
+
 mpi_test(align 1 ./align)
 mpi_test(eigen_test 1 ./eigen_test)
 mpi_test(integrate 1 ./integrate)
@@ -131,6 +141,7 @@ if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     WORKING_DIRECTORY ${MDIR})
 endif()
 
+
 if(ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
     ./test_pumi
@@ -184,7 +195,13 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
-set(MDIR ${MESHES}/fun3d)
+set(MDIR ${MESHES}/ugrid)
+mpi_test(naca_ugrid 2
+  ./from_ugrid
+  "${MDIR}/inviscid_egg.b8.ugrid"
+  "${MDIR}/naca.dmg"
+  "${MDIR}/2/"
+  "2")
 mpi_test(inviscid_ugrid 4
   ./from_ugrid
   "${MDIR}/inviscid_egg.b8.ugrid"
@@ -239,6 +256,7 @@ mpi_test(uniform_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "pipe_unif.smb")
+mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
 smoke_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.${GXT}"
@@ -451,6 +469,10 @@ mpi_test(constructThenGhost 4
   ./constructThenGhost
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(construct_bottom_up 1
+  ./construct_bottom_up
+  "${MDIR}/bottom_up_constructed_cube.smb"
+  "${MDIR}/cube.dmg")
 set(MDIR ${MESHES}/embeddedEdges)
 mpi_test(embedded_edges 1
   ./embedded_edges
@@ -475,7 +497,7 @@ mpi_test(mixedNumbering 4
   out)
 set(MDIR ${MESHES}/square)
 mpi_test(hierarchic_2p_2D 1
-  ./hierarchic 
+  ./hierarchic
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   2)
@@ -490,6 +512,25 @@ mpi_test(hierarchic_2p_3D 1
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb"
   2)
+set(MDIR ${MESHES}/cube/pumi24)
+mpi_test(nedelec 1
+  ./nedelecShapes
+  "${MDIR}/cube.dmg"
+  "${MDIR}/cube.smb")
+set(MDIR ${MESHES}/cube/pumi670)
+mpi_test(l2_shape_tet_serial 1
+  ./L2Shapes
+  ".null"
+  "${MDIR}/cube.smb")
+mpi_test(l2_shape_tet_parallel 4
+  ./L2Shapes
+  ".null"
+  "${MDIR}/4/cube.smb")
+set(MDIR ${MESHES}/cube/pumi24)
+mpi_test(pumiLoadMesh-1p 1
+  ./pumiLoadMesh
+  ${MDIR}/cube.dmg
+  ${MDIR}/cube.smb)
 set(MDIR ${MESHES}/cube)
 mpi_test(test_verify 4
   ./test_verify

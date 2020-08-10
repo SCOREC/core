@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.0)
 
-project(SCOREC VERSION 2.2.0 LANGUAGES CXX C)
+project(SCOREC VERSION 2.2.3 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -46,12 +46,17 @@ message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 option(IS_TESTING "Build for CTest" OFF)
 message(STATUS "IS_TESTING: ${IS_TESTING}")
 
+set(MESHES "${CMAKE_SOURCE_DIR}/pumi-meshes" CACHE STRING "Directory of test meshes")
+message(STATUS "MESHES: ${MESHES}")
+
 option(BUILD_EXES "Build executables" ON)
 message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 
 option(PUMI_FORTRAN_INTERFACE "enable fortran interface" OFF)
 message(STATUS "PUMI_FORTRAN_INTERFACE: ${PUMI_FORTRAN_INTERFACE}")
 
+option(PUMI_PYTHON_INTERFACE "enable python interface" OFF)
+message(STATUS "PUMI_PYTHON_INTERFACE: ${PUMI_PYTHON_INTERFACE}")
 
 get_filename_component(COMPILER_DIR "${CMAKE_CXX_COMPILER}" PATH)
 find_program(MPIRUN NAMES mpirun PATHS "${COMPILER_DIR}")
@@ -154,6 +159,10 @@ scorec_export_library(core)
 
 if(BUILD_EXES)
   add_subdirectory(test)
+endif()
+
+if(PUMI_PYTHON_INTERFACE)
+  add_subdirectory(python_wrappers)
 endif()
 
 bob_end_package()

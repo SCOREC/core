@@ -10,6 +10,8 @@
 #include "apfScalarElement.h"
 #include "apfVectorField.h"
 #include "apfVectorElement.h"
+#include "apfMixedVectorField.h"
+#include "apfMixedVectorElement.h"
 #include "apfMatrixField.h"
 #include "apfMatrixElement.h"
 #include "apfPackedField.h"
@@ -19,15 +21,24 @@
 #include "apfUserData.h"
 #include "apfVtk.h"
 #include "apfNumberingClass.h"
+#include "apfNumbering.h"
 #include <cstdio>
 #include <cstdlib>
 #include <pcu_util.h>
 #include <lionPrint.h>
 
+#include "mth.h"
+#include "mth_def.h"
+
 namespace apf {
 
 void destroyMesh(Mesh* m)
 {
+  // numberings must be destroyed before fields!
+  while(m->countNumberings())
+    destroyNumbering(m->getNumbering(0));
+  while(m->countGlobalNumberings())
+    destroyGlobalNumbering(m->getGlobalNumbering(0));
   while (m->countFields())
     destroyField(m->getField(0));
   delete m;
@@ -65,16 +76,24 @@ Field* makeField(
 {
   PCU_ALWAYS_ASSERT( ! m->findField(name));
   Field* f = 0;
-  if (valueType == SCALAR)
-    f = new ScalarField();
-  else if (valueType == VECTOR)
-    f = new VectorField();
-  else if (valueType == MATRIX)
-    f = new MatrixField();
-  else if (valueType == PACKED)
-    f = new PackedField(components);
-  else
-    fail("invalid valueType in field construction\n");
+  // Cases with Vector shape functions
+  if (shape->isVectorShape()) {
+    PCU_ALWAYS_ASSERT(valueType == SCALAR);
+    f = new MixedVectorField();
+  }
+  // Cases with Scalar shahpe funtions
+  else {
+    if (valueType == SCALAR)
+      f = new ScalarField();
+    else if (valueType == VECTOR)
+      f = new VectorField();
+    else if (valueType == MATRIX)
+      f = new MatrixField();
+    else if (valueType == PACKED)
+      f = new PackedField(components);
+    else
+      fail("invalid valueType in field construction\n");
+  }
   f->init(name,m,shape,data);
   m->addField(f);
   return f;
@@ -160,16 +179,29 @@ void destroyField(Field* f)
 
 void setScalar(Field* f, MeshEntity* e, int node, double value)
 {
-  ScalarField* field = static_cast<ScalarField*>(f);
-  double tmp[1] = {value};
-  field->setNodeValue(e,node,tmp);
+  if (f->getShape()->isVectorShape()) {
+    MixedVectorField* field = static_cast<MixedVectorField*>(f);
+    double tmp[1] = {value};
+    field->setNodeValue(e,node,tmp);
+  }
+  else {
+    ScalarField* field = static_cast<ScalarField*>(f);
+    double tmp[1] = {value};
+    field->setNodeValue(e,node,tmp);
+  }
 }
 
 double getScalar(Field* f, MeshEntity* e, int node)
 {
-  ScalarField* field = static_cast<ScalarField*>(f);
   double value[1];
-  field->getNodeValue(e,node,value);
+  if (f->getShape()->isVectorShape()) {
+    MixedVectorField* field = static_cast<MixedVectorField*>(f);
+    field->getNodeValue(e,node,value);
+  }
+  else {
+    ScalarField* field = static_cast<ScalarField*>(f);
+    field->getNodeValue(e,node,value);
+  }
   return value[0];
 }
 
@@ -252,24 +284,46 @@ void getGrad(Element* e, Vector3 const& param, Vector3& g)
 
 void getVector(Element* e, Vector3 const& param, Vector3& value)
 {
-  VectorElement* element = static_cast<VectorElement*>(e);
-  value = element->getValue(param);
+  // Cases with vector shape functions first
+  if (e->getFieldShape()->isVectorShape()) {
+    MixedVectorElement* element = static_cast<MixedVectorElement*>(e);
+    value = element->getValue(param);
+  }
+  // Cases with scalar shape functions
+  else {
+    VectorElement* element = static_cast<VectorElement*>(e);
+    value = element->getValue(param);
+  }
 }
 
 double getDiv(Element* e, Vector3 const& param)
 {
+  // Make sure this in not called for cases with vector shapes
+  PCU_ALWAYS_ASSERT_VERBOSE(!e->getFieldShape()->isVectorShape(),
+      "Not implemented for fields with vector shape functions.");
   VectorElement* element = static_cast<VectorElement*>(e);
   return element->div(param);
 }
 
 void getCurl(Element* e, Vector3 const& param, Vector3& c)
 {
-  VectorElement* element = static_cast<VectorElement*>(e);
-  return element->curl(param,c);
+  // Cases with vector shape functions first
+  if (e->getFieldShape()->isVectorShape()) {
+    MixedVectorElement* element = static_cast<MixedVectorElement*>(e);
+    return element->curl(param,c);
+  }
+  // Cases with scalar shape functions
+  else {
+    VectorElement* element = static_cast<VectorElement*>(e);
+    return element->curl(param,c);
+  }
 }
 
 void getVectorGrad(Element* e, Vector3 const& param, Matrix3x3& deriv)
 {
+  // Make sure this in not called for cases with vector shapes
+  PCU_ALWAYS_ASSERT_VERBOSE(!e->getFieldShape()->isVectorShape(),
+      "Not implemented for fields with vector shape functions.");
   VectorElement* element = static_cast<VectorElement*>(e);
   return element->grad(param,deriv);
 }
@@ -404,6 +458,77 @@ void getShapeGrads(Element* e, Vector3 const& local,
   e->getGlobalGradients(local,grads);
 }
 
+void getVectorShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values)
+{
+  NewArray<Vector3> vvals(values.size());
+  e->getShape()->getVectorValues(e->getMesh(), e->getEntity(), local, vvals);
+
+  // Perform Piola transformation
+  if( e->getDimension() == e->getMesh()->getDimension() ) // i.e. J is square
+  {
+    apf::Matrix3x3 Jinv;
+    apf::getJacobianInv( e->getParent(), local, Jinv );
+    apf::Matrix3x3 JinvT = apf::transpose(Jinv);
+
+    // u(x_hat) * J(x_hat)^{-1}
+    for( size_t i = 0; i < values.size(); i++ ) {
+      for ( int j = 0; j < 3; j++ ) {
+        values[i][j] = 0.;
+        for ( int k = 0; k < 3; k++ )
+          values[i][j] += vvals[i][k] * JinvT[k][j];
+      }
+    }
+  }
+  else
+  {
+    // TODO when ref dim != mesh space dim. Pseudo-inverse needed.
+    PCU_ALWAYS_ASSERT_VERBOSE(false,
+    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");
+  }
+}
+
+void getCurlShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values)
+{
+  NewArray<Vector3> cvals(values.size());
+  e->getShape()->getLocalVectorCurls(e->getMesh(), e->getEntity(), local, cvals);
+
+  // Perform Piola transformation
+  if (e->getDimension() == 3)
+  {
+    apf::Matrix3x3 J;
+    apf::getJacobian( e->getParent(), local, J);
+    double jdet = apf::getJacobianDeterminant(J, e->getDimension() );
+
+    // mult J * cvals^T and divide by jdet
+    mth::Matrix <double> cvalsT(e->getDimension(), cvals.size()); // cvals transpose
+    for (int i = 0; i < e->getDimension(); i++)
+      for (size_t j = 0; j < cvals.size(); j++)
+        cvalsT(i,j) = cvals[j][i];
+
+    mth::Matrix <double> JT(e->getDimension(), e->getDimension()); // J transpose
+    for (int i = 0; i < e->getDimension(); i++)
+      for (int j = 0; j < e->getDimension(); j++)
+        JT(i,j) = J[j][i];
+
+    mth::Matrix <double> physCurlShapes(e->getDimension(), cvals.size());
+    mth::multiply(JT, cvalsT, physCurlShapes);
+    physCurlShapes *= 1./jdet;
+
+    for (size_t i = 0; i < values.size(); i++)
+      for (int j = 0; j < e->getDimension(); j++)
+        values[i][j] = physCurlShapes(j,i);
+  }
+  else
+  {
+    // TODO when ref dim != mesh space dim. Pseudo-inverse needed.
+    PCU_ALWAYS_ASSERT_VERBOSE(false,
+    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");
+  }
+
+
+}
 FieldShape* getShape(Field* f)
 {
   return f->getShape();

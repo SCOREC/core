@@ -19,6 +19,7 @@ class ScalarField : public FieldOf<double>
     virtual ~ScalarField() {}
     virtual Element* getElement(VectorElement* e);
     virtual int getValueType() const {return SCALAR;}
+    virtual int getShapeType() const {return SCALAR;}
     virtual int countComponents() const;
 };
 
