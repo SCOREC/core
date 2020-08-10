@@ -252,6 +252,7 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
   if (adjRegions->n == 0 || adjRegions->n == 2) {
     gmi_free_set(adjRegions);
     return true;
+  }
   (void)param;
   (void)x;
   return true; /*
