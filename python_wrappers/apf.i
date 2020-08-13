@@ -162,7 +162,25 @@ void lion_set_verbosity(int lvl);
     }
     return sum/count;
   }
+  bool isBoundingModelRegion(int rtag, int dim, int tag)
+  {
+    if (dim != 2) return false;
+    gmi_model* gmodel = self->getModel();
+    gmi_ent* gregion = gmi_find(gmodel, 3, rtag);
+    gmi_set* adj = gmi_adjacent(gmodel, gregion, dim);
+
+    for(int i = 0; i < adj->n; i++) {
+      int adj_g_tag = gmi_tag(gmodel, adj->e[i]);
+      if (adj_g_tag == tag) {
+        gmi_free_set(adj);
+        return true;
+      }
+    }
+    gmi_free_set(adj);
+    return false;
+  }
 }
+
 #define __attribute__(x)
 %ignore apf::fail;
 %include<apf.h>
