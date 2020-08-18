@@ -25,23 +25,23 @@
 
 namespace crv {
 
-static bool compareFields(apf::Mesh* mesh, apf::Vector3 xi) 
+static bool compareFields(apf::Mesh* mesh, apf::Vector3 xi)
 {
   apf::MeshEntity* e;
   apf::MeshIterator* it = mesh->begin(3);
   apf::Vector3 val1, val2, diff;
   bool isSame = true;
 
-  while ( (e = mesh->iterate(it)) ) { 
-    apf::MeshElement* me = apf::createMeshElement(mesh, e); 
+  while ( (e = mesh->iterate(it)) ) {
+    apf::MeshElement* me = apf::createMeshElement(mesh, e);
     apf::Element* e1 = apf::createElement(mesh->getCoordinateField(), me);
-    apf::Element* e2; 
+    apf::Element* e2;
     for (int j = 0; j < mesh->countFields(); j++) {
       apf::Field* fCrd = mesh->getField(j);
       const char* namef = apf::getName(fCrd);
       if (strcmp(namef,"CoordField") == 0)
         e2 = apf::createElement(fCrd, me);
-    } 
+    }
     apf::getVector(e1, xi, val1);
     apf::getVector(e2, xi, val2);
 
@@ -57,8 +57,6 @@ static bool compareFields(apf::Mesh* mesh, apf::Vector3 xi)
     apf::destroyElement(e2);
   }
   mesh->end(it);
-  //std::cout<<" ================================" <<std::endl;
-  std::cout<<" ================================" <<std::endl;
 
   return isSame;
 

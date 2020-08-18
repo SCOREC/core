@@ -27,6 +27,8 @@
 #include <string.h>
 namespace crv {
 
+
+// FOR DEBUGGING
 static bool compareFields(apf::Mesh* mesh,
     apf::MeshEntity* e, apf::Vector3 xi) 
 {
@@ -70,12 +72,6 @@ static void setLinearEdgeFieldPoints(ma::Mesh* m, apf::Field* f,
 
   int ni = fs->countNodesOn(apf::Mesh::EDGE);
   m->getDownward(edge,0,verts);
-  /*
-     apf::MeshElement* me1 = apf::createMeshElement(m, verts[0]);
-     apf::MeshElement* me2 = apf::createMeshElement(m, verts[1]);
-     apf::Element* e1 = apf::createElement(f, me1);
-     apf::Element* e2 = apf::createElement(f, me2);
-     */
   apf::NewArray<double> value1, value2, value;
   value.allocate(apf::countComponents(f));
   value1.allocate(apf::countComponents(f));
@@ -91,8 +87,6 @@ static void setLinearEdgeFieldPoints(ma::Mesh* m, apf::Field* f,
       value[k] = value1[k]*(1.-t) + value2[k]*t;
     apf::setComponents(f, edge, j, &(value[0]));
   }
-  //apf::destroyElement(e);
-  //apf::destroyMeshElement(me);
 }
 
 static void repositionInteriorFieldWithBlended(ma::Mesh* m,
@@ -164,14 +158,12 @@ static int getBestElement(int n,
   apf::Matrix3x3 Jinv;
   apf::Vector3 fval;
 
-  //printf(" inside find best element loop %d \n", n);
   for (int i = 0; i < n; i++) {
     apf::Vector3 xin = initialGuess;
     apf::Element* e = apf::createElement(mesh->getCoordinateField(), elems[i]);
 
     for (int j = 0; j < iter; j++) {
       apf::getJacobianInv(elems[i], xin, Jinv);
-      //mapLocalToGlobal(elems[i], xin, xyz);
       apf::getVector(e, xin, xyz);
       fval = (xyz-point);
 
@@ -183,7 +175,6 @@ static int getBestElement(int n,
           bestValue = value2;
           elemNum = i;
           xi = xinew;
-          //std::cout<<" converged fval "<<fval<<"with xi"<<xi<<std::endl;
           break;
         }
         else xin = xinew;
@@ -220,7 +211,6 @@ static bool getBetterXiApproximate(apf::Mesh* mesh,
 
     if ( fval.getLength() < tol ) {
       xi = xinew;
-      //std::cout<<" fval "<<fval<<" with xi "<<xi<<std::endl;
       return true;
     }
     else
@@ -233,12 +223,10 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 {
   public:
     Adapt* adapt;
-    //ma::LinearTransfer verts;
     ma::CavityTransfer others;
 
     CrvBezierSolutionTransfer(apf::Field* field, Adapt* a):
       adapt(a),others(field)
-      //adapt(a),verts(field),others(field)
   {
     f = field;
     refine = adapt->refine;
@@ -292,8 +280,6 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 
       int ne = apf::Mesh::adjacentCount[parentType][1];
 
-      //std::cout<<" field name "<<apf::getName(f)<<std::endl;
-
       apf::NewArray<apf::MeshEntity*> midEdgeVerts(ne);
       bool useLinear = false;
 
@@ -313,27 +299,12 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
       apf::NewArray<apf::Vector3> Vnodes;
       apf::NewArray<double> Snodes;
 
-      apf::NewArray<apf::Vector3> Vcoord;
-      apf::Element* elemC = apf::createElement(mesh->getCoordinateField(), parent);
-      apf::getVectorNodes(elem,Vcoord);
-
-
       if (apf::getValueType(f) == apf::VECTOR) {
 	apf::getVectorNodes(elem,Vnodes);
-	for (int kk = 0; kk < mesh->countFields(); kk++) {
-	  apf::Field* crdf = mesh->getField(kk);
-	  const char* namefc = apf::getName(crdf);
-	  if (strcmp(namefc, "CoordField") == 0) {
-	    for(int i = 0; i < np; i++) {
-	      //std::cout<<" node diff "<<Vnodes[i]-Vcoord[i]<<std::endl;
-	    }
-	  }
-	}
       }
       else if (apf::getValueType(f) == apf::SCALAR) {
 	apf::getScalarNodes(elem,Snodes);
       }
-
 
       for (int d = 1; d <= apf::Mesh::typeDimension[parentType]; d++) {
 	if (!shape->hasNodesIn(d)) continue;
@@ -360,7 +331,6 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 	  }
 	  else {
 
-	    //int n = getNumControlPoints(childType,P);
 	    apf::Vector3 vp[4];
 	    getVertParams(mesh, parentType,parentVerts,
 		midEdgeVerts,newEntities[i], vp);
@@ -373,26 +343,10 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 
 	      if (apf::getValueType(f) == apf::VECTOR) {
 		apf::Vector3 Vvalue(0,0,0);
-		apf::Vector3 vcoordV(0,0,0);
 		for (int k = 0; k < np; ++k) {
 		  Vvalue += Vnodes[k]*B(j+n-ni,k);
 		}
-		//std::cout<<" field ("<<j<<") "<<
-		//  Vvalue<<std::endl;
 		apf::setVector(f,newEntities[i],j,Vvalue);
-
-		apf::getVector(mesh->getCoordinateField(),
-		    newEntities[i], j, vcoordV);
-		for (int kk = 0; kk < mesh->countFields(); kk++) {
-		  apf::Field* crdf = mesh->getField(kk);
-		  const char* namefc = apf::getName(crdf);
-		  if (strcmp(namefc, "CoordField") == 0) {
-		    for (int kkk = 0; kkk < np; kkk++) {
-		      //std::cout<<" inside allocation "<<
-		      //  Vvalue-vcoordV<<std::endl;
-		    }
-		  }
-		}
 
 	      }
 	      else if (apf::getValueType(f) == apf::SCALAR) {
@@ -423,27 +377,15 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
 	elems[i] = apf::createMeshElement(mesh, oldElements[i]);
       }
 
-      // For a point outside the cavity getBestElement routine
-      // returns an extrapolated xi
-      // should perform a check for negative xi values
       entNum = getBestElement(n, mesh,
 	  &elems[0], xyz, xi);
 
       PCU_ALWAYS_ASSERT(entNum >= 0);
-      apf::Vector3 xiBetter = xi;
-      //bool betterXi = getBetterXiApproximate(mesh, elems[entNum],xyz, xiBetter);
-      //if (betterXi) xi = xiBetter;
 
       apf::MeshElement* meshElemP = apf::createMeshElement(
 	  mesh, oldElements[entNum]);
       apf::Vector3 xxyy, xxzz, val2;
       apf::mapLocalToGlobal(meshElemP, xi, xxyy);
-      const char* namef = apf::getName(field1);
-      apf::NewArray<double> shpVal;
-      apf::NewArray<double> shpVal1;
-      apf::Element* elemFld = apf::createElement(
-	  mesh->getCoordinateField(), meshElemP);
-      apf::getShapeValues(elemFld, xi, shpVal);
 
       int parentType = mesh->getType(oldElements[entNum]);
       int np = fshape->getEntityShape(parentType)->countNodes();
