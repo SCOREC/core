@@ -27,42 +27,6 @@
 #include <string.h>
 namespace crv {
 
-
-// FOR DEBUGGING
-static bool compareFields(apf::Mesh* mesh,
-    apf::MeshEntity* e, apf::Vector3 xi) 
-{
-  apf::Vector3 val1, val2, diff;
-  bool isSame = true;
-
-  apf::MeshElement* me = apf::createMeshElement(mesh, e); 
-  apf::Element* e1 = apf::createElement(mesh->getCoordinateField(), me);
-  apf::Element* e2;
-  for (int j = 0; j < mesh->countFields(); j++) {
-    apf::Field* fCrd = mesh->getField(j);
-    const char* namef = apf::getName(fCrd);
-    if (strcmp(namef,"CoordField") == 0)
-      e2 = apf::createElement(fCrd, me);
-  }
-  apf::getVector(e1, xi, val1);
-  apf::getVector(e2, xi, val2);
-
-  diff = val1-val2;
-  std::cout<<" values "<<diff<<std::endl;
-  if ( diff.getLength() < 1e-8 )
-    isSame = isSame && 1;
-  else
-    isSame = isSame && 0;
-
-  apf::destroyElement(e1);
-  apf::destroyElement(e2);
-
-  std::cout<<"---------------------------------------"<<std::endl;
-  std::cout<<"---------------------------------------"<<std::endl;
-  return isSame;
-
-}
-
 static void setLinearEdgeFieldPoints(ma::Mesh* m, apf::Field* f,
     ma::Entity* edge)
 {
@@ -187,36 +151,6 @@ static int getBestElement(int n,
   }
 
   return (elemNum);
-}
-
-static bool getBetterXiApproximate(apf::Mesh* mesh,
-    apf::MeshElement* me,
-    apf::Vector3 point, apf::Vector3 &xi)
-{
-  int iter = 1000;
-  double tol = 1e-8;
-
-  apf::Vector3 xin = xi;
-  apf::Vector3 xinew, xyz;
-  apf::Matrix3x3 Jinv;
-  apf::Element* e = apf::createElement(mesh->getCoordinateField(), me);
-
-  for (int j = 0; j < iter; j++) {
-    apf::getJacobianInv(me, xin, Jinv);
-    //mapLocalToGlobal(me, xin, xyz);
-    apf::getVector(e, xin, xyz);
-    apf::Vector3 fval = (xyz-point);
-
-    xinew = xin - transpose(Jinv)*fval;
-
-    if ( fval.getLength() < tol ) {
-      xi = xinew;
-      return true;
-    }
-    else
-      xin = xinew;
-  }
-  return false;
 }
 
 class CrvBezierSolutionTransfer : public ma::SolutionTransfer
@@ -369,7 +303,6 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
       apf::Vector3 xi;
       int entNum = -1;
       int n = oldElements.getSize();
-      apf::FieldShape* fshape = apf::getShape(field1);
 
       apf::NewArray<apf::MeshElement*> elems(n);
       apf::NewArray<apf::Element*> elemsF(n);
@@ -387,8 +320,8 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
       apf::Vector3 xxyy, xxzz, val2;
       apf::mapLocalToGlobal(meshElemP, xi, xxyy);
 
-      int parentType = mesh->getType(oldElements[entNum]);
-      int np = fshape->getEntityShape(parentType)->countNodes();
+      //int parentType = mesh->getType(oldElements[entNum]);
+      //int np = fshape->getEntityShape(parentType)->countNodes();
 
       apf::Element* elemP = apf::createElement(field1, oldElements[entNum]);
       apf::NewArray<double> val;

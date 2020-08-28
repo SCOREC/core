@@ -20,43 +20,6 @@
 #include <iostream>
 #include <string.h>
 namespace crv {
-//DEBUGGING
-static bool compareFields(apf::Mesh* mesh, apf::Vector3 xi)
-{
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = mesh->begin(3);
-  apf::Vector3 val1, val2, diff;
-  bool isSame = true;
-
-  while ( (e = mesh->iterate(it)) ) {
-    apf::MeshElement* me = apf::createMeshElement(mesh, e);
-    apf::Element* e1 = apf::createElement(mesh->getCoordinateField(), me);
-    apf::Element* e2;
-    for (int j = 0; j < mesh->countFields(); j++) {
-      apf::Field* fCrd = mesh->getField(j);
-      const char* namef = apf::getName(fCrd);
-      if (strcmp(namef,"CoordField") == 0)
-	e2 = apf::createElement(fCrd, me);
-    }
-    apf::getVector(e1, xi, val1);
-    apf::getVector(e2, xi, val2);
-
-    diff = val1-val2;
-    //std::cout<<" values "<<diff<<std::endl;
-    if ( diff.getLength() < 1e-8 )
-      isSame = isSame && 1;
-    else
-      isSame = isSame && 0;
-
-    apf::destroyElement(e1);
-    apf::destroyElement(e2);
-  }
-  mesh->end(it);
-
-  std::cout<<"---------------------------------------"<<std::endl;
-  return isSame;
-
-}
 
 Adapt::Adapt(ma::Input* in)
 : ma::Adapt(in)
