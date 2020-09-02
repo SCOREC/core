@@ -19,7 +19,7 @@
 #include <maShape.h>
 #include <pcu_util.h>
 #include <iostream>
-#include <string.h>
+
 /* This is similar to maShape.cc, conceptually, but different enough
  * that some duplicate code makes sense */
 
@@ -751,7 +751,6 @@ static void swapInvalidEdges(Adapt* a)
 
 static void repositionInvalidEdges(Adapt* a)
 {
-  return;
   double t0 = PCU_Time();
   EdgeReshaper es(a);
   ma::applyOperator(a,&es);
@@ -837,17 +836,17 @@ void fixCrvElementShapes(Adapt* a)
     if ( ! count)
       break;
     prev_count = count;
-    //fixLargeAngles(a); // update this
-    //int numOpSuccess = fixLargeAngles(a); // update this */
-    //PCU_Add_Ints(&numOpSuccess,1);
-    //if (PCU_Comm_Self() == 0)
-    //  lion_oprint(1,"==> %d large angle fix operations succeeded.\n", numOpSuccess);
-    //markCrvBadQuality(a);
+    fixLargeAngles(a); // update this
+    /* int numOpSuccess = fixLargeAngles(a); // update this */
+    /* PCU_Add_Ints(&numOpSuccess,1); */
+    /* if (PCU_Comm_Self() == 0) */
+    /*   lion_oprint(1,"==> %d large angle fix operations succeeded.\n", numOpSuccess); */
+    markCrvBadQuality(a);
     fixShortEdgeElements(a); // update this
-    //int numEdgeRemoved = fixShortEdgeElements(a); // update this */
-    //PCU_Add_Ints(&numEdgeRemoved,1);
-    //if (PCU_Comm_Self() == 0)
-    //  lion_oprint(1,"==> %d edges removal operations succeeded.\n", numEdgeRemoved);
+    /* int numEdgeRemoved = fixShortEdgeElements(a); // update this */
+    /* PCU_Add_Ints(&numEdgeRemoved,1); */
+    /* if (PCU_Comm_Self() == 0) */
+    /*   lion_oprint(1,"==> %d edges removal operations succeeded.\n", numEdgeRemoved); */
     count = markCrvBadQuality(a);
     ++i;
   } while(count < prev_count && i < 6); // the second conditions is to make sure this does not take long

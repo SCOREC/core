@@ -56,8 +56,6 @@ set(HEADERS
   ma.h
   maInput.h
   maMesh.h
-  maMap.h
-  maAffine.h
   maSize.h
   maShape.h
   maTables.h

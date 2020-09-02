@@ -814,7 +814,6 @@ void fixElementShapes(Adapt* a)
     return;
   double t0 = PCU_Time();
   int count = markBadQuality(a);
-  printf(" number of bad shape inside fixElementShape %d \n", count);
   int originalCount = count;
   int prev_count;
   double time;
