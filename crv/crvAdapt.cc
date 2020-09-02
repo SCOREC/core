@@ -17,8 +17,7 @@
 #include <maLayer.h>
 #include <PCU.h>
 #include <pcu_util.h>
-#include <iostream>
-#include <string.h>
+
 namespace crv {
 
 Adapt::Adapt(ma::Input* in)
@@ -195,7 +194,7 @@ static void flagCleaner(crv::Adapt* a)
   }
 }
 
-void getAllBezierFields(ma::Mesh* m, std::vector<apf::Field*>& fields)
+static void getAllBezierFields(ma::Mesh* m, std::vector<apf::Field*>& fields)
 {
   for (int i = 0; i < m->countFields(); i++) {
     apf::FieldShape* fs = apf::getShape(m->getField(i));

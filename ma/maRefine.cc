@@ -20,7 +20,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <pcu_util.h>
-#include <iostream>
+
 namespace ma {
 
 void addEdgePreAllocation(Refine* r, Entity* e, int counts[4])

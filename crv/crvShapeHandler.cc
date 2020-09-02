@@ -19,7 +19,7 @@
 #include <mth_def.h>
 #include <math.h>
 #include <pcu_util.h>
-#include <iostream>
+
 namespace crv {
 
 static double measureLinearTriArea(ma::Mesh* m, ma::Entity* tri)
@@ -207,8 +207,6 @@ class BezierTransfer : public ma::SolutionTransfer
                 for (int k = 0; k < np; ++k) {
                   point += nodes[k]*B(j+n-ni,k);
 		}
-		//std::cout<<" shape ("<<j<<") "<<
-		//  point<<std::endl;
                 mesh->setPoint(newEntities[i],j,point);
               }
             }
