@@ -86,13 +86,6 @@ void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f)
   // revert back to at the end of this (so the rest of Bezier related
   // procedures work as intendedi)
   //
-  /*
-  int oldBlendings[apf::Mesh::TYPES];
-  for (int i = 0; i < apf::Mesh::TYPES; i++) {
-    oldBlendings[i] = getBlendingOrder(i);
-    std::cout<<" blending order "<< oldBlendings[i] <<" for type "<< i<<std::endl;
-  }
-  */
   //setBlendingOrder(apf::Mesh::TYPES, 0);
 
   apf::FieldShape * fs = apf::getShape(f);
