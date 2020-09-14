@@ -184,10 +184,6 @@ class CrvBezierSolutionTransfer : public ma::SolutionTransfer
       return others.hasNodesOn(dimension);
     }
 
-    virtual const char* getTransferFieldName() {
-      return apf::getName(f);
-    }
-
     virtual void onVertex(
 	apf::MeshElement* parent,
 	ma::Vector const& xi,
@@ -413,11 +409,6 @@ ma::SolutionTransfer* setBezierSolutionTransfers(
 
   for (std::size_t i = 0; i < fields.size(); i++) {
     st->add(createBezierSolutionTransfer(fields[i], a));
-  }
-  std::vector<ma::SolutionTransfer*> trans = st->transfers;
-  for (std::size_t i = 0; i < trans.size(); i++) {
-    const char* name = trans[i]->getTransferFieldName();
-    std::cout<<" field name added "<< name<<std::endl;
   }
   return st;
 }

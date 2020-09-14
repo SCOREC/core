@@ -77,7 +77,6 @@ class SolutionTransfer
         EntityArray& newEntities);
     /** \brief for internal MeshAdapt use */
     int getTransferDimension();
-    virtual const char* getTransferFieldName();
 };
 
 class FieldTransfer : public SolutionTransfer
@@ -89,7 +88,6 @@ class FieldTransfer : public SolutionTransfer
     apf::Mesh* mesh;
     apf::FieldShape* shape;
     apf::NewArray<double> value;
-    virtual const char* getTransferFieldName();
 };
 
 class LinearTransfer : public FieldTransfer
@@ -156,7 +154,7 @@ class SolutionTransfers : public SolutionTransfer
     virtual bool hasNodesOn(int dimension);
     virtual void onVertex(
         apf::MeshElement* parent,
-        Vector const& xi, 
+        Vector const& xi,
         Entity* vert);
     virtual void onRefine(
         Entity* parent,
@@ -164,7 +162,7 @@ class SolutionTransfers : public SolutionTransfer
     virtual void onCavity(
         EntityArray& oldElements,
         EntityArray& newEntities);
-  //private
+  private:
     typedef std::vector<SolutionTransfer*> Transfers;
     Transfers transfers;
 };

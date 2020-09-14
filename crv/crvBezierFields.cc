@@ -80,14 +80,6 @@ void convertInterpolationFieldPoints(apf::MeshEntity* e,
 
 void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f)
 {
-  // TODO: to be completed
-  // Zero out the blending orders (since they are used internally
-  // in Bezier shapes (triangles and tets) but save the old ones to
-  // revert back to at the end of this (so the rest of Bezier related
-  // procedures work as intendedi)
-  //
-  //setBlendingOrder(apf::Mesh::TYPES, 0);
-
   apf::FieldShape * fs = apf::getShape(f);
   int order = fs->getOrder();
 

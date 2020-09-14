@@ -60,12 +60,6 @@ int SolutionTransfer::getTransferDimension()
     }
   return transferDimension;
 }
-
-const char* SolutionTransfer::getTransferFieldName()
-{
-  return 0;
-}
-
 FieldTransfer::FieldTransfer(apf::Field* f)
 {
   field = f;
@@ -78,12 +72,6 @@ bool FieldTransfer::hasNodesOn(int dimension)
 {
   return shape->hasNodesIn(dimension);
 }
-
-const char* FieldTransfer::getTransferFieldName()
-{
-  return apf::getName(field);
-}
-
 void LinearTransfer::onVertex(
     apf::MeshElement* parent,
     Vector const& xi,
@@ -287,10 +275,6 @@ class HighOrderTransfer : public SolutionTransfer
         EntityArray& newEntities)
     {
       others.onCavity(oldElements,newEntities);
-    }
-    const char* getTransferFieldName()
-    {
-      return verts.getTransferFieldName();
     }
 };
 

@@ -202,11 +202,10 @@ class BezierTransfer : public ma::SolutionTransfer
               mth::Matrix<double> A(n,np),B(n,np);
               getBezierTransformationMatrix(parentType,childType,P,A,vp);
               mth::multiply(Ai[apf::Mesh::typeDimension[childType]],A,B);
-              for (int j = 0; j < ni; ++j){
+              for (int j = 0; j < ni; ++j) {
                 apf::Vector3 point(0,0,0);
-                for (int k = 0; k < np; ++k) {
+                for (int k = 0; k < np; ++k)
                   point += nodes[k]*B(j+n-ni,k);
-		}
                 mesh->setPoint(newEntities[i],j,point);
               }
             }
