@@ -29,12 +29,6 @@ void gmi_register_egads(void);
 /** \brief load an EGADS file into a gmi_model object */
 struct gmi_model* gmi_egads_load(const char* filename);
 
-/** \brief initialize a gmi_model with an EGADS body and number of regions */
-struct gmi_model* gmi_egads_init(struct egObject *body, int numRegions);
-
-/** \brief initialize the model adjacency table for 3D regions */
-void gmi_egads_init_adjacency(int ***adjacency);
-
 #ifdef __cplusplus
 }
 #endif
