@@ -11,6 +11,7 @@
 #include "apfMesh2.h"
 #include "apfShape.h"
 #include <ma.h>
+#include <maSolutionTransfer.h>
 #include <mth.h>
 #include <stdio.h>
 #include <vector>
@@ -21,6 +22,9 @@
 /** \namespace crv
   * \brief the curving functions are contained in this namespace */
 namespace crv {
+
+// forward declaration of the crv::Adapt
+class Adapt;
 
 /** \brief actually 1 greater than max order */
 static unsigned const MAX_ORDER = 19;
@@ -36,6 +40,13 @@ int getBlendingOrder(const int type);
 
 /** \brief count invalid elements of the mesh */
 int countNumberInvalidElements(apf::Mesh2* m);
+
+/** \ brief converts field f to Bezier entity wise */
+void convertInterpolationFieldPoints(apf::MeshEntity* e,
+    apf::Field* f, int n, int ne, apf::NewArray<double> &c);
+
+/** \brief converts field f, which is interpolating to Bezier */
+void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f);
 
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
@@ -202,6 +213,10 @@ void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix);
 /** \brief publically accessible functions */
 int getTriNodeIndex(int P, int i, int j);
 int getTetNodeIndex(int P, int i, int j, int k);
+
+/** \brief adds bezier solution transfers */
+ma::SolutionTransfer* setBezierSolutionTransfers(
+    const std::vector<apf::Field*>& fields, crv::Adapt* a);
 
 /** \brief crv fail function */
 void fail(const char* why) __attribute__((noreturn));
