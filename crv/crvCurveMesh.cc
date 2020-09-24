@@ -152,7 +152,7 @@ void BezierCurver::convertInterpolatingToBezier()
   // triangles and tetrahedra
   for(int d = 2; d <= md; ++d){
     if(!fs->hasNodesIn(d) ||
-        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
+        !getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;

@@ -95,7 +95,6 @@ void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f)
   int startDim = md - (blendingOrder > 0);
 
   for(int d = startDim; d >= 1; --d){
-  //for(int d = md; d >= 1; d--){
     if(!fs->hasNodesIn(d)) continue;
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
@@ -112,8 +111,10 @@ void convertInterpolatingFieldToBezier(apf::Mesh2* m_mesh, apf::Field* f)
   }
 
   for( int d = 2; d <= md; ++d){
+  std::cout<<" blendingorder of dimension "<<d <<" "<<
+  getBlendingOrder(apf::Mesh::simplexTypes[d])<<std::endl;
     if(!fs->hasNodesIn(d) ||
-        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
+        !getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
     int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
     int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
     apf::NewArray<double> c;
