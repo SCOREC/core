@@ -82,12 +82,12 @@ static void computeTriangleTi(
   }
 
 
-
-  for (int j = 0; j <= p; j++) {
-    for (int i = 0; i + j <= p; i++)
+  // face
+  for (int j = 1; j < p; j++) {
+    for (int i = 1; i + j < p; i++)
       {
-        double w = op[i] + op[j] + op[p-i-j];
-        nodes[o][0] = op[i]/w;  nodes[o][1] = op[j]/w;  nodes[o][2] = 0.;
+        double w = cp[i] + cp[j] + cp[p-i-j];
+        nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[j]/w;  nodes[o][2] = 0.;
         o++;
       }
   }
@@ -118,8 +118,8 @@ static void computeTetTi(
 {
   int non = countTetNodes(P);
 
-  apf::NewArray<double> op;
-  getOpenPoints(P, op);
+  apf::NewArray<double> cp;
+  getClosedPoints(P, cp);
 
   const int p = P;
 
@@ -131,13 +131,94 @@ static void computeTetTi(
   apf::DynamicArray<apf::Vector3> nodes (non);
   nodes.setSize(non);
 
-  int o = 0;
-  // Region loops to get nodes and dof2tk for regions
-  for (int k = 0; k <= p; k++) {
-    for (int j = 0; j + k <= p; j++) {
-      for (int i = 0; i + j + k <= p; i++) {
-        double w = op[i] + op[j] + op[k] + op[p-i-j-k];
-        nodes[o][0] = op[i]/w;  nodes[o][1] = op[j]/w;  nodes[o][2] = op[k]/w;
+
+  // vertices
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][0] = cp[0];
+  o++;
+  nodes[o][0] = cp[p]; nodes[o][1] = cp[0]; nodes[o][0] = cp[0];
+  o++;
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[p]; nodes[o][0] = cp[0];
+  o++;
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][0] = cp[p];
+  o++;
+
+  // edges
+  for (int i = 1; i < p; i++) // (0,1)
+  {
+    nodes[o][0] = cp[i];  nodes[o][1] = cp[0];  nodes[o][2] = cp[0.];
+    o++;
+  }
+
+  for (int i = 1; i < p; i++) // (1,2)
+  {
+    nodes[o][0] = cp[p-i];  nodes[o][1] = cp[i];  nodes[o][2] = cp[0.];
+    o++;
+  }
+
+  for (int i = 1; i < p; i++) // (2,0)
+  {
+    nodes[o][0] = cp[0];  nodes[o][1] = cp[p-i];  nodes[o][2] = cp[0.];
+    o++;
+  }
+
+  for (int i = 1; i < p; i++) // (0,3)
+  {
+    nodes[o][0] = cp[0];  nodes[o][1] = cp[0];  nodes[o][2] = cp[i];
+    o++;
+  }
+
+  for (int i = 1; i < p; i++) // (1,3)
+  {
+    nodes[o][0] = cp[p-i];  nodes[o][1] = cp[0];  nodes[o][2] = cp[i];
+    o++;
+  }
+
+  for (int i = 1; i < p; i++) // (2,3)
+  {
+    nodes[o][0] = cp[0];  nodes[o][1] = cp[p-i];  nodes[o][2] = cp[i];
+    o++;
+  }
+
+
+  // faces
+  // (0,1,2)
+  for (int j = 1; j < p, j++)
+    for (int i = 1, i + j < p, i++) {
+      double w = cp[i] + cp[j] + cp[p-i-j];
+      nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[j]/w;  nodes[o][2] = cp[0]/w;
+      o++;
+    }
+
+  // (0,1,3)
+  for (int j = 1; j < p, j++)
+    for (int i = 1, i + j < p, i++) {
+      double w = cp[i] + cp[j] + cp[p-i-j];
+      nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[0]/w;  nodes[o][2] = cp[j]/w;
+      o++;
+    }
+
+  // (1,2,3)
+  for (int j = 1; j < p, j++)
+    for (int i = 1, i + j < p, i++) {
+      double w = cp[i] + cp[j] + cp[p-i-j];
+      nodes[o][0] = cp[p-i-j]/w;  nodes[o][1] = cp[i]/w;  nodes[o][2] = cp[j]/w;
+      o++;
+    }
+
+  // (0,2,3)
+  for (int j = 1; j < p, j++)
+    for (int i = 1, i + j < p, i++) {
+      double w = cp[i] + cp[j] + cp[p-i-j];
+      nodes[o][0] = cp[0]/w;  nodes[o][1] = cp[i]/w;  nodes[o][2] = cp[j]/w;
+      o++;
+    }
+
+  // Region
+  for (int k = 1; k < p; k++) {
+    for (int j = 1; j + k < p; j++) {
+      for (int i = 1; i + j + k < p; i++) {
+        double w = cp[i] + cp[j] + cp[k] + cp[p-i-j-k];
+        nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[j]/w;  nodes[o][2] = cp[k]/w;
         o++;
       }
     }
@@ -206,12 +287,12 @@ static void getTi(
 }
 
 template<int P>
-class L2ShapeTri: public FieldShape {
+class H1ShapeTri: public FieldShape {
   public:
-    L2ShapeTri()
+    H1ShapeTri()
     {
       std::stringstream ss;
-      ss << "L2ShapeTri" << P;
+      ss << "H1ShapeTri" << P;
       name = ss.str();
       registerSelf(name.c_str());
     }
@@ -268,27 +349,23 @@ class L2ShapeTri: public FieldShape {
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
-      	    implemented for L2ShapeTri. Aborting()!");
+      	    implemented for H1ShapeTri. Aborting()!");
       }
       int countNodes() const {return countTriNodes(P);}
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getVectorValues not implemented \
-      	    for L2ShapeTri. Try getValues. Aborting()!");
+      	    for H1ShapeTri. Try getValues. Aborting()!");
       }
     };
     EntityShape* getEntityShape(int type)
     {
     	PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
-    			"L2ShapeTri only has entity shapes for TRIANGLEs");
+    			"H1ShapeTri only has entity shapes for TRIANGLEs");
       static Triangle tri;
       return &tri;
     }
-    // For the following to member functions we only need to
-    // consider the interior nodes, i.e.,
-    // Faces: no need to count the nodes associated with bounding edges
-    // Tets: no need to count the nodes associated with bounding edges/faces
     bool hasNodesIn(int dimension)
     {
       if (dimension == Mesh::typeDimension[Mesh::TRIANGLE])
@@ -297,8 +374,16 @@ class L2ShapeTri: public FieldShape {
     }
     int countNodesOn(int type)
     {
-      if (type == apf::Mesh::TRIANGLE) return countTriNodes(P);
-      return 0;
+      switch (type) {
+	case apf::Mesh::VERTEX:
+	  return 1;
+	case apf::Mesh::EDGE:
+	  if (P>1) return P-1; else return 0;
+	case apf::Mesh::TRIANGLE:
+	  if (P>2) return (P-1)*(P-2)/2; else return 0;
+	default:
+	  return 0;
+      }
     }
     int getOrder() {return P;}
     void getNodeXi(int type, int node, Vector3& xi)
