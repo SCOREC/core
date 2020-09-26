@@ -286,13 +286,56 @@ static void getTi(
   }
 }
 
+static apf::Vector3 getH1NodeXi(int type, int P, int node)
+{
+  if (type = apf::Mesh::VERTEX)
+    return apf::Vector3(0., 0., 0.);
+
+  apf::NewArray<double> cp;
+  getClosedPoints(P, cp);
+
+  if (type == apf::Mesh::EDGE) {
+    PCU_ALWAYS_ASSERT(node >= 0 && node < P-1);
+    int c = 0;
+    for (int i = 1; i < P; i++)
+      if (node == c)
+      	return apf::Vector3(2*cp[i]-1, 0., 0.);
+      else
+      	c++;
+  }
+
+  if (type == apf::Mesh::TRIANGLE) {
+    PCU_ALWAYS_ASSERT(node >= 0 && node < P-2);
+    int c = 0;
+    for (int j = 1; j < P; j++)
+      for (int i = 1; i + j < P; i++)
+	if (node == c) {
+	  double w = cp[i] + cp[j] + cp[P-i-j];
+	  return apf::Vector3(cp[i]/w, cp[j]/w, 0.);
+	}
+	else
+	  c++;
+  }
+
+  if (type == apf::Mesh::TET) {
+
+    return;
+  }
+
+  PCU_ALWAYS_ASSERT_VERBOSE(0, "Unsupported type!");
+  return;
+
+
+}
+
+
 template<int P>
-class H1ShapeTri: public FieldShape {
+class H1Shape: public FieldShape {
   public:
     H1ShapeTri()
     {
       std::stringstream ss;
-      ss << "H1ShapeTri" << P;
+      ss << "H1Shape" << P;
       name = ss.str();
       registerSelf(name.c_str());
     }
@@ -349,28 +392,50 @@ class H1ShapeTri: public FieldShape {
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
-      	    implemented for H1ShapeTri. Aborting()!");
+      	    implemented for H1Shape. Aborting()!");
       }
       int countNodes() const {return countTriNodes(P);}
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getVectorValues not implemented \
-      	    for H1ShapeTri. Try getValues. Aborting()!");
+      	    for H1Shape. Try getValues. Aborting()!");
       }
     };
     EntityShape* getEntityShape(int type)
     {
-    	PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
-    			"H1ShapeTri only has entity shapes for TRIANGLEs");
+      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE || type == Mesh::TET,
+    			"H1Shape only has entity shapes for TRIANGLEs or TETs");
+      static Vertex vert;
+      static Edge edge;
       static Triangle tri;
-      return &tri;
+      static Tetrahedron tet;
+      static apf::EntityShape* shapes[apf::Mesh::TYPES] =
+      {&vert,
+       &edge,
+       &tri,
+       NULL,
+       &tet,
+       NULL,
+       NULL,
+       NULL};
+      return shapes[type];
     }
     bool hasNodesIn(int dimension)
     {
-      if (dimension == Mesh::typeDimension[Mesh::TRIANGLE])
-      	return true;
-      return false;
+      return P > dimension;
+      /* switch (dimension) { */
+	/* case 0: */
+	  /* return true; */
+	/* case 1: */
+	  /* return P>1; */
+	/* case 2: */
+	  /* return P>2; */
+	/* case 3; */
+	  /* return P>3 */
+	/* default: */
+	  /* return false; */
+      /* } */
     }
     int countNodesOn(int type)
     {
@@ -381,6 +446,8 @@ class H1ShapeTri: public FieldShape {
 	  if (P>1) return P-1; else return 0;
 	case apf::Mesh::TRIANGLE:
 	  if (P>2) return (P-1)*(P-2)/2; else return 0;
+	case apf::Mesh::TET:
+	  if (P>3) return (P-1)*(P-2)*(P-3)/6; else return 0;
 	default:
 	  return 0;
       }
@@ -388,6 +455,7 @@ class H1ShapeTri: public FieldShape {
     int getOrder() {return P;}
     void getNodeXi(int type, int node, Vector3& xi)
     {
+      getH1NodeXi(type, P, node, xi);
       PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
       	  "getNodeXi for L2ShapeTri can be called only for TRIANGLEs");
       apf::NewArray<double> op;
