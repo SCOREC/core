@@ -155,6 +155,7 @@ static void computeTetTi(
   nodes.setSize(non);
 
 
+  int o = 0;
   // vertices
   nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][0] = cp[0];
   o++;
@@ -205,32 +206,32 @@ static void computeTetTi(
 
   // faces
   // (0,1,2)
-  for (int j = 1; j < p, j++)
-    for (int i = 1, i + j < p, i++) {
+  for (int j = 1; j < p; j++)
+    for (int i = 1; i + j < p; i++) {
       double w = cp[i] + cp[j] + cp[p-i-j];
       nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[j]/w;  nodes[o][2] = cp[0]/w;
       o++;
     }
 
   // (0,1,3)
-  for (int j = 1; j < p, j++)
-    for (int i = 1, i + j < p, i++) {
+  for (int j = 1; j < p; j++)
+    for (int i = 1; i + j < p; i++) {
       double w = cp[i] + cp[j] + cp[p-i-j];
       nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[0]/w;  nodes[o][2] = cp[j]/w;
       o++;
     }
 
   // (1,2,3)
-  for (int j = 1; j < p, j++)
-    for (int i = 1, i + j < p, i++) {
+  for (int j = 1; j < p; j++)
+    for (int i = 1; i + j < p; i++) {
       double w = cp[i] + cp[j] + cp[p-i-j];
       nodes[o][0] = cp[p-i-j]/w;  nodes[o][1] = cp[i]/w;  nodes[o][2] = cp[j]/w;
       o++;
     }
 
   // (0,2,3)
-  for (int j = 1; j < p, j++)
-    for (int i = 1, i + j < p, i++) {
+  for (int j = 1; j < p; j++)
+    for (int i = 1; i + j < p; i++) {
       double w = cp[i] + cp[j] + cp[p-i-j];
       nodes[o][0] = cp[0]/w;  nodes[o][1] = cp[i]/w;  nodes[o][2] = cp[j]/w;
       o++;
@@ -312,7 +313,7 @@ static void getTi(
 // internal nodes only
 static apf::Vector3 getH1NodeXi(int type, int P, int node)
 {
-  if (type = apf::Mesh::VERTEX)
+  if (type == apf::Mesh::VERTEX)
     return apf::Vector3(0., 0., 0.);
 
   apf::NewArray<double> cp;
@@ -348,7 +349,7 @@ static apf::Vector3 getH1NodeXi(int type, int P, int node)
       for (int j = 1; j + k < P; j++)
 	for (int i = 1; i + j + k < P; i++)
 	  if (c == node) {
-	    double w = cp[i] + cp[j] + cp[k] + cp[p-i-j-k];
+	    double w = cp[i] + cp[j] + cp[k] + cp[P-i-j-k];
 	    return apf::Vector3(cp[i]/w, cp[j]/w, cp[k]/w);
 	  }
 	  else
@@ -371,6 +372,30 @@ class H1Shape: public FieldShape {
     }
     const char* getName() const { return name.c_str(); }
     bool isVectorShape() {return false;}
+    class Vertex : public apf::EntityShape
+    {
+    public:
+      int getOrder() {return P;}
+      void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const& /*xi*/, apf::NewArray<double>& shapes) const
+      {
+        shapes.allocate(1);
+        shapes[0] = 1.;
+      }
+      void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+      {
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
+      	    implemented for H1Shape for Verts. Aborting()!");
+      }
+      int countNodes() const {return countEdgeNodes(P);}
+      void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+      {
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getVectorValues not implemented \
+      	    for H1Shape. Try getValues. Aborting()!");
+      }
+    };
     class Edge : public apf::EntityShape
     {
     public:
@@ -378,7 +403,6 @@ class H1Shape: public FieldShape {
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& xi, apf::NewArray<double>& shapes) const
       {
-      	// TODO
       	const int p = P;
       	apf::NewArray<double> shape_x(p+1);
         int dof = countNodes();
@@ -590,7 +614,7 @@ class H1Shape: public FieldShape {
     std::string name;
 };
 
-apf::FieldShape* getH1Shape(int order, int type)
+apf::FieldShape* getH1Shape(int order)
 {
   PCU_ALWAYS_ASSERT_VERBOSE(order > 0,
       "order is expected to be bigger than or equal to 1!");
@@ -609,7 +633,7 @@ apf::FieldShape* getH1Shape(int order, int type)
   static H1Shape<8>  h1_8;
   static H1Shape<9>  h1_9;
   static H1Shape<10> h1_10;
-  static FieldShape* const H1Shapes[11] = {NULL,
+  static FieldShape* const h1Shapes[11] = {NULL,
                                            &h1_1,
                                            &h1_2,
                                            &h1_3,
