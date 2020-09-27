@@ -22,7 +22,15 @@ using namespace std;
 
 namespace apf {
 
-static unsigned const MAX_ND_ORDER = 10;
+// This is used for static tables only.
+// The following implementation are for general orders but template classes
+// are only instantiated up to order 10 for now.
+static unsigned const MAX_ORDER = 10;
+
+static inline int countEdgeNodes(int P)
+{
+  return (P+1);
+}
 
 static inline int countTriNodes(int P)
 {
@@ -32,6 +40,21 @@ static inline int countTriNodes(int P)
 static inline int countTetNodes(int P)
 {
   return (P+1)*(P+2)*(P+3)/6;
+}
+
+static inline int countInternalEdgeNodes(int P)
+{
+  return (P-1);
+}
+
+static inline int countInternalTriNodes(int P)
+{
+  return (P-1)*(P-2)/2;
+}
+
+static inline int countInternalTetNodes(int P)
+{
+  return (P-1)*(P-2)*(P-3)/6;
 }
 
 static void computeTriangleTi(
@@ -255,8 +278,8 @@ static void getTi(
   PCU_ALWAYS_ASSERT_VERBOSE(cond,
       "type should be either apf::Mesh::TRIANGLE or apf::Mesh::TET!");
 
-  static apf::NewArray<double> transformQ[apf::Mesh::TYPES][MAX_ND_ORDER+1];
-  static apf::NewArray<double> transformR[apf::Mesh::TYPES][MAX_ND_ORDER+1];
+  static apf::NewArray<double> transformQ[apf::Mesh::TYPES][MAX_ORDER+1];
+  static apf::NewArray<double> transformR[apf::Mesh::TYPES][MAX_ORDER+1];
   int n = type == apf::Mesh::TRIANGLE ? countTriNodes(P) : countTetNodes(P);
 
   // get the transform matrices if the are not already computed
@@ -286,6 +309,7 @@ static void getTi(
   }
 }
 
+// internal nodes only
 static apf::Vector3 getH1NodeXi(int type, int P, int node)
 {
   if (type = apf::Mesh::VERTEX)
@@ -295,7 +319,7 @@ static apf::Vector3 getH1NodeXi(int type, int P, int node)
   getClosedPoints(P, cp);
 
   if (type == apf::Mesh::EDGE) {
-    PCU_ALWAYS_ASSERT(node >= 0 && node < P-1);
+    PCU_ALWAYS_ASSERT(node >= 0 && node < countInternalEdgeNodes(P));
     int c = 0;
     for (int i = 1; i < P; i++)
       if (node == c)
@@ -305,7 +329,7 @@ static apf::Vector3 getH1NodeXi(int type, int P, int node)
   }
 
   if (type == apf::Mesh::TRIANGLE) {
-    PCU_ALWAYS_ASSERT(node >= 0 && node < P-2);
+    PCU_ALWAYS_ASSERT(node >= 0 && node < countInternalTriNodes(P));
     int c = 0;
     for (int j = 1; j < P; j++)
       for (int i = 1; i + j < P; i++)
@@ -318,29 +342,70 @@ static apf::Vector3 getH1NodeXi(int type, int P, int node)
   }
 
   if (type == apf::Mesh::TET) {
-
-    return;
+    PCU_ALWAYS_ASSERT(node >= 0 && node < countInternalTetNodes(P));
+    int c = 0;
+    for (int k = 1; k < P; k++)
+      for (int j = 1; j + k < P; j++)
+	for (int i = 1; i + j + k < P; i++)
+	  if (c == node) {
+	    double w = cp[i] + cp[j] + cp[k] + cp[p-i-j-k];
+	    return apf::Vector3(cp[i]/w, cp[j]/w, cp[k]/w);
+	  }
+	  else
+	    c++;
   }
 
   PCU_ALWAYS_ASSERT_VERBOSE(0, "Unsupported type!");
-  return;
-
-
+  return apf::Vector3(0., 0., 0.);
 }
-
 
 template<int P>
 class H1Shape: public FieldShape {
   public:
-    H1ShapeTri()
+    H1Shape()
     {
       std::stringstream ss;
-      ss << "H1Shape" << P;
+      ss << "H1Shape_" << P;
       name = ss.str();
       registerSelf(name.c_str());
     }
     const char* getName() const { return name.c_str(); }
     bool isVectorShape() {return false;}
+    class Edge : public apf::EntityShape
+    {
+    public:
+      int getOrder() {return P;}
+      void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const& xi, apf::NewArray<double>& shapes) const
+      {
+      	// TODO
+      	const int p = P;
+      	apf::NewArray<double> shape_x(p+1);
+        int dof = countNodes();
+
+        double x = (xi[0]+1.)/2.; // go from [-1,1] to [0,1]
+
+        getChebyshevT(p, x, &shape_x[0]);
+        shapes.allocate(dof);
+        shapes[0] = shape_x[0];
+        shapes[1] = shape_x[p];
+        for (int i = 1; i < p; i++)
+          shapes[i+1] = shape_x[i];
+      }
+      void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+      {
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
+      	    implemented for H1Shape for Edges. Aborting()!");
+      }
+      int countNodes() const {return countEdgeNodes(P);}
+      void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
+	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+      {
+      	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getVectorValues not implemented \
+      	    for H1Shape. Try getValues. Aborting()!");
+      }
+    };
     class Triangle : public apf::EntityShape
     {
     public:
@@ -392,7 +457,7 @@ class H1Shape: public FieldShape {
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
-      	    implemented for H1Shape. Aborting()!");
+      	    implemented for H1Shape for Tris. Aborting()!");
       }
       int countNodes() const {return countTriNodes(P);}
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
@@ -402,93 +467,6 @@ class H1Shape: public FieldShape {
       	    for H1Shape. Try getValues. Aborting()!");
       }
     };
-    EntityShape* getEntityShape(int type)
-    {
-      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE || type == Mesh::TET,
-    			"H1Shape only has entity shapes for TRIANGLEs or TETs");
-      static Vertex vert;
-      static Edge edge;
-      static Triangle tri;
-      static Tetrahedron tet;
-      static apf::EntityShape* shapes[apf::Mesh::TYPES] =
-      {&vert,
-       &edge,
-       &tri,
-       NULL,
-       &tet,
-       NULL,
-       NULL,
-       NULL};
-      return shapes[type];
-    }
-    bool hasNodesIn(int dimension)
-    {
-      return P > dimension;
-      /* switch (dimension) { */
-	/* case 0: */
-	  /* return true; */
-	/* case 1: */
-	  /* return P>1; */
-	/* case 2: */
-	  /* return P>2; */
-	/* case 3; */
-	  /* return P>3 */
-	/* default: */
-	  /* return false; */
-      /* } */
-    }
-    int countNodesOn(int type)
-    {
-      switch (type) {
-	case apf::Mesh::VERTEX:
-	  return 1;
-	case apf::Mesh::EDGE:
-	  if (P>1) return P-1; else return 0;
-	case apf::Mesh::TRIANGLE:
-	  if (P>2) return (P-1)*(P-2)/2; else return 0;
-	case apf::Mesh::TET:
-	  if (P>3) return (P-1)*(P-2)*(P-3)/6; else return 0;
-	default:
-	  return 0;
-      }
-    }
-    int getOrder() {return P;}
-    void getNodeXi(int type, int node, Vector3& xi)
-    {
-      getH1NodeXi(type, P, node, xi);
-      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TRIANGLE,
-      	  "getNodeXi for L2ShapeTri can be called only for TRIANGLEs");
-      apf::NewArray<double> op;
-      getOpenPoints(P, op);
-      int c = 0;
-      for (int j = 0; j <= P; j++) {
-      	for (int i = 0; i + j <= P; i++) {
-      	  if (node == c) {
-      	    double w = op[i] + op[j] + op[P-i-j];
-      	    xi = Vector3( op[i]/w, op[j]/w, 0. );
-      	    return;
-      	  }
-      	  else
-      	    c++;
-      	}
-      }
-    }
-  private:
-    std::string name;
-};
-
-template<int P>
-class L2ShapeTet: public FieldShape {
-  public:
-    L2ShapeTet()
-    {
-      std::stringstream ss;
-      ss << "L2ShapeTet_" << P;
-      name = ss.str();
-      registerSelf(name.c_str());
-    }
-    const char* getName() const { return name.c_str(); }
-    bool isVectorShape() {return false;}
     class Tetrahedron : public apf::EntityShape
     {
     public:
@@ -544,208 +522,176 @@ class L2ShapeTet: public FieldShape {
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
-      	    implemented for L2ShapeTet. Aborting()!");
+      	    implemented for H1Shape for Tets. Aborting()!");
       }
       int countNodes() const {return countTetNodes(P);}
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& /*xi*/, apf::NewArray<apf::Vector3>& /*shapes*/) const
       {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getVectorValues not implemented for \
-      	    L2ShapeTet. Try getValues. Aborting()!");
+      	    H1Shape. Try getValues. Aborting()!");
       }
     };
+
     EntityShape* getEntityShape(int type)
     {
-      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TET,
-      	  "L2ShapeTet only has entity shapes for TETs");
+      static Vertex vert;
+      static Edge edge;
+      static Triangle tri;
       static Tetrahedron tet;
-      return &tet;
+      static apf::EntityShape* shapes[apf::Mesh::TYPES] =
+      {&vert,
+       &edge,
+       &tri,
+       NULL,
+       &tet,
+       NULL,
+       NULL,
+       NULL};
+      return shapes[type];
     }
-    // For the following to member functions we only need to
-    // consider the interior nodes, i.e.,
-    // Faces: no need to count the nodes associated with bounding edges
-    // Tets: no need to count the nodes associated with bounding edges/faces
     bool hasNodesIn(int dimension)
-    { 
-    	if (dimension == Mesh::typeDimension[Mesh::TET])
-    		return true;
-      return false;
+    {
+      return P > dimension;
+      /* switch (dimension) { */
+	/* case 0: */
+	  /* return true; */
+	/* case 1: */
+	  /* return P>1; */
+	/* case 2: */
+	  /* return P>2; */
+	/* case 3; */
+	  /* return P>3 */
+	/* default: */
+	  /* return false; */
+      /* } */
     }
     int countNodesOn(int type)
     {
-      if (type == apf::Mesh::TET) return countTetNodes(P);
-      return 0;
+      switch (type) {
+	case apf::Mesh::VERTEX:
+	  return 1;
+	case apf::Mesh::EDGE:
+	  if (P>1) return countInternalEdgeNodes(P); else return 0;
+	case apf::Mesh::TRIANGLE:
+	  if (P>2) return countInternalTriNodes(P); else return 0;
+	case apf::Mesh::TET:
+	  if (P>3) return countInternalTetNodes(P); else return 0;
+	default:
+	  return 0;
+      }
     }
     int getOrder() {return P;}
     void getNodeXi(int type, int node, Vector3& xi)
     {
-      PCU_ALWAYS_ASSERT_VERBOSE(type == Mesh::TET,
-      	  "getNodeXi for L2ShapeTet can be called only for TETs");
-      apf::NewArray<double> op;
-      getOpenPoints(P, op);
-      int c = 0;
-      for (int k = 0; k <= P; k++) {
-      	for (int j = 0; j + k <= P; j++) {
-      	  for (int i = 0; i + j + k <= P; i++) {
-      	    if( node == c) {
-      	      double w = op[i] + op[j] + op[k] + op[P-i-j-k];
-      	      xi = Vector3( op[i]/w, op[j]/w,  op[k]/w );
-      	      return;
-      	    }
-      	    else
-      	      c++;
-      	  }
-      	}
-      }
+      xi = getH1NodeXi(type, P, node);
     }
   private:
     std::string name;
 };
 
-
-static apf::FieldShape* getL2ShapeTri(int order)
+apf::FieldShape* getH1Shape(int order, int type)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(order >= 0,
-      "order is expected to be bigger than or equal to 0!");
+  PCU_ALWAYS_ASSERT_VERBOSE(order > 0,
+      "order is expected to be bigger than or equal to 1!");
   PCU_ALWAYS_ASSERT_VERBOSE(order <= 10,
       "order is expected to be less than or equal to 10!");
-  static L2ShapeTri<0>  l2_0;
-  static L2ShapeTri<1>  l2_1;
-  static L2ShapeTri<2>  l2_2;
-  static L2ShapeTri<3>  l2_3;
-  static L2ShapeTri<4>  l2_4;
-  static L2ShapeTri<5>  l2_5;
-  static L2ShapeTri<6>  l2_6;
-  static L2ShapeTri<7>  l2_7;
-  static L2ShapeTri<8>  l2_8;
-  static L2ShapeTri<9>  l2_9;
-  static L2ShapeTri<10> l2_10;
-  static FieldShape* const l2Shapes[11] = {&l2_0,
-                                           &l2_1,
-                                           &l2_2,
-                                           &l2_3,
-                                           &l2_4,
-                                           &l2_5,
-                                           &l2_6,
-                                           &l2_7,
-                                           &l2_8,
-                                           &l2_9,
-                                           &l2_10};
-  return l2Shapes[order];
+  // Note: to have higher order H1 fields all you need to do is to
+  // instantiate the class  up to that order in the following table
+  // and change the above assert so that the code does not fail.
+  static H1Shape<1>  h1_1;
+  static H1Shape<2>  h1_2;
+  static H1Shape<3>  h1_3;
+  static H1Shape<4>  h1_4;
+  static H1Shape<5>  h1_5;
+  static H1Shape<6>  h1_6;
+  static H1Shape<7>  h1_7;
+  static H1Shape<8>  h1_8;
+  static H1Shape<9>  h1_9;
+  static H1Shape<10> h1_10;
+  static FieldShape* const H1Shapes[11] = {NULL,
+                                           &h1_1,
+                                           &h1_2,
+                                           &h1_3,
+                                           &h1_4,
+                                           &h1_5,
+                                           &h1_6,
+                                           &h1_7,
+                                           &h1_8,
+                                           &h1_9,
+                                           &h1_10};
+  return h1Shapes[order];
 }
 
-static apf::FieldShape* getL2ShapeTet(int order)
-{
-  PCU_ALWAYS_ASSERT_VERBOSE(order >= 0,
-      "order is expected to be bigger than or equal to 0!");
-  PCU_ALWAYS_ASSERT_VERBOSE(order <= 10,
-      "order is expected to be less than or equal to 10!");
-  static L2ShapeTet<0>  l2_0;
-  static L2ShapeTet<1>  l2_1;
-  static L2ShapeTet<2>  l2_2;
-  static L2ShapeTet<3>  l2_3;
-  static L2ShapeTet<4>  l2_4;
-  static L2ShapeTet<5>  l2_5;
-  static L2ShapeTet<6>  l2_6;
-  static L2ShapeTet<7>  l2_7;
-  static L2ShapeTet<8>  l2_8;
-  static L2ShapeTet<9>  l2_9;
-  static L2ShapeTet<10> l2_10;
-  static FieldShape* const l2Shapes[11] = {&l2_0,
-                                           &l2_1,
-                                           &l2_2,
-                                           &l2_3,
-                                           &l2_4,
-                                           &l2_5,
-                                           &l2_6,
-                                           &l2_7,
-                                           &l2_8,
-                                           &l2_9,
-                                           &l2_10};
-  return l2Shapes[order];
-}
+/* void projectL2Field(Field* to, Field* from) */
+/* { */
+/*   // checks on the from field */
+/*   // checks on the to field */
+/*   apf::FieldShape* tShape = getShape(to); */
+/*   std::string      tName  = tShape->getName(); */
+/*   int              tOrder = tShape->getOrder(); */
+/*   PCU_ALWAYS_ASSERT_VERBOSE((tName == std::string("Linear")) && (tOrder == 1), */
+/*                 "The to field needs to be 1st order Lagrange!"); */
 
+/*   Mesh* m = getMesh(from); */
+/*   // auxiliary count fields */
+/*   Field* count = createField(m, "counter", SCALAR, getLagrange(1)); */
+/*   double xis[4][3] = {{0., 0., 0.}, */
+/*                       {1., 0., 0.}, */
+/*                       {0., 1., 0.}, */
+/*                       {0., 0., 1.}}; */
+/*   // zero out the fields */
+/*   zeroField(to); */
+/*   zeroField(count); */
 
-apf::FieldShape* getL2Shape(int order, int type)
-{
-  if (type == Mesh::TRIANGLE)
-    return getL2ShapeTri(order);
-  else if (type == Mesh::TET)
-    return getL2ShapeTet(order);
-  else
-    PCU_ALWAYS_ASSERT_VERBOSE(0,
-    	"L2Shapes are only implemented for tris and tets");
-}
+/*   int nc = countComponents(to); */
+/*   NewArray<double> atXi(nc); */
+/*   NewArray<double> currentVal(nc); */
+/*   NewArray<double> sum(nc); */
 
-void projectL2Field(Field* to, Field* from)
-{
-  // checks on the from field
-  // checks on the to field
-  apf::FieldShape* tShape = getShape(to);
-  std::string      tName  = tShape->getName();
-  int              tOrder = tShape->getOrder();
-  PCU_ALWAYS_ASSERT_VERBOSE((tName == std::string("Linear")) && (tOrder == 1),
-                "The to field needs to be 1st order Lagrange!");
+/*   MeshEntity* e; */
+/*   MeshIterator* it = m->begin(m->getDimension()); */
+/*   while( (e = m->iterate(it)) ) { */
+/*     MeshElement* me = createMeshElement(m, e); */
+/*     Element* el = createElement(from, me); */
+/*     MeshEntity* dvs[4]; */
+/*     m->getDownward(e, 0, dvs); */
+/*     for (int i=0; i<4; i++) { */
+/*       getComponents(el, Vector3(xis[i]), &(atXi[0])); */
+/*       getComponents(to, dvs[i], 0, &(currentVal[0])); */
+/*       for (int j = 0; j < nc; j++) { */
+/*         currentVal[j] += atXi[j]; */
+/*       } */
+/*       double currentCount = getScalar(count, dvs[i], 0); */
+/*       currentCount += 1.; */
+/*       setComponents(to, dvs[i], 0, &(currentVal[0])); */
+/*       setScalar(count, dvs[i], 0, currentCount); */
+/*     } */
+/*     destroyElement(el); */
+/*     destroyMeshElement(me); */
+/*   } */
+/*   m->end(it); */
 
-  Mesh* m = getMesh(from);
-  // auxiliary count fields
-  Field* count = createField(m, "counter", SCALAR, getLagrange(1));
-  double xis[4][3] = {{0., 0., 0.},
-                      {1., 0., 0.},
-                      {0., 1., 0.},
-                      {0., 0., 1.}};
-  // zero out the fields
-  zeroField(to);
-  zeroField(count);
+/*   // take care of entities on part boundary */
+/*   accumulate(to); */
+/*   accumulate(count); */
 
-  int nc = countComponents(to);
-  NewArray<double> atXi(nc);
-  NewArray<double> currentVal(nc);
-  NewArray<double> sum(nc);
+/*   it = m->begin(0); */
+/*   while( (e = m->iterate(it)) ) { */
+/*     getComponents(to, e, 0, &(sum[0])); */
+/*     int cnt = getScalar(count, e, 0); */
+/*     for (int i = 0; i < nc; i++) { */
+/*       sum[i] /= cnt; */
+/*     } */
+/*     setComponents(to, e, 0, &(sum[0])); */
+/*   } */
+/*   m->end(it); */
 
-  MeshEntity* e;
-  MeshIterator* it = m->begin(m->getDimension());
-  while( (e = m->iterate(it)) ) {
-    MeshElement* me = createMeshElement(m, e);
-    Element* el = createElement(from, me);
-    MeshEntity* dvs[4];
-    m->getDownward(e, 0, dvs);
-    for (int i=0; i<4; i++) {
-      getComponents(el, Vector3(xis[i]), &(atXi[0]));
-      getComponents(to, dvs[i], 0, &(currentVal[0]));
-      for (int j = 0; j < nc; j++) {
-        currentVal[j] += atXi[j];
-      }
-      double currentCount = getScalar(count, dvs[i], 0);
-      currentCount += 1.;
-      setComponents(to, dvs[i], 0, &(currentVal[0]));
-      setScalar(count, dvs[i], 0, currentCount);
-    }
-    destroyElement(el);
-    destroyMeshElement(me);
-  }
-  m->end(it);
+/*   // take care of entities on part boundary */
+/*   synchronize(to); */
 
-  // take care of entities on part boundary
-  accumulate(to);
-  accumulate(count);
-
-  it = m->begin(0);
-  while( (e = m->iterate(it)) ) {
-    getComponents(to, e, 0, &(sum[0]));
-    int cnt = getScalar(count, e, 0);
-    for (int i = 0; i < nc; i++) {
-      sum[i] /= cnt;
-    }
-    setComponents(to, e, 0, &(sum[0]));
-  }
-  m->end(it);
-
-  // take care of entities on part boundary
-  synchronize(to);
-
-  m->removeField(count);
-  destroyField(count);
-}
+/*   m->removeField(count); */
+/*   destroyField(count); */
+/* } */
 
 }
