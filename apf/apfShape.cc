@@ -81,7 +81,7 @@ FieldShape* getShapeByName(const char* name)
   getNedelec(1);
   getL2Shape(0, apf::Mesh::TRIANGLE);
   getL2Shape(0, apf::Mesh::TET);
-  getH1Shape(0);
+  getH1Shape(1);
   std::string s(name);
   if (registry.count(s))
     return registry[s];
