@@ -547,9 +547,10 @@ class Nedelec: public FieldShape {
     class Edge : public apf::EntityShape
     {
     private:
-      const int dim = 1; // ref elem dim
-      const double c = 0.; // center of edge
+      const int dim; // ref elem dim
+      const double c; // center of edge
     public:
+      Edge() : dim(1), c(0.0) {};
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -583,9 +584,10 @@ class Nedelec: public FieldShape {
     class Triangle : public apf::EntityShape
     {
     private:
-      const int dim = 2; // reference element dim
-      const double c = 1./3.; // center of tri
+      const int dim; // reference element dim
+      const double c; // center of tri
     public:
+      Triangle() : dim(2), c(1./3) {};
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -721,9 +723,10 @@ class Nedelec: public FieldShape {
     class Tetrahedron : public apf::EntityShape
     {
     private:
-      const int dim = 3;
-      const double c = 1./4.;
+      const int dim;
+      const double c;
     public:
+      Tetrahedron() : dim(3), c(1./4) {};
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
