@@ -484,6 +484,19 @@ class H1Shape: public FieldShape {
       	    implemented for H1Shape for Tris. Aborting()!");
       }
       int countNodes() const {return countTriNodes(P);}
+      void alignSharedNodes(apf::Mesh* m,
+      	  apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
+      {
+      	int which, rotate;
+      	bool flip;
+      	getAlignment(m, elem, shared, which, flip, rotate);
+      	if (!flip)
+      	  for (int i = 0; i < P-1; i++)
+      	    order[i] = i;
+	else
+	  for (int i = 0; i < P-1; i++)
+	    order[i] = P-2-i;
+      }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
@@ -549,6 +562,41 @@ class H1Shape: public FieldShape {
       	    implemented for H1Shape for Tets. Aborting()!");
       }
       int countNodes() const {return countTetNodes(P);}
+      void alignSharedNodes(apf::Mesh* m,
+      	  apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
+      {
+      	int stype = m->getType(shared);
+      	int which, rotate;
+      	bool flip;
+      	getAlignment(m, elem, shared, which, flip, rotate);
+      	if (stype == apf::Mesh::EDGE) {
+	  if (!flip)
+	    for (int i = 0; i < P-1; i++)
+	      order[i] = i;
+	  else
+	    for (int i = 0; i < P-1; i++)
+	      order[i] = P-2-i;
+	  return;
+	}
+	PCU_ALWAYS_ASSERT_VERBOSE(stype == apf::Mesh::TRIANGLE,
+	    "shared type must be triangle!");
+	int idx0, idx1;
+	if (!flip) {
+	  idx0 = (3-rotate) % 3;
+	  idx1 = (4-rotate) % 3;
+	}
+	else {
+	  idx0 = (2+rotate) % 3;
+	  idx1 = (1+rotate) % 3;
+	}
+	int idx = 0;
+	for (int i = 0; i <= P-3; i++)
+	  for (int j = 0; j <= P-3-i; j++) {
+	    int ijk[3] = {i, j, P-3-i-j};
+	    order[idx] = ijk[idx0]*(P-2)-ijk[idx0]*(ijk[idx0]-1)/2+ijk[idx1];
+	    idx++;
+	  }
+      }
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const& /*xi*/, apf::NewArray<apf::Vector3>& /*shapes*/) const
       {
