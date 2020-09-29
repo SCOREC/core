@@ -24,7 +24,7 @@ enum Gauss{
 void getGaussLegendrePoints(int np, double* pts);
 
 /** \brief Gauss Lobatto points */
-void getGaussLobattoPoints(int, double*);
+void getGaussLobattoPoints(int np, double* pts);
 
 /** \brief get open points for a given order and Gauss point type */
 void getOpenPoints(
