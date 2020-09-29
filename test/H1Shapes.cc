@@ -136,6 +136,7 @@ void testH1(
     apf::getVector(el, testXi, eFieldValue);
 
     double err = ((eFieldValue - eFieldExact) * (eFieldValue - eFieldExact));
+    err /= (eFieldExact * eFieldExact); // normalization factor
     L2ErrorE += err;
     apf::destroyMeshElement(me);
     apf::destroyElement(el);
