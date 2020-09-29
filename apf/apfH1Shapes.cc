@@ -78,11 +78,11 @@ static void computeTriangleTi(
   int o = 0;
 
   // vertices
-  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][0] = 0.;
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][2] = 0.;
   o++;
-  nodes[o][0] = cp[p]; nodes[o][1] = cp[0]; nodes[o][0] = 0.;
+  nodes[o][0] = cp[p]; nodes[o][1] = cp[0]; nodes[o][2] = 0.;
   o++;
-  nodes[o][0] = cp[0]; nodes[o][1] = cp[p]; nodes[o][0] = 0.;
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[p]; nodes[o][2] = 0.;
   o++;
 
   // edges
@@ -151,37 +151,37 @@ static void computeTetTi(
   apf::NewArray<double> shape_z(p+1);
   apf::NewArray<double> shape_l(p+1);
 
-  apf::DynamicArray<apf::Vector3> nodes (non);
+  apf::DynamicArray<apf::Vector3> nodes(non);
   nodes.setSize(non);
 
 
   int o = 0;
   // vertices
-  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][0] = cp[0];
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][2] = cp[0];
   o++;
-  nodes[o][0] = cp[p]; nodes[o][1] = cp[0]; nodes[o][0] = cp[0];
+  nodes[o][0] = cp[p]; nodes[o][1] = cp[0]; nodes[o][2] = cp[0];
   o++;
-  nodes[o][0] = cp[0]; nodes[o][1] = cp[p]; nodes[o][0] = cp[0];
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[p]; nodes[o][2] = cp[0];
   o++;
-  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][0] = cp[p];
+  nodes[o][0] = cp[0]; nodes[o][1] = cp[0]; nodes[o][2] = cp[p];
   o++;
 
   // edges
   for (int i = 1; i < p; i++) // (0,1)
   {
-    nodes[o][0] = cp[i];  nodes[o][1] = cp[0];  nodes[o][2] = cp[0.];
+    nodes[o][0] = cp[i];  nodes[o][1] = cp[0];  nodes[o][2] = cp[0];
     o++;
   }
 
   for (int i = 1; i < p; i++) // (1,2)
   {
-    nodes[o][0] = cp[p-i];  nodes[o][1] = cp[i];  nodes[o][2] = cp[0.];
+    nodes[o][0] = cp[p-i];  nodes[o][1] = cp[i];  nodes[o][2] = cp[0];
     o++;
   }
 
   for (int i = 1; i < p; i++) // (2,0)
   {
-    nodes[o][0] = cp[0];  nodes[o][1] = cp[p-i];  nodes[o][2] = cp[0.];
+    nodes[o][0] = cp[0];  nodes[o][1] = cp[p-i];  nodes[o][2] = cp[0];
     o++;
   }
 
@@ -209,7 +209,7 @@ static void computeTetTi(
   for (int j = 1; j < p; j++)
     for (int i = 1; i + j < p; i++) {
       double w = cp[i] + cp[j] + cp[p-i-j];
-      nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[j]/w;  nodes[o][2] = cp[0]/w;
+      nodes[o][0] = cp[i]/w;  nodes[o][1] = cp[j]/w;  nodes[o][2] = cp[0];
       o++;
     }
 
@@ -233,7 +233,7 @@ static void computeTetTi(
   for (int j = 1; j < p; j++)
     for (int i = 1; i + j < p; i++) {
       double w = cp[i] + cp[j] + cp[p-i-j];
-      nodes[o][0] = cp[0]/w;  nodes[o][1] = cp[i]/w;  nodes[o][2] = cp[j]/w;
+      nodes[o][0] = cp[0];  nodes[o][1] = cp[i]/w;  nodes[o][2] = cp[j]/w;
       o++;
     }
 
@@ -388,7 +388,7 @@ class H1Shape: public FieldShape {
       	PCU_ALWAYS_ASSERT_VERBOSE(0, "error: getLocalGradients not \
       	    implemented for H1Shape for Verts. Aborting()!");
       }
-      int countNodes() const {return countEdgeNodes(P);}
+      int countNodes() const {return 1;}
       void getVectorValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
       {
