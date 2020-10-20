@@ -77,7 +77,8 @@ static void read_adj_table(const char* filename,
   }
 
   int header[6];
-  fread(header, sizeof(int), 6, adj_table_file);
+  size_t count = fread(header, sizeof(int), 6, adj_table_file);
+  if (count != 6) gmi_fail("fread failed!\n");
 
   *nregions = header[0];
 
@@ -93,7 +94,8 @@ static void read_adj_table(const char* filename,
     }
     for (int j = 0; j < header[i]; ++j) {
       int nadjacent = -1;
-      fread(&nadjacent, sizeof(int), 1, adj_table_file);
+      count = fread(&nadjacent, sizeof(int), 1, adj_table_file);
+      if (count != 1) gmi_fail("fread failed!\n"); 
       adjacency_table[i][j] = (int*)EG_alloc(sizeof(*(adjacency_table[i][j]))
                                              * (nadjacent+1));
       if (adjacency_table[i][j] == NULL) {
@@ -104,8 +106,9 @@ static void read_adj_table(const char* filename,
         gmi_fail(fail);
       }
       adjacency_table[i][j][0] = nadjacent;
-      fread(&(adjacency_table[i][j][1]), sizeof(int), nadjacent,
-              adj_table_file);
+      count = fread(&(adjacency_table[i][j][1]), sizeof(int), nadjacent,
+                    adj_table_file);
+      if (count != (size_t)nadjacent) gmi_fail("fread failed!\n");
     }
   }
   fclose(adj_table_file);
