@@ -409,7 +409,7 @@ class H1Shape: public FieldShape {
 
         double x = (xi[0]+1.)/2.; // go from [-1,1] to [0,1]
 
-        getChebyshevT(p, x, &shape_x[0]);
+        poly1dBasisBarycentric(p, x, &shape_x[0]);
         shapes.allocate(dof);
         shapes[0] = shape_x[0];
         shapes[1] = shape_x[p];
