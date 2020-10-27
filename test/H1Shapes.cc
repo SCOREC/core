@@ -120,36 +120,39 @@ void testH1(
 
 
   // Verify that interpolated solution field agrees with exact field.
-  double L2ErrorE = 0.;
-  it = m->begin(dim);
-  int count = 0;
-  while( (ent = m->iterate(it)) ) {
-    apf::MeshElement* me = apf::createMeshElement(m, ent);
-    apf::Vector3 x;
-    apf::mapLocalToGlobal(me, testXi, x);
-    apf::Vector3 eFieldExact;
-    E_exact(x, eFieldExact, exactOrder);
+  for (int d = 0; d <= dim; d++) {
 
-    // obtain interpolated value
-    apf::Element* el = apf::createElement(h1Field, me);
-    apf::Vector3 eFieldValue;
-    apf::getVector(el, testXi, eFieldValue);
+    double L2ErrorE = 0.;
+    it = m->begin(d);
+    int count = 0;
+    while( (ent = m->iterate(it)) ) {
+      apf::MeshElement* me = apf::createMeshElement(m, ent);
+      apf::Vector3 x;
+      apf::mapLocalToGlobal(me, testXi, x);
+      apf::Vector3 eFieldExact;
+      E_exact(x, eFieldExact, exactOrder);
 
-    double err = ((eFieldValue - eFieldExact) * (eFieldValue - eFieldExact));
-    err /= (eFieldExact * eFieldExact); // normalization factor
-    L2ErrorE += err;
-    apf::destroyMeshElement(me);
-    apf::destroyElement(el);
-    count++;
+      // obtain interpolated value
+      apf::Element* el = apf::createElement(h1Field, me);
+      apf::Vector3 eFieldValue;
+      apf::getVector(el, testXi, eFieldValue);
+
+      double err = ((eFieldValue - eFieldExact) * (eFieldValue - eFieldExact));
+      err /= (eFieldExact * eFieldExact); // normalization factor
+      L2ErrorE += err;
+      apf::destroyMeshElement(me);
+      apf::destroyElement(el);
+      count++;
+    }
+    m->end(it);
+
+    // check for field interpolation
+    if(0==PCU_Comm_Self())
+      lion_oprint(1, "L2ErrorE for entities of dimension %d is %e\n", d, L2ErrorE);
+    PCU_ALWAYS_ASSERT_VERBOSE(L2ErrorE < 1.e-16,
+	"Fields were not interpolated correctly!");
+
   }
-  m->end(it);
-
-  // check for field interpolation
-  if(0==PCU_Comm_Self())
-    lion_oprint(1, "L2ErrorE is %e\n", L2ErrorE);
-  PCU_ALWAYS_ASSERT_VERBOSE(L2ErrorE < 1.e-16,
-      "Fields were not interpolated correctly!");
-
   m->removeField(h1Field);
   apf::destroyField(h1Field);
 }
