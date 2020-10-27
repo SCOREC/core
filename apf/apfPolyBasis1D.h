@@ -47,6 +47,8 @@ void getChebyshevT(int order, double xi, double* u, double* d);
 /** \brief Chebyshev polynomials of the first kind and 1st and 2nd derivative */
 void getChebyshevT(int order, double xi, double* u, double* d, double* dd);
 
+void poly1dBasisBarycentric(int order, double xi, double* u);
+
 }
 
 #endif

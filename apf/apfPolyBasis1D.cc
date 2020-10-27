@@ -216,4 +216,61 @@ void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
   }
 }
 
+void poly1dBasisBarycentric(int order, double xi, double* u)
+{
+  // order 0 is trivial
+  if (order == 0) {
+    u[0] = 1.;
+    return;
+  }
+
+  apf::NewArray<double> nodes;
+  getClosedPoints(order, nodes);
+  // anything other than 0
+  apf::NewArray<double> x(order+1);
+  apf::NewArray<double> w(order+1);
+
+  for (int i = 0; i < order+1; i++) {
+    x[i] = nodes[i];
+    w[i] = 1.0;
+  }
+
+  for (int i = 0; i < order+1; i++) {
+    for (int j = 0; j < i; j++) {
+      double xij = x[i] - x[j];
+      w[i] *=  xij;
+      w[j] *= -xij;
+    }
+  }
+
+  for (int i = 0; i < order+1; i++) {
+    w[i] = 1./w[i];
+  }
+
+  int i, k, p = order;
+  double l, lk;
+  lk = 1.;
+
+  for (k = 0; k < p; k++) {
+    if (xi >= (x[k] + x[k+1]/2) / 2.)
+      lk *= xi - x[k];
+    else {
+      for (i = k+1; i <= p; i++) {
+        lk *= xi - x[i];
+      }
+      break;
+    }
+  }
+  l = lk * (xi - x[k]);
+
+  for (i = 0; i < k; i++) {
+    u[i] = l * w[i] / (xi - x[i]);
+  }
+
+  u[k] = lk * w[k];
+
+  for(i++; i <= p; i++)
+    u[i] = l * w[i] / (xi - x[i]);
+}
+
 }
