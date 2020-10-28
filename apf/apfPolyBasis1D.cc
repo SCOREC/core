@@ -252,7 +252,7 @@ void poly1dBasisBarycentric(int order, double xi, double* u)
   lk = 1.;
 
   for (k = 0; k < p; k++) {
-    if (xi >= (x[k] + x[k+1]/2) / 2.)
+    if (xi >= (x[k] + x[k+1]) / 2.)
       lk *= xi - x[k];
     else {
       for (i = k+1; i <= p; i++) {
