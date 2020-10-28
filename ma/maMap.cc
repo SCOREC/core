@@ -134,6 +134,8 @@ Vector curvedElemInvMap(
 
   // initial iteration
   apf::getJacobianInv(me, xi_old, Jinv);
+  if (type != apf::Mesh::TET)
+    Jinv = apf::transpose(Jinv);
   apf::mapLocalToGlobal(me, xi_old, x);
   xi_new = xi_old - Jinv*(x-p);
   err = (xi_new - xi_old)*(xi_new - xi_old);
@@ -143,6 +145,8 @@ Vector curvedElemInvMap(
     if (iter > maxIter) break;
     xi_old = xi_new;
     apf::getJacobianInv(me, xi_old, Jinv);
+    if (type != apf::Mesh::TET)
+      Jinv = apf::transpose(Jinv);
     apf::mapLocalToGlobal(me, xi_old, x);
     xi_new = xi_old - Jinv*(x-p);
     err = (xi_new - xi_old)*(xi_new - xi_old);
