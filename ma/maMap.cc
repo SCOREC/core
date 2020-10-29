@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "maMap.h"
+#include <apf.h>
 #include <pcu_util.h>
 #include <algorithm>
 

@@ -11,7 +11,6 @@
 #ifndef MA_MAP_H
 #define MA_MAP_H
 
-#include <apf.h>
 #include "maAffine.h"
 #include "maMesh.h"
 
