@@ -149,7 +149,7 @@ void testH1(
     // check for field interpolation
     if(0==PCU_Comm_Self())
       lion_oprint(1, "L2ErrorE for entities of dimension %d is %e\n", d, L2ErrorE);
-    PCU_ALWAYS_ASSERT_VERBOSE(L2ErrorE < 1.e-16,
+    PCU_ALWAYS_ASSERT_VERBOSE(L2ErrorE < 1.e-12,
 	"Fields were not interpolated correctly!");
 
   }
