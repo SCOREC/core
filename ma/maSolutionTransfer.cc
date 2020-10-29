@@ -134,8 +134,8 @@ class CavityTransfer : public FieldTransfer
         Vector xi;
         if (mesh->getShape()->getOrder() == 1)
           xi = elemInvMaps[i] * point;
-	else
-	  xi = curvedElemInvMap(mesh, apf::getMeshEntity(elems[i]), point);
+        else
+          xi = curvedElemInvMap(mesh, apf::getMeshEntity(elems[i]), point);
         double value = getInsideness(mesh,apf::getMeshEntity(elems[i]),xi);
         if (value > bestValue)
         {

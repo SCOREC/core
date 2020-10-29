@@ -264,7 +264,7 @@ static void computeTetTi(
       for (int j = 0; j + k <= p; j++)
         for (int i = 0; i + j + k <= p; i++)
           T(o++, m) = shape_x[i]*shape_y[j]*shape_z[k]*shape_l[p-i-j-k];
-	}
+  }
   mth::decomposeQR(T, Q, R);
 }
 
@@ -324,9 +324,9 @@ static apf::Vector3 getH1NodeXi(int type, int P, int node)
     int c = 0;
     for (int i = 1; i < P; i++)
       if (node == c)
-      	return apf::Vector3(2*cp[i]-1, 0., 0.);
+        return apf::Vector3(2*cp[i]-1, 0., 0.);
       else
-      	c++;
+        c++;
   }
 
   if (type == apf::Mesh::TRIANGLE) {
@@ -334,12 +334,12 @@ static apf::Vector3 getH1NodeXi(int type, int P, int node)
     int c = 0;
     for (int j = 1; j < P; j++)
       for (int i = 1; i + j < P; i++)
-	if (node == c) {
-	  double w = cp[i] + cp[j] + cp[P-i-j];
-	  return apf::Vector3(cp[i]/w, cp[j]/w, 0.);
-	}
-	else
-	  c++;
+        if (node == c) {
+          double w = cp[i] + cp[j] + cp[P-i-j];
+          return apf::Vector3(cp[i]/w, cp[j]/w, 0.);
+        }
+        else
+          c++;
   }
 
   if (type == apf::Mesh::TET) {
@@ -401,10 +401,10 @@ class H1Shape: public FieldShape {
     public:
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
-	  apf::Vector3 const& xi, apf::NewArray<double>& shapes) const
+          apf::Vector3 const& xi, apf::NewArray<double>& shapes) const
       {
-      	const int p = P;
-      	apf::NewArray<double> shape_x(p+1);
+        const int p = P;
+        apf::NewArray<double> shape_x(p+1);
         int dof = countNodes();
 
         double x = (xi[0]+1.)/2.; // go from [-1,1] to [0,1]
@@ -457,12 +457,12 @@ class H1Shape: public FieldShape {
           for (int i = 0; i + j <= p; i++)
             u(n++, 0) = shape_x[i]*shape_y[j]*shape_l[p-i-j];
 
-	      mth::Matrix<double> Q(dof, dof);
-      	mth::Matrix<double> R(dof, dof);
-      	getTi(P, apf::Mesh::TRIANGLE, Q, R);
+        mth::Matrix<double> Q(dof, dof);
+        mth::Matrix<double> R(dof, dof);
+        getTi(P, apf::Mesh::TRIANGLE, Q, R);
 
         mth::Matrix<double> S(dof, 1);
-      	for(int i = 0; i < 1; i++) // S = Ti * u
+        for(int i = 0; i < 1; i++) // S = Ti * u
         {
           mth::Vector<double> B (dof);
           mth::Vector<double> X (dof);
@@ -474,7 +474,7 @@ class H1Shape: public FieldShape {
         shapes.allocate(dof);
         for (int i = 0; i < dof; i++) // populate y
         {
-      	  shapes[i] = S(i,0);
+          shapes[i] = S(i,0);
         }
       }
       void getLocalGradients(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
