@@ -197,6 +197,7 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(degenerate_test degenerateSurfs.cc)
   test_exe_func(simZBalance simZBalance.cc)
   test_exe_func(crack_test crack_test.cc)
+  test_exe_func(highOrderSolutionTransfer highOrderSolutionTransfer.cc)
 endif()
 
 # send all the newly added utility executable targets

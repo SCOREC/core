@@ -640,6 +640,10 @@ if(ENABLE_SIMMETRIX)
       ./curvetest
       "${MDIR}/sphere1.xmt_txt"
       "${MDIR}/sphere1_4.smb")
+    mpi_test(highOrderSolutionTransfer 1
+      ./highOrderSolutionTransfer
+      "${MDIR}/sphere1.xmt_txt"
+      "${MDIR}/sphere1_4.smb")
     mpi_test(curvedKova 1
       ./curvetest
       "${MDIR}/Kova.xmt_txt"
