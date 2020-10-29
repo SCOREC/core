@@ -15,7 +15,6 @@
 #include <string>
 #include <math.h>
 
-using namespace std;
 
 // User defined vector functions E(x,y,z) of order up to 6
 void E_exact(const apf::Vector3& x, apf::Vector3& value, int p);
