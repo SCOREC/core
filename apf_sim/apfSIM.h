@@ -95,6 +95,7 @@ class MeshSIM : public Mesh2
     // Mesh2 interface ==============================
     void setRemotes(MeshEntity*, Copies&) {}
     void addRemote(MeshEntity*, int, MeshEntity*) {}
+    void clearRemotes(MeshEntity*) {}
     void setResidence(MeshEntity*, Parts&) {}
     void setParam(MeshEntity*, Vector3 const &) {}
     void increment(MeshIterator*) {}

@@ -36,6 +36,8 @@ class Mesh2 : public Mesh
     virtual void setRemotes(MeshEntity* e, Copies& remotes) = 0;
 /** \brief Add just one remote copy to an entity */
     virtual void addRemote(MeshEntity* e, int p, MeshEntity* r) = 0;
+/** \brief Remove remote copies */
+    virtual void clearRemotes(MeshEntity* e) = 0;
 
 // seol
 /** \brief Add just one ghost copy to an entity */
