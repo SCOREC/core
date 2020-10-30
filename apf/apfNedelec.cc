@@ -17,8 +17,6 @@
 #include <pcu_util.h>
 #include <PCU.h>
 
-#include <iostream>
-using namespace std;
 
 namespace apf {
 

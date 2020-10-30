@@ -131,7 +131,11 @@ class CavityTransfer : public FieldTransfer
       int bestI = 0;
       for (int i = 0; i < n; ++i)
       {
-        Vector xi = elemInvMaps[i] * point;
+        Vector xi;
+        if (mesh->getShape()->getOrder() == 1)
+          xi = elemInvMaps[i] * point;
+        else
+          xi = curvedElemInvMap(mesh, apf::getMeshEntity(elems[i]), point);
         double value = getInsideness(mesh,apf::getMeshEntity(elems[i]),xi);
         if (value > bestValue)
         {
@@ -148,16 +152,25 @@ class CavityTransfer : public FieldTransfer
         Affine* elemInvMaps,
         apf::Node const& node)
     {
+      // first get the physical coordinate of the node
       Vector xi;
+      Vector point;
       shape->getNodeXi(mesh->getType(node.entity),node.node,xi);
-      Affine childMap = getMap(mesh,node.entity);
-      Vector point = childMap * xi;
+      if (mesh->getShape()->getOrder() == 1) { // if linear mesh use the affine
+      	Affine childMap = getMap(mesh,node.entity);
+      	point = childMap * xi;
+      }
+      else { // else inquire the physical coordinated of local coordinate xi
+	apf::MeshElement* me = apf::createMeshElement(mesh,node.entity);
+	apf::mapLocalToGlobal(me, xi, point);
+	apf::destroyMeshElement(me);
+      }
       Vector elemXi;
       int i = getBestElement(n,elems,elemInvMaps,point,elemXi);
       transferToNodeIn(elems[i],node,elemXi);
     }
     void transfer(
-        int n,
+        int n, // size of the cavity
         Entity** cavity,
         EntityArray& newEntities)
     {
