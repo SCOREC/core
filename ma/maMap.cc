@@ -9,6 +9,8 @@
 *******************************************************************************/
 
 #include "maMap.h"
+#include <apf.h>
+#include <pcu_util.h>
 #include <algorithm>
 
 namespace ma {
@@ -98,6 +100,59 @@ double getInsideness(apf::Mesh* m, Entity* e, Vector const& xi)
            std::min(xi[2],
                     1 - xi[0] - xi[1] - xi[2])));
   return 0;
+}
+
+Vector curvedElemInvMap(
+    apf::Mesh* m,
+    Entity* e,
+    const Vector& p,
+    const double tol,
+    const int maxIter)
+{
+  int iter = 0;
+  // put the initial guess at the center of the elements
+  Vector xi0;
+  int type = m->getType(e);
+  if (type == apf::Mesh::VERTEX)
+    xi0 = Vector(0., 0., 0.);
+  else if (type == apf::Mesh::EDGE)
+    xi0 = Vector(0., 0., 0.);
+  else if (type == apf::Mesh::TRIANGLE)
+    xi0 = Vector(1./3., 1./3., 1./3.);
+  else if (type == apf::Mesh::TET)
+    xi0 = Vector(1./4., 1./4., 1./4.);
+  else
+    PCU_ALWAYS_ASSERT_VERBOSE(0, "unsupported type!");
+
+
+  apf::MeshElement* me = apf::createMeshElement(m, e);
+
+  Matrix Jinv;
+  Vector x;
+  Vector xi_new = xi0;
+  Vector xi_old = xi0;
+  double err = 1.e16;
+
+  // initial iteration
+  apf::getJacobianInv(me, xi_old, Jinv);
+  Jinv = apf::transpose(Jinv);
+  apf::mapLocalToGlobal(me, xi_old, x);
+  xi_new = xi_old - Jinv*(x-p);
+  err = (xi_new - xi_old)*(xi_new - xi_old);
+
+  while (err > tol) {
+    iter++;
+    if (iter > maxIter) break;
+    xi_old = xi_new;
+    apf::getJacobianInv(me, xi_old, Jinv);
+    Jinv = apf::transpose(Jinv);
+    apf::mapLocalToGlobal(me, xi_old, x);
+    xi_new = xi_old - Jinv*(x-p);
+    err = (xi_new - xi_old)*(xi_new - xi_old);
+  }
+
+  apf::destroyMeshElement(me);
+  return xi_new;
 }
 
 }

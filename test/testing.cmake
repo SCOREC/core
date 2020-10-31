@@ -520,11 +520,19 @@ mpi_test(nedelec 1
 set(MDIR ${MESHES}/cube/pumi670)
 mpi_test(l2_shape_tet_serial 1
   ./L2Shapes
-  ".null"
+  "${MDIR}/../cube.dmg"
   "${MDIR}/cube.smb")
 mpi_test(l2_shape_tet_parallel 4
   ./L2Shapes
-  ".null"
+  "${MDIR}/../cube.dmg"
+  "${MDIR}/4/cube.smb")
+mpi_test(h1_shape_serial 1
+  ./H1Shapes
+  "${MDIR}/../cube.dmg"
+  "${MDIR}/cube.smb")
+mpi_test(h1_shape_parallel 4
+  ./H1Shapes
+  "${MDIR}/../cube.dmg"
   "${MDIR}/4/cube.smb")
 set(MDIR ${MESHES}/cube/pumi24)
 mpi_test(pumiLoadMesh-1p 1
@@ -630,6 +638,10 @@ if(ENABLE_SIMMETRIX)
     set(MDIR ${MESHES}/curved)
     mpi_test(curvedSphere 1
       ./curvetest
+      "${MDIR}/sphere1.xmt_txt"
+      "${MDIR}/sphere1_4.smb")
+    mpi_test(highOrderSolutionTransfer 1
+      ./highOrderSolutionTransfer
       "${MDIR}/sphere1.xmt_txt"
       "${MDIR}/sphere1_4.smb")
     mpi_test(curvedKova 1

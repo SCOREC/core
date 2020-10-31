@@ -172,6 +172,11 @@ FieldShape* getNedelec(int order);
  */
 FieldShape* getL2Shape(int order, int type);
 
+/** \brief Get the H1 shapes of a given order
+  \details These are hierarchic shapes that are compatible with MFEM's impl.
+ */
+FieldShape* getH1Shape(int order);
+
 /** \brief Project a hierarchic field */
 void projectHierarchicField(Field* to, Field* from);
 
