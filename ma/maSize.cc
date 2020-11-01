@@ -439,19 +439,33 @@ struct LogAnisoSizeField : public MetricSizeField
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
-    logMField = apf::createField(m, "ma_logM", apf::MATRIX, apf::getLagrange(1));
-    Entity* v;
-    Iterator* it = m->begin(0);
-    while ( (v = m->iterate(it)) ) {
-      Vector h;
-      Matrix f;
-      apf::getVector(sizes, v, 0, h);
-      apf::getMatrix(frames, v, 0, f);
-      Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
-      Matrix S(s[0], 0   , 0,
-              0    , s[1], 0,
-              0    , 0   , s[2]);
-      apf::setMatrix(logMField, v, 0, f * S * transpose(f));
+    logMField = apf::createField(m, "ma_logM", apf::MATRIX,
+        apf::getShape(sizes));
+    int dim = m->getDimension();
+    Entity* ent;
+    Iterator* it;
+    for (int d = 0; d <= dim; d++) {
+      if (!apf::getShape(logMField)->countNodesOn(apf::Mesh::simplexTypes[d]))
+        continue;
+      else {
+        it = m->begin(d);
+        while( (ent = m->iterate(it)) ){
+	  int type = m->getType(ent);
+	  int non = apf::getShape(logMField)->countNodesOn(type);
+	  for (int i = 0; i < non; i++) {
+	    Vector h;
+	    Matrix f;
+	    apf::getVector(sizes, ent, i, h);
+	    apf::getMatrix(frames, ent, i, f);
+	    Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
+	    Matrix S(s[0], 0   , 0,
+		0    , s[1], 0,
+		0    , 0   , s[2]);
+	    apf::setMatrix(logMField, ent, i, f * S * transpose(f));
+	  }
+	}
+	m->end(it);
+      }
     }
   }
   void getTransform(
