@@ -9,6 +9,7 @@
 *******************************************************************************/
 #include <PCU.h>
 #include "maSize.h"
+#include "maSolutionTransferHelper.h"
 #include "apfMatrix.h"
 #include <apfShape.h>
 #include <cstdlib>
@@ -63,6 +64,14 @@ void IdentitySizeField::getTransform(
 double IdentitySizeField::getWeight(Entity*)
 {
   return 1.0;
+}
+
+void IdentitySizeField::onRefine(Entity*, EntityArray&)
+{
+}
+
+void IdentitySizeField::onCavity(EntityArray&, EntityArray&)
+{
 }
 
 static void orthogonalizeR(Matrix& R)
@@ -413,6 +422,12 @@ struct AnisoSizeField : public MetricSizeField
                           0,0,1),
                    Vector(value,value,value));
   }
+  void onRefine(Entity*, EntityArray&)
+  {
+  }
+  void onCavity(EntityArray&, EntityArray&)
+  {
+  }
   apf::Field* hField;
   apf::Field* rField;
   BothEval bothEval;
@@ -467,6 +482,7 @@ struct LogAnisoSizeField : public MetricSizeField
 	m->end(it);
       }
     }
+    fieldVal.allocate(apf::countComponents(logMField));
   }
   void getTransform(
       apf::MeshElement* me,
@@ -511,6 +527,20 @@ struct LogAnisoSizeField : public MetricSizeField
                           0,value,0,
                           0,0,value));
   }
+  void onRefine(
+      Entity* parent,
+      EntityArray& newEntities)
+  {
+    transfer(logMField, &(fieldVal[0]), 1, &parent, newEntities);
+  }
+  void onCavity(
+      EntityArray& oldElements,
+      EntityArray& newEntities)
+  {
+    transfer(logMField, &(fieldVal[0]),
+        oldElements.getSize(), &(oldElements[0]), newEntities);
+  }
+  apf::NewArray<double> fieldVal;
   apf::Field* logMField;
   LogMEval logMEval;
 };
