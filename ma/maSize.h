@@ -42,7 +42,6 @@ class SizeField
     virtual void onCavity(
         EntityArray& oldElements,
         EntityArray& newEntities) = 0;
-    virtual void getTransferDimension() = 0;
 };
 
 struct IdentitySizeField : public SizeField
