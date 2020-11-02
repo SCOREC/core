@@ -137,11 +137,13 @@ class Cavity
     void fit(EntityArray& oldElements);
     bool shouldTransfer;
     bool shouldFit;
+    bool shouldTransferSizeField;
   private:
     Adapt* adapter;
     SolutionTransfer* solutionTransfer;
     ShapeHandler* shape;
     NewEntities newEntities;
+    SizeField* sizeField;
 };
 
 Entity* buildVertex(

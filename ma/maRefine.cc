@@ -357,6 +357,13 @@ void transferElements(Refine* r)
       for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
 	st->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
   }
+  {
+    SizeField* sf = a->sizeField;
+    int td = sf->getTransferDimension();
+    for (int d = td; d <= m->getDimension(); ++d)
+      for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
+	sf->onRefine(r->toSplit[d][i],r->newEntities[d][i]);
+  }
 }
 
 void forgetNewEntities(Refine* r)

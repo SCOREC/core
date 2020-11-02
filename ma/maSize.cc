@@ -74,6 +74,11 @@ void IdentitySizeField::onCavity(EntityArray&, EntityArray&)
 {
 }
 
+int IdentitySizeField::getTransferDimension()
+{
+  return 0;
+}
+
 static void orthogonalizeR(Matrix& R)
 {
   /* by the way, the principal direction vectors
@@ -428,6 +433,10 @@ struct AnisoSizeField : public MetricSizeField
   void onCavity(EntityArray&, EntityArray&)
   {
   }
+  int getTransferDimension()
+  {
+    return 0;
+  }
   apf::Field* hField;
   apf::Field* rField;
   BothEval bothEval;
@@ -539,6 +548,16 @@ struct LogAnisoSizeField : public MetricSizeField
   {
     transfer(logMField, &(fieldVal[0]),
         oldElements.getSize(), &(oldElements[0]), newEntities);
+  }
+  int getTransferDimension()
+  {
+    int transferDimension = 4;
+    for (int d = 1; d <=3; d++)
+      if (apf::getShape(logMField)->hasNodesIn(d)) {
+        transferDimension = d;
+        break;
+      }
+    return transferDimension;
   }
   apf::NewArray<double> fieldVal;
   apf::Field* logMField;
