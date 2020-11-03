@@ -23,7 +23,7 @@ namespace apf {
 // This is used for static tables only.
 // The following implementation are for general orders but template classes
 // are only instantiated up to order 10 for now.
-static unsigned const MAX_ORDER = 10;
+static const int MAX_ORDER = 10;
 
 static inline int countEdgeNodes(int P)
 {
@@ -664,7 +664,7 @@ apf::FieldShape* getH1Shape(int order)
 {
   PCU_ALWAYS_ASSERT_VERBOSE(order > 0,
       "order is expected to be bigger than or equal to 1!");
-  PCU_ALWAYS_ASSERT_VERBOSE(order <= 10,
+  PCU_ALWAYS_ASSERT_VERBOSE(order <= MAX_ORDER,
       "order is expected to be less than or equal to 10!");
   // Note: to have higher order H1 fields all you need to do is to
   // instantiate the class  up to that order in the following table
