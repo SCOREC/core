@@ -1147,80 +1147,101 @@ apf::FieldShape* getNedelec(int order)
 
 void projectNedelecField(Field* to, Field* from)
 {
-  // checks on the from field
-  // checks on the to field
-  /* apf::FieldShape* tShape = getShape(to); */
-  /* std::string      tName  = tShape->getName(); */
-  /* int              tOrder = tShape->getOrder(); */
-  /* PCU_ALWAYS_ASSERT_VERBOSE((tName == std::string("Linear")) && (tOrder == 1), */
-  /* 		"The to field needs to be 1st order Lagrange!"); */
-
   Mesh* m = getMesh(from);
   apf::FieldShape* fs = getShape(to);
-  // auxiliary count fields
-  Field* count = createField(m, "counter", SCALAR, fs);
+  std::string name(fs->getName());
 
-  // zero out the fields
-  zeroField(to);
-  zeroField(count);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it;
 
-  MeshEntity* e;
-  MeshIterator* it = m->begin(m->getDimension());
-  while( (e = m->iterate(it)) ) {
-    MeshElement* me = createMeshElement(m, e);
-    Element* el = createElement(from, me);
-    for (int d = 0; d <= m->getDimension(); d++) {
-      if (!fs->hasNodesIn(d)) continue;
-      MeshEntity* down[12];
-      int nd = m->getDownward(e, d, down);
-      for (int i=0; i<nd; i++) {
-        int type = m->getType(down[i]);
-        int non = fs->countNodesOn(type);
-        for (int j = 0; j < non; j++) {
-          Vector3 nodeXiChild;
-          fs->getNodeXi(type, j, nodeXiChild);
-          Vector3 nodeXiParent = boundaryToElementXi(
-              m, down[i], e, nodeXiChild);
-          Vector3 atXi;
-          getVector(el, nodeXiParent, atXi);
-          Vector3 currentVal;
-          getVector(to, down[i], j, currentVal);
-          double currentCount = getScalar(count, down[i], j);
-          currentVal += atXi;
-          currentCount += 1.;
-          setVector(to, down[i], j, currentVal);
-          setScalar(count, down[i], j, currentCount);
-        }
+  // Integration Point Shapes (IPShapes) has to be treated differently
+  if (name.find(std::string("IP")) != std::string::npos)
+  {
+    int ip_order = fs->getOrder();
+    it = m->begin(m->getDimension());
+    while ( (e = m->iterate(it)) ) {
+      apf::MeshElement* me = apf::createMeshElement(m, e);
+      apf::Element*     el = apf::createElement(from, me);
+      int np = apf::countIntPoints(me, ip_order);
+      for (int i = 0; i < np; i++) {
+	apf::Vector3 xi;
+	apf::getIntPoint(me, ip_order, i, xi);
+	apf::Vector3 val;
+	apf::getVector(el, xi, val);
+	apf::setVector(to, e, i, val);
       }
-    }
-    destroyElement(el);
-    destroyMeshElement(me);
-  }
-  m->end(it);
-
-  // take care of entities on part boundary
-  accumulate(to);
-  accumulate(count);
-
-  for (int d = 0; d <= m->getDimension(); d++) {
-    if (!fs->hasNodesIn(d)) continue;
-    it = m->begin(d);
-    while( (e = m->iterate(it)) ) {
-      int type = m->getType(e);
-      int non = fs->countNodesOn(type);
-      for (int j = 0; j < non; j++) {
-	Vector3 sum;
-	getVector(to, e, j, sum);
-	setVector(to, e, j, sum/getScalar(count, e, j));
-      }
+      apf::destroyElement(el);
+      apf::destroyMeshElement(me);
     }
     m->end(it);
   }
-  // take care of entities on part boundary
-  synchronize(to);
+  // Other fields such as Lagrange and H1 can be treated here
+  else
+  {
+    // auxiliary count fields
+    Field* count = createField(m, "counter", SCALAR, fs);
 
-  m->removeField(count);
-  destroyField(count);
+    // zero out the fields
+    zeroField(to);
+    zeroField(count);
+
+    it = m->begin(m->getDimension());
+    while( (e = m->iterate(it)) ) {
+      MeshElement* me = createMeshElement(m, e);
+      Element* el = createElement(from, me);
+      for (int d = 0; d <= m->getDimension(); d++) {
+	if (!fs->hasNodesIn(d)) continue;
+	MeshEntity* down[12];
+	int nd = m->getDownward(e, d, down);
+	for (int i=0; i<nd; i++) {
+	  int type = m->getType(down[i]);
+	  int non = fs->countNodesOn(type);
+	  for (int j = 0; j < non; j++) {
+	    Vector3 nodeXiChild;
+	    fs->getNodeXi(type, j, nodeXiChild);
+	    Vector3 nodeXiParent = boundaryToElementXi(
+		m, down[i], e, nodeXiChild);
+	    Vector3 atXi;
+	    getVector(el, nodeXiParent, atXi);
+	    Vector3 currentVal;
+	    getVector(to, down[i], j, currentVal);
+	    double currentCount = getScalar(count, down[i], j);
+	    currentVal += atXi;
+	    currentCount += 1.;
+	    setVector(to, down[i], j, currentVal);
+	    setScalar(count, down[i], j, currentCount);
+	  }
+	}
+      }
+      destroyElement(el);
+      destroyMeshElement(me);
+    }
+    m->end(it);
+
+    // take care of entities on part boundary
+    accumulate(to);
+    accumulate(count);
+
+    for (int d = 0; d <= m->getDimension(); d++) {
+      if (!fs->hasNodesIn(d)) continue;
+      it = m->begin(d);
+      while( (e = m->iterate(it)) ) {
+	int type = m->getType(e);
+	int non = fs->countNodesOn(type);
+	for (int j = 0; j < non; j++) {
+	  Vector3 sum;
+	  getVector(to, e, j, sum);
+	  setVector(to, e, j, sum/getScalar(count, e, j));
+	}
+      }
+      m->end(it);
+    }
+    // take care of entities on part boundary
+    synchronize(to);
+
+    m->removeField(count);
+    destroyField(count);
+  }
 }
 
 }
