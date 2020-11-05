@@ -17,8 +17,6 @@
 extern "C" {
 #endif
 
-struct egObject;
-
 /** \brief start the EGADS session */
 void gmi_egads_start(void);
 /** \brief end the EGADS session */
