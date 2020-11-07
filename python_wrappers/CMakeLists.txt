@@ -44,6 +44,7 @@ set_property(TARGET pyCore
   ${CMAKE_SOURCE_DIR}/ma
   ${CMAKE_SOURCE_DIR}/can
   ${CMAKE_SOURCE_DIR}/spr
+  ${CMAKE_SOURCE_DIR}/crv
 )
 
 set(pyCoreDepLibs

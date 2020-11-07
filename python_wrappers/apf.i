@@ -27,6 +27,7 @@
 #include <spr.h>
 #include <maInput.h>
 #include <ma.h>
+#include <crv.h>
 
 #ifdef HAVE_SIMMETRIX
   #include <sim_helper.h>
@@ -309,4 +310,19 @@ namespace ma {
 namespace ma {
   void adapt(Input* in);
   void adaptVerbose(Input* in, bool verbosef = false);
+}
+
+/* CRV RELATED WRAPPERS */
+%rename(crvadapt) crv::adapt;
+namespace crv {
+  void adapt(ma::Input* in);
+  class BezierCurver : public MeshCurver
+  {
+    public:
+      BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m,P)
+      {
+        setBlendingOrder(apf::Mesh::TYPES,B);
+      };
+      virtual bool run();
+  };
 }
