@@ -143,7 +143,6 @@ class Cavity
     SolutionTransfer* solutionTransfer;
     ShapeHandler* shape;
     NewEntities newEntities;
-    SizeField* sizeField;
 };
 
 Entity* buildVertex(

@@ -43,6 +43,7 @@ class SizeField
         EntityArray& oldElements,
         EntityArray& newEntities) = 0;
     virtual int getTransferDimension() = 0;
+    virtual bool hasNodesOn(int dimension) = 0;
 };
 
 struct IdentitySizeField : public SizeField
@@ -59,6 +60,7 @@ struct IdentitySizeField : public SizeField
           apf::MeshElement*,
           Vector const&,
           Matrix& t);
+  bool hasNodesOn(int dimension);
   double getWeight(Entity*);
   void onRefine(
       Entity* parent,

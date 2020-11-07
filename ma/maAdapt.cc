@@ -360,7 +360,6 @@ void Cavity::init(Adapt* a)
 {
   adapter = a;
   solutionTransfer = a->solutionTransfer;
-  sizeField = a->sizeField;
   shape = a->shape;
   Mesh* m = a->mesh;
   shouldTransfer = false;
@@ -370,7 +369,7 @@ void Cavity::init(Adapt* a)
       shouldTransfer = true;
     if (shape->hasNodesOn(d))
       shouldFit = true;
-    if (sizeField->getTransferDimension())
+    if (adapter->sizeField->hasNodesOn(d))
       shouldTransferSizeField = true;
   }
 }
@@ -417,7 +416,7 @@ void Cavity::transfer(EntityArray& oldElements)
   {
     EntityArray a;
     newEntities.retrieve(a);
-    sizeField->onCavity(oldElements,a);
+    adapter->sizeField->onCavity(oldElements,a);
   }
 }
 

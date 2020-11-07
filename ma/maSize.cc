@@ -79,6 +79,12 @@ int IdentitySizeField::getTransferDimension()
   return 0;
 }
 
+bool IdentitySizeField::hasNodesOn(int dimension)
+{
+  std::ignore = (dimension);
+  return false;
+}
+
 static void orthogonalizeR(Matrix& R)
 {
   /* by the way, the principal direction vectors
@@ -437,6 +443,11 @@ struct AnisoSizeField : public MetricSizeField
   {
     return 0;
   }
+  bool hasNodesOn(int dimension)
+  {
+    std::ignore = (dimension);
+    return false;
+  }
   apf::Field* hField;
   apf::Field* rField;
   BothEval bothEval;
@@ -471,25 +482,23 @@ struct LogAnisoSizeField : public MetricSizeField
     for (int d = 0; d <= dim; d++) {
       if (!apf::getShape(logMField)->countNodesOn(apf::Mesh::simplexTypes[d]))
         continue;
-      else {
-        it = m->begin(d);
-        while( (ent = m->iterate(it)) ){
-	  int type = m->getType(ent);
-	  int non = apf::getShape(logMField)->countNodesOn(type);
-	  for (int i = 0; i < non; i++) {
-	    Vector h;
-	    Matrix f;
-	    apf::getVector(sizes, ent, i, h);
-	    apf::getMatrix(frames, ent, i, f);
-	    Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
-	    Matrix S(s[0], 0   , 0,
-		0    , s[1], 0,
-		0    , 0   , s[2]);
-	    apf::setMatrix(logMField, ent, i, f * S * transpose(f));
-	  }
+      it = m->begin(d);
+      while( (ent = m->iterate(it)) ){
+	int type = m->getType(ent);
+	int non = apf::getShape(logMField)->countNodesOn(type);
+	for (int i = 0; i < non; i++) {
+	  Vector h;
+	  Matrix f;
+	  apf::getVector(sizes, ent, i, h);
+	  apf::getMatrix(frames, ent, i, f);
+	  Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
+	  Matrix S(s[0], 0   , 0,
+	      0    , s[1], 0,
+	      0    , 0   , s[2]);
+	  apf::setMatrix(logMField, ent, i, f * S * transpose(f));
 	}
-	m->end(it);
       }
+      m->end(it);
     }
     fieldVal.allocate(apf::countComponents(logMField));
   }
@@ -553,11 +562,15 @@ struct LogAnisoSizeField : public MetricSizeField
   {
     int transferDimension = 4;
     for (int d = 1; d <=3; d++)
-      if (apf::getShape(logMField)->hasNodesIn(d)) {
+      if (hasNodesOn(d)) {
         transferDimension = d;
         break;
       }
     return transferDimension;
+  }
+  bool hasNodesOn(int dimension)
+  {
+    return apf::getShape(logMField)->hasNodesIn(dimension);
   }
   apf::NewArray<double> fieldVal;
   apf::Field* logMField;
