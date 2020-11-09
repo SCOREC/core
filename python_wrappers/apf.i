@@ -325,4 +325,6 @@ namespace crv {
       };
       virtual bool run();
   };
+  void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
+  void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix);
 }
