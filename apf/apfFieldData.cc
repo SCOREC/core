@@ -297,6 +297,12 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 	if (nan > 1 && ed != d) { /* multiple shared nodes, check alignment */
 	  order.setSize(nen); /* nen >= nan */
 	  adata.setSize(nen); /* setSize is no-op for the same size */
+	  // Note: The above efficiency consideration does not account for the
+	  // fact that nc might be very large (e.g. nc = 9 for matrix fields)
+	  // and for such cases setting the size of adata to "nen" is not enough.
+	  // Hence the need for the following line.
+	  if (nan*nc > nen)
+	    adata.setSize(nan*nc);
 	  es->alignSharedNodes(mesh, entity, a[i], &order[0]);
 	  get(a[i], &adata[0]);
 	  reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
