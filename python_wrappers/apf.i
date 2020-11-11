@@ -27,6 +27,7 @@
 #include <spr.h>
 #include <maInput.h>
 #include <ma.h>
+#include <crv.h>
 
 #ifdef HAVE_SIMMETRIX
   #include <sim_helper.h>
@@ -162,6 +163,84 @@ void lion_set_verbosity(int lvl);
     }
     return sum/count;
   }
+  apf::Field* getCurrentIsoSize(const char* name)
+  {
+    apf::Field* currentSize = apf::createField(
+        self, name, apf::SCALAR, apf::getLagrange(1));
+
+    apf::Field* cnt = apf::createField(
+        self, "current_size_cnt", apf::SCALAR, apf::getLagrange(1));
+
+    apf::zeroField(currentSize);
+    apf::zeroField(cnt);
+
+
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = self->begin(0);
+    while ( (e = self->iterate(it)) ) {
+      double local_sum = 0.;
+      double local_cnt = 0.;
+      for (int i = 0; i < self->countUpward(e); i++) {
+        local_sum += apf::measure(self, self->getUpward(e, i));
+        local_cnt += 1.0;
+      }
+      apf::setScalar(currentSize, e, 0, local_sum);
+      apf::setScalar(cnt, e, 0, local_cnt);
+
+    }
+    self->end(it);
+
+    apf::accumulate(currentSize);
+    apf::accumulate(cnt);
+
+    it = self->begin(0);
+    while ( (e = self->iterate(it)) ) {
+      if (!self->isOwned(e)) continue;
+      double sum = apf::getScalar(currentSize, e, 0);
+      double count = apf::getScalar(cnt, e, 0);
+      apf::setScalar(currentSize, e, 0, sum/count);
+    }
+    self->end(it);
+
+    apf::synchronize(currentSize);
+    self->removeField(cnt);
+    apf::destroyField(cnt);
+    return currentSize;
+  }
+  double getMinOfScalarField(apf::Field* field)
+  {
+    PCU_ALWAYS_ASSERT(apf::getValueType(field) == apf::SCALAR);
+    double local_min = 1.0e32;
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = self->begin(0);
+    while ( (e = self->iterate(it)) ) {
+      if (!self->isOwned(e))
+        continue;
+      double val = apf::getScalar(field, e, 0);
+      if (val < local_min)
+        local_min = val;
+    }
+    self->end(it);
+    PCU_Min_Doubles(&local_min, 1);
+    return local_min;
+  }
+  double getMaxOfScalarField(apf::Field* field)
+  {
+    PCU_ALWAYS_ASSERT(apf::getValueType(field) == apf::SCALAR);
+    double local_max = -1.0e32;
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = self->begin(0);
+    while ( (e = self->iterate(it)) ) {
+      if (!self->isOwned(e))
+        continue;
+      double val = apf::getScalar(field, e, 0);
+      if (val > local_max)
+        local_max = val;
+    }
+    self->end(it);
+    PCU_Max_Doubles(&local_max, 1);
+    return local_max;
+  }
   bool isBoundingModelRegion(int rtag, int dim, int tag)
   {
     if (dim != 2) return false;
@@ -231,4 +310,21 @@ namespace ma {
 namespace ma {
   void adapt(Input* in);
   void adaptVerbose(Input* in, bool verbosef = false);
+}
+
+/* CRV RELATED WRAPPERS */
+%rename(crvadapt) crv::adapt;
+namespace crv {
+  void adapt(ma::Input* in);
+  class BezierCurver : public MeshCurver
+  {
+    public:
+      BezierCurver(apf::Mesh2* m, int P, int B) : MeshCurver(m,P)
+      {
+        setBlendingOrder(apf::Mesh::TYPES,B);
+      };
+      virtual bool run();
+  };
+  void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix);
+  void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix);
 }
