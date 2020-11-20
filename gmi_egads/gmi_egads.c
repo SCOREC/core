@@ -43,7 +43,7 @@ typedef struct egads_ent
 /// egads_global_ents[1] - array of model edges
 /// egads_global_ents[2] - array of model faces
 /// egads_global_ents[3] - array of model regions
-egads_ent *egads_global_ents[4];
+static egads_ent *egads_global_ents[4];
 
 typedef struct egads_iter
 {
