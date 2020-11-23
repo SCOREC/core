@@ -153,7 +153,7 @@ class SizeFieldIntegrator : public apf::Integrator
 {
   public:
     SizeFieldIntegrator(SizeField* sF):
-      Integrator(2),
+      Integrator(3),
       measurement(0),
       sizeField(sF),
       meshElement(0),
