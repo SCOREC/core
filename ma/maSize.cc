@@ -159,8 +159,8 @@ static double parentMeasure[apf::Mesh::TYPES] =
 class SizeFieldIntegrator : public apf::Integrator
 {
   public:
-    SizeFieldIntegrator(SizeField* sF):
-      Integrator(3),
+    SizeFieldIntegrator(SizeField* sF, int order):
+      Integrator(order),
       measurement(0),
       sizeField(sF),
       meshElement(0),
@@ -208,7 +208,8 @@ struct MetricSizeField : public SizeField
 {
   double measure(Entity* e)
   {
-    SizeFieldIntegrator sFI(this); 
+    SizeFieldIntegrator sFI(this,
+    	std::max(mesh->getShape()->getOrder(), order)+1);
     apf::MeshElement* me = apf::createMeshElement(mesh, e);
     sFI.process(me);
     apf::destroyMeshElement(me);
@@ -228,6 +229,7 @@ struct MetricSizeField : public SizeField
     return measure(e) / parentMeasure[mesh->getType(e)];
   }
   Mesh* mesh;
+  int order; // this is the underlying sizefield order
 };
 
 AnisotropicFunction::~AnisotropicFunction()
@@ -371,6 +373,7 @@ struct AnisoSizeField : public MetricSizeField
     frameEval(&bothEval)
   {
     mesh = m;
+    order = 1;
     hField = apf::createUserField(m, "ma_sizes", apf::VECTOR,
         apf::getLagrange(1), &sizesEval);
     rField = apf::createUserField(m, "ma_frame", apf::MATRIX,
@@ -384,6 +387,7 @@ struct AnisoSizeField : public MetricSizeField
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
+    order = apf::getShape(sizes)->getOrder();
     hField = sizes;
     rField = frames;
   }
@@ -456,6 +460,7 @@ struct LogAnisoSizeField : public MetricSizeField
     logMEval(f)
   {
     mesh = m;
+    order = 1;
     logMField = apf::createUserField(m, "ma_logM", apf::MATRIX,
         apf::getLagrange(1), &logMEval);
   }
@@ -466,6 +471,7 @@ struct LogAnisoSizeField : public MetricSizeField
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
+    order = apf::getShape(sizes)->getOrder();
     logMField = apf::createField(m, "ma_logM", apf::MATRIX,
         apf::getShape(sizes));
     int dim = m->getDimension();
