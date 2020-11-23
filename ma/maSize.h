@@ -38,12 +38,12 @@ class SizeField
     virtual double getWeight(Entity* e) = 0;
     virtual void onRefine(
         Entity* parent,
-        EntityArray& newEntities) = 0;
+        EntityArray& newEntities);
     virtual void onCavity(
         EntityArray& oldElements,
-        EntityArray& newEntities) = 0;
-    virtual int getTransferDimension() = 0;
-    virtual bool hasNodesOn(int dimension) = 0;
+        EntityArray& newEntities);
+    virtual int getTransferDimension();
+    virtual bool hasNodesOn(int dimension);
 };
 
 struct IdentitySizeField : public SizeField
@@ -60,16 +60,7 @@ struct IdentitySizeField : public SizeField
           apf::MeshElement*,
           Vector const&,
           Matrix& t);
-  bool hasNodesOn(int dimension);
   double getWeight(Entity*);
-  void onRefine(
-      Entity* parent,
-      EntityArray& newEntities);
-  void onCavity(
-      EntityArray& oldElements,
-      EntityArray& newEntities);
-  int getTransferDimension();
-
   Mesh* mesh;
 
 };

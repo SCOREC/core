@@ -21,6 +21,32 @@ SizeField::~SizeField()
 {
 }
 
+void SizeField::onRefine(Entity*, EntityArray&)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(0,
+      "unimplemented onRefine was called for a size-field!");
+}
+
+void SizeField::onCavity(EntityArray&, EntityArray&)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(0,
+      "unimplemented onCavity was called for a size-field!");
+}
+
+int SizeField::getTransferDimension()
+{
+  // By default there should be now size_field transfer.
+  // This is used in a loop to get the lowest dimension
+  // entities that require transfer. So something bigger
+  // than mesh dimension will ignore that loop
+  return 4;
+}
+
+bool SizeField::hasNodesOn(int)
+{
+  return false;
+}
+
 IdentitySizeField::IdentitySizeField(Mesh* m):
   mesh(m)
 {
@@ -66,25 +92,6 @@ double IdentitySizeField::getWeight(Entity*)
   return 1.0;
 }
 
-void IdentitySizeField::onRefine(Entity*, EntityArray&)
-{
-}
-
-void IdentitySizeField::onCavity(EntityArray&, EntityArray&)
-{
-}
-
-int IdentitySizeField::getTransferDimension()
-{
-  return 0;
-}
-
-bool IdentitySizeField::hasNodesOn(int dimension)
-{
-  std::ignore = (dimension);
-  return false;
-}
-
 static void orthogonalizeR(Matrix& R)
 {
   /* by the way, the principal direction vectors
@@ -116,14 +123,14 @@ static void orthogonalizeR(Matrix& R)
 
 static void orthogonalEigenDecompForSymmetricMatrix(Matrix const& A, Vector& v, Matrix& R)
 {
-  /* here we assume A to be real symmetric 3x3 matrix, 
+  /* here we assume A to be real symmetric 3x3 matrix,
    * we should be able to get 3 orthogonal eigen vectors
    * we also normalize the eigen vectors */
   double eigenValues[3];
   Vector eigenVectors[3];
-  
+
   apf::eigen(A, eigenVectors, eigenValues);
-  
+
   Matrix RT(eigenVectors); // eigen vectors are stored in the rows of RT
 
   RT[0] = RT[0].normalize();
@@ -432,21 +439,6 @@ struct AnisoSizeField : public MetricSizeField
                           0,1,0,
                           0,0,1),
                    Vector(value,value,value));
-  }
-  void onRefine(Entity*, EntityArray&)
-  {
-  }
-  void onCavity(EntityArray&, EntityArray&)
-  {
-  }
-  int getTransferDimension()
-  {
-    return 0;
-  }
-  bool hasNodesOn(int dimension)
-  {
-    std::ignore = (dimension);
-    return false;
   }
   apf::Field* hField;
   apf::Field* rField;
