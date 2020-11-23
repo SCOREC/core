@@ -229,7 +229,7 @@ struct MetricSizeField : public SizeField
     return measure(e) / parentMeasure[mesh->getType(e)];
   }
   Mesh* mesh;
-  int order; // this is the underlying sizefield order
+  int order; // this is the underlying sizefield order (default 1)
 };
 
 AnisotropicFunction::~AnisotropicFunction()
@@ -366,6 +366,8 @@ struct AnisoSizeField : public MetricSizeField
 {
   AnisoSizeField()
   {
+    mesh = 0;
+    order = 1;
   }
   AnisoSizeField(Mesh* m, AnisotropicFunction* f):
     bothEval(f),
@@ -455,6 +457,8 @@ struct LogAnisoSizeField : public MetricSizeField
 {
   LogAnisoSizeField()
   {
+    mesh = 0;
+    order = 1;
   }
   LogAnisoSizeField(Mesh* m, AnisotropicFunction* f):
     logMEval(f)
