@@ -35,7 +35,7 @@ void SizeField::onCavity(EntityArray&, EntityArray&)
 
 int SizeField::getTransferDimension()
 {
-  // By default there should be now size_field transfer.
+  // By default there should be no size_field transfer.
   // This is used in a loop to get the lowest dimension
   // entities that require transfer. So something bigger
   // than mesh dimension will ignore that loop
