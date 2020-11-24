@@ -28,11 +28,6 @@ void computeSizesFrames(
     apf::Vector3 &sz,
     apf::Matrix3x3 &frm);
 
-void computeLogM(
-    const apf::Vector3& sz,
-    const apf::Matrix3x3& frm,
-    apf::Matrix3x3& logm);
-
 void testAdapt(
     const char* model,
     const char* mesh,
@@ -115,18 +110,6 @@ void computeSizesFrames(
   frm[2] = tangent;
 }
 
-void computeLogM(
-    const apf::Vector3& sz,
-    const apf::Matrix3x3& frm,
-    apf::Matrix3x3& logm)
-{
-  apf::Vector3 s(log(1./sz[0]/sz[0]), log(1./sz[1]/sz[1]), log(1./sz[2]/sz[2]));
-  apf::Matrix3x3 S(s[0],   0.,   0.,
-                     0., s[1],   0.,
-                     0.,   0., s[2]);
-  logm = frm * S * transpose(frm);
-}
-
 void testAdapt(
     const char* model,
     const char* mesh,
@@ -142,13 +125,6 @@ void testAdapt(
   apf::FieldShape* fs = apf::getH1Shape(order);
   apf::Field* sizes = apf::createField(m, "sizes", apf::VECTOR, fs);
   apf::Field* frames = apf::createField(m, "frames", apf::MATRIX, fs);
-
-  apf::Field* sizes_transfer = apf::createField(m, "sizest", apf::VECTOR,
-      apf::getH1Shape(order));
-  apf::Field* frames_transfer = apf::createField(m, "framest", apf::MATRIX,
-      apf::getH1Shape(order));
-  apf::Field* logm_transfer = apf::createField(m, "logmt", apf::MATRIX,
-      apf::getH1Shape(order));
 
   int dim = m->getDimension();
   apf::MeshEntity* ent;
@@ -171,12 +147,6 @@ void testAdapt(
 	computeSizesFrames(m, p, sz, frm);
 	apf::setVector(sizes, ent, i, sz);
 	apf::setMatrix(frames, ent, i, frm);
-
-        apf::setVector(sizes_transfer, ent, i, sz);
-        apf::setMatrix(frames_transfer, ent, i, frm);
-        apf::Matrix3x3 logm;
-        computeLogM(sz, frm, logm);
-        apf::setMatrix(logm_transfer, ent, i, logm);
       }
       apf::destroyMeshElement(me);
     }
@@ -198,15 +168,9 @@ void testAdapt(
 
   m->removeField(sizes);
   m->removeField(frames);
-  m->removeField(sizes_transfer);
-  m->removeField(frames_transfer);
-  m->removeField(logm_transfer);
 
   apf::destroyField(sizes);
   apf::destroyField(frames);
-  apf::destroyField(sizes_transfer);
-  apf::destroyField(frames_transfer);
-  apf::destroyField(logm_transfer);
 
   m->destroyNative();
   apf::destroyMesh(m);
