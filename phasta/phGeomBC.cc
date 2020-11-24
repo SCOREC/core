@@ -367,7 +367,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
 // start effort to write coords to a flat ascii file for each part
   int npts=params[0];
   char coordfilename[64];
-  bzero((void*)coordfilename,64);
+  //bzero((void*)coordfilename,64);
   int rank = PCU_Comm_Self() + 1;
   sprintf(coordfilename, "coords.%d",rank);
   FILE* fc = fopen(coordfilename, "w");
