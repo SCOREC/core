@@ -66,6 +66,10 @@ if(ENABLE_SIMMETRIX)
   mpi_test(modelInfo_smd 1
     ./modelInfo
     "${MESHES}/cube/cube.smd")
+  mpi_test(highorder_sizefield 1
+    ./highOrderSizeFields
+    "${MESHES}/cube/cube.smd"
+    "${MESHES}/cube/pumi11/cube.smb")
 endif(ENABLE_SIMMETRIX)
 
 if(ENABLE_SIMMETRIX)
