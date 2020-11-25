@@ -9,6 +9,7 @@
 *******************************************************************************/
 #include <PCU.h>
 #include "maSize.h"
+#include "maSolutionTransferHelper.h"
 #include "apfMatrix.h"
 #include <apfShape.h>
 #include <cstdlib>
@@ -18,6 +19,32 @@ namespace ma {
 
 SizeField::~SizeField()
 {
+}
+
+void SizeField::onRefine(Entity*, EntityArray&)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(0,
+      "unimplemented onRefine was called for a size-field!");
+}
+
+void SizeField::onCavity(EntityArray&, EntityArray&)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(0,
+      "unimplemented onCavity was called for a size-field!");
+}
+
+int SizeField::getTransferDimension()
+{
+  // By default there should be no size_field transfer.
+  // This is used in a loop to get the lowest dimension
+  // entities that require transfer. So something bigger
+  // than mesh dimension will ignore that loop
+  return 4;
+}
+
+bool SizeField::hasNodesOn(int)
+{
+  return false;
 }
 
 IdentitySizeField::IdentitySizeField(Mesh* m):
@@ -96,14 +123,14 @@ static void orthogonalizeR(Matrix& R)
 
 static void orthogonalEigenDecompForSymmetricMatrix(Matrix const& A, Vector& v, Matrix& R)
 {
-  /* here we assume A to be real symmetric 3x3 matrix, 
+  /* here we assume A to be real symmetric 3x3 matrix,
    * we should be able to get 3 orthogonal eigen vectors
    * we also normalize the eigen vectors */
   double eigenValues[3];
   Vector eigenVectors[3];
-  
+
   apf::eigen(A, eigenVectors, eigenValues);
-  
+
   Matrix RT(eigenVectors); // eigen vectors are stored in the rows of RT
 
   RT[0] = RT[0].normalize();
@@ -132,8 +159,8 @@ static double parentMeasure[apf::Mesh::TYPES] =
 class SizeFieldIntegrator : public apf::Integrator
 {
   public:
-    SizeFieldIntegrator(SizeField* sF):
-      Integrator(2),
+    SizeFieldIntegrator(SizeField* sF, int order):
+      Integrator(order),
       measurement(0),
       sizeField(sF),
       meshElement(0),
@@ -181,7 +208,8 @@ struct MetricSizeField : public SizeField
 {
   double measure(Entity* e)
   {
-    SizeFieldIntegrator sFI(this); 
+    SizeFieldIntegrator sFI(this,
+    	std::max(mesh->getShape()->getOrder(), order)+1);
     apf::MeshElement* me = apf::createMeshElement(mesh, e);
     sFI.process(me);
     apf::destroyMeshElement(me);
@@ -201,6 +229,7 @@ struct MetricSizeField : public SizeField
     return measure(e) / parentMeasure[mesh->getType(e)];
   }
   Mesh* mesh;
+  int order; // this is the underlying sizefield order (default 1)
 };
 
 AnisotropicFunction::~AnisotropicFunction()
@@ -337,6 +366,8 @@ struct AnisoSizeField : public MetricSizeField
 {
   AnisoSizeField()
   {
+    mesh = 0;
+    order = 1;
   }
   AnisoSizeField(Mesh* m, AnisotropicFunction* f):
     bothEval(f),
@@ -344,6 +375,7 @@ struct AnisoSizeField : public MetricSizeField
     frameEval(&bothEval)
   {
     mesh = m;
+    order = 1;
     hField = apf::createUserField(m, "ma_sizes", apf::VECTOR,
         apf::getLagrange(1), &sizesEval);
     rField = apf::createUserField(m, "ma_frame", apf::MATRIX,
@@ -357,6 +389,7 @@ struct AnisoSizeField : public MetricSizeField
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
+    order = apf::getShape(sizes)->getOrder();
     hField = sizes;
     rField = frames;
   }
@@ -424,11 +457,14 @@ struct LogAnisoSizeField : public MetricSizeField
 {
   LogAnisoSizeField()
   {
+    mesh = 0;
+    order = 1;
   }
   LogAnisoSizeField(Mesh* m, AnisotropicFunction* f):
     logMEval(f)
   {
     mesh = m;
+    order = 1;
     logMField = apf::createUserField(m, "ma_logM", apf::MATRIX,
         apf::getLagrange(1), &logMEval);
   }
@@ -439,20 +475,34 @@ struct LogAnisoSizeField : public MetricSizeField
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
-    logMField = apf::createField(m, "ma_logM", apf::MATRIX, apf::getLagrange(1));
-    Entity* v;
-    Iterator* it = m->begin(0);
-    while ( (v = m->iterate(it)) ) {
-      Vector h;
-      Matrix f;
-      apf::getVector(sizes, v, 0, h);
-      apf::getMatrix(frames, v, 0, f);
-      Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
-      Matrix S(s[0], 0   , 0,
-              0    , s[1], 0,
-              0    , 0   , s[2]);
-      apf::setMatrix(logMField, v, 0, f * S * transpose(f));
+    order = apf::getShape(sizes)->getOrder();
+    logMField = apf::createField(m, "ma_logM", apf::MATRIX,
+        apf::getShape(sizes));
+    int dim = m->getDimension();
+    Entity* ent;
+    Iterator* it;
+    for (int d = 0; d <= dim; d++) {
+      if (!apf::getShape(logMField)->countNodesOn(apf::Mesh::simplexTypes[d]))
+        continue;
+      it = m->begin(d);
+      while( (ent = m->iterate(it)) ){
+	int type = m->getType(ent);
+	int non = apf::getShape(logMField)->countNodesOn(type);
+	for (int i = 0; i < non; i++) {
+	  Vector h;
+	  Matrix f;
+	  apf::getVector(sizes, ent, i, h);
+	  apf::getMatrix(frames, ent, i, f);
+	  Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
+	  Matrix S(s[0], 0   , 0,
+	      0    , s[1], 0,
+	      0    , 0   , s[2]);
+	  apf::setMatrix(logMField, ent, i, f * S * transpose(f));
+	}
+      }
+      m->end(it);
     }
+    fieldVal.allocate(apf::countComponents(logMField));
   }
   void getTransform(
       apf::MeshElement* me,
@@ -497,6 +547,34 @@ struct LogAnisoSizeField : public MetricSizeField
                           0,value,0,
                           0,0,value));
   }
+  void onRefine(
+      Entity* parent,
+      EntityArray& newEntities)
+  {
+    transfer(logMField, &(fieldVal[0]), 1, &parent, newEntities);
+  }
+  void onCavity(
+      EntityArray& oldElements,
+      EntityArray& newEntities)
+  {
+    transfer(logMField, &(fieldVal[0]),
+        oldElements.getSize(), &(oldElements[0]), newEntities);
+  }
+  int getTransferDimension()
+  {
+    int transferDimension = 4;
+    for (int d = 1; d <=3; d++)
+      if (hasNodesOn(d)) {
+        transferDimension = d;
+        break;
+      }
+    return transferDimension;
+  }
+  bool hasNodesOn(int dimension)
+  {
+    return apf::getShape(logMField)->hasNodesIn(dimension);
+  }
+  apf::NewArray<double> fieldVal;
   apf::Field* logMField;
   LogMEval logMEval;
 };
