@@ -36,6 +36,14 @@ class SizeField
         Vector const& xi,
         Matrix& t) = 0;
     virtual double getWeight(Entity* e) = 0;
+    virtual void onRefine(
+        Entity* parent,
+        EntityArray& newEntities);
+    virtual void onCavity(
+        EntityArray& oldElements,
+        EntityArray& newEntities);
+    virtual int getTransferDimension();
+    virtual bool hasNodesOn(int dimension);
 };
 
 struct IdentitySizeField : public SizeField
@@ -54,6 +62,7 @@ struct IdentitySizeField : public SizeField
           Matrix& t);
   double getWeight(Entity*);
   Mesh* mesh;
+
 };
 
 struct UniformRefiner : public IdentitySizeField

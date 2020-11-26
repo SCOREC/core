@@ -8,8 +8,7 @@
  
 *******************************************************************************/
 #include "maSolutionTransfer.h"
-#include "maAffine.h"
-#include "maMap.h"
+#include "maSolutionTransferHelper.h"
 #include <apfShape.h>
 #include <apfNumbering.h>
 #include <float.h>
@@ -37,18 +36,6 @@ void SolutionTransfer::onCavity(
     EntityArray&,
     EntityArray&)
 {
-}
-
-static int getMinimumDimension(apf::FieldShape* s)
-{
-  int transferDimension = 4;
-  for (int d=1; d <= 3; ++d)
-    if (s->hasNodesIn(d))
-    {
-      transferDimension = d;
-      break;
-    }
-  return transferDimension;
 }
 
 int SolutionTransfer::getTransferDimension()
@@ -112,102 +99,18 @@ class CavityTransfer : public FieldTransfer
     {
       minDim = getMinimumDimension(getShape(f));
     }
-    void transferToNodeIn(
-        apf::Element* elem,
-        apf::Node const& node,
-        Vector const& elemXi)
-    {
-      apf::getComponents(elem,elemXi,&(value[0]));
-      apf::setComponents(field,node.entity,node.node,&(value[0]));
-    }
-    int getBestElement(
-        int n,
-        apf::Element** elems,
-        Affine* elemInvMaps,
-        Vector const& point,
-        Vector& bestXi)
-    {
-      double bestValue = -DBL_MAX;
-      int bestI = 0;
-      for (int i = 0; i < n; ++i)
-      {
-        Vector xi;
-        if (mesh->getShape()->getOrder() == 1)
-          xi = elemInvMaps[i] * point;
-        else
-          xi = curvedElemInvMap(mesh, apf::getMeshEntity(elems[i]), point);
-        double value = getInsideness(mesh,apf::getMeshEntity(elems[i]),xi);
-        if (value > bestValue)
-        {
-          bestValue = value;
-          bestI = i;
-          bestXi = xi;
-        }
-      }
-      return bestI;
-    }
-    void transferToNode(
-        int n,
-        apf::Element** elems,
-        Affine* elemInvMaps,
-        apf::Node const& node)
-    {
-      // first get the physical coordinate of the node
-      Vector xi;
-      Vector point;
-      shape->getNodeXi(mesh->getType(node.entity),node.node,xi);
-      if (mesh->getShape()->getOrder() == 1) { // if linear mesh use the affine
-      	Affine childMap = getMap(mesh,node.entity);
-      	point = childMap * xi;
-      }
-      else { // else inquire the physical coordinated of local coordinate xi
-	apf::MeshElement* me = apf::createMeshElement(mesh,node.entity);
-	apf::mapLocalToGlobal(me, xi, point);
-	apf::destroyMeshElement(me);
-      }
-      Vector elemXi;
-      int i = getBestElement(n,elems,elemInvMaps,point,elemXi);
-      transferToNodeIn(elems[i],node,elemXi);
-    }
-    void transfer(
-        int n, // size of the cavity
-        Entity** cavity,
-        EntityArray& newEntities)
-    {
-      if (getDimension(mesh, cavity[0]) < minDim)
-        return;
-      apf::NewArray<apf::Element*> elems(n);
-      for (int i = 0; i < n; ++i)
-        elems[i] = apf::createElement(field,cavity[i]);
-      apf::NewArray<Affine> elemInvMaps(n);
-      for (int i = 0; i < n; ++i)
-        elemInvMaps[i] = invert(getMap(mesh,cavity[i]));
-      for (size_t i = 0; i < newEntities.getSize(); ++i)
-      {
-        int type = mesh->getType(newEntities[i]);
-        if (type == apf::Mesh::VERTEX)
-          continue; //vertices will have been handled specially beforehand
-        int nnodes = shape->countNodesOn(type);
-        for (int j = 0; j < nnodes; ++j)
-        {
-          apf::Node node(newEntities[i],j);
-          transferToNode(n,&(elems[0]),&(elemInvMaps[0]),node);
-        }
-      }
-      for (int i = 0; i < n; ++i)
-        apf::destroyElement(elems[i]);
-    }
     virtual void onRefine(
         Entity* parent,
         EntityArray& newEntities)
     {
-      transfer(1,&parent,newEntities);
+      transfer(field, &(value[0]), 1,&parent,newEntities);
     }
     virtual void onCavity(
         EntityArray& oldElements,
         EntityArray& newEntities)
     {
-      transfer(oldElements.getSize(),&(oldElements[0]),newEntities);
+      transfer(field, &(value[0]),
+           oldElements.getSize(),&(oldElements[0]),newEntities);
     }
   private:
     int minDim;

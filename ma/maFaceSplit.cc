@@ -123,16 +123,22 @@ void FaceSplit::cancel()
 void FaceSplit::transfer()
 {
   Mesh* m = adapter->mesh;
-  SolutionTransfer* st = adapter->solutionTransfer;
-  int td = st->getTransferDimension();
-  for (int d = td; d <= m->getDimension(); ++d)
-    for (size_t i = 0; i < toSplit[d].getSize(); ++i)
-      st->onRefine(toSplit[d][i], newEntities[d][i]);
-
+  int td;
   td = adapter->shape->getTransferDimension();
   for (int d = td; d <= m->getDimension(); ++d)
     for (size_t i = 0; i < toSplit[d].getSize(); ++i)
       adapter->shape->onRefine(toSplit[d][i], newEntities[d][i]);
+
+  SolutionTransfer* st = adapter->solutionTransfer;
+  td = st->getTransferDimension();
+  for (int d = td; d <= m->getDimension(); ++d)
+    for (size_t i = 0; i < toSplit[d].getSize(); ++i)
+      st->onRefine(toSplit[d][i], newEntities[d][i]);
+
+  td = adapter->sizeField->getTransferDimension();
+  for (int d = td; d <= m->getDimension(); ++d)
+    for (size_t i = 0; i < toSplit[d].getSize(); ++i)
+      adapter->sizeField->onRefine(toSplit[d][i], newEntities[d][i]);
 }
 
 void FaceSplit::destroyOldElements()
