@@ -18,7 +18,7 @@ namespace {
   template <class T> inline
   apf::MeshTag* createTag(apf::Mesh*,
       const char*, const int) {
-    exit(EXIT_FAILURE); 
+    exit(EXIT_FAILURE);
     return 0;
   }
   

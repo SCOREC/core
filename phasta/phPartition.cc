@@ -26,14 +26,14 @@ void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
   apf::MeshIterator* it = m->begin(dim);
   int nverts =1;
   apf::Downward verts;
-  while ((e = m->iterate(it)))
-// copied from function defn: int getDimension(Mesh* m, MeshEntity* e);
-//  if(getDimension(m,e)==3) {
-// No-OP    if(0==1){
-//      nverts = m->getDownward(e, 0, verts);
-//      w=1.0*nverts;
-// No-OP   }
+  while ((e = m->iterate(it))){
+    int dimEnt=getDimension(m,e);
+    if(dimEnt==3) {
+      nverts = m->getDownward(e, 0, verts);
+      if(nverts==8) w=6.0;
+    }
     m->setDoubleTag(e, tag, &w);
+  }
   m->end(it);
 }
 
