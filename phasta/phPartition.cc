@@ -9,6 +9,8 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 
+
+
 #ifdef HAVE_SIMMETRIX
 #include <apfSIM.h>
 #include "SimPartitionedMesh.h"
@@ -17,6 +19,31 @@
 #endif
 
 namespace ph {
+
+void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
+  double w = 1.0;
+  apf::MeshEntity* e;
+  apf::MeshIterator* it = m->begin(dim);
+  int nverts =1;
+  apf::Downward verts;
+  while ((e = m->iterate(it)))
+// copied from function defn: int getDimension(Mesh* m, MeshEntity* e);
+//  if(getDimension(m,e)==3) {
+// No-OP    if(0==1){
+//      nverts = m->getDownward(e, 0, verts);
+//      w=1.0*nverts;
+// No-OP   }
+    m->setDoubleTag(e, tag, &w);
+  m->end(it);
+}
+
+apf::MeshTag* setWeights(apf::Mesh* m) {
+  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
+  setWeight(m, tag, 0);
+  setWeight(m, tag, m->getDimension());
+  return tag;
+}
+
 
 apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
 {
@@ -37,7 +64,8 @@ apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
       else
         splitter = apf::makeZoltanGlobalSplitter(m, method, apf::REPARTITION);
     }
-    apf::MeshTag* weights = Parma_WeighByMemory(m);
+//    apf::MeshTag* weights = Parma_WeighByMemory(m);
+    apf::MeshTag* weights = setWeights(m);
     plan = splitter->split(weights, 1.01, in.splitFactor);
     apf::removeTagFromDimension(m, weights, m->getDimension());
     m->destroyTag(weights);
@@ -66,22 +94,6 @@ bool isMixed(apf::Mesh2* m) {
   return PCU_Max_Int(mixed);
 }
 
-void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
-  double w = 1.0;
-  apf::MeshEntity* e;
-  apf::MeshIterator* it = m->begin(dim);
-  while ((e = m->iterate(it)))
-    m->setDoubleTag(e, tag, &w);
-  m->end(it);
-}
-
-apf::MeshTag* setWeights(apf::Mesh* m) {
-  apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
-  setWeight(m, tag, 0);
-  setWeight(m, tag, m->getDimension());
-  return tag;
-}
-
 void clearTags(apf::Mesh* m, apf::MeshTag* t) {
   apf::removeTagFromDimension(m, t, 0);
   apf::removeTagFromDimension(m, t, m->getDimension());
@@ -101,7 +113,8 @@ void neighborReduction(apf::Mesh2* m, apf::MeshTag* weights, int verbose, bool f
 void parmaMixed(Input& in, apf::Mesh2* m) {
   bool fineStats=false; // set to true for per part stats
   Parma_PrintPtnStats(m, "preRefine", fineStats); //FIXME
-  apf::MeshTag* weights = Parma_WeighByMemory(m);
+//  apf::MeshTag* weights = Parma_WeighByMemory(m);
+  apf::MeshTag* weights = setWeights(m);
   const double step = 0.2;
   const int verbose = 0;
   apf::Balancer* balancer = Parma_MakeElmBalancer(m, step, verbose);
@@ -139,9 +152,9 @@ void parmaTet(Input& in, apf::Mesh2* m, bool runGap) {
 }
 
 void parmaBalance(Input& in, apf::Mesh2* m, bool runGap) {
-  if( isMixed(m) )
-    parmaMixed(in,m);
-  else
+//  if( isMixed(m) )
+//    parmaMixed(in,m);
+//  else
     parmaTet(in,m,runGap);
 }
 
