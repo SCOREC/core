@@ -484,6 +484,7 @@ struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile)
   pGModel sm;
   if (!smdfile) {
     if (NM_isAssemblyModel(nm)) {
+//      pGModel am = GAM_createFromNativeModel(nm, NULL);
       pGAModel am = GAM_createFromNativeModel(nm, NULL);
       NM_release(nm);
       sm = GM_createFromAssemblyModel(am, NULL, NULL);
