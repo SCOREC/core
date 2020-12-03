@@ -185,6 +185,8 @@ test_exe_func(create_mis create_mis.cc)
 test_exe_func(fieldReduce fieldReduce.cc)
 test_exe_func(test_integrator test_integrator.cc)
 test_exe_func(test_matrix_gradient test_matrix_grad.cc)
+test_exe_func(residualErrorEstimation_test residualErrorEstimation_test.cc)
+
 if(ENABLE_DSP)
   test_exe_func(graphdist graphdist.cc)
   test_exe_func(moving moving.cc)
