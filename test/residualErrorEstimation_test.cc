@@ -1,5 +1,5 @@
 #include "ma.h"
-#include <em.h>
+#include <ree.h>
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
   m->verify();
 
   apf::Field* electric_field = m->getField(0);
-  apf::Field* implicit_error_field = em::estimateError(electric_field);
+  apf::Field* implicit_error_field = ree::estimateError(electric_field);
   apf::destroyField(implicit_error_field);
 
   m->destroyNative();
