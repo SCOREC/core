@@ -1,3 +1,4 @@
+#include "ma.h"
 #include <em.h>
 #include <apf.h>
 #include <gmi_mesh.h>
@@ -35,6 +36,7 @@ int main(int argc, char** argv)
 
   apf::Field* electric_field = m->getField(0);
   apf::Field* implicit_error_field = em::estimateError(electric_field);
+  apf::destroyField(implicit_error_field);
 
   m->destroyNative();
   apf::destroyMesh(m);

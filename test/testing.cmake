@@ -294,6 +294,10 @@ mpi_test(tet_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
+mpi_test(residualErrorEstimation_test 1
+  ./residualErrorEstimation_test
+  "${MESHES}/fichera/fichera.x_t"
+  "${MESHES}/fichera/fichera.smb")
 if(PCU_COMPRESS)
   set(MESHFILE "bz2:pipe_2_.smb")
 else()
