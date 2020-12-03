@@ -4,18 +4,12 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-#include <iostream>
-#include <cstdlib>
 #include <algorithm>
-
 #include <apfCavityOp.h>
 #include "apfElement.h"
 #include "crv.h"
 #include "crvShape.h"
-
 #include "em.h"
-
-using namespace std;
 
 namespace em {
 
@@ -173,7 +167,6 @@ static void assembleEdgePatchLHS(EdgePatch* ep)
 
 /*
  * Performs Curl Curl integration using curl vector Nedelec shapes
- * TODO Add 2D curl curl integration. not needed right now.
  */
 void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat)
@@ -212,15 +205,6 @@ void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
         for (int k = 0; k < dim; k++)
           for (int l = 0; l < dim; l++)
             phys_curlshape(j,k) += curlshape[j][l] * J[l][k];
-    }
-    else {
-      /*
-      2D in apfNedelec.cc
-      el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
-      phys_curlshape.zero();
-      for (int i = 0; i < nd; i++)
-        for (int j = 0; j < dimc; j++)
-        */
     }
     mth::Matrix<double> phys_curlshapeT;
     mth::transpose(phys_curlshape, phys_curlshapeT);
@@ -311,8 +295,6 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   apf::Downward e;
   int ne = ep->mesh->getDownward(tet, 1, e);
   int ei = apf::findIn(e, ne, ep->entity);
-  if (PCU_Comm_Self() == 0)
-    cout << "ei " << ei << endl;
   // get Element Dofs
   apf::MeshElement* me = apf::createMeshElement(ep->mesh, tet);
   apf::Element* el = apf::createElement(ep->equilibration->ef, me);
@@ -352,8 +334,9 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   return blf_integrals(ei);
 }
 
-
-// TODO QUESTION redo this to allow user access from outside
+/*
+ * Capability can be added in the future to allow the user
+ * to define a custom  function */
 void pumiUserFunction(apf::Mesh* mesh, apf::MeshEntity* e,
     const apf::Vector3& x, mth::Vector<double>& f)
 {
@@ -662,13 +645,6 @@ static void assembleEdgePatchRHS(EdgePatch* p)
     double blfIntegral = getLocalEdgeBLF(p, tet);
     double lfIntegral = getLocalEdgeLF(p, tet);
     double fluxIntegral = getLocalFluxIntegral(p, tet);
-    if (PCU_Comm_Self() == 0) {
-      apf::Vector3 center = apf::getLinearCentroid(p->mesh, tet);
-      cout << center << endl;
-      cout << "bilinear integral " << blfIntegral << endl;
-      cout << "linear integral " << lfIntegral << endl;
-      cout << "flux integral " << fluxIntegral << endl;
-    }
     if(p->isOnBdry)
       p->b(nf+i) = blfIntegral - lfIntegral - fluxIntegral;
     else
@@ -808,15 +784,6 @@ void getClockwiseTetsandFaces(EdgePatch* p)
         std::reverse(p->tets.begin(), p->tets.end());
         std::reverse(p->faces.begin(), p->faces.begin());
       }
-      else if ((vFirst * normal < 0)  && (vLast * normal > 0)) {
-        cout << "already clockwise" << endl;
-      }
-      else if ((vFirst * normal < 0)  && (vLast * normal < 0)) {
-        cout << "failed clockwise. ABORT" << endl;
-      }
-      else if ((vFirst * normal > 0)  && (vLast * normal > 0)) {
-        cout << "failed clockwise. ABORT" << endl;
-      }
     }
   }
   else {
@@ -864,14 +831,6 @@ void getClockwiseTetsandFaces(EdgePatch* p)
       std::reverse(p->tets.begin(), p->tets.end());
       std::reverse(p->faces.begin(), p->faces.begin());
     }
-    else if ((vFirst * normal < 0)  && (vLast * normal > 0)) {
-    }
-    else if ((vFirst * normal < 0)  && (vLast * normal < 0)) {
-      cout << "failed clockwise. ABORT" << endl;
-    }
-    else if ((vFirst * normal > 0)  && (vLast * normal > 0)) {
-      cout << "failed clockwise. ABORT" << endl;
-    }
   }
 }
 
@@ -905,56 +864,6 @@ static void runErm(EdgePatch* ep)
     components[ei] = ep->x(i);
     apf::setComponents(ep->equilibration->g, face, 0, components);
   }
-  // debug
-  if (PCU_Comm_Self() == 0) {
-    cout << "Part " << PCU_Comm_Self() << ": ";
-    apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->entity);
-    cout << center << endl;
-
-    cout << "LHS: ";
-    for (size_t i = 0; i < ep->T.rows(); i++) {
-      for (size_t j = 0; j < ep->T.cols(); j++) {
-        cout << ep->T(i,j) << " ";
-      }
-      cout << endl;
-    }
-
-    cout << "RHS: ";
-    for (size_t i = 0; i < ep->b.size(); i++)
-      cout << ep->b[i] << " ";
-    cout << endl;
-
-    cout << "gs: ";
-    for (size_t i = 0; i < ep->x.size(); i++)
-      cout << ep->x[i] << " ";
-    cout << endl;
-
-    cout << "Ordered tets" << endl;
-    for (size_t i = 0; i < ep->tets.size(); i++) {
-      apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->tets[i]);
-      cout << center << endl;
-    }
-    cout << "Ordered faces" << endl;
-    for (size_t i = 0; i < ep->faces.size(); i++) {
-      apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->faces[i]);
-      cout << center << endl;
-    }
-
-
-    cout << "==================" << endl;
-
-
-  }
-  /*if (PCU_Comm_Self() == 1) {
-    cout << "Part " << PCU_Comm_Self() << ": ";
-    apf::Vector3 center = apf::getLinearCentroid(ep->mesh, ep->entity);
-    cout << center << endl;
-
-    cout << "RHS: ";
-    for (size_t i = 0; i < ep->faces.size(); i++)
-      cout << ep->b[i] << " ";
-    cout << endl;
-  }*/
 }
 
 

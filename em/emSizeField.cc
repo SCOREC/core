@@ -4,16 +4,12 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-#include <iostream>
-#include <cstdlib>
-
 #include "apfElement.h"
 #include "crv.h"
 #include "crvShape.h"
 #include <apfCavityOp.h>
-
 #include "em.h"
-using namespace std;
+
 namespace em {
 
 
@@ -103,7 +99,6 @@ static void getElementSizeField(Sizefield* sz)
   while ((entity = sz->mesh->iterate(elements))) {
     double h = getDesiredSize(sz, entity);
     apf::setScalar(eSize, entity, 0, h);
-    cout << "h " << h << endl;
   }
   sz->mesh->end(elements);
   sz->element_size = eSize;
@@ -174,6 +169,5 @@ apf::Field* getTargetEMSizeField(
     lion_eprint(1,"EM: SizeField computed in %f seconds\n",t1-t0);
   return sz.size;
 }
-
 
 }

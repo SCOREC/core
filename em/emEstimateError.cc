@@ -4,16 +4,13 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-#include <iostream>
-#include <cstdlib>
 
 #include <apfCavityOp.h>
 #include "apfElement.h"
 #include "crv.h"
 #include "crvShape.h"
-
 #include "em.h"
-using namespace std;
+
 namespace em {
 
 static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
@@ -52,7 +49,7 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
 
     apf::getCurl(fel, p, curl);
 
-    // get curlshape values // TODO CLEAN use getCurlShapeValues
+    // get curlshape values
     fp1el->getShape()->getLocalVectorCurls(mesh, e, p, curlshape);
     phys_curlshape.zero();
     for (int i = 0; i < nd; i++)
@@ -147,14 +144,14 @@ static void computeLambdaVector(
     apf::NewArray<apf::Vector3> vectorshape(nfdofs);
 
     apf::MeshElement* fme = apf::createMeshElement(mesh, face);
-    int np = apf::countIntPoints(fme, 2*order-1); // TODO 2*order
+    int np = apf::countIntPoints(fme, 2*order-1);
 
     // 4. Compute integral on the face
     apf::Vector3 p;
     for (int n = 0; n < np; n++) {
 
-      apf::getIntPoint(fme, 2*order-1, n, p); // TODO 2*order
-      double weight = apf::getIntWeight(fme, 2*order-1, n); // TODO 2*order
+      apf::getIntPoint(fme, 2*order-1, n, p);
+      double weight = apf::getIntWeight(fme, 2*order-1, n);
       apf::Matrix3x3 fJ;
       apf::getJacobian(fme, p, fJ);
       double jdet = apf::getJacobianDeterminant(
@@ -442,7 +439,7 @@ apf::Field* estimateError(apf::Field* f)
   apf::Field* theta = em::computeFluxCorrection(f, g);
   lion_eprint(1,"2/4: flux corrections computed \n");
   apf::destroyField(g);
-  PCU_Barrier(); // TODO remove
+  PCU_Barrier();
 
   apf::Field* correctedFlux = em::computeCorrectedFlux(f, theta);
   lion_eprint(1,"3/4: corrected flux field computed\n");
@@ -457,7 +454,5 @@ apf::Field* estimateError(apf::Field* f)
     lion_eprint(1,"EM: Error estimated in %f seconds\n",t1-t0);
 
   return error_field;
-  //return correctedFlux;
 }
-
 }

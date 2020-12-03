@@ -4,16 +4,12 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-#include <iostream>
-#include <cstdlib>
-
 #include <apfCavityOp.h>
 #include "apfElement.h"
 #include "crv.h"
 #include "crvShape.h"
-
 #include "em.h"
-using namespace std;
+
 namespace em {
 
 enum {VISITED};
@@ -64,7 +60,7 @@ static void setupCorrectFlux(
   while ((tet = cf->mesh->iterate(it))) {
     apf::MeshElement* me = apf::createMeshElement(cf->mesh, tet);
     int orderp1 = cf->order+1;
-    int np = apf::countIntPoints(me, 2*orderp1-1); // TODO 2*order
+    int np = apf::countIntPoints(me, 2*orderp1-1);
 
     for (int i = 0; i < np; i++) {
       apf::setComponents(cf->correctedFlux, tet, i, zeros);
@@ -166,8 +162,8 @@ static void computeCorrectedFlux(FaceCavity* fc)
   theta_coeffs(1) = components[1];
   theta_coeffs(2) = components[2];
 
-//////
-  // 4. Evaluate and save corrected flux vector in an auxiliary field
+
+  // 5. Evaluate and save corrected flux vector in an auxiliary field
   int ftype = fc->mesh->getType(face);
   PCU_ALWAYS_ASSERT(ftype == apf::Mesh::TRIANGLE);
   int nfdofs = apf::countElementNodes(fc->correctflux->ef->getShape(), ftype);
@@ -175,7 +171,7 @@ static void computeCorrectedFlux(FaceCavity* fc)
 
   apf::MeshElement* fme = apf::createMeshElement(fc->mesh, face);
   apf::Element* fel = apf::createElement(fc->correctflux->ef, fme);
-  int int_order = 2*fc->correctflux->orderp1-1; // TODO 2*order
+  int int_order = 2*fc->correctflux->orderp1-1;
   int np = apf::countIntPoints(fme, int_order);
   int nc = apf::countComponents(fc->correctflux->correctedFlux);
 
@@ -288,7 +284,7 @@ apf::Field* computeCorrectedFlux(apf::Field* ef, apf::Field* theta)
 {
   int dim = apf::getMesh(ef)->getDimension();
   int order = ef->getShape()->getOrder() + 1; // local BVPs require p+1
-  int int_order = 2*order-1; // TODO 2*order TODO update IPField to handle
+  int int_order = 2*order-1;
   int nc = 4*3; // 1 flux vector per face
   apf::Field* correctedFlux = createPackedField(
       apf::getMesh(ef), "correctedFlux", nc, apf::getIPShape(dim, int_order));
@@ -297,33 +293,7 @@ apf::Field* computeCorrectedFlux(apf::Field* ef, apf::Field* theta)
   setupCorrectFlux(&correctflux, ef, theta, correctedFlux);
   FaceCavityOp op (&correctflux);
   op.applyToDimension(2);
-  // TODO remove tag
   return correctedFlux;
 
-  /* debug
-  // testing initial corrected flux field
-  cout << "testing initial field" << endl;
-    int elemNo = 0;
-    apf::MeshEntity* ent;
-    apf::MeshIterator* itr = apf::getMesh(ef)->begin(3);
-    while ((ent = apf::getMesh(ef)->iterate(itr)))
-    {
-      cout << "at tet " << elemNo++ << endl;
-      apf::MeshElement* me = apf::createMeshElement(apf::getMesh(ef), ent);
-      int np = apf::countIntPoints(me, int_order);
-      for (int i = 0; i < np; i++) {
-        cout << " at point " << i << endl;
-        double components[nc];
-        apf::getComponents(correctflux.correctedFlux, ent, i, components);
-        for (int j = 0; j < nc; j++) {
-          cout << components[j] << " ";
-        }
-        cout << endl;
-      }
-      cout << "==================================================" << endl;
-    }*/
 }
-
-
-
 }

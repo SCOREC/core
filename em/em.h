@@ -9,18 +9,12 @@
 #define EM_H
 
 
-/** \file em.h
- *  \brief The Elegtromagnetics Equilibrated Residual error estimator inteface
- */
 #include "apf.h"
 #include <apfMesh.h>
-
 #include <PCU.h>
 #include <lionPrint.h>
-
 #include "apfShape.h"
 #include "apfField.h"
-
 #include <mthQR.h>
 #include <mth.h>
 #include <mth_def.h>
@@ -28,7 +22,7 @@
 namespace em {
 
 /*
- * Computes nodal size field // TODO currently only element size field
+ * Computes nodal size field
  */
 apf::Field* getTargetEMSizeField(
     apf::Field* ef,
@@ -78,15 +72,4 @@ apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
 #endif
