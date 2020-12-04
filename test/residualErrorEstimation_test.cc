@@ -35,6 +35,7 @@ int main(int argc, char** argv)
   m->verify();
 
   apf::Field* electric_field = m->getField(0);
+  PCU_ALWAYS_ASSERT(electric_field);
   apf::Field* implicit_error_field = ree::estimateError(electric_field);
   apf::destroyField(implicit_error_field);
 

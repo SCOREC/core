@@ -185,7 +185,6 @@ test_exe_func(create_mis create_mis.cc)
 test_exe_func(fieldReduce fieldReduce.cc)
 test_exe_func(test_integrator test_integrator.cc)
 test_exe_func(test_matrix_gradient test_matrix_grad.cc)
-test_exe_func(residualErrorEstimation_test residualErrorEstimation_test.cc)
 
 if(ENABLE_DSP)
   test_exe_func(graphdist graphdist.cc)
@@ -198,6 +197,7 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(degenerate_test degenerateSurfs.cc)
   test_exe_func(simZBalance simZBalance.cc)
   test_exe_func(crack_test crack_test.cc)
+  test_exe_func(residualErrorEstimation_test residualErrorEstimation_test.cc)
 endif()
 
 # send all the newly added utility executable targets
