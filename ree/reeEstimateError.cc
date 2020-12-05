@@ -107,9 +107,9 @@ static void computeResidualBLF(apf::Mesh* mesh, apf::MeshEntity* e,
   blf += curlcurl_vec;
   blf += mass_vec;
 
-  apf::destroyMeshElement(me);
-  apf::destroyElement(fp1el);
   apf::destroyElement(fel);
+  apf::destroyElement(fp1el);
+  apf::destroyMeshElement(me);
 }
 
 static void computeLambdaVector(
@@ -340,11 +340,14 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
     mth::Matrix<double> vectorShapeT (dim, nd);
     mth::transpose(vectorShape, vectorShapeT);
 
-		mth::Vector<double> err_func;
-		mth::multiply(vectorShapeT, error_dofs, err_func);
+    mth::Vector<double> err_func;
+    mth::multiply(vectorShapeT, error_dofs, err_func);
 
-		error += w * (err_func * err_func);
-	}
+    error += w * (err_func * err_func);
+  }
+  apf::destroyElement(el);
+  apf::destroyMeshElement(me);
+
 	if (error < 0.0)
 		error = -error;
 

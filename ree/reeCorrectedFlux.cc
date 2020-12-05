@@ -65,6 +65,7 @@ static void setupCorrectFlux(
     for (int i = 0; i < np; i++) {
       apf::setComponents(cf->correctedFlux, tet, i, zeros);
     }
+    apf::destroyMeshElement(me);
   }
   cf->mesh->end(it);
 }
@@ -250,6 +251,8 @@ static void computeCorrectedFlux(FaceCavity* fc)
       apf::setComponents(fc->correctflux->correctedFlux, secondTet, n, comp2);
     }
   }
+  apf::destroyElement(fel);
+  apf::destroyMeshElement(fme);
 }
 
 class FaceCavityOp : public apf::CavityOp

@@ -4,8 +4,6 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-#include "crv.h"
-#include "crvShape.h"
 #include "apfElement.h"
 #include "ree.h"
 

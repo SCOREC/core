@@ -5,8 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include "apfElement.h"
-#include "crv.h"
-#include "crvShape.h"
 #include <apfCavityOp.h>
 #include "ree.h"
 

@@ -301,7 +301,7 @@ static double getLocalEdgeBLF(EdgePatch* ep, apf::MeshEntity* tet)
   int type = ep->mesh->getType(tet);
   int nd = apf::countElementNodes(el->getFieldShape(), type);
   apf::NewArray<double> d (nd);
-  el->getElementDofs(d);
+  el->getElementNodeData(d);
   mth::Vector<double> dofs (nd);
   for (int i = 0; i < nd; i++)
     dofs(i) = d[i];

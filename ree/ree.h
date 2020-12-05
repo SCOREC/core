@@ -9,6 +9,10 @@
 #define REE_H
 
 
+/** \file ree.h
+ *  \brief The Residual Error Estimator (REE) interface
+ */
+
 #include "apf.h"
 #include <apfMesh.h>
 #include <PCU.h>
@@ -19,39 +23,60 @@
 #include <mth.h>
 #include <mth_def.h>
 
+/** \namespace ree
+  * \brief All Residual Error Estimator functions
+  */
 namespace ree {
 
-/*
- * Computes nodal size field
- */
+/** @brief Computes a nodal size field from the element error field
+  *        obtained after running the residual error estimator.
+  * @param ef (In) nedelec electric field
+  * @param error_field (In) per-element residual error field
+  * @param n a parameter to prescribe allowable error
+  * @param alpha floor on the size field; alpha < h_new/h_old < beta
+  * @param beta ceiling on the size field; alpha < h_new/h_old < beta
+  * @returns a scalar mesh size field at mesh vertices
+  */
 apf::Field* getTargetEMSizeField(
     apf::Field* ef,
     apf::Field* error_field,
     int n,
     double alpha = 0.25,
     double beta = 2.0);
-/*
- * Takes the solution electric field and computes edge equilibrations.
- */
+
+/** @brief Computes equilibrated residuals using the fem nedelec electric field.
+  * @param f (In) nedelec electric field
+  */
 apf::Field* equilibrateResiduals(apf::Field* f);
 
-/*
- * Takes the solution electric field and equilibrated field (of face vectors)
- * and computes the 'correction' to the flux vectors on each face.
- */
+/** @brief Uses the fem nedelec electric field and the equilibrated residuals to
+  *        compute the 'correction' to the flux vectors on each face.
+  * @param ef (In) nedelec electric field
+  * @param g (In) equilibrated residuals field
+  */
 apf::Field* computeFluxCorrection(apf::Field* ef, apf::Field* g);
 
-/* Takes the solution electric field and correctiion to the flux vectors on
- * each face and computes the 'corrected' flux vectors on each face
- */
+/** @brief Uses the fem nedelec electric field and the 'correction' to the flux
+  *        vectors to compute the 'corrected' flux vectors on each face.
+  * @param ef (In) nedelec electric field
+  * @param theta (In) correction to the flux vectors
+  */
 apf::Field* computeCorrectedFlux(apf::Field* ef, apf::Field* theta);
 
-/* Takes the solution electric field and corrected flux field and solves
- * local element level BVPs to estimate the error.
- * Returns a per-element scalar error field.
- */
+/** @brief Solves additional local BVPs on a one order higher nedelec field on
+  *        each element to estimate the dsicretization error.
+  * @param ef (In) nedelec electric field
+  * @param correctedFlux (In) flux field which provides Neumann BCs for each
+  *        local BVP.
+  * @returns a per-element scalar residual error field.
+  */
 apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux);
 
+/** @brief run the residual error estimator.
+  * @param f the fem nedelec electric field
+  *                    scales the output size field.
+  * @returns a per-element scalar residual error field.
+  */
 apf::Field* estimateError(apf::Field* f);
 
 
