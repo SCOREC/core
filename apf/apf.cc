@@ -4,7 +4,6 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-#include <iostream>
 #include "apf.h"
 #include "apfScalarField.h"
 #include "apfScalarElement.h"
@@ -482,35 +481,14 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
   }
   else
   {
-    // TODO clean up
-    apf::Matrix3x3 J;
-    apf::getJacobian(e->getParent(), local, J);
-
-    apf::Matrix3x3 JT = apf::transpose(J);
-    apf::Matrix3x3 JJT = J * JT;
-    // take inverse of JTJ and transpose it
-    apf::Matrix<2,2> jjt;
-    for (int i = 0; i < 2; i++)
-      for (int j = 0; j < 2; j++)
-        jjt[i][j] = JJT[i][j];
-    apf::Matrix<2,2> JJTinv = apf::invert(jjt);
-    apf::Matrix<2,2> JJTinvT = apf::transpose(JJTinv);
-
-    apf::Matrix<2,3> JJTinvTJ; // JJTinvT * J
-    for( int i = 0; i < 2; i++ ) {
-      for ( int j = 0; j < 3; j++ ) {
-        JJTinvTJ[i][j] = 0.;
-        for ( int k = 0; k < 2; k++ )
-          JJTinvTJ[i][j] += JJTinvT[i][k] * J[k][j];
-      }
-    }
-
-    // u(x_hat) * J(x_hat)^{-1}
+    apf::Matrix3x3 Jinv;
+    apf::getJacobianInv( e->getParent(), local, Jinv );
+    apf::Matrix3x3 JinvT = apf::transpose(Jinv);
     for( size_t i = 0; i < values.size(); i++ ) {
       for ( int j = 0; j < 3; j++ ) {
         values[i][j] = 0.;
         for ( int k = 0; k < 2; k++ )
-          values[i][j] += vvals[i][k] * JJTinvTJ[k][j];
+          values[i][j] += vvals[i][k] * JinvT[k][j];
       }
     }
   }
