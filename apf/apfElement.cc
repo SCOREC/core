@@ -119,7 +119,7 @@ void Element::getNodeData()
   field->getData()->getElementData(entity,nodeData);
 }
 
-void Element::getElementDofs(NewArray<double>& d)
+void Element::getElementNodeData(NewArray<double>& d)
 {
   d.allocated() ? d.resize(nen) : d.allocate(nen);
   for (int i = 0; i < nen; i++)

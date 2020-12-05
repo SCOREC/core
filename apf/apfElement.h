@@ -35,7 +35,7 @@ class Element
     EntityShape* getShape() {return shape;}
     FieldShape* getFieldShape() {return field->getShape();}
     void getComponents(Vector3 const& xi, double* c);
-    void getElementDofs(NewArray<double>& d);
+    void getElementNodeData(NewArray<double>& d);
   protected:
     void init(Field* f, MeshEntity* e, VectorElement* p);
     void getNodeData();
