@@ -294,7 +294,7 @@ mpi_test(tet_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
-mpi_test(residualErrorEstimation_test 1
+mpi_test(test_residual_error_estimate 1
   ./residualErrorEstimation_test
   "${MESHES}/electromagnetic/fichera.x_t"
   "${MESHES}/electromagnetic/fichera_1k.smb")
