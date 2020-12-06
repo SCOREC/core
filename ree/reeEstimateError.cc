@@ -5,10 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <apfCavityOp.h>
-#include "apfElement.h"
-#include "crv.h"
-#include "crvShape.h"
+#include <apfElement.h>
 #include "ree.h"
 
 namespace ree {
@@ -207,7 +204,7 @@ static void getEssentialElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
   PCU_ALWAYS_ASSERT(nedges == 6);
   for (int i = 0; i < nedges; i++) {
     int nodesOnEdge = fs->countNodesOn(mesh->getType(edges[i]));
-    if ( crv::isBoundaryEntity(mesh, edges[i]) ) {
+    if ( isOnDomainBoundary(mesh, edges[i]) ) {
       for (int n = 0; n < nodesOnEdge; n++) {
         marker_list[(i*nodesOnEdge)+n] = -1;
       }
@@ -220,7 +217,7 @@ static void getEssentialElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
   PCU_ALWAYS_ASSERT(nfaces == 4);
   for (int i = 0; i < nfaces; i++) {
     int nodesOnFace = fs->countNodesOn(mesh->getType(faces[i]));
-    if ( crv::isBoundaryEntity(mesh, faces[i]) ) {
+    if ( isOnDomainBoundary(mesh, faces[i]) ) {
       for (int n = 0; n < nodesOnFace; n++) {
         marker_list[(nodesOnEdges + i*nodesOnFace)+n] = -1;
       }

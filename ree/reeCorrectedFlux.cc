@@ -5,9 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 #include <apfCavityOp.h>
-#include "apfElement.h"
-#include "crv.h"
-#include "crvShape.h"
 #include "ree.h"
 
 namespace ree {
@@ -130,7 +127,7 @@ static void computeCorrectedFlux(FaceCavity* fc)
   // 1. get upward tets of the face
   apf::Up up;
   fc->mesh->getUp(face, up);
-  if (crv::isBoundaryEntity(fc->mesh, face))
+  if (isOnDomainBoundary(fc->mesh, face))
     PCU_ALWAYS_ASSERT(up.n == 1);
   else
     PCU_ALWAYS_ASSERT(up.n == 2);

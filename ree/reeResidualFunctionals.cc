@@ -507,6 +507,13 @@ apf::Vector3 computeFaceOutwardNormal(apf::Mesh* m,
   return n;
 }
 
+// TODO this needs generalisation for cases with internal model boundaries
+// (i.e., interfaces)
+bool isOnDomainBoundary(apf::Mesh* m, apf::MeshEntity* e)
+{
+  return m->getModelType(m->toModel(e)) < m->getDimension();
+}
+
 /*
  * computes local flux integral restricted to
  * an edge of a tet element
