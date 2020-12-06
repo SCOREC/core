@@ -14,9 +14,6 @@
 #endif
 #include <pcu_util.h>
 
-#include <iostream>
-using namespace std;
-
 void E_exact(const apf::Vector3 &x, apf::Vector3& E);
 double computeElementExactError(apf::Mesh* mesh, apf::MeshEntity* e,
   apf::Field* f);
@@ -83,10 +80,10 @@ int main(int argc, char** argv)
   avg_exact_error /= m->count(3);
   avg_computed_error /= m->count(3);
 
-  cout << "Max Exact Error: " << max_exact_error << endl;
-  cout << "Average Exact Error: " << avg_exact_error << endl;
-  cout << "Max Computed Error: " << max_computed_error << endl;
-  cout << "Average Computed Error: " << avg_computed_error << endl;
+  lion_oprint(1, "Max     Exact Error: %e\n", max_exact_error);
+  lion_oprint(1, "Average Exact Error: %e\n", avg_exact_error);
+  lion_oprint(1, "Max     Computed Error: %e\n", max_computed_error);
+  lion_oprint(1, "Average Computed Error: %e\n", avg_computed_error);
 
   apf::destroyField(residual_error_field);
   apf::destroyField(exact_error_field);
