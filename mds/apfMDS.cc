@@ -632,6 +632,11 @@ class MeshMDS : public Mesh2
     }
 
 //seol
+    void clearRemotes(MeshEntity* e)
+    {
+      mds_set_copies(&mesh->remotes, &mesh->mds, fromEnt(e), 0);
+    }
+
     void addGhost(MeshEntity* e, int p, MeshEntity* r)
     {
       mds_copy c;

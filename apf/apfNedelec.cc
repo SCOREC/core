@@ -17,10 +17,14 @@
 #include <pcu_util.h>
 #include <PCU.h>
 
-#include <iostream>
-using namespace std;
 
 namespace apf {
+
+// MAX_ND_ORDER is used for static tables.
+// The following implementations are for general orders but template classes
+// are only instantiated for up to order 10
+
+static const int MAX_ND_ORDER = 10;
 
 static void alignFaceNodes(
     int init_order[],
@@ -178,8 +182,6 @@ static void alignFaceNodes(
       final_order[i+ind] = (i%2) ? 0 : 1;
   }
 }
-
-static unsigned const MAX_ND_ORDER = 10;
 
 // This is all nodes, including the nodes associated with bounding edges
 static inline int countTriNodes(int P)
@@ -547,9 +549,10 @@ class Nedelec: public FieldShape {
     class Edge : public apf::EntityShape
     {
     private:
-      const int dim = 1; // ref elem dim
-      const double c = 0.; // center of edge
+      const int dim; // ref elem dim
+      const double c; // center of edge
     public:
+      Edge() : dim(1), c(0.0) {};
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -583,9 +586,10 @@ class Nedelec: public FieldShape {
     class Triangle : public apf::EntityShape
     {
     private:
-      const int dim = 2; // reference element dim
-      const double c = 1./3.; // center of tri
+      const int dim; // reference element dim
+      const double c; // center of tri
     public:
+      Triangle() : dim(2), c(1./3) {};
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -721,9 +725,10 @@ class Nedelec: public FieldShape {
     class Tetrahedron : public apf::EntityShape
     {
     private:
-      const int dim = 3;
-      const double c = 1./4.;
+      const int dim;
+      const double c;
     public:
+      Tetrahedron() : dim(3), c(1./4) {};
       int getOrder() {return P;}
       void getValues(apf::Mesh* /*m*/, apf::MeshEntity* /*e*/,
 	  apf::Vector3 const&, apf::NewArray<double>&) const
@@ -1123,7 +1128,7 @@ apf::FieldShape* getNedelec(int order)
 {
   PCU_ALWAYS_ASSERT_VERBOSE(order >= 1,
       "order is expected to be bigger than or equal to 1!");
-  PCU_ALWAYS_ASSERT_VERBOSE(order <= 10,
+  PCU_ALWAYS_ASSERT_VERBOSE(order <= MAX_ND_ORDER,
       "order is expected to be less than or equal to 10!");
   static Nedelec<1>  ND1;
   static Nedelec<2>  ND2;
@@ -1135,72 +1140,108 @@ apf::FieldShape* getNedelec(int order)
   static Nedelec<8>  ND8;
   static Nedelec<9>  ND9;
   static Nedelec<10> ND10;
-  static FieldShape* const nedelecShapes[10] =
+  static FieldShape* const nedelecShapes[MAX_ND_ORDER] =
   {&ND1, &ND2, &ND3, &ND4, &ND5, &ND6, &ND7, &ND8, &ND9, &ND10};
   return nedelecShapes[order-1];
 }
 
 void projectNedelecField(Field* to, Field* from)
 {
-  // checks on the from field
-  // checks on the to field
-  apf::FieldShape* tShape = getShape(to);
-  std::string      tName  = tShape->getName();
-  int              tOrder = tShape->getOrder();
-  PCU_ALWAYS_ASSERT_VERBOSE((tName == std::string("Linear")) && (tOrder == 1),
-  		"The to field needs to be 1st order Lagrange!");
-
   Mesh* m = getMesh(from);
-  // auxiliary count fields
-  Field* count = createField(m, "counter", SCALAR, getLagrange(1));
-  double xis[4][3] = {{0., 0., 0.},
-  	              {1., 0., 0.},
-  	              {0., 1., 0.},
-  	              {0., 0., 1.}};
-  // zero out the fields
-  zeroField(to);
-  zeroField(count);
+  apf::FieldShape* fs = getShape(to);
+  std::string name(fs->getName());
 
-  MeshEntity* e;
-  MeshIterator* it = m->begin(m->getDimension());
-  while( (e = m->iterate(it)) ) {
-    MeshElement* me = createMeshElement(m, e);
-    Element* el = createElement(from, me);
-    MeshEntity* dvs[4];
-    m->getDownward(e, 0, dvs);
-    for (int i=0; i<4; i++) {
-      Vector3 atXi;
-      getVector(el, Vector3(xis[i]), atXi);
-      Vector3 currentVal;
-      getVector(to, dvs[i], 0, currentVal);
-      double currentCount = getScalar(count, dvs[i], 0);
-      currentVal += atXi;
-      currentCount += 1.;
-      setVector(to, dvs[i], 0, currentVal);
-      setScalar(count, dvs[i], 0, currentCount);
+  apf::MeshEntity* e;
+  apf::MeshIterator* it;
+
+  // Integration Point Shapes (IPShapes) has to be treated differently
+  if (name.find(std::string("IP")) != std::string::npos)
+  {
+    int ip_order = fs->getOrder();
+    it = m->begin(m->getDimension());
+    while ( (e = m->iterate(it)) ) {
+      apf::MeshElement* me = apf::createMeshElement(m, e);
+      apf::Element*     el = apf::createElement(from, me);
+      int np = apf::countIntPoints(me, ip_order);
+      for (int i = 0; i < np; i++) {
+	apf::Vector3 xi;
+	apf::getIntPoint(me, ip_order, i, xi);
+	apf::Vector3 val;
+	apf::getVector(el, xi, val);
+	apf::setVector(to, e, i, val);
+      }
+      apf::destroyElement(el);
+      apf::destroyMeshElement(me);
     }
-    destroyElement(el);
-    destroyMeshElement(me);
+    m->end(it);
   }
-  m->end(it);
+  // Other fields such as Lagrange and H1 can be treated here
+  else
+  {
+    // auxiliary count fields
+    Field* count = createField(m, "counter", SCALAR, fs);
 
-  // take care of entities on part boundary
-  accumulate(to);
-  accumulate(count);
+    // zero out the fields
+    zeroField(to);
+    zeroField(count);
 
-  it = m->begin(0);
-  while( (e = m->iterate(it)) ) {
-    Vector3 sum;
-    getVector(to, e, 0, sum);
-    setVector(to, e, 0, sum/getScalar(count, e, 0));
+    it = m->begin(m->getDimension());
+    while( (e = m->iterate(it)) ) {
+      MeshElement* me = createMeshElement(m, e);
+      Element* el = createElement(from, me);
+      for (int d = 0; d <= m->getDimension(); d++) {
+	if (!fs->hasNodesIn(d)) continue;
+	MeshEntity* down[12];
+	int nd = m->getDownward(e, d, down);
+	for (int i=0; i<nd; i++) {
+	  int type = m->getType(down[i]);
+	  int non = fs->countNodesOn(type);
+	  for (int j = 0; j < non; j++) {
+	    Vector3 nodeXiChild;
+	    fs->getNodeXi(type, j, nodeXiChild);
+	    Vector3 nodeXiParent = boundaryToElementXi(
+		m, down[i], e, nodeXiChild);
+	    Vector3 atXi;
+	    getVector(el, nodeXiParent, atXi);
+	    Vector3 currentVal;
+	    getVector(to, down[i], j, currentVal);
+	    double currentCount = getScalar(count, down[i], j);
+	    currentVal += atXi;
+	    currentCount += 1.;
+	    setVector(to, down[i], j, currentVal);
+	    setScalar(count, down[i], j, currentCount);
+	  }
+	}
+      }
+      destroyElement(el);
+      destroyMeshElement(me);
+    }
+    m->end(it);
+
+    // take care of entities on part boundary
+    accumulate(to);
+    accumulate(count);
+
+    for (int d = 0; d <= m->getDimension(); d++) {
+      if (!fs->hasNodesIn(d)) continue;
+      it = m->begin(d);
+      while( (e = m->iterate(it)) ) {
+	int type = m->getType(e);
+	int non = fs->countNodesOn(type);
+	for (int j = 0; j < non; j++) {
+	  Vector3 sum;
+	  getVector(to, e, j, sum);
+	  setVector(to, e, j, sum/getScalar(count, e, j));
+	}
+      }
+      m->end(it);
+    }
+    // take care of entities on part boundary
+    synchronize(to);
+
+    m->removeField(count);
+    destroyField(count);
   }
-  m->end(it);
-
-  // take care of entities on part boundary
-  synchronize(to);
-
-  m->removeField(count);
-  destroyField(count);
 }
 
 }

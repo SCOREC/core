@@ -308,14 +308,20 @@ namespace {
 
       apf::Vector3 vtx_coord;
       m->getPoint(vtx, 0, vtx_coord);
-      bool same_dim = std::all_of(upward_dim.begin(), upward_dim.end(), 
-                                  [upward_dim](const int i) {
-                                    return upward_dim[0] == i;
-                                  });
-      bool same_id = std::all_of(upward_id.begin(), upward_id.end(), 
-                                 [upward_id](const int i) {
-                                   return upward_id[0] == i;
-                                 });
+      bool same_dim = true;
+      for(size_t i=0; i<upward_dim.size(); i++) {
+         if (upward_dim[0] != upward_dim[i]) {
+           same_dim = false;
+           break;
+         }
+      }
+      bool same_id = true;
+      for(size_t i=0; i<upward_id.size(); i++) {
+         if (upward_id[0] != upward_id[i]) {
+           same_id = false;
+           break;
+         }
+      }
       if (same_dim && same_id)
       {
         /// if all edges adjacent to a vertex have the same classification
@@ -335,23 +341,23 @@ namespace {
       {
         /// find all the indices in the vectors where the model entity is 1D
         std::vector<int> edge_indx;
-        std::vector<int>::iterator iter = upward_dim.begin();
-        while ((iter = std::find_if(iter, upward_dim.end(), 
-                                    [](const int i){ return i == 1; }))
-               != upward_dim.end())
-        {
-            edge_indx.push_back(std::distance(upward_dim.begin(), iter));
-            iter++;
+        for(size_t i = 0; i < upward_dim.size(); i++) {
+          if(upward_dim[i] == 1) {
+            edge_indx.push_back(i);
+          }
         }
         std::vector<int> edge_id;
         for (size_t i = 0; i < edge_indx.size(); i++)
         {
           edge_id.push_back(upward_id[edge_indx[i]]);
         }
-        bool same_edge_id = std::all_of(edge_id.begin(), edge_id.end(), 
-                                        [edge_id](const int i) {
-                                          return edge_id[0] == i;
-                                        });
+        bool same_edge_id = true;
+        for(size_t i=0; i<edge_id.size(); i++) {
+          if (edge_id[0] != edge_id[i]) {
+            same_id = false;
+            break;
+          }
+        }
         if (same_edge_id)
         {
           /// if the edges adjacent to a vertex that are classified on a dim 1
