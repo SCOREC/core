@@ -74,12 +74,12 @@ apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux);
 
 /** @brief run the residual error estimator.
   * @param f the fem nedelec electric field
-  *                    scales the output size field.
+  *        scales the output size field.
   * @returns a per-element scalar residual error field.
   */
 apf::Field* estimateError(apf::Field* f);
 
-
+// helper functions
 void assembleCurlCurlElementMatrix(apf::Mesh* mesh, apf::MeshEntity* e,
     apf::Field* f, mth::Matrix<double>& elmat);
 
