@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <apfCavityOp.h>
 #include "apfElement.h"
-#include "crv.h"
-#include "crvShape.h"
 #include "ree.h"
 
 namespace ree {
@@ -87,7 +85,7 @@ static void startEdgePatch(EdgePatch* ep, apf::MeshEntity* e)
   ep->tets.clear();
   ep->faces.clear();
   ep->entity = e;
-  ep->isOnBdry = crv::isBoundaryEntity(ep->mesh, ep->entity);
+  ep->isOnBdry = isOnDomainBoundary(ep->mesh, ep->entity);
 }
 
 static void addEntityToPatch(EdgePatch* ep, apf::MeshEntity* e)
@@ -133,7 +131,7 @@ static void assembleEdgePatchLHS(EdgePatch* ep)
 {
   int ne = ep->tets.size();
   int nf = ep->faces.size();
-  if( crv::isBoundaryEntity(ep->mesh, ep->entity) ) {
+  if( isOnDomainBoundary(ep->mesh, ep->entity) ) {
     ep->T.resize(ne+nf, ne+nf);
     ep->T.zero();
     for (int i = 0; i < nf; i++)
@@ -145,7 +143,7 @@ static void assembleEdgePatchLHS(EdgePatch* ep)
     ep->T(ne+nf-1, ne-1) = 1.; ep->T(ne+nf-1, ne) = 1.;
     ep->T(ne-1, ne+nf-1) = 1.; ep->T(ne, ne+nf-1) = 1.;
   }
-  else if( ! crv::isBoundaryEntity(ep->mesh, ep->entity) ) {
+  else if( ! isOnDomainBoundary(ep->mesh, ep->entity) ) {
     ep->A.resize(ne, nf);
     ep->A.zero();
     for (int i = 0; i < ne-1; i++) {
@@ -540,7 +538,7 @@ static double getLocalFluxIntegral(EdgePatch* ep, apf::MeshEntity* tet)
     apf::Up up;
     apf::MeshEntity* currentFace = patchFaces[i];
     ep->mesh->getUp(currentFace, up);
-    if (crv::isBoundaryEntity(ep->mesh, currentFace))
+    if (isOnDomainBoundary(ep->mesh, currentFace))
       PCU_ALWAYS_ASSERT( up.n == 1);
     else
       PCU_ALWAYS_ASSERT( up.n == 2);
@@ -683,7 +681,7 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
 {
   tets.clear();
   faces.clear();
-  if( ! crv::isBoundaryEntity(mesh, edge) ) {
+  if( ! isOnDomainBoundary(mesh, edge) ) {
     apf::MeshEntity* currentFace = mesh->getUpward(edge, 0);
     apf::Up up;
     mesh->getUp(currentFace, up);
@@ -714,7 +712,7 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
     mesh->getUp(edge, up);
     apf::MeshEntity* firstFace;
     for (int i = 0; i < up.n; i++) {
-      if ( crv::isBoundaryEntity(mesh, up.e[i]) ) {
+      if ( isOnDomainBoundary(mesh, up.e[i]) ) {
         firstFace = up.e[i]; break;
       }
     }

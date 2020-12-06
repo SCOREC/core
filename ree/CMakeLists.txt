@@ -25,7 +25,7 @@ target_include_directories(ree INTERFACE
     )
 
 # Link this package to these libraries
-target_link_libraries(ree PUBLIC apf pcu crv)
+target_link_libraries(ree PUBLIC apf pcu)
 
 scorec_export_library(ree)
 
