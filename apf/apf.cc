@@ -463,33 +463,18 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
   NewArray<Vector3> vvals(values.size());
   e->getShape()->getVectorValues(e->getMesh(), e->getEntity(), local, vvals);
 
-  // Perform Piola transformation
-  if( e->getDimension() == e->getMesh()->getDimension() ) // i.e. J is square
-  {
-    apf::Matrix3x3 Jinv;
-    apf::getJacobianInv( e->getParent(), local, Jinv );
-    apf::Matrix3x3 JinvT = apf::transpose(Jinv);
+  apf::Matrix3x3 Jinv;
+  apf::getJacobianInv( e->getParent(), local, Jinv );
+  apf::Matrix3x3 JinvT = apf::transpose(Jinv);
 
-    // u(x_hat) * J(x_hat)^{-1}
-    for( size_t i = 0; i < values.size(); i++ ) {
-      for ( int j = 0; j < 3; j++ ) {
-        values[i][j] = 0.;
-        for ( int k = 0; k < 3; k++ )
-          values[i][j] += vvals[i][k] * JinvT[k][j];
-      }
-    }
-  }
-  else
-  {
-    apf::Matrix3x3 Jinv;
-    apf::getJacobianInv( e->getParent(), local, Jinv );
-    apf::Matrix3x3 JinvT = apf::transpose(Jinv);
-    for( size_t i = 0; i < values.size(); i++ ) {
-      for ( int j = 0; j < 3; j++ ) {
-        values[i][j] = 0.;
-        for ( int k = 0; k < 2; k++ )
-          values[i][j] += vvals[i][k] * JinvT[k][j];
-      }
+  // Perform Piola transformation - u(x_hat) * J(x_hat)^{-1}
+  int d = 0;
+  (e->getDimension() == e->getMesh()->getDimension()) ? d = 3 : d = 2;
+  for( size_t i = 0; i < values.size(); i++ ) {
+    for ( int j = 0; j < 3; j++ ) {
+      values[i][j] = 0.;
+      for ( int k = 0; k < d; k++ )
+        values[i][j] += vvals[i][k] * JinvT[k][j];
     }
   }
 }

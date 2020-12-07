@@ -262,9 +262,9 @@ static void eliminateDBCs(
   int num_uness_dofs = uness_dofs.size();
 
   // 1. Remove rows of A corresponding to
-	// ess_dofs by copying into Anew
+  // ess_dofs by copying into Anew
   Anew.resize(num_uness_dofs, num_uness_dofs);
-	for(int rr = 0; rr < num_uness_dofs; rr++) {
+  for(int rr = 0; rr < num_uness_dofs; rr++) {
     int i = uness_dofs[rr];
     for(int cc = 0; cc < num_uness_dofs; cc++) {
       int j = uness_dofs[cc];
@@ -272,14 +272,14 @@ static void eliminateDBCs(
     }
   }
 
-	// 2. Assemble new B
-	Bnew.resize(num_uness_dofs);
+  // 2. Assemble new B
+  Bnew.resize(num_uness_dofs);
   for(int i = 0; i < num_uness_dofs; i++) {
     Bnew(i) = B(uness_dofs[i]);
   }
 
   if (num_ess_dofs > 0) {
-	  // 3. Subtract from Bnew: (Bnew -= Ae*Xe)
+    // 3. Subtract from Bnew: (Bnew -= Ae*Xe)
     mth::Matrix<double> Ae(num_uness_dofs, num_ess_dofs);
     for(int rr = 0; rr < num_uness_dofs; rr++) {
       int i = uness_dofs[rr];
@@ -353,16 +353,15 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
 
 apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux)
 {
-
-	// 1. Create per-element SCALAR error field
+  // 1. Create per-element SCALAR error field
   apf::Field* error_field = apf::createIPField(
-		apf::getMesh(ef), "residual_error_field", apf::SCALAR, 1);
+      apf::getMesh(ef), "residual_error_field", apf::SCALAR, 1);
 
   // 2. Create p+1 order tet ND field
   int order = ef->getShape()->getOrder();
   int orderp1 = order+1;
   apf::Field* efp1 = apf::createField(apf::getMesh(ef),
-	 "orderp1_nedelec_field", apf::SCALAR, apf::getNedelec(orderp1));
+      "orderp1_nedelec_field", apf::SCALAR, apf::getNedelec(orderp1));
   apf::zeroField(efp1);
 
   // 2. iterate over all elements of the mesh
@@ -398,22 +397,22 @@ apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux)
         apf::getMesh(efp1), el, efp1, ess_dofs, uness_dofs);
 
     // 2(g). eliminate Dirichlet (Essential) Boundary Conditions
-		mth::Vector<double> X, Bnew;
+    mth::Vector<double> X, Bnew;
     mth::Matrix<double> Anew;
-		X.resize(B.size());
-		X.zero(); // initialize X with exact DBC (e = 0.0)
-		eliminateDBCs(A, X, B, ess_dofs, uness_dofs, Anew, Bnew);
+    X.resize(B.size());
+    X.zero(); // initialize X with exact DBC (e = 0.0)
+    eliminateDBCs(A, X, B, ess_dofs, uness_dofs, Anew, Bnew);
 
-		// 2(h). Solve the reduced system
-	  mth::Matrix<double> Q, R;
-		mth::decomposeQR(Anew, Q, R);
-		mth::Vector<double> Xnew;
-		mth::solveFromQR(Q, R, Bnew, Xnew);
+    // 2(h). Solve the reduced system
+    mth::Matrix<double> Q, R;
+    mth::decomposeQR(Anew, Q, R);
+    mth::Vector<double> Xnew;
+    mth::solveFromQR(Q, R, Bnew, Xnew);
 
-		// 2(i). Recover the solution
-		mth::Vector<double> error_dofs(B.size());
+    // 2(i). Recover the solution
+    mth::Vector<double> error_dofs(B.size());
     for(unsigned int i = 0; i < ess_dofs.size(); i++) {
-    	int index = ess_dofs[i];
+      int index = ess_dofs[i];
       error_dofs(index) = X(index);
     }
     for(unsigned int i = 0; i < uness_dofs.size(); i++) {
@@ -421,14 +420,14 @@ apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux)
       error_dofs(index) = Xnew(i);
     }
 
-		// 2(j). Compute L2 Norm Error
-		double l2_error = computeL2Error(apf::getMesh(ef), el, efp1, error_dofs);
-		apf::setScalar(error_field, el, 0, l2_error);
+    // 2(j). Compute L2 Norm Error
+    double l2_error = computeL2Error(apf::getMesh(ef), el, efp1, error_dofs);
+    apf::setScalar(error_field, el, 0, l2_error);
   }
   apf::getMesh(ef)->end(it);
-	apf::destroyField(efp1);
+  apf::destroyField(efp1);
 
-	return error_field;
+  return error_field;
 }
 
 apf::Field* estimateError(apf::Field* f)

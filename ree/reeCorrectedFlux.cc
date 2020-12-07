@@ -41,6 +41,7 @@ static void setupCorrectFlux(
 {
   cf->mesh = apf::getMesh(f);
   cf->dim = cf->mesh->getDimension();
+  PCU_ALWAYS_ASSERT(cf->dim == 3);
   cf->order = f->getShape()->getOrder();
   cf->orderp1 = cf->order+1;
   cf->ef = f;
