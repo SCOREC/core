@@ -31,6 +31,7 @@ void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
     if(dimEnt==3) {
       nverts = m->getDownward(e, 0, verts);
       if(nverts==8) w=6.0;
+      if(nverts==6) w=3.0; 
     }
     m->setDoubleTag(e, tag, &w);
   }
