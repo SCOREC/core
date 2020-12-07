@@ -61,8 +61,8 @@ void transpose(Matrix<T,M,N> const& a,
   unsigned n = a.rows();
   b.resize(m, n);
   for (unsigned i=0; i < m; ++i)
-  for (unsigned j=0; j < n; ++j)
-    b(i,j) = a(j,i);
+    for (unsigned j=0; j < n; ++j)
+      b(i,j) = a(j,i);
 }
 
 template <class T>
