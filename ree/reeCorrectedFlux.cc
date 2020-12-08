@@ -284,6 +284,7 @@ public:
 apf::Field* computeCorrectedFlux(apf::Field* ef, apf::Field* theta)
 {
   int dim = apf::getMesh(ef)->getDimension();
+  PCU_ALWAYS_ASSERT(dim==3);
   int order = ef->getShape()->getOrder() + 1; // local BVPs require p+1
   int int_order = 2*order-1;
   int nc = 4*3; // 1 flux vector per face
