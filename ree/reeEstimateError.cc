@@ -231,10 +231,8 @@ static void getEssentialElementNDDofs(apf::Mesh* mesh, apf::MeshEntity* e,
   }
 
   // use marker list to get ess_dofs list
-  ess_dofs.allocated() ? ess_dofs.resize(num_marked)
-    : ess_dofs.allocate(num_marked);
-  uness_dofs.allocated() ? uness_dofs.resize(nedofs-num_marked)
-    : uness_dofs.allocate(nedofs-num_marked);
+  ess_dofs.resize(num_marked);
+  uness_dofs.resize(nedofs-num_marked);
   int ess_dof_counter = 0;
   int uness_dof_counter = 0;
   for (int i = 0; i < nedofs; i++) {
@@ -301,13 +299,13 @@ static void eliminateDBCs(
 }
 
 static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
-	apf::Field* f, mth::Vector<double> const error_dofs)
+  apf::Field* f, mth::Vector<double> const error_dofs)
 {
-	double error = 0.0;
+  double error = 0.0;
 
   apf::FieldShape* fs = f->getShape();
   int type = mesh->getType(e);
-	PCU_ALWAYS_ASSERT(type == apf::Mesh::TET);
+  PCU_ALWAYS_ASSERT(type == apf::Mesh::TET);
   int nd = apf::countElementNodes(fs, type);
   int dim = apf::getDimension(mesh, e);
   double w;
@@ -345,10 +343,10 @@ static double computeL2Error(apf::Mesh* mesh, apf::MeshEntity* e,
   apf::destroyElement(el);
   apf::destroyMeshElement(me);
 
-	if (error < 0.0)
-		error = -error;
+  if (error < 0.0)
+    error = -error;
 
-	return sqrt(error);
+  return sqrt(error);
 }
 
 apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux)
