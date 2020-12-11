@@ -26,6 +26,7 @@ For more information, start at our
 * MTH: Math containers and routines
 * CRV: Support for curved meshes with Bezier Shapes
 * PYCORE: Python Wrappers (see python_wrappers/README.md for build instructions)
+* REE: Residual based implicit error estimator
 
 ### How do I get set up? ###
 

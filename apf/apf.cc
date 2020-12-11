@@ -4,7 +4,6 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-
 #include "apf.h"
 #include "apfScalarField.h"
 #include "apfScalarElement.h"
@@ -464,27 +463,19 @@ void getVectorShapeValues(Element* e, Vector3 const& local,
   NewArray<Vector3> vvals(values.size());
   e->getShape()->getVectorValues(e->getMesh(), e->getEntity(), local, vvals);
 
-  // Perform Piola transformation
-  if( e->getDimension() == e->getMesh()->getDimension() ) // i.e. J is square
-  {
-    apf::Matrix3x3 Jinv;
-    apf::getJacobianInv( e->getParent(), local, Jinv );
-    apf::Matrix3x3 JinvT = apf::transpose(Jinv);
+  apf::Matrix3x3 Jinv;
+  apf::getJacobianInv( e->getParent(), local, Jinv );
+  apf::Matrix3x3 JinvT = apf::transpose(Jinv);
 
-    // u(x_hat) * J(x_hat)^{-1}
-    for( size_t i = 0; i < values.size(); i++ ) {
-      for ( int j = 0; j < 3; j++ ) {
-        values[i][j] = 0.;
-        for ( int k = 0; k < 3; k++ )
-          values[i][j] += vvals[i][k] * JinvT[k][j];
-      }
+  // Perform Piola transformation - u(x_hat) * J(x_hat)^{-1}
+  int d = 0;
+  (e->getDimension() == e->getMesh()->getDimension()) ? d = 3 : d = 2;
+  for( size_t i = 0; i < values.size(); i++ ) {
+    for ( int j = 0; j < 3; j++ ) {
+      values[i][j] = 0.;
+      for ( int k = 0; k < d; k++ )
+        values[i][j] += vvals[i][k] * JinvT[k][j];
     }
-  }
-  else
-  {
-    // TODO when ref dim != mesh space dim. Pseudo-inverse needed.
-    PCU_ALWAYS_ASSERT_VERBOSE(false,
-    	"not yet implemented for 3D surface meshes (i.e., manifolds)!");
   }
 }
 
