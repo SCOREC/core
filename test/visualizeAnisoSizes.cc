@@ -3,6 +3,7 @@
 #include <maStats.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
+#include <maDBG.h>
 #include <PCU.h>
 #include <lionPrint.h>
 
@@ -25,27 +26,10 @@
 #include <errno.h> /* for checking the error from mkdir */
 // ===============================
 
-static double PI = 3.14159265359;
-
 void safe_mkdir(const char* path);
 double getLargetsSize(
     apf::Mesh2* m,
     apf::Field* sizes);
-apf::Vector3 getPointOnEllipsoid(
-    apf::Vector3 center,
-    apf::Vector3 abc,
-    apf::Matrix3x3 rotation,
-    double scaleFactor,
-    double u,
-    double v);
-void makeEllipsoid(
-    apf::Mesh2* msf,
-    apf::Mesh2* m,
-    apf::Field* sizes,
-    apf::Field* frames,
-    apf::MeshEntity* vert,
-    double scaleFactor,
-    int sampleSize[2]);
 void visualizeSizeField(
     const char* modelFile,
     const char* meshFile,
@@ -140,94 +124,6 @@ double getLargetsSize(
   return maxSize;
 }
 
-apf::Vector3 getPointOnEllipsoid(
-    apf::Vector3 center,
-    apf::Vector3 abc,
-    apf::Matrix3x3 rotation,
-    double scaleFactor,
-    double u,
-    double v)
-{
-  apf::Vector3 result;
-  result[0] = abc[0] * cos(u) * cos(v);
-  result[1] = abc[1] * cos(u) * sin(v);
-  result[2] = abc[2] * sin(u);
-
-  result = result * scaleFactor;
-
-  result = rotation * result + center;
-  return result;
-}
-
-
-void makeEllipsoid(
-    apf::Mesh2* msf,
-    apf::Mesh2* mesh,
-    apf::Field* sizes,
-    apf::Field* frames,
-    apf::MeshEntity* vert,
-    double scaleFactor,
-    int sampleSize[2])
-{
-
-  apf::Vector3 center;
-  mesh->getPoint(vert, 0, center);
-
-  apf::Vector3 abc;
-  apf::getVector(sizes, vert, 0, abc);
-
-  apf::Matrix3x3 rotation;
-  apf::getMatrix(frames, vert, 0, rotation);
-
-
-  double U0 = 0.0;
-  double U1 = 2 * PI;
-  double V0 = -PI/2.;
-  double V1 =  PI/2.;
-  int n = sampleSize[0];
-  int m = sampleSize[1];
-  double dU = (U1 - U0) / (n-1);
-  double dV = (V1 - V0) / (m-1);
-
-  // make the array of vertex coordinates in the physical space
-  std::vector<ma::Vector> ps;
-  for (int j = 0; j < m; j++) {
-    for (int i = 0; i < n; i++) {
-      double u = U0 + i * dU;
-      double v = V0 + j * dV;
-      apf::Vector3 pt = getPointOnEllipsoid(center, abc, rotation, scaleFactor, u, v);
-      ps.push_back(pt);
-    }
-  }
-  // make the vertexes and set the coordinates using the array
-  std::vector<apf::MeshEntity*> vs;
-  for (size_t i = 0; i < ps.size(); i++) {
-    apf::MeshEntity* newVert = msf->createVert(0);
-    msf->setPoint(newVert, 0, ps[i]);
-    vs.push_back(newVert);
-  }
-
-  PCU_ALWAYS_ASSERT(vs.size() == ps.size());
-
-  apf::MeshEntity* v[3];
-  // make the lower/upper t elems
-  for (int i = 0; i < n-1; i++) {
-    for (int j = 0; j < m-1; j++) {
-      // upper triangle
-      v[0] = vs[(i + 0) + n * (j + 0)];
-      v[1] = vs[(i + 0) + n * (j + 1)];
-      v[2] = vs[(i + 1) + n * (j + 0)];
-      apf::buildElement(msf, 0, apf::Mesh::TRIANGLE, v);
-      // upper triangle
-      v[0] = vs[(i + 0) + n * (j + 1)];
-      v[1] = vs[(i + 1) + n * (j + 1)];
-      v[2] = vs[(i + 1) + n * (j + 0)];
-      apf::buildElement(msf, 0, apf::Mesh::TRIANGLE, v);
-    }
-  }
-}
-
-
 void visualizeSizeField(
     const char* modelFile,
     const char* meshFile,
@@ -290,23 +186,12 @@ void visualizeSizeField(
 
   m->verify();
 
-  // create the size-field visualization mesh
-  apf::Mesh2* msf = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
-
-  apf::MeshEntity* vert;
-  apf::MeshIterator* it = m->begin(0);
-  while ( (vert = m->iterate(it)) )
-    if (m->isOwned(vert))
-      makeEllipsoid(msf, m, sizes, frames, vert, userScale , sampleSize);
-  m->end(it);
-
   std::stringstream ss;
   ss << outputPrefix << "/size_field_vis";
-  apf::writeVtkFiles(ss.str().c_str(), msf);
+  ma_dbg::visualizeSizeField(
+      m, sizes, frames, sampleSize, userScale, ss.str().c_str());
   ss.str("");
 
-  msf->destroyNative();
-  apf::destroyMesh(msf);
   m->destroyNative();
   apf::destroyMesh(m);
 }
