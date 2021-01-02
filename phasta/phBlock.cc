@@ -246,9 +246,11 @@ std::string getElementType
   ,"tetrahedron "
   ,"hexahedron "
   ,"wedge "
+  ,"wedge triface"
   ,"wedge quadface "
   ,"pyramid "
-  ,"pyramid triface "};
+  ,"pyramid triface "
+  ,"pyramid quadface"};
   return typeTable[elementType];
 }
 
