@@ -245,12 +245,10 @@ std::string getElementType
   {NULL
   ,"tetrahedron "
   ,"hexahedron "
-  ,"wedge "
-  ,"wedge triface"
+  ,"wedge triface" // this will push this into the interior element as well but have to propagate
   ,"wedge quadface "
-  ,"pyramid "
-  ,"pyramid triface "
-  ,"pyramid quadface"};
+  ,"pyramid quadface"
+  ,"pyramid triface "};
   return typeTable[elementType];
 }
 
