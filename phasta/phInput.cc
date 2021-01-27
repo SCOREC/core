@@ -83,6 +83,7 @@ static void setDefaults(Input& in)
   in.nRigidBody = 0;
   in.nRBParam = 12;
   in.gradingFactor = 1.25;
+  in.txtCoord = 0; // write coords.<part> in run directory if 1
   in.spanAvg = 0; // prepare and write spanwise average arrays
   in.nfathers = 0; // number of father nodes (# of pts in xy (2D) plane for z averaging)
   in.nsons = 0; // number of sons for each father (constant nz for each father ONLY for ijk grids)
@@ -167,6 +168,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["nRigidBody"] = &in.nRigidBody;
   intMap["nRBParam"] = &in.nRBParam;
   dblMap["gradingFactor"] = &in.gradingFactor;
+  intMap["textCoord"] = &in.txtCoord;
   intMap["spanAverage"] = &in.spanAvg;
   intMap["nfathers"] = &in.nfathers;
   intMap["nsons"] = &in.nsons;

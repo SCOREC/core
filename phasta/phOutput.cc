@@ -948,6 +948,7 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
     int nnodes = m->count(0); // number of nodes of whole mesh or part??
     /* this will come from the adapt.inp file and is constant for all geombc
      it is the total number of father nodes, nx*ny, and each geombc loads this */
+    o.txtCoord=in.txtCoord;  // controls whether we write coords.part
     int nfather = in.nfathers;
     o.arrays.nfather = nfather;
     /* this will come from the adapt.inp file and is constant for all geombc

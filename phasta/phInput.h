@@ -191,6 +191,7 @@ class Input
     double gradingFactor;
     /* Stuff for spanwise averaging */
     int spanAvg;
+    int txtCoord;
     int nfathers;
     int nsons;
 };

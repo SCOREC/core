@@ -136,6 +136,7 @@ namespace chef {
 namespace ph {
   void checkBalance(apf::Mesh2* m, ph::Input& in) {
     /* check if balancing was requested */
+      Parma_PrintPtnStats(m, "postSplit", false);
       if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
         ph::balance(in,m);
   }

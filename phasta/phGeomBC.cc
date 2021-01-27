@@ -368,6 +368,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   int npts=params[0];
   char coordfilename[64];
   //bzero((void*)coordfilename,64);
+ if (o.txtCoord == 1) {
   int rank = PCU_Comm_Self() + 1;
   sprintf(coordfilename, "coords.%d",rank);
   FILE* fc = fopen(coordfilename, "w");
@@ -381,6 +382,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     fprintf ( fc, "%.15E,%.15E,%.15E,\n", x,y,z);
   }
   fclose(fc);
+  }
 
   writeInt(f, "number of processors", PCU_Comm_Peers());
   writeInt(f, "size of ilwork array", o.nlwork);

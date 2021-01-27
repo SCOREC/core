@@ -144,6 +144,7 @@ struct Output
   ~Output();
   Input* in;
   apf::Mesh* mesh;
+  int txtCoord;
   int nOverlapNodes;
   int nOwnedNodes;
   int nBoundaryElements;

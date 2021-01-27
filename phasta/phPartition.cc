@@ -29,6 +29,7 @@ void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
   while ((e = m->iterate(it))){
     int dimEnt=getDimension(m,e);
     if(dimEnt==3) {
+      w=1.0;
       nverts = m->getDownward(e, 0, verts);
       if(nverts==8) w=6.0;
       if(nverts==6) w=3.0; 
@@ -67,6 +68,7 @@ apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
     }
 //    apf::MeshTag* weights = Parma_WeighByMemory(m);
     apf::MeshTag* weights = setWeights(m);
+//    Parma_PrintPtnStats(m, "preSplit",false);
     plan = splitter->split(weights, 1.01, in.splitFactor);
     apf::removeTagFromDimension(m, weights, m->getDimension());
     m->destroyTag(weights);
