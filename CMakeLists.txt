@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.0)
 
-project(SCOREC VERSION 2.2.3 LANGUAGES CXX C)
+project(SCOREC VERSION 2.2.5 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -146,6 +146,7 @@ add_subdirectory(pumi)
 add_subdirectory(ma)
 add_subdirectory(crv)
 add_subdirectory(spr)
+add_subdirectory(ree)
 add_subdirectory(sam)
 add_subdirectory(phasta)
 add_subdirectory(stk)

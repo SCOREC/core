@@ -95,8 +95,43 @@ void getGaussLegendrePoints(int np, double* pts)
   }
 }
 
-void getGaussLobattoPoints(int /*np*/, double* /*pts*/)
-{ /* implement Gauss Lobatto points. Later when needed. */
+void getGaussLobattoPoints(int np, double* pts)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(np >= 2, "np is expected to be greater or equal to 2!");
+  // end points are 0 and 1
+  pts[0] = 0.;
+  pts[np-1] = 1.;
+
+  // interior points are symmetric
+  for (int i = 1; i <= (np-1)/2; i++) {
+    double x_i = std::sin(M_PI * ((double)(i)/(np-1) - 0.5));
+    double z_i = 0.;
+    double p_l;
+    bool done = false;
+    for (int iter = 0; true; iter++) {
+      double p_lm1 = 1.;
+      p_l = x_i;
+      for (int l = 1; l < (np-1); l++) {
+        double p_lp1 = ((2*l + 1)*x_i*p_l - l*p_lm1)/(l + 1);
+        p_lm1 = p_l;
+        p_l = p_lp1;
+      }
+      if (done) break;
+
+      double dx = (x_i*p_l - p_lm1) / (np*p_l);
+      if (std::abs(dx) < 1e-16)
+      {
+        done = true;
+        z_i = ((1.0 + x_i) - dx)/2;
+      }
+      PCU_ALWAYS_ASSERT_VERBOSE(iter < 8,
+         "something went wrong in getGaussLobattoPoints!");
+      x_i -= dx;
+    }
+
+    pts[i] = z_i;
+    pts[np-i-1] = 1-z_i;
+  }
 }
 
 
@@ -113,7 +148,7 @@ void getClosedPoints(
     apf::NewArray<double>& cp,
     int type)
 {
-    getPoints(order, cp, type);
+  getPoints(order, cp, type);
 }
 
 void getChebyshevT(int order, double xi, double* u)
@@ -179,6 +214,63 @@ void getChebyshevT(int order, double xi, double* u, double* d, double* dd)
      d[n+1] = (n + 1)*(z*d[n]/n + 2*u[n]);
      dd[n+1] = (n + 1)*(2.*(n + 1)*d[n] + z*dd[n])/n;
   }
+}
+
+void poly1dBasisBarycentric(int order, double xi, double* u)
+{
+  // order 0 is trivial
+  if (order == 0) {
+    u[0] = 1.;
+    return;
+  }
+
+  apf::NewArray<double> nodes;
+  getClosedPoints(order, nodes);
+  // anything other than 0
+  apf::NewArray<double> x(order+1);
+  apf::NewArray<double> w(order+1);
+
+  for (int i = 0; i < order+1; i++) {
+    x[i] = nodes[i];
+    w[i] = 1.0;
+  }
+
+  for (int i = 0; i < order+1; i++) {
+    for (int j = 0; j < i; j++) {
+      double xij = x[i] - x[j];
+      w[i] *=  xij;
+      w[j] *= -xij;
+    }
+  }
+
+  for (int i = 0; i < order+1; i++) {
+    w[i] = 1./w[i];
+  }
+
+  int i, k, p = order;
+  double l, lk;
+  lk = 1.;
+
+  for (k = 0; k < p; k++) {
+    if (xi >= (x[k] + x[k+1]) / 2.)
+      lk *= xi - x[k];
+    else {
+      for (i = k+1; i <= p; i++) {
+        lk *= xi - x[i];
+      }
+      break;
+    }
+  }
+  l = lk * (xi - x[k]);
+
+  for (i = 0; i < k; i++) {
+    u[i] = l * w[i] / (xi - x[i]);
+  }
+
+  u[k] = lk * w[k];
+
+  for(i++; i <= p; i++)
+    u[i] = l * w[i] / (xi - x[i]);
 }
 
 }

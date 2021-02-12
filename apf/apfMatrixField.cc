@@ -10,15 +10,6 @@
 
 namespace apf {
 
-MatrixElement::MatrixElement(MatrixField* f, MeshElement* e):
-    ElementOf<Matrix3x3>(f,e)
-{
-}
-
-MatrixElement::~MatrixElement()
-{
-}
-
 Element* MatrixField::getElement(VectorElement* e)
 {
   return new MatrixElement(this,e);

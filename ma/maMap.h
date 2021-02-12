@@ -20,6 +20,13 @@ Affine getMap(apf::Mesh* m, Entity* e);
 
 double getInsideness(apf::Mesh* m, Entity* e, Vector const& xi);
 
+Vector curvedElemInvMap(
+    apf::Mesh* m,
+    Entity* e,
+    const Vector& p,
+    const double tol = 1.e-16,
+    const int maxIter = 10);
+
 }
 
 #endif
