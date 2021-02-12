@@ -17,12 +17,19 @@
 #include "gmi_egads.h"
 #include "gmi_egads_config.h"
 
-// will be initialized by `gmi_egads_start`
-ego eg_context;
-// will be initialized by `gmi_egads_load`
-ego eg_model;
-// will be initialized by `gmi_egads_load`
-ego eg_body;
+/** \brief initialize a gmi_model with an EGADS body and number of regions */
+struct gmi_model* gmi_egads_init(struct egObject *body, int numRegions);
+
+/** \brief initialize the model adjacency table for 3D regions */
+void gmi_egads_init_adjacency(int ***adjacency);
+
+
+/// initialized by `gmi_egads_start`
+static ego eg_context;
+/// initialized by `gmi_egads_load`
+static ego eg_model;
+/// initialized by `gmi_egads_load`
+static ego eg_body;
 
 typedef struct egads_ent
 {
@@ -36,22 +43,22 @@ typedef struct egads_ent
 /// egads_global_ents[1] - array of model edges
 /// egads_global_ents[2] - array of model faces
 /// egads_global_ents[3] - array of model regions
-egads_ent *egads_global_ents[4];
+static egads_ent *egads_global_ents[4];
 
-struct egads_iter
+typedef struct egads_iter
 {
    egads_ent *ents;
    int nelem;
    int idx;
-};
+} egads_iter;
 
 /// adjacency table to be used for the "dummy" 3D elements that EGADS doesn't
 /// natively track
-int **adjacency_table[6];
+static int **adjacency_table[6];
 
 /// read adjacency table from binary file
-void read_adj_table(const char* filename,
-                    int *nregions)
+static void read_adj_table(const char* filename,
+                           int *nregions)
 {
   char *sup_filename;
   sup_filename = EG_alloc(strlen(filename)+4+1);
@@ -70,7 +77,8 @@ void read_adj_table(const char* filename,
   }
 
   int header[6];
-  fread(header, sizeof(int), 6, adj_table_file);
+  size_t count = fread(header, sizeof(int), 6, adj_table_file);
+  if (count != 6) gmi_fail("fread failed!\n");
 
   *nregions = header[0];
 
@@ -86,7 +94,8 @@ void read_adj_table(const char* filename,
     }
     for (int j = 0; j < header[i]; ++j) {
       int nadjacent = -1;
-      fread(&nadjacent, sizeof(int), 1, adj_table_file);
+      count = fread(&nadjacent, sizeof(int), 1, adj_table_file);
+      if (count != 1) gmi_fail("fread failed!\n"); 
       adjacency_table[i][j] = (int*)EG_alloc(sizeof(*(adjacency_table[i][j]))
                                              * (nadjacent+1));
       if (adjacency_table[i][j] == NULL) {
@@ -97,8 +106,9 @@ void read_adj_table(const char* filename,
         gmi_fail(fail);
       }
       adjacency_table[i][j][0] = nadjacent;
-      fread(&(adjacency_table[i][j][1]), sizeof(int), nadjacent,
-              adj_table_file);
+      count = fread(&(adjacency_table[i][j][1]), sizeof(int), nadjacent,
+                    adj_table_file);
+      if (count != (size_t)nadjacent) gmi_fail("fread failed!\n");
     }
   }
   fclose(adj_table_file);
@@ -106,11 +116,11 @@ void read_adj_table(const char* filename,
 
 
 /// TODO: consider optimizing adjacency tables and access
-void get_3D_adjacency(struct gmi_model* m,
-                      egads_ent* ent, 
-                      int adj_dim, 
-                      int *num_adjacent, 
-                      egads_ent*** adjacent_ents)
+static void get_3D_adjacency(struct gmi_model* m,
+                             egads_ent* ent, 
+                             int adj_dim, 
+                             int *num_adjacent, 
+                             egads_ent*** adjacent_ents)
 {
   int ent_dim = m->ops->dim(m, (struct gmi_ent*)ent);
   int ent_tag = m->ops->tag(m, (struct gmi_ent*)ent);
@@ -143,7 +153,7 @@ void get_3D_adjacency(struct gmi_model* m,
 }
 
 /// TODO: implement based on adjacent face's bounding boxes
-void get_3D_bounding_box(egads_ent *ent, double *box)
+static void get_3D_bounding_box(egads_ent *ent, double *box)
 {
   (void)ent;
   (void)box;
@@ -151,7 +161,10 @@ void get_3D_bounding_box(egads_ent *ent, double *box)
 }
 
 /// reparameterize a vertex onto an edge
-void getVertexT(struct gmi_model* m, struct gmi_ent* to, struct gmi_ent* from, double* t)
+static void getVertexT(struct gmi_model* m,
+                       struct gmi_ent* to,
+                       struct gmi_ent* from,
+                       double* t)
 {
   double diff;
   double t_range[2];
@@ -187,8 +200,10 @@ void getVertexT(struct gmi_model* m, struct gmi_ent* to, struct gmi_ent* from, d
 /// TODO: handle degenerate edges (cant eval on them)
 /// function to reparameterize a vertex onto a face
 /// (get the u,v parametric coodinates associated with the vertex)
-void getVertexUV(struct gmi_model* m, struct gmi_ent* to,
-                 struct gmi_ent* from, double to_p[2])
+static void getVertexUV(struct gmi_model* m,
+                        struct gmi_ent* to,
+                        struct gmi_ent* from,
+                        double to_p[2])
 {
   struct gmi_set* adj_faces = NULL;
   struct gmi_set* adj_edges = gmi_adjacent(m, from, 1);
@@ -216,7 +231,7 @@ void getVertexUV(struct gmi_model* m, struct gmi_ent* to,
     return;
 }
 
-struct gmi_iter* begin(struct gmi_model* m, int dim)
+static struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
 //   printf("begin\n");
   
@@ -238,7 +253,7 @@ struct gmi_iter* begin(struct gmi_model* m, int dim)
   return (struct gmi_iter*)NULL;
 }
 
-struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
+static struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
 {
 //   printf("next\n");
   (void)m;
@@ -250,7 +265,7 @@ struct gmi_ent* next(struct gmi_model* m, struct gmi_iter* i)
   return (struct gmi_ent*)NULL;
 }
 
-void end(struct gmi_model* m, struct gmi_iter* i)
+static void end(struct gmi_model* m, struct gmi_iter* i)
 {
   // printf("egads end!\n");
   (void)m;
@@ -263,7 +278,7 @@ void end(struct gmi_model* m, struct gmi_iter* i)
   }
 }
 
-int get_dim(struct gmi_model* m, struct gmi_ent* e)
+static int get_dim(struct gmi_model* m, struct gmi_ent* e)
 {
 //   printf("get dim\n");
   (void)m;
@@ -271,7 +286,7 @@ int get_dim(struct gmi_model* m, struct gmi_ent* e)
   return eg_ent->dim;
 }
 
-int get_tag(struct gmi_model* m, struct gmi_ent* e)
+static int get_tag(struct gmi_model* m, struct gmi_ent* e)
 {
 //   printf("get tag\n");
   (void)m;
@@ -279,7 +294,7 @@ int get_tag(struct gmi_model* m, struct gmi_ent* e)
   return eg_ent->tag;
 }
 
-struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
+static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
 //   printf("find\n");
   (void)m;
@@ -287,9 +302,9 @@ struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 }
 
 // find (dim)-dimensional entities adjacent to e
-struct gmi_set* adjacent(struct gmi_model* m, 
-                         struct gmi_ent* e, 
-                         int dim)
+static struct gmi_set* adjacent(struct gmi_model* m, 
+                                struct gmi_ent* e, 
+                                int dim)
 {
   egads_ent *eg_ent = (egads_ent*)e;
   // printf("adjacent! dim: %d, ent dim: %d, ent tag: %d\n", dim, eg_ent->dim, eg_ent->tag);
@@ -337,10 +352,10 @@ struct gmi_set* adjacent(struct gmi_model* m,
 }
 
 /// TODO: error check to make sure ego_ent != NULL?
-void eval(struct gmi_model* m, 
-          struct gmi_ent* e,
-          double const p[2],
-          double x[3])
+static void eval(struct gmi_model* m, 
+                 struct gmi_ent* e,
+                 double const p[2],
+                 double x[3])
 {
   // printf("eval\n");
   // (void)m;
@@ -378,11 +393,11 @@ void eval(struct gmi_model* m,
 }
 
 /// TODO: error check to make sure ego_ent != NULL?
-void reparam(struct gmi_model* m,
-             struct gmi_ent* from,
-             double const from_p[2],
-             struct gmi_ent* to,
-             double to_p[2])
+static void reparam(struct gmi_model* m,
+                    struct gmi_ent* from,
+                    double const from_p[2],
+                    struct gmi_ent* to,
+                    double to_p[2])
 {
   // printf("reparam\n");
   int from_dim, to_dim;
@@ -419,9 +434,9 @@ void reparam(struct gmi_model* m,
 }
 
 /// TODO: error check to make sure ego_ent != NULL?
-int periodic(struct gmi_model* m,
-             struct gmi_ent* e,
-             int dir)
+static int periodic(struct gmi_model* m,
+                    struct gmi_ent* e,
+                    int dir)
 {
   // printf("periodic\n");
   int ent_dim = get_dim(m, e);
@@ -450,10 +465,10 @@ int periodic(struct gmi_model* m,
 }
 
 /// TODO: error check to make sure ego_ent != NULL?
-void range(struct gmi_model* m,
-           struct gmi_ent* e,
-           int dir,
-           double r[2])
+static void range(struct gmi_model* m,
+                  struct gmi_ent* e,
+                  int dir,
+                  double r[2])
 {
   // printf("range\n");
   int ent_dim = get_dim(m, e);
@@ -482,11 +497,11 @@ void range(struct gmi_model* m,
 }
 
 /// TODO: error check to make sure ego_ent != NULL?
-void closest_point(struct gmi_model* m,
-                   struct gmi_ent* e, 
-                   double const from[3],
-                   double to[3],
-                   double to_p[2])
+static void closest_point(struct gmi_model* m,
+                          struct gmi_ent* e, 
+                          double const from[3],
+                          double to[3],
+                          double to_p[2])
 {
   // printf("closest point\n");
   (void)m;
@@ -497,10 +512,10 @@ void closest_point(struct gmi_model* m,
 }
 
 /// TODO: error check to make sure ego_ent != NULL?
-void normal(struct gmi_model* m,
-            struct gmi_ent* e,
-            double const p[2],
-            double n[3])
+static void normal(struct gmi_model* m,
+                   struct gmi_ent* e,
+                   double const p[2],
+                   double n[3])
 {
   // printf("normal\n");
   double du[3], dv[3];
@@ -529,11 +544,11 @@ void normal(struct gmi_model* m,
 }
 
 /// TODO: error check to make sure ego_ent != NULL?
-void first_derivative(struct gmi_model* m,
-                      struct gmi_ent* e,
-                      double const p[2],
-                      double t0[3],
-                      double t1[3])
+static void first_derivative(struct gmi_model* m,
+                             struct gmi_ent* e,
+                             double const p[2],
+                             double t0[3],
+                             double t1[3])
 {
   // printf("first derivative\n");
   int ent_dim = get_dim(m, e);
@@ -553,9 +568,9 @@ void first_derivative(struct gmi_model* m,
 }
 
 /// TODO: make this work for new 3D object
-int is_point_in_region(struct gmi_model* m,
-                       struct gmi_ent* e,
-                       double p[3])
+static int is_point_in_region(struct gmi_model* m,
+                              struct gmi_ent* e,
+                              double p[3])
 {
   // printf("is in region\n");
   (void)m;
@@ -577,10 +592,10 @@ int is_point_in_region(struct gmi_model* m,
 }
 
 /// TODO: make this work for new 3D object
-void bbox(struct gmi_model* m,
-          struct gmi_ent* e,
-          double bmin[3],
-          double bmax[3])
+static void bbox(struct gmi_model* m,
+                 struct gmi_ent* e,
+                 double bmin[3],
+                 double bmax[3])
 {
   // printf("bbox\n");
   (void)m;
@@ -608,9 +623,9 @@ void bbox(struct gmi_model* m,
 /// TODO: seems like this should call adjacent?
 /// For any given vertex, edge, or face e, this function can be used
 /// to see if the e is in the closure of entity et.
-int is_in_closure_of(struct gmi_model* m,
-                     struct gmi_ent* e,
-                     struct gmi_ent* et)
+static int is_in_closure_of(struct gmi_model* m,
+                            struct gmi_ent* e,
+                            struct gmi_ent* et)
 {
   // printf("in closure of\n");
   egads_ent *eg_ent = (egads_ent*)e;
@@ -663,7 +678,7 @@ int is_in_closure_of(struct gmi_model* m,
 }
 
 /// what does this function do?
-int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
+static int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 {
   (void)m;
   (void)e;
@@ -671,7 +686,7 @@ int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
 }
 
 /// TODO: free adjacency table too
-void destroy(struct gmi_model* m)
+static void destroy(struct gmi_model* m)
 {
   // printf("destroy!\n");
   for (int dim = 0; dim < 4; ++dim)
@@ -699,7 +714,7 @@ void destroy(struct gmi_model* m)
   free(m);
 }
 
-struct gmi_model_ops ops;
+static struct gmi_model_ops ops;
 
 /// TODO: Come up with a better flag? 
 /// TODO: re-write for EGADSlite - model loading is different
