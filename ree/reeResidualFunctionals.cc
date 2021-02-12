@@ -710,7 +710,7 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
   else {
     apf::Up up;
     mesh->getUp(edge, up);
-    apf::MeshEntity* firstFace;
+    apf::MeshEntity* firstFace = nullptr;
     for (int i = 0; i < up.n; i++) {
       if ( isOnDomainBoundary(mesh, up.e[i]) ) {
         firstFace = up.e[i]; break;
