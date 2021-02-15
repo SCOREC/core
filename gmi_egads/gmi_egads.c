@@ -62,6 +62,8 @@ static void read_adj_table(const char* filename,
                            int *nregions,
                            int *** adjacency_table)
 {
+  /// filename of supplementary model file
+  /// 4 chars longer for ".sup" suffix plus 1 for string termination character
   char *sup_filename;
   sup_filename = EG_alloc(strlen(filename)+4+1);
   if (sup_filename == NULL)
@@ -69,10 +71,11 @@ static void read_adj_table(const char* filename,
     gmi_fail("failed to allocate memory for new string");
   }
   sup_filename[0] = '\0';
-  strcat(sup_filename,filename);
+  strcat(sup_filename, filename);
   strcat(sup_filename, ".sup");
 
   FILE *adj_table_file = fopen(sup_filename, "rb");
+  EG_free(sup_filename);
   if (adj_table_file == NULL)
   {
     gmi_fail("failed to open supplementary EGADS model file!");
@@ -145,7 +148,6 @@ static void get_3D_adjacency(struct gmi_model* m,
   else
     gmi_fail("bad dims in get_3D_adjacency!");
 
-
   int *adj_tags = egm->adjacency_table[pairing][ent_tag-1];
   *num_adjacent = adj_tags[0];
   *adjacent_ents = (egads_ent**)EG_alloc(sizeof(**adjacent_ents) * (*num_adjacent));
@@ -156,7 +158,7 @@ static void get_3D_adjacency(struct gmi_model* m,
   }
 }
 
-/// TODO: implement based on adjacent face's bounding boxes
+/// TODO: implement based on adjacent face's bounding boxes?
 static void get_3D_bounding_box(egads_ent *ent, double *box)
 {
   (void)ent;
@@ -497,7 +499,6 @@ static void normal(struct gmi_model* m,
   n[1] = du[2]*dv[0] - du[0]*dv[2];
   n[2] = du[0]*dv[1] - du[1]*dv[0];
 
-  // int mtype = 0;
   egads_ent *eg_ent = (egads_ent*)e;
   ego ego_ent = eg_ent->ego_ent;
   double data[4];
@@ -534,7 +535,7 @@ static void first_derivative(struct gmi_model* m,
   }
 }
 
-/// TODO: make this work for new 3D object
+/// TODO: make this work for 3D entity
 static int is_point_in_region(struct gmi_model* m,
                               struct gmi_ent* e,
                               double p[3])
@@ -584,8 +585,6 @@ static void bbox(struct gmi_model* m,
   bmax[2] = box[5];
 }
 
-
-/// TODO: seems like this should call adjacent?
 /// For any given vertex, edge, or face e, this function can be used
 /// to see if the e is in the closure of entity et.
 static int is_in_closure_of(struct gmi_model* m,
@@ -755,7 +754,6 @@ struct gmi_model* gmi_egads_init(ego body, int nregions)
   {
     for (int i = 0; i < m->model.n[dim]; ++i)
     {
-
       if (dim == 0)
       {
         EG_objectBodyTopo(body, NODE, i+1,
