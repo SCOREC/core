@@ -21,15 +21,10 @@
 struct gmi_model* gmi_egads_init(struct egObject *body, int numRegions);
 
 /** \brief initialize the model adjacency table for 3D regions */
-void gmi_egads_init_adjacency(int ***adjacency);
+void gmi_egads_init_adjacency(struct gmi_model* m, int ***adjacency);
 
-
-/// initialized by `gmi_egads_start`
+/// global context used by EGADS initialized by `gmi_egads_start`
 static ego eg_context;
-/// initialized by `gmi_egads_load`
-static ego eg_model;
-/// initialized by `gmi_egads_load`
-static ego eg_body;
 
 typedef struct egads_ent
 {
@@ -38,27 +33,34 @@ typedef struct egads_ent
   int tag;
 } egads_ent;
 
-/// global array of model entities
-/// egads_global_ents[0] - array of model verts
-/// egads_global_ents[1] - array of model edges
-/// egads_global_ents[2] - array of model faces
-/// egads_global_ents[3] - array of model regions
-static egads_ent *egads_global_ents[4];
+typedef struct egads_model
+{
+  struct gmi_model model;
+  ego eg_body;
+
+  /// array of model entities
+  /// egads_model_ents[0] - array of model verts
+  /// egads_model_ents[1] - array of model edges
+  /// egads_model_ents[2] - array of model faces
+  /// egads_model_ents[3] - array of model regions
+  egads_ent *egads_model_ents[4];
+
+  /// adjacency table to be used for the "dummy" 3D elements that EGADS doesn't
+  /// natively track
+  int **adjacency_table[6];
+} egads_model;
 
 typedef struct egads_iter
 {
-   egads_ent *ents;
-   int nelem;
-   int idx;
+  egads_ent *ents;
+  int nelem;
+  int idx;
 } egads_iter;
-
-/// adjacency table to be used for the "dummy" 3D elements that EGADS doesn't
-/// natively track
-static int **adjacency_table[6];
 
 /// read adjacency table from binary file
 static void read_adj_table(const char* filename,
-                           int *nregions)
+                           int *nregions,
+                           int *** adjacency_table)
 {
   char *sup_filename;
   sup_filename = EG_alloc(strlen(filename)+4+1);
@@ -122,6 +124,8 @@ static void get_3D_adjacency(struct gmi_model* m,
                              int *num_adjacent, 
                              egads_ent*** adjacent_ents)
 {
+  egads_model *egm = (egads_model*)m;
+
   int ent_dim = m->ops->dim(m, (struct gmi_ent*)ent);
   int ent_tag = m->ops->tag(m, (struct gmi_ent*)ent);
   
@@ -142,7 +146,7 @@ static void get_3D_adjacency(struct gmi_model* m,
     gmi_fail("bad dims in get_3D_adjacency!");
 
 
-  int *adj_tags = adjacency_table[pairing][ent_tag-1];
+  int *adj_tags = egm->adjacency_table[pairing][ent_tag-1];
   *num_adjacent = adj_tags[0];
   *adjacent_ents = (egads_ent**)EG_alloc(sizeof(**adjacent_ents) * (*num_adjacent));
 
@@ -234,7 +238,8 @@ static void getVertexUV(struct gmi_model* m,
 static struct gmi_iter* begin(struct gmi_model* m, int dim)
 {
 //   printf("begin\n");
-  
+  egads_model *egm = (egads_model*)m;
+
   struct egads_iter *eg_iter;
   if (dim >= 0 && dim <= 3)
   {
@@ -244,8 +249,8 @@ static struct gmi_iter* begin(struct gmi_model* m, int dim)
       gmi_fail("EG_alloc failed to allocate memory for iter");
       return (struct gmi_iter*)NULL;
     }
-    int nents = m->n[dim];
-    eg_iter->ents = &(egads_global_ents[dim][0]);
+    int nents = egm->model.n[dim];
+    eg_iter->ents = &(egm->egads_model_ents[dim][0]);
     eg_iter->nelem = nents;
     eg_iter->idx = 0;
     return (struct gmi_iter*)eg_iter;
@@ -297,8 +302,8 @@ static int get_tag(struct gmi_model* m, struct gmi_ent* e)
 static struct gmi_ent* find(struct gmi_model* m, int dim, int tag)
 {
 //   printf("find\n");
-  (void)m;
-  return (struct gmi_ent*)&(egads_global_ents[dim][tag-1]);
+  egads_model *egm = (egads_model*)m;
+  return (struct gmi_ent*)&(egm->egads_model_ents[dim][tag-1]);
 }
 
 // find (dim)-dimensional entities adjacent to e
@@ -306,6 +311,8 @@ static struct gmi_set* adjacent(struct gmi_model* m,
                                 struct gmi_ent* e, 
                                 int dim)
 {
+  egads_model *egm = (egads_model*)m;
+
   egads_ent *eg_ent = (egads_ent*)e;
   // printf("adjacent! dim: %d, ent dim: %d, ent tag: %d\n", dim, eg_ent->dim, eg_ent->tag);
 
@@ -321,16 +328,16 @@ static struct gmi_set* adjacent(struct gmi_model* m,
   {
     ego *adjacent_egos;
     if (dim == 0)
-      EG_getBodyTopos(eg_body, (eg_ent->ego_ent), 20, &num_adjacent, &adjacent_egos);
+      EG_getBodyTopos(egm->eg_body, (eg_ent->ego_ent), 20, &num_adjacent, &adjacent_egos);
     else if (dim == 1)
-      EG_getBodyTopos(eg_body, (eg_ent->ego_ent), 21, &num_adjacent, &adjacent_egos);
+      EG_getBodyTopos(egm->eg_body, (eg_ent->ego_ent), 21, &num_adjacent, &adjacent_egos);
     else if (dim == 2)
-      EG_getBodyTopos(eg_body, (eg_ent->ego_ent), 23, &num_adjacent, &adjacent_egos);
+      EG_getBodyTopos(egm->eg_body, (eg_ent->ego_ent), 23, &num_adjacent, &adjacent_egos);
 
     adjacent_ents = (egads_ent**)EG_alloc(sizeof(*adjacent_ents) * num_adjacent);
     for (int i = 0; i < num_adjacent; i++)
     {
-      int adj_ent_tag = EG_indexBodyTopo(eg_body, adjacent_egos[i]);
+      int adj_ent_tag = EG_indexBodyTopo(egm->eg_body, adjacent_egos[i]);
       // adjacent_ents[i].ego_ent = adjacent_egos[i];
       // adjacent_ents[i].dim = dim;
       // adjacent_ents[i].tag = adj_ent_tag;
@@ -627,6 +634,8 @@ static int is_in_closure_of(struct gmi_model* m,
                             struct gmi_ent* e,
                             struct gmi_ent* et)
 {
+  egads_model *egm = (egads_model*)m;
+
   // printf("in closure of\n");
   egads_ent *eg_ent = (egads_ent*)e;
   ego ego_ent = eg_ent->ego_ent;
@@ -659,11 +668,11 @@ static int is_in_closure_of(struct gmi_model* m,
   {
     ego *adjacent_egos = NULL;
     if (ent_dim == 0)
-      EG_getBodyTopos(eg_body, ego_region, NODE, &num_adjacent, &adjacent_egos);
+      EG_getBodyTopos(egm->eg_body, ego_region, NODE, &num_adjacent, &adjacent_egos);
     else if (ent_dim == 1)
-      EG_getBodyTopos(eg_body, ego_region, EDGE, &num_adjacent, &adjacent_egos);
+      EG_getBodyTopos(egm->eg_body, ego_region, EDGE, &num_adjacent, &adjacent_egos);
     else if (ent_dim == 2)
-      EG_getBodyTopos(eg_body, ego_region, FACE, &num_adjacent, &adjacent_egos);
+      EG_getBodyTopos(egm->eg_body, ego_region, FACE, &num_adjacent, &adjacent_egos);
     for (int i = 0; i < num_adjacent; ++i)
     {
       if (EG_isEquivalent(ego_ent, adjacent_egos[i]))
@@ -685,9 +694,10 @@ static int is_discrete_ent(struct gmi_model* m, struct gmi_ent* e)
   gmi_fail("is_discrete_ent not implemented");
 }
 
-/// TODO: free adjacency table too
 static void destroy(struct gmi_model* m)
 {
+  egads_model *egm = (egads_model*)m;
+
   // printf("destroy!\n");
   for (int dim = 0; dim < 4; ++dim)
   {
@@ -697,7 +707,7 @@ static void destroy(struct gmi_model* m)
     //   // if (ent.ego_ent != NULL)
     //   //   EG_free(ent.ego_ent);
     // }
-    EG_free(egads_global_ents[dim]);
+    EG_free(egm->egads_model_ents[dim]);
   }
 
   int sizes[] = {m->n[3], m->n[3], m->n[3],
@@ -706,12 +716,12 @@ static void destroy(struct gmi_model* m)
   {
     for (int j = 0; j < sizes[i]; ++j)
     {
-      EG_free(adjacency_table[i][j]);
+      EG_free(egm->adjacency_table[i][j]);
     }
-    EG_free(adjacency_table[i]);
+    EG_free(egm->adjacency_table[i]);
   }
 
-  free(m);
+  free(egm);
 }
 
 static struct gmi_model_ops ops;
@@ -723,6 +733,7 @@ static struct gmi_model_ops ops;
 struct gmi_model* gmi_egads_load(const char* filename)
 {
   printf("in gmi_egads_load\n");
+  ego eg_model;
   int load_status = EG_loadModel(eg_context, 0, filename, &eg_model);
   if (load_status != EGADS_SUCCESS)
   {
@@ -749,20 +760,12 @@ struct gmi_model* gmi_egads_load(const char* filename)
   }
 
   int nregions = 1; // read adjacency file to find this number
-  read_adj_table(filename, &nregions);
-  // eg_body = eg_bodies[0];
+  int **adjacency_table[6];
+  read_adj_table(filename, &nregions, adjacency_table);
 
-  // struct gmi_model *model;
-  // model = (struct gmi_model*)malloc(sizeof(*model));
-  // model->ops = &ops;
-
-  // EG_getBodyTopos(eg_body, NULL, NODE, &(model->n[0]), NULL);
-  // EG_getBodyTopos(eg_body, NULL, EDGE, &(model->n[1]), NULL);
-  // EG_getBodyTopos(eg_body, NULL, FACE, &(model->n[2]), NULL);
-  // // I believe this should be shell, but always seems to result in 1 shell
-  // EG_getBodyTopos(eg_body, NULL, SHELL, &(model->n[3]), NULL); // BODY?
-
-  return gmi_egads_init(eg_bodies[0], nregions);
+  struct gmi_model* m = gmi_egads_init(eg_bodies[0], nregions);
+  gmi_egads_init_adjacency(m, adjacency_table);
+  return m;
 }
 #else
 struct gmi_model* gmi_egads_load(const char* filename)
@@ -775,100 +778,76 @@ struct gmi_model* gmi_egads_load(const char* filename)
 
 struct gmi_model* gmi_egads_init(ego body, int nregions)
 {
-  eg_body = body;
-
   // set the context
-  EG_getContext(eg_body, &eg_context);
+  EG_getContext(body, &eg_context);
 
-  struct gmi_model *model;
-  model = (struct gmi_model*)malloc(sizeof(*model));
-  model->ops = &ops;
+  egads_model* m;
+  m = (egads_model*)EG_alloc(sizeof(*m));
+  m->model.ops = &ops;
+  m->eg_body = body;
 
   int nverts, nedges, nfaces;
+  EG_getBodyTopos(body, NULL, NODE, &nverts, NULL);
+  EG_getBodyTopos(body, NULL, EDGE, &nedges, NULL);
+  EG_getBodyTopos(body, NULL, FACE, &nfaces, NULL);
 
-  EG_getBodyTopos(eg_body, NULL, NODE, &nverts, NULL);
-  EG_getBodyTopos(eg_body, NULL, EDGE, &nedges, NULL);
-  EG_getBodyTopos(eg_body, NULL, FACE, &nfaces, NULL);
-
-  /// fix below to read supplementary file
-  // I believe this should be shell, but always seems to result in 1 shell
-  // EG_getBodyTopos(eg_body, NULL, SHELL, &nregions, NULL); // BODY?
-
-  model->n[0] = nverts;
-  model->n[1] = nedges;
-  model->n[2] = nfaces;
-  model->n[3] = nregions;
+  m->model.n[0] = nverts;
+  m->model.n[1] = nedges;
+  m->model.n[2] = nfaces;
+  m->model.n[3] = nregions;
 
   for (int i = 0; i < 4; ++i)
   {
-    egads_global_ents[i] = (egads_ent*)EG_alloc(sizeof(*egads_global_ents[i])
-                                              * model->n[i]);
+    m->egads_model_ents[i] = (egads_ent*)EG_alloc(sizeof(*m->egads_model_ents[i])
+                                              * m->model.n[i]);
   }
 
-  /// populate global array
+  /// populate model ent array
   for (int dim = 0; dim < 4; ++dim)
   {
-    for (int i = 0; i < model->n[dim]; ++i)
+    for (int i = 0; i < m->model.n[dim]; ++i)
     {
 
       if (dim == 0)
       {
-        EG_objectBodyTopo(eg_body, NODE, i+1,
-                          &(egads_global_ents[dim][i].ego_ent));
+        EG_objectBodyTopo(body, NODE, i+1,
+                          &(m->egads_model_ents[dim][i].ego_ent));
       }
       else if (dim == 1)
       {
-        EG_objectBodyTopo(eg_body, EDGE, i+1,
-                          &(egads_global_ents[dim][i].ego_ent));
+        EG_objectBodyTopo(body, EDGE, i+1,
+                          &(m->egads_model_ents[dim][i].ego_ent));
       }
       else if (dim == 2)
       {
-        EG_objectBodyTopo(eg_body, FACE, i+1,
-                          &(egads_global_ents[dim][i].ego_ent));
+        EG_objectBodyTopo(body, FACE, i+1,
+                          &(m->egads_model_ents[dim][i].ego_ent));
       }
       else if (dim == 3) // no EGADS 3D objects, just track with dim and tag
       {
-        egads_global_ents[dim][i].ego_ent = NULL;
+        m->egads_model_ents[dim][i].ego_ent = NULL;
       }
 
-      egads_global_ents[dim][i].dim = dim;
-      egads_global_ents[dim][i].tag = i+1;
-//       if (dim < 3) {
-//         printf("ent dim: %d and tag: %d, magic number: %d\n", dim, i+1, (*egads_global_ents[dim][i].ego_ent).magicnumber);
-//         printf("actual dim: %d, tag: %d\n", egads_global_ents[dim][i].dim, egads_global_ents[dim][i].tag);
-//       }
+      m->egads_model_ents[dim][i].dim = dim;
+      m->egads_model_ents[dim][i].tag = i+1;
     }
   }
 
-
-  // printf("after:\n");
-  // for (int dim = 0; dim < 4; ++dim)
-  // {
-  //   for (int i = 0; i < model->n[dim]; ++i)
-  //   {
-  //     if (dim < 3) {
-  //       printf("ent dim: %d and tag: %d, magic number: %d\n", dim, i+1, (*egads_global_ents[dim][i].ego_ent).magicnumber);
-  //       printf("actual dim: %d, tag: %d\n", egads_global_ents[dim][i].dim, egads_global_ents[dim][i].tag);
-  //     }
-  //   }
-  // }
-
-  return model;
+  return &m->model;
 }
 
-void gmi_egads_init_adjacency(int ***adjacency)
+void gmi_egads_init_adjacency(struct gmi_model* m, int ***adjacency)
 {
+  egads_model *egm = (egads_model*)m;
   for (int i = 0; i < 6; ++i)
   {
-    adjacency_table[i] = adjacency[i];
+    egm->adjacency_table[i] = adjacency[i];
   }
 }
 
 void gmi_egads_start(void)
 {
-  printf("egads start\n");
   int status = EG_open(&eg_context);
-  printf("after egads open\n");
   if (status != EGADS_SUCCESS)
   {
     char str[50]; // big enough
