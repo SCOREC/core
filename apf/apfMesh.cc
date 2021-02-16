@@ -253,15 +253,18 @@ bool Mesh::isParamPointInsideModel(ModelEntity* g,
     gmi_free_set(adjRegions);
     return true;
   }
-  (void)param;
-  (void)x;
-  return true; /*
+  // for faces with more than 1 adj model region return true for now
+  // TODO: update for future
+  if (adjRegions->n == 2) {
+    gmi_free_set(adjRegions);
+    return true;
+  }
   PCU_ALWAYS_ASSERT(adjRegions->n <= 1);
   gmi_ent* r = (gmi_ent*)adjRegions->e[0];
   gmi_eval(getModel(), (gmi_ent*)g, &param[0], &x[0]);
   int res = gmi_is_point_in_region(getModel(), r, &x[0]);
   gmi_free_set(adjRegions);
-  return (res == 1) ? true : false; */
+  return (res == 1) ? true : false;
 }
 
 bool Mesh::isInClosureOf(ModelEntity* g, ModelEntity* target){
