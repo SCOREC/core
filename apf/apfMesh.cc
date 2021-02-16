@@ -15,7 +15,6 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <algorithm>
-#include <iostream>
 
 namespace apf {
 
