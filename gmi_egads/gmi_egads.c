@@ -36,7 +36,9 @@ static void (*EGADS_free)(void *pointer);
 static int (*EGADS_open)( ego *context );
 static int (*EGADS_loadModel)(ego context, int bflg, const char *name, 
                               ego *model);
-static int (*EGADS_getContext)(ego object, ego *context);
+static int (*EGADS_exportModel)(ego model, size_t *nbytes, char **stream);
+static int (*EGADS_importModel)(ego context, const size_t nbytes,
+                                const char *stream, ego *model);
 static int (*EGADS_close)(ego context);
 /* geometry functions */
 static int (*EGADS_getRange)(const ego geom, double *range, int *periodic);
@@ -58,10 +60,9 @@ static int (*EGADS_inTopology)(const ego topo, const double *xyz);
 static int (*EGADS_getEdgeUV)(const ego face, const ego edge, int sense,
                               double t, double *UV);
 static int (*EGADS_getBoundingBox)(const ego topo, double *bbox);
-static int (*EGADS_isEquivalent)(const ego topo1, const ego topo2);
 
 /** \brief initialize a gmi_model with an EGADS body and number of regions */
-struct gmi_model* gmi_egads_init(struct egObject *body, int numRegions);
+struct gmi_model* gmi_egads_init(ego body, int numRegions, ego context);
 
 /** \brief initialize the model adjacency table for 3D regions */
 void gmi_egads_init_adjacency(struct gmi_model* m, int ***adjacency);
@@ -674,7 +675,9 @@ static int is_in_closure_of(struct gmi_model* m,
       EGADS_getBodyTopos(egm->eg_body, ego_region, FACE, &num_adjacent, &adjacent_egos);
     for (int i = 0; i < num_adjacent; ++i)
     {
-      if (EGADS_isEquivalent(ego_ent, adjacent_egos[i]))
+      int ent_tag = EGADS_indexBodyTopo(egm->eg_body, ego_ent);
+      int adj_ent_tag = EGADS_indexBodyTopo(egm->eg_body, adjacent_egos[i]);
+      if (ent_tag == adj_ent_tag)
       {
         EGADS_free(adjacent_egos);
         return 1;
@@ -718,26 +721,74 @@ static void destroy(struct gmi_model* m)
 
 static struct gmi_model_ops ops;
 
-/// TODO: Come up with a better flag? 
 /// TODO: re-write for EGADSlite - model loading is different
-// #ifdef HAVE_EGADS
-#if 1
 struct gmi_model* gmi_egads_load(const char* filename)
 {
+  MPI_Comm comm = PCU_Get_Comm();
+  const int rank = PCU_Proc_Self();
+  char *stream;
+  int status, nbytes;
   ego eg_model;
-  int load_status = EGADS_loadModel(eg_context, 0, filename, &eg_model);
-  if (load_status != EGADS_SUCCESS)
+
+  /// rank 0 uses EGADS to load the model then broadcasts it to all other procs
+  if (rank == 0)
   {
-    char str[50]; // big enough
-    sprintf(str, "EGADS failed to load model with error code: %d", load_status);
-    gmi_fail(str);
+    status = EGADS_loadModel(eg_context, 0, filename, &eg_model);
+    if (status != EGADS_SUCCESS)
+    {
+      char str[50]; // big enough
+      sprintf(str, "EGADS failed to load model with error code: %d", status);
+      gmi_fail(str);
+    }
+    size_t size_t_nbytes;
+    status = EGADS_exportModel(eg_model, &size_t_nbytes, &stream);
+    if (status != EGADS_SUCCESS)
+    {
+      char str[50]; // big enough
+      sprintf(str, "EGADS failed to export model with error code: %d", status);
+      gmi_fail(str);
+    }
+    nbytes = (int)size_t_nbytes;
+
+    /* broadcast size of stream so that clients can malloc arrays */
+    MPI_Bcast((void *)(&nbytes), 1, MPI_INT, 0, comm);
+
+    /* broadcast the stream to the clients */
+    MPI_Bcast((void *)stream, nbytes, MPI_CHAR, 0, comm);
+
+    EGADS_free(stream);
+  }
+  /// all other ranks use EGADSlite and receive the model over a broadcast
+  else
+  {
+    /* receive (via broadcast) the size of the stream */
+    MPI_Bcast((void *)(&nbytes), 1, MPI_INT, 0, comm);
+    
+    /* allocate a buffer to receive the stream */
+    stream = (char *)EGADS_alloc(nbytes+1);
+    if (stream == NULL)
+    {
+      gmi_fail("failed to allocate memory for stream");
+    }
+    
+    /* receive (via broadcast) the stream */
+    MPI_Bcast((void *)stream, nbytes, MPI_CHAR, 0, comm);
+
+    status = EGADS_importModel(eg_context, nbytes, stream, &eg_model);
+    if (status != EGADS_SUCCESS)
+    {
+      char str[50]; // big enough
+      sprintf(str, "EGADSlite failed to import model with error code: %d", status);
+      gmi_fail(str);
+    }
+    EGADS_free(stream);
   }
 
   /// TODO: only store the outputs I need, replace the rest with NULL
   int oclass, mtype, nbody, *senses;
   ego geom, *eg_bodies;
-  int status = EGADS_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
-                          &eg_bodies, &senses);
+  status = EGADS_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
+                             &eg_bodies, &senses);
   if (status != EGADS_SUCCESS)
   {
     char str[50]; // big enough
@@ -753,23 +804,15 @@ struct gmi_model* gmi_egads_load(const char* filename)
   int **adjacency_table[6];
   read_adj_table(filename, &nregions, adjacency_table);
 
-  struct gmi_model* m = gmi_egads_init(eg_bodies[0], nregions);
+  struct gmi_model* m = gmi_egads_init(eg_bodies[0], nregions, eg_context);
   gmi_egads_init_adjacency(m, adjacency_table);
   return m;
 }
-#else
-struct gmi_model* gmi_egads_load(const char* filename)
-{
-  (void)filename;
-  /// TODO: chose a compile flag
-  gmi_fail("recompile with -DUSE_EGADS=ON");
-}
-#endif
 
-struct gmi_model* gmi_egads_init(ego body, int nregions)
+struct gmi_model* gmi_egads_init(ego body, int nregions, ego context)
 {
   // set the context
-  EGADS_getContext(body, &eg_context);
+  eg_context = context;
 
   egads_model* m;
   m = (egads_model*)EGADS_alloc(sizeof(*m));
@@ -900,11 +943,15 @@ static void load_dl_function(void (**fptr)(void), const char *symbol)
 
 static void init_egads_functions(void)
 {
+  const int rank = PCU_Proc_Self();
   load_dl_function((void (**)(void))&EGADS_alloc, "EG_alloc");
   load_dl_function((void (**)(void))&EGADS_free, "EG_free");
   load_dl_function((void (**)(void))&EGADS_open, "EG_open");
   load_dl_function((void (**)(void))&EGADS_loadModel, "EG_loadModel");
-  load_dl_function((void (**)(void))&EGADS_getContext, "EG_getContext");
+  if (rank == 0)
+    load_dl_function((void (**)(void))&EGADS_exportModel, "EG_exportModel");
+  else
+    load_dl_function((void (**)(void))&EGADS_importModel, "EG_importModel");
   load_dl_function((void (**)(void))&EGADS_close, "EG_close");
   load_dl_function((void (**)(void))&EGADS_getRange, "EG_getRange");
   load_dl_function((void (**)(void))&EGADS_evaluate, "EG_evaluate");
@@ -916,7 +963,6 @@ static void init_egads_functions(void)
   load_dl_function((void (**)(void))&EGADS_inTopology, "EG_inTopology");
   load_dl_function((void (**)(void))&EGADS_getEdgeUV, "EG_getEdgeUV");
   load_dl_function((void (**)(void))&EGADS_getBoundingBox, "EG_getBoundingBox");
-  load_dl_function((void (**)(void))&EGADS_isEquivalent, "EG_isEquivalent");
 }
 
 void gmi_egads_start(void)
