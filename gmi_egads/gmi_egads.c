@@ -7,15 +7,58 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
+#include <dlfcn.h>
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "egads.h"
 
-#include <gmi.h>
+#include "PCU.h"
+#include "gmi.h"
 #include "gmi_egads.h"
 #include "gmi_egads_config.h"
+
+/**
+ * The following are the EGADS APIs we use to implement the GMI interface
+ * Since we'll load EGADS or EGADSlite dynamically at runtime each of these
+ * functions needs to be a function pointer loaded with dlsym
+*/
+
+/// handle to dynamically loaded EGADS/EGADSlite library
+static void *handle;
+
+/// EGADS API of dynamically loaded functions
+/* memory functions */
+static void * (*EGADS_alloc)(size_t nbytes);
+static void (*EGADS_free)(void *pointer);
+/* base-level object functions */
+static int (*EGADS_open)( ego *context );
+static int (*EGADS_loadModel)(ego context, int bflg, const char *name, 
+                              ego *model);
+static int (*EGADS_getContext)(ego object, ego *context);
+static int (*EGADS_close)(ego context);
+/* geometry functions */
+static int (*EGADS_getRange)(const ego geom, double *range, int *periodic);
+static int (*EGADS_evaluate)(const ego geom, /*@null@*/ const double *param, 
+                             double *results);
+static int (*EGADS_invEvaluate)(const ego geom, double *xyz, double *param,
+                                double *results);
+/* topology functions */
+static int (*EGADS_getTopology)(const ego topo, ego *geom, int *oclass, 
+                                int *type, /*@null@*/ double *limits, 
+                                int *nChildren, ego **children, int **sense);
+static int (*EGADS_getBodyTopos)(const ego body, /*@null@*/ ego src,
+                                 int oclass, int *ntopo,
+                                 /*@null@*/ ego **topos);
+static int (*EGADS_indexBodyTopo)(const ego body, const ego src);
+static int (*EGADS_objectBodyTopo)(const ego body, int oclass, int index,
+                                   ego *obj);
+static int (*EGADS_inTopology)(const ego topo, const double *xyz);
+static int (*EGADS_getEdgeUV)(const ego face, const ego edge, int sense,
+                              double t, double *UV);
+static int (*EGADS_getBoundingBox)(const ego topo, double *bbox);
+static int (*EGADS_isEquivalent)(const ego topo1, const ego topo2);
 
 /** \brief initialize a gmi_model with an EGADS body and number of regions */
 struct gmi_model* gmi_egads_init(struct egObject *body, int numRegions);
@@ -791,8 +834,81 @@ void gmi_egads_init_adjacency(struct gmi_model* m, int ***adjacency)
   }
 }
 
+static void open_egads_lib(void)
+{
+  const int rank = PCU_Proc_Self();
+  if (rank == 0)
+  {
+    handle = dlopen(EGADS_LIBRARIES, RTLD_LAZY);
+  }
+  else
+  {
+    handle = dlopen(EGADSLITE_LIBRARIES, RTLD_LAZY);
+  }
+}
+
+static void close_egads_lib(void)
+{
+  dlclose(handle);
+}
+
+static void load_dl_function(void *fptr, const char *symbol)
+{
+  fptr = dlsym(handle, symbol);
+  if (!fptr) {
+    /* no such symbol */
+    printf("Symbol %s not found!\n", symbol);
+    fprintf(stderr, "Error: %s\n", dlerror());
+    dlclose(handle);
+    gmi_fail("Symbol not found!\n");
+  }
+}
+
+static void init_egads_functions(void)
+{
+  load_dl_function(&EGADS_alloc, "EG_alloc");
+  load_dl_function(&EGADS_free, "EG_free");
+  load_dl_function(&EGADS_open, "EG_open");
+  load_dl_function(&EGADS_loadModel, "EG_loadModel");
+  load_dl_function(&EGADS_getContext, "EG_getContext");
+  load_dl_function(&EGADS_close, "EG_close");
+  load_dl_function(&EGADS_getRange, "EG_getRange");
+  load_dl_function(&EGADS_evaluate, "EG_evaluate");
+  load_dl_function(&EGADS_invEvaluate, "EG_invEvaluate");
+  load_dl_function(&EGADS_getTopology, "EG_getTopology");
+  load_dl_function(&EGADS_getBodyTopos, "EG_getBodyTopos");
+  load_dl_function(&EGADS_indexBodyTopo, "EG_indexBodyTopo");
+  load_dl_function(&EGADS_objectBodyTopo, "EG_objectBodyTopo");
+  load_dl_function(&EGADS_inTopology, "EG_inTopology");
+  load_dl_function(&EGADS_getEdgeUV, "EG_getEdgeUV");
+  load_dl_function(&EGADS_getBoundingBox, "EG_getBoundingBox");
+  load_dl_function(&EGADS_isEquivalent, "EG_isEquivalent");
+
+  // *(void **)(&EGADS_alloc) = dlsym(handle, "EG_alloc");
+  // *(void **)(&EGADS_free) = dlsym(handle, "EG_free");
+  // *(void **)(&EGADS_open) = dlsym(handle, "EG_open");
+  // *(void **)(&EGADS_loadModel) = dlsym(handle, "EG_loadModel");
+  // *(void **)(&EGADS_getContext) = dlsym(handle, "EG_getContext");
+  // *(void **)(&EGADS_close) = dlsym(handle, "EG_close");
+  // *(void **)(&EGADS_getRange) = dlsym(handle, "EG_getRange");
+  // *(void **)(&EGADS_evaluate) = dlsym(handle, "EG_evaluate");
+  // *(void **)(&EGADS_invEvaluate) = dlsym(handle, "EG_invEvaluate");
+  // *(void **)(&EGADS_getTopology) = dlsym(handle, "EG_getTopology");
+  // *(void **)(&EGADS_getBodyTopos) = dlsym(handle, "EG_getBodyTopos");
+  // *(void **)(&EGADS_indexBodyTopo) = dlsym(handle, "EG_indexBodyTopo");
+  // *(void **)(&EGADS_objectBodyTopo) = dlsym(handle, "EG_objectBodyTopo");
+  // *(void **)(&EGADS_inTopology) = dlsym(handle, "EG_inTopology");
+  // *(void **)(&EGADS_getEdgeUV) = dlsym(handle, "EG_getEdgeUV");
+  // *(void **)(&EGADS_getBoundingBox) = dlsym(handle, "EG_getBoundingBox");
+  // *(void **)(&EGADS_isEquivalent) = dlsym(handle, "EG_isEquivalent");
+}
+
 void gmi_egads_start(void)
 {
+  
+  open_egads_lib();
+  init_egads_functions();
+
   int status = EG_open(&eg_context);
   if (status != EGADS_SUCCESS)
   {
@@ -805,6 +921,7 @@ void gmi_egads_start(void)
 void gmi_egads_stop(void)
 {
   EG_close(eg_context);
+  close_egads_lib();
 }
 
 void gmi_register_egads(void)
