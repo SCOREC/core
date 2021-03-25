@@ -7,9 +7,7 @@ if(NOT ENABLE_EGADS)
   return()
 endif()
 
-# this file brings EGADS_LIB from CMake to C
-# set(EGADS_LIB "${EGADS_LIBRARIES}")
-# set(EGADSLITE_LIB "${EGADSLITE_LIBRARIES}")
+# this file effectively sets the runtime path for the EGADS libraries
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_egads_config.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/gmi_egads_config.h")
 
@@ -29,8 +27,6 @@ target_link_libraries(gmi_egads
   PUBLIC
     gmi
     pcu
-  PRIVATE
-    ${EGADS_LIBRARIES}
 )
 
 # Include directories

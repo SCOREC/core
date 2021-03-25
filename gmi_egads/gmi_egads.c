@@ -839,11 +839,11 @@ static void open_egads_lib(void)
   const int rank = PCU_Proc_Self();
   if (rank == 0)
   {
-    handle = dlopen(EGADS_LIBRARIES, RTLD_NOW);
+    handle = dlopen(EGADS_LIBRARIES, RTLD_LAZY);
   }
   else
   {
-    handle = dlopen(EGADSLITE_LIBRARIES, RTLD_NOW);
+    handle = dlopen(EGADSLITE_LIBRARIES, RTLD_LAZY);
   }
 }
 
@@ -885,24 +885,6 @@ static void init_egads_functions(void)
   load_dl_function((void (**)(void))&EGADS_getEdgeUV, "EG_getEdgeUV");
   load_dl_function((void (**)(void))&EGADS_getBoundingBox, "EG_getBoundingBox");
   load_dl_function((void (**)(void))&EGADS_isEquivalent, "EG_isEquivalent");
-
-  // *(void **)(&EGADS_alloc) = dlsym(handle, "EG_alloc");
-  // *(void **)(&EGADS_free) = dlsym(handle, "EG_free");
-  // *(void **)(&EGADS_open) = dlsym(handle, "EG_open");
-  // *(void **)(&EGADS_loadModel) = dlsym(handle, "EG_loadModel");
-  // *(void **)(&EGADS_getContext) = dlsym(handle, "EG_getContext");
-  // *(void **)(&EGADS_close) = dlsym(handle, "EG_close");
-  // *(void **)(&EGADS_getRange) = dlsym(handle, "EG_getRange");
-  // *(void **)(&EGADS_evaluate) = dlsym(handle, "EG_evaluate");
-  // *(void **)(&EGADS_invEvaluate) = dlsym(handle, "EG_invEvaluate");
-  // *(void **)(&EGADS_getTopology) = dlsym(handle, "EG_getTopology");
-  // *(void **)(&EGADS_getBodyTopos) = dlsym(handle, "EG_getBodyTopos");
-  // *(void **)(&EGADS_indexBodyTopo) = dlsym(handle, "EG_indexBodyTopo");
-  // *(void **)(&EGADS_objectBodyTopo) = dlsym(handle, "EG_objectBodyTopo");
-  // *(void **)(&EGADS_inTopology) = dlsym(handle, "EG_inTopology");
-  // *(void **)(&EGADS_getEdgeUV) = dlsym(handle, "EG_getEdgeUV");
-  // *(void **)(&EGADS_getBoundingBox) = dlsym(handle, "EG_getBoundingBox");
-  // *(void **)(&EGADS_isEquivalent) = dlsym(handle, "EG_isEquivalent");
 }
 
 void gmi_egads_start(void)
