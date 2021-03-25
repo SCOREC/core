@@ -7,8 +7,9 @@ if(NOT ENABLE_EGADS)
   return()
 endif()
 
-option(EGADS_LITE "Enable EGADSlite" OFF)
-# this file brings EGADS_LITE from CMake to C++
+# this file brings EGADS_LIB from CMake to C
+# set(EGADS_LIB "${EGADS_LIBRARIES}")
+# set(EGADSLITE_LIB "${EGADSLITE_LIBRARIES}")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_egads_config.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/gmi_egads_config.h")
 
@@ -18,7 +19,12 @@ set(HEADERS gmi_egads.h)
 
 add_library(gmi_egads ${SOURCES})
 
-target_include_directories(gmi_egads PRIVATE ${EGADS_INCLUDE_DIR})
+target_include_directories(gmi_egads
+  PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${EGADS_INCLUDE_DIR}
+)
+
 target_link_libraries(gmi_egads
   PUBLIC
     gmi
