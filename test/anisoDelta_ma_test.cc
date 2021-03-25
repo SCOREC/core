@@ -62,26 +62,19 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
   const char* modelFile = argv[1];
-fprintf(stderr,"ok1\n");
   const char* meshFile = argv[2];
-fprintf(stderr,"ok2\n");
   bool logInterpolation = atoi(argv[3]) > 0 ? true : false;
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
   gmi_register_mesh();
   gmi_register_null();
-fprintf(stderr,"ok3\n");
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   auto targetMetric = m->findField("target_metric");
   PCU_ALWAYS_ASSERT(targetMetric);
   int nComps = targetMetric->countComponents();
-  fprintf(stderr, "components %d\n", nComps);
-fprintf(stderr,"ok4\n");
   m->verify();
-fprintf(stderr,"ok5\n");
   apf::writeVtkFiles("anisoDelta_before",m);
-fprintf(stderr,"ok6\n");
 
   AnIso sf(m);
   ma::Input* in = ma::configure(m, &sf, 0, logInterpolation);
@@ -91,18 +84,8 @@ fprintf(stderr,"ok6\n");
   in->shouldRefineLayer = true;
   in->goodQuality = 0.2;
 
-/*
-  pMeshIter vertices = m->begin(0);
-  pMeshEnt vtx;
-  while ((vtx = m->iterate(vertices))) {
-    ma::Vector H;
-    ma::Matrix R;
-    ma::Matrix M;
-    AnIso::getMetric(*vtx, &R, &H, &M);
-  }
-  m->end(vertices);
-*/
-  //ma::adapt(in);
+  fprintf(stderr, "components %d\n", nComps);
+  ma::adapt(in);
   m->verify();
 /*
   if (logInterpolation)
