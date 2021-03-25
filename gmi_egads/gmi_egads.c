@@ -840,10 +840,42 @@ static void open_egads_lib(void)
   if (rank == 0)
   {
     handle = dlopen(EGADS_LIBRARIES, RTLD_LAZY);
+    if (!handle)
+    {
+      /* fail to load the library */
+      fprintf(stderr, "Could not load EGADS at path %s: %s\n"
+              "searching LD_LIBRARY_PATH...\n", EGADS_LIBRARIES, dlerror());
+      handle = dlopen("libegads.so", RTLD_LAZY);
+      if (!handle)
+      {
+        handle = dlopen("libegads.dylib", RTLD_LAZY);
+      }
+      if (!handle)
+      {
+        fprintf(stderr, "Could not load EGADS: %s\n", dlerror());
+        gmi_fail("Could not load EGADS!\n");
+      }
+    }
   }
   else
   {
     handle = dlopen(EGADSLITE_LIBRARIES, RTLD_LAZY);
+    if (!handle)
+    {
+      /* fail to load the library */
+      fprintf(stderr, "Could not load EGADSlite at path %s: %s\n"
+              "searching LD_LIBRARY_PATH...\n", EGADSLITE_LIBRARIES, dlerror());
+      handle = dlopen("libegadslite.so", RTLD_LAZY);
+      if (!handle)
+      {
+        handle = dlopen("libegadslite.dylib", RTLD_LAZY);
+      }
+      if (!handle)
+      {
+        fprintf(stderr, "Could not load EGADSlite: %s\n", dlerror());
+        gmi_fail("Could not load EGADS!\n");
+      }
+    }
   }
 }
 
