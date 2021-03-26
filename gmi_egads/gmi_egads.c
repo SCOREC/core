@@ -250,12 +250,11 @@ static void getVertexUV(struct gmi_model* m,
                         struct gmi_ent* from,
                         double to_p[2])
 {
-  struct gmi_set* adj_faces = NULL;
   struct gmi_set* adj_edges = gmi_adjacent(m, from, 1);
 
   for (int i = 0; i < adj_edges->n; ++i)
   {
-    adj_faces = gmi_adjacent(m, adj_edges->e[i], 2);
+    struct gmi_set* adj_faces = gmi_adjacent(m, adj_edges->e[i], 2);
     for (int j = 0; j < adj_faces->n; ++j)
     {
       if (adj_faces->e[j] == to)
@@ -263,17 +262,13 @@ static void getVertexUV(struct gmi_model* m,
         double t;
         getVertexT(m, adj_edges->e[i], from, &t);
         m->ops->reparam(m, adj_edges->e[i], &t, to, to_p);
-        goto cleanup;
+        gmi_free_set(adj_faces);
+        gmi_free_set(adj_edges);
+        return;
       }
     }
     gmi_free_set(adj_faces);
   }
-
-  cleanup:
-    if (adj_faces != NULL)
-      gmi_free_set(adj_faces);
-    gmi_free_set(adj_edges);
-    return;
 }
 
 static struct gmi_iter* begin(struct gmi_model* m, int dim)
@@ -721,7 +716,6 @@ static void destroy(struct gmi_model* m)
 
 static struct gmi_model_ops ops;
 
-/// TODO: re-write for EGADSlite - model loading is different
 struct gmi_model* gmi_egads_load(const char* filename)
 {
   MPI_Comm comm = PCU_Get_Comm();
