@@ -136,7 +136,7 @@ static void read_adj_table(const char* filename,
     adjacency_table[i] = (int**)EGADS_alloc(sizeof(*(adjacency_table[i]))
                                          * header[i]);
     if (adjacency_table[i] == NULL) {
-      char fail[50];
+      char fail[100];
       sprintf(fail, "failed to alloc memory for adjacency_table[%d]", i);
       /// TODO: this could cause memory leak
       gmi_fail(fail);
@@ -730,7 +730,7 @@ struct gmi_model* gmi_egads_load(const char* filename)
     status = EGADS_loadModel(eg_context, 0, filename, &eg_model);
     if (status != EGADS_SUCCESS)
     {
-      char str[50]; // big enough
+      char str[100]; // big enough
       sprintf(str, "EGADS failed to load model with error code: %d", status);
       gmi_fail(str);
     }
@@ -738,7 +738,7 @@ struct gmi_model* gmi_egads_load(const char* filename)
     status = EGADS_exportModel(eg_model, &size_t_nbytes, &stream);
     if (status != EGADS_SUCCESS)
     {
-      char str[50]; // big enough
+      char str[100]; // big enough
       sprintf(str, "EGADS failed to export model with error code: %d", status);
       gmi_fail(str);
     }
@@ -771,7 +771,7 @@ struct gmi_model* gmi_egads_load(const char* filename)
     status = EGADS_importModel(eg_context, nbytes, stream, &eg_model);
     if (status != EGADS_SUCCESS)
     {
-      char str[50]; // big enough
+      char str[100]; // big enough
       sprintf(str, "EGADSlite failed to import model with error code: %d", status);
       gmi_fail(str);
     }
@@ -785,7 +785,7 @@ struct gmi_model* gmi_egads_load(const char* filename)
                              &eg_bodies, &senses);
   if (status != EGADS_SUCCESS)
   {
-    char str[50]; // big enough
+    char str[100]; // big enough
     sprintf(str, "EGADS failed to get bodies with error code: %d", status);
     gmi_fail(str);
   }
@@ -968,7 +968,7 @@ void gmi_egads_start(void)
   int status = EGADS_open(&eg_context);
   if (status != EGADS_SUCCESS)
   {
-    char str[50]; // big enough
+    char str[100]; // big enough
     sprintf(str, "EGADS failed to open with error code: %d", status);
     gmi_fail(str);
   }
