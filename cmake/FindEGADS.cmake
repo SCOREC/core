@@ -12,12 +12,7 @@
 #endif()
 
 find_path(EGADS_INCLUDE_DIR egads.h PATHS "${EGADS_DIR}/include")
-set(EGADS_INCLUDE_DIRS ${EGADS_INCLUDE_DIR} )
-
-find_library(EGADS_LIBRARY
-  NAMES egads libegads.so libegads.dylib
-  PATHS "${EGADS_DIR}/lib")
-set(EGADS_LIBRARIES ${EGADS_LIBRARY})
+set(EGADS_INCLUDE_DIRS ${EGADS_INCLUDE_DIR})
 
 find_library(EGADSLITE_LIBRARY
   NAMES egadslite libegadslite.so libegadslite.dylib
@@ -30,7 +25,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
     EGADS
     DEFAULT_MSG
-    EGADS_INCLUDE_DIR EGADS_LIBRARY EGADSLITE_LIBRARY
+    EGADS_INCLUDE_DIR EGADSLITE_LIBRARY
 )
 
-mark_as_advanced(EGADS_INCLUDE_DIR EGADS_LIBRARY EGADSLITE_LIBRARY)
+mark_as_advanced(EGADS_INCLUDE_DIR EGADSLITE_LIBRARY)
