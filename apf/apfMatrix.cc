@@ -73,6 +73,13 @@ int eigen(Matrix3x3 const& A,
   mth::Matrix<double,3,3> L;
   mth::Matrix<double,3,3> Q;
   bool converged = mth::eigenQR(A2, L, Q, 100);
+  if (!converged) {
+    fprintf(stderr, "metric \n%f, %f, %f \n %f, %f, %f\n %f, %f, %f\n",
+                            A[0][0], A[0][1], A[0][2],
+                            A[1][0], A[1][1], A[1][2],
+                            A[2][0], A[2][1], A[2][2]);
+                              
+  }
   PCU_ALWAYS_ASSERT(converged);
   for (unsigned i = 0; i < 3; ++i)
     eigenValues[i] = L(i,i);
