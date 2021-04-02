@@ -7,6 +7,10 @@ if(NOT ENABLE_EGADS)
   return()
 endif()
 
+# this file brings USE_EGADSLITE from CMake to C++
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_egads_config.h.in"
+               "${CMAKE_CURRENT_BINARY_DIR}/gmi_egads_config.h")
+
 #Sources & Headers
 set(SOURCES gmi_egads.c)
 set(HEADERS gmi_egads.h)
@@ -22,7 +26,7 @@ target_link_libraries(gmi_egads
   PUBLIC
     gmi
   PRIVATE
-    ${EGADSLITE_LIBRARIES}
+    ${EGADS_LIBRARIES}
 )
 
 # Include directories

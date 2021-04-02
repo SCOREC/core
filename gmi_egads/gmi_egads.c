@@ -14,10 +14,14 @@
 #include "egads.h"
 
 #include "gmi.h"
+#include "gmi_egads_config.h"
 #include "gmi_egads.h"
 
 /** \brief initialize a gmi_model with filestream and number of regions */
-struct gmi_model* gmi_egads_init(size_t nbytes, char *stream, int numRegions);
+struct gmi_model* gmi_egadslite_init(size_t nbytes, char *stream, int numRegions);
+
+/** \brief initialize a gmi_model with an EGADS model and number of regions */
+struct gmi_model* gmi_egads_init_model(ego eg_model, int nregions);
 
 /** \brief initialize the model adjacency table for 3D regions */
 void gmi_egads_init_adjacency(struct gmi_model* m, int ***adjacency);
@@ -670,7 +674,37 @@ static void destroy(struct gmi_model* m)
 
 static struct gmi_model_ops ops;
 
+#ifdef USE_EGADSLITE
 struct gmi_model* gmi_egads_load(const char* filename)
+{
+  (void)filename;
+  gmi_fail("gmi_egads_load only available if compiled with EGADS!\n"
+           "\trecompile with -DUSE_EGADSLITE=OFF!\n");
+}
+#else
+struct gmi_model* gmi_egads_load(const char* filename)
+{
+  ego eg_model;
+  int status = EG_loadModel(eg_context, 0, filename, &eg_model);
+  if (status != EGADS_SUCCESS)
+  {
+    char str[100]; // big enough
+    sprintf(str, "EGADS failed to load model with error code: %d", status);
+    gmi_fail(str);
+  }
+
+  int nregions = 1; // read adjacency file to find this number
+  int **adjacency_table[6];
+  read_adj_table(filename, &nregions, adjacency_table);
+
+  struct gmi_model* m = gmi_egads_init_model(eg_model, nregions);
+  gmi_egads_init_adjacency(m, adjacency_table);
+  return m;
+}
+#endif
+
+#ifdef USE_EGADSLITE
+struct gmi_model* gmi_egadslite_load(const char* filename)
 {
   char *stream;
   size_t nbytes, ntest;
@@ -710,12 +744,21 @@ struct gmi_model* gmi_egads_load(const char* filename)
   int **adjacency_table[6];
   read_adj_table(filename, &nregions, adjacency_table);
 
-  struct gmi_model* m = gmi_egads_init(nbytes, stream, nregions);
+  struct gmi_model* m = gmi_egadslite_init(nbytes, stream, nregions);
   gmi_egads_init_adjacency(m, adjacency_table);
   return m;
 }
+#else
+struct gmi_model* gmi_egadslite_load(const char* filename)
+{
+  (void)filename;
+  gmi_fail("gmi_egadslite_load only available if compiled with EGADSlite!\n"
+           "\trecompile with -DUSE_EGADSLITE=ON!\n");
+}
+#endif
 
-struct gmi_model* gmi_egads_init(size_t nbytes, char *stream, int nregions)
+#ifdef USE_EGADSLITE
+struct gmi_model* gmi_egadslite_init(size_t nbytes, char *stream, int nregions)
 {
   ego eg_model;
   int status = EG_importModel(eg_context, nbytes, stream, &eg_model);
@@ -726,11 +769,25 @@ struct gmi_model* gmi_egads_init(size_t nbytes, char *stream, int nregions)
     gmi_fail(str);
   }
   EG_free(stream);
+  return gmi_egads_init_model(eg_model, nregions);
+}
+#else
+struct gmi_model* gmi_egadslite_init(size_t nbytes, char *stream, int nregions)
+{
+  (void)nbytes;
+  (void)stream;
+  (void)nregions;
+  gmi_fail("gmi_egadslite_init only available if compiled with EGADSlite!\n"
+           "\trecompile with -DUSE_EGADSLITE=ON!\n");
+}
+#endif
 
+struct gmi_model* gmi_egads_init_model(ego eg_model, int nregions)
+{
   int oclass, mtype, nbody, *senses;
   ego geom, *eg_bodies;
-  status = EG_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
-                             &eg_bodies, &senses);
+  int status = EG_getTopology(eg_model, &geom, &oclass, &mtype, NULL, &nbody,
+                              &eg_bodies, &senses);
   if (status != EGADS_SUCCESS)
   {
     char str[100]; // big enough
@@ -843,5 +900,6 @@ void gmi_register_egads(void)
   ops.bbox = bbox;
   ops.is_discrete_ent = is_discrete_ent;
   ops.destroy = destroy;
-  gmi_register(gmi_egads_load, "egadslite");
+  gmi_register(gmi_egads_load, "egads");
+  gmi_register(gmi_egadslite_load, "egadslite");
 }
