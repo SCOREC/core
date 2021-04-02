@@ -7,7 +7,7 @@ if(NOT ENABLE_EGADS)
   return()
 endif()
 
-# this file brings USE_EGADSLITE from CMake to C++
+# this file brings PUMI_USE_EGADSLITE from CMake to C++
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_egads_config.h.in"
                "${CMAKE_CURRENT_BINARY_DIR}/gmi_egads_config.h")
 

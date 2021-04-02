@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "egadslite.h"
 #include "egads.h"
 
 #include "gmi.h"
@@ -674,12 +675,12 @@ static void destroy(struct gmi_model* m)
 
 static struct gmi_model_ops ops;
 
-#ifdef USE_EGADSLITE
+#ifdef PUMI_USE_EGADSLITE
 struct gmi_model* gmi_egads_load(const char* filename)
 {
   (void)filename;
   gmi_fail("gmi_egads_load only available if compiled with EGADS!\n"
-           "\trecompile with -DUSE_EGADSLITE=OFF!\n");
+           "\trecompile with -DPUMI_USE_EGADSLITE=OFF!\n");
 }
 #else
 struct gmi_model* gmi_egads_load(const char* filename)
@@ -703,7 +704,7 @@ struct gmi_model* gmi_egads_load(const char* filename)
 }
 #endif
 
-#ifdef USE_EGADSLITE
+#ifdef PUMI_USE_EGADSLITE
 struct gmi_model* gmi_egadslite_load(const char* filename)
 {
   char *stream;
@@ -753,11 +754,11 @@ struct gmi_model* gmi_egadslite_load(const char* filename)
 {
   (void)filename;
   gmi_fail("gmi_egadslite_load only available if compiled with EGADSlite!\n"
-           "\trecompile with -DUSE_EGADSLITE=ON!\n");
+           "\trecompile with -DPUMI_USE_EGADSLITE=ON!\n");
 }
 #endif
 
-#ifdef USE_EGADSLITE
+#ifdef PUMI_USE_EGADSLITE
 struct gmi_model* gmi_egadslite_init(size_t nbytes, char *stream, int nregions)
 {
   ego eg_model;
@@ -778,7 +779,7 @@ struct gmi_model* gmi_egadslite_init(size_t nbytes, char *stream, int nregions)
   (void)stream;
   (void)nregions;
   gmi_fail("gmi_egadslite_init only available if compiled with EGADSlite!\n"
-           "\trecompile with -DUSE_EGADSLITE=ON!\n");
+           "\trecompile with -DPUMI_USE_EGADSLITE=ON!\n");
 }
 #endif
 

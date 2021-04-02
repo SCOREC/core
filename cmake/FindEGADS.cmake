@@ -9,7 +9,7 @@
 find_path(EGADS_INCLUDE_DIR egads.h PATHS "${EGADS_DIR}/include")
 set(EGADS_INCLUDE_DIRS ${EGADS_INCLUDE_DIR})
 
-if(${USE_EGADSLITE})
+if(${PUMI_USE_EGADSLITE})
   find_library(EGADS_LIBRARY
     NAMES egadslite libegadslite.so libegadslite.dylib
     PATHS "${EGADS_DIR}/lib")

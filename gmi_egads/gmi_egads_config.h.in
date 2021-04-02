@@ -1,1 +1,1 @@
-#cmakedefine USE_EGADSLITE
+#cmakedefine PUMI_USE_EGADSLITE
