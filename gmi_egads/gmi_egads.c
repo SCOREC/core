@@ -11,7 +11,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "egadslite.h"
 #include "egads.h"
 
 #include "gmi.h"
