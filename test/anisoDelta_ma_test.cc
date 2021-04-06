@@ -75,7 +75,6 @@ int main(int argc, char** argv) {
   ma::Mesh* m = apf::loadMdsMesh (modelFile, meshFile);
   auto targetMetric = m->findField ("target_metric");
   PCU_ALWAYS_ASSERT (targetMetric);
-  int nComps = targetMetric->countComponents ();
   m->verify();
   apf::writeVtkFiles ("anisoDelta_before",m);
 
