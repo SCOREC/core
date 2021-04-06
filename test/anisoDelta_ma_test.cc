@@ -32,6 +32,13 @@ class AnIso : public ma::AnisotropicFunction
     virtual void getValue(ma::Entity* v, ma::Matrix& R, ma::Vector& H)
     {
       apf::getComponents(targetMetric, v, 0, vals);
+      auto scale = 1e4;
+      vals[0] = vals[0]/scale;
+      vals[1] = vals[1]/scale;
+      vals[2] = vals[2]/scale;
+      vals[3] = vals[3]/scale;
+      vals[4] = vals[4]/scale;
+      vals[5] = vals[5]/scale;
       ma::Matrix M(vals[0], vals[3], vals[5],
 		   vals[3], vals[1], vals[4],
 		   vals[5], vals[4], vals[2]);
@@ -47,7 +54,8 @@ class AnIso : public ma::AnisotropicFunction
       R = apf::transpose(RT);
 
       double h[3];
-      for (int i = 0; i < 3; ++i) h[i] = std::sqrt(1.0/eigenValues[i]);
+      for (int i = 0; i < 3; ++i)
+        h[i] = std::sqrt(1.0/(eigenValues[i]*scale));
       H = ma::Vector(h);
     }
   private:
@@ -87,12 +95,12 @@ int main(int argc, char** argv)
   fprintf(stderr, "components %d\n", nComps);
   ma::adapt(in);
   m->verify();
-/*
+
   if (logInterpolation)
     apf::writeVtkFiles("anisoDelta_log_interpolation_after",m);
   else
     apf::writeVtkFiles("anisoDelta_after",m);
-*/
+
   m->destroyNative();
   apf::destroyMesh(m);
   PCU_Comm_Free();
