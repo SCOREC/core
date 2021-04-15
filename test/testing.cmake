@@ -298,7 +298,7 @@ mpi_test(tet_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
-if(ENABLE_SIMMETRIX)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(test_residual_error_estimate 1
     ./residualErrorEstimation_test
     "${MESHES}/electromagnetic/fichera.x_t"
