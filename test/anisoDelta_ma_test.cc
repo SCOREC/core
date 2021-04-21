@@ -86,7 +86,9 @@ int main(int argc, char** argv) {
   in-> shouldRefineLayer = true;
   in-> goodQuality = 0.2;
 
-  ma::adapt (in);
+  in->maximumIterations = 10;
+
+  ma::adaptVerbose (in);
   m-> verify ();
 
   apf::writeVtkFiles ("anisoDelta_after",m);
