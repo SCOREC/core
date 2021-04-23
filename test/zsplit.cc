@@ -14,6 +14,7 @@
 #include <apfZoltan.h>
 #include <pcu_util.h>
 #include <cstdlib>
+#include <gmi_null.h>
 
 namespace {
 
@@ -88,6 +89,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
+  gmi_register_null ();
   getConfig(argc,argv);
   bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
   gmi_model* g = 0;

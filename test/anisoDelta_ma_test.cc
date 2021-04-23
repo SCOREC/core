@@ -12,6 +12,10 @@
 #include <apfMatrix.h>
 
 #include <stdlib.h>
+#include "maStats.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 class AnIso : public ma::AnisotropicFunction {
 public:
@@ -66,7 +70,7 @@ int main(int argc, char** argv) {
   PCU_ALWAYS_ASSERT(argc == 4);
   const char *modelFile = argv[1];
   const char *meshFile = argv[2];
-  bool logInterpolation = false;
+  bool logInterpolation = true;
   MPI_Init(&argc, &argv);
   PCU_Comm_Init ();
   lion_set_verbosity (1);
@@ -90,6 +94,30 @@ int main(int argc, char** argv) {
 
   ma::adaptVerbose (in);
   m-> verify ();
+
+  std::vector<double> lengths;
+  std::vector<double> qualities;
+  ma::stats(m, in->sizeField, lengths, qualities, true);
+
+  std::ostringstream len_fileNameStream("lengths_");
+  len_fileNameStream << PCU_Comm_Self() << ".txt";
+  std::string len_fileName = len_fileNameStream.str();
+  std::ofstream len_file;
+  len_file.open (len_fileName.c_str());
+  for(std::size_t i = 0; i < lengths.size(); ++i) {
+    len_file << lengths[i] << "\n";
+  }
+  len_file.close();
+
+  std::ostringstream qua_fileNameStream("qualities_");
+  qua_fileNameStream << PCU_Comm_Self() << ".txt";
+  std::string qua_fileName = qua_fileNameStream.str();
+  std::ofstream qua_file;
+  qua_file.open (qua_fileName.c_str());
+  for(std::size_t i = 0; i < qualities.size(); ++i) {
+    qua_file << qualities[i] << "\n";
+  }
+  qua_file.close();
 
   apf::writeVtkFiles ("anisoDelta_after",m);
 

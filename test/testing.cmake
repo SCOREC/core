@@ -287,10 +287,10 @@ mpi_test(aniso_ma_serial_log_interpolation 1
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb"
   "1")
-mpi_test(anisoDelta_ma_serial 1
+mpi_test(anisoDelta_ma_serial 48
   ./anisoDelta_ma_test
   ".null"
-  "${MESHES}/../deltaWingAdapt/deltaWing.smb"
+  "${MESHES}/deltaWing_48p.smb"
   "0")
 if(ENABLE_ZOLTAN)
   mpi_test(torus_ma_parallel 4
