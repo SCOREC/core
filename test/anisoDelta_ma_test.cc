@@ -97,7 +97,11 @@ int main(int argc, char** argv) {
 
   std::vector<double> lengths;
   std::vector<double> qualities;
+  printf("ok1\n");
+  in = ma::configure (m, &sf, 0, logInterpolation);
   ma::stats(m, in->sizeField, lengths, qualities, true);
+
+  printf("ok2\n");
 
   std::ostringstream len_fileNameStream("lengths_");
   len_fileNameStream << PCU_Comm_Self() << ".txt";
@@ -108,6 +112,7 @@ int main(int argc, char** argv) {
     len_file << lengths[i] << "\n";
   }
   len_file.close();
+  printf("ok3\n");
 
   std::ostringstream qua_fileNameStream("qualities_");
   qua_fileNameStream << PCU_Comm_Self() << ".txt";
@@ -118,6 +123,7 @@ int main(int argc, char** argv) {
     qua_file << qualities[i] << "\n";
   }
   qua_file.close();
+  printf("ok4\n");
 
   apf::writeVtkFiles ("anisoDelta_after",m);
 
