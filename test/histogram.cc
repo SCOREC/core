@@ -34,15 +34,29 @@ int main(int argc, char** argv) {
   }
   file.close();
 
+  double data_min = 3e33;
+  double data_max = -3e33;
+  size_t data_count = input.size();
+  double data_avg = 0;
   int count[nbins] = {0};
   for (size_t i = 0; i < input.size(); ++i) {
     int bin = (int)std::round((input[i] - min)/bin_size);
     count[bin] += 1;
+
+    data_avg += input[i];
+    if (input[i] > data_max) data_max = input[i];
+    if (input[i] < data_min) data_min = input[i];
   }
 
+  data_avg = data_avg/(1.0*data_count);
+
+  fprintf(stderr, "Count for each bin is \n");
   for (int i = 0; i < nbins; ++i) {
     fprintf(stderr, "%d\n", count[i]);
   }
+
+  fprintf(stderr, "Min %f, Max %f, Average %f\n",
+          data_min, data_max, data_avg);
 
   PCU_Comm_Free ();
   MPI_Finalize ();
