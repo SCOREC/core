@@ -752,6 +752,16 @@ void unfreezeFields(Mesh* m) {
   m->hasFrozenFields = false;
 }
 
+void freezeFields(Mesh* m) {
+  Field* f;
+  for (int i=0; i<m->countFields(); i++) {
+    f = m->getField(i);
+    if (!isFrozen(f))
+      freeze(f);
+  }
+  m->hasFrozenFields = true;
+}
+
 Copy getOtherCopy(Mesh* m, MeshEntity* s)
 {
   Copies remotes;
