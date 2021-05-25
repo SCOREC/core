@@ -584,14 +584,15 @@ bool skipLine(char* line) {
 
 void getNumVerts(FILE* f, unsigned& verts) {
   rewind(f);
-  verts = 0;
-  size_t linelimit = 1024;
-  char* line = new char[linelimit];
-  while( gmi_getline(&line,&linelimit,f) != -1 ) {
-    if( ! skipLine(line) )
-      verts++;
-  }
-  delete [] line;
+  gmi_fscanf(f, 1, "%d",  &verts);
+//  verts = 0;
+//  size_t linelimit = 1024;
+//  char* line = new char[linelimit];
+//  while( gmi_getline(&line,&linelimit,f) != -1 ) {
+//    if( ! skipLine(line) )
+//      verts++;
+//  }
+//  delete [] line;
 }
 
 void readClassification(FILE* f, unsigned numVtx, int** classification) {
@@ -622,12 +623,13 @@ void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordi
   long firstVtx, lastVtx;
   getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
   *coordinates = new double[localnumvtx*3];
-  rewind(f);
+//  rewind(f);
   int vidx = 0;
   for(unsigned i=0; i<numvtx; i++) {
-    int id;
+//    int id;
     double pos[3];
-    gmi_fscanf(f, 4, "%d %lf %lf %lf", &id, pos+0, pos+1, pos+2);
+//    gmi_fscanf(f, 4, "%d %lf %lf %lf", &id, pos+0, pos+1, pos+2);
+    gmi_fscanf(f, 3, "%lf %lf %lf", pos+0, pos+1, pos+2);
     if( i >= firstVtx && i < lastVtx ) {
       for(unsigned j=0; j<3; j++)
         (*coordinates)[vidx*3+j] = pos[j];
@@ -671,10 +673,10 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
           ( matchedVtx >= 1 && matchedVtx <= static_cast<int>(numvtx) ));
       if( matchedVtx != -1 )
         --matchedVtx;
-      if( matchedVtx == 66350 || matchedVtx == 65075 ) {
-        fprintf(stderr, "%d reader found match %d at gid %d i %d vidx %d\n",
-            PCU_Comm_Self(), matchedVtx, gid, i, vidx);
-      }
+//      if( matchedVtx == 66350 || matchedVtx == 65075 ) {
+//        fprintf(stderr, "%d reader found match %d at gid %d i %d vidx %d\n",
+ //           PCU_Comm_Self(), matchedVtx, gid, i, vidx);
+//      }
       (*matches)[vidx] = matchedVtx;
       vidx++;
     }
@@ -682,14 +684,15 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
   }
 }
 
-void readElements(FILE* f, unsigned &dim, unsigned& numElms,
+void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
     unsigned& numVtxPerElm, unsigned& localNumElms, int** elements) {
   rewind(f);
+  rewind(fh);
   int dimHeader[2];
-  gmi_fscanf(f, 2, "%u %u", dimHeader, dimHeader+1);
+  gmi_fscanf(fh, 2, "%u %u", dimHeader, dimHeader+1);
   assert( dimHeader[0] == 1 && dimHeader[1] == 1);
-  gmi_fscanf(f, 1, "%u", &dim);
-  gmi_fscanf(f, 2, "%u %u", &numElms, &numVtxPerElm);
+  gmi_fscanf(fh, 1, "%u", &dim);
+  gmi_fscanf(fh, 2, "%u %u", &numElms, &numVtxPerElm);
   long firstElm, lastElm;
   getLocalRange(numElms, localNumElms, firstElm, lastElm);
   *elements = new int[localNumElms*numVtxPerElm];
@@ -734,10 +737,12 @@ void readMesh(const char* meshfilename,
     const char* classfilename,
     const char* fathers2Dfilename,
     const char* solutionfilename,
+    const char* connHeadfilename,
     MeshInfo& mesh) {
   FILE* fc = fopen(coordfilename, "r");
   PCU_ALWAYS_ASSERT(fc);
   getNumVerts(fc,mesh.numVerts);
+  
   if(!PCU_Comm_Self())
     fprintf(stderr, "numVerts %u\n", mesh.numVerts);
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
@@ -769,8 +774,10 @@ void readMesh(const char* meshfilename,
   }
 
   FILE* f = fopen(meshfilename, "r");
+  FILE* fh = fopen(connHeadfilename, "r");
   PCU_ALWAYS_ASSERT(f);
-  readElements(f, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
+  PCU_ALWAYS_ASSERT(fh);
+  readElements(f,fh, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
   fclose(f);
@@ -782,7 +789,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  if( argc != 9 ) {
+  if( argc != 11 ) {
     if( !PCU_Comm_Self() ) {
       printf("Usage: %s <ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
@@ -790,6 +797,7 @@ int main(int argc, char** argv)
           "<ascii vertex classification flag .class> "
           "<ascii vertex fathers2D flag .fathers2D> "
           "<ascii solution flag .soln> "
+          "<ascii conn header> "
           "<output model .dmg> <output mesh .smb>\n",
           argv[0]);
     }
@@ -802,7 +810,7 @@ int main(int argc, char** argv)
 
   double t0 = PCU_Time();
   MeshInfo m;
-  readMesh(argv[1],argv[2],argv[3],argv[4],argv[5],argv[6],m);
+  readMesh(argv[1],argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],m);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
@@ -866,8 +874,8 @@ int main(int argc, char** argv)
   mesh->verify();
 
   outMap.clear();
-  gmi_write_dmg(model, argv[7]);
-  mesh->writeNative(argv[8]);
+  gmi_write_dmg(model, argv[8]);
+  mesh->writeNative(argv[9]);
   apf::writeVtkFiles("rendered",mesh);
 
   mesh->destroyNative();
