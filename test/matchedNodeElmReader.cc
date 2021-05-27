@@ -603,9 +603,10 @@ void readClassification(FILE* f, unsigned numVtx, int** classification) {
   rewind(f);
   int vidx = 0;
   for(unsigned i=0; i<numVtx; i++) {
-    int id;
+//    int id;
     int mdlId;
-    gmi_fscanf(f, 2, "%d %d", &id, &mdlId);
+//    gmi_fscanf(f, 2, "%d %d", &id, &mdlId);
+    gmi_fscanf(f, 1, "%d",  &mdlId);
     //std::cout<<"read id is "<<id<<std::endl;
     //std::cout<<"read model id is "<<mdlId<<std::endl;
     if( i >= firstVtx && i < lastVtx ) {
@@ -665,9 +666,9 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
   *matches = new int[localnumvtx];
   rewind(f);
   int vidx = 0;
-  int gid, matchedVtx;
+  int matchedVtx;
   int i = 0;
-  while( 2 == fscanf(f, "%d %d", &gid, &matchedVtx) ) {
+  while( 1 == fscanf(f, "%d", &matchedVtx) ) {
     if( i >= firstVtx && i < lastVtx ) {
       PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
           ( matchedVtx >= 1 && matchedVtx <= static_cast<int>(numvtx) ));
@@ -700,8 +701,6 @@ void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
   unsigned elmIdx = 0;
   int* elmVtx = new int[numVtxPerElm];
   for (i = 0; i < numElms; i++) {
-    int ignored;
-    gmi_fscanf(f, 1, "%u", &ignored);
     for (j = 0; j < numVtxPerElm; j++)
       gmi_fscanf(f, 1, "%u", elmVtx+j);
     if (i >= firstElm && i < lastElm) {
@@ -789,7 +788,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  if( argc != 11 ) {
+  if( argc != 10 ) {
     if( !PCU_Comm_Self() ) {
       printf("Usage: %s <ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
