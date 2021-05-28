@@ -9,7 +9,7 @@
 namespace apf {
 
 static void constructVerts(
-    Mesh2* m, const int* conn, int nelem, int etype,
+    Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& result)
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
@@ -20,7 +20,7 @@ static void constructVerts(
 }
 
 static void constructElements(
-    Mesh2* m, const int* conn, int nelem, int etype,
+    Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
@@ -160,7 +160,7 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
   }
 }
 
-void construct(Mesh2* m, const int* conn, int nelem, int etype,
+void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
   constructVerts(m, conn, nelem, etype, globalToVert);
@@ -492,7 +492,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
   m->destroyTag(matchGidTag);
 }
 
-void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
+void destruct(Mesh2* m, Gid*& conn, int& nelem, int &etype)
 {
   int dim = m->getDimension();
   nelem = m->count(dim);
@@ -507,7 +507,7 @@ void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
     Downward verts;
     int nverts = m->getDownward(e, 0, verts);
     if (!conn)
-      conn = new int[nelem * nverts];
+      conn = new Gid[nelem * nverts];
     for (int j = 0; j < nverts; ++j)
       conn[i++] = getNumber(global, Node(verts[j], 0));
   }

@@ -16,7 +16,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   gmi_register_mesh();
   gmi_register_null();
-  int* conn;
+  apf::Gid* conn;
   double* coords;
   int nelem;
   int etype;

@@ -6,10 +6,9 @@
 #include "apfConvert.h"
 
 namespace {
-  typedef int Gid;
-  static Gid getMax(const apf::GlobalToVert& globalToVert)
+  static apf::Gid getMax(const apf::GlobalToVert& globalToVert)
   {
-    Gid max = -1;
+    apf::Gid max = -1;
     APF_CONST_ITERATE(apf::GlobalToVert, globalToVert, it)
       max = std::max(max, it->first);
     return PCU_Max_Int(max); // this is type-dependent
@@ -62,8 +61,8 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
     const T* vals, const int entries,
     int nverts, GlobalToVert& globalToVert)
 {
-  Gid max = getMax(globalToVert);
-  Gid total = max + 1;
+  apf::Gid max = getMax(globalToVert);
+  apf::Gid total = max + 1;
   int peers = PCU_Comm_Peers();
   int quotient = total / peers;
   int remainder = total % peers;

@@ -77,7 +77,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
 
 /** \brief convert an apf::Mesh2 object into a connectivity array
   \details this is useful for debugging the apf::convert function */
-void destruct(Mesh2* m, int*& conn, int& nelem, int &etype);
+void destruct(Mesh2* m, Gid*& conn, int& nelem, int &etype);
 
 /** \brief get a contiguous set of global vertex coordinates
   \details this is used for debugging apf::setCoords */
