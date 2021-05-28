@@ -32,6 +32,7 @@ static void constructElements(
     int offset = i * nev;
     Gid vCur=conn[offset];
     int vNext=-1;
+    int uniqueVerts2=1;
     int uniqueVerts=1;
     for (int j = 0; j < nev; ++j) {
       if(irep ==0){
@@ -47,7 +48,12 @@ static void constructElements(
     if(uniqueVerts==5) etypeL=apf::Mesh::PYRAMID;
     if(uniqueVerts==6) etypeL=apf::Mesh::PRISM;
     if(uniqueVerts==8) etypeL=apf::Mesh::HEX;
+    if(m==NULL) {
+      uniqueVerts2=2;
+    }
+    if(uniqueVerts/uniqueVerts2 > 0){
     buildElement(m, interior, etypeL, verts);
+    }
   }
 }
 
@@ -480,7 +486,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
         int rightPart = cp->first;
         apf::MeshEntity* right = cp->second;
         m->addMatch(left, rightPart, right);
-        PCU_Debug_Print("%d add remote copy match ptr to %d gid %d\n",
+        PCU_Debug_Print("%d add remote copy match ptr to %d gid %ld\n",
           self, rightPart, it->first);
       }
     }
