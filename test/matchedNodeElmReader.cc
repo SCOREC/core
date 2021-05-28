@@ -686,7 +686,7 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
 }
 
 void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
-    unsigned& numVtxPerElm, unsigned& localNumElms, int** elements) {
+    unsigned& numVtxPerElm, unsigned& localNumElms, Gid** elements) {
   rewind(f);
   rewind(fh);
   int dimHeader[2];
@@ -696,10 +696,10 @@ void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
   gmi_fscanf(fh, 2, "%u %u", &numElms, &numVtxPerElm);
   long firstElm, lastElm;
   getLocalRange(numElms, localNumElms, firstElm, lastElm);
-  *elements = new int[localNumElms*numVtxPerElm];
+  *elements = new Gid[localNumElms*numVtxPerElm];
   unsigned i, j;
   unsigned elmIdx = 0;
-  int* elmVtx = new int[numVtxPerElm];
+  Gid* elmVtx = new Gid[numVtxPerElm];
   for (i = 0; i < numElms; i++) {
     for (j = 0; j < numVtxPerElm; j++)
       gmi_fscanf(f, 1, "%u", elmVtx+j);
@@ -717,7 +717,7 @@ void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
 struct MeshInfo {
   double* coords;
   double* solution;
-  int* elements;
+  Gid* elements;
   int* matches;
   int* classification;
   int* fathers2D;

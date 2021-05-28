@@ -29,8 +29,10 @@ class MeshEntity;
 void convert(Mesh *in, Mesh2 *out,
              MeshEntity** nodes=NULL, MeshEntity** elems=NULL);
 
+typedef long Gid;
+
 /** \brief a map from global ids to vertex objects */
-typedef std::map<int, MeshEntity*> GlobalToVert;
+typedef std::map<Gid, MeshEntity*> GlobalToVert;
 
 /** \brief construct a mesh from just a connectivity array
   \details this function is here to interface with very
@@ -46,7 +48,7 @@ typedef std::map<int, MeshEntity*> GlobalToVert;
 
   Note that all vertices will have zero coordinates, so
   it is often good to use apf::setCoords after this. */
-void construct(Mesh2* m, const int* conn, int nelem, int etype,
+void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert);
 
 /** \brief Assign coordinates to the mesh

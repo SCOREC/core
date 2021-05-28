@@ -8,8 +8,6 @@
 
 namespace apf {
 
-typedef int Gid;
-
 static void constructVerts(
     Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& result)
@@ -32,7 +30,7 @@ static void constructElements(
     int irep=0;
     Downward verts;
     int offset = i * nev;
-    int vCur=conn[offset];
+    Gid vCur=conn[offset];
     int vNext=-1;
     int uniqueVerts=1;
     for (int j = 0; j < nev; ++j) {
@@ -58,7 +56,7 @@ static Gid getMax(const GlobalToVert& globalToVert)
   Gid max = -1;
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it)
     max = std::max(max, it->first);
-  return PCU_Max_Int(max); // this is type-dependent
+  return PCU_Max_Long(max); // this is type-dependent
 }
 
 
