@@ -1050,8 +1050,8 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
           "MeshTag name \"_vert_id\" is used internally in this method\n");
   apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
   for (apf::GlobalToVert::iterator vit = globalToVert.begin();
-       vit != globalToVert.end(); vit++) {
-    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+       vit !=  globalToVert.end(); vit++) {
+    mesh->setIntTag((int)vit->second, vIDTag, (int)&(vit->first));
   }
 
   // Reserve tags used for model faces
@@ -1167,7 +1167,7 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
   apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
   for (apf::GlobalToVert::iterator vit = globalToVert.begin();
        vit != globalToVert.end(); vit++) {
-    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+    mesh->setIntTag((int)vit->second, vIDTag, (int)&(vit->first));
   }
 
   // Reserve tags used for model edges

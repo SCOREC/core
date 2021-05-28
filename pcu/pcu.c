@@ -469,6 +469,22 @@ int PCU_Max_Int(int x)
   PCU_Max_Ints(a, 1);
   return a[0];
 }
+/** \brief Performs an Allreduce maximum of long arrays.
+  */
+void PCU_Max_Longs(long* p, size_t n)
+{
+  if (global_state == uninit)
+    reel_fail("Max_Longs called before Comm_Init");
+  pcu_allreduce(&(get_msg()->coll),pcu_max_longs,p,n*sizeof(long));
+}
+
+long PCU_Max_Long(long x)
+{
+  long a[1];
+  a[0] = x;
+  PCU_Max_Longs(a, 1);
+  return a[0];
+}
 
 /** \brief Performs a parallel logical OR reduction
   */

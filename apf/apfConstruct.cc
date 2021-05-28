@@ -9,7 +9,7 @@
 namespace apf {
 
 static void constructVerts(
-    Mesh2* m, const Gid* conn, int nelem, int etype,
+    Mesh2* m, const int* conn, int nelem, int etype,
     GlobalToVert& result)
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
@@ -20,7 +20,7 @@ static void constructVerts(
 }
 
 static void constructElements(
-    Mesh2* m, const Gid* conn, int nelem, int etype,
+    Mesh2* m, const int* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
@@ -507,7 +507,7 @@ void destruct(Mesh2* m, int*& conn, int& nelem, int &etype)
     Downward verts;
     int nverts = m->getDownward(e, 0, verts);
     if (!conn)
-      conn = new Gid[nelem * nverts];
+      conn = new int[nelem * nverts];
     for (int j = 0; j < nverts; ++j)
       conn[i++] = getNumber(global, Node(verts[j], 0));
   }
