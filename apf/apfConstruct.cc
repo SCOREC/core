@@ -181,26 +181,27 @@ void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
 void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert)
 {
+  Gid nvertsG=nverts;
   Gid max = getMax(globalToVert);
   Gid total = max + 1;
-  int peers = PCU_Comm_Peers();
-  int quotient = total / peers;
-  int remainder = total % peers;
-  int mySize = quotient;
-  int self = PCU_Comm_Self();
+  Gid peers = PCU_Comm_Peers();
+  Gid quotient = total / peers;
+  Gid remainder = total % peers;
+  Gid mySize = quotient;
+  Gid self = PCU_Comm_Self();
   if (self == (peers - 1))
     mySize += remainder;
-  int myOffset = self * quotient;
+  Gid myOffset = self * quotient;
 
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some coords */
   double* c = new double[mySize*3];
 
-  int start = PCU_Exscan_Int(nverts);
+  Gid start = PCU_Exscan_Int(nverts);
 
   PCU_Comm_Begin();
-  int to = std::min(peers - 1, start / quotient);
-  int n = std::min((to+1)*quotient-start, nverts);
+  Gid to = std::min(peers - 1, start / quotient);
+  Gid n = std::min((to+1)*quotient-start, nvertsG);
   if(n > 100000000) {
      lion_eprint(1, "setCoords int overflow of: self=%d,mySize=%d,total=%ld, n=%d,to=%d, quotient=%d, remainder=%d start=%d, peers=%d \n",self,mySize,total,n,to,quotient,remainder,start,peers);
   Gid peersG = PCU_Comm_Peers();
@@ -209,16 +210,16 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
      lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
 }
 
-  while (nverts > 0) {
+  while (nvertsG > 0) {
     PCU_COMM_PACK(to, start);
     PCU_COMM_PACK(to, n);
     PCU_Comm_Pack(to, coords, n*3*sizeof(double));
 
-    nverts -= n;
+    nvertsG -= n;
     start += n;
     coords += n*3;
     to = std::min(peers - 1, to + 1);
-    n = std::min(quotient, nverts);
+    n = std::min(quotient, nvertsG);
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
@@ -228,36 +229,36 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   }
 
   /* Tell all the owners of the coords what we need */
-  typedef std::vector< std::vector<int> > TmpParts;
+  typedef std::vector< std::vector<Gid> > TmpParts;
   TmpParts tmpParts(mySize);
   PCU_Comm_Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
-    int gid = it->first;
-    int to = std::min(peers - 1, gid / quotient);
+    Gid gid = it->first;
+    Gid to = std::min(peers - 1, gid / quotient);
     PCU_COMM_PACK(to, gid);
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
-    int gid;
+    Gid gid;
     PCU_COMM_UNPACK(gid);
-    int from = PCU_Comm_Sender();
+    Gid from = PCU_Comm_Sender();
     tmpParts.at(gid - myOffset).push_back(from);
   }
 
   /* Send the coords to everybody who want them */
   PCU_Comm_Begin();
-  for (int i = 0; i < mySize; ++i) {
-    std::vector<int>& parts = tmpParts[i];
+  for (Gid i = 0; i < mySize; ++i) {
+    std::vector<Gid>& parts = tmpParts[i];
     for (size_t j = 0; j < parts.size(); ++j) {
-      int to = parts[j];
-      int gid = i + myOffset;
+      Gid to = parts[j];
+      Gid gid = i + myOffset;
       PCU_COMM_PACK(to, gid);
       PCU_Comm_Pack(to, &c[i*3], 3*sizeof(double));
     }
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
-    int gid;
+    Gid gid;
     PCU_COMM_UNPACK(gid);
     double v[3];
     PCU_Comm_Unpack(v, sizeof(v));
