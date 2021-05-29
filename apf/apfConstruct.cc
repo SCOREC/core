@@ -203,11 +203,12 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   Gid to = std::min(peers - 1, start / quotient);
   Gid n = std::min((to+1)*quotient-start, nvertsG);
   if(n > 1000) {
-     lion_eprint(1, "setCoords int overflow of: self=%d,mySize=%d,total=%ld, n=%d,to=%d, quotient=%d, remainder=%d start=%d, peers=%d \n",self,mySize,total,n,to,quotient,remainder,start,peers);
-  Gid peersG = PCU_Comm_Peers();
-    Gid quotientG = total / peersG;
-  Gid remainderG = total % peersG;
-     lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, remainderG=%ld,peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
+     Gid sizeToSend=n*3*sizeof(double);
+     lion_eprint(1, "setCoords int overflow of: self=%ld,mySize=%ld,total=%ld, n=%ld,to=%ld, quotient=%ld, remainder=%ld start=%ld, peers=%ld, sizeToSend=%ld, nvertsG=%ld, nverts=%u \n",self,mySize,total,n,to,quotient,remainder,start,peers,sizeToSend,nvertsG,nverts);
+//  Gid peersG = PCU_Comm_Peers();
+//    Gid quotientG = total / peersG;
+//  Gid remainderG = total % peersG;
+//     lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, remainderG=%ld,peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
 }
 
   while (nvertsG > 0) {
