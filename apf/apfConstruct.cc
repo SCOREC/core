@@ -202,12 +202,12 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   PCU_Comm_Begin();
   Gid to = std::min(peers - 1, start / quotient);
   Gid n = std::min((to+1)*quotient-start, nvertsG);
-  if(n > 100000000) {
+  if(n > 1000) {
      lion_eprint(1, "setCoords int overflow of: self=%d,mySize=%d,total=%ld, n=%d,to=%d, quotient=%d, remainder=%d start=%d, peers=%d \n",self,mySize,total,n,to,quotient,remainder,start,peers);
   Gid peersG = PCU_Comm_Peers();
     Gid quotientG = total / peersG;
   Gid remainderG = total % peersG;
-     lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
+     lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, remainderG=%ld,peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
 }
 
   while (nvertsG > 0) {
