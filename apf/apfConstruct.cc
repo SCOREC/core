@@ -5,6 +5,7 @@
 #include "apf.h"
 #include "apfNumbering.h"
 #include <map>
+#include <lionPrint.h>
 
 namespace apf {
 
@@ -200,6 +201,14 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   PCU_Comm_Begin();
   int to = std::min(peers - 1, start / quotient);
   int n = std::min((to+1)*quotient-start, nverts);
+  if(n > 100000000) {
+     lion_eprint(1, "setCoords int overflow of: self=%d,mySize=%d,total=%ld, n=%d,to=%d, quotient=%d, remainder=%d start=%d, peers=%d \n",self,mySize,total,n,to,quotient,remainder,start,peers);
+  Gid peersG = PCU_Comm_Peers();
+    Gid quotientG = total / peersG;
+  Gid remainderG = total % peersG;
+     lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
+}
+
   while (nverts > 0) {
     PCU_COMM_PACK(to, start);
     PCU_COMM_PACK(to, n);
