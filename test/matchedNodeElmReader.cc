@@ -702,7 +702,7 @@ void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
   apf::Gid* elmVtx = new apf::Gid[numVtxPerElm];
   for (i = 0; i < numElms; i++) {
     for (j = 0; j < numVtxPerElm; j++)
-      gmi_fscanf(f, 1, "%u", elmVtx+j);
+      gmi_fscanf(f, 1, "%ld", elmVtx+j);
     if (i >= firstElm && i < lastElm) {
       for (j = 0; j < numVtxPerElm; j++) {
         const unsigned elmVtxIdx = elmIdx*numVtxPerElm+j;
