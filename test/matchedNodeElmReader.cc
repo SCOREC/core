@@ -531,8 +531,8 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   mesh->acceptChanges();
 }
 
-void getLocalRange(unsigned total, unsigned& local,
-    long& first, long& last) {
+void getLocalRange(apf::Gid total, apf::Gid& local,
+    apf::Gid& first, apf::Gid& last) {
   const int self = PCU_Comm_Self();
   const int peers = PCU_Comm_Peers();
   local = total/peers;
@@ -582,9 +582,9 @@ bool skipLine(char* line) {
   return (line[0] == '#' || line[0] == ' ' );
 }
 
-void getNumVerts(FILE* f, unsigned& verts) {
+void getNumVerts(FILE* f, apf::Gid& verts) {
   rewind(f);
-  gmi_fscanf(f, 1, "%d",  &verts);
+  gmi_fscanf(f, 1, "%ld",  &verts);
 //  verts = 0;
 //  size_t linelimit = 1024;
 //  char* line = new char[linelimit];
@@ -595,14 +595,14 @@ void getNumVerts(FILE* f, unsigned& verts) {
 //  delete [] line;
 }
 
-void readClassification(FILE* f, unsigned numVtx, int** classification) {
-  long firstVtx, lastVtx;
-  unsigned localNumVtx;
+void readClassification(FILE* f, apf::Gid numVtx, int** classification) {
+  apf::Gid firstVtx, lastVtx;
+  apf::Gid localNumVtx;
   getLocalRange(numVtx,localNumVtx,firstVtx,lastVtx);
   *classification = new int[localNumVtx];
   rewind(f);
   int vidx = 0;
-  for(unsigned i=0; i<numVtx; i++) {
+  for(apf::Gid i=0; i<numVtx; i++) {
 //    int id;
     int mdlId;
 //    gmi_fscanf(f, 2, "%d %d", &id, &mdlId);
@@ -620,13 +620,13 @@ void readClassification(FILE* f, unsigned numVtx, int** classification) {
   }*/
 }
 
-void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordinates) {
-  long firstVtx, lastVtx;
+void readCoords(FILE* f, apf::Gid numvtx, apf::Gid& localnumvtx, double** coordinates) {
+  apf::Gid firstVtx, lastVtx;
   getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
   *coordinates = new double[localnumvtx*3];
 //  rewind(f);
   int vidx = 0;
-  for(unsigned i=0; i<numvtx; i++) {
+  for(apf::Gid i=0; i<numvtx; i++) {
 //    int id;
     double pos[3];
 //    gmi_fscanf(f, 4, "%d %lf %lf %lf", &id, pos+0, pos+1, pos+2);
@@ -639,13 +639,13 @@ void readCoords(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** coordi
   }
 }
 
-void readSolution(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** solution) {
-  long firstVtx, lastVtx;
+void readSolution(FILE* f, apf::Gid numvtx, apf::Gid& localnumvtx, double** solution) {
+  apf::Gid firstVtx, lastVtx;
   getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
   *solution = new double[localnumvtx*5];
   rewind(f);
   int vidx = 0;
-  for(unsigned i=0; i<numvtx; i++) {
+  for(apf::Gid i=0; i<numvtx; i++) {
     double pos[5];
     pos[4]=0; //temperature
     gmi_fscanf(f, 4, "%lf %lf %lf %lf", pos+0, pos+1, pos+2, pos+3);
@@ -657,9 +657,9 @@ void readSolution(FILE* f, unsigned numvtx, unsigned& localnumvtx, double** solu
   }
 }
 
-void readMatches(FILE* f, unsigned numvtx, int** matches) {
-  long firstVtx, lastVtx;
-  unsigned localnumvtx;
+void readMatches(FILE* f, apf::Gid numvtx, int** matches) {
+  apf::Gid firstVtx, lastVtx;
+  apf::Gid localnumvtx;
   getLocalRange(numvtx, localnumvtx, firstVtx, lastVtx);
   fprintf(stderr, "%d readMatches numvtx %d localnumvtx %u firstVtx %ld lastVtx %ld\n",
       PCU_Comm_Self(), numvtx, localnumvtx, firstVtx, lastVtx);
@@ -667,7 +667,7 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
   rewind(f);
   int vidx = 0;
   int matchedVtx;
-  int i = 0;
+  apf::Gid i = 0;
   while( 1 == fscanf(f, "%d", &matchedVtx) ) {
     if( i >= firstVtx && i < lastVtx ) {
       PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
@@ -685,19 +685,21 @@ void readMatches(FILE* f, unsigned numvtx, int** matches) {
   }
 }
 
-void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
-    unsigned& numVtxPerElm, unsigned& localNumElms, apf::Gid** elements) {
+//void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
+void readElements(FILE* f, FILE* fh, unsigned &dim, apf::Gid& numElms,
+    unsigned& numVtxPerElm, apf::Gid& localNumElms, apf::Gid** elements) {
   rewind(f);
   rewind(fh);
   int dimHeader[2];
   gmi_fscanf(fh, 2, "%u %u", dimHeader, dimHeader+1);
   assert( dimHeader[0] == 1 && dimHeader[1] == 1);
   gmi_fscanf(fh, 1, "%u", &dim);
-  gmi_fscanf(fh, 2, "%u %u", &numElms, &numVtxPerElm);
+  gmi_fscanf(fh, 2, "%ld %u", &numElms, &numVtxPerElm);
   long firstElm, lastElm;
   getLocalRange(numElms, localNumElms, firstElm, lastElm);
   *elements = new apf::Gid[localNumElms*numVtxPerElm];
-  unsigned i, j;
+  apf::Gid i;
+  unsigned j;
   unsigned elmIdx = 0;
   apf::Gid* elmVtx = new apf::Gid[numVtxPerElm];
   for (i = 0; i < numElms; i++) {
@@ -723,10 +725,10 @@ struct MeshInfo {
   int* fathers2D;
   unsigned dim;
   unsigned elementType;
-  unsigned numVerts;
-  unsigned localNumVerts;
-  unsigned numElms;
-  unsigned localNumElms;
+  apf::Gid numVerts;
+  apf::Gid localNumVerts;
+  apf::Gid numElms;
+  apf::Gid localNumElms;
   unsigned numVtxPerElm;
 };
 

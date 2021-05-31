@@ -210,6 +210,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
 //  Gid remainderG = total % peersG;
 //     lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, remainderG=%ld,peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
 }
+  PCU_Barrier();
 
   while (nvertsG > 0) {
     PCU_COMM_PACK(to, start);
