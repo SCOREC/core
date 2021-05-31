@@ -661,7 +661,7 @@ void readMatches(FILE* f, apf::Gid numvtx, int** matches) {
   apf::Gid firstVtx, lastVtx;
   apf::Gid localnumvtx;
   getLocalRange(numvtx, localnumvtx, firstVtx, lastVtx);
-  fprintf(stderr, "%d readMatches numvtx %d localnumvtx %u firstVtx %ld lastVtx %ld\n",
+  fprintf(stderr, "%d readMatches numvtx %ld localnumvtx %ld firstVtx %ld lastVtx %ld\n",
       PCU_Comm_Self(), numvtx, localnumvtx, firstVtx, lastVtx);
   *matches = new int[localnumvtx];
   rewind(f);
@@ -745,7 +745,7 @@ void readMesh(const char* meshfilename,
   getNumVerts(fc,mesh.numVerts);
   
   if(!PCU_Comm_Self())
-    fprintf(stderr, "numVerts %u\n", mesh.numVerts);
+    fprintf(stderr, "numVerts %ld\n", mesh.numVerts);
   readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
  
