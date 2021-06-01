@@ -67,6 +67,10 @@ void visualizeSizeField(
     int smapleSize[2],
     double userScale,
     const char* OutputPrefix);
-
+void uniformAdaptByModelTag(
+    apf::Mesh2* m,
+    int mtype,
+    int mtag,
+    int level);
 }
 #endif
