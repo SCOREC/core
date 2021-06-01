@@ -40,6 +40,8 @@
 #include <sys/types.h> /*required for mode_t for mkdir on some systems*/
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 #include <errno.h> /* for checking the error from mkdir */
+#include <limits.h> /*INT_MAX*/
+#include <stdlib.h> /*abort*/
 
 enum state { uninit, init };
 static enum state global_state = uninit;
@@ -138,6 +140,10 @@ int PCU_Comm_Pack(int to_rank, const void* data, size_t size)
     reel_fail("Comm_Pack called before Comm_Init");
   if ((to_rank < 0)||(to_rank >= pcu_mpi_size()))
     reel_fail("Invalid rank in Comm_Pack");
+  if ( size > (size_t)INT_MAX ) {
+	  fprintf(stderr, "ERROR Attempting to pack a PCU message whose size exceeds INT_MAX... exiting\n");
+	  abort();
+  }
   memcpy(pcu_msg_pack(get_msg(),to_rank,size),data,size);
   return PCU_SUCCESS;
 }
