@@ -531,6 +531,35 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   mesh->acceptChanges();
 }
 
+void getLocalRangeMT(apf::Gid total, apf::Gid& numWedge, apf::Gid& numTet, int& local,
+    apf::Gid& first, apf::Gid& last) {
+  const int self = PCU_Comm_Self();
+  const int peers = PCU_Comm_Peers();
+  apf::Gid Nverte=numWedge/2+numTet/6;
+  int nvertpp=Nverte/peers;
+  float xnwr=peers/(1.0+numTet/(3.0*numWedge));
+  int nAllWedge=xnwr;
+  int nWpp=numWedge/xnwr;
+  int localw= numWedge - nAllWedge*nWpp;
+  int ntetpartial=6*(nvertpp-localw/2);
+  if(self < nAllWedge) 
+     local=nWpp;
+  else if( self==nAllWedge)  // mixed
+      local=localw+ntetpartial;
+  else 
+     local=(numTet-ntetpartial)/(peers-nAllWedge-1);
+  apf::Gid lp=PCU_Exscan_Long(local)+local;
+  if( self == peers-1 ) {  //last rank
+    if( lp < total ){
+      apf::Gid lpd;
+      lpd= total - lp;
+      local += lpd;
+    }
+  }
+  first = PCU_Exscan_Long(local);
+  last = first+local;
+}
+
 void getLocalRange(apf::Gid total, int& local,
     apf::Gid& first, apf::Gid& last) {
   const int self = PCU_Comm_Self();
@@ -697,11 +726,16 @@ void readElements(FILE* f, FILE* fh, unsigned &dim, apf::Gid& numElms,
   rewind(fh);
   int dimHeader[2];
   gmi_fscanf(fh, 2, "%u %u", dimHeader, dimHeader+1);
-  assert( dimHeader[0] == 1 && dimHeader[1] == 1);
+//  assert( dimHeader[0] == 1 && dimHeader[1] == 1);
   gmi_fscanf(fh, 1, "%u", &dim);
   gmi_fscanf(fh, 2, "%ld %u", &numElms, &numVtxPerElm);
-  long firstElm, lastElm;
-  getLocalRange(numElms, localNumElms, firstElm, lastElm);
+  apf::Gid numWedge, numTet;
+  int ijunk;
+  gmi_fscanf(fh, 2, "%ld %u", &numWedge, &ijunk);
+  gmi_fscanf(fh, 2, "%ld %u", &numTet, &ijunk);
+  apf::Gid firstElm, lastElm;
+//  getLocalRange(numElms, localNumElms, firstElm, lastElm);
+  getLocalRangeMT(numElms, numWedge, numTet, localNumElms, firstElm, lastElm);
   *elements = new apf::Gid[localNumElms*numVtxPerElm];
   apf::Gid i;
   unsigned j;
