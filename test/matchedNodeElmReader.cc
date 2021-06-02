@@ -700,12 +700,12 @@ void readMatches(FILE* f, apf::Gid numvtx, int** matches) {
   *matches = new int[localnumvtx];
   rewind(f);
   int vidx = 0;
-  int matchedVtx;
+  apf::Gid matchedVtx;
   apf::Gid i = 0;
-  while( 1 == fscanf(f, "%d", &matchedVtx) ) {
+  while( 1 == fscanf(f, "%ld", &matchedVtx) ) {
     if( i >= firstVtx && i < lastVtx ) {
       PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
-          ( matchedVtx >= 1 && matchedVtx <= static_cast<int>(numvtx) ));
+          ( matchedVtx >= 1 && matchedVtx <= numvtx ));
       if( matchedVtx != -1 )
         --matchedVtx;
 //      if( matchedVtx == 66350 || matchedVtx == 65075 ) {
