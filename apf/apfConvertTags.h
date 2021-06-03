@@ -70,17 +70,21 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
   int self = PCU_Comm_Self();
   if (self == (peers - 1))
     mySize += remainder;
-  int myOffset = self * quotient;
+  apf::Gid myOffset = self * quotient;
 
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some coords */
   T* c = new T[mySize*entries];
 
-  int start = PCU_Exscan_Int(nverts);
+  apf::Gid start = PCU_Exscan_Int(nverts);
 
   PCU_Comm_Begin();
-  int to = std::min(peers - 1, start / quotient);
-  int n = std::min((to+1)*quotient-start, nverts);
+  apf::Gid tmpL=start / quotient;
+  int tmpI=tmpL;
+  int to = std::min(peers - 1, tmpI);
+  tmpL=(to+1)*quotient-start;
+  tmpI=tmpL;
+  int n = std::min(tmpI, nverts);
   while (nverts > 0) {
     PCU_COMM_PACK(to, start);
     PCU_COMM_PACK(to, n);
@@ -104,13 +108,16 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
   TmpParts tmpParts(mySize);
   PCU_Comm_Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
-    int gid = it->first;
-    int to = std::min(peers - 1, gid / quotient);
+    apf::Gid gid = it->first;
+    tmpL=gid / quotient;
+    tmpI=tmpL;
+    int to = std::min(peers - 1, tmpI);
+// replaced     int to = std::min(peers - 1, gid / quotient);
     PCU_COMM_PACK(to, gid);
   }
   PCU_Comm_Send();
   while (PCU_Comm_Receive()) {
-    int gid;
+    apf::Gid gid;
     PCU_COMM_UNPACK(gid);
     int from = PCU_Comm_Sender();
     tmpParts.at(gid - myOffset).push_back(from);
@@ -122,7 +129,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
     std::vector<int>& parts = tmpParts[i];
     for (size_t j = 0; j < parts.size(); ++j) {
       int to = parts[j];
-      int gid = i + myOffset;
+      apf::Gid gid = i + myOffset;
       PCU_COMM_PACK(to, gid);
       PCU_Comm_Pack(to, &c[i*entries], entries*sizeof(T));
     }
@@ -131,7 +138,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
   apf::MeshTag* t = createTag<T>(m,tagName,entries);
   T* v = new T[entries];
   while (PCU_Comm_Receive()) {
-    int gid;
+    apf::Gid gid;
     PCU_COMM_UNPACK(gid);
     PCU_Comm_Unpack(v, entries*sizeof(T));
     setEntTag(m,t,globalToVert[gid],v);

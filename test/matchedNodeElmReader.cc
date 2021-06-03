@@ -592,64 +592,37 @@ bool skipLine(char* line) {
 void getNumVerts(FILE* f, apf::Gid& verts) {
   rewind(f);
   gmi_fscanf(f, 1, "%ld",  &verts);
-//  verts = 0;
-//  size_t linelimit = 1024;
-//  char* line = new char[linelimit];
-//  while( gmi_getline(&line,&linelimit,f) != -1 ) {
-//    if( ! skipLine(line) )
-//      verts++;
-//  }
-//  delete [] line;
 }
 
-void readClassification(FILE* f, apf::Gid numVtx, int** classification) {
-  apf::Gid firstVtx, lastVtx;
-  int localNumVtx;
-  getLocalRange(numVtx,localNumVtx,firstVtx,lastVtx);
+void readClassification(FILE* f, int localNumVtx, int** classification) {
   *classification = new int[localNumVtx];
   rewind(f);
-  int vidx = 0;
-  for(apf::Gid i=0; i<numVtx; i++) {
-//    int id;
-    int mdlId;
-//    gmi_fscanf(f, 2, "%d %d", &id, &mdlId);
+  int mdlId;
+  for(int i=0; i<localNumVtx; i++) {
     gmi_fscanf(f, 1, "%d",  &mdlId);
-    //std::cout<<"read id is "<<id<<std::endl;
-    //std::cout<<"read model id is "<<mdlId<<std::endl;
-    if( i >= firstVtx && i < lastVtx ) {
-      (*classification)[vidx] = mdlId;
-      vidx++;
-    }
+    (*classification)[i] = mdlId;
   }
-  /*std::cout<<"numVtx is "<<numVtx<<std::endl;
-  for (int i=0;i<numVtx;i++) {
-      std::cout<<"vtx num "<<i<<" has class "<<(*classification)[i]<<std::endl;
-  }*/
 }
 
 void readCoords(FILE* f, int& localnumvtx, double** coordinates) {
   *coordinates = new double[localnumvtx*3];
-  int vidx = 0;
   for(int i=0; i<localnumvtx; i++) {
     double pos[3];
     gmi_fscanf(f, 3, "%lf %lf %lf", pos+0, pos+1, pos+2);
     for(unsigned j=0; j<3; j++)
-        (*coordinates)[vidx*3+j] = pos[j];
-    vidx++;
+        (*coordinates)[i*3+j] = pos[j];
   }
 }
 
 void readSolution(FILE* f, int& localnumvtx, double** solution) {
   *solution = new double[localnumvtx*5];
   rewind(f);
-  int vidx = 0;
   for(int i=0; i<localnumvtx; i++) {
     double pos[5];
     pos[4]=0; //temperature
     gmi_fscanf(f, 4, "%lf %lf %lf %lf", pos+0, pos+1, pos+2, pos+3);
     for(unsigned j=0; j<5; j++)
-      (*solution)[vidx*5+j] = pos[j];
-    vidx++;
+      (*solution)[i*5+j] = pos[j];
   }
 }
 
@@ -658,18 +631,25 @@ void readMatches(FILE* f, apf::Gid numvtx, int localnumvtx, apf::Gid** matches) 
       PCU_Comm_Self(), numvtx, localnumvtx);
   *matches = new apf::Gid[localnumvtx];
   rewind(f);
-  int vidx = 0;
   apf::Gid matchedVtx;
-  apf::Gid i = 0;
-  while( 1 == fscanf(f, "%ld", &matchedVtx) ) {
+  for(int i=0; i<localnumvtx; i++) {
+    gmi_fscanf(f, 1, "%ld",  &matchedVtx);
     PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
        ( matchedVtx >= 1 && matchedVtx <= numvtx ));
     if( matchedVtx != -1 )
         --matchedVtx;
-    (*matches)[vidx] = matchedVtx;
-    vidx++;
-    i++;
+    (*matches)[i] = matchedVtx;
   }
+// I think the above will perform better than the code commented out below
+//  int vidx = 0;
+//  while( 1 == fscanf(f, "%ld", &matchedVtx) ) {
+//    PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
+//       ( matchedVtx >= 1 && matchedVtx <= numvtx ));
+//    if( matchedVtx != -1 )
+//        --matchedVtx;
+//    (*matches)[vidx] = matchedVtx;
+//    vidx++;
+//  }
 }
 
 void readElements(FILE* f, FILE* fh, unsigned &dim,  apf::Gid& numElms,
