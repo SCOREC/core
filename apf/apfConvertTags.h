@@ -11,13 +11,13 @@ namespace {
     apf::Gid max = -1;
     APF_CONST_ITERATE(apf::GlobalToVert, globalToVert, it)
       max = std::max(max, it->first);
-    return PCU_Max_Int(max); // this is type-dependent
+    return PCU_Max_Long(max); // this is type-dependent
   }
 
   template <class T> inline
   apf::MeshTag* createTag(apf::Mesh*,
       const char*, const int) {
-//    exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
     return 0;
   }
   
@@ -28,9 +28,20 @@ namespace {
   }
   
   template <> inline
+  apf::MeshTag* createTag<long>(apf::Mesh* m,
+      const char* name, const long entries) {
+    return m->createLongTag(name,entries);
+  }
+  
+  template <> inline
   apf::MeshTag* createTag<double>(apf::Mesh* m,
       const char* name, const int entries) {
     return m->createDoubleTag(name,entries);
+  }
+  
+  inline void setEntTag(apf::Mesh* m, apf::MeshTag* t,
+      apf::MeshEntity* e, long* vals) {
+    return m->setLongTag(e,t,vals);
   }
   
   inline void setEntTag(apf::Mesh* m, apf::MeshTag* t,
@@ -76,7 +87,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
      This means we might need to send and recv some coords */
   T* c = new T[mySize*entries];
 
-  apf::Gid start = PCU_Exscan_Int(nverts);
+  apf::Gid start = PCU_Exscan_Long(nverts);
 
   PCU_Comm_Begin();
   apf::Gid tmpL=start / quotient;
