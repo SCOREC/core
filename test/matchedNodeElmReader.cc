@@ -1,3 +1,4 @@
+//  char* filename;
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -13,6 +14,9 @@
 #include <cassert>
 #include <algorithm>
 #include <apfBox.h>
+#include <sstream>
+#include <iostream>
+
 
 /* from https://github.com/SCOREC/core/issues/205
 0=fully interior of the volume
@@ -654,103 +658,78 @@ void readClassification(FILE* f, apf::Gid numVtx, int** classification) {
   }*/
 }
 
-void readCoords(FILE* f, apf::Gid numvtx, int& localnumvtx, double** coordinates) {
-  apf::Gid firstVtx, lastVtx;
-  getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
+void readCoords(FILE* f, int& localnumvtx, double** coordinates) {
   *coordinates = new double[localnumvtx*3];
-//  rewind(f);
   int vidx = 0;
-  for(apf::Gid i=0; i<numvtx; i++) {
-//    int id;
+  for(int i=0; i<localnumvtx; i++) {
     double pos[3];
-//    gmi_fscanf(f, 4, "%d %lf %lf %lf", &id, pos+0, pos+1, pos+2);
     gmi_fscanf(f, 3, "%lf %lf %lf", pos+0, pos+1, pos+2);
-    if( i >= firstVtx && i < lastVtx ) {
-      for(unsigned j=0; j<3; j++)
+    for(unsigned j=0; j<3; j++)
         (*coordinates)[vidx*3+j] = pos[j];
-      vidx++;
-    }
+    vidx++;
   }
 }
 
-void readSolution(FILE* f, apf::Gid numvtx, int& localnumvtx, double** solution) {
-  apf::Gid firstVtx, lastVtx;
-  getLocalRange(numvtx, localnumvtx,firstVtx,lastVtx);
+void readSolution(FILE* f, int& localnumvtx, double** solution) {
   *solution = new double[localnumvtx*5];
   rewind(f);
   int vidx = 0;
-  for(apf::Gid i=0; i<numvtx; i++) {
+  for(int i=0; i<localnumvtx; i++) {
     double pos[5];
     pos[4]=0; //temperature
     gmi_fscanf(f, 4, "%lf %lf %lf %lf", pos+0, pos+1, pos+2, pos+3);
-    if( i >= firstVtx && i < lastVtx ) {
-      for(unsigned j=0; j<5; j++)
-        (*solution)[vidx*5+j] = pos[j];
-      vidx++;
-    }
+    for(unsigned j=0; j<5; j++)
+      (*solution)[vidx*5+j] = pos[j];
+    vidx++;
   }
 }
 
-void readMatches(FILE* f, apf::Gid numvtx, int** matches) {
-  apf::Gid firstVtx, lastVtx;
-  int localnumvtx;
-  getLocalRange(numvtx, localnumvtx, firstVtx, lastVtx);
-  fprintf(stderr, "%d readMatches numvtx %ld localnumvtx %d firstVtx %ld lastVtx %ld\n",
-      PCU_Comm_Self(), numvtx, localnumvtx, firstVtx, lastVtx);
-  *matches = new int[localnumvtx];
+void readMatches(FILE* f, int localnumvtx, apf::Gid** matches) {
+  fprintf(stderr, "%d readMatches localnumvtx \n",
+      PCU_Comm_Self(), localnumvtx);
+  *matches = new apf::Gid[localnumvtx];
   rewind(f);
   int vidx = 0;
   apf::Gid matchedVtx;
   apf::Gid i = 0;
   while( 1 == fscanf(f, "%ld", &matchedVtx) ) {
-    if( i >= firstVtx && i < lastVtx ) {
-      PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
-          ( matchedVtx >= 1 && matchedVtx <= numvtx ));
-      if( matchedVtx != -1 )
+    PCU_ALWAYS_ASSERT( matchedVtx == -1 ||
+       ( matchedVtx >= 1 && matchedVtx <= numvtx ));
+    if( matchedVtx != -1 )
         --matchedVtx;
-//      if( matchedVtx == 66350 || matchedVtx == 65075 ) {
-//        fprintf(stderr, "%d reader found match %d at gid %d i %d vidx %d\n",
- //           PCU_Comm_Self(), matchedVtx, gid, i, vidx);
-//      }
-      (*matches)[vidx] = matchedVtx;
-      vidx++;
-    }
+    (*matches)[vidx] = matchedVtx;
+    vidx++;
     i++;
   }
 }
 
-//void readElements(FILE* f, FILE* fh, unsigned &dim, unsigned& numElms,
-void readElements(FILE* f, FILE* fh, unsigned &dim, apf::Gid& numElms,
+void readElements(FILE* f, FILE* fh, unsigned &dim,  apf::Gid& numElms,
     unsigned& numVtxPerElm, int& localNumElms, apf::Gid** elements) {
   rewind(f);
   rewind(fh);
   int dimHeader[2];
+  apf::Gid numElms;  // not used but save anyway
   gmi_fscanf(fh, 2, "%u %u", dimHeader, dimHeader+1);
 //  assert( dimHeader[0] == 1 && dimHeader[1] == 1);
   gmi_fscanf(fh, 1, "%u", &dim);
   gmi_fscanf(fh, 2, "%ld %u", &numElms, &numVtxPerElm);
-  apf::Gid numWedge, numTet;
-  int ijunk;
-  gmi_fscanf(fh, 2, "%ld %u", &numWedge, &ijunk);
-  gmi_fscanf(fh, 2, "%ld %u", &numTet, &ijunk);
-  apf::Gid firstElm, lastElm;
-//  getLocalRange(numElms, localNumElms, firstElm, lastElm);
-  getLocalRangeMT(numElms, numWedge, numTet, localNumElms, firstElm, lastElm);
+  int self = PCU_Comm_Self();
+  const int peers = PCU_Comm_Peers();
+  for (int j=0; j<= self,j++)
+     gmi_fscanf(fh, 2, "%d %u", &localNumElms, &numVtxPerElm);
   *elements = new apf::Gid[localNumElms*numVtxPerElm];
-  apf::Gid i;
+  int i;
   unsigned j;
   unsigned elmIdx = 0;
   apf::Gid* elmVtx = new apf::Gid[numVtxPerElm];
   for (i = 0; i < numElms; i++) {
     for (j = 0; j < numVtxPerElm; j++)
       gmi_fscanf(f, 1, "%ld", elmVtx+j);
-    if (i >= firstElm && i < lastElm) {
-      for (j = 0; j < numVtxPerElm; j++) {
-        const unsigned elmVtxIdx = elmIdx*numVtxPerElm+j;
-        (*elements)[elmVtxIdx] = --(elmVtx[j]); //export from matlab using 1-based indices
-      }
-      elmIdx++;
+    for (j = 0; j < numVtxPerElm; j++) {
+      const unsigned elmVtxIdx = elmIdx*numVtxPerElm+j;
+      (*elements)[elmVtxIdx] = --(elmVtx[j]); //export from matlab using 1-based indices
     }
+    elmIdx++;
   }
   delete [] elmVtx;
 }
@@ -779,37 +758,49 @@ void readMesh(const char* meshfilename,
     const char* solutionfilename,
     const char* connHeadfilename,
     MeshInfo& mesh) {
-  FILE* fc = fopen(coordfilename, "r");
+
+  int self = PCU_Comm_Self();
+
+  char filename[64];
+//  sprintf(filename, "coords.%d",self);
+  sprintf(filename, "%s.%d",coordfilename,self);
+    
+  FILE* fc = fopen(filename , "r");
   PCU_ALWAYS_ASSERT(fc);
   getNumVerts(fc,mesh.numVerts);
+  mesh.localNumVerts=mesh.numVerts;
+  mesh.numVerts=PCU_Add_Long(mesh.numVerts);
   
   if(!PCU_Comm_Self())
     fprintf(stderr, "numVerts %ld\n", mesh.numVerts);
-  readCoords(fc, mesh.numVerts, mesh.localNumVerts, &(mesh.coords));
+  readCoords(fc, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
  
   if(0==1) {
   FILE* fs = fopen(solutionfilename, "r");
   PCU_ALWAYS_ASSERT(fs);
-  readSolution(fs, mesh.numVerts, mesh.localNumVerts, &(mesh.solution));
+  readSolution(fs, mesh.localNumVerts, &(mesh.solution));
   fclose(fs);
   }
 
-  FILE* ff = fopen(classfilename, "r");
+  sprintf(filename, "%s.%d",classfilename,self);
+  FILE* ff = fopen(filename, "r");
   PCU_ALWAYS_ASSERT(ff);
-  readClassification(ff, mesh.numVerts, &(mesh.classification));
+  readClassification(ff, mesh.localNumVerts, &(mesh.classification));
   fclose(ff);
 
   //add an argument to readMesh for the fathers2D
-  FILE* fff = fopen(fathers2Dfilename, "r");
+  sprintf(filename, "%s.%d",fathers2Dfilename,self);
+  FILE* fff = fopen(filename, "r");
   PCU_ALWAYS_ASSERT(fff);
-  readClassification(fff, mesh.numVerts, &(mesh.fathers2D)); // note we re-use classification reader
+  readClassification(fff, mesh.localNumVerts, &(mesh.fathers2D)); // note we re-use classification reader
   fclose(fff);
 
   if( strcmp(matchfilename, "NULL") ) {
-    FILE* fm = fopen(matchfilename, "r");
+    sprintf(filename, "%s.%d",matchfilename,self);
+    FILE* fm = fopen(filename, "r");
     PCU_ALWAYS_ASSERT(fm);
-    readMatches(fm, mesh.numVerts, &(mesh.matches));
+    readMatches(fm, mesh.localNumVerts, &(mesh.matches));
     fclose(fm);
   }
 
@@ -817,7 +808,7 @@ void readMesh(const char* meshfilename,
   FILE* fh = fopen(connHeadfilename, "r");
   PCU_ALWAYS_ASSERT(f);
   PCU_ALWAYS_ASSERT(fh);
-  readElements(f,fh, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
+  readElements(f,fh, mesh.dim,  mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
   fclose(f);
