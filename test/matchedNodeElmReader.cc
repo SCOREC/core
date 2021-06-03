@@ -1,4 +1,3 @@
-//  char* filename;
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -14,9 +13,6 @@
 #include <cassert>
 #include <algorithm>
 #include <apfBox.h>
-#include <sstream>
-#include <iostream>
-
 
 /* from https://github.com/SCOREC/core/issues/205
 0=fully interior of the volume
@@ -535,34 +531,7 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
   mesh->acceptChanges();
 }
 
-void getLocalRangeMT(apf::Gid total, apf::Gid& numWedge, apf::Gid& numTet, int& local,
-    apf::Gid& first, apf::Gid& last) {
-  const int self = PCU_Comm_Self();
-  const int peers = PCU_Comm_Peers();
-  apf::Gid Nverte=numWedge/2+numTet/6;
-  int nvertpp=Nverte/peers;
-  float xnwr=peers/(1.0+numTet/(3.0*numWedge));
-  int nAllWedge=xnwr;
-  int nWpp=numWedge/xnwr;
-  int localw= numWedge - nAllWedge*nWpp;
-  int ntetpartial=6*(nvertpp-localw/2);
-  if(self < nAllWedge) 
-     local=nWpp;
-  else if( self==nAllWedge)  // mixed
-      local=localw+ntetpartial;
-  else 
-     local=(numTet-ntetpartial)/(peers-nAllWedge-1);
-  apf::Gid lp=PCU_Exscan_Long(local)+local;
-  if( self == peers-1 ) {  //last rank
-    if( lp < total ){
-      apf::Gid lpd;
-      lpd= total - lp;
-      local += lpd;
-    }
-  }
-  first = PCU_Exscan_Long(local);
-  last = first+local;
-}
+
 
 void getLocalRange(apf::Gid total, int& local,
     apf::Gid& first, apf::Gid& last) {
@@ -684,9 +653,9 @@ void readSolution(FILE* f, int& localnumvtx, double** solution) {
   }
 }
 
-void readMatches(FILE* f, int localnumvtx, apf::Gid** matches) {
-  fprintf(stderr, "%d readMatches localnumvtx \n",
-      PCU_Comm_Self(), localnumvtx);
+void readMatches(FILE* f, apf::Gid numvtx, int localnumvtx, apf::Gid** matches) {
+  fprintf(stderr, "%d readMatches numvtx %ld localnumvtx %d \n",
+      PCU_Comm_Self(), numvtx, localnumvtx);
   *matches = new apf::Gid[localnumvtx];
   rewind(f);
   int vidx = 0;
@@ -708,21 +677,19 @@ void readElements(FILE* f, FILE* fh, unsigned &dim,  apf::Gid& numElms,
   rewind(f);
   rewind(fh);
   int dimHeader[2];
-  apf::Gid numElms;  // not used but save anyway
   gmi_fscanf(fh, 2, "%u %u", dimHeader, dimHeader+1);
 //  assert( dimHeader[0] == 1 && dimHeader[1] == 1);
   gmi_fscanf(fh, 1, "%u", &dim);
   gmi_fscanf(fh, 2, "%ld %u", &numElms, &numVtxPerElm);
-  int self = PCU_Comm_Self();
-  const int peers = PCU_Comm_Peers();
-  for (int j=0; j<= self,j++)
+  int self = PCU_Comm_Self();;
+  for (int j=0; j< self+1;j++)
      gmi_fscanf(fh, 2, "%d %u", &localNumElms, &numVtxPerElm);
   *elements = new apf::Gid[localNumElms*numVtxPerElm];
   int i;
   unsigned j;
   unsigned elmIdx = 0;
   apf::Gid* elmVtx = new apf::Gid[numVtxPerElm];
-  for (i = 0; i < numElms; i++) {
+  for (i = 0; i < localNumElms; i++) {
     for (j = 0; j < numVtxPerElm; j++)
       gmi_fscanf(f, 1, "%ld", elmVtx+j);
     for (j = 0; j < numVtxPerElm; j++) {
@@ -738,7 +705,7 @@ struct MeshInfo {
   double* coords;
   double* solution;
   apf::Gid* elements;
-  int* matches;
+  apf::Gid* matches;
   int* classification;
   int* fathers2D;
   unsigned dim;
@@ -762,7 +729,6 @@ void readMesh(const char* meshfilename,
   int self = PCU_Comm_Self();
 
   char filename[64];
-//  sprintf(filename, "coords.%d",self);
   sprintf(filename, "%s.%d",coordfilename,self);
     
   FILE* fc = fopen(filename , "r");
@@ -777,7 +743,8 @@ void readMesh(const char* meshfilename,
   fclose(fc);
  
   if(0==1) {
-  FILE* fs = fopen(solutionfilename, "r");
+  sprintf(filename, "%s.%d",solutionfilename,self);
+  FILE* fs = fopen(filename, "r");
   PCU_ALWAYS_ASSERT(fs);
   readSolution(fs, mesh.localNumVerts, &(mesh.solution));
   fclose(fs);
@@ -800,15 +767,16 @@ void readMesh(const char* meshfilename,
     sprintf(filename, "%s.%d",matchfilename,self);
     FILE* fm = fopen(filename, "r");
     PCU_ALWAYS_ASSERT(fm);
-    readMatches(fm, mesh.localNumVerts, &(mesh.matches));
+    readMatches(fm, mesh.numVerts, mesh.localNumVerts, &(mesh.matches));
     fclose(fm);
   }
 
-  FILE* f = fopen(meshfilename, "r");
+  sprintf(filename, "%s.%d",meshfilename,self);
+  FILE* f = fopen(filename, "r");
   FILE* fh = fopen(connHeadfilename, "r");
   PCU_ALWAYS_ASSERT(f);
   PCU_ALWAYS_ASSERT(fh);
-  readElements(f,fh, mesh.dim,  mesh.numElms, mesh.numVtxPerElm,
+  readElements(f,fh, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
   fclose(f);

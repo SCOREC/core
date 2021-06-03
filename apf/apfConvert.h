@@ -71,7 +71,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   * After this call, all vertices in the apf::Mesh2 object have correct
   * coordinates assigned.
   */
-void setMatches(Mesh2* m, const int* matches, int nverts,
+void setMatches(Mesh2* m, const Gid* matches, int nverts,
     GlobalToVert& globalToVert);
 
 
