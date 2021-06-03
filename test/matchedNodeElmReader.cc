@@ -619,14 +619,6 @@ bool skipLine(char* line) {
 void getNumVerts(FILE* f, apf::Gid& verts) {
   rewind(f);
   gmi_fscanf(f, 1, "%ld",  &verts);
-//  verts = 0;
-//  size_t linelimit = 1024;
-//  char* line = new char[linelimit];
-//  while( gmi_getline(&line,&linelimit,f) != -1 ) {
-//    if( ! skipLine(line) )
-//      verts++;
-//  }
-//  delete [] line;
 }
 
 void readClassification(FILE* f, apf::Gid numVtx, int** classification) {
