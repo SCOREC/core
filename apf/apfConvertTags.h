@@ -27,11 +27,11 @@ namespace {
     return m->createIntTag(name,entries);
   }
   
-  template <> inline
-  apf::MeshTag* createTag<long>(apf::Mesh* m,
-      const char* name, const long entries) {
-    return m->createLongTag(name,entries);
-  }
+//  template <> inline
+//  apf::MeshTag* createTag<long>(apf::Mesh* m,
+//      const char* name, const long entries) {
+//    return m->createLongTag(name,entries);
+//  }
   
   template <> inline
   apf::MeshTag* createTag<double>(apf::Mesh* m,
@@ -39,10 +39,10 @@ namespace {
     return m->createDoubleTag(name,entries);
   }
   
-  inline void setEntTag(apf::Mesh* m, apf::MeshTag* t,
-      apf::MeshEntity* e, long* vals) {
-    return m->setLongTag(e,t,vals);
-  }
+//  inline void setEntTag(apf::Mesh* m, apf::MeshTag* t,
+//      apf::MeshEntity* e, long* vals) {
+//    return m->setLongTag(e,t,vals);
+//  }
   
   inline void setEntTag(apf::Mesh* m, apf::MeshTag* t,
       apf::MeshEntity* e, int* vals) {
