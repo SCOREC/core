@@ -275,7 +275,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   delete [] c;
 }
 
-void setMatches(Mesh2* m, const int* matches, int nverts,
+void setMatches(Mesh2* m, const Gid* matches, int nverts,
     GlobalToVert& globalToVert)
 {
   PCU_Debug_Open();
@@ -308,7 +308,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
   while (nverts > 0) {
     PCU_COMM_PACK(to, start);
     PCU_COMM_PACK(to, n);
-    PCU_Comm_Pack(to, matches, n*sizeof(int));
+    PCU_Comm_Pack(to, matches, n*sizeof(Gid));
     PCU_Debug_Print("%d sending start %ld n %d to %d\n",
         self, start, n, to);
 
@@ -328,9 +328,9 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
   }
 
   for (int i = 0; i < mySize; ++i) {
-    int match = c[i];
+    Gid match = c[i];
     if( match != -1 )
-      PCU_Debug_Print("%d found match %d at gid %ld\n",
+      PCU_Debug_Print("%d found match %ld at gid %ld\n",
           self, match, i+myOffset);
   }
 
@@ -354,7 +354,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
     tmpParts.at(gid - myOffset).push_back(from);
   }
  
-  MeshTag* matchGidTag = m->createIntTag("matchGids", 1);
+  MeshTag* matchGidTag = m->createLongTag("matchGids", 1);
   /* Send the matches to everybody who wants them */
   PCU_Comm_Begin();
   for (int i = 0; i < mySize; ++i) {
@@ -393,7 +393,7 @@ void setMatches(Mesh2* m, const int* matches, int nverts,
    */
   PCU_Comm_Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
-    MeshEntity* e = it->second;
+    MeshEntity* e = it->second;  // KEJ does not follow this
     Gid gid = it->first;
     int tmpI=gid / quotient;
     int to = std::min(peers - 1,tmpI); 

@@ -691,13 +691,13 @@ void readSolution(FILE* f, apf::Gid numvtx, int& localnumvtx, double** solution)
   }
 }
 
-void readMatches(FILE* f, apf::Gid numvtx, int** matches) {
+void readMatches(FILE* f, apf::Gid numvtx, apf::Gid** matches) {
   apf::Gid firstVtx, lastVtx;
   int localnumvtx;
   getLocalRange(numvtx, localnumvtx, firstVtx, lastVtx);
   fprintf(stderr, "%d readMatches numvtx %ld localnumvtx %d firstVtx %ld lastVtx %ld\n",
       PCU_Comm_Self(), numvtx, localnumvtx, firstVtx, lastVtx);
-  *matches = new int[localnumvtx];
+  *matches = new apf::Gid[localnumvtx];
   rewind(f);
   int vidx = 0;
   apf::Gid matchedVtx;
@@ -759,7 +759,7 @@ struct MeshInfo {
   double* coords;
   double* solution;
   apf::Gid* elements;
-  int* matches;
+  apf::Gid* matches;
   int* classification;
   int* fathers2D;
   unsigned dim;
