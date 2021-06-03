@@ -292,7 +292,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
 
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some matches */
-  int* c = new int[mySize];
+  Gid* c = new Gid[mySize];
   PCU_Debug_Print("%d mysize %d\n", self, mySize);
 
   Gid start = PCU_Exscan_Long(nverts);
@@ -322,7 +322,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   while (PCU_Comm_Receive()) {
     PCU_COMM_UNPACK(start);
     PCU_COMM_UNPACK(n); /// in-place 64
-    PCU_Comm_Unpack(&c[(start - myOffset)], n*sizeof(int));
+    PCU_Comm_Unpack(&c[(start - myOffset)], n*sizeof(Gid));
     PCU_Debug_Print("%d receiving start %ld n %d from %d\n",
         self, start, n, PCU_Comm_Sender());
   }
