@@ -76,7 +76,9 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     }
     ifirst++;
   }
+  PCU_Barrier();
   Gid max = getMax(globalToVert);  // seems like we read this and know it already on every rank so why compute with global comm?
+  PCU_Barrier();
   ifirst=0;
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
