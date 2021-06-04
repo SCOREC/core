@@ -67,7 +67,24 @@ static Gid getMax(const GlobalToVert& globalToVert)
    I didn't think to use it here, so credit is given. */
 static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
 {
+  Gid ifirst=0;
+  int self2 = PCU_Comm_Self();
+  APF_ITERATE(GlobalToVert, globalToVert, it) {
+    Gid gid = it->first;  
+    if(ifirst==0 || ifirst==13437400 ) {
+        lion_eprint(1, "constructResidence: self=%d,gid=%ld,ifirst=%ld  \n",self2,gid,ifirst);
+    }
+    ifirst++;
+  }
   Gid max = getMax(globalToVert);  // seems like we read this and know it already on every rank so why compute with global comm?
+  ifirst=0;
+  APF_ITERATE(GlobalToVert, globalToVert, it) {
+    Gid gid = it->first;  
+    if(ifirst==0 || ifirst==13437400 ) {
+        lion_eprint(1, "constructResidence: self=%d,gid=%ld,ifirst=%ld,max=%ld  \n",self2,gid,ifirst,max);
+    }
+    ifirst++;
+  }
   Gid total = max + 1;
   int peers = PCU_Comm_Peers();
   int quotient = total / peers; // this seems to work as C++ is doing the math in 64 bit and the result is assumed not to overflow 32
