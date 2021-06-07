@@ -103,7 +103,7 @@ double pumi_getMem()
   Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
   return (double)heap/M;
 #else
-  struct mallinfo meminfo_now = mallinfo();
+  struct mallinfo2 meminfo_now = mallinfo2();
   return ((double)meminfo_now.arena)/M;
 #endif
 }

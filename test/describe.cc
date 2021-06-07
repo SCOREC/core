@@ -32,7 +32,7 @@ static double get_peak()
 
 static double get_peak()
 {
-  return mallinfo().arena;
+  return mallinfo2().arena;
 }
 
 #else
@@ -62,7 +62,7 @@ static void print_stats(const char* name, double value)
 
 static double get_chunks()
 {
-  struct mallinfo m = mallinfo();
+  struct mallinfo2 m = mallinfo2();
   return m.uordblks + m.hblkhd;
 }
 
