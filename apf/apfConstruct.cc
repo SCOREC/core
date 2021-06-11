@@ -67,25 +67,29 @@ static Gid getMax(const GlobalToVert& globalToVert)
    I didn't think to use it here, so credit is given. */
 static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
 {
-  Gid ifirst=0;
-  int self2 = PCU_Comm_Self();
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(ifirst==0 || ifirst==13437400 ) {
-        lion_eprint(1, "constructResidence: self=%d,gid=%ld,ifirst=%ld  \n",self2,gid,ifirst);
+  if(1==0){ // Debug block used when getMax we returning overflowed ints
+    Gid ifirst=0;
+    int self2 = PCU_Comm_Self();
+    APF_ITERATE(GlobalToVert, globalToVert, it) {
+      Gid gid = it->first;  
+      if(ifirst==0 || ifirst==13437400 ) {
+          lion_eprint(1, "constructResidence: self=%d,gid=%ld,ifirst=%ld  \n",self2,gid,ifirst);
+      }
+      ifirst++;
     }
-    ifirst++;
+    PCU_Barrier();
   }
-  PCU_Barrier();
   Gid max = getMax(globalToVert);  // seems like we read this and know it already on every rank so why compute with global comm?
-  PCU_Barrier();
-  ifirst=0;
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(ifirst==0 || ifirst==13437400 ) {
-        lion_eprint(1, "constructResidence: self=%d,gid=%ld,ifirst=%ld,max=%ld  \n",self2,gid,ifirst,max);
-    }
-    ifirst++;
+  if (1==0){
+    PCU_Barrier();
+    ifirst=0;
+    APF_ITERATE(GlobalToVert, globalToVert, it) {
+      Gid gid = it->first;  
+      if(ifirst==0 || ifirst==13437400 ) {
+          lion_eprint(1, "constructResidence: self=%d,gid=%ld,ifirst=%ld,max=%ld  \n",self2,gid,ifirst,max);
+      }
+      ifirst++;
+    } 
   }
   Gid total = max + 1;
   int peers = PCU_Comm_Peers();
