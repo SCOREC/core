@@ -31,6 +31,8 @@ util_exe_func(mkmodel mkmodel.cc)
 util_exe_func(mktopomodel mktopomodel.cc)
 util_exe_func(modelInfo modelInfo.cc)
 
+test_exe_func(nonmanifold nonmanifold.cc)
+
 # Mesh generation utilities
 util_exe_func(box box.cc)
 util_exe_func(uniform uniform.cc)
