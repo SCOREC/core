@@ -148,6 +148,15 @@ add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
 scorec_export_library(core)
 
+#check for mallinfo2
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+  include(CheckCXXSymbolExists)
+  check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
+  if(PUMI_HAS_MALLINFO2)
+    target_compile_definitions(core INTERFACE -DPUMI_HAS_MALLINFO2)
+  endif()
+endif()
+
 if(BUILD_EXES)
   add_subdirectory(test)
 endif()
