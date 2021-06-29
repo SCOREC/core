@@ -8,6 +8,7 @@
  
 *******************************************************************************/
 #include "maInput.h"
+#include "maAdapt.h"
 #include <lionPrint.h>
 #include <apfShape.h>
 #include <cstdio>
@@ -74,6 +75,8 @@ void setDefaultValues(Input* in)
 
 void rejectInput(const char* str)
 {
+  if (PCU_Comm_Self() != 0)
+    return;
   lion_eprint(1,"MeshAdapt input error:\n");
   lion_eprint(1,"%s\n",str);
   abort();
@@ -153,33 +156,21 @@ void validateInput(Input* in)
 #endif
 }
 
-static void configPrint(const char* format, ...)
-{
-  if (PCU_Comm_Self())
-    return;
-  lion_oprint(1, "\nMeshAdaptConfigure: ");
-  va_list ap;
-  va_start(ap, format);
-  lion_voprint(1, format, ap);
-  va_end(ap);
-  lion_oprint(1, "\n");
-}
-
-static void updateInputBasedOnSize(Mesh* m, Input* in)
+static void updateMaxIterBasedOnSize(Mesh* m, Input* in)
 {
   // number of iterations
   double maxMetricLength = getMaximumEdgeLength(m, in->sizeField);
   int iter = std::ceil(std::log2(maxMetricLength));
-  if (iter > 10) {
-    configPrint("Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
-    	"                    which is larger than the maximum of 10 allowed.\n"
-    	"                    Setting the number of iteration to 10!", iter);
+  if (iter >= 10) {
+    print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
+    	"           which is equal to or larger than the maximum of 10 allowed.\n"
+    	"           Setting the number of iteration to 10!", iter);
     in->maximumIterations = 10;
   }
   else {
-    configPrint("Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
-    	"                    Setting the number of iteration to %d!", iter, iter);
-    in->maximumIterations = iter;
+    print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
+    	"           Setting the number of iteration to %d!", iter, iter+1);
+    in->maximumIterations = iter+1;
   }
 }
 
@@ -221,7 +212,7 @@ Input* configure(
    solution transfer */
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f, logInterpolation);
-  updateInputBasedOnSize(m, in);
+  updateMaxIterBasedOnSize(m, in);
   return in;
 }
 
@@ -232,7 +223,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f);
-  updateInputBasedOnSize(m, in);
+  updateMaxIterBasedOnSize(m, in);
   return in;
 }
 
@@ -243,7 +234,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f);
-  updateInputBasedOnSize(m, in);
+  updateMaxIterBasedOnSize(m, in);
   return in;
 }
 
@@ -256,7 +247,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, sizes, frames, logInterpolation);
-  updateInputBasedOnSize(m, in);
+  updateMaxIterBasedOnSize(m, in);
   return in;
 }
 
