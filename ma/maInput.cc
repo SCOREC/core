@@ -78,6 +78,18 @@ void rejectInput(const char* str)
   abort();
 }
 
+// if more than 1 option is true return true
+static bool moreThanOneOptionIsTrue(bool op1, bool op2, bool op3)
+{
+  int cnt = 0;
+  if (op1) cnt++;
+  if (op2) cnt++;
+  if (op3) cnt++;
+  if (cnt > 1)
+    return true;
+  return false;
+}
+
 void validateInput(Input* in)
 {
   if ( ! in->sizeField)

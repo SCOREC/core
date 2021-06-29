@@ -120,6 +120,10 @@ if(ENABLE_OMEGA_H)
   bob_public_dep(Omega_h)
 endif()
 
+if(ENABLE_ZOLTAN)
+  add_definitions(-DHAVE_ZOLTAN)
+endif()
+
 # Include the SCOREC project packages
 add_subdirectory(lion)
 add_subdirectory(pcu)
