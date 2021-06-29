@@ -11,6 +11,7 @@
 #include <lionPrint.h>
 #include <apfShape.h>
 #include <cstdio>
+#include <PCU.h>
 #include <pcu_util.h>
 #include <cstdlib>
 
@@ -132,6 +133,54 @@ void validateInput(Input* in)
     rejectInput("maximum imbalance less than 1.0");
   if (in->maximumEdgeRatio < 1.0)
     rejectInput("maximum tet edge ratio less than one");
+  if (moreThanOneOptionIsTrue(
+  	in->shouldRunPreZoltan,
+  	in->shouldRunPreZoltanRib,
+  	in->shouldRunPreParma))
+    rejectInput("only one of Zoltan, ZoltanRib, and Parma PreBalance options can be set to true!");
+  if (moreThanOneOptionIsTrue(
+  	in->shouldRunPostZoltan,
+  	in->shouldRunPostZoltanRib,
+  	in->shouldRunPostParma))
+    rejectInput("only one of Zoltan, ZoltanRib, and Parma PostBalance options can be set to true!");
+  if (in->shouldRunMidZoltan && in->shouldRunMidParma)
+    rejectInput("only one of Zoltan and Parma MidBalance options can be set to true!");
+#ifndef HAVE_ZOLTAN
+  if (in->shouldRunPreZoltan ||
+      in->shouldRunPreZoltanRib ||
+      in->shouldRunMidZoltan)
+    rejectInput("core is not compiled with Zoltan. Use a different balancer or compile core with ENABLE_ZOLTAN=ON!");
+#endif
+}
+
+static void configPrint(const char* format, ...)
+{
+  if (PCU_Comm_Self())
+    return;
+  lion_oprint(1, "\nMeshAdaptConfigure: ");
+  va_list ap;
+  va_start(ap, format);
+  lion_voprint(1, format, ap);
+  va_end(ap);
+  lion_oprint(1, "\n");
+}
+
+static void updateInputBasedOnSize(Mesh* m, Input* in)
+{
+  // number of iterations
+  double maxMetricLength = getMaximumEdgeLength(m, in->sizeField);
+  int iter = std::ceil(std::log2(maxMetricLength));
+  if (iter > 10) {
+    configPrint("Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
+    	"                    which is larger than the maximum of 10 allowed.\n"
+    	"                    Setting the number of iteration to 10!", iter);
+    in->maximumIterations = 10;
+  }
+  else {
+    configPrint("Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
+    	"                    Setting the number of iteration to %d!", iter, iter);
+    in->maximumIterations = iter;
+  }
 }
 
 void setSolutionTransfer(Input* in, SolutionTransfer* s)
@@ -172,6 +221,7 @@ Input* configure(
    solution transfer */
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f, logInterpolation);
+  updateInputBasedOnSize(m, in);
   return in;
 }
 
@@ -182,6 +232,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f);
+  updateInputBasedOnSize(m, in);
   return in;
 }
 
@@ -192,6 +243,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f);
+  updateInputBasedOnSize(m, in);
   return in;
 }
 
@@ -204,6 +256,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, sizes, frames, logInterpolation);
+  updateInputBasedOnSize(m, in);
   return in;
 }
 
