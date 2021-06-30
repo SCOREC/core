@@ -4,6 +4,8 @@
 #include <parma.h>
 #include <apfZoltan.h>
 
+#define MAX_ZOLTAN_GRAPH_RANKS 16*1024
+
 namespace ma {
 
 static double clamp(double x, double max, double min)
@@ -160,7 +162,9 @@ void preBalance(Adapt* a)
       (!in->shouldRunPreParma) &&
       (estimateWeightedImbalance(a) > in->maximumImbalance)) {
 #ifdef PUMI_HAS_ZOLTAN
-    if (PCU_Comm_Peers() < 16000) {  // the parmetis multi-level graph partitioner memory usage grows significantly with process count beyond 16K processes
+    // The parmetis multi-level graph partitioner memory usage grows
+    // significantly with process count beyond 16K processes
+    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       return;
     }
@@ -198,7 +202,9 @@ void midBalance(Adapt* a)
       (!in->shouldRunMidParma) &&
       (estimateWeightedImbalance(a) > in->maximumImbalance)) {
 #ifdef PUMI_HAS_ZOLTAN
-    if (PCU_Comm_Peers() < 16000) {
+    // The parmetis multi-level graph partitioner memory usage grows
+    // significantly with process count beyond 16K processes
+    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       return;
     }
@@ -244,7 +250,9 @@ void postBalance(Adapt* a)
       (!in->shouldRunPostParma) &&
       (estimateWeightedImbalance(a) > in->maximumImbalance)) {
 #ifdef PUMI_HAS_ZOLTAN
-    if (PCU_Comm_Peers() < 16000) {
+    // The parmetis multi-level graph partitioner memory usage grows
+    // significantly with process count beyond 16K processes
+    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       printEntityImbalance(a->mesh);
       return;
