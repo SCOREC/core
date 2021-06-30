@@ -148,7 +148,7 @@ void validateInput(Input* in)
     rejectInput("only one of Zoltan, ZoltanRib, and Parma PostBalance options can be set to true!");
   if (in->shouldRunMidZoltan && in->shouldRunMidParma)
     rejectInput("only one of Zoltan and Parma MidBalance options can be set to true!");
-#ifndef HAVE_ZOLTAN
+#ifndef PUMI_HAS_ZOLTAN
   if (in->shouldRunPreZoltan ||
       in->shouldRunPreZoltanRib ||
       in->shouldRunMidZoltan)

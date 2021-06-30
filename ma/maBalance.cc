@@ -159,7 +159,7 @@ void preBalance(Adapt* a)
       (!in->shouldRunPreZoltanRib) &&
       (!in->shouldRunPreParma) &&
       (estimateWeightedImbalance(a) > in->maximumImbalance)) {
-#ifdef HAVE_ZOLTAN
+#ifdef PUMI_HAS_ZOLTAN
     if (PCU_Comm_Peers() < 16000) {
       runZoltan(a);
       return;
@@ -197,7 +197,7 @@ void midBalance(Adapt* a)
   if ((!in->shouldRunMidZoltan) &&
       (!in->shouldRunMidParma) &&
       (estimateWeightedImbalance(a) > in->maximumImbalance)) {
-#ifdef HAVE_ZOLTAN
+#ifdef PUMI_HAS_ZOLTAN
     if (PCU_Comm_Peers() < 16000) {
       runZoltan(a);
       return;
@@ -243,7 +243,7 @@ void postBalance(Adapt* a)
       (!in->shouldRunPostZoltanRib) &&
       (!in->shouldRunPostParma) &&
       (estimateWeightedImbalance(a) > in->maximumImbalance)) {
-#ifdef HAVE_ZOLTAN
+#ifdef PUMI_HAS_ZOLTAN
     if (PCU_Comm_Peers() < 16000) {
       runZoltan(a);
       printEntityImbalance(a->mesh);
