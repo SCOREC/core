@@ -160,7 +160,7 @@ void preBalance(Adapt* a)
       (!in->shouldRunPreParma) &&
       (estimateWeightedImbalance(a) > in->maximumImbalance)) {
 #ifdef PUMI_HAS_ZOLTAN
-    if (PCU_Comm_Peers() < 16000) {
+    if (PCU_Comm_Peers() < 16000) {  // the parmetis multi-level graph partitioner memory usage grows significantly with process count beyond 16K processes
       runZoltan(a);
       return;
     }
