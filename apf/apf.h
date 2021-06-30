@@ -13,6 +13,7 @@
 #include "apfDynamicArray.h"
 
 #include <vector>
+#include <map>
 #include <limits>
 
 /** \file apf.h
@@ -34,6 +35,7 @@ class Field;
 class Element;
 class Mesh;
 class MeshEntity;
+class MeshTag;
 class VectorElement;
 /** \brief Mesh Elements represent the mesh coordinate vector field. */
 typedef VectorElement MeshElement;
@@ -641,6 +643,28 @@ for (t::iterator i = (w).begin(); \
 #define APF_CONST_ITERATE(t,w,i) \
 for (t::const_iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
+
+struct CGNSInfo
+{
+  // cgns_bc_name
+  std::string cgnsBCSName;
+  /* tag value
+
+    Tag value holds [0, 1] as a
+    marker to indicate mesh_entities 
+    within bc group. 1="in group", 0="not in group"
+    Tags set on vertices, edges, faces, and cells
+  */
+  apf::MeshTag* bcsMarkerTag = nullptr;
+  // model dimension
+  int mdlDim = -1;
+  // model id
+  int mdlId = -1;
+};
+
+//using CGNSBCMap = std::map<std::string, std::vector<std::tuple<std::string, apf::MeshTag *, int>>>;
+using CGNSBCMap = std::map<std::string, std::vector<CGNSInfo>>;
+void writeCGNS(const char *prefix, Mesh *m, const CGNSBCMap &cgnsBCMap);
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   * with binary (base64) encoding and zlib compression (if LION_COMPRESS=ON)

@@ -20,19 +20,21 @@ static void constructVerts(
       result[conn[i]] = m->createVert_(interior);
 }
 
-static void constructElements(
+static NewElements constructElements(
     Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
   int nev = apf::Mesh::adjacentCount[etype][0];
+  NewElements newElements;
   for (int i = 0; i < nelem; ++i) {
     Downward verts;
     int offset = i * nev;
     for (int j = 0; j < nev; ++j)
       verts[j] = globalToVert[conn[j + offset]];
-    buildElement(m, interior, etype, verts);
+    newElements.push_back(buildElement(m, interior, etype, verts));
   }
+  return newElements;
 }
 
 static Gid getMax(const GlobalToVert& globalToVert)
@@ -144,11 +146,11 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
   }
 }
 
-void assemble(Mesh2* m, const int* conn, int nelem, int etype,
+NewElements assemble(Mesh2* m, const int* conn, int nelem, int etype,
      GlobalToVert& globalToVert)
 {
   constructVerts(m, conn, nelem, etype, globalToVert);
-  constructElements(m, conn, nelem, etype, globalToVert);
+  return constructElements(m, conn, nelem, etype, globalToVert);
 }
 
 void finalise(Mesh2* m, GlobalToVert& globalToVert)
@@ -159,11 +161,12 @@ void finalise(Mesh2* m, GlobalToVert& globalToVert)
   m->acceptChanges();
 }
  
-void construct(Mesh2* m, const int* conn, int nelem, int etype,
+NewElements construct(Mesh2* m, const int* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
-  assemble(m, conn, nelem, etype, globalToVert);
+  const auto& newElements = assemble(m, conn, nelem, etype, globalToVert);
   finalise(m, globalToVert);
+  return newElements;
 }
 
 void setCoords(Mesh2* m, const double* coords, int nverts,

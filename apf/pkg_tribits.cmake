@@ -57,6 +57,10 @@ set(APF_SOURCES
   apfFile.cc
 )
 
+if(ENABLE_CGNS)
+  set(APF_SOURCES ${APF_SOURCES} apfCGNS.cc)
+endif(ENABLE_CGNS)
+
 set(APF_HEADERS
   apf.h
   apfMesh.h

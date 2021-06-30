@@ -98,7 +98,7 @@ Quality::Quality(apf::Mesh* m, int algorithm_) :
   PCU_ALWAYS_ASSERT(algorithm >= 0 && algorithm <= 2);
   order = mesh->getShape()->getOrder();
   PCU_ALWAYS_ASSERT(order >= 1);
-};
+}
 
 /* This work is based on the approach of Geometric Validity of high-order
  * lagrange finite elements, theory and practical guidance,

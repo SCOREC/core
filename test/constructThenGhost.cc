@@ -59,7 +59,7 @@ int main(int argc, char** argv)
   pMeshIter it = pm->begin(mdim);
   pMeshEnt e;
   double v = 0;
-  while ((e = m->iterate(it)))
+  while ((e = pm->iterate(it)))
     pumi_node_setField(f,e,0,&v);
   pm->end(it);
 
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 
   it = pm->begin(mdim);
   v = 1;
-  while ((e = m->iterate(it))) {
+  while ((e = pm->iterate(it))) {
     if (!pumi_ment_isGhost(e))
       pumi_node_setField(f,e,0,&v);
   }
