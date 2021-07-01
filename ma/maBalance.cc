@@ -4,6 +4,8 @@
 #include <parma.h>
 #include <apfZoltan.h>
 
+#define MAX_ZOLTAN_GRAPH_RANKS 16*1024
+
 namespace ma {
 
 static double clamp(double x, double max, double min)
@@ -121,17 +123,60 @@ void printEntityImbalance(Mesh* m)
   print("element imbalance %.0f%% of average",p);
 }
 
+double estimateWeightedImbalance(Adapt* a)
+{
+  Tag* w = getElementWeights(a);
+  double imb[4];
+  Parma_GetWeightedEntImbalance(a->mesh, w, &imb);
+  removeTagFromDimension(a->mesh, w, a->mesh->getDimension());
+  a->mesh->destroyTag(w);
+  return imb[a->mesh->getDimension()];
+}
+
 void preBalance(Adapt* a)
 {
   if (PCU_Comm_Peers()==1)
     return;
   Input* in = a->input;
-  if (in->shouldRunPreZoltan)
+  // First take care of user overrides. That is, if any of the three options
+  // is true, apply that balancer and return.
+  if (in->shouldRunPreZoltan) {
     runZoltan(a);
-  if (in->shouldRunPreZoltanRib)
+    return;
+  }
+  if (in->shouldRunPreZoltanRib) {
     runZoltan(a,apf::RIB);
-  if (in->shouldRunPreParma)
+    return;
+  }
+  if (in->shouldRunPreParma) {
     runParma(a);
+    return;
+  }
+
+  // Then, take care of the case where all the options are set to false.
+  // That is, if the default values have not changed by the user. In
+  // this case, we apply the best possible balancer, if weighted imbalance
+  // is bigger than in->maximumImbalance
+  if ((!in->shouldRunPreZoltan) &&
+      (!in->shouldRunPreZoltanRib) &&
+      (!in->shouldRunPreParma) &&
+      (estimateWeightedImbalance(a) > in->maximumImbalance)) {
+#ifdef PUMI_HAS_ZOLTAN
+    // The parmetis multi-level graph partitioner memory usage grows
+    // significantly with process count beyond 16K processes
+    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+      runZoltan(a);
+      return;
+    }
+    else {
+      runZoltan(a, apf::RIB);
+      return;
+    }
+#else
+    runParma(a);
+    return;
+#endif
+  }
 }
 
 void midBalance(Adapt* a)
@@ -139,10 +184,39 @@ void midBalance(Adapt* a)
   if (PCU_Comm_Peers()==1)
     return;
   Input* in = a->input;
-  if (in->shouldRunMidZoltan)
+  // First take care of user overrides. That is, if any of the three options
+  // is true, apply that balancer and return.
+  if (in->shouldRunMidZoltan) {
     runZoltan(a);
-  if (in->shouldRunMidParma)
+    return;
+  }
+  if (in->shouldRunMidParma) {
     runParma(a);
+    return;
+  }
+  // Then, take care of the case where all the options are set to false.
+  // That is, if the default values have not changed by the user. In
+  // this case, we apply the best possible balancer, if weighted imbalance
+  // is bigger than in->maximumImbalance
+  if ((!in->shouldRunMidZoltan) &&
+      (!in->shouldRunMidParma) &&
+      (estimateWeightedImbalance(a) > in->maximumImbalance)) {
+#ifdef PUMI_HAS_ZOLTAN
+    // The parmetis multi-level graph partitioner memory usage grows
+    // significantly with process count beyond 16K processes
+    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+      runZoltan(a);
+      return;
+    }
+    else {
+      runZoltan(a, apf::RIB);
+      return;
+    }
+#else
+    runParma(a);
+    return;
+#endif
+  }
 }
 
 void postBalance(Adapt* a)
@@ -150,13 +224,50 @@ void postBalance(Adapt* a)
   if (PCU_Comm_Peers()==1)
     return;
   Input* in = a->input;
-  if (in->shouldRunPostZoltan)
+  // First take care of user overrides. That is, if any of the three options
+  // is true, apply that balancer and return.
+  if (in->shouldRunPostZoltan) {
     runZoltan(a);
-  if (in->shouldRunPostZoltanRib)
+    printEntityImbalance(a->mesh);
+    return;
+  }
+  if (in->shouldRunPostZoltanRib) {
     runZoltan(a,apf::RIB);
-  if (in->shouldRunPostParma)
+    printEntityImbalance(a->mesh);
+    return;
+  }
+  if (in->shouldRunPostParma) {
     runParma(a);
-  printEntityImbalance(a->mesh);
+    printEntityImbalance(a->mesh);
+    return;
+  }
+  // Then, take care of the case where all the options are set to false.
+  // That is, if the default values have not changed by the user. In
+  // this case, we apply the best possible balancer, if weighted imbalance
+  // is bigger than in->maximumImbalance
+  if ((!in->shouldRunPostZoltan) &&
+      (!in->shouldRunPostZoltanRib) &&
+      (!in->shouldRunPostParma) &&
+      (estimateWeightedImbalance(a) > in->maximumImbalance)) {
+#ifdef PUMI_HAS_ZOLTAN
+    // The parmetis multi-level graph partitioner memory usage grows
+    // significantly with process count beyond 16K processes
+    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+      runZoltan(a);
+      printEntityImbalance(a->mesh);
+      return;
+    }
+    else {
+      runZoltan(a, apf::RIB);
+      printEntityImbalance(a->mesh);
+      return;
+    }
+#else
+    runParma(a);
+    printEntityImbalance(a->mesh);
+    return;
+#endif
+  }
 }
 
 }
