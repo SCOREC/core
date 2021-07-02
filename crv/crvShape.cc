@@ -509,7 +509,7 @@ static bool isCornerTriAngleLargeMetric(crv::Adapt *a,
   // some level of control over what is considered an invalid angle
   // an angle is "too large" if the dot product between the corner triangle
   // and the triangle formed by its vertices is negative
-  if (cornerNormal*normal < a->input->validQuality)
+  if (cornerNormal*normal < a->input->validQuality())
     return true;
 
   return false;
@@ -786,7 +786,7 @@ struct IsBadCrvQuality : public ma::Predicate
   }
   bool operator()(apf::MeshEntity* e)
   {
-    return sh->getQuality(e) < a->input->goodQuality;
+    return sh->getQuality(e) < a->input->goodQuality();
   }
   Adapt* a;
   ma::ShapeHandler* sh;
@@ -824,9 +824,9 @@ static int fixShortEdgeElements(Adapt* a)
 
 void fixCrvElementShapes(Adapt* a)
 {
-  if ( ! a->input->shouldFixShape)
+  if ( ! a->input->shouldFixShape())
     return;
-  a->input->shouldForceAdaptation = true;
+  a->input->setShouldForceAdaptation(true);
   double t0 = PCU_Time();
   int count = markCrvBadQuality(a);
   int originalCount = count;
@@ -853,7 +853,7 @@ void fixCrvElementShapes(Adapt* a)
   double t1 = PCU_Time();
   ma::print("bad shapes down from %d to %d in %f seconds",
         originalCount,count,t1-t0);
-  a->input->shouldForceAdaptation = false;
+  a->input->setShouldForceAdaptation(false);
 }
 
 }

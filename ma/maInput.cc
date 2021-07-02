@@ -29,47 +29,47 @@ Input::~Input()
 void setDefaultValues(Input* in)
 {
   in->ownsSizeField = true;
-  in->maximumIterations = 3;
-  in->shouldCoarsen = true;
-  in->shouldSnap = in->mesh->canSnap();
-  in->shouldTransferParametric = in->mesh->canSnap();
-  in->shouldTransferToClosestPoint = false;
-  in->shouldHandleMatching = in->mesh->hasMatching();
-  in->shouldFixShape = true;
-  in->shouldForceAdaptation = false;
-  in->shouldPrintQuality = true;
+  in->_maximumIterations = 3;
+  in->_shouldCoarsen = true;
+  in->_shouldSnap = in->mesh->canSnap();
+  in->_shouldTransferParametric = in->mesh->canSnap();
+  in->_shouldTransferToClosestPoint = false;
+  in->_shouldHandleMatching = in->mesh->hasMatching();
+  in->_shouldFixShape = true;
+  in->_shouldForceAdaptation = false;
+  in->_shouldPrintQuality = true;
   if (in->mesh->getDimension()==3)
   {
-    in->goodQuality = 0.027;
-    in->maximumEdgeRatio = 2.0;
+    in->_goodQuality = 0.027;
+    in->_maximumEdgeRatio = 2.0;
   }
   else
   { PCU_ALWAYS_ASSERT(in->mesh->getDimension()==2);
     //old MA says .04, but that rarely kicks in.
     //.2 is strict, but at least quality goes up
-    in->goodQuality = 0.2;
+    in->_goodQuality = 0.2;
     //this basically turns off short edge removal...
-    in->maximumEdgeRatio = 100.0;
+    in->_maximumEdgeRatio = 100.0;
     //2D mesh adapt performs better if forceAdapt is on
-    in->shouldForceAdaptation = true;
+    in->_shouldForceAdaptation = true;
   }
-  in->shouldCheckQualityForDoubleSplits = false;
-  in->validQuality = 1e-10;
-  in->maximumImbalance = 1.10;
-  in->shouldRunPreZoltan = false;
-  in->shouldRunPreZoltanRib = false;
-  in->shouldRunPreParma = false;
-  in->shouldRunMidZoltan = false;
-  in->shouldRunMidParma = false;
-  in->shouldRunPostZoltan = false;
-  in->shouldRunPostZoltanRib = false;
-  in->shouldRunPostParma = false;
-  in->shouldTurnLayerToTets = false;
-  in->shouldCleanupLayer = false;
-  in->shouldRefineLayer = false;
-  in->shouldCoarsenLayer = false;
-  in->splitAllLayerEdges = false;
-  in->userDefinedLayerTagName = "";
+  in->_shouldCheckQualityForDoubleSplits = false;
+  in->_validQuality = 1e-10;
+  in->_maximumImbalance = 1.10;
+  in->_shouldRunPreZoltan = false;
+  in->_shouldRunPreZoltanRib = false;
+  in->_shouldRunPreParma = false;
+  in->_shouldRunMidZoltan = false;
+  in->_shouldRunMidParma = false;
+  in->_shouldRunPostZoltan = false;
+  in->_shouldRunPostZoltanRib = false;
+  in->_shouldRunPostParma = false;
+  in->_shouldTurnLayerToTets = false;
+  in->_shouldCleanupLayer = false;
+  in->_shouldRefineLayer = false;
+  in->_shouldCoarsenLayer = false;
+  in->_splitAllLayerEdges = false;
+  in->_userDefinedLayerTagName = "";
   in->shapeHandler = 0;
 }
 
@@ -100,77 +100,77 @@ void validateInput(Input* in)
     rejectInput("no size field");
   if ( ! in->solutionTransfer)
     rejectInput("no solution transfer object");
-  if (in->maximumIterations < 0)
+  if (in->_maximumIterations < 0)
     rejectInput("negative maximum iteration count");
-  if (in->maximumIterations > 10)
+  if (in->_maximumIterations > 10)
     rejectInput("unusually high maximum iteration count");
-  if (in->shouldSnap
+  if (in->_shouldSnap
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested snapping "
                 "but the geometric model does not support it");
-  if (in->shouldTransferParametric
+  if (in->_shouldTransferParametric
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested parametric coordinate transfer "
                 "but the geometric model does not support it");
-  if (in->shouldTransferToClosestPoint
+  if (in->_shouldTransferToClosestPoint
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested transfer to closest point on model"
                 "but the geometric model does not support it");
-  if (in->shouldSnap && ( ! (in->shouldTransferParametric ||
-			     in->shouldTransferToClosestPoint)))
+  if (in->_shouldSnap && ( ! (in->_shouldTransferParametric ||
+			     in->_shouldTransferToClosestPoint)))
     rejectInput("snapping requires parametric coordinate transfer or transfer to closest point");
   if ((in->mesh->hasMatching())
-    &&( ! in->shouldHandleMatching))
+    &&( ! in->_shouldHandleMatching))
     rejectInput("the mesh has matching entities but matched support is off");
-  if (in->shouldHandleMatching
-    && in->shouldFixShape)
+  if (in->_shouldHandleMatching
+    && in->_shouldFixShape)
     rejectInput("user requested matched mesh handling and shape correction "
         "but shape correction does not support matching yet");
-  if (in->goodQuality < 0.0)
+  if (in->_goodQuality < 0.0)
     rejectInput("negative desired element quality");
-  if (in->goodQuality > 1.0)
+  if (in->_goodQuality > 1.0)
     rejectInput("desired element quality greater than one");
-  if (in->validQuality < 0.0)
+  if (in->_validQuality < 0.0)
     rejectInput("negative minimum element quality");
-  if (in->maximumImbalance < 1.0)
+  if (in->_maximumImbalance < 1.0)
     rejectInput("maximum imbalance less than 1.0");
-  if (in->maximumEdgeRatio < 1.0)
+  if (in->_maximumEdgeRatio < 1.0)
     rejectInput("maximum tet edge ratio less than one");
   if (moreThanOneOptionIsTrue(
-  	in->shouldRunPreZoltan,
-  	in->shouldRunPreZoltanRib,
-  	in->shouldRunPreParma))
+  	in->_shouldRunPreZoltan,
+  	in->_shouldRunPreZoltanRib,
+  	in->_shouldRunPreParma))
     rejectInput("only one of Zoltan, ZoltanRib, and Parma PreBalance options can be set to true!");
   if (moreThanOneOptionIsTrue(
-  	in->shouldRunPostZoltan,
-  	in->shouldRunPostZoltanRib,
-  	in->shouldRunPostParma))
+  	in->_shouldRunPostZoltan,
+  	in->_shouldRunPostZoltanRib,
+  	in->_shouldRunPostParma))
     rejectInput("only one of Zoltan, ZoltanRib, and Parma PostBalance options can be set to true!");
-  if (in->shouldRunMidZoltan && in->shouldRunMidParma)
+  if (in->_shouldRunMidZoltan && in->_shouldRunMidParma)
     rejectInput("only one of Zoltan and Parma MidBalance options can be set to true!");
 #ifndef PUMI_HAS_ZOLTAN
-  if (in->shouldRunPreZoltan ||
-      in->shouldRunPreZoltanRib ||
-      in->shouldRunMidZoltan)
+  if (in->_shouldRunPreZoltan ||
+      in->_shouldRunPreZoltanRib ||
+      in->_shouldRunMidZoltan)
     rejectInput("core is not compiled with Zoltan. Use a different balancer or compile core with ENABLE_ZOLTAN=ON!");
 #endif
 }
 
-static void updateMaxIterBasedOnSize(Mesh* m, Input* in)
+void updateMaxIterBasedOnSize(Input* in)
 {
-  // number of iterations
+  Mesh* m = in->mesh;
   double maxMetricLength = getMaximumEdgeLength(m, in->sizeField);
   int iter = std::ceil(std::log2(maxMetricLength));
   if (iter >= 10) {
     print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
     	"           which is equal to or larger than the maximum of 10 allowed.\n"
     	"           Setting the number of iteration to 10!", iter);
-    in->maximumIterations = 10;
+    in->_maximumIterations = 10;
   }
   else {
     print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
     	"           Setting the number of iteration to %d!", iter, iter+1);
-    in->maximumIterations = iter+1;
+    in->_maximumIterations = iter+1;
   }
 }
 
@@ -212,7 +212,7 @@ Input* configure(
    solution transfer */
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f, logInterpolation);
-  updateMaxIterBasedOnSize(m, in);
+  updateMaxIterBasedOnSize(in);
   return in;
 }
 
@@ -223,7 +223,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f);
-  updateMaxIterBasedOnSize(m, in);
+  updateMaxIterBasedOnSize(in);
   return in;
 }
 
@@ -233,8 +233,10 @@ Input* configure(
     SolutionTransfer* s)
 {
   Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, f);
-  updateMaxIterBasedOnSize(m, in);
+  if (f) {
+    in->sizeField = makeSizeField(m, f);
+    updateMaxIterBasedOnSize(in);
+  }
   return in;
 }
 
@@ -247,7 +249,7 @@ Input* configure(
 {
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, sizes, frames, logInterpolation);
-  updateMaxIterBasedOnSize(m, in);
+  updateMaxIterBasedOnSize(in);
   return in;
 }
 
@@ -255,17 +257,17 @@ Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
 {
   Input* in = configure(m,s);
   in->sizeField = new UniformRefiner(m);
-  in->maximumIterations = n;
-  in->shouldRefineLayer = true;
-  in->splitAllLayerEdges = true;
+  in->_maximumIterations = n;
+  in->_shouldRefineLayer = true;
+  in->_splitAllLayerEdges = true;
   return in;
 }
 
 Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
 {
   Input* in = configureUniformRefine(m,n,s);
-  in->shouldHandleMatching = true;
-  in->shouldFixShape = false;
+  in->_shouldHandleMatching = true;
+  in->_shouldFixShape = false;
   return in;
 }
 
@@ -282,9 +284,9 @@ Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
     in->sizeField = new IdentitySizeField(m);
     in->ownsSizeField = true;
   }
-  in->maximumIterations = 0;
-  in->shouldFixShape = false;
-  in->shouldSnap = false;
+  in->_maximumIterations = 0;
+  in->_shouldFixShape = false;
+  in->_shouldSnap = false;
   return in;
 }
 

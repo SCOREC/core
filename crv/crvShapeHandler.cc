@@ -52,7 +52,7 @@ class BezierTransfer : public ma::SolutionTransfer
       adapt = a;
       mesh = a->mesh;
       refine = a->refine;
-      shouldSnap = a->input->shouldSnap;
+      shouldSnap = a->input->shouldSnap();
       // pre compute the inverses of the transformation matrices
       // pre store transformation matrices too
       int P = mesh->getShape()->getOrder();
@@ -254,7 +254,7 @@ class BezierHandler : public ma::ShapeHandler
       mesh = a->mesh;
       bt = new BezierTransfer(a);
       sizeField = a->sizeField;
-      shouldSnap = a->input->shouldSnap;
+      shouldSnap = a->input->shouldSnap();
       qual = makeQuality(mesh,2);
     }
     ~BezierHandler()

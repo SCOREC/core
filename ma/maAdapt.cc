@@ -40,11 +40,11 @@ Adapt::Adapt(Input* in)
     shape = in->shapeHandler(this);
   } else
     shape = getShapeHandler(this);
-  if (in->shouldCoarsen)
-    coarsensLeft = in->maximumIterations;
+  if (in->shouldCoarsen())
+    coarsensLeft = in->maximumIterations();
   else
     coarsensLeft = 0;
-  refinesLeft = in->maximumIterations;
+  refinesLeft = in->maximumIterations();
   resetLayer(this);
   if (hasLayer)
     checkLayerShape(mesh, "input mesh");

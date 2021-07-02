@@ -151,19 +151,19 @@ void clearTag(Adapt* a, ma::Entity* e)
 }
 // use an identity configuration but with default fixing values
 ma::Input* configureShapeCorrection(
-    ma::Mesh* m, ma::SizeField* f,
+    ma::Mesh* m, apf::Field* f,
     ma::SolutionTransfer* s)
 {
-  ma::Input* in = ma::configureIdentity(m,f,s);
-  in->shouldFixShape = true;
-  in->shouldSnap = in->mesh->canSnap();
-  in->shouldTransferParametric = in->mesh->canSnap();
+  ma::Input* in = ma::configure(m,f,s);
+  /* in->shouldFixShape = true; */
+  /* in->shouldSnap = in->mesh->canSnap(); */
+  /* in->shouldTransferParametric = in->mesh->canSnap(); */
   return in;
 }
 
 static int fixInvalidElements(crv::Adapt* a)
 {
-  a->input->shouldForceAdaptation = true;
+  a->input->setShouldForceAdaptation(true);
   int count = crv::fixLargeBoundaryAngles(a)
             + crv::fixInvalidEdges(a);
   int originalCount = count;
@@ -180,7 +180,7 @@ static int fixInvalidElements(crv::Adapt* a)
 
   crv::fixLargeBoundaryAngles(a);
   ma::clearFlagFromDimension(a,ma::COLLAPSE | ma::BAD_QUALITY,1);
-  a->input->shouldForceAdaptation = false;
+  a->input->setShouldForceAdaptation(false);
   return originalCount - count;
 }
 
@@ -209,7 +209,7 @@ void adapt(ma::Input* in)
 
   fixInvalidElements(a);
 
-  for (int i=0; i < in->maximumIterations; ++i)
+  for (int i=0; i < in->maximumIterations(); ++i)
   {
     ma::print("iteration %d",i);
     ma::coarsen(a);
@@ -222,7 +222,7 @@ void adapt(ma::Input* in)
 
   allowSplitCollapseOutsideLayer(a);
 
-  if (in->maximumIterations > 0) {
+  if (in->maximumIterations() > 0) {
     fixInvalidElements(a);
     flagCleaner(a); // all true-flags must be false before using markEntities
     fixCrvElementShapes(a);

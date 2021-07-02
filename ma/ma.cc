@@ -28,7 +28,7 @@ void adapt(Input* in)
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  for (int i = 0; i < in->maximumIterations; ++i)
+  for (int i = 0; i < in->maximumIterations(); ++i)
   {
     print("iteration %d",i);
     coarsen(a);
@@ -58,11 +58,11 @@ void adaptVerbose(Input* in, bool verbose)
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  for (int i = 0; i < in->maximumIterations; ++i)
+  for (int i = 0; i < in->maximumIterations(); ++i)
   {
     print("iteration %d",i);
     coarsen(a);
-    if (verbose && in->shouldCoarsen)
+    if (verbose && in->shouldCoarsen())
       ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
     coarsenLayer(a);
     midBalance(a);
@@ -70,10 +70,10 @@ void adaptVerbose(Input* in, bool verbose)
     if (verbose)
       ma_dbg::dumpMeshWithQualities(a,i,"after_refine");
     snap(a);
-    if (verbose && in->shouldSnap)
+    if (verbose && in->shouldSnap())
       ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
     fixElementShapes(a);
-    if (verbose && in->shouldFixShape)
+    if (verbose && in->shouldFixShape())
       ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }
   allowSplitCollapseOutsideLayer(a);

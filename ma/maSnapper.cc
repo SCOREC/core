@@ -84,7 +84,7 @@ static void collectBadElements(Adapt* a, Upward& es,
     if (getFlag(a, es[i], LAYER))
       continue;
     double quality = a->shape->getQuality(es[i]);
-    if (quality < a->input->validQuality)
+    if (quality < a->input->validQuality())
       bad.e[bad.n++] = es[i];
 /* check for triangles whose normals have changed by
    more than 90 degrees when the vertex was snapped */
@@ -133,12 +133,12 @@ static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
     return false;
   if ( ! collapse.checkTopo())
     return false;
-  double q = adapter->input->validQuality;
-  bool oldShouldForce = adapter->input->shouldForceAdaptation;
-  adapter->input->shouldForceAdaptation = true;
+  double q = adapter->input->validQuality();
+  bool oldShouldForce = adapter->input->shouldForceAdaptation();
+  adapter->input->setShouldForceAdaptation(true);
   if ( ! collapse.tryBothDirections(q))
     return false;
-  adapter->input->shouldForceAdaptation = oldShouldForce;
+  adapter->input->setShouldForceAdaptation(oldShouldForce);
   collapse.destroyOldElements();
   return true;
 }

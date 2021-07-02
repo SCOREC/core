@@ -895,7 +895,7 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
 
 void snap(Adapt* a)
 {
-  if ( ! a->input->shouldSnap)
+  if ( ! a->input->shouldSnap())
     return;
   double t0 = PCU_Time();
   Tag* tag;

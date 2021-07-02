@@ -51,7 +51,7 @@ int getSliverCode(
   Entity* fs[4];
   m->getDownward(tet, 2, fs);
   double f0Qual = a->shape->getQuality(fs[0]);
-  if ((f0Qual*f0Qual*f0Qual > a->input->goodQuality*a->input->goodQuality)) {
+  if ((f0Qual*f0Qual*f0Qual > a->input->goodQuality()*a->input->goodQuality())) {
     // if its okay, use it for projection
     Vector v03 = J[2];
     J[2] = apf::cross(J[0],J[1]); //face normal towards v[3]
@@ -125,7 +125,7 @@ struct IsBadQuality : public Predicate
   IsBadQuality(Adapt* a_):a(a_) {}
   bool operator()(Entity* e)
   {
-    return a->shape->getQuality(e) < a->input->goodQuality;
+    return a->shape->getQuality(e) < a->input->goodQuality();
   }
   Adapt* a;
 };
@@ -180,7 +180,7 @@ class ShortEdgeFixer : public Operator
       adapter = a;
       mesh = a->mesh;
       sizeField = a->sizeField;
-      shortEdgeRatio = a->input->maximumEdgeRatio;
+      shortEdgeRatio = a->input->maximumEdgeRatio();
       nr = nf = 0;
       element = 0;
     }
@@ -811,7 +811,7 @@ double improveQualities(Adapt* a)
 
 void fixElementShapes(Adapt* a)
 {
-  if ( ! a->input->shouldFixShape)
+  if ( ! a->input->shouldFixShape())
     return;
   double t0 = PCU_Time();
   int count = markBadQuality(a);
@@ -853,7 +853,7 @@ void fixElementShapes(Adapt* a)
 void alignElements(Adapt* a)
 {
   int max_iter = 5;
-  if ( ! a->input->shouldFixShape)
+  if ( ! a->input->shouldFixShape())
     return;
   double t0 = PCU_Time();
   int count = markBadQuality(a);
@@ -878,7 +878,7 @@ void alignElements(Adapt* a)
 
 void printQuality(Adapt* a)
 {
-  if ( ! a->input->shouldPrintQuality)
+  if ( ! a->input->shouldPrintQuality())
     return;
   double minqual = getMinQuality(a);
   print("worst element quality is %e", minqual);

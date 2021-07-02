@@ -70,9 +70,9 @@ bool Collapse::tryBothDirections(double qualityToBeat)
   // if adaptation is not forced, only accept if it
   // beats the smaller of good quality and the old quality
   // and is still of valid quality
-  if (!adapt->input->shouldForceAdaptation)
-    qualityToBeat = std::min(adapt->input->goodQuality,
-        std::max(getOldQuality(),adapt->input->validQuality));
+  if (!adapt->input->shouldForceAdaptation())
+    qualityToBeat = std::min(adapt->input->goodQuality(),
+        std::max(getOldQuality(),adapt->input->validQuality()));
 
   if (tryThisDirection(qualityToBeat))
     return true;
@@ -80,9 +80,9 @@ bool Collapse::tryBothDirections(double qualityToBeat)
     return false;
   std::swap(vertToKeep,vertToCollapse);
   computeElementSets();
-  if (!adapt->input->shouldForceAdaptation)
-    qualityToBeat = std::min(adapt->input->goodQuality,
-        std::max(getOldQuality(),adapt->input->validQuality));
+  if (!adapt->input->shouldForceAdaptation())
+    qualityToBeat = std::min(adapt->input->goodQuality(),
+        std::max(getOldQuality(),adapt->input->validQuality()));
 
   return tryThisDirection(qualityToBeat);
 }

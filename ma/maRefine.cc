@@ -140,9 +140,9 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
   Vector param(0,0,0); //prevents uninitialized values
-  if (a->input->shouldTransferParametric)
+  if (a->input->shouldTransferParametric())
     transferParametricOnEdgeSplit(m,edge,0.5,param);
-  if (a->input->shouldTransferToClosestPoint)
+  if (a->input->shouldTransferToClosestPoint())
     transferToClosestPointOnEdgeSplit(m,edge,0.5,param);
   Entity* vert = buildVertex(a,c,point,param);
   st->onVertex(me,xi,vert);
@@ -297,7 +297,7 @@ void collectForMatching(Refine* r)
 {
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
-  if (a->input->shouldHandleMatching)
+  if (a->input->shouldHandleMatching())
     for (int d=1; d < m->getDimension(); ++d)
       r->shouldCollect[d] = true;
 }
@@ -407,7 +407,7 @@ void processNewElements(Refine* r)
     apf::stitchMesh(r->adapt->mesh);
     r->adapt->mesh->acceptChanges();
   }
-  if (r->adapt->input->shouldHandleMatching)
+  if (r->adapt->input->shouldHandleMatching())
     matchNewElements(r);
   transferElements(r);
 }

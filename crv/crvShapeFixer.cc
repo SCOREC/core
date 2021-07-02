@@ -283,7 +283,7 @@ CrvShortEdgeFixer::CrvShortEdgeFixer(Adapt* a):
   adapter = a;
   mesh = a->mesh;
   sizeField = a->sizeField;
-  shortEdgeRatio = a->input->maximumEdgeRatio;
+  shortEdgeRatio = a->input->maximumEdgeRatio();
   nr = nf = 0;
   element = 0;
 }

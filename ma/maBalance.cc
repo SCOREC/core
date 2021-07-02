@@ -50,16 +50,16 @@ static double clampForLayerPermissions(Adapt* a, int type, double weight)
 {
   if (apf::isSimplex(type))
     return weight;
-  if ( ! a->input->shouldRefineLayer)
+  if ( ! a->input->shouldRefineLayer())
     weight = std::max(1.0, weight);
-  if ( ! a->input->shouldCoarsenLayer)
+  if ( ! a->input->shouldCoarsenLayer())
     weight = std::min(1.0, weight);
   return weight;
 }
 
 static double accountForTets(Adapt* a, int type, double weight)
 {
-  if (a->input->shouldTurnLayerToTets) {
+  if (a->input->shouldTurnLayerToTets()) {
     if (type == apf::Mesh::PRISM)
       return weight * 3;
     if (type == apf::Mesh::PYRAMID)
@@ -97,7 +97,7 @@ static void runBalancer(Adapt* a, apf::Balancer* b)
   Mesh* m = a->mesh;
   Input* in = a->input;
   Tag* weights = getElementWeights(a);
-  b->balance(weights,in->maximumImbalance);
+  b->balance(weights,in->maximumImbalance());
   delete b;
   removeTagFromDimension(m,weights,m->getDimension());
   m->destroyTag(weights);
@@ -140,15 +140,15 @@ void preBalance(Adapt* a)
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
-  if (in->shouldRunPreZoltan) {
+  if (in->shouldRunPreZoltan()) {
     runZoltan(a);
     return;
   }
-  if (in->shouldRunPreZoltanRib) {
+  if (in->shouldRunPreZoltanRib()) {
     runZoltan(a,apf::RIB);
     return;
   }
-  if (in->shouldRunPreParma) {
+  if (in->shouldRunPreParma()) {
     runParma(a);
     return;
   }
@@ -157,10 +157,10 @@ void preBalance(Adapt* a)
   // That is, if the default values have not changed by the user. In
   // this case, we apply the best possible balancer, if weighted imbalance
   // is bigger than in->maximumImbalance
-  if ((!in->shouldRunPreZoltan) &&
-      (!in->shouldRunPreZoltanRib) &&
-      (!in->shouldRunPreParma) &&
-      (estimateWeightedImbalance(a) > in->maximumImbalance)) {
+  if ((!in->shouldRunPreZoltan()) &&
+      (!in->shouldRunPreZoltanRib()) &&
+      (!in->shouldRunPreParma()) &&
+      (estimateWeightedImbalance(a) > in->maximumImbalance())) {
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
@@ -186,11 +186,11 @@ void midBalance(Adapt* a)
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
-  if (in->shouldRunMidZoltan) {
+  if (in->shouldRunMidZoltan()) {
     runZoltan(a);
     return;
   }
-  if (in->shouldRunMidParma) {
+  if (in->shouldRunMidParma()) {
     runParma(a);
     return;
   }
@@ -198,9 +198,9 @@ void midBalance(Adapt* a)
   // That is, if the default values have not changed by the user. In
   // this case, we apply the best possible balancer, if weighted imbalance
   // is bigger than in->maximumImbalance
-  if ((!in->shouldRunMidZoltan) &&
-      (!in->shouldRunMidParma) &&
-      (estimateWeightedImbalance(a) > in->maximumImbalance)) {
+  if ((!in->shouldRunMidZoltan()) &&
+      (!in->shouldRunMidParma()) &&
+      (estimateWeightedImbalance(a) > in->maximumImbalance())) {
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
@@ -226,17 +226,17 @@ void postBalance(Adapt* a)
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
-  if (in->shouldRunPostZoltan) {
+  if (in->shouldRunPostZoltan()) {
     runZoltan(a);
     printEntityImbalance(a->mesh);
     return;
   }
-  if (in->shouldRunPostZoltanRib) {
+  if (in->shouldRunPostZoltanRib()) {
     runZoltan(a,apf::RIB);
     printEntityImbalance(a->mesh);
     return;
   }
-  if (in->shouldRunPostParma) {
+  if (in->shouldRunPostParma()) {
     runParma(a);
     printEntityImbalance(a->mesh);
     return;
@@ -245,10 +245,10 @@ void postBalance(Adapt* a)
   // That is, if the default values have not changed by the user. In
   // this case, we apply the best possible balancer, if weighted imbalance
   // is bigger than in->maximumImbalance
-  if ((!in->shouldRunPostZoltan) &&
-      (!in->shouldRunPostZoltanRib) &&
-      (!in->shouldRunPostParma) &&
-      (estimateWeightedImbalance(a) > in->maximumImbalance)) {
+  if ((!in->shouldRunPostZoltan()) &&
+      (!in->shouldRunPostZoltanRib()) &&
+      (!in->shouldRunPostParma()) &&
+      (estimateWeightedImbalance(a) > in->maximumImbalance())) {
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes

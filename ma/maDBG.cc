@@ -163,7 +163,7 @@ void dumpMeshWithQualities(ma::Adapt* a,
   // setup file name and write the mesh
   std::stringstream ss;
 
-  ss << a->input->debugFolder << "/";
+  ss << a->input->debugFolder() << "/";
   ss << std::setfill('0') << std::setw(3) << iter << "_";
   ss << prefix;
 
@@ -202,7 +202,7 @@ void dumpMeshWithFlag(ma::Adapt* a,
 
   // setup file name and write the mesh
   std::stringstream ss;
-  ss << a->input->debugFolder << "/";
+  ss << a->input->debugFolder() << "/";
   ss << prefix << "_" << std::setfill('0') << std::setw(3) << iter;
 
   writeMesh(a->mesh, ss.str().c_str(), "");
@@ -237,7 +237,7 @@ void createCavityMesh(ma::Adapt* a,
 
   cavityMesh->acceptChanges();
   std::stringstream ss;
-  ss << a->input->debugFolder << "/";
+  ss << a->input->debugFolder() << "/";
   ss << prefix;
 
 

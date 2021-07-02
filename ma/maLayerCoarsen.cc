@@ -227,7 +227,7 @@ static void collapseLocalStacks(Adapt* a,
         ++skipCount;
         continue;
       }
-      if (c.apply(in->validQuality))
+      if (c.apply(in->validQuality()))
         ++successCount;
       else
         ++failureCount;
@@ -261,7 +261,7 @@ bool coarsenLayer(Adapt* a)
 {
   if ( ! a->hasLayer)
     return false;
-  if ( ! a->input->shouldCoarsenLayer)
+  if ( ! a->input->shouldCoarsenLayer())
     return false;
   double t0 = PCU_Time();
   allowLayerToCollapse(a);

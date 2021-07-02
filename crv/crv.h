@@ -114,7 +114,7 @@ class GregoryCurver : public BezierCurver
 
 /** \brief configure for fixing invalid elements */
 ma::Input* configureShapeCorrection(
-    ma::Mesh* m, ma::SizeField* f=0,
+    ma::Mesh* m, apf::Field* f=0,
     ma::SolutionTransfer* s=0);
 
 /** \brief crv adapt with custom configuration

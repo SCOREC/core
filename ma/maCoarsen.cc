@@ -111,10 +111,10 @@ class AllEdgeCollapser : public Operator
     {
       collapse.Init(a);
       successCount = 0;
-      if(a->input->shouldForceAdaptation)
-        qualityToBeat = getAdapt()->input->validQuality;
+      if(a->input->shouldForceAdaptation())
+        qualityToBeat = getAdapt()->input->validQuality();
       else
-        qualityToBeat = getAdapt()->input->goodQuality;
+        qualityToBeat = getAdapt()->input->goodQuality();
     }
     virtual int getTargetDimension() {return 1;}
     virtual bool shouldApply(Entity* e)
@@ -186,7 +186,7 @@ class MatchedEdgeCollapser : public Operator
     }
     virtual void apply()
     {
-      double qualityToBeat = getAdapt()->input->validQuality;
+      double qualityToBeat = getAdapt()->input->validQuality();
       collapse.setEdges();
       if ( ! collapse.checkTopo())
         return;
@@ -228,7 +228,7 @@ long markEdgesToCollapse(Adapt* a)
 
 bool coarsen(Adapt* a)
 {
-  if (!a->input->shouldCoarsen)
+  if (!a->input->shouldCoarsen())
     return false;
   double t0 = PCU_Time();
   --(a->coarsensLeft);

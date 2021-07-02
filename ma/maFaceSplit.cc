@@ -177,9 +177,9 @@ Entity* makeSplitVertOnFace(Adapt* a, Entity* face)
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
   Vector param(0,0,0);
-  if (a->input->shouldTransferParametric)
+  if (a->input->shouldTransferParametric())
     transferParametricOnTriSplit(m, face, xi, param);
-  if (a->input->shouldTransferToClosestPoint)
+  if (a->input->shouldTransferToClosestPoint())
     transferToClosestPointOnTriSplit(m, face, xi, param);
   Entity* vert = buildVertex(a, c, point, param);
   st->onVertex(me, xi, vert);

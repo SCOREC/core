@@ -72,7 +72,7 @@ bool DoubleSplitCollapse::run(Entity** edges)
   /* This is to make sure the quality of newly created elements
    * by the double splits is not less than the in->goodQuality
    */
-  if (a->input->shouldCheckQualityForDoubleSplits) {
+  if (a->input->shouldCheckQualityForDoubleSplits()) {
     EntityArray toCheck;
     Upward regionsToSplitVert0;
     Upward regionsToSplitVert1;
@@ -111,7 +111,7 @@ bool DoubleSplitCollapse::run(Entity** edges)
     }
     PCU_ALWAYS_ASSERT(count == toCheck.getSize());
     double toCheckQuality = getWorstQuality(a, toCheck);
-    if (toCheckQuality < a->input->goodQuality) {
+    if (toCheckQuality < a->input->goodQuality()) {
       splits.cancel();
       return false;
     }

@@ -495,7 +495,7 @@ void tetrahedronizeCommon(Refine* r)
    and user reports are made */
 void tetrahedronize(Adapt* a)
 {
-  if ( ! a->input->shouldTurnLayerToTets)
+  if ( ! a->input->shouldTurnLayerToTets())
     return;
   PCU_ALWAYS_ASSERT(a->hasLayer);
   double t0 = PCU_Time();
@@ -671,7 +671,7 @@ void cleanupLayer(Adapt* a)
 {
   if (!a->hasLayer)
     return;
-  if (!a->input->shouldCleanupLayer)
+  if (!a->input->shouldCleanupLayer())
     return;
   double t0 = PCU_Time();
   long n = prepareIslandCleanup(a);

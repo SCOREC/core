@@ -238,10 +238,10 @@ void setupLayerForSplit(Adapt* a)
 {
   if (!a->hasLayer)
     return;
-  if (!a->input->shouldRefineLayer)
+  if (!a->input->shouldRefineLayer())
     return;
   unfreezeLayer(a);
-  if (!a->input->splitAllLayerEdges) {
+  if (!a->input->splitAllLayerEdges()) {
     preventQuadEdgeSplits(a);
     findLayerBase(a);
     allowBaseToSplit(a);
@@ -253,9 +253,9 @@ void setupRefineForLayer(Refine* r)
   Adapt* a = r->adapt;
   if (!a->hasLayer)
     return;
-  if (!a->input->shouldRefineLayer)
+  if (!a->input->shouldRefineLayer())
     return;
-  if (!a->input->splitAllLayerEdges) {
+  if (!a->input->splitAllLayerEdges()) {
     tagSplits(a);
     disambiguateLayerTris(a);
   }
