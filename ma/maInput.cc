@@ -282,10 +282,8 @@ void Input::maximumIterations(int i)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.maximumIterations = i;
-    validateInput();
-  }
 }
 
 bool Input::shouldCoarsen() { return ops.shouldCoarsen; }
@@ -293,10 +291,8 @@ void Input::shouldCoarsen(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldCoarsen = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldSnap() { return ops.shouldSnap; }
@@ -304,10 +300,8 @@ void Input::shouldSnap(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldSnap = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldTransferParametric() { return ops.shouldTransferParametric; }
@@ -315,10 +309,8 @@ void Input::shouldTransferParametric(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldTransferParametric = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldTransferToClosestPoint() { return ops.shouldTransferToClosestPoint; }
@@ -326,10 +318,8 @@ void Input::shouldTransferToClosestPoint(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldTransferToClosestPoint = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldHandleMatching() { return ops.shouldHandleMatching; }
@@ -337,10 +327,8 @@ void Input::shouldHandleMatching(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldHandleMatching = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldFixShape() { return ops.shouldFixShape; }
@@ -348,10 +336,8 @@ void Input::shouldFixShape(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldFixShape = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldForceAdaptation() { return ops.shouldForceAdaptation; }
@@ -359,10 +345,8 @@ void Input::shouldForceAdaptation(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldForceAdaptation = b;
-    validateInput();
-  }
 }
 /* void Input::shouldForceAdaptation(bool b) { ops.shouldFixShape = b; } */
 
@@ -371,10 +355,8 @@ void Input::shouldPrintQuality(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldPrintQuality = b;
-    validateInput();
-  }
 }
 
 double Input::goodQuality() { return ops.goodQuality; }
@@ -382,10 +364,8 @@ void Input::goodQuality(double d)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.goodQuality = d;
-    validateInput();
-  }
 }
 
 bool Input::shouldCheckQualityForDoubleSplits() { return ops.shouldCheckQualityForDoubleSplits; }
@@ -393,10 +373,8 @@ void Input::shouldCheckQualityForDoubleSplits(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldCheckQualityForDoubleSplits = b;
-    validateInput();
-  }
 }
 
 double Input::validQuality() { return ops.validQuality; }
@@ -404,10 +382,8 @@ void Input::validQuality(double d)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.validQuality = d;
-    validateInput();
-  }
 }
 
 double Input::maximumImbalance() { return ops.maximumImbalance; }
@@ -415,10 +391,8 @@ void Input::maximumImbalance(double d)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.maximumImbalance = d;
-    validateInput();
-  }
 }
 
 bool Input::shouldRunPreZoltan() { return ops.shouldRunPreZoltan; }
@@ -426,10 +400,8 @@ void Input::shouldRunPreZoltan(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunPreZoltan = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldRunPreZoltanRib() { return ops.shouldRunPreZoltanRib; }
@@ -437,10 +409,8 @@ void Input::shouldRunPreZoltanRib(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunPreZoltanRib = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldRunPreParma() { return ops.shouldRunPreParma; }
@@ -448,10 +418,8 @@ void Input::shouldRunPreParma(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunPreParma = b;
-    validateInput();
-  }
 }
 
 
@@ -460,10 +428,8 @@ void Input::shouldRunMidZoltan(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunMidZoltan = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldRunMidParma() { return ops.shouldRunMidParma; }
@@ -471,10 +437,8 @@ void Input::shouldRunMidParma(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunMidParma = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldRunPostZoltan() { return ops.shouldRunPostZoltan; }
@@ -482,10 +446,8 @@ void Input::shouldRunPostZoltan(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunPostZoltan = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldRunPostZoltanRib() { return ops.shouldRunPostZoltanRib; }
@@ -493,10 +455,8 @@ void Input::shouldRunPostZoltanRib(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunPostZoltanRib = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldRunPostParma() { return ops.shouldRunPostParma; }
@@ -504,10 +464,8 @@ void Input::shouldRunPostParma(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRunPostParma = b;
-    validateInput();
-  }
 }
 
 double Input::maximumEdgeRatio() { return ops.maximumEdgeRatio; }
@@ -515,10 +473,8 @@ void Input::maximumEdgeRatio(double d)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.maximumEdgeRatio = d;
-    validateInput();
-  }
 }
 
 bool Input::shouldTurnLayerToTets() { return ops.shouldTurnLayerToTets; }
@@ -526,10 +482,8 @@ void Input::shouldTurnLayerToTets(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldTurnLayerToTets = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldCleanupLayer() { return ops.shouldCleanupLayer; }
@@ -537,10 +491,8 @@ void Input::shouldCleanupLayer(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldCleanupLayer = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldRefineLayer() { return ops.shouldRefineLayer; }
@@ -548,10 +500,8 @@ void Input::shouldRefineLayer(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldRefineLayer = b;
-    validateInput();
-  }
 }
 
 bool Input::shouldCoarsenLayer() { return ops.shouldCoarsenLayer; }
@@ -559,10 +509,8 @@ void Input::shouldCoarsenLayer(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.shouldCoarsenLayer = b;
-    validateInput();
-  }
 }
 
 bool Input::splitAllLayerEdges() { return ops.splitAllLayerEdges; }
@@ -570,10 +518,8 @@ void Input::splitAllLayerEdges(bool b)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.splitAllLayerEdges = b;
-    validateInput();
-  }
 }
 
 const char* Input::userDefinedLayerTagName() { return ops.userDefinedLayerTagName; }
@@ -581,10 +527,8 @@ void Input::userDefinedLayerTagName(const char* c)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.userDefinedLayerTagName = c;
-    validateInput();
-  }
 }
 
 const char* Input::debugFolder() { return ops.debugFolder; }
@@ -592,10 +536,8 @@ void Input::debugFolder(const char* c)
 {
   if (!modifiable())
     rejectSetter("Cannot change mesh adapt options for basic input!");
-  else {
+  else
     ops.debugFolder = c;
-    validateInput();
-  }
 }
 
 
