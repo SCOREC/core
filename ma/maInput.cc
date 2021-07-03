@@ -26,54 +26,63 @@ Input::~Input()
     delete solutionTransfer;
 }
 
-void setDefaultValues(Input* in)
+void Input::setDefaultValues()
 {
-  in->ownsSizeField = true;
-  in->_maximumIterations = 3;
-  in->_shouldCoarsen = true;
-  in->_shouldSnap = in->mesh->canSnap();
-  in->_shouldTransferParametric = in->mesh->canSnap();
-  in->_shouldTransferToClosestPoint = false;
-  in->_shouldHandleMatching = in->mesh->hasMatching();
-  in->_shouldFixShape = true;
-  in->_shouldForceAdaptation = false;
-  in->_shouldPrintQuality = true;
-  if (in->mesh->getDimension()==3)
+  ownsSizeField = true;
+  shapeHandler = 0;
+  ops.maximumIterations = 3;
+  ops.shouldCoarsen = true;
+  ops.shouldSnap = mesh->canSnap();
+  ops.shouldTransferParametric = mesh->canSnap();
+  ops.shouldTransferToClosestPoint = false;
+  ops.shouldHandleMatching = mesh->hasMatching();
+  ops.shouldFixShape = true;
+  ops.shouldForceAdaptation = false;
+  ops.shouldPrintQuality = true;
+  if (mesh->getDimension()==3)
   {
-    in->_goodQuality = 0.027;
-    in->_maximumEdgeRatio = 2.0;
+    ops.goodQuality = 0.027;
+    ops.maximumEdgeRatio = 2.0;
   }
   else
-  { PCU_ALWAYS_ASSERT(in->mesh->getDimension()==2);
+  { PCU_ALWAYS_ASSERT(mesh->getDimension()==2);
     //old MA says .04, but that rarely kicks in.
     //.2 is strict, but at least quality goes up
-    in->_goodQuality = 0.2;
+    ops.goodQuality = 0.2;
     //this basically turns off short edge removal...
-    in->_maximumEdgeRatio = 100.0;
+    ops.maximumEdgeRatio = 100.0;
     //2D mesh adapt performs better if forceAdapt is on
-    in->_shouldForceAdaptation = true;
+    ops.shouldForceAdaptation = true;
   }
-  in->_shouldCheckQualityForDoubleSplits = false;
-  in->_validQuality = 1e-10;
-  in->_maximumImbalance = 1.10;
-  in->_shouldRunPreZoltan = false;
-  in->_shouldRunPreZoltanRib = false;
-  in->_shouldRunPreParma = false;
-  in->_shouldRunMidZoltan = false;
-  in->_shouldRunMidParma = false;
-  in->_shouldRunPostZoltan = false;
-  in->_shouldRunPostZoltanRib = false;
-  in->_shouldRunPostParma = false;
-  in->_shouldTurnLayerToTets = false;
-  in->_shouldCleanupLayer = false;
-  in->_shouldRefineLayer = false;
-  in->_shouldCoarsenLayer = false;
-  in->_splitAllLayerEdges = false;
-  in->_userDefinedLayerTagName = "";
-  in->shapeHandler = 0;
+  ops.shouldCheckQualityForDoubleSplits = false;
+  ops.validQuality = 1e-10;
+  ops.maximumImbalance = 1.10;
+  ops.shouldRunPreZoltan = false;
+  ops.shouldRunPreZoltanRib = false;
+  ops.shouldRunPreParma = false;
+  ops.shouldRunMidZoltan = false;
+  ops.shouldRunMidParma = false;
+  ops.shouldRunPostZoltan = false;
+  ops.shouldRunPostZoltanRib = false;
+  ops.shouldRunPostParma = false;
+  ops.shouldTurnLayerToTets = false;
+  ops.shouldCleanupLayer = false;
+  ops.shouldRefineLayer = false;
+  ops.shouldCoarsenLayer = false;
+  ops.splitAllLayerEdges = false;
+  ops.userDefinedLayerTagName = "";
 }
 
 void rejectInput(const char* str)
+{
+  if (PCU_Comm_Self() != 0)
+    return;
+  lion_eprint(1,"MeshAdapt input error:\n");
+  lion_eprint(1,"%s\n",str);
+  abort();
+}
+
+void rejectSetter(const char* str)
 {
   if (PCU_Comm_Self() != 0)
     return;
@@ -93,113 +102,105 @@ static bool moreThanOneOptionIsTrue(bool op1, bool op2, bool op3)
     return true;
   return false;
 }
-
-void validateInput(Input* in)
+void Input::validateInput()
 {
-  if ( ! in->sizeField)
+  if ( ! sizeField)
     rejectInput("no size field");
-  if ( ! in->solutionTransfer)
+  if ( ! solutionTransfer)
     rejectInput("no solution transfer object");
-  if (in->_maximumIterations < 0)
+  if (ops.maximumIterations < 0)
     rejectInput("negative maximum iteration count");
-  if (in->_maximumIterations > 10)
+  if (ops.maximumIterations > 10)
     rejectInput("unusually high maximum iteration count");
-  if (in->_shouldSnap
-    &&( ! in->mesh->canSnap()))
+  if (ops.shouldSnap
+    &&( ! mesh->canSnap()))
     rejectInput("user requested snapping "
                 "but the geometric model does not support it");
-  if (in->_shouldTransferParametric
-    &&( ! in->mesh->canSnap()))
+  if (ops.shouldTransferParametric
+    &&( ! mesh->canSnap()))
     rejectInput("user requested parametric coordinate transfer "
                 "but the geometric model does not support it");
-  if (in->_shouldTransferToClosestPoint
-    &&( ! in->mesh->canSnap()))
+  if (ops.shouldTransferToClosestPoint
+    &&( ! mesh->canSnap()))
     rejectInput("user requested transfer to closest point on model"
                 "but the geometric model does not support it");
-  if (in->_shouldSnap && ( ! (in->_shouldTransferParametric ||
-			     in->_shouldTransferToClosestPoint)))
+  if (ops.shouldSnap && ( ! (ops.shouldTransferParametric ||
+			     ops.shouldTransferToClosestPoint)))
     rejectInput("snapping requires parametric coordinate transfer or transfer to closest point");
-  if ((in->mesh->hasMatching())
-    &&( ! in->_shouldHandleMatching))
+  if ((mesh->hasMatching())
+    &&( ! ops.shouldHandleMatching))
     rejectInput("the mesh has matching entities but matched support is off");
-  if (in->_shouldHandleMatching
-    && in->_shouldFixShape)
+  if (ops.shouldHandleMatching
+    && ops.shouldFixShape)
     rejectInput("user requested matched mesh handling and shape correction "
         "but shape correction does not support matching yet");
-  if (in->_goodQuality < 0.0)
+  if (ops.goodQuality < 0.0)
     rejectInput("negative desired element quality");
-  if (in->_goodQuality > 1.0)
+  if (ops.goodQuality > 1.0)
     rejectInput("desired element quality greater than one");
-  if (in->_validQuality < 0.0)
+  if (ops.validQuality < 0.0)
     rejectInput("negative minimum element quality");
-  if (in->_maximumImbalance < 1.0)
+  if (ops.maximumImbalance < 1.0)
     rejectInput("maximum imbalance less than 1.0");
-  if (in->_maximumEdgeRatio < 1.0)
+  if (ops.maximumEdgeRatio < 1.0)
     rejectInput("maximum tet edge ratio less than one");
   if (moreThanOneOptionIsTrue(
-  	in->_shouldRunPreZoltan,
-  	in->_shouldRunPreZoltanRib,
-  	in->_shouldRunPreParma))
+  	ops.shouldRunPreZoltan,
+  	ops.shouldRunPreZoltanRib,
+  	ops.shouldRunPreParma))
     rejectInput("only one of Zoltan, ZoltanRib, and Parma PreBalance options can be set to true!");
   if (moreThanOneOptionIsTrue(
-  	in->_shouldRunPostZoltan,
-  	in->_shouldRunPostZoltanRib,
-  	in->_shouldRunPostParma))
+  	ops.shouldRunPostZoltan,
+  	ops.shouldRunPostZoltanRib,
+  	ops.shouldRunPostParma))
     rejectInput("only one of Zoltan, ZoltanRib, and Parma PostBalance options can be set to true!");
-  if (in->_shouldRunMidZoltan && in->_shouldRunMidParma)
+  if (ops.shouldRunMidZoltan && ops.shouldRunMidParma)
     rejectInput("only one of Zoltan and Parma MidBalance options can be set to true!");
 #ifndef PUMI_HAS_ZOLTAN
-  if (in->_shouldRunPreZoltan ||
-      in->_shouldRunPreZoltanRib ||
-      in->_shouldRunMidZoltan)
+  if (ops.shouldRunPreZoltan ||
+      ops.shouldRunPreZoltanRib ||
+      ops.shouldRunMidZoltan)
     rejectInput("core is not compiled with Zoltan. Use a different balancer or compile core with ENABLE_ZOLTAN=ON!");
 #endif
 }
 
-void updateMaxIterBasedOnSize(Input* in)
+void Input::updateMaxIterBasedOnSize()
 {
-  Mesh* m = in->mesh;
-  double maxMetricLength = getMaximumEdgeLength(m, in->sizeField);
+  double maxMetricLength = getMaximumEdgeLength(mesh, sizeField);
   int iter = std::ceil(std::log2(maxMetricLength));
   if (iter >= 10) {
     print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
     	"           which is equal to or larger than the maximum of 10 allowed.\n"
     	"           Setting the number of iteration to 10!", iter);
-    in->_maximumIterations = 10;
+    ops.maximumIterations = 10;
   }
   else {
     print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
     	"           Setting the number of iteration to %d!", iter, iter+1);
-    in->_maximumIterations = iter+1;
+    ops.maximumIterations = iter+1;
   }
 }
 
-void setSolutionTransfer(Input* in, SolutionTransfer* s)
-{
-  if (s)
-  {
-    in->solutionTransfer = s;
-    in->ownsSolutionTransfer = false;
-  }
-  else
-  {
-    in->solutionTransfer = new AutoSolutionTransfer(in->mesh);
-    in->ownsSolutionTransfer = true;
-  }
-}
-
-Input* configure(
+void Input::init(
     Mesh* m,
     SolutionTransfer* s)
 {
-  Input* in = new Input;
-  in->mesh = m;
-  setDefaultValues(in);
-  setSolutionTransfer(in,s);
-  return in;
+  /* Input* in = new Input; */
+  mesh = m;
+  setDefaultValues();
+  if (s)
+  {
+    solutionTransfer = s;
+    ownsSolutionTransfer = false;
+  }
+  else
+  {
+    solutionTransfer = new AutoSolutionTransfer(mesh);
+    ownsSolutionTransfer = true;
+  }
 }
 
-Input* configure(
+Input::Input(
     Mesh* m,
     AnisotropicFunction* f,
     SolutionTransfer* s,
@@ -210,10 +211,410 @@ Input* configure(
    AutoSolutionTransfer taking ownership of
    the metric field, which has its own built-in
    solution transfer */
-  Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, f, logInterpolation);
-  updateMaxIterBasedOnSize(in);
-  return in;
+  init(m,s);
+  sizeField = makeSizeField(m, f, logInterpolation);
+  updateMaxIterBasedOnSize();
+}
+
+Input::Input(
+    Mesh* m,
+    IsotropicFunction* f,
+    SolutionTransfer* s)
+{
+  init(m,s);
+  sizeField = makeSizeField(m, f);
+  updateMaxIterBasedOnSize();
+}
+
+Input::Input(
+    Mesh* m,
+    apf::Field* f,
+    SolutionTransfer* s)
+{
+  init(m,s);
+  if (f) {
+    sizeField = makeSizeField(m, f);
+    updateMaxIterBasedOnSize();
+  }
+}
+
+Input::Input(
+    Mesh* m,
+    apf::Field* sizes,
+    apf::Field* frames,
+    SolutionTransfer* s,
+    bool logInterpolation)
+{
+  init(m,s);
+  sizeField = makeSizeField(m, sizes, frames, logInterpolation);
+  updateMaxIterBasedOnSize();
+}
+
+Input::Input(Mesh* m, int n, SolutionTransfer* s)
+{
+  init(m,s);
+  sizeField = new UniformRefiner(m);
+  ops.maximumIterations = n;
+  ops.shouldRefineLayer = true;
+  ops.splitAllLayerEdges = true;
+}
+
+Input::Input(Mesh* m, SizeField* f, SolutionTransfer* s)
+{
+  init(m,s);
+  if (f)
+  {
+    sizeField = f;
+    ownsSizeField = false;
+  }
+  else
+  {
+    sizeField = new IdentitySizeField(m);
+    ownsSizeField = true;
+  }
+  ops.maximumIterations = 0;
+  ops.shouldFixShape = false;
+  ops.shouldSnap = false;
+}
+
+int Input::maximumIterations() { return ops.maximumIterations; }
+void Input::maximumIterations(int i)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.maximumIterations = i;
+    validateInput();
+  }
+}
+
+bool Input::shouldCoarsen() { return ops.shouldCoarsen; }
+void Input::shouldCoarsen(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldCoarsen = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldSnap() { return ops.shouldSnap; }
+void Input::shouldSnap(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldSnap = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldTransferParametric() { return ops.shouldTransferParametric; }
+void Input::shouldTransferParametric(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldTransferParametric = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldTransferToClosestPoint() { return ops.shouldTransferToClosestPoint; }
+void Input::shouldTransferToClosestPoint(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldTransferToClosestPoint = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldHandleMatching() { return ops.shouldHandleMatching; }
+void Input::shouldHandleMatching(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldHandleMatching = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldFixShape() { return ops.shouldFixShape; }
+void Input::shouldFixShape(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldFixShape = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldForceAdaptation() { return ops.shouldForceAdaptation; }
+void Input::shouldForceAdaptation(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldForceAdaptation = b;
+    validateInput();
+  }
+}
+/* void Input::shouldForceAdaptation(bool b) { ops.shouldFixShape = b; } */
+
+bool Input::shouldPrintQuality() { return ops.shouldPrintQuality; }
+void Input::shouldPrintQuality(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldPrintQuality = b;
+    validateInput();
+  }
+}
+
+double Input::goodQuality() { return ops.goodQuality; }
+void Input::goodQuality(double d)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.goodQuality = d;
+    validateInput();
+  }
+}
+
+bool Input::shouldCheckQualityForDoubleSplits() { return ops.shouldCheckQualityForDoubleSplits; }
+void Input::shouldCheckQualityForDoubleSplits(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldCheckQualityForDoubleSplits = b;
+    validateInput();
+  }
+}
+
+double Input::validQuality() { return ops.validQuality; }
+void Input::validQuality(double d)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.validQuality = d;
+    validateInput();
+  }
+}
+
+double Input::maximumImbalance() { return ops.maximumImbalance; }
+void Input::maximumImbalance(double d)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.maximumImbalance = d;
+    validateInput();
+  }
+}
+
+bool Input::shouldRunPreZoltan() { return ops.shouldRunPreZoltan; }
+void Input::shouldRunPreZoltan(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunPreZoltan = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldRunPreZoltanRib() { return ops.shouldRunPreZoltanRib; }
+void Input::shouldRunPreZoltanRib(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunPreZoltanRib = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldRunPreParma() { return ops.shouldRunPreParma; }
+void Input::shouldRunPreParma(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunPreParma = b;
+    validateInput();
+  }
+}
+
+
+bool Input::shouldRunMidZoltan() { return ops.shouldRunMidZoltan; }
+void Input::shouldRunMidZoltan(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunMidZoltan = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldRunMidParma() { return ops.shouldRunMidParma; }
+void Input::shouldRunMidParma(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunMidParma = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldRunPostZoltan() { return ops.shouldRunPostZoltan; }
+void Input::shouldRunPostZoltan(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunPostZoltan = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldRunPostZoltanRib() { return ops.shouldRunPostZoltanRib; }
+void Input::shouldRunPostZoltanRib(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunPostZoltanRib = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldRunPostParma() { return ops.shouldRunPostParma; }
+void Input::shouldRunPostParma(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRunPostParma = b;
+    validateInput();
+  }
+}
+
+double Input::maximumEdgeRatio() { return ops.maximumEdgeRatio; }
+void Input::maximumEdgeRatio(double d)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.maximumEdgeRatio = d;
+    validateInput();
+  }
+}
+
+bool Input::shouldTurnLayerToTets() { return ops.shouldTurnLayerToTets; }
+void Input::shouldTurnLayerToTets(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldTurnLayerToTets = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldCleanupLayer() { return ops.shouldCleanupLayer; }
+void Input::shouldCleanupLayer(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldCleanupLayer = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldRefineLayer() { return ops.shouldRefineLayer; }
+void Input::shouldRefineLayer(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldRefineLayer = b;
+    validateInput();
+  }
+}
+
+bool Input::shouldCoarsenLayer() { return ops.shouldCoarsenLayer; }
+void Input::shouldCoarsenLayer(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.shouldCoarsenLayer = b;
+    validateInput();
+  }
+}
+
+bool Input::splitAllLayerEdges() { return ops.splitAllLayerEdges; }
+void Input::splitAllLayerEdges(bool b)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.splitAllLayerEdges = b;
+    validateInput();
+  }
+}
+
+const char* Input::userDefinedLayerTagName() { return ops.userDefinedLayerTagName; }
+void Input::userDefinedLayerTagName(const char* c)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.userDefinedLayerTagName = c;
+    validateInput();
+  }
+}
+
+const char* Input::debugFolder() { return ops.debugFolder; }
+void Input::debugFolder(const char* c)
+{
+  if (!modifiable())
+    rejectSetter("Cannot change mesh adapt options for basic input!");
+  else {
+    ops.debugFolder = c;
+    validateInput();
+  }
+}
+
+
+
+Input* configure(
+    Mesh* m,
+    AnisotropicFunction* f,
+    SolutionTransfer* s,
+    bool logInterpolation)
+{
+  return new InputBasic(m, f, s, logInterpolation);
+}
+Input* configureAdvanced(
+    Mesh* m,
+    AnisotropicFunction* f,
+    SolutionTransfer* s,
+    bool logInterpolation)
+{
+  return new InputAdvanced(m, f, s, logInterpolation);
 }
 
 Input* configure(
@@ -221,10 +622,14 @@ Input* configure(
     IsotropicFunction* f,
     SolutionTransfer* s)
 {
-  Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, f);
-  updateMaxIterBasedOnSize(in);
-  return in;
+  return new InputBasic(m, f, s);
+}
+Input* configureAdvanced(
+    Mesh* m,
+    IsotropicFunction* f,
+    SolutionTransfer* s)
+{
+  return new InputAdvanced(m, f, s);
 }
 
 Input* configure(
@@ -232,12 +637,14 @@ Input* configure(
     apf::Field* f,
     SolutionTransfer* s)
 {
-  Input* in = configure(m,s);
-  if (f) {
-    in->sizeField = makeSizeField(m, f);
-    updateMaxIterBasedOnSize(in);
-  }
-  return in;
+  return new InputBasic(m, f, s);
+}
+Input* configureAdvanced(
+    Mesh* m,
+    apf::Field* f,
+    SolutionTransfer* s)
+{
+  return new InputAdvanced(m, f, s);
 }
 
 Input* configure(
@@ -247,47 +654,53 @@ Input* configure(
     SolutionTransfer* s,
     bool logInterpolation)
 {
-  Input* in = configure(m,s);
-  in->sizeField = makeSizeField(m, sizes, frames, logInterpolation);
-  updateMaxIterBasedOnSize(in);
-  return in;
+  return new InputBasic(m, sizes, frames, s, logInterpolation);
+}
+Input* configureAdvanced(
+    Mesh* m,
+    apf::Field* sizes,
+    apf::Field* frames,
+    SolutionTransfer* s,
+    bool logInterpolation)
+{
+  return new InputAdvanced(m, sizes, frames, s, logInterpolation);
 }
 
 Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
 {
-  Input* in = configure(m,s);
-  in->sizeField = new UniformRefiner(m);
-  in->_maximumIterations = n;
-  in->_shouldRefineLayer = true;
-  in->_splitAllLayerEdges = true;
-  return in;
+  return new InputBasic(m, n, s);
+}
+Input* configureUniformRefineAdvanced(Mesh* m, int n, SolutionTransfer* s)
+{
+  return new InputAdvanced(m, n, s);
 }
 
 Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
 {
-  Input* in = configureUniformRefine(m,n,s);
-  in->_shouldHandleMatching = true;
-  in->_shouldFixShape = false;
+  Input* inAdv = configureUniformRefineAdvanced(m,n,s);
+  inAdv->shouldHandleMatching(true);
+  inAdv->shouldFixShape(false);
+  // make an un-modifiable version
+  Input* in = new InputBasic(inAdv);
+  delete inAdv;
+  return in;
+}
+Input* configureMatchingAdvanced(Mesh* m, int n, SolutionTransfer* s)
+{
+  Input* in = configureUniformRefineAdvanced(m,n,s);
+  in->shouldHandleMatching(true);
+  in->shouldFixShape(false);
   return in;
 }
 
+
 Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
 {
-  Input* in = configure(m,s);
-  if (f)
-  {
-    in->sizeField = f;
-    in->ownsSizeField = false;
-  }
-  else
-  {
-    in->sizeField = new IdentitySizeField(m);
-    in->ownsSizeField = true;
-  }
-  in->_maximumIterations = 0;
-  in->_shouldFixShape = false;
-  in->_shouldSnap = false;
-  return in;
+  return new InputBasic(m, f, s);
+}
+Input* configureIdentityAdvanced(Mesh* m, SizeField* f, SolutionTransfer* s)
+{
+  return new InputAdvanced(m, f, s);
 }
 
 }

@@ -54,11 +54,6 @@ int main(int argc, char** argv)
   apf::writeVtkFiles("aniso_before",m);
   AnIso sf(m);
   ma::Input* in = ma::configure(m, &sf, 0, logInterpolation);
-  in->shouldRunPreZoltan = true;
-  in->shouldRunMidParma = true;
-  in->shouldRunPostParma = true;
-  in->shouldRefineLayer = true;
-  in->goodQuality = 0.2;
   ma::adapt(in);
   m->verify();
   if (logInterpolation)

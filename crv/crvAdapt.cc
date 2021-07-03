@@ -151,19 +151,19 @@ void clearTag(Adapt* a, ma::Entity* e)
 }
 // use an identity configuration but with default fixing values
 ma::Input* configureShapeCorrection(
-    ma::Mesh* m, apf::Field* f,
+    ma::Mesh* m, ma::SizeField* f,
     ma::SolutionTransfer* s)
 {
-  ma::Input* in = ma::configure(m,f,s);
-  /* in->shouldFixShape = true; */
-  /* in->shouldSnap = in->mesh->canSnap(); */
-  /* in->shouldTransferParametric = in->mesh->canSnap(); */
+  ma::Input* in = ma::configureIdentityAdvanced(m,f,s);
+  in->shouldFixShape(true);
+  in->shouldSnap(in->mesh->canSnap());
+  in->shouldTransferParametric(in->mesh->canSnap());
   return in;
 }
 
 static int fixInvalidElements(crv::Adapt* a)
 {
-  a->input->setShouldForceAdaptation(true);
+  a->input->shouldForceAdaptation(true);
   int count = crv::fixLargeBoundaryAngles(a)
             + crv::fixInvalidEdges(a);
   int originalCount = count;
@@ -180,7 +180,7 @@ static int fixInvalidElements(crv::Adapt* a)
 
   crv::fixLargeBoundaryAngles(a);
   ma::clearFlagFromDimension(a,ma::COLLAPSE | ma::BAD_QUALITY,1);
-  a->input->setShouldForceAdaptation(false);
+  a->input->shouldForceAdaptation(false);
   return originalCount - count;
 }
 
@@ -203,7 +203,7 @@ void adapt(ma::Input* in)
   in->shapeHandler = crv::getShapeHandler;
   ma::print("Curved Adaptation Version 2.0 !");
   double t0 = PCU_Time();
-  ma::validateInput(in);
+  in->validateInput();
   Adapt* a = new Adapt(in);
   ma::preBalance(a);
 

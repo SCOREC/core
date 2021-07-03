@@ -139,12 +139,12 @@ int main(int argc, char** argv)
 
   printClassCounts(m);
 
-  ma::Input* in = ma::configureUniformRefine(m, 1);
-  if (in->shouldSnap) {
-    in->shouldSnap = false;
-    PCU_ALWAYS_ASSERT(in->shouldTransferParametric);
+  ma::Input* in = ma::configureUniformRefineAdvanced(m, 1);
+  if (in->shouldSnap()) {
+    in->shouldSnap(false);
+    PCU_ALWAYS_ASSERT(in->shouldTransferParametric());
   }
-  in->shouldFixShape = false;
+  in->shouldFixShape(false);
   ma::adapt(in);
 
   printClassCounts(m);

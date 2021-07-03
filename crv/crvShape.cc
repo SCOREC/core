@@ -826,7 +826,7 @@ void fixCrvElementShapes(Adapt* a)
 {
   if ( ! a->input->shouldFixShape())
     return;
-  a->input->setShouldForceAdaptation(true);
+  a->input->shouldForceAdaptation(true);
   double t0 = PCU_Time();
   int count = markCrvBadQuality(a);
   int originalCount = count;
@@ -853,7 +853,7 @@ void fixCrvElementShapes(Adapt* a)
   double t1 = PCU_Time();
   ma::print("bad shapes down from %d to %d in %f seconds",
         originalCount,count,t1-t0);
-  a->input->setShouldForceAdaptation(false);
+  a->input->shouldForceAdaptation(false);
 }
 
 }

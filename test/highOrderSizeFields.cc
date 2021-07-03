@@ -153,10 +153,10 @@ void testAdapt(
     m->end(it);
   }
 
-  in = ma::configure(m, sizes, frames, 0, true);
-  in->shouldFixShape = true;
-  in->maximumIterations = 10;
-  in->shouldForceAdaptation = true;
+  in = ma::configureAdvanced(m, sizes, frames, 0, true);
+  in->shouldFixShape(true);
+  in->maximumIterations(10);
+  in->shouldForceAdaptation(true);
 
   std::stringstream ss;
   ss << "before_adapt_with_ho_sizefield_order_" << order;

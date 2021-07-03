@@ -135,10 +135,10 @@ static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
     return false;
   double q = adapter->input->validQuality();
   bool oldShouldForce = adapter->input->shouldForceAdaptation();
-  adapter->input->setShouldForceAdaptation(true);
+  adapter->input->shouldForceAdaptation(true);
   if ( ! collapse.tryBothDirections(q))
     return false;
-  adapter->input->setShouldForceAdaptation(oldShouldForce);
+  adapter->input->shouldForceAdaptation(oldShouldForce);
   collapse.destroyOldElements();
   return true;
 }

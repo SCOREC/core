@@ -46,12 +46,12 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   getConfig(argc,argv);
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
-  ma::Input* in = ma::configureUniformRefine(m, 1);
-  if (in->shouldSnap) {
-    in->shouldSnap = false;
-    PCU_ALWAYS_ASSERT(in->shouldTransferParametric);
+  ma::Input* in = ma::configureUniformRefineAdvanced(m, 1);
+  if (in->shouldSnap()) {
+    in->shouldSnap(false);
+    PCU_ALWAYS_ASSERT(in->shouldTransferParametric());
   }
-  in->shouldFixShape = false;
+  in->shouldFixShape(false);
   ma::adapt(in);
   m->writeNative(outFile);
   m->destroyNative();

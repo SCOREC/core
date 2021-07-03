@@ -54,11 +54,11 @@ int main(int argc, char** argv)
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
   Linear sf(m);
-  ma::Input* in = ma::configure(m, &sf);
-  in->shouldRunPreZoltan = true;
-  in->shouldRunMidParma = true;
-  in->shouldRunPostParma = true;
-  in->shouldRefineLayer = true;
+  ma::Input* in = ma::configureAdvanced(m, &sf);
+  in->shouldRunPreZoltan(true);
+  in->shouldRunMidParma(true);
+  in->shouldRunPostParma(true);
+  in->shouldRefineLayer(true);
   ma::adapt(in);
   m->verify();
   apf::writeVtkFiles("after",m);

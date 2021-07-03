@@ -411,7 +411,7 @@ void uniformAdaptByModelTag(
     int level)
 {
   ma::Input* in = ma::configureUniformRefine(m, 0);
-  ma::validateInput(in);
+  in->validateInput();
   ma::Adapt* a = new ma::Adapt(in);
   for(int i = 0; i < level; i++) {
     SplitByTag p(a, mtype, mtag);

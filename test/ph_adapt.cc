@@ -75,15 +75,16 @@ int main(int argc, char** argv)
   sam::multiplySF(m, szFld, 1.0);
   apf::writeVtkFiles("before",m);
   /* mesh adaptation */
-  ma::Input* ma_in = ma::configure(m, szFld);
-  ma_in->shouldRunPreZoltan = true;
-  ma_in->shouldRunMidParma = true;
-  ma_in->shouldRunPostParma = true;
-  ma_in->shouldSnap = in.snap;
-  ma_in->shouldTransferParametric = in.transferParametric;
+  // use the advanced version of configure since adapt options have to be changed by the user
+  ma::Input* ma_in = ma::configureAdvanced(m, szFld);
+  ma_in->shouldRunPreZoltan(true);
+  ma_in->shouldRunMidParma(true);
+  ma_in->shouldRunPostParma(true);
+  ma_in->shouldSnap(in.snap);
+  ma_in->shouldTransferParametric(in.transferParametric);
   if (m->hasMatching()) {
-    ma_in->shouldSnap = false;
-    ma_in->shouldFixShape = false;
+    ma_in->shouldSnap(false);
+    ma_in->shouldFixShape(false);
   }
   ma::adapt(ma_in);
   m->verify();

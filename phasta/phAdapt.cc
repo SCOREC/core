@@ -43,8 +43,8 @@ void setupMatching(ma::Input& in) {
   if (!PCU_Comm_Self())
     lion_oprint(1,"Matched mesh: disabling"
            " snapping, and shape correction,\n");
-  in.shouldSnap = false;
-  in.shouldFixShape = false;
+  in.shouldSnap(false);
+  in.shouldFixShape(false);
 }
 
 struct AdaptCallback : public Parma_GroupCode
@@ -57,25 +57,31 @@ struct AdaptCallback : public Parma_GroupCode
   AdaptCallback(apf::Mesh2* m, apf::Field* szfld, ph::Input* inp)
     : mesh(m), field(szfld), in(inp) { }
   void run(int) {
-    ma::Input* ma_in = ma::configure(mesh, field);
+    ma::Input* ma_in = ma::configureAdvanced(mesh, field);
     if( in ) {
       //chef defaults
-      ma_in->shouldRunPreZoltan = true;
-      ma_in->shouldRunMidParma = true;
-      ma_in->shouldRunPostParma = true;
+      ma_in->shouldRunPreZoltan(true);
+      ma_in->shouldRunMidParma(true);
+      ma_in->shouldRunPostParma(true);
       //override with user inputs if specified
+      bool parOp, zoltanOp, zoltanRibOp;
       setupBalance("preAdaptBalanceMethod", in->preAdaptBalanceMethod,
-          ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-          ma_in->shouldRunPreZoltanRib);
-      bool ignored;
+          parOp, zoltanOp, zoltanRibOp);
+      ma_in->shouldRunPreParma(parOp);
+      ma_in->shouldRunPreZoltan(zoltanOp);
+      ma_in->shouldRunPreZoltanRib(zoltanRibOp);
       setupBalance("midAdaptBalanceMethod", in->midAdaptBalanceMethod,
-          ma_in->shouldRunMidParma, ma_in->shouldRunMidZoltan, ignored);
+          parOp, zoltanOp, zoltanRibOp);
+      ma_in->shouldRunMidParma(parOp);
+      ma_in->shouldRunMidZoltan(zoltanOp);
       setupBalance("postAdaptBalanceMethod", in->postAdaptBalanceMethod,
-          ma_in->shouldRunPostParma, ma_in->shouldRunPostZoltan,
-          ma_in->shouldRunPostZoltanRib);
-      ma_in->shouldTransferParametric = in->transferParametric;
-      ma_in->shouldSnap = in->snap;
-      ma_in->maximumIterations = in->maxAdaptIterations;
+          parOp, zoltanOp, zoltanRibOp);
+      ma_in->shouldRunPostParma(parOp);
+      ma_in->shouldRunPostZoltan(zoltanOp);
+      ma_in->shouldRunPostZoltanRib(zoltanRibOp);
+      ma_in->shouldTransferParametric(in->transferParametric);
+      ma_in->shouldSnap(in->snap);
+      ma_in->maximumIterations(in->maxAdaptIterations);
       /*
         validQuality sets which elements will be accepted during mesh
         modification. If no boundary layers, you might bring this high (e.g,
@@ -83,9 +89,9 @@ struct AdaptCallback : public Parma_GroupCode
         high aspect ratio routinely produces quality measures in the e-6 to e-7
         range so, when there are layers, this needs to be O(1e-8).
       */
-      ma_in->validQuality = in->validQuality;
+      ma_in->validQuality(in->validQuality);
     } else {
-      ma_in->shouldRunPreZoltan = true;
+      ma_in->shouldRunPreZoltan(true);
     }
     if (mesh->hasMatching())
       ph::setupMatching(*ma_in);
@@ -156,11 +162,14 @@ static void runFromGivenSize(Input& in, apf::Mesh2* m)
 
 void tetrahedronize(Input& in, apf::Mesh2* m)
 {
-  ma::Input* ma_in = ma::configureIdentity(m);
+  ma::Input* ma_in = ma::configureIdentityAdvanced(m);
+  bool parOp, zoltanOp, zoltanRibOp;
   ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
-      ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-      ma_in->shouldRunPreZoltanRib);
-  ma_in->shouldTurnLayerToTets = true;
+      parOp, zoltanOp, zoltanRibOp);
+  ma_in->shouldRunPreParma(parOp);
+  ma_in->shouldRunPreZoltan(zoltanOp);
+  ma_in->shouldRunPreZoltanRib(zoltanRibOp);
+  ma_in->shouldTurnLayerToTets(true);
   ma::adapt(ma_in);
   m->verify();
 }
@@ -212,10 +221,13 @@ namespace chef {
 
   void adaptLevelSet(ph::Input& in, apf::Mesh2* m)
   {
-    ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
+    ma::Input* ma_in = ma::configureMatchingAdvanced(m, in.recursiveUR);
+    bool parOp, zoltanOp, zoltanRibOp;
     ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
-        ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-        ma_in->shouldRunPreZoltanRib);
+    	parOp, zoltanOp, zoltanRibOp);
+    ma_in->shouldRunPreParma(parOp);
+    ma_in->shouldRunPreZoltan(zoltanOp);
+    ma_in->shouldRunPreZoltanRib(zoltanRibOp);
     // get the level set
     apf::Field* soln = m->findField("solution");
     PCU_ALWAYS_ASSERT(soln);
@@ -234,27 +246,30 @@ namespace chef {
     }
     m->end(it);
     if (in.snap) {
-      if (!ma_in->shouldSnap)
+      if (!ma_in->shouldSnap())
         ph::fail("adapt.inp requests snapping but model doesn't support it\n");
     } else {
-      ma_in->shouldSnap = false;
+      ma_in->shouldSnap(false);
     }
     chef::adapt(m,szFld,in);
   }
 
   void uniformRefinement(ph::Input& in, apf::Mesh2* m)
   {
-    ma::Input* ma_in = ma::configureMatching(m, in.recursiveUR);
+    ma::Input* ma_in = ma::configureMatchingAdvanced(m, in.recursiveUR);
+    bool parOp, zoltanOp, zoltanRibOp;
     ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
-        ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-        ma_in->shouldRunPreZoltanRib);
-    ma_in->shouldRefineLayer = true;
-    ma_in->splitAllLayerEdges = in.splitAllLayerEdges;
+    	parOp, zoltanOp, zoltanRibOp);
+    ma_in->shouldRunPreParma(parOp);
+    ma_in->shouldRunPreZoltan(zoltanOp);
+    ma_in->shouldRunPreZoltanRib(zoltanRibOp);
+    ma_in->shouldRefineLayer(true);
+    ma_in->splitAllLayerEdges(in.splitAllLayerEdges);
     if (in.snap) {
-      if (!ma_in->shouldSnap)
+      if (!ma_in->shouldSnap())
         ph::fail("adapt.inp requests snapping but model doesn't support it\n");
     } else
-      ma_in->shouldSnap = false;
+      ma_in->shouldSnap(false);
     ma::adapt(ma_in);
   }
 }

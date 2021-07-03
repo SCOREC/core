@@ -54,17 +54,17 @@ int main(int argc, char** argv)
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
   Linear sf(m);
-  ma::Input* in = ma::configure(m, &sf);
+  ma::Input* in = ma::configureAdvanced(m, &sf);
   if (!PCU_Comm_Self())
     printf("Matched mesh: disabling"
            " snapping, and shape correction,\n");
-  in->shouldSnap = false;
-  in->shouldFixShape = false;
-  in->shouldTransferParametric = false;
-  in->shouldRunPreZoltan = true;
-  in->shouldRunMidParma = true;
-  in->shouldRunPostParma = true;
-  in->shouldRefineLayer = true;
+  in->shouldSnap(false);
+  in->shouldFixShape(false);
+  in->shouldTransferParametric(false);
+  in->shouldRunPreZoltan(true);
+  in->shouldRunMidParma(true);
+  in->shouldRunPostParma(true);
+  in->shouldRefineLayer(true);
   ma::adapt(in);
   m->verify();
   apf::writeVtkFiles("after",m);

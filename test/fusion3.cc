@@ -290,8 +290,8 @@ int main(int argc, char * argv[])
   apf::Mesh2* mesh=apf::loadMdsMesh(model, argv[1]);
   mesh->verify();
   Vortex sfv(mesh, center, modelLen);
-  ma::Input* in = ma::configure(mesh,&sfv);
-  in->maximumIterations = 9;
+  ma::Input* in = ma::configureAdvanced(mesh,&sfv);
+  in->maximumIterations(9);
   ma::adapt(in);
   mesh->verify();
   apf::writeVtkFiles("adapted",mesh);
