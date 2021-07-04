@@ -135,7 +135,7 @@ class Input
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms
  \param logInterpolation if true uses logarithmic interpolation */
-Input* configure(
+const Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
     SolutionTransfer* s=0,
@@ -143,7 +143,7 @@ Input* configure(
 /** \brief generate a configuration based on an isotropic function
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms */
-Input* configure(
+const Input* configure(
     Mesh* m,
     IsotropicFunction* f,
     SolutionTransfer* s=0);
@@ -155,7 +155,7 @@ Input* configure(
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms
  \param logInterpolation if true uses logarithmic interpolation */
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
@@ -165,20 +165,24 @@ Input* configure(
  \param size a scalar field of desired element size
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms */
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* size,
     SolutionTransfer* s=0);
 
 /** \brief generate a uniform refinement configuration */
-Input* configureUniformRefine(Mesh* m, int n=1, SolutionTransfer* s=0);
+const Input* configureUniformRefine(Mesh* m, int n=1, SolutionTransfer* s=0);
 /** \brief generate a matched uniform refinement configuration */
-Input* configureMatching(Mesh* m, int n=1, SolutionTransfer* s=0);
+const Input* configureMatching(Mesh* m, int n=1, SolutionTransfer* s=0);
 /** \brief generate a no-op configuration */
-Input* configureIdentity(Mesh* m, SizeField* f=0, SolutionTransfer* s=0);
+const Input* configureIdentity(Mesh* m, SizeField* f=0, SolutionTransfer* s=0);
 
 /** \brief used internally, but users can call this if they want */
 void validateInput(Input* in);
+
+/** \brief removes constant-ness from a constant Input pointer
+           so users can modify it */
+Input* makeAdvanced(const Input* in);
 
 }
 

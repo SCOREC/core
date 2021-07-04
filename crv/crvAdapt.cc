@@ -154,7 +154,7 @@ ma::Input* configureShapeCorrection(
     ma::Mesh* m, ma::SizeField* f,
     ma::SolutionTransfer* s)
 {
-  ma::Input* in = ma::configureIdentity(m,f,s);
+  ma::Input* in = ma::makeAdvanced(ma::configureIdentity(m,f,s));
   in->shouldFixShape = true;
   in->shouldSnap = in->mesh->canSnap();
   in->shouldTransferParametric = in->mesh->canSnap();

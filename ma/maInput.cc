@@ -188,7 +188,7 @@ void setSolutionTransfer(Input* in, SolutionTransfer* s)
   }
 }
 
-Input* configure(
+static Input* configure(
     Mesh* m,
     SolutionTransfer* s)
 {
@@ -199,7 +199,7 @@ Input* configure(
   return in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
     SolutionTransfer* s,
@@ -213,10 +213,10 @@ Input* configure(
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f, logInterpolation);
   updateMaxIterBasedOnSize(m, in);
-  return in;
+  return (const Input*)in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     IsotropicFunction* f,
     SolutionTransfer* s)
@@ -224,10 +224,10 @@ Input* configure(
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f);
   updateMaxIterBasedOnSize(m, in);
-  return in;
+  return (const Input*)in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* f,
     SolutionTransfer* s)
@@ -235,10 +235,10 @@ Input* configure(
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, f);
   updateMaxIterBasedOnSize(m, in);
-  return in;
+  return (const Input*)in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
@@ -248,28 +248,28 @@ Input* configure(
   Input* in = configure(m,s);
   in->sizeField = makeSizeField(m, sizes, frames, logInterpolation);
   updateMaxIterBasedOnSize(m, in);
-  return in;
+  return (const Input*)in;
 }
 
-Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
+const Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
 {
   Input* in = configure(m,s);
   in->sizeField = new UniformRefiner(m);
   in->maximumIterations = n;
   in->shouldRefineLayer = true;
   in->splitAllLayerEdges = true;
-  return in;
+  return (const Input*)in;
 }
 
-Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
+const Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
 {
-  Input* in = configureUniformRefine(m,n,s);
+  Input* in = makeAdvanced(configureUniformRefine(m,n,s));
   in->shouldHandleMatching = true;
   in->shouldFixShape = false;
-  return in;
+  return (const Input*)in;
 }
 
-Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
+const Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
 {
   Input* in = configure(m,s);
   if (f)
@@ -285,7 +285,12 @@ Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
   in->maximumIterations = 0;
   in->shouldFixShape = false;
   in->shouldSnap = false;
-  return in;
+  return (const Input*)in;
+}
+
+Input* makeAdvanced(const Input* in)
+{
+  return const_cast<Input*>(in);
 }
 
 }
