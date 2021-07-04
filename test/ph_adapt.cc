@@ -75,8 +75,9 @@ int main(int argc, char** argv)
   sam::multiplySF(m, szFld, 1.0);
   apf::writeVtkFiles("before",m);
   /* mesh adaptation */
-  // use the advanced version of configure since adapt options have to be changed by the user
-  ma::Input* ma_in = ma::configureAdvanced(m, szFld);
+  // since the Input properties are modified outside configure,
+  // make ma_in advanced by calling ma::makeAdvenced
+  ma::Input* ma_in = ma::makeAdvanced(ma::configure(m, szFld));
   ma_in->shouldRunPreZoltan(true);
   ma_in->shouldRunMidParma(true);
   ma_in->shouldRunPostParma(true);

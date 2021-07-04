@@ -227,7 +227,7 @@ void fixMatches(apf::Mesh2* m)
 
 void fixPyramids(apf::Mesh2* m)
 {
-  ma::Input* in = ma::configureIdentityAdvanced(m);
+  ma::Input* in = ma::makeAdvanced(ma::configureIdentity(m));
   in->shouldCleanupLayer(true);
   ma::adapt(in);
 }

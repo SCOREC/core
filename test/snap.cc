@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   gmi_sim_start();
   gmi_register_sim();
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
-  ma::Input* in = ma::configureIdentityAdvanced(m);
+  ma::Input* in = ma::makeAdvanced(ma::configureIdentity(m));
   in->shouldSnap(true);
   in->shouldTransferParametric(true);
   ma::adapt(in);

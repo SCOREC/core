@@ -290,7 +290,7 @@ int main(int argc, char * argv[])
   apf::Mesh2* mesh=apf::loadMdsMesh(model, argv[1]);
   mesh->verify();
   Vortex sfv(mesh, center, modelLen);
-  ma::Input* in = ma::configureAdvanced(mesh,&sfv);
+  ma::Input* in = ma::makeAdvanced(ma::configure(mesh,&sfv));
   in->maximumIterations(9);
   ma::adapt(in);
   mesh->verify();

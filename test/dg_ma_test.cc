@@ -54,7 +54,7 @@ int main(int argc, char** argv)
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
   Linear sf(m);
-  ma::Input* in = ma::configureAdvanced(m, &sf);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   if (!PCU_Comm_Self())
     printf("Matched mesh: disabling"
            " snapping, and shape correction,\n");

@@ -410,7 +410,7 @@ void uniformAdaptByModelTag(
     int mtag,
     int level)
 {
-  ma::Input* in = ma::configureUniformRefine(m, 0);
+  ma::Input* in = makeAdvanced(ma::configureUniformRefine(m, 0));
   in->validateInput();
   ma::Adapt* a = new ma::Adapt(in);
   for(int i = 0; i < level; i++) {

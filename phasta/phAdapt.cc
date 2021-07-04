@@ -57,7 +57,7 @@ struct AdaptCallback : public Parma_GroupCode
   AdaptCallback(apf::Mesh2* m, apf::Field* szfld, ph::Input* inp)
     : mesh(m), field(szfld), in(inp) { }
   void run(int) {
-    ma::Input* ma_in = ma::configureAdvanced(mesh, field);
+    ma::Input* ma_in = ma::makeAdvanced(ma::configure(mesh, field));
     if( in ) {
       //chef defaults
       ma_in->shouldRunPreZoltan(true);
@@ -162,7 +162,7 @@ static void runFromGivenSize(Input& in, apf::Mesh2* m)
 
 void tetrahedronize(Input& in, apf::Mesh2* m)
 {
-  ma::Input* ma_in = ma::configureIdentityAdvanced(m);
+  ma::Input* ma_in = ma::makeAdvanced(ma::configureIdentity(m));
   bool parOp, zoltanOp, zoltanRibOp;
   ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
       parOp, zoltanOp, zoltanRibOp);
@@ -221,7 +221,7 @@ namespace chef {
 
   void adaptLevelSet(ph::Input& in, apf::Mesh2* m)
   {
-    ma::Input* ma_in = ma::configureMatchingAdvanced(m, in.recursiveUR);
+    ma::Input* ma_in = ma::makeAdvanced(ma::configureMatching(m, in.recursiveUR));
     bool parOp, zoltanOp, zoltanRibOp;
     ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
     	parOp, zoltanOp, zoltanRibOp);
@@ -256,7 +256,7 @@ namespace chef {
 
   void uniformRefinement(ph::Input& in, apf::Mesh2* m)
   {
-    ma::Input* ma_in = ma::configureMatchingAdvanced(m, in.recursiveUR);
+    ma::Input* ma_in = ma::makeAdvanced(ma::configureMatching(m, in.recursiveUR));
     bool parOp, zoltanOp, zoltanRibOp;
     ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
     	parOp, zoltanOp, zoltanRibOp);

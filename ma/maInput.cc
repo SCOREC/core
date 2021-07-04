@@ -26,6 +26,17 @@ Input::~Input()
     delete solutionTransfer;
 }
 
+Input::Input(const Input& in)
+{
+  this->ops = in.ops;
+  this->mesh = in.mesh;
+  this->sizeField = in.sizeField;
+  this->ownsSizeField = in.ownsSizeField;
+  this->solutionTransfer = in.solutionTransfer;
+  this->ownsSolutionTransfer = in.ownsSolutionTransfer;
+  this->shapeHandler = in.shapeHandler;
+}
+
 void Input::setDefaultValues()
 {
   ownsSizeField = true;
@@ -277,372 +288,63 @@ Input::Input(Mesh* m, SizeField* f, SolutionTransfer* s)
   ops.shouldSnap = false;
 }
 
-int Input::maximumIterations() { return ops.maximumIterations; }
-void Input::maximumIterations(int i)
+Input* makeAdvanced(const Input* in)
 {
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.maximumIterations = i;
+  return const_cast<Input*>(in);
 }
 
-bool Input::shouldCoarsen() { return ops.shouldCoarsen; }
-void Input::shouldCoarsen(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldCoarsen = b;
-}
-
-bool Input::shouldSnap() { return ops.shouldSnap; }
-void Input::shouldSnap(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldSnap = b;
-}
-
-bool Input::shouldTransferParametric() { return ops.shouldTransferParametric; }
-void Input::shouldTransferParametric(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldTransferParametric = b;
-}
-
-bool Input::shouldTransferToClosestPoint() { return ops.shouldTransferToClosestPoint; }
-void Input::shouldTransferToClosestPoint(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldTransferToClosestPoint = b;
-}
-
-bool Input::shouldHandleMatching() { return ops.shouldHandleMatching; }
-void Input::shouldHandleMatching(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldHandleMatching = b;
-}
-
-bool Input::shouldFixShape() { return ops.shouldFixShape; }
-void Input::shouldFixShape(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldFixShape = b;
-}
-
-bool Input::shouldForceAdaptation() { return ops.shouldForceAdaptation; }
-void Input::shouldForceAdaptation(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldForceAdaptation = b;
-}
-/* void Input::shouldForceAdaptation(bool b) { ops.shouldFixShape = b; } */
-
-bool Input::shouldPrintQuality() { return ops.shouldPrintQuality; }
-void Input::shouldPrintQuality(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldPrintQuality = b;
-}
-
-double Input::goodQuality() { return ops.goodQuality; }
-void Input::goodQuality(double d)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.goodQuality = d;
-}
-
-bool Input::shouldCheckQualityForDoubleSplits() { return ops.shouldCheckQualityForDoubleSplits; }
-void Input::shouldCheckQualityForDoubleSplits(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldCheckQualityForDoubleSplits = b;
-}
-
-double Input::validQuality() { return ops.validQuality; }
-void Input::validQuality(double d)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.validQuality = d;
-}
-
-double Input::maximumImbalance() { return ops.maximumImbalance; }
-void Input::maximumImbalance(double d)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.maximumImbalance = d;
-}
-
-bool Input::shouldRunPreZoltan() { return ops.shouldRunPreZoltan; }
-void Input::shouldRunPreZoltan(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunPreZoltan = b;
-}
-
-bool Input::shouldRunPreZoltanRib() { return ops.shouldRunPreZoltanRib; }
-void Input::shouldRunPreZoltanRib(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunPreZoltanRib = b;
-}
-
-bool Input::shouldRunPreParma() { return ops.shouldRunPreParma; }
-void Input::shouldRunPreParma(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunPreParma = b;
-}
-
-
-bool Input::shouldRunMidZoltan() { return ops.shouldRunMidZoltan; }
-void Input::shouldRunMidZoltan(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunMidZoltan = b;
-}
-
-bool Input::shouldRunMidParma() { return ops.shouldRunMidParma; }
-void Input::shouldRunMidParma(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunMidParma = b;
-}
-
-bool Input::shouldRunPostZoltan() { return ops.shouldRunPostZoltan; }
-void Input::shouldRunPostZoltan(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunPostZoltan = b;
-}
-
-bool Input::shouldRunPostZoltanRib() { return ops.shouldRunPostZoltanRib; }
-void Input::shouldRunPostZoltanRib(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunPostZoltanRib = b;
-}
-
-bool Input::shouldRunPostParma() { return ops.shouldRunPostParma; }
-void Input::shouldRunPostParma(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRunPostParma = b;
-}
-
-double Input::maximumEdgeRatio() { return ops.maximumEdgeRatio; }
-void Input::maximumEdgeRatio(double d)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.maximumEdgeRatio = d;
-}
-
-bool Input::shouldTurnLayerToTets() { return ops.shouldTurnLayerToTets; }
-void Input::shouldTurnLayerToTets(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldTurnLayerToTets = b;
-}
-
-bool Input::shouldCleanupLayer() { return ops.shouldCleanupLayer; }
-void Input::shouldCleanupLayer(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldCleanupLayer = b;
-}
-
-bool Input::shouldRefineLayer() { return ops.shouldRefineLayer; }
-void Input::shouldRefineLayer(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldRefineLayer = b;
-}
-
-bool Input::shouldCoarsenLayer() { return ops.shouldCoarsenLayer; }
-void Input::shouldCoarsenLayer(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.shouldCoarsenLayer = b;
-}
-
-bool Input::splitAllLayerEdges() { return ops.splitAllLayerEdges; }
-void Input::splitAllLayerEdges(bool b)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.splitAllLayerEdges = b;
-}
-
-const char* Input::userDefinedLayerTagName() { return ops.userDefinedLayerTagName; }
-void Input::userDefinedLayerTagName(const char* c)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.userDefinedLayerTagName = c;
-}
-
-const char* Input::debugFolder() { return ops.debugFolder; }
-void Input::debugFolder(const char* c)
-{
-  if (!modifiable())
-    rejectSetter("Cannot change mesh adapt options for basic input!");
-  else
-    ops.debugFolder = c;
-}
-
-
-
-Input* configure(
+const Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
     SolutionTransfer* s,
     bool logInterpolation)
 {
-  return new InputBasic(m, f, s, logInterpolation);
-}
-Input* configureAdvanced(
-    Mesh* m,
-    AnisotropicFunction* f,
-    SolutionTransfer* s,
-    bool logInterpolation)
-{
-  return new InputAdvanced(m, f, s, logInterpolation);
+  return new Input(m, f, s, logInterpolation);
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     IsotropicFunction* f,
     SolutionTransfer* s)
 {
-  return new InputBasic(m, f, s);
-}
-Input* configureAdvanced(
-    Mesh* m,
-    IsotropicFunction* f,
-    SolutionTransfer* s)
-{
-  return new InputAdvanced(m, f, s);
+  return new Input(m, f, s);
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* f,
     SolutionTransfer* s)
 {
-  return new InputBasic(m, f, s);
-}
-Input* configureAdvanced(
-    Mesh* m,
-    apf::Field* f,
-    SolutionTransfer* s)
-{
-  return new InputAdvanced(m, f, s);
+  return new Input(m, f, s);
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
     SolutionTransfer* s,
     bool logInterpolation)
 {
-  return new InputBasic(m, sizes, frames, s, logInterpolation);
-}
-Input* configureAdvanced(
-    Mesh* m,
-    apf::Field* sizes,
-    apf::Field* frames,
-    SolutionTransfer* s,
-    bool logInterpolation)
-{
-  return new InputAdvanced(m, sizes, frames, s, logInterpolation);
+  return new Input(m, sizes, frames, s, logInterpolation);
 }
 
-Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
+const Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
 {
-  return new InputBasic(m, n, s);
-}
-Input* configureUniformRefineAdvanced(Mesh* m, int n, SolutionTransfer* s)
-{
-  return new InputAdvanced(m, n, s);
+  return new Input(m, n, s);
 }
 
-Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
+const Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
 {
-  Input* inAdv = configureUniformRefineAdvanced(m,n,s);
+  const Input* in = configureUniformRefine(m,n,s);
+  Input* inAdv = makeAdvanced(in);
   inAdv->shouldHandleMatching(true);
   inAdv->shouldFixShape(false);
-  // make an un-modifiable version
-  Input* in = new InputBasic(inAdv);
-  delete inAdv;
-  return in;
-}
-Input* configureMatchingAdvanced(Mesh* m, int n, SolutionTransfer* s)
-{
-  Input* in = configureUniformRefineAdvanced(m,n,s);
-  in->shouldHandleMatching(true);
-  in->shouldFixShape(false);
-  return in;
+  return (const Input*) inAdv;
 }
 
-
-Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
+const Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
 {
-  return new InputBasic(m, f, s);
-}
-Input* configureIdentityAdvanced(Mesh* m, SizeField* f, SolutionTransfer* s)
-{
-  return new InputAdvanced(m, f, s);
+  return new Input(m, f, s);
 }
 
 }

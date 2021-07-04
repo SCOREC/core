@@ -55,7 +55,7 @@ int main(int argc, char** argv)
   crv::BezierCurver bc(m, order, 0);
   bc.run();
 
-  ma::Input* in = ma::configureUniformRefineAdvanced(m, level);
+  ma::Input* in = ma::makeAdvanced(ma::configureUniformRefine(m, level));
   if (in->shouldSnap()) {
     PCU_ALWAYS_ASSERT(in->shouldTransferParametric());
   }

@@ -119,7 +119,7 @@ void testAdapt(
   apf::Mesh2* m = apf::loadMdsMesh(g,mesh);
   m->verify();
 
-  ma::Input* in = ma::configureUniformRefine(m, 1, 0);
+  const ma::Input* in = ma::configureUniformRefine(m, 1, 0);
   ma::adapt(in);
 
   apf::FieldShape* fs = apf::getH1Shape(order);
@@ -153,16 +153,16 @@ void testAdapt(
     m->end(it);
   }
 
-  in = ma::configureAdvanced(m, sizes, frames, 0, true);
-  in->shouldFixShape(true);
-  in->maximumIterations(10);
-  in->shouldForceAdaptation(true);
+  ma::Input* inAdv = ma::makeAdvanced(ma::configure(m, sizes, frames, 0, true));
+  inAdv->shouldFixShape(true);
+  inAdv->maximumIterations(10);
+  inAdv->shouldForceAdaptation(true);
 
   std::stringstream ss;
   ss << "before_adapt_with_ho_sizefield_order_" << order;
   apf::writeVtkFiles(ss.str().c_str(), m);
   ss.str("");
-  ma::adaptVerbose(in);
+  ma::adaptVerbose(inAdv);
   ss << "after_adapt_with_ho_sizefield_order_" << order;
   apf::writeVtkFiles(ss.str().c_str(), m);
 

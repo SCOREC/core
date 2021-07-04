@@ -51,6 +51,11 @@ void adapt(Input* in)
   apf::printStats(m);
 }
 
+void adapt(const Input* in)
+{
+  adapt(makeAdvanced(in));
+}
+
 void adaptVerbose(Input* in, bool verbose)
 {
   print("version 2.0 - dev !");
@@ -113,6 +118,11 @@ void adaptVerbose(Input* in, bool verbose)
   double t1 = PCU_Time();
   print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(m);
+}
+
+void adaptVerbose(const Input* in, bool verbose)
+{
+  adaptVerbose(makeAdvanced(in), verbose);
 }
 
 

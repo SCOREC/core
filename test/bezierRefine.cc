@@ -223,7 +223,7 @@ void test2D()
       }
       }
       double v0 = measureMesh(m);
-      ma::Input* inRefine = ma::configureUniformRefineAdvanced(m,1);
+      ma::Input* inRefine = ma::makeAdvanced(ma::configureUniformRefine(m,1));
       inRefine->shouldSnap(true);
       inRefine->shouldTransferParametric(true);
       if(order > 1)
@@ -270,7 +270,7 @@ void test3D()
     bc.run();
 
     double v0 = measureMesh(m);
-    ma::Input* inRefine = ma::configureUniformRefineAdvanced(m,1);
+    ma::Input* inRefine = ma::makeAdvanced(ma::configureUniformRefine(m,1));
     inRefine->shouldSnap(false);
     inRefine->shouldTransferParametric(false);
     if(order > 1)
@@ -290,7 +290,7 @@ void test3D()
     bc.run();
 
     double v0 = measureMesh(m);
-    ma::Input* inRefine = ma::configureUniformRefineAdvanced(m,1);
+    ma::Input* inRefine = ma::makeAdvanced(ma::configureUniformRefine(m,1));
     inRefine->shouldSnap(false);
     inRefine->shouldTransferParametric(false);
     if(order > 1)
