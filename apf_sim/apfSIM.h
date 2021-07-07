@@ -60,6 +60,7 @@ class MeshSIM : public Mesh2
     void getResidence(MeshEntity* e, Parts& residence);
     MeshTag* createDoubleTag(const char* name, int size);
     MeshTag* createIntTag(const char* name, int size);
+    MeshTag* createIntTag(const char* name, pMeshDataId simTag, int size);
     MeshTag* createLongTag(const char* name, int size);
     MeshTag* findTag(const char* name);
     void destroyTag(MeshTag* tag);

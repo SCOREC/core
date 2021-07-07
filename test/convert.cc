@@ -222,20 +222,23 @@ int main(int argc, char** argv)
 //  three that already exist.  I suppose this is best accomplished by building a map of the 3D father nodes to a 2D father node number and
 //  increment that 2D father node counter as  we encounter nodes not yet on the list. This can aso take care of the fact that 3D father node
 //  needs to point a 2D fther node as well
-    int marked;
     for(i=0; i< 3 ; i++) { //FIXME logic for quads
-       if(!EN_getDataInt((pEntity)vrts[i],myFather,&marked)){  // not sure about marked yet
+       int* markedData;
+       if(!EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&markedData)){  // not sure about marked yet
          count2D++;
-         EN_attachDataInt((pEntity)vrts[i],myFather,count2D);
+         int* vtxData = new int[1];
+         vtxData[0] = count2D;
+         EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
        }  
     }
 
     double coordFather[nvert][3];
     int fatherIds[4]; //store the ids of the fathers (vertices) on the root face 
     for(i=0; i< 3 ; i++) { //FIXME logic for quads
-       int fatherId;
-       assert(EN_getDataInt((pEntity)vrts[i],myFather,&fatherId));
-       fatherIds[i] = fatherId;
+       int* fatherIdPtr;
+       const int exists = EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&fatherIdPtr);
+       assert(exists);
+       fatherIds[i] = fatherIdPtr[0];
        V_coord(vrts[i],coordFather[i]);
     }
 
@@ -282,7 +285,9 @@ int main(int argc, char** argv)
         }
 //FAIL        my2Dfath=fatherIds[i];  FAIL would have worked if Simmetrix Extrusions followed root ordering with dir 0 or 1 but they don't
         my2Dfath=fatherIds[iMin];
-        EN_attachDataInt((pEntity)sonVtx,myFather,my2Dfath);
+        int* vtxData = new int[1];
+        vtxData[0] = my2Dfath;
+        EN_attachDataPtr((pEntity)sonVtx,myFather,(void*)vtxData);
 //FAIL        i++;
      }
     PList_delete(listVn);
@@ -300,6 +305,8 @@ int main(int argc, char** argv)
 
 
   apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  apf::MeshSIM* cake = reinterpret_cast<apf::MeshSIM*>(simApfMesh);
+  cake->createIntTag("fathers2D", myFather, 1);
   double t2 = PCU_Time();
   if(!PCU_Comm_Self())
     fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);

@@ -542,6 +542,19 @@ class TagSIM
       comm = AttachDataCommu_new(unitSize/sizeof(int),0,count);
       PM_setMigrId(mesh,id);
     }
+    TagSIM(pParMesh m,
+           pMeshDataId simTag,
+           const char* n,
+           std::size_t unitSize,
+           int c):
+      count(c),
+      mesh(m),
+      id(simTag),
+      name(n)
+    {
+      comm = AttachDataCommu_new(unitSize/sizeof(int),0,count);
+      PM_setMigrId(mesh,id);
+    }
     virtual ~TagSIM()
     {
       MD_removeMeshCallback(id,CBdelete);
@@ -650,6 +663,14 @@ class IntTagSIM : public TagSIM
       return 1;
     }
 
+    IntTagSIM(pParMesh m, pMeshDataId simTag, const char* name, int c):
+      TagSIM(m,simTag,name,sizeof(int),c)
+    {
+      MD_setMeshCallback(id,CBdelete,deleteIntCB,this);
+      MD_setMeshCallback(id,CBmigrateOut,pm_sendIntArray,comm);
+      MD_setMeshCallback(id,CBmigrateIn,pm_recvIntArray,comm);
+    }
+
     IntTagSIM(pParMesh m, const char* name, int c):
       TagSIM(m,name,sizeof(int),c)
     {
@@ -749,6 +770,15 @@ MeshTag* MeshSIM::createIntTag(const char* name, int size)
   tags.push_back(tag);
   return reinterpret_cast<MeshTag*>(tag);
 }
+
+MeshTag* MeshSIM::createIntTag(const char* name, pMeshDataId simTag, int size)
+{
+  TagSIM* tag = new IntTagSIM(mesh,simTag,name,size);
+  tags.push_back(tag);
+  return reinterpret_cast<MeshTag*>(tag);
+}
+
+
 
 MeshTag* MeshSIM::createLongTag(const char* name, int size)
 {
