@@ -71,6 +71,7 @@ const char* smb_path = NULL;
 int should_log = 0;
 int should_fix_pyramids = 1;
 int should_attach_order = 0;
+int ExtruRootId =0;
 bool found_bad_arg = false;
 
 void getConfig(int argc, char** argv) {
@@ -81,6 +82,7 @@ void getConfig(int argc, char** argv) {
     {"no-pyramid-fix", no_argument, &should_fix_pyramids, 0},
     {"attach-order", no_argument, &should_attach_order, 1},
     {"enable-log", no_argument, &should_log, 2},
+    {"model-face-root", required_argument, 0, 'e'},
     {"native-model", required_argument, 0, 'n'},
     {0, 0, 0, 0}  // terminate the option array
   };
@@ -91,6 +93,7 @@ void getConfig(int argc, char** argv) {
     "  --no-pyramid-fix                Disable quad-connected pyramid tetrahedronization\n"
     "  --attach-order                  Attach the Simmetrix element order as a Numbering\n"
     "  --enable-log                    Enable Simmetrix logging\n"
+    "  --model-face-root               Model face that is root of extrusion from SimModeler\n"
     "  --native-model=/path/to/model   Load the native Parasolid or ACIS model that the GeomSim model uses\n";
 
   int option_index = 0;
@@ -101,6 +104,9 @@ void getConfig(int argc, char** argv) {
       case 0: // pyramid fix flag
       case 1: // attach order flag
       case 2: // enable simmetrix logging
+        break;
+      case 'e':
+        ExtruRootId = atoi(optarg);
         break;
       case 'n':
         gmi_native_path = optarg;
@@ -127,8 +133,8 @@ void getConfig(int argc, char** argv) {
   smb_path = argv[i++];
 
   if (!PCU_Comm_Self()) {
-    printf ("fix_pyramids %d attach_order %d enable_log %d\n",
-            should_fix_pyramids, should_attach_order, should_log);
+    printf ("fix_pyramids %d attach_order %d enable_log %d ExtruRootId %d\n",
+            should_fix_pyramids, should_attach_order, should_log, ExtruRootId);
     printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
       gmi_native_path, gmi_path, sms_path, smb_path);
   }
@@ -193,7 +199,7 @@ int main(int argc, char** argv)
 //  pVertex vrtsN[4]; 
   int dir, err;
   int count2D=0;
-  int wantedId=6176;
+//  int ExtruRootId=6176;
   pGFace gface;
   pGFace ExtruRootFace=NULL;
 //  pEntity ent;
@@ -204,7 +210,7 @@ int main(int argc, char** argv)
   GFIter gfIter=GM_faceIter(simModel);
   while ( (gface=GFIter_next(gfIter))) {
     int id = GEN_tag(gface); 
-    if(id==wantedId) ExtruRootFace=gface;
+    if(id==ExtruRootId) ExtruRootFace=gface;
   }
   assert(ExtruRootFace != NULL);
 
