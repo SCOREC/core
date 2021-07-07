@@ -17,6 +17,7 @@ namespace apf {
 
 class Mesh;
 class Mesh2;
+class MeshTag;
 class ModelEntity;
 class MeshEntity;
 
@@ -27,9 +28,10 @@ class MeshEntity;
   tool. */
 void convert(Mesh *in, Mesh2 *out,
              MeshEntity** nodes=NULL, MeshEntity** elems=NULL, bool copy_data=true);
+typedef long Gid;
 
 /** \brief a map from global ids to vertex objects */
-typedef std::map<int, MeshEntity*> GlobalToVert;
+typedef std::map<Gid, MeshEntity*> GlobalToVert;
 
 /** \brief construct a mesh from just a connectivity array
   \details this function is here to interface with very
@@ -45,7 +47,7 @@ typedef std::map<int, MeshEntity*> GlobalToVert;
 
   Note that all vertices will have zero coordinates, so
   it is often good to use apf::setCoords after this. */
-void construct(Mesh2* m, const int* conn, int nelem, int etype,
+void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert);
 
 /** \brief Assign coordinates to the mesh
@@ -59,6 +61,19 @@ void construct(Mesh2* m, const int* conn, int nelem, int etype,
 void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert);
 
+/** \brief Assign matching to the mesh
+  * \details
+  * Each peer provides a set of the matched entity global ids. An id set
+  * to -1 indicates that the vertex is not matched.  The ids most be ordered
+  * according to the global ids of the vertices. Peer 0 provides the ids
+  * for vertices 0 to m-1, peer to for m to n-1, ...
+  * After this call, all vertices in the apf::Mesh2 object have correct
+  * coordinates assigned.
+  */
+void setMatches(Mesh2* m, const Gid* matches, int nverts,
+    GlobalToVert& globalToVert);
+
+
 /** \brief convert an apf::Mesh2 object into a connectivity array
   \details this is useful for debugging the apf::convert function
   \param mesh the apf mesh
@@ -66,7 +81,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   \param etype apf::Mesh::Type
   \param cellDim dimension of elements (if embedded in a higher dimension manifold)
   */
-void destruct(Mesh2* m, int*& conn, int& nelem, int &etype, int cellDim = -1);
+void destruct(Mesh2* m, Gid*& conn, int& nelem, int &etype, int cellDim = -1);
 
 /** \brief get a contiguous set of global vertex coordinates
   \details this is used for debugging apf::setCoords */

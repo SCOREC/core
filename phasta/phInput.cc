@@ -89,6 +89,10 @@ static void setDefaults(Input& in)
   in.simSizeLowerBound = 0.0;
   in.simSizeUpperBound = 1.0e16;
   in.simMaxAdaptMeshElements = 1.0e16;
+  in.txtCoord = 0; // write coords.<part> in run directory if 1
+  in.spanAvg = 0; // prepare and write spanwise average arrays
+  in.nfathers = 0; // number of father nodes (# of pts in xy (2D) plane for z averaging)
+  in.nsons = 0; // number of sons for each father (constant nz for each father ONLY for ijk grids)
 }
 
 Input::Input()
@@ -176,6 +180,9 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
   dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
   dblMap["simMaxAdaptMeshElements"] = &in.simMaxAdaptMeshElements;
+  intMap["spanAverage"] = &in.spanAvg;
+  intMap["nfathers"] = &in.nfathers;
+  intMap["nsons"] = &in.nsons;
 }
 
 template <class T>

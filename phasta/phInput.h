@@ -201,6 +201,11 @@ class Input
     double simSizeUpperBound;
     /** \brief number of allowed mesh elements of adapted mesh */
     double simMaxAdaptMeshElements;
+    /* Stuff for spanwise averaging */
+    int spanAvg;
+    int txtCoord;
+    int nfathers;
+    int nsons;
 };
 
 int countNaturalBCs(Input& in);
