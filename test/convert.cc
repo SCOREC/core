@@ -12,6 +12,7 @@
 #include <apfConvert.h>
 #include <apfMesh2.h>
 #include <apfNumbering.h>
+#include <apfShape.h>
 #include <ma.h>
 #include <pcu_util.h>
 #include <cstdlib>
@@ -21,6 +22,20 @@
 
 #include <getopt.h>
 
+apf::Field* convert_my_tag(apf::Mesh* m, apf::MeshTag* t) {
+  apf::MeshEntity* vtx;
+  apf::MeshIterator* it = m->begin(0);
+  apf::Field* f = apf::createFieldOn(m, "fathers2D_field", apf::SCALAR);
+  int vals[1];
+  double vals_d;
+  while ((vtx = m->iterate(it))) {
+    m->getIntTag(vtx, t, vals);
+    vals_d = vals[0];
+    apf::setScalar(f, vtx, 0, vals_d);
+  }
+  m->end(it);
+  return f;
+}
 
 static void attachOrder(apf::Mesh* m)
 {
@@ -324,6 +339,10 @@ int main(int argc, char** argv)
   if (should_fix_pyramids) fixPyramids(mesh);
   mesh->verify();
   mesh->writeNative(smb_path);
+
+  auto ft = mesh->findTag("fathers2D");
+  convert_my_tag(mesh, ft);
+  apf::writeVtkFiles("foo", mesh);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
