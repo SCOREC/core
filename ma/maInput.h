@@ -35,6 +35,8 @@ class Input
 {
   public:
     ~Input();
+    Input() {} // default empty c-tor
+    Input(const Input& in); // copy c-tor
     Mesh* mesh;
     SizeField* sizeField;
     bool ownsSizeField;
