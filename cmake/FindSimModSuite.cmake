@@ -65,21 +65,21 @@ string(REGEX REPLACE
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 string(REGEX MATCH
-  "[0-9]+.[0-9]+-[0-9]+"
+  "[0-9]+[.][0-9]+-[0-9]+"
   SIM_VERSION
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 #VERSION_LESS and VERSION_GREATER need '.' delimited version strings.
 string(REGEX REPLACE
-  "([0-9]+.[0-9]+)-([0-9]+)"
+  "([0-9]+[.][0-9]+)-([0-9]+)"
   "\\1.\\2" SIM_DOT_VERSION
   "${SIM_VERSION}")
 string(REGEX REPLACE
-  "([0-9]+).([0-9]+)-([0-9]+)"
+  "([0-9]+)[.]([0-9]+)-([0-9]+)"
   "\\1" SIMMODSUITE_MAJOR_VERSION
   "${SIM_VERSION}")
 string(REGEX REPLACE
-  "([0-9]+).([0-9]+)-([0-9]+)"
+  "([0-9]+)[.]([0-9]+)-([0-9]+)"
   "\\3" SIMMODSUITE_MINOR_VERSION
   "${SIM_VERSION}")
 
