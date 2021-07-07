@@ -45,6 +45,10 @@ void adapt(Input* in)
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
   delete in;
   double t1 = PCU_Time();
   print("mesh adapted in %f seconds",t1-t0);
@@ -114,6 +118,10 @@ void adaptVerbose(Input* in, bool verbose)
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
   delete in;
   double t1 = PCU_Time();
   print("mesh adapted in %f seconds",t1-t0);

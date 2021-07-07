@@ -18,53 +18,6 @@
 
 namespace ma {
 
-Input::~Input()
-{
-  if (ownsSizeField)
-    delete sizeField;
-  if (ownsSolutionTransfer)
-    delete solutionTransfer;
-}
-
-Input::Input(const Input& in)
-{
-  mesh = in.mesh;
-  sizeField = in.sizeField ;
-  ownsSizeField = in.ownsSizeField;
-  solutionTransfer = in.solutionTransfer;
-  ownsSolutionTransfer = in.ownsSolutionTransfer;
-  shapeHandler = in.shapeHandler;
-  maximumIterations = in.maximumIterations;
-  shouldCoarsen = in.shouldCoarsen;
-  shouldSnap = in.shouldSnap;
-  shouldTransferParametric = in.shouldTransferParametric;
-  shouldTransferToClosestPoint = in.shouldTransferToClosestPoint;
-  shouldHandleMatching = in.shouldHandleMatching;
-  shouldFixShape = in.shouldFixShape;
-  shouldForceAdaptation = in.shouldForceAdaptation;
-  shouldPrintQuality = in.shouldPrintQuality;
-  goodQuality = in.goodQuality;
-  shouldCheckQualityForDoubleSplits = in.shouldCheckQualityForDoubleSplits;
-  validQuality = in.validQuality;
-  maximumImbalance = in.maximumImbalance;
-  shouldRunPreZoltan = in.shouldRunPreZoltan;
-  shouldRunPreZoltanRib = in.shouldRunPreZoltanRib;
-  shouldRunPreParma = in.shouldRunPreParma;
-  shouldRunMidZoltan = in.shouldRunMidZoltan;
-  shouldRunMidParma = in.shouldRunMidParma;
-  shouldRunPostZoltan = in.shouldRunPostZoltan;
-  shouldRunPostZoltanRib = in.shouldRunPostZoltanRib;
-  shouldRunPostParma = in.shouldRunPostParma;
-  maximumEdgeRatio = in.maximumEdgeRatio;
-  shouldTurnLayerToTets = in.shouldTurnLayerToTets;
-  shouldCleanupLayer = in.shouldCleanupLayer;
-  shouldRefineLayer = in.shouldRefineLayer;
-  shouldCoarsenLayer = in.shouldCoarsenLayer;
-  splitAllLayerEdges = in.splitAllLayerEdges;
-  userDefinedLayerTagName = in.userDefinedLayerTagName;
-  debugFolder = in.debugFolder;
-}
-
 void setDefaultValues(Input* in)
 {
   in->ownsSizeField = true;
@@ -329,7 +282,9 @@ const Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
 
 Input* makeAdvanced(const Input* in)
 {
-  return new Input(*in);
+  Input* in2 = new Input(*in);
+  delete in;
+  return in2;
 }
 
 }

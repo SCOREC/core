@@ -34,9 +34,9 @@ typedef ShapeHandler* (*ShapeHandlerFunction)(Adapt* a);
 class Input
 {
   public:
-    ~Input();
+    ~Input() {}
     Input() {} // default empty c-tor
-    Input(const Input& in); // copy c-tor
+    Input(const Input& in) = default; // copy c-tor
     Mesh* mesh;
     SizeField* sizeField;
     bool ownsSizeField;
