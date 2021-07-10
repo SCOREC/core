@@ -255,6 +255,8 @@ namespace {
       int val = tags[id];
       r->mesh->setIntTag(f, t, &val);
     }
+    lion_eprint(1, "set %d %s face tags\n",
+        nbdry, apf::Mesh::typeName[apfType]);
   }
 
   void setBoundaryTags(Reader* r, header* h) {
@@ -282,6 +284,8 @@ namespace {
     }
     free(vtx);
     free(tags);
+    lion_eprint(1, "set %d %s face tags\n",
+        nbdry, apf::Mesh::typeName[apfType]);
   }
 
   void classifyBoundaryElms(Reader* r, header* h) {
@@ -469,6 +473,7 @@ namespace {
     }
     free(vtx);
     free(elm_model_id);
+    lion_eprint(1, "read %d %s\n", nelms, apf::Mesh::typeName[apfType]);
   }
 
   void read2DElms(Reader* r, header* h) {
