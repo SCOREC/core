@@ -15,7 +15,7 @@ option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
 
 #requre c++11 without extensions
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSION "NO")
+set(CMAKE_CXX_EXTENSION OFF)
 set(CMAKE_CXX_STANDARD 11)
 
 xsdk_begin_package()
