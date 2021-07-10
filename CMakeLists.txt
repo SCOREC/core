@@ -11,9 +11,12 @@ project(SCOREC VERSION 2.2.6 LANGUAGES CXX C)
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
 
-option(SCOREC_ENABLE_CXX11 "enable compilation with c++11 support" NO)
-
 option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
+
+#requre c++11 without extensions
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSION "NO")
+set(CMAKE_CXX_STANDARD 11)
 
 xsdk_begin_package()
 bob_begin_package()
@@ -28,9 +31,6 @@ if(NOT USE_XSDK_DEFAULTS)
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
-  if(SCOREC_ENABLE_CXX11)
-    bob_cxx11_flags()
-  endif()
 endif()
 message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
