@@ -147,6 +147,7 @@ add_subdirectory(omega_h)
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
+target_compile_features(core INTERFACE cxx_std_11)
 scorec_export_library(core)
 
 #check for mallinfo2
