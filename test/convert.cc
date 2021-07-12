@@ -42,7 +42,7 @@ static void fixPyramids(apf::Mesh2* m)
     return; /* no pyramids exist in 2D */
   if (apf::countEntitiesOfType(m, apf::Mesh::HEX))
     return; /* meshadapt can't even look at hexes */
-  ma::Input* in = ma::configureIdentity(m);
+  ma::Input* in = ma::makeAdvanced(ma::configureIdentity(m));
   in->shouldCleanupLayer = true;
   ma::adapt(in);
 }

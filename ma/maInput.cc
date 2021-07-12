@@ -18,14 +18,6 @@
 
 namespace ma {
 
-Input::~Input()
-{
-  if (ownsSizeField)
-    delete sizeField;
-  if (ownsSolutionTransfer)
-    delete solutionTransfer;
-}
-
 void setDefaultValues(Input* in)
 {
   in->ownsSizeField = true;
@@ -188,7 +180,7 @@ void setSolutionTransfer(Input* in, SolutionTransfer* s)
   }
 }
 
-Input* configure(
+static Input* configure(
     Mesh* m,
     SolutionTransfer* s)
 {
@@ -199,7 +191,7 @@ Input* configure(
   return in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
     SolutionTransfer* s,
@@ -216,7 +208,7 @@ Input* configure(
   return in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     IsotropicFunction* f,
     SolutionTransfer* s)
@@ -227,7 +219,7 @@ Input* configure(
   return in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* f,
     SolutionTransfer* s)
@@ -238,7 +230,7 @@ Input* configure(
   return in;
 }
 
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
@@ -251,7 +243,7 @@ Input* configure(
   return in;
 }
 
-Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
+const Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
 {
   Input* in = configure(m,s);
   in->sizeField = new UniformRefiner(m);
@@ -261,15 +253,15 @@ Input* configureUniformRefine(Mesh* m, int n, SolutionTransfer* s)
   return in;
 }
 
-Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
+const Input* configureMatching(Mesh* m, int n, SolutionTransfer* s)
 {
-  Input* in = configureUniformRefine(m,n,s);
+  Input* in = makeAdvanced(configureUniformRefine(m,n,s));
   in->shouldHandleMatching = true;
   in->shouldFixShape = false;
   return in;
 }
 
-Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
+const Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
 {
   Input* in = configure(m,s);
   if (f)
@@ -286,6 +278,13 @@ Input* configureIdentity(Mesh* m, SizeField* f, SolutionTransfer* s)
   in->shouldFixShape = false;
   in->shouldSnap = false;
   return in;
+}
+
+Input* makeAdvanced(const Input* in)
+{
+  Input* in2 = new Input(*in);
+  delete in;
+  return in2;
 }
 
 }

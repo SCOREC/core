@@ -190,7 +190,7 @@ static void migrateForLayerCollapse(Adapt* a, int d, int round)
 }
 
 void localizeLayerStacks(Mesh* m) {
-  Input* in = configureIdentity(m);
+  Input* in = makeAdvanced(configureIdentity(m));
   Adapt* a = new Adapt(in);
   //mark layer bases
   findLayerBase(a);

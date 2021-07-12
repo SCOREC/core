@@ -122,6 +122,11 @@ ma::Input* configureShapeCorrection(
   note that this function will delete the Input object */
 void adapt(ma::Input* in);
 
+/** \brief crv adapt with custom configuration
+  \details see maInput.h for details.
+  note that this function will delete the Input object */
+void adapt(const ma::Input* in);
+
 /** \brief crv stats to get statistic information about the mesh
   \details statistic considered are (1)final/desired edge-lengths
   (2) linear quality (3) curved quality (minJ/maxJ)

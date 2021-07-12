@@ -179,10 +179,7 @@ int main(int argc, char** argv)
 
   apf::writeVtkFiles("initial_mesh_on_analytic_model", m);
 
-  ma::Input* in = ma::configureUniformRefine(m, 2);
-  in->shouldSnap = true;
-  in->shouldTransferParametric = true;
-  in->shouldFixShape = true;
+  const ma::Input* in = ma::configureUniformRefine(m, 2);
   ma::adapt(in);
 
   apf::writeVtkFiles("adapted_mesh_on_analytic_model", m);
