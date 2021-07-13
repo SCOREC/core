@@ -273,21 +273,21 @@ if(ENABLE_SIMMETRIX)
     "pipe_unif.smb"
     "pipe.smb")
 endif()
-mpi_test(ma_serial 1
-  ./ma_test
-  "${MDIR}/pipe.${GXT}"
-  "pipe.smb")
-mpi_test(aniso_ma_serial 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "0")
-mpi_test(aniso_ma_serial_log_interpolation 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "1")
 if(ENABLE_ZOLTAN)
+  mpi_test(ma_serial 1
+    ./ma_test
+    "${MDIR}/pipe.${GXT}"
+    "pipe.smb")
+  mpi_test(aniso_ma_serial 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "0")
+  mpi_test(aniso_ma_serial_log_interpolation 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "1")
   mpi_test(torus_ma_parallel 4
     ./torus_ma_test
     "${MESHES}/torus/torus.dmg"
@@ -623,11 +623,13 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/upright.smd"
       "67k")
     endif()
-    # adapt_meshgen uses the output of parallel_meshgen
-    mpi_test(adapt_meshgen 4
-      ./ma_test
-      "${MDIR}/upright.smd"
-      "67k/")
+    if(ENABLE_ZOLTAN)
+      # adapt_meshgen uses the output of parallel_meshgen
+      mpi_test(adapt_meshgen 4
+        ./ma_test
+        "${MDIR}/upright.smd"
+        "67k/")
+    endif()
   endif()
   if(SIM_PARASOLID)
     mpi_test(convert_para 1
