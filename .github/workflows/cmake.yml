@@ -19,7 +19,7 @@ jobs:
       run: cmake -E make_directory ${{runner.workspace}}/build
 
     - name: download meshes
-      run: ls pumi-meshes
+      run: git submodule init && git submodule update
 
     - name: Configure CMake
       shell: bash
