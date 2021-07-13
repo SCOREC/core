@@ -33,7 +33,7 @@ jobs:
            -DCMAKE_C_COMPILER=mpicc
            -DCMAKE_VERBOSE_MAKEFILE=on
            -DMESHES=${GITHUB_WORKSPACE}/pumi-meshes
-           -DBUILD_TESTING=ON
+           -DIS_TESTING=ON
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
