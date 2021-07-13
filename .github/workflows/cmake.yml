@@ -14,6 +14,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    
+    - name: install mpich
+      run: sudo apt install mpich
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
