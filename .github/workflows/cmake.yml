@@ -10,7 +10,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: download meshes
-      run: git submodule init && git submodule update
+      working-directory: $GITHUB_WORKSPACE
+      run: git submodule init
+           git submodule update
     - name: install mpich
       run: sudo apt install mpich
 
