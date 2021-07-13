@@ -10,10 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: download meshes
-      run: git submodule init
-           git submodule update
-           ls -altr
-           pwd
+      run: git submodule init && git submodule update
     - name: install mpich
       run: sudo apt install mpich
 
@@ -27,11 +24,8 @@ jobs:
         compiler: [g++, clang++]
 
     steps:
-    - uses: actions/checkout@v2
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build-${{ matrix.compiler }}
-           ls -altr
-           pwd
 
     - name: Configure CMake
       shell: bash
