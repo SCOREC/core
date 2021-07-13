@@ -514,7 +514,7 @@ class StkBridge
       stk::mesh::EntityRank rank = stk::topology::NODE_RANK;
       if (isQP)
         rank = stk::topology::ELEMENT_RANK;
-      bulkData->get_buckets(rank, overlapSelector, buckets);
+      buckets = bulkData->get_buckets(rank, overlapSelector);
       GlobalMap* globalIdsToEnts = &globalIdsToVerts;
       if (isQP)
         globalIdsToEnts = &globalIdsToElems;
