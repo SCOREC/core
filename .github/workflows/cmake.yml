@@ -20,7 +20,7 @@ jobs:
 
     - name: download meshes
       working-directory: $GITHUB_WORKSPACE
-      run: git submodule init && git submodule update
+      run: ls pumi-meshes
 
     - name: Configure CMake
       shell: bash
