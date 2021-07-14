@@ -802,6 +802,7 @@ int main(int argc, char** argv)
   gmi_model* model = apf::makeMdsBox(2,2,2,1,1,1,0);
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
+  PCU_Debug_Open();
   apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);
   delete [] m.elements;
   apf::alignMdsRemotes(mesh);
