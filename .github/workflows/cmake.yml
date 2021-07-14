@@ -1,0 +1,46 @@
+name: CMake test matrix
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+jobs:
+  build:
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: install mpich
+      run: sudo apt install mpich
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: download meshes
+      run: git submodule init && git submodule update
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: export MPICXX=${{ matrix.compiler }} && 
+           cmake $GITHUB_WORKSPACE
+           -DCMAKE_CXX_COMPILER=mpicxx
+           -DCMAKE_C_COMPILER=mpicc
+           -DCMAKE_VERBOSE_MAKEFILE=on
+           -DMESHES=${GITHUB_WORKSPACE}/pumi-meshes
+           -DIS_TESTING=ON
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build .
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: ctest --output-on-failure
