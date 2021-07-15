@@ -36,18 +36,18 @@ static void constructElements(
     Downward verts;
     int offset = i * nev;
     Gid vCur=conn[offset];
-    Gid vNext=-1;
     int uniqueVerts=1;
-    for (int j = 0; j < nev; ++j) {
-      if(irep ==0){
-        verts[j] = globalToVert[vCur]; // conn[j + offset]];
-        vNext=conn[j+1+offset];
-        if(vNext == vCur) irep=1; // this was last one
-        else vCur=vNext; // Keep going but set this to what it needs next
-        uniqueVerts=j;
+    verts[0]=globalToVert[vCur];
+    Gid vPrev=vCur;
+    for (int j = 1; j < nev; ++j) {
+      vCur=conn[j+offset];
+      if (vCur != vPrev) { // multi-topology determined by repeating last used vtx
+         verts[j] = globalToVert[vCur]; 
+         uniqueVerts++;
+         vPrev=vCur; // for next check
       } 
     }
-    uniqueVerts++;
+
     if(uniqueVerts==4) etypeL=apf::Mesh::TET;
     if(uniqueVerts==5) etypeL=apf::Mesh::PYRAMID;
     if(uniqueVerts==6) etypeL=apf::Mesh::PRISM;
