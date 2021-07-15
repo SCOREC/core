@@ -174,9 +174,9 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
       residence.insert(part);
     }
     APF_ITERATE(GlobalToVert, globalToVert, it) {
-      Gid gid = it->first;  
-      if(gid < 0 )      
-          lion_eprint(1, "constructResidence cgTV3.45: self=%d,gid=%ld \n",self2,gid);
+      Gid gid2 = it->first;  
+      if(gid2 < 0 )      
+          lion_eprint(1, "constructResidence cgTV3.45: self=%d,gid=%ld \n",self2,gid2);
     }
     MeshEntity* vert = globalToVert[gid];
     m->setResidence(vert, residence);
