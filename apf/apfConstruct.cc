@@ -152,9 +152,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     PCU_COMM_UNPACK(gid);
     int from = PCU_Comm_Sender();
     Gid tmpL=gid - myOffset; // forcing 64 bit difference until we know it is safe
-    if (self == (peers - 1)) lion_eprint(1, "CR6: tmpL=%ld,myOffset=%ld,gid=%ld \n",tmpL,myOffset,gid);
     int tmpI=tmpL;
-    if (self == (peers - 1)) lion_eprint(1, "CR7: tmpI=%d \n",tmpI);
     tmpParts.at(tmpI).push_back(from);
   }
   APF_ITERATE(GlobalToVert, globalToVert, it) {
@@ -205,7 +203,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     for (int i = 0; i < nparts; ++i) {
       int part;
       PCU_COMM_UNPACK(part);
-      //residence.insert(part); //one less suspect
+      residence.insert(part); //one less suspect
     }
     APF_ITERATE(GlobalToVert, globalToVert, it) {
       Gid gid2 = it->first;  
