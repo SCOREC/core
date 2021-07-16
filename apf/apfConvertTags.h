@@ -81,7 +81,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
   int self = PCU_Comm_Self();
   if (self == (peers - 1))
     mySize += remainder;
-  apf::Gid myOffset = self * quotient;
+  apf::Gid myOffset = (long)self * quotient;
 
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some coords */

@@ -114,28 +114,36 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
   /* if we have a vertex, send its global id to the
      broker for that global id */
   PCU_Comm_Begin();
+  int sometimes=0;
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
     if(gid < 0 || gid > max ){ 
         lion_eprint(1, "constructResidence cgTV3: self=%d,gid=%ld \n",self2,gid);
     }
-    if (self == (peers - 1)) 
-      lion_eprint(1, "CR2: quotient=%d,mySize=%d,gid=%ld \n",quotient,mySize,gid);
+    sometimes++;
+    if (self == (peers - 1)&& (sometimes%10000==1)) 
+      lion_eprint(1, "CR2: quotient=%d,mySize=%d,gid=%ld,itcount=%d \n",quotient,mySize,gid,sometimes);
     Gid tmpL=gid / quotient;
     int tmpI=tmpL;
-    if (self == (peers - 1)) lion_eprint(1, "CR3: tmpI=%d,peers=%d,quotient=%d \n",tmpI,peers,quotient);
+    if (self == (peers - 1)&& (sometimes%10000==1)) lion_eprint(1, "CR3: tmpI=%d,peers=%d,quotient=%d,itcount=%d \n",tmpI,peers,quotient,sometimes);
     int to = std::min(peers - 1,tmpI); 
-    if (self == (peers - 1)) lion_eprint(1, "CR4: to=%d,peers=%d,gid=%ld \n",to,peers,gid);
+    if (self == (peers - 1)&& (quotient<0)) lion_eprint(1, "CR3.5: tmpI=%d,peers=%d,quotient=%d,itcount=%d \n",tmpI,peers,quotient,sometimes);
+    if (self == (peers - 1)&& (sometimes%10000==1)) lion_eprint(1, "CR4: to=%d,peers=%d,gid=%ld,itCount=%d \n",to,peers,gid,sometimes);
     PCU_COMM_PACK(to, gid);
+    if (self == (peers - 1)&& (quotient<0)) lion_eprint(1, "CR4.125: tmpI=%d,peers=%d,quotient=%d,itcount=%d \n",tmpI,peers,quotient,sometimes);
   }
+  Gid myOffset3 = self * quotientL;
+  if (self == (peers - 1)) lion_eprint(1, "CR4.25: self=%d,myOffset=%ld,quotient=%ld \n",self,myOffset3,quotientL);
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
     if(gid < 0 || gid > max ){ 
         lion_eprint(1, "constructResidence cgTV3.1: self=%d,gid=%ld \n",self2,gid);
     }
   }
+  Gid myOffset2 = self * quotientL;
+  if (self == (peers - 1)) lion_eprint(1, "CR4.5: self=%d,myOffset=%ld,quotient=%ld \n",self,myOffset2,quotientL);
   PCU_Comm_Send();
-  Gid myOffset = self * quotient;
+  Gid myOffset = (long)self * quotient;
   if (self == (peers - 1)) lion_eprint(1, "CR5: self=%d,myOffset=%ld,quotient=%d \n",self,myOffset,quotient);
   /* brokers store all the part ids that sent messages
      for each global id */
@@ -304,7 +312,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   int self = PCU_Comm_Self();
   if (self == (peers - 1))
     mySize += remainder;
-  Gid myOffset = self * quotient;
+  Gid myOffset = (long)self * quotient;
 
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some coords */
@@ -405,7 +413,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   int self = PCU_Comm_Self();
   if (self == (peers - 1))
     mySize += remainder;
-  Gid myOffset = self * quotient;
+  Gid myOffset = (long)self * quotient;
 
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some matches */
