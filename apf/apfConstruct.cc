@@ -19,7 +19,8 @@ static void constructVerts(
   for (int i = 0; i < end; ++i)
     if ( ! result.count(conn[i])) {
       result[conn[i]] = m->createVert_(interior);
-      if(conn[i] < 0 || conn[i] > 4305368187 ) { 
+//      if(conn[i] < 0 || conn[i] > 4305368187 ) { 
+      if(conn[i] < 0 ) { 
         lion_eprint(1, "constructVerts building globalToVert: self=%d,gid=%ld,i=%d,nelem=%ld  \n",self2,conn[i],i,nelem);
       }
     }
@@ -76,9 +77,6 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
   int self2 = PCU_Comm_Self();
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
-    if(gid < 0 || gid > 4305368187 ) { 
-        lion_eprint(1, "constructResidence cgTV1: self=%d,gid=%ld,ifirst=%ld  \n",self2,gid,ifirst);
-    }
     if(ifirst==0 || ifirst==13437400 ) {
         lion_eprint(1, "constructResidence: self=%d,gid=%ld,ifirst=%ld  \n",self2,gid,ifirst);
     }
@@ -114,34 +112,15 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
   /* if we have a vertex, send its global id to the
      broker for that global id */
   PCU_Comm_Begin();
-  int sometimes=0;
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
     if(gid < 0 || gid > max ){ 
         lion_eprint(1, "constructResidence cgTV3: self=%d,gid=%ld \n",self2,gid);
-    }
-    sometimes++;
-    if (self == (peers - 1)&& (sometimes%10000==1)) 
-      lion_eprint(1, "CR2: quotient=%d,mySize=%d,gid=%ld,itcount=%d \n",quotient,mySize,gid,sometimes);
+    } 
     Gid tmpL=gid / quotient;
-    int tmpI=tmpL;
-    if (self == (peers - 1)&& (sometimes%10000==1)) lion_eprint(1, "CR3: tmpI=%d,peers=%d,quotient=%d,itcount=%d \n",tmpI,peers,quotient,sometimes);
-    int to = std::min(peers - 1,tmpI); 
-    if (self == (peers - 1)&& (quotient<0)) lion_eprint(1, "CR3.5: tmpI=%d,peers=%d,quotient=%d,itcount=%d \n",tmpI,peers,quotient,sometimes);
-    if (self == (peers - 1)&& (sometimes%10000==1)) lion_eprint(1, "CR4: to=%d,peers=%d,gid=%ld,itCount=%d \n",to,peers,gid,sometimes);
+    int tmpI=tmpL;    int to = std::min(peers - 1,tmpI); 
     PCU_COMM_PACK(to, gid);
-    if (self == (peers - 1)&& (quotient<0)) lion_eprint(1, "CR4.125: tmpI=%d,peers=%d,quotient=%d,itcount=%d \n",tmpI,peers,quotient,sometimes);
   }
-  Gid myOffset3 = self * quotientL;
-  if (self == (peers - 1)) lion_eprint(1, "CR4.25: self=%d,myOffset=%ld,quotient=%ld \n",self,myOffset3,quotientL);
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(gid < 0 || gid > max ){ 
-        lion_eprint(1, "constructResidence cgTV3.1: self=%d,gid=%ld \n",self2,gid);
-    }
-  }
-  Gid myOffset2 = self * quotientL;
-  if (self == (peers - 1)) lion_eprint(1, "CR4.5: self=%d,myOffset=%ld,quotient=%ld \n",self,myOffset2,quotientL);
   PCU_Comm_Send();
   Gid myOffset = (long)self * quotient;
   if (self == (peers - 1)) lion_eprint(1, "CR5: self=%d,myOffset=%ld,quotient=%d \n",self,myOffset,quotient);
@@ -155,26 +134,14 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     int tmpI=tmpL;
     tmpParts.at(tmpI).push_back(from);
   }
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(gid < 0 || gid > max ){ 
-        lion_eprint(1, "constructResidence cgTV3.2: self=%d,gid=%ld \n",self2,gid);
-    }
-  }
   /* for each global id, send all associated part ids
      to all associated parts */
   PCU_Comm_Begin();
-  if (self == (peers - 1)) lion_eprint(1, "CR8: mySize=%d \n", mySize);
   for (int i = 0; i < mySize; ++i) {
     std::vector<int>& parts = tmpParts[i];
     for (size_t j = 0; j < parts.size(); ++j) {
       int to = parts[j];
       Gid gid = i + myOffset;
-      if(gid < 0 || gid > max ) {
-        lion_eprint(1, "constructResidence cgTV3.3: self=%d,gid=%ld \n",self2,gid);
-        if (self == (peers - 1)) lion_eprint(1, "CR9: myOffset=%ld,i=%d \n", myOffset,i);
-
-  }
       int nparts = parts.size();
       PCU_COMM_PACK(to, gid);
       PCU_COMM_PACK(to, nparts);
@@ -186,15 +153,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
   /* receiving a global id and associated parts,
      lookup the vertex and classify it on the partition
      model entity for that set of parts */
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(gid < 0 || gid > max ){      
-        lion_eprint(1, "constructResidence cgTV3.4: self=%d,gid=%ld \n",self2,gid);
-    }
-  }
-  int whichWhile=0;
   while (PCU_Comm_Receive()) {
-    whichWhile++;
     Gid gid;
     PCU_COMM_UNPACK(gid);
     int nparts;
@@ -203,34 +162,10 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     for (int i = 0; i < nparts; ++i) {
       int part;
       PCU_COMM_UNPACK(part);
-      residence.insert(part); //one less suspect
-    }
-    APF_ITERATE(GlobalToVert, globalToVert, it) {
-      Gid gid2 = it->first;  
-      if(gid2 < 0 || gid2 > max ){      
-          lion_eprint(1, "constructResidence cgTV3.45: self=%d,gid=%ld,whichWhile=%d \n",self2,gid2,whichWhile);
-      }
+      residence.insert(part);
     }
     MeshEntity* vert = globalToVert[gid];
-    APF_ITERATE(GlobalToVert, globalToVert, it) {
-      Gid gid2 = it->first;  
-      if(gid2 < 0 || gid2 > max ){      
-          lion_eprint(1, "constructResidence cgTV3.46: self=%d,gid=%ld,whichWhile=%d \n",self2,gid2,whichWhile);
-      }
-    }
     m->setResidence(vert, residence);
-    APF_ITERATE(GlobalToVert, globalToVert, it) {
-      Gid gid2 = it->first;  
-      if(gid2 < 0 || gid2 > max ){      
-          lion_eprint(1, "constructResidence cgTV3.47: self=%d,gid=%ld,whichWhile=%d \n",self2,gid2,whichWhile);
-      }
-    }
-  }
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(gid < 0 || gid > max ){ 
-        lion_eprint(1, "constructResidence cgTV3.5: self=%d,gid=%ld \n",self2,gid);
-    }
   }
 }
 
@@ -240,11 +175,6 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
 static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
 {
   int self = PCU_Comm_Self();
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(gid < 0 )      
-        lion_eprint(1, "constructRemotes cgTV3.7: self=%d,gid=%ld \n",self,gid);
-  }
   PCU_Comm_Begin();
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;
@@ -257,7 +187,6 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
       if (*rit != self) {
         PCU_COMM_PACK(*rit, gid);
         PCU_COMM_PACK(*rit, vert);
-        PCU_Debug_Print("sending remotes: gid %ld to %d\n", gid, *rit);
       }
   }
   PCU_Comm_Send();
@@ -269,7 +198,6 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
     int from = PCU_Comm_Sender();
     MeshEntity* vert = globalToVert[gid];
     m->addRemote(vert, from, remote);
-    PCU_Debug_Print("receive remotes: from %d gid %ld\n", from, gid);
   }
   // who is not stuck?
   lion_eprint(1, "%d done inside remotes \n",PCU_Comm_Self());
@@ -281,20 +209,9 @@ void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
   constructVerts(m, conn, nelem, etype, globalToVert);
   constructElements(m, conn, nelem, etype, globalToVert);
   constructResidence(m, globalToVert);
-  int self = PCU_Comm_Self();
-  APF_ITERATE(GlobalToVert, globalToVert, it) {
-    Gid gid = it->first;  
-    if(gid < 0 )      
-        lion_eprint(1, "constructRemotes cgTV3.6: self=%d,gid=%ld \n",self,gid);
-  }
-  PCU_Barrier();
   lion_eprint(1, "%d after residence \n",PCU_Comm_Self());
   constructRemotes(m, globalToVert);
-  PCU_Barrier();
-  lion_eprint(1, "%d after Remotes \n",PCU_Comm_Self());
   stitchMesh(m);
-  PCU_Barrier();
-  lion_eprint(1, "%d after stitch \n",PCU_Comm_Self());
   m->acceptChanges();
 }
 
