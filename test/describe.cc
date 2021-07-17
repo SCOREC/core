@@ -101,6 +101,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   print_stats("malloc used before", get_chunks());
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  m->verify();
   print_stats("kernel heap", get_peak());
   print_stats("malloc used", get_chunks());
   Parma_PrintPtnStats(m, "");
