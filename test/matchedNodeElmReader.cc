@@ -833,7 +833,7 @@ int main(int argc, char** argv)
       m.localNumVerts, outMap);
     (void) tf;
   } else if(!PCU_Comm_Self())
-    fprintf(stderr, "fathers2D not requrested \n");
+    fprintf(stderr, "fathers2D not requested \n");
 
   //mesh->destroyTag(tf);
 

@@ -521,19 +521,18 @@ static void receiveAlignment(Mesh* m)
 
 static void verifyAlignment(Mesh* m)
 {
-  PCU_Comm_Begin();
-  for (int d = 1; d <= m->getDimension(); ++d)
-  {
+  for (int d = 1; d <= m->getDimension(); ++d) {
+    PCU_Comm_Begin();
     MeshIterator* it = m->begin(d);
     MeshEntity* e;
     while ((e = m->iterate(it)))
       if (m->isShared(e))
         sendAlignment(m, e);
     m->end(it);
+    PCU_Comm_Send();
+    while (PCU_Comm_Receive())
+      receiveAlignment(m);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
-    receiveAlignment(m);
 }
 
 void packFieldInfo(Field* f, int to)
@@ -773,31 +772,29 @@ static void verifyTags(Mesh* m)
   
   // verify tag data
 
-  PCU_Comm_Begin();
-  for (int d = 0; d <= m->getDimension(); ++d)
+  for (int d = 0; d <= m->getDimension(); ++d) 
   {
+    PCU_Comm_Begin();
     MeshIterator* it = m->begin(d);
     MeshEntity* e;
-    while ((e = m->iterate(it)))
+    while ((e = m->iterate(it))) 
     {
       if (m->getOwner(e)!=PCU_Comm_Self()) continue;
-      if (m->isShared(e))
-      {
+      if (m->isShared(e)) {
         Copies r;
         m->getRemotes(e, r);
         sendTagData(m, e, tags, r);
       }
-      if (m->isGhosted(e))
-      {
+      if (m->isGhosted(e)) {
         Copies g;
         m->getGhosts(e, g);
         sendTagData(m, e, tags, g, true);
       }
     } // while
     m->end(it);
+    PCU_Comm_Send();
+    receiveTagData(m, tags);
   } // for
-  PCU_Comm_Send();
-  receiveTagData(m, tags);
 }
 
 void verify(Mesh* m, bool abort_on_error)
