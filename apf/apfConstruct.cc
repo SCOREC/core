@@ -239,7 +239,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   Gid tmpL=start / quotient; 
   int tmpInt=tmpL;
   int to = std::min(peers - 1, tmpInt);
-  tmpL=(to+1)*quotient-start; 
+  tmpL=(to+1)*(long)quotient-start; 
   tmpInt=tmpL;
   int n = std::min(tmpInt, nverts);
   if(n > 1000) {
@@ -342,7 +342,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   Gid tmpL=start / quotient; 
   int tmpInt=tmpL;
   int to = std::min(peers - 1, tmpInt);
-  tmpL=(to+1)*quotient-start; 
+  tmpL=(to+1)*(long)quotient-start; 
   tmpInt=tmpL;
   int n = std::min(tmpInt, nverts);
   while (nverts > 0) {

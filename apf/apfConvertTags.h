@@ -93,7 +93,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
   apf::Gid tmpL=start / quotient;
   int tmpI=tmpL;
   int to = std::min(peers - 1, tmpI);
-  tmpL=(to+1)*quotient-start;
+  tmpL=(to+1)*(long)quotient-start;
   tmpI=tmpL;
   int n = std::min(tmpI, nverts);
   while (nverts > 0) {
