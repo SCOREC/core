@@ -19,7 +19,7 @@ static void constructVerts(
   for (int i = 0; i < end; ++i)
     if ( ! result.count(conn[i])) {
       result[conn[i]] = m->createVert_(interior);
-//      if(conn[i] < 0 || conn[i] > 4305368187 ) { 
+//      if(conn[i] < 0 || conn[i] > 4305368187 ) { // for whatever reason max is not stored but is found and checked later
       if(conn[i] < 0 ) { 
         lion_eprint(1, "constructVerts building globalToVert: self=%d,gid=%ld,i=%d,nelem=%ld  \n",self2,conn[i],i,nelem);
       }
@@ -187,6 +187,7 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
       if (*rit != self) {
         PCU_COMM_PACK(*rit, gid);
         PCU_COMM_PACK(*rit, vert);
+        PCU_Debug_Print("sending remotes: gid %ld to %d\n", gid, *rit);
       }
   }
   PCU_Comm_Send();
@@ -198,6 +199,7 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
     int from = PCU_Comm_Sender();
     MeshEntity* vert = globalToVert[gid];
     m->addRemote(vert, from, remote);
+    PCU_Debug_Print("receive remotes: from %d gid %ld\n", from, gid);
   }
   // who is not stuck?
   lion_eprint(1, "%d done inside remotes \n",PCU_Comm_Self());
@@ -211,7 +213,11 @@ void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
   constructResidence(m, globalToVert);
   lion_eprint(1, "%d after residence \n",PCU_Comm_Self());
   constructRemotes(m, globalToVert);
+  PCU_Barrier();
+  lion_eprint(1, "%d after Remotes \n",PCU_Comm_Self());
   stitchMesh(m);
+  PCU_Barrier();
+  lion_eprint(1, "%d after stitch \n",PCU_Comm_Self());
   m->acceptChanges();
 }
 
