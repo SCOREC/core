@@ -736,12 +736,14 @@ void readMesh(const char* meshfilename,
   readClassification(ff, mesh.localNumVerts, &(mesh.classification));
   fclose(ff);
 
+  if( strcmp(fathers2Dfilename, "NULL") ) {
   //add an argument to readMesh for the fathers2D
-  sprintf(filename, "%s.%d",fathers2Dfilename,self);
-  FILE* fff = fopen(filename, "r");
-  PCU_ALWAYS_ASSERT(fff);
-  readClassification(fff, mesh.localNumVerts, &(mesh.fathers2D)); // note we re-use classification reader
-  fclose(fff);
+    sprintf(filename, "%s.%d",fathers2Dfilename,self);
+    FILE* fff = fopen(filename, "r");
+    PCU_ALWAYS_ASSERT(fff);
+    readClassification(fff, mesh.localNumVerts, &(mesh.fathers2D)); // note we re-use classification reader
+    fclose(fff);
+  }
 
   if( strcmp(matchfilename, "NULL") ) {
     sprintf(filename, "%s.%d",matchfilename,self);
@@ -768,7 +770,8 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  if( argc != 10 ) {
+  int noVerify=0;    // maintain default of verifying if not explicitly requesting it off
+  if( argc < 10 ) {
     if( !PCU_Comm_Self() ) {
       printf("Usage: %s <ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
@@ -777,7 +780,8 @@ int main(int argc, char** argv)
           "<ascii vertex fathers2D flag .fathers2D> "
           "<ascii solution flag .soln> "
           "<ascii conn header> "
-          "<output model .dmg> <output mesh .smb>\n",
+          "<output model .dmg> <output mesh .smb>",
+          "turn off verify mesh if equal 1 (on if you give nothing)\n",
           argv[0]);
     }
     return 0;
@@ -786,6 +790,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
+  if( argc == 11 ) noVerify=atoi(argv[10]);
 
   double t0 = PCU_Time();
   MeshInfo m;
@@ -823,9 +828,13 @@ int main(int argc, char** argv)
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
  
-  apf::MeshTag* tf = setMappedTag(mesh, "fathers2D", m.fathers2D, 1,
+  if( strcmp(argv[5], "NULL") ) {
+    apf::MeshTag* tf = setMappedTag(mesh, "fathers2D", m.fathers2D, 1,
       m.localNumVerts, outMap);
-  (void) tf;
+    (void) tf;
+  } else if(!PCU_Comm_Self())
+    fprintf(stderr, "fathers2D not requrested \n");
+
   //mesh->destroyTag(tf);
 
   if(0==1) {
@@ -851,11 +860,12 @@ int main(int argc, char** argv)
 
   if(!PCU_Comm_Self())
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
-  mesh->verify();
+  if(noVerify != 1) mesh->verify();
 
   outMap.clear();
   gmi_write_dmg(model, argv[8]);
   mesh->writeNative(argv[9]);
+  if(noVerify != 0) mesh->verify();
   apf::writeVtkFiles("rendered",mesh);
 
   mesh->destroyNative();

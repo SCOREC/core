@@ -281,19 +281,19 @@ static void receiveAllCopies(Mesh* m)
 
 static void verifyRemoteCopies(Mesh* m)
 {
-  PCU_Comm_Begin();
   for (int d = 0; d <= m->getDimension(); ++d)
   {
+    PCU_Comm_Begin();
     MeshIterator* it = m->begin(d);
     MeshEntity* e;
     while ((e = m->iterate(it)))
       if (m->isShared(e) && !m->isGhost(e))
         sendAllCopies(m, e);
     m->end(it);
+    PCU_Comm_Send();
+    while (PCU_Comm_Receive())
+     receiveAllCopies(m);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
-    receiveAllCopies(m);
 }
 
 // ghost verification
