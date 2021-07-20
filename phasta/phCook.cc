@@ -30,6 +30,39 @@
 #include <stdlib.h>
 #include <cstring>
 #include <iostream>
+#include <malloc.h>
+
+static void print_stats(const char* name, double value)
+{
+  double min, max, avg;
+  min = PCU_Min_Double(value);
+  max = PCU_Max_Double(value);
+  avg = PCU_Add_Double(value);
+  avg /= PCU_Comm_Peers();
+  double imb = max / avg;
+  if (!PCU_Comm_Self())
+    printf("%s: min %f max %f avg %f imb %f\n", name, min, max, avg, imb);
+}
+
+#if defined(__linux__)
+
+static double get_chunks()
+{
+  struct mallinfo m = mallinfo();
+  return m.uordblks + m.hblkhd;
+}
+
+#else
+static double get_chunks()
+{
+  cheese
+  if(!PCU_Comm_Self())
+    printf("%s:%d: OS Not supported\n", __FILE__, __LINE__);
+  return(-1.0);
+}
+#endif
+
+
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -151,9 +184,18 @@ namespace ph {
         in.isReorder )
     {
       apf::MeshTag* order = NULL;
+
+      print_stats("malloc used before Bfs", get_chunks());
+
       if (in.isReorder && PCU_Comm_Peers() > 1)
         order = Parma_BfsReorder(m);
+
+      print_stats("malloc used before reorder", get_chunks());
+
       apf::reorderMdsMesh(m,order);
+
+      print_stats("malloc used after reorder", get_chunks());
+
     }
   }
 
