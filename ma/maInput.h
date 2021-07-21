@@ -182,8 +182,7 @@ const Input* configureIdentity(Mesh* m, SizeField* f=0, SolutionTransfer* s=0);
 /** \brief used internally, but users can call this if they want */
 void validateInput(Input* in);
 
-/** \brief removes constant-ness from a constant Input pointer
-           so users can modify it */
+/** \brief creates a new non-constant Input for advanced users */
 Input* makeAdvanced(const Input* in);
 
 }
