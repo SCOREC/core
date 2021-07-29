@@ -295,6 +295,8 @@ namespace chef {
     ph::Output out;
     out.openfile_write = openfile_write;
     bake(g,m,in,out);
+    if ((in.writeVTK) == 1)  apf::writeVtkFiles("rendered",m);
+
   }
   void cook(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl) {

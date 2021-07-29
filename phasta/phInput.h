@@ -142,6 +142,7 @@ class Input
     int formEdges;
     int parmaLoops;
     int parmaVerbosity;
+    int writeVTK;
     /** \brief write the geombc file during in-memory data transfer
        between phasta and chef. */
     int writeGeomBCFiles;
