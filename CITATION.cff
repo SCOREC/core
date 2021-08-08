@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Ibanez"
+  given-names: "Daniel A."
+- family-names: "Seol"
+  given-names: "E. Seegyoung"
+- family-names: "Smith"
+  given-names: "Cameron W."
+  orcid: "https://orcid.org/0000-0001-9258-5226"  
+- family-names: "Shephard"
+  given-names: "Mark S."
+title: "PUMI: Parallel Unstructured Mesh Infrastructure"
+doi: https://dl.acm.org/doi/10.1145/2814935
+month: 6
+year: 2016
+issue: "42, 3"
+number: "Article 17"
+journal: "ACM Trans. Math. Softw"
