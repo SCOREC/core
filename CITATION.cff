@@ -9,7 +9,8 @@ keywords:
   - "C++"
   - "finite elements"
 references:
-  - authors:
+  - type: article
+    authors:
       - family-names: "Ibanez"
         given-names: "Daniel A."
       - family-names: "Seol"
@@ -19,11 +20,10 @@ references:
         orcid: "https://orcid.org/0000-0001-9258-5226"  
       - family-names: "Shephard"
         given-names: "Mark S."
-  type: article
-  title: "PUMI: Parallel Unstructured Mesh Infrastructure"
-  doi: "https://dl.acm.org/doi/10.1145/2814935"
-  month: 6
-  year: 2016
-  volume: 42
-  issue: 3
-  journal: "ACM Trans. Math. Softw"
+    title: "PUMI: Parallel Unstructured Mesh Infrastructure"
+    doi: "https://dl.acm.org/doi/10.1145/2814935"
+    month: 6
+    year: 2016
+    volume: 42
+    issue: 3
+    journal: "ACM Trans. Math. Softw"
