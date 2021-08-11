@@ -1,6 +1,22 @@
-cff-version: 1.2.0
+cff-version: 1.1.0
 title: "PUMI"
 message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Ibanez"
+    given-names: "Daniel A."
+  - family-names: "Smith"
+    given-names: "Cameron W."
+    orcid: "https://orcid.org/0000-0001-9258-5226"  
+  - family-names: "Granzow"
+    given-names: "Brian"
+  - family-names: "Zaide"
+    given-names: "Daniel"
+  - family-names: "Hakimi"
+    given-names: "Morteza"
+  - family-names: "Seol"
+    given-names: "E. Seegyoung"
+date-released: 2021-06-25
+version: 2.2.6
 keywords:
   - "unstructured meshes"
   - "parallel"
@@ -21,9 +37,9 @@ references:
       - family-names: "Shephard"
         given-names: "Mark S."
     title: "PUMI: Parallel Unstructured Mesh Infrastructure"
-    doi: "https://dl.acm.org/doi/10.1145/2814935"
+    doi: "10.1145/2814935"
     month: 6
     year: 2016
     volume: 42
-    issue: 3
+    issue: "3"
     journal: "ACM Trans. Math. Softw"
