@@ -45,6 +45,7 @@ void adapt(Input* in)
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
   if (in->ownsSizeField)
     delete in->sizeField;
   if (in->ownsSolutionTransfer)
@@ -118,6 +119,7 @@ void adaptVerbose(Input* in, bool verbose)
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
   if (in->ownsSizeField)
     delete in->sizeField;
   if (in->ownsSolutionTransfer)

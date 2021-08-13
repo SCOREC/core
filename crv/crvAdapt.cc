@@ -235,6 +235,7 @@ void adapt(ma::Input* in)
   apf::printStats(a->mesh);
   crv::clearTags(a);
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
   if (in->ownsSizeField)
     delete in->sizeField;
   if (in->ownsSolutionTransfer)

@@ -206,6 +206,11 @@ void localizeLayerStacks(Mesh* m) {
   for (int d = 1; d < m->getDimension(); ++d)
     migrateForLayerCollapse(a,d,round);
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
   delete in;
 }
 
