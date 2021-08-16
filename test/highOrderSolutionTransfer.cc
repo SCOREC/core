@@ -159,7 +159,7 @@ double testH1Field(
 
   int dim = m->getDimension();
   int count;
-  apf::MeshIterator* it = m->begin(0);
+  apf::MeshIterator* it;
   apf::MeshEntity* ent;
 
   // Verify that interpolated solution field agrees with exact field.

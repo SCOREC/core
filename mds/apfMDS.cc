@@ -600,7 +600,7 @@ class MeshMDS : public Mesh2
       apf::destroyField(coordinateField);
       coordinateField = 0;
       gmi_model* model = static_cast<gmi_model*>(mesh->user_model);
-      if (ownsModel)
+      if (ownsModel && model)
         gmi_destroy(model);
       mds_apf_destroy(mesh);
       mesh = 0;
