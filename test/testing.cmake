@@ -136,7 +136,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
+if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     AND SIMMODSUITE_SimAdvMeshing_FOUND)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
@@ -273,21 +273,21 @@ if(ENABLE_SIMMETRIX)
     "pipe_unif.smb"
     "pipe.smb")
 endif()
-mpi_test(ma_serial 1
-  ./ma_test
-  "${MDIR}/pipe.${GXT}"
-  "pipe.smb")
-mpi_test(aniso_ma_serial 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "0")
-mpi_test(aniso_ma_serial_log_interpolation 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "1")
 if(ENABLE_ZOLTAN)
+  mpi_test(ma_serial 1
+    ./ma_test
+    "${MDIR}/pipe.${GXT}"
+    "pipe.smb")
+  mpi_test(aniso_ma_serial 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "0")
+  mpi_test(aniso_ma_serial_log_interpolation 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "1")
   mpi_test(torus_ma_parallel 4
     ./torus_ma_test
     "${MESHES}/torus/torus.dmg"
@@ -623,11 +623,13 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/upright.smd"
       "67k")
     endif()
-    # adapt_meshgen uses the output of parallel_meshgen
-    mpi_test(adapt_meshgen 4
-      ./ma_test
-      "${MDIR}/upright.smd"
-      "67k/")
+    if(ENABLE_ZOLTAN)
+      # adapt_meshgen uses the output of parallel_meshgen
+      mpi_test(adapt_meshgen 4
+        ./ma_test
+        "${MDIR}/upright.smd"
+        "67k/")
+    endif()
   endif()
   if(SIM_PARASOLID)
     mpi_test(convert_para 1
@@ -722,7 +724,7 @@ if (PCU_COMPRESS)
   add_test(NAME chef8
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  if(ENABLE_SIMMETRIX)
+  if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   endif()

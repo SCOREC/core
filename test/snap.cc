@@ -21,9 +21,7 @@ int main(int argc, char** argv)
   gmi_sim_start();
   gmi_register_sim();
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
-  ma::Input* in = ma::configureIdentity(m);
-  in->shouldSnap = true;
-  in->shouldTransferParametric = true;
+  const ma::Input* in = ma::configureIdentity(m);
   ma::adapt(in);
   m->writeNative(argv[3]);
   m->destroyNative();

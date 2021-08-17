@@ -129,11 +129,7 @@ static void testIndexing(apf::Mesh2* m)
 static void fusionAdapt(apf::Mesh2* m)
 {
   Vortex sf(m);
-  ma::Input* in = ma::configure(m, &sf);
-  in->maximumIterations = 9;
-  in->shouldRunPreZoltan = true;
-  in->shouldRunMidParma = true;
-  in->shouldRunPostParma = true;
+  const ma::Input* in = ma::configure(m, &sf);
   ma::adapt(in);
   m->verify();
 }

@@ -75,7 +75,7 @@ int main(int argc, char** argv)
   sam::multiplySF(m, szFld, 1.0);
   apf::writeVtkFiles("before",m);
   /* mesh adaptation */
-  ma::Input* ma_in = ma::configure(m, szFld);
+  ma::Input* ma_in = ma::makeAdvanced(ma::configure(m, szFld));
   ma_in->shouldRunPreZoltan = true;
   ma_in->shouldRunMidParma = true;
   ma_in->shouldRunPostParma = true;
