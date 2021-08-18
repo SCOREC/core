@@ -51,7 +51,7 @@ apf::Migration* getSplitPlan(Input& in, apf::Mesh2* m)
 {
   PCU_ALWAYS_ASSERT(in.splitFactor >= 1);
   apf::Migration* plan;
-  if (in.splitFactor != 0 ) { // 1) {
+  if (in.splitFactor != 1 ) { //0 ) { // 1) {  // 0 will force reparttition  even when split factor is 1
     apf::Splitter* splitter;
     if (in.partitionMethod == "rib") { //prefer SCOREC RIB over Zoltan RIB
       splitter = Parma_MakeRibSplitter(m);
