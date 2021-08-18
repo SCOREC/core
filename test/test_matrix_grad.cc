@@ -114,6 +114,8 @@ int main(int argc, char* argv[])
   check_matrix_deriv->process(mesh);
   delete check_matrix_deriv;
   std::cout<<"Done"<<std::endl;
+  mesh->destroyNative();
+  apf::destroyMesh(mesh);
   PCU_Comm_Free();
   MPI_Finalize();
   return 0;
