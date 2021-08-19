@@ -50,6 +50,8 @@ int main( int argc, char* argv[])
   code.meshFile = argv[3];
   apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
   Parma_ShrinkPartition(code.mesh, atoi(argv[4]), code);
+  code.mesh->destroyNative();
+  apf::destroyMesh(code.mesh);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
