@@ -283,6 +283,16 @@ static void writeGrowthCurves(Output& o, FILE* f)
   }
 }
 
+static void writeThinSectionStacks(Output& o, FILE* f)
+{
+  if (o.nThinSectionStacks > 0) {
+    writeInt(f, "number of thin section stacks", o.nThinSectionStacks);
+    writeInt(f, "number of thin section mesh vertices", o.nThinSectionStackMeshVertices);
+    writeInts(f, "number of vertices on thin section stack", o.arrays.iTSnv, o.nThinSectionStacks);
+    writeInts(f, "list of vertices on growth curve", o.arrays.iTSlvid, o.nLayeredMeshVertices);
+  }
+}
+
 void writeGeomBC(Output& o, std::string path, int timestep)
 {
   double t0 = PCU_Time();
@@ -363,6 +373,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeElementGraph(o, f);
   writeEdges(o, f);
   writeGrowthCurves(o, f);
+  writeThinSectionStacks(o, f);
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
