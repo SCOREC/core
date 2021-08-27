@@ -34,49 +34,29 @@ void getThinSectionStack(Output& o)
     gmi_model* gmiModel = apf_msim->getModel();
     pGModel model = gmi_export_sim(gmiModel);
 
-//  Algorithm: Get growth curve info
- 
-    typedef std::pair <pGEntity, pGFace> gPair_t;
-    typedef std::multimap <pGEntity, pGFace> gPairMap_t;
-    typedef std::pair <gPairMap_t::iterator, gPairMap_t::iterator> gPairMap_equalRange_t;
-
-//  Create an empty list (gEntities) for storing gEntity
-//  Create an empty multimap (gPairMap) for storing pairs gPair {KEY: gEntity, CONTENT: gFace}
-//  //gEntity is the model entity where a base mesh vertex is classified
-//  //gFace is the model face where 3D thin section/extrusion attribute is placed
-    pPList gEntities = PList_new();
-    gPairMap_t gPairs;
-    gPairMap_t::iterator gPairIter;
-    gPair_t gPair;
-
+//  Algorithm: Get thinStack connectivity info
+	  
     pGEntity gEntity;
     pGFace gFace;
     pGEdge gEdge;
     pGVertex gVertex;
     pVertex vertex;
-	pFace face;
+    pFace face;
 
     pPList gEdges = PList_new();
     pPList gVertices = PList_new();
-	pPList gSrcFaces = PList_new();
-	pPList regions_stack = PList_new();
-	pPList faces_stack = PList_new();
-	pPList gDestFaces =PList_new();
+    pPList gSrcFaces = PList_new();
+    pPList regions_stack = PList_new();
+    pPList faces_stack = PList_new();
+    pPList gDestFaces =PList_new();
 
-//  //generate gEntities and gPairs
-//  //gEntities contains non-duplicated items
-//  //gPairs may contain duplicated items
-    PList_clear(gEntities);
-    gPairIter = gPairs.begin();
 //  FOR each model face (gFace)
     GFIter gFIter = GM_faceIter(model);
     while((gFace = GFIter_next(gFIter))){
-	 if(PList_contains(gDestFaces, gFace)==0){				//check if gFace is already in gSrcFaces
-//    IF gFace has extrusion/thin stack mesh attribute
-  	  bool isThinStackFace = false;
-      FIter fIter = M_classifiedFaceIter(mesh, gFace, 1);
-      while((face = FIter_next(fIter))){
-        if(EN_isExtrusionEntity(face) == 1){
+	 if(PList_contains(gDestFaces, gFace)==0){				//check if gFace is already in gSrcFace
+           FIter fIter = M_classifiedFaceIter(mesh, gFace, 1);
+           while((face = FIter_next(fIter))){
+              if(EN_isExtrusionEntity(face) == 1){				//Figure out how to find if source or dest face
 		  PList_appUnique(gSrcFaces, gFace);
 		  for(int j = 0; j < 1; j++){
 			if((EN_isExtrusionEntity(F_region(face, j))) == 1){
@@ -85,29 +65,29 @@ void getThinSectionStack(Output& o)
 				PList_appUnique(gDestFaces, F_whatIn(PList_item(faces_stack(PList_size(faces_stack)))));
 				PList_clear(regions_stack);
 				PList_clear(faces_stack);
-            break;
+            			break;
 			}
 		  }
-	    }
+	      }
 	  }
       GFIter_delete(gFIter);
-	 }
-	}
+      }
+   }
 	
 //  get seeds of all growth curves
     pPList allSeeds = PList_new();
     pPList gFaces = PList_new();
 
     pPList seeds = PList_new();
-	pPList base_vertices = PList_new();
-	pPList fvertices = PList_new();
-	pPList allStackVertices = PList_new();
-	pPList StackVertices = PList_new();
-	pPList iTSnv_list
+    pPList base_vertices = PList_new();
+    pPList fvertices = PList_new();
+    pPList allStackVertices = PList_new();
+    pPList StackVertices = PList_new();
+    pPList iTSnv_list
 
-	pEntity seed;
+    pEntity seed;
     pGRegion gRegion;
-	pRegion region;
+    pRegion region;
 
 //  FOR each gEntity in gEntities
     for(int i = 0; i < PList_size(gSrcFaces); i++){
@@ -123,8 +103,8 @@ void getThinSectionStack(Output& o)
       while((face = FIter_next(fIter))){
 //      Create an empty list (seeds) for storing potential seed edges of vertex
         PList_clear(seeds);
-		PList_clear(regions_stack);
-		PList_clear(faces_stack);
+	PList_clear(regions_stack);
+	PList_clear(faces_stack);
 
 		for(int j = 0; j < 1; j++){
 			if((EN_isExtrusionEntity(F_region(face, j))) == 1){
