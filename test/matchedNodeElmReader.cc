@@ -780,7 +780,7 @@ int main(int argc, char** argv)
           "<ascii vertex fathers2D flag .fathers2D> "
           "<ascii solution flag .soln> "
           "<ascii conn header> "
-          "<output model .dmg> <output mesh .smb>",
+          "<output model .dmg> <output mesh .smb>"
           "turn off verify mesh if equal 1 (on if you give nothing)\n",
           argv[0]);
     }
