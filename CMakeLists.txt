@@ -156,6 +156,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
   check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
   if(PUMI_HAS_MALLINFO2)
     target_compile_definitions(core INTERFACE -DPUMI_HAS_MALLINFO2)
+    target_compile_definitions(pumi PRIVATE -DPUMI_HAS_MALLINFO2)
   endif()
 endif()
 
