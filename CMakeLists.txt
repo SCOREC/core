@@ -69,7 +69,7 @@ set(VALGRIND_ARGS "" CACHE STRING
   "the command line arguments to VALGRIND")
 
 # smoke test target - a few tests are defined later with the 'SMOKE_TEST' label
-add_custom_target(test_install
+add_custom_target(check
   COMMAND ${CMAKE_CTEST_COMMAND} -L SMOKE_TEST
   COMMENT "running a smoke test on the installed binaries")
 
