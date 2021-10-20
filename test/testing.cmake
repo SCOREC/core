@@ -8,16 +8,6 @@ function(mpi_test TESTNAME PROCS EXE)
   )
 endfunction(mpi_test)
 
-function(smoke_test TESTNAME PROCS EXE)
-  set(tname smoke_test_${TESTNAME})
-  add_test(
-    NAME ${tname}
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
-    CONFIGURATIONS SMOKE_TEST_CONFIG
-    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
-  SET_TESTS_PROPERTIES(${tname} PROPERTIES LABELS "SMOKE_TEST" )
-endfunction(smoke_test)
-
 mpi_test(shapefun 1 ./shapefun)
 mpi_test(shapefun2 1 ./shapefun2)
 mpi_test(bezierElevation 1 ./bezierElevation)
@@ -261,11 +251,6 @@ mpi_test(uniform_serial 1
   "pipe.smb"
   "pipe_unif.smb")
 mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
-smoke_test(uniform_serial 1
-  ./uniform
-  "${MDIR}/pipe.${GXT}"
-  "${MDIR}/pipe.smb"
-  "pipe_unif.smb")
 if(ENABLE_SIMMETRIX)
   mpi_test(snap_serial 1
     ./snap
@@ -313,12 +298,6 @@ mpi_test(split_2 2
   ./split
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
-  ${MESHFILE}
-  2)
-smoke_test(split_2 2
-  ./split
-  "${MDIR}/pipe.${GXT}"
-  "${MDIR}/pipe.smb"
   ${MESHFILE}
   2)
 mpi_test(collapse_2 2
