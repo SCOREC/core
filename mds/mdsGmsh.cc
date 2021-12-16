@@ -55,6 +55,8 @@ struct Reader {
   bool isQuadratic;
   std::map<long, Node> nodeMap;
   std::map<long, apf::MeshEntity*> entMap[4];
+  std::vector<int> physicalTypeFace;
+  std::vector<int> physicalTypeRgn;
 };
 
 void initReader(Reader* r, apf::Mesh2* m, const char* filename)
@@ -158,7 +160,13 @@ void readElement(Reader* r)
   int dim = apf::Mesh::typeDimension[apfType];
   long ntags = getLong(r);
   PCU_ALWAYS_ASSERT(ntags >= 2);
-  getLong(r); /* discard physical type */
+  const int physType = static_cast<int>(getLong(r));
+  //tag only faces and regions
+  if(dim == 2) {
+    r->physicalTypeFace.push_back(physType);
+  } else if(dim == 3) {
+    r->physicalTypeRgn.push_back(physType);
+  }
   long gtag = getLong(r);
   for (long i = 2; i < ntags; ++i)
     getLong(r); /* discard all other element tags */
@@ -183,9 +191,26 @@ void readElements(Reader* r)
   seekMarker(r, "$Elements");
   long n = getLong(r);
   getLine(r);
+  r->physicalTypeFace.reserve(n);
+  r->physicalTypeRgn.reserve(n);
   for (long i = 0; i < n; ++i)
     readElement(r);
   checkMarker(r, "$EndElements");
+}
+
+void setElmPhysicalType(Reader* r, apf::Mesh2* m) {
+  apf::MeshEntity* e;
+  apf::MeshTag* tag = m->createIntTag("physical_type", 1);
+  for(int dim=2; dim<=m->getDimension(); dim++) {
+    int* tagPtr;
+    if(dim==2) tagPtr = r->physicalTypeFace.data();
+    if(dim==3) tagPtr = r->physicalTypeRgn.data();
+    int i = 0;
+    apf::MeshIterator* it = m->begin(dim);
+    while ((e = m->iterate(it)))
+      m->setIntTag(e, tag, &tagPtr[i++]);
+    m->end(it);
+  }
 }
 
 static const double gmshTet10EdgeIndices[6] = {0, 1, 2, 3, 5, 4};
@@ -254,8 +279,9 @@ void readGmsh(apf::Mesh2* m, const char* filename)
   initReader(&r, m, filename);
   readNodes(&r);
   readElements(&r);
-  freeReader(&r);
   m->acceptChanges();
+  setElmPhysicalType(&r,m);
+  freeReader(&r);
   if (r.isQuadratic)
     readQuadratic(&r, m, filename);
 }
