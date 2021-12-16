@@ -189,6 +189,13 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
+set(MDIR ${MESHES}/gmsh)
+mpi_test(twoQuads 1
+  ./from_gmsh
+  ".null"
+  "${MDIR}/twoQuads.msh"
+  "${MDIR}/twoQuads.smb")
+
 set(MDIR ${MESHES}/ugrid)
 mpi_test(naca_ugrid 2
   ./from_ugrid
