@@ -55,8 +55,9 @@ struct Reader {
   bool isQuadratic;
   std::map<long, Node> nodeMap;
   std::map<long, apf::MeshEntity*> entMap[4];
-  std::vector<int> physicalTypeFace;
-  std::vector<int> physicalTypeRgn;
+  //the 0th vector is not used as mesh vertices don't have a 'physical entity'
+  //association in the legacy 2.* gmsh format
+  std::vector<int> physicalType[4];
 };
 
 void initReader(Reader* r, apf::Mesh2* m, const char* filename)
@@ -159,14 +160,20 @@ void readElement(Reader* r)
   int nverts = apf::Mesh::adjacentCount[apfType][0];
   int dim = apf::Mesh::typeDimension[apfType];
   long ntags = getLong(r);
+  /* The Gmsh 4.9 documentation on the legacy 2.* format states:
+   * "By default, the first tag is the tag of the physical entity to which the
+   * element belongs; the second is the tag of the elementary model entity to
+   * which the element belongs; the third is the number of mesh partitions to
+   * which the element belongs, followed by the partition ids (negative
+   * partition ids indicate ghost cells). A zero tag is equivalent to no tag.
+   * Gmsh and most codes using the MSH 2 format require at least the first two
+   * tags (physical and elementary tags)."
+   * A physical entity is a user defined grouping of elementary model entities.
+   * An elementary model entity is a geometric model entity. */
   PCU_ALWAYS_ASSERT(ntags >= 2);
   const int physType = static_cast<int>(getLong(r));
-  //tag only faces and regions
-  if(dim == 2) {
-    r->physicalTypeFace.push_back(physType);
-  } else if(dim == 3) {
-    r->physicalTypeRgn.push_back(physType);
-  }
+  PCU_ALWAYS_ASSERT(dim>=0 && dim<4);
+  r->physicalType[dim].push_back(physType);
   long gtag = getLong(r);
   for (long i = 2; i < ntags; ++i)
     getLong(r); /* discard all other element tags */
@@ -191,8 +198,6 @@ void readElements(Reader* r)
   seekMarker(r, "$Elements");
   long n = getLong(r);
   getLine(r);
-  r->physicalTypeFace.reserve(n);
-  r->physicalTypeRgn.reserve(n);
   for (long i = 0; i < n; ++i)
     readElement(r);
   checkMarker(r, "$EndElements");
@@ -200,11 +205,9 @@ void readElements(Reader* r)
 
 void setElmPhysicalType(Reader* r, apf::Mesh2* m) {
   apf::MeshEntity* e;
-  apf::MeshTag* tag = m->createIntTag("physical_type", 1);
-  for(int dim=2; dim<=m->getDimension(); dim++) {
-    int* tagPtr;
-    if(dim==2) tagPtr = r->physicalTypeFace.data();
-    if(dim==3) tagPtr = r->physicalTypeRgn.data();
+  apf::MeshTag* tag = m->createIntTag("gmsh_physical_entity", 1);
+  for(int dim=1; dim<=m->getDimension(); dim++) { //vertices don't have a physical entity ?
+    int* tagPtr = r->physicalType[dim].data();
     int i = 0;
     apf::MeshIterator* it = m->begin(dim);
     while ((e = m->iterate(it)))
