@@ -207,6 +207,7 @@ void setElmPhysicalType(Reader* r, apf::Mesh2* m) {
   apf::MeshEntity* e;
   apf::MeshTag* tag = m->createIntTag("gmsh_physical_entity", 1);
   for(int dim=1; dim<=m->getDimension(); dim++) { //vertices don't have a physical entity ?
+    if( ! r->physicalType[dim].size() ) continue;
     int* tagPtr = r->physicalType[dim].data();
     int i = 0;
     apf::MeshIterator* it = m->begin(dim);
