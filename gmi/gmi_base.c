@@ -12,6 +12,8 @@
 #include "agm.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <assert.h>
 
 struct gmi_model_ops gmi_base_ops = {
   .begin    = gmi_base_begin,
@@ -39,15 +41,20 @@ struct gmi_ent* gmi_from_agm(struct agm_ent e)
 struct agm_ent agm_from_gmi(struct gmi_ent* e)
 {
   char* p;
-  int uid;
+  intptr_t uid;
+  int iuid;
   struct agm_ent a;
   p = (char*)e;
-  uid = p - ((char*)0);
+  iuid = p - ((char*)0);
+  uid = (intptr_t)e;
+  assert(iuid == uid);
   if (uid == 0) {
     a.type = 0;
     a.id = -1;
   } else {
     uid -= 1;
+    iuid -= 1;
+    assert(uid == iuid);
     a.type = uid % AGM_ENT_TYPES;
     a.id = uid / AGM_ENT_TYPES;
   }
