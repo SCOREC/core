@@ -55,6 +55,9 @@ struct Reader {
   bool isQuadratic;
   std::map<long, Node> nodeMap;
   std::map<long, apf::MeshEntity*> entMap[4];
+  //the 0th vector is not used as mesh vertices don't have a 'physical entity'
+  //association in the legacy 2.* gmsh format
+  std::vector<int> physicalType[4];
 };
 
 void initReader(Reader* r, apf::Mesh2* m, const char* filename)
@@ -157,8 +160,20 @@ void readElement(Reader* r)
   int nverts = apf::Mesh::adjacentCount[apfType][0];
   int dim = apf::Mesh::typeDimension[apfType];
   long ntags = getLong(r);
+  /* The Gmsh 4.9 documentation on the legacy 2.* format states:
+   * "By default, the first tag is the tag of the physical entity to which the
+   * element belongs; the second is the tag of the elementary model entity to
+   * which the element belongs; the third is the number of mesh partitions to
+   * which the element belongs, followed by the partition ids (negative
+   * partition ids indicate ghost cells). A zero tag is equivalent to no tag.
+   * Gmsh and most codes using the MSH 2 format require at least the first two
+   * tags (physical and elementary tags)."
+   * A physical entity is a user defined grouping of elementary model entities.
+   * An elementary model entity is a geometric model entity. */
   PCU_ALWAYS_ASSERT(ntags >= 2);
-  getLong(r); /* discard physical type */
+  const int physType = static_cast<int>(getLong(r));
+  PCU_ALWAYS_ASSERT(dim>=0 && dim<4);
+  r->physicalType[dim].push_back(physType);
   long gtag = getLong(r);
   for (long i = 2; i < ntags; ++i)
     getLong(r); /* discard all other element tags */
@@ -186,6 +201,20 @@ void readElements(Reader* r)
   for (long i = 0; i < n; ++i)
     readElement(r);
   checkMarker(r, "$EndElements");
+}
+
+void setElmPhysicalType(Reader* r, apf::Mesh2* m) {
+  apf::MeshEntity* e;
+  apf::MeshTag* tag = m->createIntTag("gmsh_physical_entity", 1);
+  for(int dim=1; dim<=m->getDimension(); dim++) { //vertices don't have a physical entity ?
+    if( ! r->physicalType[dim].size() ) continue;
+    int* tagPtr = r->physicalType[dim].data();
+    int i = 0;
+    apf::MeshIterator* it = m->begin(dim);
+    while ((e = m->iterate(it)))
+      m->setIntTag(e, tag, &tagPtr[i++]);
+    m->end(it);
+  }
 }
 
 static const double gmshTet10EdgeIndices[6] = {0, 1, 2, 3, 5, 4};
@@ -254,8 +283,9 @@ void readGmsh(apf::Mesh2* m, const char* filename)
   initReader(&r, m, filename);
   readNodes(&r);
   readElements(&r);
-  freeReader(&r);
   m->acceptChanges();
+  setElmPhysicalType(&r,m);
+  freeReader(&r);
   if (r.isQuadratic)
     readQuadratic(&r, m, filename);
 }
