@@ -44,7 +44,7 @@ int main(int argc, char** argv)
   if (std::string(argv[1]).compare(".null") == 0)
     apf::deriveMdsModel(m);
   m->verify();
-  convert_my_tag(m,"gmsh_physical_entity");
+  convert_my_tag(m,"physical_type");
   apf::writeVtkFiles("foo.vtu", m);
   m->writeNative(argv[3]);
   m->destroyNative();
