@@ -3,28 +3,10 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <apfShape.h>
 #include <PCU.h>
 #include <lionPrint.h>
 #include <cstdlib>
 #include <string.h>
-
-apf::Field* convert_my_tag(apf::Mesh* m, std::string name) {
-  apf::MeshTag* t = m->findTag(name.c_str());
-  apf::MeshEntity* elm;
-  apf::MeshIterator* it = m->begin(m->getDimension());
-  apf::Field* f = apf::createField(m, name.c_str(), apf::SCALAR, 
-                                   apf::getConstant(m->getDimension()));
-  int vals[1];
-  double vals_d[1];
-  while ((elm = m->iterate(it))) {
-    m->getIntTag(elm, t, vals);
-    vals_d[0] = vals[0];
-    apf::setComponents(f, elm, 0, vals_d);
-  }
-  m->end(it);
-  return f;
-}
 
 int main(int argc, char** argv)
 {
@@ -44,8 +26,6 @@ int main(int argc, char** argv)
   if (std::string(argv[1]).compare(".null") == 0)
     apf::deriveMdsModel(m);
   m->verify();
-  convert_my_tag(m,"physical_type");
-  apf::writeVtkFiles("foo.vtu", m);
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
