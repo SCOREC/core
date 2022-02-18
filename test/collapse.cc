@@ -60,6 +60,8 @@ int main(int argc, char** argv) {
   code.mesh = apf::loadMdsMesh(modelFile, meshFile);
   apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
   Parma_ShrinkPartition(code.mesh, partitionFactor, code);
+  code.mesh->destroyNative();
+  apf::destroyMesh(code.mesh);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();

@@ -10,6 +10,7 @@
 #include "maDBG.h"
 #include "maShape.h"
 #include "maAdapt.h"
+#include "maRefine.h"
 #include <gmi.h>
 #include <gmi_null.h>
 #include <PCU.h>
@@ -384,6 +385,50 @@ void visualizeSizeField(
 
   msf->destroyNative();
   apf::destroyMesh(msf);
+}
+
+struct SplitByTag : public ma::Predicate
+{
+  SplitByTag(ma::Adapt* a_, int type_, int tag_) :
+    a(a_), type(type_), tag(tag_) {}
+  bool operator() (ma::Entity* e) {
+    ma::Mesh* m = a->mesh;
+    int mtype = m->getModelType(m->toModel(e));
+    int mtag  = m->getModelTag(m->toModel(e));
+    if (mtype != type) return false;
+    if (mtag  != tag ) return false;
+    return true;
+  }
+  ma::Adapt* a;
+  int type;
+  int tag;
+};
+
+void uniformAdaptByModelTag(
+    apf::Mesh2* m,
+    int mtype,
+    int mtag,
+    int level)
+{
+  ma::Input* in = ma::makeAdvanced(ma::configureUniformRefine(m, 0));
+  ma::validateInput(in);
+  ma::Adapt* a = new ma::Adapt(in);
+  for(int i = 0; i < level; i++) {
+    SplitByTag p(a, mtype, mtag);
+    ma::markEntities(a, 1, p, ma::SPLIT, ma::NEED_NOT_SPLIT,
+    	ma::DONT_SPLIT | ma::NEED_NOT_SPLIT);
+    PCU_ALWAYS_ASSERT(ma::checkFlagConsistency(a,1,ma::SPLIT));
+    ma::Refine* r = a->refine;
+    ma::resetCollection(r);
+    ma::collectForTransfer(r);
+    ma::collectForMatching(r);
+    ma::addAllMarkedEdges(r);
+    ma::splitElements(r);
+    ma::processNewElements(r);
+    ma::destroySplitElements(r);
+    ma::forgetNewEntities(r);
+  }
+  delete(a);
 }
 
 }

@@ -65,26 +65,26 @@ string(REGEX REPLACE
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 string(REGEX MATCH
-  "[0-9]+.[0-9]+-[0-9]+"
+  "[0-9]+[.][0-9]+-[0-9]+"
   SIM_VERSION
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 #VERSION_LESS and VERSION_GREATER need '.' delimited version strings.
 string(REGEX REPLACE
-  "([0-9]+.[0-9]+)-([0-9]+)"
+  "([0-9]+[.][0-9]+)-([0-9]+)"
   "\\1.\\2" SIM_DOT_VERSION
   "${SIM_VERSION}")
 string(REGEX REPLACE
-  "([0-9]+).([0-9]+)-([0-9]+)"
+  "([0-9]+)[.]([0-9]+)-([0-9]+)"
   "\\1" SIMMODSUITE_MAJOR_VERSION
   "${SIM_VERSION}")
 string(REGEX REPLACE
-  "([0-9]+).([0-9]+)-([0-9]+)"
+  "([0-9]+)[.]([0-9]+)-([0-9]+)"
   "\\3" SIMMODSUITE_MINOR_VERSION
   "${SIM_VERSION}")
 
 set(MIN_VALID_SIM_VERSION 12.0.190225)
-set(MAX_VALID_SIM_VERSION 15.0.200714)
+set(MAX_VALID_SIM_VERSION 16.0-210623)
 if( ${SKIP_SIMMETRIX_VERSION_CHECK} )
   message(STATUS "Skipping Simmetrix SimModSuite version check."
     " This may result in undefined behavior")
@@ -113,7 +113,7 @@ message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
   set(MIN_SIM_PARASOLID_VERSION 290)
-  set(MAX_SIM_PARASOLID_VERSION 310)
+  set(MAX_SIM_PARASOLID_VERSION 330)
   foreach(version RANGE
       ${MAX_SIM_PARASOLID_VERSION}
       ${MIN_SIM_PARASOLID_VERSION} -10)

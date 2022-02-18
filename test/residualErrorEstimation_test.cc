@@ -155,6 +155,9 @@ double computeElementExactError(apf::Mesh* mesh, apf::MeshEntity* e,
   if (error < 0.0)
     error = -error;
 
+  apf::destroyElement(el);
+  apf::destroyMeshElement(me);
+
   return sqrt(error);
 }
 

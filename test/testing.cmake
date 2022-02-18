@@ -8,16 +8,6 @@ function(mpi_test TESTNAME PROCS EXE)
   )
 endfunction(mpi_test)
 
-function(smoke_test TESTNAME PROCS EXE)
-  set(tname smoke_test_${TESTNAME})
-  add_test(
-    NAME ${tname}
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
-    CONFIGURATIONS SMOKE_TEST_CONFIG
-    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
-  SET_TESTS_PROPERTIES(${tname} PROPERTIES LABELS "SMOKE_TEST" )
-endfunction(smoke_test)
-
 mpi_test(shapefun 1 ./shapefun)
 mpi_test(shapefun2 1 ./shapefun2)
 mpi_test(bezierElevation 1 ./bezierElevation)
@@ -136,7 +126,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
+if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     AND SIMMODSUITE_SimAdvMeshing_FOUND)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
@@ -221,6 +211,13 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
+set(MDIR ${MESHES}/gmsh)
+mpi_test(twoQuads 1
+  ./from_gmsh
+  ".null"
+  "${MDIR}/twoQuads.msh"
+  "${MDIR}/twoQuads.smb")
+
 set(MDIR ${MESHES}/ugrid)
 mpi_test(naca_ugrid 2
   ./from_ugrid
@@ -283,11 +280,6 @@ mpi_test(uniform_serial 1
   "pipe.smb"
   "pipe_unif.smb")
 mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
-smoke_test(uniform_serial 1
-  ./uniform
-  "${MDIR}/pipe.${GXT}"
-  "${MDIR}/pipe.smb"
-  "pipe_unif.smb")
 if(ENABLE_SIMMETRIX)
   mpi_test(snap_serial 1
     ./snap
@@ -295,21 +287,21 @@ if(ENABLE_SIMMETRIX)
     "pipe_unif.smb"
     "pipe.smb")
 endif()
-mpi_test(ma_serial 1
-  ./ma_test
-  "${MDIR}/pipe.${GXT}"
-  "pipe.smb")
-mpi_test(aniso_ma_serial 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "0")
-mpi_test(aniso_ma_serial_log_interpolation 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "1")
 if(ENABLE_ZOLTAN)
+  mpi_test(ma_serial 1
+    ./ma_test
+    "${MDIR}/pipe.${GXT}"
+    "pipe.smb")
+  mpi_test(aniso_ma_serial 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "0")
+  mpi_test(aniso_ma_serial_log_interpolation 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "1")
   mpi_test(torus_ma_parallel 4
     ./torus_ma_test
     "${MESHES}/torus/torus.dmg"
@@ -320,7 +312,7 @@ mpi_test(tet_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
-if(ENABLE_SIMMETRIX)
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(test_residual_error_estimate 1
     ./residualErrorEstimation_test
     "${MESHES}/electromagnetic/fichera.x_t"
@@ -335,12 +327,6 @@ mpi_test(split_2 2
   ./split
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
-  ${MESHFILE}
-  2)
-smoke_test(split_2 2
-  ./split
-  "${MDIR}/pipe.${GXT}"
-  "${MDIR}/pipe.smb"
   ${MESHFILE}
   2)
 mpi_test(collapse_2 2
@@ -645,11 +631,13 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/upright.smd"
       "67k")
     endif()
-    # adapt_meshgen uses the output of parallel_meshgen
-    mpi_test(adapt_meshgen 4
-      ./ma_test
-      "${MDIR}/upright.smd"
-      "67k/")
+    if(ENABLE_ZOLTAN)
+      # adapt_meshgen uses the output of parallel_meshgen
+      mpi_test(adapt_meshgen 4
+        ./ma_test
+        "${MDIR}/upright.smd"
+        "67k/")
+    endif()
   endif()
   if(SIM_PARASOLID)
     mpi_test(convert_para 1
@@ -744,7 +732,7 @@ if (PCU_COMPRESS)
   add_test(NAME chef8
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  if(ENABLE_SIMMETRIX)
+  if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   endif()

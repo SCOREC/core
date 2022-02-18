@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   m->verify();
   apf::writeVtkFiles("aniso_before",m);
   AnIso sf(m);
-  ma::Input* in = ma::configure(m, &sf, 0, logInterpolation);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf, 0, logInterpolation));
   in->shouldRunPreZoltan = true;
   in->shouldRunMidParma = true;
   in->shouldRunPostParma = true;

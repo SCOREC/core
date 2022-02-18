@@ -159,7 +159,7 @@ double testH1Field(
 
   int dim = m->getDimension();
   int count;
-  apf::MeshIterator* it = m->begin(0);
+  apf::MeshIterator* it;
   apf::MeshEntity* ent;
 
   // Verify that interpolated solution field agrees with exact field.
@@ -209,7 +209,7 @@ void testCurveAdapt(
   apf::Field* f = addH1Field(m, field_order, exact_order);
   double l2ErrorBefore = testH1Field(m, f, apf::Vector3(1./3., 1./4., 1./5.), exact_order);
 
-  ma::Input* in = ma::configureUniformRefine(m,1);
+  ma::Input* in = ma::makeAdvanced(ma::configureUniformRefine(m,1));
   // Snap is off for solutions transfer testing.
   in->shouldSnap = false;
   in->goodQuality = 0.3*0.3*0.3;

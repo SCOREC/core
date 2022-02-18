@@ -716,6 +716,7 @@ static void getOrderedTetsandFaces(apf::Mesh* mesh, apf::MeshEntity* edge,
         firstFace = up.e[i]; break;
       }
     }
+    PCU_ALWAYS_ASSERT(firstFace);
     faces.push_back(firstFace);
     mesh->getUp(firstFace, up);
     PCU_ALWAYS_ASSERT(up.n == 1);

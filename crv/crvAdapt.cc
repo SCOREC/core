@@ -154,7 +154,7 @@ ma::Input* configureShapeCorrection(
     ma::Mesh* m, ma::SizeField* f,
     ma::SolutionTransfer* s)
 {
-  ma::Input* in = ma::configureIdentity(m,f,s);
+  ma::Input* in = ma::makeAdvanced(ma::configureIdentity(m,f,s));
   in->shouldFixShape = true;
   in->shouldSnap = in->mesh->canSnap();
   in->shouldTransferParametric = in->mesh->canSnap();
@@ -235,7 +235,18 @@ void adapt(ma::Input* in)
   apf::printStats(a->mesh);
   crv::clearTags(a);
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
   delete in;
+}
+
+
+void adapt(const ma::Input* in)
+{
+  crv::adapt(ma::makeAdvanced(in));
 }
 
 /** \brief Measures entity related quantities for a given mesh

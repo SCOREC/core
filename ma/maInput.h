@@ -34,14 +34,20 @@ typedef ShapeHandler* (*ShapeHandlerFunction)(Adapt* a);
 class Input
 {
   public:
-    ~Input();
+    ~Input() {}
+    Input() {} // default empty c-tor
+    Input(const Input& in) = default; // copy c-tor
     Mesh* mesh;
     SizeField* sizeField;
     bool ownsSizeField;
     SolutionTransfer* solutionTransfer;
     bool ownsSolutionTransfer;
     ShapeHandlerFunction shapeHandler;
-/** \brief number of refine/coarsen iterations to run (default 3) */
+/** \brief number of refine/coarsen iterations to run (default 3)
+    \details this value will be set to the minimum required iterations
+    inside the call to ma::configure in cases where there is a size information.
+    Users can override this by setting in->maximumIterations after the
+    call to ma::configure and before the call to ma::adapt routine.*/
     int maximumIterations;
 /** \brief whether to perform the collapse step */
     bool shouldCoarsen;
@@ -49,10 +55,10 @@ class Input
     \details requires modeler support, see gmi_can_eval */
     bool shouldSnap;
 /** \brief whether to transfer parametric coordinates
-  \details requires modeler support, see gmi_reparam */
+    \details requires modeler support, see gmi_reparam */
     bool shouldTransferParametric;
 /** \brief whether to transfer to the parametric coords of the closest point
-  \details requires modeler support, see gmi_closest_point */
+    \details requires modeler support, see gmi_closest_point */
     bool shouldTransferToClosestPoint;
 /** \brief whether to update matched entity info (limited support) */
     bool shouldHandleMatching;
@@ -63,35 +69,51 @@ class Input
 /** \brief whether to print the worst shape quality */
     bool shouldPrintQuality;
 /** \brief minimum desired mean ratio cubed for simplex elements
-   \details a different measure is used for curved elements */
+    \details a different measure is used for curved elements */
     double goodQuality;
 /** \brief whether to check the quality of split elems in DoubleSplitsCollapse
-   (default false) */
+    (default false) */
     double shouldCheckQualityForDoubleSplits;
 /** \brief minimum valid mean ratio cubed for simplex elements (default 1e-10)
-   \details used to define inside-out tetrahedra.
-   a different measure is used for curved elements */
+    \details used to define inside-out tetrahedra.
+    a different measure is used for curved elements */
     double validQuality;
 /** \brief imbalance target for all load balancing tools (default 1.10) */
     double maximumImbalance;
-/** \brief whether to run zoltan predictive load balancing (default false) */
+/** \brief whether to run zoltan predictive load balancing (default false)
+    \details if this and all the other PreBalance options are false, pre-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPreZoltan;
-/** \brief whether to run zoltan predictive load balancing using RIB (default false) */
+/** \brief whether to run zoltan predictive load balancing using RIB (default false)
+    \details if this and all the other PreBalance options are false, pre-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPreZoltanRib;
-/** \brief whether to run parma predictive load balancing (default false) */
+/** \brief whether to run parma predictive load balancing (default false)
+    \details if this and all the other PreBalance options are false, pre-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPreParma;
-/** \brief whether to run zoltan during adaptation (default false) */
+/** \brief whether to run zoltan during adaptation (default false)
+    \details if this and all the other MidBalance options are false, mid-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunMidZoltan;
-/** \brief whether to run parma during adaptation (default false)*/
+/** \brief whether to run parma during adaptation (default false)
+    \details if this and all the other MidBalance options are false, mid-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunMidParma;
-/** \brief whether to run zoltan after adapting (default false) */
+/** \brief whether to run zoltan after adapting (default false)
+    \details if this and all the other PostBalance options are false, post-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPostZoltan;
-/** \brief whether to run zoltan RIB after adapting (default false) */
+/** \brief whether to run zoltan RIB after adapting (default false)
+    \details if this and all the other PostBalance options are false, post-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPostZoltanRib;
-/** \brief whether to run parma after adapting (default false) */
+/** \brief whether to run parma after adapting (default false)
+    \details if this and all the other PostBalance options are false, post-balancing
+    occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPostParma;
 /** \brief the ratio between longest and shortest edges that differentiates a
-   "short edge" element from a "large angle" element. */
+    "short edge" element from a "large angle" element. */
     double maximumEdgeRatio;
 /** \brief whether to tetrahedronize the boundary layer (default false)  */
     bool shouldTurnLayerToTets;
@@ -115,7 +137,7 @@ class Input
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms
  \param logInterpolation if true uses logarithmic interpolation */
-Input* configure(
+const Input* configure(
     Mesh* m,
     AnisotropicFunction* f,
     SolutionTransfer* s=0,
@@ -123,7 +145,7 @@ Input* configure(
 /** \brief generate a configuration based on an isotropic function
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms */
-Input* configure(
+const Input* configure(
     Mesh* m,
     IsotropicFunction* f,
     SolutionTransfer* s=0);
@@ -135,7 +157,7 @@ Input* configure(
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms
  \param logInterpolation if true uses logarithmic interpolation */
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* sizes,
     apf::Field* frames,
@@ -145,20 +167,23 @@ Input* configure(
  \param size a scalar field of desired element size
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms */
-Input* configure(
+const Input* configure(
     Mesh* m,
     apf::Field* size,
     SolutionTransfer* s=0);
 
 /** \brief generate a uniform refinement configuration */
-Input* configureUniformRefine(Mesh* m, int n=1, SolutionTransfer* s=0);
+const Input* configureUniformRefine(Mesh* m, int n=1, SolutionTransfer* s=0);
 /** \brief generate a matched uniform refinement configuration */
-Input* configureMatching(Mesh* m, int n=1, SolutionTransfer* s=0);
+const Input* configureMatching(Mesh* m, int n=1, SolutionTransfer* s=0);
 /** \brief generate a no-op configuration */
-Input* configureIdentity(Mesh* m, SizeField* f=0, SolutionTransfer* s=0);
+const Input* configureIdentity(Mesh* m, SizeField* f=0, SolutionTransfer* s=0);
 
 /** \brief used internally, but users can call this if they want */
 void validateInput(Input* in);
+
+/** \brief creates a new non-constant Input for advanced users */
+Input* makeAdvanced(const Input* in);
 
 }
 
