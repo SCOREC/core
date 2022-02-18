@@ -20,7 +20,8 @@ smoke_test(split_2 2
   "pipe_2_.smb"
   2)
 
+include(GNUInstallDirs)
 # install the test input files for use in spack post-install tests
 install(FILES "${MDIR}/pipe.dmg" "${MDIR}/pipe0.smb"
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/testdata)
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/testdata)
 
