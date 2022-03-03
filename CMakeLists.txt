@@ -93,6 +93,7 @@ option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in u
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
+option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
@@ -116,7 +117,7 @@ endif()
 if(ENABLE_OMEGA_H)
   # find the omega_h library
   set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
-  set(Omega_h_REQUIRED_VERSION 9.0.0)
+  set(Omega_h_REQUIRED_VERSION ${PUMI_USE_OMEGA_H_VERSION})
   bob_public_dep(Omega_h)
 endif()
 
