@@ -244,31 +244,35 @@ static const uint16_t pcu_endian_value = 1;
 #define PCU_BIG_ENDIAN 0
 #define PCU_ENCODED_ENDIAN PCU_BIG_ENDIAN //consistent with network byte order
 
-static void pcu_swap_16(uint16_t* p)
-{
-  uint8_t* p2 = (uint8_t*)p;
-  uint8_t temp = p2[0];
-  p2[0] = p2[1];
-  p2[1] = temp;
-}
-
 static void pcu_swap_32(uint32_t* p)
 {
-  uint16_t* p2 = (uint16_t*)p;
-  uint16_t temp = p2[0];
-  p2[0] = p2[1];
-  p2[1] = temp;
-  pcu_swap_16(p2);
-  pcu_swap_16(p2+1);
+  uint32_t a = *p;
+#if defined(__GNUC__)
+  a = __builtin_bswap32(a);
+#elif defined(_MSC_VER)
+  a = _byteswap_ulong(a);
+#else
+  a = ((a & 0x000000FF) << 24) | ((a & 0x0000FF00) << 8) |
+      ((a & 0x00FF0000) >> 8) | ((a & 0xFF000000) >> 24);
+#endif
+  *p = a;
 }
 
-static void pcu_swap_64(uint32_t* p)
+static void pcu_swap_64(uint64_t* p)
 {
-  uint32_t temp = p[0];
-  p[0] = p[1];
-  p[1] = temp;
-  pcu_swap_32(p);
-  pcu_swap_32(p+1);
+  uint64_t a = *p;
+#if defined(__GNUC__) && !defined(__CUDA_ARCH__)
+  a = __builtin_bswap64(a);
+#elif defined(_MSC_VER) && !defined(__CUDA_ARCH__)
+  a = _byteswap_uint64(a);
+#else
+  a = ((a & 0x00000000000000FFULL) << 56) |
+      ((a & 0x000000000000FF00ULL) << 40) |
+      ((a & 0x0000000000FF0000ULL) << 24) | ((a & 0x00000000FF000000ULL) << 8) |
+      ((a & 0x000000FF00000000ULL) >> 8) | ((a & 0x0000FF0000000000ULL) >> 24) |
+      ((a & 0x00FF000000000000ULL) >> 40) | ((a & 0xFF00000000000000ULL) >> 56);
+#endif
+  *p = a;
 }
 
 void pcu_swap_unsigneds(unsigned* p, size_t n)
@@ -282,7 +286,7 @@ void pcu_swap_doubles(double* p, size_t n)
 {
   PCU_ALWAYS_ASSERT(sizeof(double)==8);
   for (size_t i=0; i < n; ++i)
-    pcu_swap_64((uint32_t*)(p++));
+    pcu_swap_64((uint64_t*)(p++));
 }
 
 void pcu_write_unsigneds(pcu_file* f, unsigned* p, size_t n)
