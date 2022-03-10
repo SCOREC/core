@@ -253,7 +253,7 @@ int main(int argc, char** argv)
 //  increment that 2D father node counter as  we encounter nodes not yet on the list. This can aso take care of the fact that 3D father node
 //  needs to point a 2D fther node as well
     double coordNewPt[nvert][3];
-    for(i=0; i< 3 ; i++) { //FIXME logic for quads
+    for(i=0; i< nvert ; i++) { //FIXME logic for quads
        int* markedData;
        if(!EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&markedData)){  // not sure about marked yet
          count2D++;
@@ -261,20 +261,22 @@ int main(int argc, char** argv)
          vtxData[0] = count2D;
          EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
          V_coord(vrts[i],coordNewPt[i]);
-         fprintf ( fcr, "%.15E,%.15E,\n", coordNewPt[i][0],coordNewPt[i][1]);
+         fprintf ( fcr, "%.15E %.15E,\n", coordNewPt[i][0],coordNewPt[i][1]);
        }  
     }
 
     double coordFather[nvert][3];
     int fatherIds[4]; //store the ids of the fathers (vertices) on the root face 
-    for(i=0; i< 3 ; i++) { //FIXME logic for quads
+    for(i=0; i< nvert ; i++) { //FIXME logic for quads
        int* fatherIdPtr;
        const int exists = EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&fatherIdPtr);
        assert(exists);
        fatherIds[i] = fatherIdPtr[0];
        V_coord(vrts[i],coordFather[i]);
+       fprintf ( fcn, "%d ", fatherIds[i]);
     }
-    fprintf ( fcn, "%d,%d,%d,\n", fatherIds[0],fatherIds[1],fatherIds[2]);
+    fprintf ( fcn, "\n");
+//    fprintf ( fcn, "%d,%d,%d,\n", fatherIds[0],fatherIds[1],fatherIds[2]);
 
    dir=0;  // 1 fails
  // get the upward adjacent region srcRgn
@@ -308,7 +310,7 @@ int main(int argc, char** argv)
      while( (sonVtx = (pVertex)PList_next(listVn, &iter2)) ) { //loop over plist of vertices
         V_coord(sonVtx,coordSon);
         distMin=1.0e7;
-        for(i=0; i< 3; i++){
+        for(i=0; i< nvert; i++){
           dx=coordSon[0]-coordFather[i][0];
           dy=coordSon[1]-coordFather[i][1];
           dist=dx*dx+dy*dy;
