@@ -125,7 +125,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::adapt(in, m);
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
-  if (in.simmetrixMesh == 0)
+  if (in.simmetrixMesh == 0 && (in.splitFactor) > 1 )
     plan = ph::split(in, m);
 }
 
@@ -270,9 +270,23 @@ namespace ph {
   }
 }
 
+  struct GroupCode : public Parma_GroupCode {
+    apf::Mesh2* mesh;
+    void run(int) {
+     // mesh->writeNative(outFile);
+    if (!PCU_Comm_Self())
+      lion_eprint(1, "not writing collapse mesh yet \n");
+    }   
+  };  
+
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
+    int shrinkFactor=1;
+    if(in.splitFactor < 0) {
+       in.splitFactor=1; // this is used in to set readers so if shrinking need to read all
+       shrinkFactor=-1*in.splitFactor; 
+    }
     PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
@@ -283,8 +297,15 @@ namespace chef {
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll(comm);
-    if (in.simmetrixMesh == 0)
+    if (in.simmetrixMesh == 0 && in.splitFactor > 1)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
+    if (in.simmetrixMesh == 0 && shrinkFactor > 1){
+      GroupCode code;
+//      code.mesh = apf::loadMdsMesh(modelFile, meshFile);
+//      apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+//      Parma_ShrinkPartition(code.mesh, -1*in.splitFactor, code);
+      Parma_ShrinkPartition(m, shrinkFactor, code);
+    }
     ph::checkBalance(m,in);
     ph::preprocess(m,in,out,bcs);
   }
