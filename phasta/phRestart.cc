@@ -285,9 +285,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "projection vectors",
     "vorticity",
     "BCs",
-    "cdelsq",
-    "conservativestats",
-    "STG_rnd"
+    "cdelsq"
   };
   static char const* const known_cell_fields[] = {
     "VOF solution",

@@ -278,7 +278,7 @@ namespace {
   struct GroupCode : public Parma_GroupCode {
     apf::Mesh2* mesh;
     void run(int) {
-      ph::checkBalance(m,input);
+      ph::checkBalance(mesh,input);
       ph::preprocess(mesh,input,output,boundary);
     }
   };  
