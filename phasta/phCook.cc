@@ -277,13 +277,9 @@ namespace {
   ph::BCs boundary;
   struct GroupCode : public Parma_GroupCode {
     apf::Mesh2* mesh;
-//    const char* dumpFile = "dump";
     void run(int) {
-      mesh->writeNative(dumpFile);
+      ph::checkBalance(m,input);
       ph::preprocess(mesh,input,output,boundary);
-//      mesh->writeNative(dumpFile);
-//    if (!PCU_Comm_Self())
-//      lion_eprint(1, "now writing collapse mesh yet \n");
     }
   };  
 }
@@ -309,20 +305,17 @@ namespace chef {
     if (in.simmetrixMesh == 0 && in.splitFactor > 1)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
     if (in.simmetrixMesh == 0 && shrinkFactor > 1){
-      dumpFile="dump/";
       GroupCode code;
-//      code.mesh = apf::loadMdsMesh(modelFile, meshFile);
       apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
-//      Parma_ShrinkPartition(code.mesh, -1*in.splitFactor, code);
       code.mesh=m;
       input=in;
       output=out;
       boundary=bcs;
       Parma_ShrinkPartition(code.mesh, shrinkFactor, code);
-//      switchToMasters(shrinkFactor);
+    } else {
+      ph::checkBalance(m,in);
+      ph::preprocess(m,in,out,bcs);
     }
-    //ph::checkBalance(m,in);
-    //ph::preprocess(m,in,out,bcs);
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
