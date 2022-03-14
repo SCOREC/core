@@ -22,7 +22,7 @@
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
 #include <errno.h> /* for checking the error from mkdir */
 
-enum { SMB_VERSION = 5 };
+enum { SMB_VERSION = 6 };
 
 enum {
   SMB_VERT,
