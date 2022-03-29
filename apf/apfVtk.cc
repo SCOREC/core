@@ -557,7 +557,7 @@ static void writeTypes(std::ostream& file,
     ,{ 9,23}//quad
     ,{10,24}//tet
     ,{12,25}//hex
-    ,{13,-1}//prism
+    ,{13,32}//prism
     ,{14,-1}//pyramid
   };
   if (isWritingBinary)
