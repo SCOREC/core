@@ -562,22 +562,6 @@ class QuadraticBase : public FieldShape
       return shapes[type];
     }
     int getOrder() {return 2;}
-    bool hasNodesIn(int dimension)
-    {
-      if (dimension == 3)
-        return false;
-      else
-        return true;
-    }
-    int countNodesOn(int type)
-    {
-      if (type == Mesh::VERTEX)
-      	return 1;
-      if (type == Mesh::EDGE)
-      	return 1;
-      return 0;
-    }
-
     void getNodeXi(int, int, Vector3& xi)
     {
       /* for vertex nodes, mid-edge nodes,
