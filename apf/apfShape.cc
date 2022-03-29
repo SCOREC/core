@@ -541,7 +541,7 @@ class QuadraticBase : public FieldShape
 	{
 	  fail("getVectorValues not defined for nodal shapes");
 	}
-        int countNodes() const {return 15;}
+        int countNodes() const {return 18;}
     };
     EntityShape* getEntityShape(int type)
     {
