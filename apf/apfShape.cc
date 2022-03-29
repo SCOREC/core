@@ -522,12 +522,34 @@ class QuadraticBase : public FieldShape
 	}
         int countNodes() const {return 10;}
     };
+    class Prism : public EntityShape
+    {
+      public:
+        void getValues(Mesh*, MeshEntity*,
+            Vector3 const& , NewArray<double>& ) const
+        {
+	  fail("getValue not implemented for quadratic prisms type!");
+        }
+        void getLocalGradients(Mesh*, MeshEntity*,
+            Vector3 const& ,
+            NewArray<Vector3>& ) const
+        {
+	  fail("getLocalGradients not implemented for quadratic prisms type!");
+        }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
+        int countNodes() const {return 15;}
+    };
     EntityShape* getEntityShape(int type)
     {
       static Linear::Vertex vertex;
       static Edge edge;
       static Triangle triangle;
       static Tetrahedron tet;
+      static Prism prism;
       static EntityShape* shapes[Mesh::TYPES] =
       {&vertex,   //vertex
        &edge,     //edge
@@ -535,11 +557,27 @@ class QuadraticBase : public FieldShape
        NULL,     //quad
        &tet,      //tet
        NULL,      //hex
-       NULL,      //prism
+       &prism,      //prism
        NULL};     //pyramid
       return shapes[type];
     }
     int getOrder() {return 2;}
+    bool hasNodesIn(int dimension)
+    {
+      if (dimension == 3)
+        return false;
+      else
+        return true;
+    }
+    int countNodesOn(int type)
+    {
+      if (type == Mesh::VERTEX)
+      	return 1;
+      if (type == Mesh::EDGE)
+      	return 1;
+      return 0;
+    }
+
     void getNodeXi(int, int, Vector3& xi)
     {
       /* for vertex nodes, mid-edge nodes,
