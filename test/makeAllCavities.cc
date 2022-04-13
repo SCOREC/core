@@ -148,6 +148,22 @@ static void makeCavityMeshes(
 
   int dim = m->getDimension();
 
+  std::set<apf::MeshEntity*> cavity;
+  cavity.clear();
+
+  apf::Downward dv;
+  int nv = m->getDownward(e, 0, dv);
+  for (int i = 0; i < nv; i++) {
+    apf::Adjacent adj;
+    m->getAdjacent(dv[i], dim, adj);
+    APF_ITERATE(apf::Adjacent, adj, it)
+      if (!cavity.count(*it))
+      	cavity.insert(*it);
+  }
+
+
+
+
   cavityMeshLinear = apf::makeEmptyMdsMesh(0, dim, false);
   cavityMeshCurved = apf::makeEmptyMdsMesh(0, dim, false);
 }
