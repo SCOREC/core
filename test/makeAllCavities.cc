@@ -199,6 +199,10 @@ int main(int argc, char** argv)
       writeMeshes(entMeshCurved, prefix, "cavities",
       	  cavityFolderName, entityFileNameCurved, res);
 
+      entMeshLinear->destroyNative();
+      entMeshCurved->destroyNative();
+      apf::destroyMesh(entMeshLinear);
+      apf::destroyMesh(entMeshCurved);
       cavityMeshLinear->destroyNative();
       cavityMeshCurved->destroyNative();
       apf::destroyMesh(cavityMeshLinear);
@@ -799,25 +803,12 @@ static void writeMeshes(
   }
   ss << name;
 
-  // also check if the cavity is made from a vertex
-  bool isVertCavity = false;
-  if (prefix2) {
-    std::string st(prefix2);
-    std::string subst = st.substr(0,4);
-    if (subst.compare(std::string("vert")) == 0)
-      isVertCavity = true;
-  }
-
   if (order == 1) {
     apf::writeVtkFiles(ss.str().c_str(), m);
   }
   else {
-    if (isVertCavity)
-      apf::writeVtkFiles(ss.str().c_str(), m);
-    else {
-      crv::writeCurvedVtuFiles(m, apf::Mesh::TRIANGLE, res, ss.str().c_str());
-      crv::writeCurvedWireFrame(m, res, ss.str().c_str());
-    }
+    crv::writeCurvedVtuFiles(m, apf::Mesh::TRIANGLE, res, ss.str().c_str());
+    crv::writeCurvedWireFrame(m, res, ss.str().c_str());
   }
   ss << ".smb";
   m->writeNative(ss.str().c_str());
