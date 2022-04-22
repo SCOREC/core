@@ -50,6 +50,11 @@ static void writeMeshes(
     const char* name,
     int res = 10);
 
+static apf::MeshTag* tagMesh(
+    apf::Mesh2* m,
+    int dim,
+    int model);
+
 int main(int argc, char** argv)
 {
 
@@ -58,16 +63,25 @@ int main(int argc, char** argv)
   if (PCU_Comm_Peers() > 1) {
     printf("%s should only be used for serial (single part) meshes!\n", argv[0]);
     printf("use the serialize utility to get a serial mesh, and retry!\n");
+    MPI_Finalize();
+    exit(EXIT_FAILURE);
   }
-  if (argc < 5) {
-    printf("USAGE: %s <model> <mesh> <enttype> <prefix> <tagname:optional>\n", argv[0]);
-    printf("CASE1:if tagname IS given && such a tag exists in the mesh \n");
-    printf("      then enttype is ignored and cavities are made for all \n");
-    printf("      the entities of dim 0,1,2 that have the tag.\n");
-    printf("CASE2:if tagname IS NOT given \n");
-    printf("      then cavities are made for all the entities \n");
-    printf("      of dim enttype.\n");
-    printf("NOTE: for large meshes users are encouraged to use CASE1!\n");
+  if (argc != 6) {
+    printf("USAGE: %s <model> <mesh> <prefix> <resolution> <mode>\n", argv[0]);
+    printf("modes are as follows \n");
+    printf("aa: creates all vert, edge, face cavities\n");
+    printf("ai: creates all vert, edge, face cavities classified on interior\n");
+    printf("ab: creates all vert, edge, face cavities classified on boundary\n");
+    printf("va: creates all vert cavities\n");
+    printf("vi: creates all vert cavities classified on interior\n");
+    printf("vb: creates all vert cavities classified on boundary\n");
+    printf("ea: creates all edge cavities\n");
+    printf("ei: creates all edge cavities classified on interior\n");
+    printf("eb: creates all edge cavities classified on boundary\n");
+    printf("fa: creates all face cavities\n");
+    printf("fi: creates all face cavities classified on interior\n");
+    printf("fb: creates all face cavities classified on boundary\n");
+    printf("tagname: creates cavities for all entities that have tagname\n");
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
@@ -84,43 +98,65 @@ int main(int argc, char** argv)
 
   const char* modelFile = argv[1];
   const char* meshFile  = argv[2];
-  int         enttype   = atoi(argv[3]);
-  const char* prefix    = argv[4];
+  const char* prefix    = argv[3];
+  int         res       = atoi(argv[4]);
+  std::string mode(argv[5]);
 
+  apf::MeshTag* tag = 0;
 
 
   // load the mesh and check if the tag exists on the mesh
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
 
-  apf::MeshTag* tag = 0;
-  if (argc == 6) {
-    const char* tname = argv[5];
-    tag = m->findTag(tname);
+  if (mode.compare(std::string("aa")) == 0)
+    tag = tagMesh(m, -1, 1);
+  else if (mode.compare(std::string("ai")) == 0)
+    tag = tagMesh(m, -1, 2);
+  else if (mode.compare(std::string("ab")) == 0)
+    tag = tagMesh(m, -1, 3);
+  else if (mode.compare(std::string("va")) == 0)
+    tag = tagMesh(m, 0, 1);
+  else if (mode.compare(std::string("vi")) == 0)
+    tag = tagMesh(m, 0, 2);
+  else if (mode.compare(std::string("vb")) == 0)
+    tag = tagMesh(m, 0, 3);
+  else if (mode.compare(std::string("ea")) == 0)
+    tag = tagMesh(m, 1, 1);
+  else if (mode.compare(std::string("ei")) == 0)
+    tag = tagMesh(m, 1, 2);
+  else if (mode.compare(std::string("eb")) == 0)
+    tag = tagMesh(m, 1, 3);
+  else if (mode.compare(std::string("fa")) == 0)
+    tag = tagMesh(m, 2, 1);
+  else if (mode.compare(std::string("fi")) == 0)
+    tag = tagMesh(m, 2, 2);
+  else if (mode.compare(std::string("fb")) == 0)
+    tag = tagMesh(m, 2, 3);
+  else {
+    tag = m->findTag(mode.c_str());
     if (!tag) {
-      printf("input mesh does not have the tag with name %s\n", tname);
-      printf("aborting!\n");
+      printf("tag with name %s was not found on the mesh. Aborting!\n", mode.c_str());
       MPI_Finalize();
       exit(EXIT_FAILURE);
     }
   }
 
+  PCU_ALWAYS_ASSERT(tag);
+
+
   // make the root directory to save the cavity info
   safe_mkdir(prefix);
-  writeMeshes(m, prefix, "mesh", NULL, "linear");
+  writeMeshes(m, prefix, "mesh", NULL, "linear", res);
   // change the order of the mesh
   m->changeShape(crv::getBezier(3), true);
-  writeMeshes(m, prefix, "mesh", NULL, "curved");
+  writeMeshes(m, prefix, "mesh", NULL, "curved", res);
 
-
-  int targetd = apf::Mesh::typeDimension[enttype]; // the dim we iterate on to create cavities
 
   apf::MeshEntity* e;
   apf::MeshIterator* it;
 
 
   for (int d = 0; d < 3; d++) {
-    if (!tag && d != targetd) continue;
-
     it = m->begin(d);
     int index = 0;
 
@@ -129,7 +165,7 @@ int main(int argc, char** argv)
     // are adjacent to the verts of the "e". E.g., in case of edges,
     // this would give us the bi-directional edge collapse cavity.
     while ( (e = m->iterate(it)) ) {
-      if (tag && !m->hasTag(e, tag)) {
+      if (!m->hasTag(e, tag)) {
       	index++;
       	continue;
       }
@@ -153,11 +189,15 @@ int main(int argc, char** argv)
       sprintf(cavityFileNameCurved, "%s", "cavity_curved");
       sprintf(entityFileNameLinear, "%s", "entity_linear");
       sprintf(entityFileNameCurved, "%s", "entity_curved");
-      writeMeshes(cavityMeshLinear, prefix, "cavities", cavityFolderName, cavityFileNameLinear);
-      writeMeshes(cavityMeshCurved, prefix, "cavities", cavityFolderName, cavityFileNameCurved);
+      writeMeshes(cavityMeshLinear, prefix, "cavities",
+      	  cavityFolderName, cavityFileNameLinear, res);
+      writeMeshes(cavityMeshCurved, prefix, "cavities",
+      	  cavityFolderName, cavityFileNameCurved, res);
 
-      writeMeshes(entMeshLinear, prefix, "cavities", cavityFolderName, entityFileNameLinear);
-      writeMeshes(entMeshCurved, prefix, "cavities", cavityFolderName, entityFileNameCurved);
+      writeMeshes(entMeshLinear, prefix, "cavities",
+      	  cavityFolderName, entityFileNameLinear, res);
+      writeMeshes(entMeshCurved, prefix, "cavities",
+      	  cavityFolderName, entityFileNameCurved, res);
 
       cavityMeshLinear->destroyNative();
       cavityMeshCurved->destroyNative();
@@ -167,9 +207,6 @@ int main(int argc, char** argv)
     }
     m->end(it);
   }
-
-
-  /* safe_mkdir(inPrefix); */
 
   // rest of the clean up
   m->destroyNative();
@@ -784,4 +821,36 @@ static void writeMeshes(
   }
   ss << ".smb";
   m->writeNative(ss.str().c_str());
+}
+
+static apf::MeshTag* tagMesh(
+    apf::Mesh2* m,
+    int dim,
+    int model)
+{
+  // model = 1 means all
+  // model = 2 means only interior
+  // model = 3 means only boundary
+  // dim = -1 tags all dims
+  // dim =  0 tags verts only
+  // dim =  1 tags edges only
+  // dim =  2 tags faces only
+  apf::MeshEntity* e;
+  apf::MeshIterator* it;
+  apf::MeshTag* t = m->createIntTag("which_ent", 1);
+  for (int d = 0; d < 3; d++) {
+    if (dim == 0 && d != 0) continue;
+    if (dim == 1 && d != 1) continue;
+    if (dim == 2 && d != 2) continue;
+    it = m->begin(d);
+    while ( (e = m->iterate(it)) ) {
+      int mtype = m->getModelType(m->toModel(e));
+      if (model == 2 && mtype !=3) continue;
+      if (model == 3 && mtype ==3) continue;
+      int val = 1; // the value does not matter
+      m->setIntTag(e, t, &val);
+    }
+    m->end(it);
+  }
+  return t;
 }
