@@ -27,11 +27,9 @@
 #include <errno.h> /* for checking the error from mkdir */
 
 
-/* static void safe_mkdir( */
-/*     const char* path); */
-/* static apf::Mesh2* makeEntMesh( */
-/*     apf::Mesh2* m, */
-/*     apf::MeshEntity* e); */
+static void safe_mkdir(
+    const char* path);
+
 static void makeCavityMeshes(
     apf::Mesh2* m,
     apf::MeshEntity* e,
@@ -44,6 +42,14 @@ static void makeEntMeshes(
     apf::Mesh2* &entMeshLinear,
     apf::Mesh2* &entMeshCurved);
 
+static void writeMeshes(
+    apf::Mesh2* m,
+    const char* prefix0,
+    const char* prefix1,
+    const char* prefix2,
+    const char* name,
+    int res = 10);
+
 int main(int argc, char** argv)
 {
 
@@ -53,10 +59,15 @@ int main(int argc, char** argv)
     printf("%s should only be used for serial (single part) meshes!\n", argv[0]);
     printf("use the serialize utility to get a serial mesh, and retry!\n");
   }
-  if (argc < 6) {
-    if (PCU_Comm_Self() == 0) {
-      printf("USAGE: %s <model> <mesh> <enttype> <prefix>\n", argv[0]);
-    }
+  if (argc < 5) {
+    printf("USAGE: %s <model> <mesh> <enttype> <prefix> <tagname:optional>\n", argv[0]);
+    printf("CASE1:if tagname IS given && such a tag exists in the mesh \n");
+    printf("      then enttype is ignored and cavities are made for all \n");
+    printf("      the entities of dim 0,1,2 that have the tag.\n");
+    printf("CASE2:if tagname IS NOT given \n");
+    printf("      then cavities are made for all the entities \n");
+    printf("      of dim enttype.\n");
+    printf("NOTE: for large meshes users are encouraged to use CASE1!\n");
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
@@ -76,79 +87,86 @@ int main(int argc, char** argv)
   int         enttype   = atoi(argv[3]);
   const char* prefix    = argv[4];
 
-  printf("%s\n", prefix);
 
-  // load the mesh and get the order
+
+  // load the mesh and check if the tag exists on the mesh
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
-  m->changeShape(crv::getBezier(3), true);
-  /* int order = m->getShape()->getOrder(); */
-  crv::writeCurvedVtuFiles(m, apf::Mesh::TRIANGLE, 10, "in_mesh");
-  crv::writeCurvedWireFrame(m, 10, "in_mesh");
 
-  /* int dim = m->getDimension(); // mesh dimension */
-  int d = apf::Mesh::typeDimension[enttype]; // the dim we iterate on to create cavities
+  apf::MeshTag* tag = 0;
+  if (argc == 6) {
+    const char* tname = argv[5];
+    tag = m->findTag(tname);
+    if (!tag) {
+      printf("input mesh does not have the tag with name %s\n", tname);
+      printf("aborting!\n");
+      MPI_Finalize();
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  // make the root directory to save the cavity info
+  safe_mkdir(prefix);
+  writeMeshes(m, prefix, "mesh", NULL, "linear");
+  // change the order of the mesh
+  m->changeShape(crv::getBezier(3), true);
+  writeMeshes(m, prefix, "mesh", NULL, "curved");
+
+
+  int targetd = apf::Mesh::typeDimension[enttype]; // the dim we iterate on to create cavities
 
   apf::MeshEntity* e;
-  apf::MeshIterator* it = m->begin(d);
-  int index = 0;
+  apf::MeshIterator* it;
 
-  // for now cavities are defined as follows
-  // all the upward adjacent entities of dimension "dim" that
-  // are adjacent to the verts of the "e". E.g., in case of edges,
-  // this would give us the bi-directional edge collapse cavity.
-  while ( (e = m->iterate(it)) ) {
-    if (index != atoi(argv[5])) {
+
+  for (int d = 0; d < 3; d++) {
+    if (!tag && d != targetd) continue;
+
+    it = m->begin(d);
+    int index = 0;
+
+    // for now cavities are defined as follows
+    // all the upward adjacent entities of dimension "dim" that
+    // are adjacent to the verts of the "e". E.g., in case of edges,
+    // this would give us the bi-directional edge collapse cavity.
+    while ( (e = m->iterate(it)) ) {
+      if (tag && !m->hasTag(e, tag)) {
+      	index++;
+      	continue;
+      }
+      int etype = m->getType(e);
+
+      apf::Mesh2* cavityMeshCurved = 0;
+      apf::Mesh2* cavityMeshLinear = 0;
+      makeCavityMeshes(m, e, cavityMeshLinear, cavityMeshCurved);
+
+      apf::Mesh2* entMeshCurved = 0;
+      apf::Mesh2* entMeshLinear = 0;
+      makeEntMeshes(m, e, entMeshLinear, entMeshCurved);
+
+      char cavityFolderName[128];
+      char cavityFileNameLinear[128];
+      char cavityFileNameCurved[128];
+      char entityFileNameLinear[128];
+      char entityFileNameCurved[128];
+      sprintf(cavityFolderName, "%s_%05d", apf::Mesh::typeName[etype], index);
+      sprintf(cavityFileNameLinear, "%s", "cavity_linear");
+      sprintf(cavityFileNameCurved, "%s", "cavity_curved");
+      sprintf(entityFileNameLinear, "%s", "entity_linear");
+      sprintf(entityFileNameCurved, "%s", "entity_curved");
+      writeMeshes(cavityMeshLinear, prefix, "cavities", cavityFolderName, cavityFileNameLinear);
+      writeMeshes(cavityMeshCurved, prefix, "cavities", cavityFolderName, cavityFileNameCurved);
+
+      writeMeshes(entMeshLinear, prefix, "cavities", cavityFolderName, entityFileNameLinear);
+      writeMeshes(entMeshCurved, prefix, "cavities", cavityFolderName, entityFileNameCurved);
+
+      cavityMeshLinear->destroyNative();
+      cavityMeshCurved->destroyNative();
+      apf::destroyMesh(cavityMeshLinear);
+      apf::destroyMesh(cavityMeshCurved);
       index++;
-      continue;
     }
-    /* int etype = m->getType(e); */
-    /* int mtype = m->getModelType(m->toModel(e)); */
-
-    apf::Mesh2* cavityMeshCurved = 0;
-    apf::Mesh2* cavityMeshLinear = 0;
-    makeCavityMeshes(m, e, cavityMeshLinear, cavityMeshCurved);
-
-    apf::Mesh2* entMeshCurved = 0;
-    apf::Mesh2* entMeshLinear = 0;
-    makeEntMeshes(m, e, entMeshLinear, entMeshCurved);
-
-    apf::writeVtkFiles("cavity_linear", cavityMeshLinear);
-    crv::writeCurvedVtuFiles(cavityMeshCurved, apf::Mesh::TRIANGLE, 10, "cavity_curved");
-    crv::writeCurvedWireFrame(cavityMeshCurved, 10, "cavity_curved");
-
-    if (m->getType(e) == apf::Mesh::VERTEX)
-    {
-      apf::writeVtkFiles("entity_linear", entMeshLinear);
-      apf::writeVtkFiles("entity_curved", entMeshCurved);
-    }
-    else if (m->getType(e) == apf::Mesh::EDGE)
-    {
-      apf::writeVtkFiles("entity_linear", entMeshLinear);
-      /* crv::writeCurvedVtuFiles(entMeshCurved, apf::Mesh::TRIANGLE, 10, "entity_curved"); */
-      crv::writeCurvedWireFrame(entMeshCurved, 10, "entity_curved");
-    }
-    else if (m->getType(e) == apf::Mesh::TRIANGLE)
-    {
-      apf::writeVtkFiles("entity_linear", entMeshLinear);
-      crv::writeCurvedVtuFiles(entMeshCurved, apf::Mesh::TRIANGLE, 10, "entity_curved");
-      crv::writeCurvedWireFrame(entMeshCurved, 10, "entity_curved");
-    }
-    else
-      PCU_ALWAYS_ASSERT(0);
-
-    // write the curved cavity mesh in native format for future retrieval
-
-    // write the entMesh and cavityMeshLinear and cavityMeshCurved in vtk format
-
-    // destroy the entMesh and cavityMeshes
-    /* destroyMesh(entMesh); */
-    cavityMeshLinear->destroyNative();
-    cavityMeshCurved->destroyNative();
-    apf::destroyMesh(cavityMeshLinear);
-    apf::destroyMesh(cavityMeshCurved);
-    index++;
+    m->end(it);
   }
-  m->end(it);
 
 
   /* safe_mkdir(inPrefix); */
@@ -168,25 +186,18 @@ int main(int argc, char** argv)
   MPI_Finalize();
 }
 
-/* static void safe_mkdir( */
-/*     const char* path) */
-/* { */
-/*   mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH; */
-/*   int err; */
-/*   errno = 0; */
-/*   err = mkdir(path, mode); */
-/*   if (err != 0 && errno != EEXIST) */
-/*   { */
-/*     reel_fail("Err: could not create directory \"%s\"\n", path); */
-/*   } */
-/* } */
-
-/* static apf::Mesh2* makeEntMesh( */
-/*     apf::Mesh2* m, */
-/*     apf::MeshEntity* e) */
-/* { */
-/*   return 0; */
-/* } */
+static void safe_mkdir(
+    const char* path)
+{
+  mode_t const mode = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
+  int err;
+  errno = 0;
+  err = mkdir(path, mode);
+  if (err != 0 && errno != EEXIST)
+  {
+    reel_fail("Err: could not create directory \"%s\"\n", path);
+  }
+}
 
 static apf::Vector3 getEdgeCenter(
     apf::Mesh2* m,
@@ -247,8 +258,8 @@ static apf::Mesh2*  makePoint(
   vs.clear();
   for (int i = 0; i < n; i++) {
     apf::Vector3 p(0., 0., 0.);
-    p[0] = center[0] + radius * std::cos(i*pi/n);
-    p[1] = center[1] + radius * std::sin(i*pi/n);
+    p[0] = center[0] + radius * std::cos(2.*i*pi/n);
+    p[1] = center[1] + radius * std::sin(2.*i*pi/n);
     p[2] = center[2];
     apf::MeshEntity* newV = sphMesh->createVertex(m->toModel(e), p, param);
     vs.push_back(newV);
@@ -265,9 +276,9 @@ static apf::Mesh2*  makePoint(
   vs.clear();
   for (int i = 0; i < n; i++) {
     apf::Vector3 p(0., 0., 0.);
-    p[0] = center[0] + radius * std::cos(i*pi/n);
+    p[0] = center[0] + radius * std::cos(2.*i*pi/n);
     p[1] = center[1];
-    p[2] = center[2] + radius * std::sin(i*pi/n);
+    p[2] = center[2] + radius * std::sin(2.*i*pi/n);
     apf::MeshEntity* newV = sphMesh->createVertex(m->toModel(e), p, param);
     vs.push_back(newV);
   }
@@ -284,8 +295,8 @@ static apf::Mesh2*  makePoint(
   for (int i = 0; i < n; i++) {
     apf::Vector3 p(0., 0., 0.);
     p[0] = center[0];
-    p[1] = center[1] + radius * std::cos(i*pi/n);
-    p[2] = center[2] + radius * std::sin(i*pi/n);
+    p[1] = center[1] + radius * std::cos(2.*i*pi/n);
+    p[2] = center[2] + radius * std::sin(2.*i*pi/n);
     apf::MeshEntity* newV = sphMesh->createVertex(m->toModel(e), p, param);
     vs.push_back(newV);
   }
@@ -297,6 +308,8 @@ static apf::Mesh2*  makePoint(
     sphMesh->createEntity(apf::Mesh::EDGE, m->toModel(e), dv);
   }
   sphMesh->acceptChanges();
+  apf::deriveMdsModel(sphMesh);
+  sphMesh->verify();
   return sphMesh;
 }
 
@@ -336,6 +349,14 @@ static void makeEntMeshes(
     newVsc[1] = entMeshCurved->createVertex(0, p[1], param);
     apf::MeshEntity* edge = entMeshCurved->createEntity(apf::Mesh::EDGE, 0, newVsc);
 
+    entMeshLinear->acceptChanges();
+    apf::deriveMdsModel(entMeshLinear);
+    entMeshLinear->verify();
+
+    entMeshCurved->acceptChanges();
+    apf::deriveMdsModel(entMeshCurved);
+    entMeshCurved->verify();
+
     apf::FieldShape* fs = m->getShape();
     entMeshCurved->changeShape(fs, true);
     if (fs->countNodesOn(apf::Mesh::EDGE))
@@ -353,34 +374,90 @@ static void makeEntMeshes(
   {
     entMeshLinear = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
     entMeshCurved = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
-    apf::MeshEntity* vs[3];
-    m->getDownward(e, 0, vs);
-    apf::Vector3 p[3];
-    m->getPoint(vs[0], 0, p[0]);
-    m->getPoint(vs[1], 0, p[1]);
-    m->getPoint(vs[2], 0, p[2]);
-    apf::MeshEntity* newVs[3];
-    newVs[0] = entMeshLinear->createVertex(0, p[0], param);
-    newVs[1] = entMeshLinear->createVertex(0, p[1], param);
-    newVs[2] = entMeshLinear->createVertex(0, p[2], param);
-    entMeshLinear->createEntity(apf::Mesh::TRIANGLE, 0, newVs);
+    apf::MeshEntity* downverts[3];
+    apf::MeshEntity* downedges[3];
+    m->getDownward(e, 0, downverts);
+    m->getDownward(e, 1, downedges);
+    int edge_vert[3][2];
+    for (int i = 0; i < 3; i++) {
+      apf::MeshEntity* dv[2];
+      m->getDownward(downedges[i], 0, dv);
+      int i0 = apf::findIn(downverts, 3, dv[0]);
+      int i1 = apf::findIn(downverts, 3, dv[1]);
+      PCU_ALWAYS_ASSERT(i0 != -1);
+      PCU_ALWAYS_ASSERT(i1 != -1);
+      edge_vert[i][0] = i0;
+      edge_vert[i][1] = i1;
+    }
 
-    apf::MeshEntity* newVsc[3];
-    newVsc[0] = entMeshCurved->createVertex(0, p[0], param);
-    newVsc[1] = entMeshCurved->createVertex(0, p[1], param);
-    newVsc[2] = entMeshCurved->createVertex(0, p[2], param);
-    apf::MeshEntity* face = entMeshCurved->createEntity(apf::Mesh::TRIANGLE, 0, newVsc);
+    apf::MeshEntity* newvertsLinear[3];
+    apf::MeshEntity* newedgesLinear[3];
+    apf::MeshEntity* newvertsCurved[3];
+    apf::MeshEntity* newedgesCurved[3];
+    apf::Vector3 param(0.,0.,0.);
+    for (int i = 0; i < 3; i++) {
+      apf::Vector3 p;
+      m->getPoint(downverts[i], 0, p);
+      newvertsLinear[i] = entMeshLinear->createVertex(0, p, param);
+      newvertsCurved[i] = entMeshCurved->createVertex(0, p, param);
+    }
+
+    for (int i = 0; i < 3; i++) {
+      apf::MeshEntity* evLinear[2] = {
+      	newvertsLinear[edge_vert[i][0]],
+      	newvertsLinear[edge_vert[i][1]]
+      };
+      newedgesLinear[i] = entMeshLinear->createEntity(
+    	apf::Mesh::EDGE, 0, evLinear);
+
+      apf::MeshEntity* evCurved[2] = {
+      	newvertsCurved[edge_vert[i][0]],
+      	newvertsCurved[edge_vert[i][1]]
+      };
+      newedgesCurved[i] = entMeshCurved->createEntity(
+    	apf::Mesh::EDGE, 0, evCurved);
+    }
+
+
+    entMeshLinear->createEntity(
+    	apf::Mesh::TRIANGLE, 0, newedgesLinear);
+
+    apf::MeshEntity* face =
+    entMeshCurved->createEntity(
+    	apf::Mesh::TRIANGLE, 0, newedgesCurved);
+
+
+    entMeshLinear->acceptChanges();
+    apf::deriveMdsModel(entMeshLinear);
+    entMeshLinear->verify();
+
+    entMeshCurved->acceptChanges();
+    apf::deriveMdsModel(entMeshCurved);
+    entMeshCurved->verify();
 
     apf::FieldShape* fs = m->getShape();
     entMeshCurved->changeShape(fs, true);
-    if (fs->countNodesOn(apf::Mesh::TRIANGLE))
-    {
-      for (int i = 0; i < fs->countNodesOn(apf::Mesh::TRIANGLE); i++) {
-	apf::Vector3 p;
-	m->getPoint(e, i, p);
-	entMeshCurved->setPoint(face, i, p);
+
+    int nnodes = fs->countNodesOn(apf::Mesh::EDGE);
+    if (nnodes) {
+      for (int i = 0; i < 3; i++) {
+	for (int n = 0; n < nnodes; n++) {
+	  apf::Vector3 p;
+	  m->getPoint(downedges[i], n, p);
+	  entMeshCurved->setPoint(newedgesCurved[i], n, p);
+	}
       }
     }
+
+    nnodes = fs->countNodesOn(apf::Mesh::TRIANGLE);
+    if (nnodes) {
+      for (int n = 0; n < nnodes; n++) {
+	apf::Vector3 p;
+	m->getPoint(e, n, p);
+	entMeshCurved->setPoint(face, n, p);
+      }
+    }
+
     entMeshCurved->acceptChanges();
     return;
   }
@@ -599,10 +676,12 @@ static void makeCavityMeshes(
 
 
   cavityMeshLinear->acceptChanges();
-  /* cavityMeshLinear->verify(); */
+  apf::deriveMdsModel(cavityMeshLinear);
+  cavityMeshLinear->verify();
 
   cavityMeshCurved->acceptChanges();
-  /* cavityMeshCurved->verify(); */
+  apf::deriveMdsModel(cavityMeshCurved);
+  cavityMeshCurved->verify();
 
   // curve cavityMeshCurved
   // this can be done by
@@ -653,4 +732,56 @@ static void makeCavityMeshes(
   }
 
   cavityMeshCurved->acceptChanges();
+}
+
+static void writeMeshes(
+    apf::Mesh2* m,
+    const char* prefix0,
+    const char* prefix1,
+    const char* prefix2,
+    const char* name,
+    int res)
+{
+  PCU_ALWAYS_ASSERT(prefix0);
+  PCU_ALWAYS_ASSERT(name);
+  if (!prefix1)
+    PCU_ALWAYS_ASSERT(!prefix2);
+
+  int order = m->getShape()->getOrder();
+  std::stringstream ss;
+  ss << prefix0 << "/";
+  if (prefix1) {
+    ss << prefix1;
+    safe_mkdir(ss.str().c_str());
+    ss << "/";
+  }
+  if (prefix2) {
+    ss << prefix2;
+    safe_mkdir(ss.str().c_str());
+    ss << "/";
+  }
+  ss << name;
+
+  // also check if the cavity is made from a vertex
+  bool isVertCavity = false;
+  if (prefix2) {
+    std::string st(prefix2);
+    std::string subst = st.substr(0,4);
+    if (subst.compare(std::string("vert")) == 0)
+      isVertCavity = true;
+  }
+
+  if (order == 1) {
+    apf::writeVtkFiles(ss.str().c_str(), m);
+  }
+  else {
+    if (isVertCavity)
+      apf::writeVtkFiles(ss.str().c_str(), m);
+    else {
+      crv::writeCurvedVtuFiles(m, apf::Mesh::TRIANGLE, res, ss.str().c_str());
+      crv::writeCurvedWireFrame(m, res, ss.str().c_str());
+    }
+  }
+  ss << ".smb";
+  m->writeNative(ss.str().c_str());
 }
