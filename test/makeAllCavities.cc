@@ -55,6 +55,10 @@ static apf::MeshTag* tagMesh(
     int dim,
     int model);
 
+static apf::MeshTag* tagMesh(
+    apf::Mesh2* m,
+    const std::vector<std::string>& ids);
+
 int main(int argc, char** argv)
 {
 
@@ -81,6 +85,7 @@ int main(int argc, char** argv)
     printf("fa: creates all face cavities\n");
     printf("fi: creates all face cavities classified on interior\n");
     printf("fb: creates all face cavities classified on boundary\n");
+    printf("ls: get a list from user and creates cavities for that list\n");
     printf("tagname: creates cavities for all entities that have tagname\n");
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -132,6 +137,31 @@ int main(int argc, char** argv)
     tag = tagMesh(m, 2, 2);
   else if (mode.compare(std::string("fb")) == 0)
     tag = tagMesh(m, 2, 3);
+  else if (mode.compare(std::string("ls")) == 0) {
+    std::cout << "provide the list of entities format \"v_i,e_i,f_i\"" << std::endl;
+    std::cout << "example: v120 e23 f0 represents vert 120," << std::endl;
+    std::cout << "edge 23 and face 0." << std::endl;
+    std::cout << "total #verts=" << m->count(0);
+    std::cout << ", #edges=" << m->count(1);
+    std::cout << ", #faces=" << m->count(2) << std::endl;
+    int cnt=0;
+    std::cout << "enter #of ents in the list:" << std::endl;
+    std::cin >> cnt;
+    std::vector<std::string> ents;
+    ents.clear();
+    while ((int)ents.size() < cnt) {
+      std::string temp;
+      std::cin >> temp;
+      ents.push_back(temp);
+    }
+    PCU_ALWAYS_ASSERT((int)ents.size() == cnt);
+    std::cout << "creating cavities for " << std::endl;
+    for (int i = 0; i < (int)ents.size(); i++)
+      std::cout << ents[i] << " ";
+    std::cout << std::endl;
+
+    tag = tagMesh(m, ents);
+  }
   else {
     tag = m->findTag(mode.c_str());
     if (!tag) {
@@ -840,6 +870,67 @@ static apf::MeshTag* tagMesh(
       if (model == 3 && mtype ==3) continue;
       int val = 1; // the value does not matter
       m->setIntTag(e, t, &val);
+    }
+    m->end(it);
+  }
+  return t;
+}
+
+static void getEntIds(
+    const std::vector<std::string>& ids,
+    std::vector<int>& vids,
+    std::vector<int>& eids,
+    std::vector<int>& fids)
+{
+  vids.clear();
+  eids.clear();
+  fids.clear();
+
+  for (std::size_t i = 0; i < ids.size(); i++) {
+    std::string key = ids[i].substr(0,1);
+    int value = atoi(ids[i].substr(1).c_str());
+    if (key.compare(std::string("v")) == 0)
+      vids.push_back(value);
+    if (key.compare(std::string("e")) == 0)
+      eids.push_back(value);
+    if (key.compare(std::string("f")) == 0)
+      fids.push_back(value);
+  }
+
+}
+
+static apf::MeshTag* tagMesh(
+    apf::Mesh2* m,
+    const std::vector<std::string>& ids)
+{
+  std::vector<int> vids;
+  std::vector<int> eids;
+  std::vector<int> fids;
+  getEntIds(ids, vids, eids, fids);
+  PCU_ALWAYS_ASSERT(ids.size() == vids.size()+eids.size()+fids.size());
+
+  std::vector<int>::iterator vit;
+  apf::MeshEntity* e;
+  apf::MeshIterator* it;
+  apf::MeshTag* t = m->createIntTag("which_ent", 1);
+  for (int d = 0; d < 3; d++) {
+    int index = 0;
+    it = m->begin(d);
+    while ( (e = m->iterate(it)) ) {
+      bool found = false;
+      if (d == 0 &&
+      	  std::find(vids.begin(), vids.end(), index) != vids.end())
+      	found = true;
+      if (d == 1 &&
+      	  std::find(eids.begin(), eids.end(), index) != eids.end())
+      	found = true;
+      if (d == 2 &&
+      	  std::find(fids.begin(), fids.end(), index) != fids.end())
+      	found = true;
+      int val = 1; // the value does not matter
+      if (found)
+      	m->setIntTag(e, t, &val);
+      index++;
     }
     m->end(it);
   }
