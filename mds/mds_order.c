@@ -400,6 +400,9 @@ static struct mds_apf* rebuild(
     rebuild_net(&m->matches, &m->mds,
                 &m2->matches, &m2->mds,
                 new_of);
+    rebuild_net(&m->ghosts, &m->mds,
+                &m2->ghosts, &m2->mds,
+                new_of);
   }
   mds_destroy_tag(&m2->tags, old_of);
   return m2;
