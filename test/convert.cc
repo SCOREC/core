@@ -261,7 +261,18 @@ int main(int argc, char** argv)
          vtxData[0] = count2D;
          EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
          V_coord(vrts[i],coordNewPt[i]);
-         fprintf ( fcr, "%.15E %.15E,\n", coordNewPt[i][0],coordNewPt[i][1]);
+
+//Worked         pGEntity pei=V_whatIn(vrts[i]);	
+//         if ((V_whatInType(vrts[i])==2) ;	
+//pGEntity V_whatIn	(	pVertex 	vertex	)	
+//Returns the model entity on which vertex is classified.
+
+//gType V_whatInType	(	pVertex 	vertex	)	
+         
+                    
+//           apfSIM::modelEntity* pei=meshP->toModel(vrts[i]);
+//         int mtag = meshP->getModelTag(meshP->toModel(vrts[i]));
+        fprintf ( fcr, "%.15E %.15E %d \n", coordNewPt[i][0],coordNewPt[i][1], V_whatInType(vrts[i]));
        }  
     }
 
