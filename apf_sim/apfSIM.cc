@@ -1064,7 +1064,7 @@ static bool hasAnySerendipity(pParMesh mesh)
 
 static bool findMatches(Mesh* m)
 {
-  int matchOpts=1;
+//  int matchOpts=1;
   bool found = false;
   for (int i = 0; i < 4; ++i)
   {
@@ -1073,7 +1073,9 @@ static bool findMatches(Mesh* m)
     while ((e = m->iterate(it)))
     {
       pEntity ent = reinterpret_cast<pEntity>(e);
-      pPList l = EN_getMatchingEnts(ent, NULL, matchOpts);
+//      pPList l = EN_getMatchingEnts(ent, NULL, matchOpts);
+//      pPList l = EN_getMatchingEnts(ent, matchOpts);
+      pPList l = EN_getMatchingEnts(ent, NULL);
       if (l)
       {
         found = true;
