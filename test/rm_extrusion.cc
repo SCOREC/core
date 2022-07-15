@@ -135,6 +135,7 @@ int main(int argc, char** argv)
 
   M_release(sim_mesh);
   Progress_delete(progress);
+  gmi_destroy(mdl);
   gmi_sim_stop();
   SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();

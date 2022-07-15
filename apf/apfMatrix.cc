@@ -124,12 +124,31 @@ double getDeterminant(Matrix<1,1> const& A)
   return A[0][0];
 }
 
+template <std::size_t M>
+void applyMatrixFunc(Matrix<M,M> const& A, double (*callback)(double), Matrix<M,M> & newMat)
+{
+  Vector<3> eigenVectors[3];
+  double eigenValues[3];
+  eigen(A, eigenVectors, eigenValues);
+  newMat = tensorProduct(eigenVectors[0],eigenVectors[0])*callback(eigenValues[0]); 
+  for(std::size_t i=1; i<M; ++i)
+  {
+    newMat = newMat+tensorProduct(eigenVectors[i],eigenVectors[i])*callback(eigenValues[i]); 
+  }
+}
+
 template Matrix<1,1> getMinor(Matrix<2,2> const& A, std::size_t i, std::size_t j);
 template Matrix<2,2> getMinor(Matrix<3,3> const& A, std::size_t i, std::size_t j);
 template Matrix<3,3> getMinor(Matrix<4,4> const& A, std::size_t i, std::size_t j);
 
+template double getCofactor(Matrix<2,2> const& A, std::size_t i, std::size_t);
+template double getCofactor(Matrix<3,3> const& A, std::size_t i, std::size_t);
+template double getCofactor(Matrix<4,4> const& A, std::size_t i, std::size_t);
+
 template double getDeterminant(Matrix<2,2> const& A);
 template double getDeterminant(Matrix<3,3> const& A);
 template double getDeterminant(Matrix<4,4> const& A);
+
+template void applyMatrixFunc(Matrix<3,3> const& A, double (*callback)(double), Matrix<3,3> & newMat);
 
 }

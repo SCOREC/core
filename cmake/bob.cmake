@@ -1,3 +1,4 @@
+include(GNUInstallDirs)
 function(bob_always_full_rpath)
   # CMake RPATH "always full" configuration, see:
   # https://cmake.org/Wiki/CMake_RPATH_handling#Always_full_RPATH
@@ -6,12 +7,17 @@ function(bob_always_full_rpath)
   # when building, don't use the install RPATH already
   # (but later on when installing)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH False PARENT_SCOPE)
-  # the RPATH to be used when installing, but only if it's not a system directory
-  list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
-       "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-  if("${isSystemDir}" STREQUAL "-1")
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib" PARENT_SCOPE)
+
+  if(APPLE)
+      set(base @loader_path)
+  else()
+      set(base $ORIGIN)
   endif()
+  file(RELATIVE_PATH relDir
+       ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+       ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+  )
+  set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir} PARENT_SCOPE)
   # add the automatically determined parts of the RPATH
   # which point to directories outside the build tree to the install RPATH
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True PARENT_SCOPE)
@@ -44,7 +50,7 @@ endmacro(bob_set_shared_libs)
 function(bob_begin_cxx_flags)
   option(${PROJECT_NAME}_CXX_OPTIMIZE "Compile C++ with optimization" ON)
   option(${PROJECT_NAME}_CXX_SYMBOLS "Compile C++ with debug symbols" ON)
-  option(${PROJECT_NAME}_CXX_WARNINGS "Compile C++ with warnings" ON)
+  option(${PROJECT_NAME}_CXX_WARNINGS "Compile C++ with warnings" OFF)
   set(FLAGS "")
   if(${PROJECT_NAME}_CXX_OPTIMIZE)
     if (NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
@@ -73,7 +79,11 @@ endfunction(bob_begin_cxx_flags)
 
 function(bob_cxx11_flags)
   set(FLAGS "${CMAKE_CXX_FLAGS}")
-  set(FLAGS "${FLAGS} --std=c++11")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "PGI")
+    set(FLAGS "${FLAGS} -std=c++11")
+  else()
+    set(FLAGS "${FLAGS} --std=c++11")
+  endif()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (${PROJECT_NAME}_CXX_WARNINGS)
       set(FLAGS "${FLAGS} -Wno-c++98-compat-pedantic -Wno-c++98-compat")

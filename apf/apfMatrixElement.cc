@@ -5,10 +5,21 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include "apfMatrixField.h"
 #include "apfMatrixElement.h"
 #include "apfVectorElement.h"
 
 namespace apf {
+
+MatrixElement::MatrixElement(MatrixField* f, MeshElement* e):
+    ElementOf<Matrix3x3>(f,e)
+{
+}
+
+MatrixElement::~MatrixElement()
+{
+}
+
 // laid out in array as F_i*3+j+9*d
 void MatrixElement::grad(Vector3 const& xi, Vector<27>& g)
 {

@@ -25,9 +25,7 @@ void adapt(Input* in)
 {
   print("version 2.0 !");
   double t0 = PCU_Time();
-#ifdef DEBUG
   validateInput(in);
-#endif
   Adapt* a = new Adapt(in);
   preBalance(a);
   for (int i = 0; i < in->maximumIterations; ++i)
@@ -47,10 +45,20 @@ void adapt(Input* in)
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
   delete in;
   double t1 = PCU_Time();
   print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(m);
+}
+
+void adapt(const Input* in)
+{
+  adapt(makeAdvanced(in));
 }
 
 void adaptVerbose(Input* in, bool verbose)
@@ -111,10 +119,20 @@ void adaptVerbose(Input* in, bool verbose)
   postBalance(a);
   Mesh* m = a->mesh;
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
   delete in;
   double t1 = PCU_Time();
   print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(m);
+}
+
+void adaptVerbose(const Input* in, bool verbose)
+{
+  adaptVerbose(makeAdvanced(in), verbose);
 }
 
 

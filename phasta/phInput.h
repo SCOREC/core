@@ -193,8 +193,8 @@ class Input
     int simCooperation;
     /** \brief flag for writing simmetrix log file */
     int writeSimLog;
-    /** \brief flag for measure the adapted mesh in phastaChef */
-    int measureAdaptedMesh;
+    /** \brief maximum CFL number for mesh size */
+    double simCFLUpperBound;
     /** \brief minimum desired mesh size for sim adapter */
     double simSizeLowerBound;
     /** \brief maximum desired mesh size for sim adapter */

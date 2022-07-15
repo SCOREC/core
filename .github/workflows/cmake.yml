@@ -1,0 +1,46 @@
+name: CMake test matrix
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+jobs:
+  build:
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - { compiler: GNU, CC: gcc-10, CXX: g++-10 }
+          - { compiler: LLVM, CC: clang, CXX: clang++ }
+        build_type: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    
+    - name: install mpich and gcc
+      run: |
+           sudo apt update
+           sudo apt install gcc-10 g++-10 mpich
+
+    - name: Configure CMake
+      env:
+        MPICH_CXX: ${{matrix.compiler.CXX}}
+        MPICH_CC: ${{matrix.compiler.CC}}
+      run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+
+    - name: Build
+      env:
+        MPICH_CXX: ${{matrix.compiler.CXX}}
+        MPICH_CC: ${{matrix.compiler.CC}}
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j
+
+    - name: Test
+      env:
+        MPICH_CXX: ${{matrix.compiler.CXX}}
+        MPICH_CC: ${{matrix.compiler.CC}}
+      working-directory: ${{github.workspace}}/build
+      run: ctest --output-on-failure -C ${{matrix.build_type}}

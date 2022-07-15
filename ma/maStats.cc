@@ -51,7 +51,7 @@ void getLinearQualitiesInPhysicalSpace(ma::Mesh* m,
   ma::Iterator* it;
   it = m->begin(m->getDimension());
   while( (e = m->iterate(it)) ) {
-    double lq;
+    double lq = 0;
     if (m->getType(e) == apf::Mesh::TRIANGLE) {
       ma::Vector p[3];
       ma::getVertPoints(m, e, p);

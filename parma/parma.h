@@ -16,6 +16,12 @@
 
 /**
  * @brief get entity imbalance
+ * @remark The imbalance of a given entity order (i.e., vtx, edge, face, rgn) 
+ * is defined as the maximum count of that entity order on a part, across all parts, 
+ * divided by the average entity count across all parts.
+ * For example if there are four parts and the parts have 5, 7, 12, and 8
+ * vertices, respectively, then the vertex imbalance is 50%;
+ * 12 / ((5+7+8+12)/4) = 1.5.
  * @param mesh (InOut) partitioned mesh
  * @param entImb (InOut) entity imbalance [vtx, edge, face, rgn]
  */
@@ -23,9 +29,12 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]);
 
 /**
  * @brief see Parma_GetEntImbalance(...)
- * @remark On a part, if an entity order (vtx, edge, face, rgn) does not have
+ * @remark The weighted imbalance definition replaces the entity count with the 
+ * sum of entity weights.  If the weight for all the entities of a given order
+ * is one, then the two definitions are equivalent.
+ * On a part, if an entity order (vtx, edge, face, rgn) does not have
  * weights set on all its entities then a weight of one will be assigned to each
- * of the entities (of the given order)
+ * of the entities (of the given order).
  * @param mesh (InOut) partitioned mesh
  * @param weight (In) entity weights used for computing imbalance
  * @param entImb (InOut) entity imbalance [vtx, edge, face, rgn]

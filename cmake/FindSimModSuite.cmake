@@ -65,26 +65,26 @@ string(REGEX REPLACE
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 string(REGEX MATCH
-  "[0-9]+.[0-9]+-[0-9]+"
+  "[0-9]+[.][0-9]+-[0-9]+"
   SIM_VERSION
   "${SIMMODSUITE_INCLUDE_DIR}")
 
 #VERSION_LESS and VERSION_GREATER need '.' delimited version strings.
 string(REGEX REPLACE
-  "([0-9]+.[0-9]+)-([0-9]+)"
+  "([0-9]+[.][0-9]+)-([0-9]+)"
   "\\1.\\2" SIM_DOT_VERSION
   "${SIM_VERSION}")
 string(REGEX REPLACE
-  "([0-9]+).([0-9]+)-([0-9]+)"
+  "([0-9]+)[.]([0-9]+)-([0-9]+)"
   "\\1" SIMMODSUITE_MAJOR_VERSION
   "${SIM_VERSION}")
 string(REGEX REPLACE
-  "([0-9]+).([0-9]+)-([0-9]+)"
+  "([0-9]+)[.]([0-9]+)-([0-9]+)"
   "\\3" SIMMODSUITE_MINOR_VERSION
   "${SIM_VERSION}")
 
 set(MIN_VALID_SIM_VERSION 12.0.190225)
-set(MAX_VALID_SIM_VERSION 14.0.190617)
+set(MAX_VALID_SIM_VERSION 16.0-210623)
 if( ${SKIP_SIMMETRIX_VERSION_CHECK} )
   message(STATUS "Skipping Simmetrix SimModSuite version check."
     " This may result in undefined behavior")
@@ -112,17 +112,26 @@ message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
-  set(SIM_PARASOLID_VERSION 300)
-  getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
-    SimParasolid${SIM_PARASOLID_VERSION} simParaLib FALSE)
-  if(NOT EXISTS ${simParaLib})
-    set(SIM_PARASOLID_VERSION 290)
+  set(MIN_SIM_PARASOLID_VERSION 290)
+  set(MAX_SIM_PARASOLID_VERSION 330)
+  foreach(version RANGE
+      ${MAX_SIM_PARASOLID_VERSION}
+      ${MIN_SIM_PARASOLID_VERSION} -10)
+    set(SIM_PARASOLID_VERSION ${version})
     getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
-      SimParasolid${SIM_PARASOLID_VERSION} simParaLib TRUE)
-    set(SIM_CAD_LIB_NAMES
-      ${simParaLib}
-      pskernel)
+      SimParasolid${SIM_PARASOLID_VERSION} simParaLib FALSE)
+    if(simParaLib)
+      break()
+    endif()
+  endforeach()
+  if(NOT simParaLib)
+    message(FATAL_ERROR "libSimParasolid<#>.a "
+      "${MIN_SIM_PARASOLID_VERSION}-${MAX_SIM_PARASOLID_VERSION} "
+      "not found - check the version installed with SimModSuite")
   endif()
+  set(SIM_CAD_LIB_NAMES
+    ${simParaLib}
+    pskernel)
 endif()
 
 option(SIM_ACIS "Use Acis through Simmetrix" OFF)

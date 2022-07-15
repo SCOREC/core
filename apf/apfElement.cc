@@ -5,6 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include <pcu_util.h>
+
 #include "apfElement.h"
 #include "apfShape.h"
 #include "apfMesh.h"
@@ -75,6 +77,8 @@ Matrix3x3 getJacobianInverse(Matrix3x3 J, int dim)
 void Element::getGlobalGradients(Vector3 const& local,
                                  NewArray<Vector3>& globalGradients)
 {
+  PCU_ALWAYS_ASSERT_VERBOSE(!field->getShape()->isVectorShape(),
+      "Not implemented for vector shape functions!");
   Matrix3x3 J;
   parent->getJacobian(local,J);
   Matrix3x3 jinv = getJacobianInverse(J, getDimension());
@@ -87,18 +91,39 @@ void Element::getGlobalGradients(Vector3 const& local,
 
 void Element::getComponents(Vector3 const& xi, double* c)
 {
-  NewArray<double> shapeValues;
-  shape->getValues(mesh, entity, xi, shapeValues);
-  for (int ci = 0; ci < nc; ++ci)
-    c[ci] = 0;
-  for (int ni = 0; ni < nen; ++ni)
+  // handle cases with vector shape functions
+  if (field->getShape()->isVectorShape()) {
+    NewArray<Vector3> shapeValues;
+    shapeValues.allocate(nen);
+    getVectorShapeValues(this, xi, shapeValues);
+    for (int ci = 0; ci < 3; ci++)
+      c[ci] = 0.;
+    for (int ni = 0; ni < nen; ni++)
+      for (int ci = 0; ci < 3; ci++)
+      	c[ci] += nodeData[ni] * shapeValues[ni][ci];
+  }
+  // handle cases with scalar shape functions
+  else {
+    NewArray<double> shapeValues;
+    shape->getValues(mesh, entity, xi, shapeValues);
     for (int ci = 0; ci < nc; ++ci)
-      c[ci] += nodeData[ni * nc + ci] * shapeValues[ni];
+      c[ci] = 0;
+    for (int ni = 0; ni < nen; ++ni)
+      for (int ci = 0; ci < nc; ++ci)
+	c[ci] += nodeData[ni * nc + ci] * shapeValues[ni];
+  }
 }
 
 void Element::getNodeData()
 {
   field->getData()->getElementData(entity,nodeData);
+}
+
+void Element::getElementNodeData(NewArray<double>& d)
+{
+  d.allocated() ? d.resize(nen) : d.allocate(nen);
+  for (int i = 0; i < nen; i++)
+    d[i] = nodeData[i];
 }
 
 }//namespace apf

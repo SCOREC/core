@@ -297,16 +297,19 @@ class Converter
                 dblData = new double[tagSize];
                 inMesh->getDoubleTag(e, in, dblData);
                 outMesh->setDoubleTag(newFromOld[e], out, dblData);
+                delete [] dblData;
                 break;
               case apf::Mesh::INT:
                 intData = new int[tagSize];
                 inMesh->getIntTag(e, in, intData);
                 outMesh->setIntTag(newFromOld[e], out, intData);
+                delete [] intData;
                 break;
               case apf::Mesh::LONG:
                 lngData = new long[tagSize];
                 inMesh->getLongTag(e, in, lngData);
                 outMesh->setLongTag(newFromOld[e], out, lngData);
+                delete [] lngData;
                 break;
               default:
                 lion_eprint(1,"Tried to convert unknown tag type\n");

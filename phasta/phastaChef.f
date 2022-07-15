@@ -48,23 +48,6 @@ c
 c-----------------------------------------------------------------------
 c
 c-----------------------------------------------------------------------
-      module core_error
-      use iso_c_binding
-c
-      interface
-c
-        subroutine core_phasta_get_err_param(err_correct_f)
-     &    bind(C, NAME='core_phasta_get_err_param')
-        use iso_c_binding
-          real(c_double),intent(out) :: err_correct_f
-        end subroutine
-c
-      end interface
-c
-      end module
-c-----------------------------------------------------------------------
-c
-c-----------------------------------------------------------------------
       module core_rigid_body
       use iso_c_binding
 c

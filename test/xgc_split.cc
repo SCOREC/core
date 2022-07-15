@@ -76,7 +76,7 @@ int main(int argc, char** argv)
   char without_extension[256];
   snprintf(without_extension,strlen(argv[3])-3,"%s",argv[3]);
 
-  char vtk_fname[32];
+  char vtk_fname[512];
   sprintf(vtk_fname,"%s",without_extension); 
   pumi_mesh_write(m, vtk_fname, "vtk");
 

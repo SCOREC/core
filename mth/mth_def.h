@@ -22,7 +22,7 @@ T norm(Vector<T,M> const& a)
 }
 
 template <class T>
-Vector<T,3> cross(Vector<T,3> const& a, Vector<T,3> const& b)
+Vector3<T> cross(Vector<T,3> const& a, Vector<T,3> const& b)
 {
   Vector3<T> r;
   r(0) = a(1)*b(2) - a(2)*b(1);
@@ -32,7 +32,7 @@ Vector<T,3> cross(Vector<T,3> const& a, Vector<T,3> const& b)
 }
 
 template <class T>
-Matrix<T,3,3> cross(Vector<T,3> const& a)
+Matrix3x3<T> cross(Vector<T,3> const& a)
 {
   Matrix3x3<T> r(
       0, -a(2),  a(1),
@@ -57,12 +57,12 @@ template <class T, unsigned M, unsigned N>
 void transpose(Matrix<T,M,N> const& a,
     Matrix<T,N,M>& b)
 {
-  unsigned m = a.rows();
+  unsigned m = a.cols();
   unsigned n = a.rows();
   b.resize(m, n);
   for (unsigned i=0; i < m; ++i)
-  for (unsigned j=0; j < n; ++j)
-    b(j,i) = a(i,j);
+    for (unsigned j=0; j < n; ++j)
+      b(i,j) = a(j,i);
 }
 
 template <class T>

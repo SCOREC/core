@@ -66,7 +66,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     param[periodicAxes] = candidatePeriodicParam;
     param[degenAxes] = candidateDegenParam;
     Vector p(param[0], param[1], 0.0);
-    m->getFirstDerivative(g, param, uTan, vTan);
+    m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
 #ifdef HAVE_CAPSTONE
@@ -220,7 +220,12 @@ static Vector getInvSphere(const Vector& x)
   double phi = atan2(x[1], x[0]);
   if (phi < 0)
     phi = phi + 2 * M_PI;
-  double the = acos(x[2]);
+  // the following 3 lines are to avoid errors
+  // caused by floating point operations
+  double x2 = x[2];
+  if (x2 > 1.0) x2 = 1.0;
+  if (x2 < -1.0) x2 = -1.0;
+  double the = acos(x2);
   Vector res(phi, the, 0.0);
   return res;
 }

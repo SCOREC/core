@@ -63,6 +63,7 @@ if(ENABLE_ZOLTAN)
     ${ZOLTAN_LIBRARIES}
     ${PARMETIS_LIBRARIES}
   )
+  target_compile_definitions(apf_zoltan PUBLIC PUMI_HAS_ZOLTAN)
 endif()
 
 scorec_export_library(apf_zoltan)

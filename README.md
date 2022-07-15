@@ -1,7 +1,5 @@
 # SCOREC Core #
 
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/6698/badge.svg)](https://scan.coverity.com/projects/scorec-core)
-
 The SCOREC Core is a set of C/C++ libraries for unstructured mesh
 simulations on supercomputers.
 
@@ -25,6 +23,8 @@ For more information, start at our
 * PHASTA: Tools and file formats related to the PHASTA fluid solver
 * MTH: Math containers and routines
 * CRV: Support for curved meshes with Bezier Shapes
+* PYCORE: Python Wrappers (see python_wrappers/README.md for build instructions)
+* REE: Residual based implicit error estimator
 
 ### How do I get set up? ###
 
@@ -52,3 +52,11 @@ For more information, start at our
 
 * If you have a usage question or have found a bug please post an [issue](https://github.com/SCOREC/core/issues).
 * Otherwise, email [Cameron Smith](https://www.scorec.rpi.edu/~cwsmith) and pumi@scorec.rpi.edu.
+
+### Citing PUMI
+
+If you use these tools, please cite the following paper:
+
+Daniel A. Ibanez, E. Seegyoung Seol, Cameron W. Smith, and Mark S. Shephard. 2016. PUMI: Parallel Unstructured Mesh Infrastructure. ACM Trans. Math. Softw. 42, 3, Article 17 (May 2016), 28 pages. DOI: https://doi.org/10.1145/2814935
+
+We would be happy to provide feedback on journal submissions using PUMI prior to publication.

@@ -43,7 +43,7 @@ template <class T> class ReductionOp;
 template <class T> class ReductionSum;
 
 /** \brief Base class for applying operations to make a Field consistent
-  * in parallel 
+  * in parallel
   * \details This function gets applied pairwise to the Field values
   * from every partition, resulting in a single unique value.  No guarantees
   * are made about the order in which this function is applied to the
@@ -540,6 +540,17 @@ Vector3 computeEdgeTangentAtVertex(Mesh* m, MeshEntity* edge,
 double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
     const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
 
+/** \brief Returns the largest height in a tet
+  *
+  * \param m	mesh
+  * \param tet  tet
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeLargestHeightInTet(Mesh* m, MeshEntity* tet,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
+
 /** \brief Returns the shortest height in a tri
   *
   * \param m	mesh
@@ -549,6 +560,17 @@ double computeShortestHeightInTet(Mesh* m, MeshEntity* tet,
   */
 double computeShortestHeightInTri(Mesh* m, MeshEntity* tri,
     const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
+/** \brief Returns the largest height in a tri
+  *
+  * \param m	mesh
+  * \param tri  tri
+  * \param Q	metric (default Identity)
+  *
+  */
+double computeLargestHeightInTri(Mesh* m, MeshEntity* tri,
+    const Matrix3x3& Q = Matrix3x3(1.,0.,0.,0.,1.,0.,0.,0.,1.));
+
 
 /** \brief Returns the number of element nodes.
   *
@@ -581,6 +603,19 @@ void getShapeValues(Element* e, Vector3 const& local,
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads);
 
+/** \brief Returns the vector shape function values at a point
+ *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
+  */
+void getVectorShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
+
+/** \brief Returns the vector curl shape function values at a point
+ *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
+  */
+void getCurlShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
 
 /** \brief Retrieve the apf::FieldShape used by a field
   */
@@ -643,6 +678,12 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m);
   */
 void writeASCIIVtkFiles(const char* prefix, Mesh* m,
     std::vector<std::string> writeFields);
+
+/** \brief Output .vtk files with ASCII encoding for this part.
+  \details this function is useful for debugging meshes with Nedelec 
+  fields on them.
+  */
+void writeNedelecVtkFiles(const char* prefix, Mesh* m);
 
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType

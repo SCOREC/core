@@ -190,7 +190,7 @@ static void migrateForLayerCollapse(Adapt* a, int d, int round)
 }
 
 void localizeLayerStacks(Mesh* m) {
-  Input* in = configureIdentity(m);
+  Input* in = makeAdvanced(configureIdentity(m));
   Adapt* a = new Adapt(in);
   //mark layer bases
   findLayerBase(a);
@@ -206,6 +206,11 @@ void localizeLayerStacks(Mesh* m) {
   for (int d = 1; d < m->getDimension(); ++d)
     migrateForLayerCollapse(a,d,round);
   delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
   delete in;
 }
 

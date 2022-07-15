@@ -90,6 +90,11 @@ public:
         apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
     {
     }
+    void getVectorValues(apf::Mesh*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+    {
+      fail("getVectorValues is not implemented for Bezier shapes");
+    }
     int countNodes() const {return 1;}
     void alignSharedNodes(apf::Mesh*,
         apf::MeshEntity*, apf::MeshEntity*, int order[])
@@ -111,6 +116,11 @@ public:
     {
       grads.allocate(P+1);
       bezierGrads[apf::Mesh::EDGE](P,xi,grads);
+    }
+    void getVectorValues(apf::Mesh*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+    {
+      fail("getVectorValues is not implemented for Bezier shapes");
     }
     int countNodes() const {return P+1;}
     void alignSharedNodes(apf::Mesh*,
@@ -146,6 +156,11 @@ public:
         BlendedTriangleGetLocalGradients(m,e,xi,grads);
 
     }
+    void getVectorValues(apf::Mesh*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+    {
+      fail("getVectorValues is not implemented for Bezier shapes");
+    }
     int countNodes() const {return getNumControlPoints(apf::Mesh::TRIANGLE,P);}
     void alignSharedNodes(apf::Mesh* m,
         apf::MeshEntity* elem, apf::MeshEntity* shared, int order[])
@@ -178,6 +193,11 @@ public:
         grads.allocate(2*P*P+2);
         BlendedTetGetLocalGradients(m,e,xi,grads);
       }
+    }
+    void getVectorValues(apf::Mesh*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+    {
+      fail("getVectorValues is not implemented for Bezier shapes");
     }
     int countNodes() const {
       if(!useBlending(apf::Mesh::TET))
@@ -372,6 +392,11 @@ public:
         BlendedTriangleGetLocalGradients(m,e,xi,grads);
 
     }
+    void getVectorValues(apf::Mesh*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+    {
+      fail("getVectorValues is not implemented for Gregory shapes");
+    }
     int countNodes() const
     {
       return 18;
@@ -512,6 +537,11 @@ public:
         grads.allocate(46);
         BlendedTetGetLocalGradients(m,e,xi,grads);
       }
+    }
+    void getVectorValues(apf::Mesh*, apf::MeshEntity*,
+        apf::Vector3 const&, apf::NewArray<apf::Vector3>&) const
+    {
+      fail("getVectorValues is not implemented for Gregory shapes");
     }
     int countNodes() const {
       if(!useBlending(apf::Mesh::TET))

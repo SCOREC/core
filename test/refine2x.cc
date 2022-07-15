@@ -103,9 +103,12 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
   AnisotropicX* ansx = new AnisotropicX(m, atoi(argv[3]));
-  ma::Input* in = ma::configure(m, ansx);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, ansx));
+#ifdef PUMI_HAS_ZOLTAN
   in->shouldRunPreZoltanRib = true;
+#else
   in->shouldRunPreParma = true;
+#endif
   in->shouldRunMidParma = true;
   in->shouldRunPostParma = true;
   in->maximumIterations = 10;

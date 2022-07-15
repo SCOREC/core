@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 #endif
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(argv[1], argv[2]);
-  ma::Input* in = ma::configureIdentity(m);
+  ma::Input* in = ma::makeAdvanced(ma::configureIdentity(m));
   in->shouldTurnLayerToTets = true;
   ma::adapt(in);
   m->writeNative(argv[3]);

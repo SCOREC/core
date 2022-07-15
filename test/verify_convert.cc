@@ -61,8 +61,9 @@ int main(int argc, char* argv[])
   apf::Numbering* numNoField = apf::createNumbering(
       m1, "noField", apf::getShape(f), apf::countComponents(f));
   apf::GlobalNumbering* globalNumWithField = apf::createGlobalNumbering(f);
+
   apf::GlobalNumbering* globalNumNoField = apf::createGlobalNumbering(
-      m1, "noField", apf::getShape(f), apf::countComponents(f));
+      m1, "noField_global", apf::getShape(f), apf::countComponents(f));
   // create an integer tag
   apf::MeshTag* intTag = m1->createIntTag("intTag", 1);
   // loop over all vertices in mesh and set values
@@ -108,7 +109,8 @@ int main(int argc, char* argv[])
   assert(getField(m2->findNumbering(apf::getName(numWithField))) == f2);
   assert(getField(m2->findGlobalNumbering(apf::getName(globalNumWithField))) == f2);
   // update the user field to reference the field in mesh 2
-  apf::updateUserField(uf2, new twox(f2));
+  apf::Function* func2 = new twox(f2);
+  apf::updateUserField(uf2, func2);
   // find the copied tag data
   apf::MeshTag* intTag2 = m2->findTag("intTag");
   assert(intTag2);
@@ -151,6 +153,7 @@ int main(int argc, char* argv[])
 
   // cleanup
   delete func;
+  delete func2;
   m1->destroyNative();
   m2->destroyNative();
   m3->destroyNative();

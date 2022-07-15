@@ -8,16 +8,6 @@ function(mpi_test TESTNAME PROCS EXE)
   )
 endfunction(mpi_test)
 
-function(smoke_test TESTNAME PROCS EXE)
-  set(tname smoke_test_${TESTNAME})
-  add_test(
-    NAME ${tname}
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
-    CONFIGURATIONS SMOKE_TEST_CONFIG
-    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin)
-  SET_TESTS_PROPERTIES(${tname} PROPERTIES LABELS "SMOKE_TEST" )
-endfunction(smoke_test)
-
 mpi_test(shapefun 1 ./shapefun)
 mpi_test(shapefun2 1 ./shapefun2)
 mpi_test(bezierElevation 1 ./bezierElevation)
@@ -28,10 +18,21 @@ mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
 mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
+if(ENABLE_ZOLTAN)
+mpi_test(print_pumipic_partion 1
+         ./print_pumipic_partition
+         ${MESHES}/cube/cube.dmg
+         ${MESHES}/cube/pumi11/cube.smb
+         4
+         pumipic_cube
+         )
+endif()
+
 mpi_test(align 1 ./align)
 mpi_test(eigen_test 1 ./eigen_test)
 mpi_test(integrate 1 ./integrate)
 mpi_test(qr_test 1 ./qr)
+mpi_test(swapDoubles 1 ./swapDoubles)
 mpi_test(base64 1 ./base64)
 mpi_test(tensor_test 1 ./tensor)
 mpi_test(verify_convert 1 ./verify_convert)
@@ -56,6 +57,10 @@ if(ENABLE_SIMMETRIX)
   mpi_test(modelInfo_smd 1
     ./modelInfo
     "${MESHES}/cube/cube.smd")
+  mpi_test(highorder_sizefield 1
+    ./highOrderSizeFields
+    "${MESHES}/cube/cube.smd"
+    "${MESHES}/cube/pumi11/cube.smb")
 endif(ENABLE_SIMMETRIX)
 
 if(ENABLE_SIMMETRIX)
@@ -122,7 +127,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
+if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     AND SIMMODSUITE_SimAdvMeshing_FOUND)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
@@ -130,6 +135,7 @@ if(ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     "${MDIR}/mesh_.smb"
     WORKING_DIRECTORY ${MDIR})
 endif()
+
 
 if(ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
@@ -184,7 +190,20 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
-set(MDIR ${MESHES}/fun3d)
+set(MDIR ${MESHES}/gmsh)
+mpi_test(twoQuads 1
+  ./from_gmsh
+  ".null"
+  "${MDIR}/twoQuads.msh"
+  "${MDIR}/twoQuads.smb")
+
+set(MDIR ${MESHES}/ugrid)
+mpi_test(naca_ugrid 2
+  ./from_ugrid
+  "${MDIR}/inviscid_egg.b8.ugrid"
+  "${MDIR}/naca.dmg"
+  "${MDIR}/2/"
+  "2")
 mpi_test(inviscid_ugrid 4
   ./from_ugrid
   "${MDIR}/inviscid_egg.b8.ugrid"
@@ -239,11 +258,7 @@ mpi_test(uniform_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "pipe_unif.smb")
-smoke_test(uniform_serial 1
-  ./uniform
-  "${MDIR}/pipe.${GXT}"
-  "${MDIR}/pipe.smb"
-  "pipe_unif.smb")
+mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
 if(ENABLE_SIMMETRIX)
   mpi_test(snap_serial 1
     ./snap
@@ -251,21 +266,21 @@ if(ENABLE_SIMMETRIX)
     "pipe_unif.smb"
     "pipe.smb")
 endif()
-mpi_test(ma_serial 1
-  ./ma_test
-  "${MDIR}/pipe.${GXT}"
-  "pipe.smb")
-mpi_test(aniso_ma_serial 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "0")
-mpi_test(aniso_ma_serial_log_interpolation 1
-  ./aniso_ma_test
-  "${MESHES}/cube/cube.dmg"
-  "${MESHES}/cube/pumi670/cube.smb"
-  "1")
 if(ENABLE_ZOLTAN)
+  mpi_test(ma_serial 1
+    ./ma_test
+    "${MDIR}/pipe.${GXT}"
+    "pipe.smb")
+  mpi_test(aniso_ma_serial 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "0")
+  mpi_test(aniso_ma_serial_log_interpolation 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "1")
   mpi_test(torus_ma_parallel 4
     ./torus_ma_test
     "${MESHES}/torus/torus.dmg"
@@ -276,6 +291,12 @@ mpi_test(tet_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+  mpi_test(test_residual_error_estimate 1
+    ./residualErrorEstimation_test
+    "${MESHES}/electromagnetic/fichera.x_t"
+    "${MESHES}/electromagnetic/fichera_1k.smb")
+endif()
 if(PCU_COMPRESS)
   set(MESHFILE "bz2:pipe_2_.smb")
 else()
@@ -285,12 +306,6 @@ mpi_test(split_2 2
   ./split
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
-  ${MESHFILE}
-  2)
-smoke_test(split_2 2
-  ./split
-  "${MDIR}/pipe.${GXT}"
-  "${MDIR}/pipe.smb"
   ${MESHFILE}
   2)
 mpi_test(collapse_2 2
@@ -367,6 +382,8 @@ mpi_test(gap 4
   "${MDIR}/torusBal4p/"
   "1.08"
   "${MDIR}/torusOpt4p/")
+mpi_test(applyMatrixFunc 1
+  ./applyMatrixFunc)
 if(ENABLE_ZOLTAN)
   mpi_test(zbalance 4
     ./zbalance
@@ -445,6 +462,14 @@ mpi_test(construct 4
   ./construct
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(constructThenGhost 4
+  ./constructThenGhost
+  "${MDIR}/cube.dmg"
+  "${MDIR}/pumi7k/4/cube.smb")
+mpi_test(construct_bottom_up 1
+  ./construct_bottom_up
+  "${MDIR}/bottom_up_constructed_cube.smb"
+  "${MDIR}/cube.dmg")
 set(MDIR ${MESHES}/embeddedEdges)
 mpi_test(embedded_edges 1
   ./embedded_edges
@@ -469,7 +494,7 @@ mpi_test(mixedNumbering 4
   out)
 set(MDIR ${MESHES}/square)
 mpi_test(hierarchic_2p_2D 1
-  ./hierarchic 
+  ./hierarchic
   "${MDIR}/square.dmg"
   "${MDIR}/square.smb"
   2)
@@ -484,6 +509,33 @@ mpi_test(hierarchic_2p_3D 1
   "${MDIR}/cube.dmg"
   "${MDIR}/cube.smb"
   2)
+set(MDIR ${MESHES}/cube/pumi24)
+mpi_test(nedelec 1
+  ./nedelecShapes
+  "${MDIR}/cube.dmg"
+  "${MDIR}/cube.smb")
+set(MDIR ${MESHES}/cube/pumi670)
+mpi_test(l2_shape_tet_serial 1
+  ./L2Shapes
+  "${MDIR}/../cube.dmg"
+  "${MDIR}/cube.smb")
+mpi_test(l2_shape_tet_parallel 4
+  ./L2Shapes
+  "${MDIR}/../cube.dmg"
+  "${MDIR}/4/cube.smb")
+mpi_test(h1_shape_serial 1
+  ./H1Shapes
+  "${MDIR}/../cube.dmg"
+  "${MDIR}/cube.smb")
+mpi_test(h1_shape_parallel 4
+  ./H1Shapes
+  "${MDIR}/../cube.dmg"
+  "${MDIR}/4/cube.smb")
+set(MDIR ${MESHES}/cube/pumi24)
+mpi_test(pumiLoadMesh-1p 1
+  ./pumiLoadMesh
+  ${MDIR}/cube.dmg
+  ${MDIR}/cube.smb)
 set(MDIR ${MESHES}/cube)
 mpi_test(test_verify 4
   ./test_verify
@@ -558,11 +610,13 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/upright.smd"
       "67k")
     endif()
-    # adapt_meshgen uses the output of parallel_meshgen
-    mpi_test(adapt_meshgen 4
-      ./ma_test
-      "${MDIR}/upright.smd"
-      "67k/")
+    if(ENABLE_ZOLTAN)
+      # adapt_meshgen uses the output of parallel_meshgen
+      mpi_test(adapt_meshgen 4
+        ./ma_test
+        "${MDIR}/upright.smd"
+        "67k/")
+    endif()
   endif()
   if(SIM_PARASOLID)
     mpi_test(convert_para 1
@@ -583,6 +637,10 @@ if(ENABLE_SIMMETRIX)
     set(MDIR ${MESHES}/curved)
     mpi_test(curvedSphere 1
       ./curvetest
+      "${MDIR}/sphere1.xmt_txt"
+      "${MDIR}/sphere1_4.smb")
+    mpi_test(highOrderSolutionTransfer 1
+      ./highOrderSolutionTransfer
       "${MDIR}/sphere1.xmt_txt"
       "${MDIR}/sphere1_4.smb")
     mpi_test(curvedKova 1
@@ -653,7 +711,7 @@ if (PCU_COMPRESS)
   add_test(NAME chef8
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  if(ENABLE_SIMMETRIX)
+  if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   endif()

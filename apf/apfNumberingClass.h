@@ -23,7 +23,7 @@ class NumberingOf : public FieldBase
               Mesh* m,
               FieldShape* s,
               int c);
-    void init(Field* f);
+    void init(Field* f, bool global=false);
     Field* getField();
     FieldDataOf<T>* getData();
     void getAll(MeshEntity* e, T* dat);

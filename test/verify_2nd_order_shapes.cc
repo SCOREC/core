@@ -100,6 +100,8 @@ int main(int argc, char** argv) {
       abort();
   }
 
+  apf::destroyElement(elem);
+
   m->destroyNative();
   apf::destroyMesh(m);
 #ifdef HAVE_SIMMETRIX
