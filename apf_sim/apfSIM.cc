@@ -3,6 +3,7 @@
 #include <apfShape.h>
 #include <SimModel.h>
 #include <MeshSim.h>
+#include <SimMeshTools.h> // M_splitMatch
 #include <SimPartitionedMesh.h>
 #include <gmi.h>
 #include <gmi_sim.h>
@@ -14,7 +15,7 @@
 /* forward declare simmetrix API M_splitMatch;
    once it is ready in published code, remove this
    - defined in libSimMeshTools.a */
-extern pEntity M_splitMatch(pMesh, pEntity, pGFace);
+//extern pEntity M_splitMatch(pMesh, pEntity, pGFace);
 
 #ifdef USE_FIELDSIM
 
