@@ -155,7 +155,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
          }
        } else mesh->setModelEntity(e,getMdlEdge(mesh,cmax-1000000)); // min is vtx thus max is correct edge to classify
     } else { // should never get her
-       std:cout <<"classification of edge on a vertex is not valid";
+//       std:cout <<"classification of edge on a vertex is not valid";
     }
   }
   mesh->end(it);
@@ -186,7 +186,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
       ctri[i]=c;
     }
     if (cmax >= 3000000) { // at least one vertex is interior -> cls interior
-       mesh->setModelEntity(e,getMdlRgn(model));
+       mesh->setModelEntity(f,getMdlRgn(model));
        //cint++;
     } else if(cmin >= 2000000) { // all nodes on  model face(s?)
         if(cmax != cmin) { // all on faces but not all on same so classified on interior
@@ -195,13 +195,13 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
           mesh->setModelEntity(f,getMdlFace(mesh,cmax-2000000));
         }
     } else { // faces can ONLY be classified on model faces or interior but their vertices can be classified  on model faces, edge, or vertices (regions caught in if).  Consequently, the simplest logic is to loop over faces  and check  if all verts in closure
-      int faceFound=0;
+      size_t faceFound=0;
       pGFace gfaceFound;
       GFIter gfIter=GM_faceIter(model);
       while ( faceFound != verts.size() && (gface=GFIter_next(gfIter))) {
         faceFound=0;
         for(size_t i=0; i< nverts; i++) { // check if each vert is in the cls of faceh
-          if(ctri[i] >= 2000000 {   // i is a face 
+          if(ctri[i] >= 2000000 ) {   // i is a face 
              if( GF_inClosure(gface, getMdlFace(mesh,ctri[i]))) faceFound++;
 	  } else if(ctri[i] >= 1000000 ) { // i is an edge 
              if( GF_inClosure(gface, getMdlEdge(mesh,ctri[i]))) faceFound++;
@@ -209,15 +209,15 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
              if( GF_inClosure(gface, getMdlVtx(mesh,ctri[i]))) faceFound++;
           }
         }
-        if(faceFound==verts.size() ) {
+        if(faceFound==nverts ) {
           gfaceFound=gface;
           mesh->setModelEntity(f,gfaceFound);
           // does C++ have a concept of exiting the wile loop
         }
       }         
+     if(faceFound != nverts ) 
+            fprintf(stderr, "face classification of these vert classification failed %d %d  %d \n", cmin, cmax);
      }
-     if(faceFound != verts.size() ) 
-            fprintf(stderr, "face classification of these vert classification failed %d %d  %d \n", cmin, cmid, cmax);
     }
   mesh->end(it);
 }
