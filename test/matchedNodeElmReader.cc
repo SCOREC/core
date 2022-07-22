@@ -115,8 +115,6 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
     int cmin=100000000;
     for(size_t i=0; i<verts.size(); i++) {
       mesh->getIntTag(verts[i],vtxClass,&c);
-      //mesh->getPoint(verts[i], 0, vCoord);
-      //std::cout<<vCoord[0]<<" "<<vCoord[1]<<" "<<vCoord[2]<<std::endl;
       cmax=std::max(cmax,c);
       cmin=std::min(cmin,c);
     }
@@ -124,8 +122,6 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
     int dimMax=cmax/1000000;
     int tagMin=cmin-dimMin*1000000;
     int tagMax=cmax-dimMax*1000000;
-    //std::cout<<"has classification "<<cmin<<std::endl;
-    //std::cout<<" "<<std::endl;
     if (cmax >= 3000000) {
        mesh->setModelEntity(e,getMdlRgn(model));
        //cint++;
@@ -136,30 +132,16 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
        } else if (cmin >= 2000000) { // min is a DIFFERENT face -> interior
           mesh->setModelEntity(e,getMdlRgn(model));
        } else { //if (cmin >= 1000000) { // max is face min is an edge 
-//         int res = gmi_is_in_closure_of(model,getMdlFace(mesh,cmax), getMdlEdge(mesh,cmin));
-//         int res = gmi_is_in_closure_of(model,gmi_find(model,2,cmax-2000000), gmi_find(model,1,cmin-1000000));
          int res = gmi_is_in_closure_of(model,gmi_find(model,dimMax,tagMax), gmi_find(model,dimMin,tagMin));
-//         int res = m->isInClosureOf(model,getMdlFace(mesh,cmax), getMdlEdge(mesh,cmin));
          if( res ) { // is it in cls
            mesh->setModelEntity(e,getMdlFace(mesh,cmax-2000000));
          } else  // edge not in closure so interior
            mesh->setModelEntity(e,getMdlRgn(model));
-//       } else { // second must be vtx but is that vtx in closure 
-//         int res=gmi_is_in_closure_of(model,getMdlFace(mesh,cmax), getMdlVtx(mesh,cmin));
-//         if( res ) {
-//            mesh->setModelEntity(e,getMdlFace(mesh,cmax-2000000));
-//         } else {
-//           mesh->setModelEntity(e,getMdlRgn(model));
-//         }
       }
     } else if (cmax >= 1000000) { // max is an edge
        if (cmin == cmax)  // cls on same edge 
           mesh->setModelEntity(e,getMdlEdge(mesh,cmax-1000000));
-       else { // if (cmin >= 1000000) { // min is a different edge  and there is a face they must be in the closure of but which face is it 
-//simmet         pPList maxFaces = GE_faces(getMdlEdge(mesh,cmax-1000000));  
-//simmet         pPList minFaces = GE_faces(getMdlEdge(mesh,cmin-1000000));  
-//FAIL         gmi_set* maxFaces = gmi_adjacent(model,getMdlEdge(mesh,cmax-1000000),2);  
-//FAIL         gmi_set* minFaces = gmi_adjacent(model,getMdlEdge(mesh,cmin-1000000),2);  
+       else if (cmin >= 1000000) { // min is a different edge  and there is a face they must be in the closure of but which face is it 
          gmi_set* maxFaces = gmi_adjacent(model,gmi_find(model,1,tagMax),2);  
          gmi_set* minFaces = gmi_adjacent(model,gmi_find(model,1,tagMin),2);  
          for (int i = 0; i < maxFaces->n; i++) {
@@ -172,8 +154,9 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
            }
          }
        } else mesh->setModelEntity(e,getMdlEdge(mesh,cmax-1000000)); // min is vtx thus max is correct edge to classify
-    } else { // should never get her
-//       std:cout <<"classification of edge on a vertex is not valid";
+    
+    } else { // should never get here since cmax < 10000000 is a vtx
+            fprintf(stderr, "edge classification of these vert failed %d  %d \n", cmin, cmax);
     }
   }
   mesh->end(it);
@@ -214,32 +197,27 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
         }
     } else { // faces can ONLY be classified on model faces or interior but their vertices can be classified  on model faces, edge, or vertices (regions caught in if).  Consequently, the simplest logic is to loop over faces  and check  if all verts in closure
       size_t faceFound=0;
-//simmet      pGFace gfaceFound;
-//simmet      GFIter gfIter=GM_faceIter(model);
-      pGEntit = gfaceFound;
-      gmi_iter* it=gmi_begin(model,2);
-      gmi_ent* fofit
-// with exit      while ( faceFound != nverts && (fofit=gmi_next(model,it))) {
-      while ( fofit=gmi_next(model,it)) {
+      gmi_iter* gi=gmi_begin(model,2);
+      gmi_ent* g;
+      int dimi;
+      int tagi;
+      int res;
+      while ( (g=gmi_next(model,gi)) && faceFound != nverts ) {
         faceFound=0;
         for(size_t i=0; i< nverts; i++) { // check if each vert is in the cls of faceh
-          if(ctri[i] >= 2000000 ) {   // i is a face 
-             int res= gmi_is_in_closure_of(model,gface, getMdlFace(mesh,ctri[i]));
-             if( res ) faceFound++;
-	  } else if(ctri[i] >= 1000000 ) { // i is an edge 
-             if( (int) gmi_is_in_closure_of(model,gface, getMdlEdge(mesh,ctri[i]))) faceFound++;
-          } else {// i is a vertex
-             if( (int) gmi_is_in_closure_of(model,gface, getMdlVtx(mesh,ctri[i]))) faceFound++;
-          }
+          dimi=ctri[i]/1000000;
+          tagi=ctri[i]-dimi*1000000;
+          res = gmi_is_in_closure_of(model,g, gmi_find(model,dimi,tagi));
+          if( res ) faceFound++;
         }
         if(faceFound==nverts ) {
-          gfaceFound=(pGEntity) fofit;
-          mesh->setModelEntity(f,gfaceFound);
+          int fftag=gmi_tag(model,g);
+          mesh->setModelEntity(f,getMdlFace(mesh,fftag));
         }
       }         
-      gmi_end(model,it);
-     if(faceFound != nverts ) 
-            fprintf(stderr, "face classification of these vert classification failed %d %d  %d \n", cmin, cmax);
+      gmi_end(model,gi);
+      if(faceFound != nverts ) // none of the model face's closure held all verts classificaton  so interior
+        mesh->setModelEntity(f,getMdlRgn(model));
      }
     }
   mesh->end(it);
