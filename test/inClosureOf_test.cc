@@ -41,13 +41,22 @@ int main(int argc, char** argv)
   gmi_end(model, gi);
 
   gmi_ent* g;
+  int ff;
+
   // go through the model vertexes and check if they are in closure of gf
   printf("checking verts against face with tag %d\n",
       gmi_tag(model, gf));
   gi = gmi_begin(model, 0);
   while( (g = gmi_next(model, gi)) ){
-    int res = gmi_is_in_closure_of(model, g, gf);
-    if (res)
+    ff=-1;
+    gmi_set* Edges = gmi_adjacent(model,gf,1);
+    for (int i = 0; i < ((Edges->n)); i++) {
+      gmi_set* Verts = gmi_adjacent(model,Edges->e[i],0);
+      for (int j = 0; j < Verts->n; j++)  
+        if(g==Verts->e[j]) ff=j;
+    }
+//    int res = gmi_is_in_closure_of(model, g, gf);
+    if (ff!=-1)
       printf("vertex with tag %d IS inside the face with tag %d\n",
       	  gmi_tag(model, g), gmi_tag(model, gf));
     else
@@ -61,13 +70,17 @@ int main(int argc, char** argv)
       gmi_tag(model, gf));
   gi = gmi_begin(model, 1);
   while( (g = gmi_next(model, gi)) ){
-    int res = gmi_is_in_closure_of(model, g, gf);
-    if (res)
+    ff=-1;
+    gmi_set* Edges = gmi_adjacent(model,gf,1);
+    for (int i = 0; i < ((Edges->n)); i++) 
+        if(g==Edges->e[i]) ff=i;
+ 
+    if (ff!=-1)
       printf("edge with tag %d IS inside the face with tag %d\n",
-      	  gmi_tag(model, g), gmi_tag(model, gf));
+        gmi_tag(model, g), gmi_tag(model, gf));
     else
       printf("edge with tag %d IS NOT inside the face with tag %d\n",
-      	  gmi_tag(model, g), gmi_tag(model, gf));
+        gmi_tag(model, g), gmi_tag(model, gf));
   }
   gmi_end(model, gi); // end the iterator
 
@@ -75,9 +88,15 @@ int main(int argc, char** argv)
   printf("checking faces against face with tag %d\n",
       gmi_tag(model, gf));
   gi = gmi_begin(model, 2);
+  int ifcnt=0;
   while( (g = gmi_next(model, gi)) ){
-    int res = gmi_is_in_closure_of(model, g, gf);
-    if (res)
+    ff=-1;
+    if(g==gf) ff=ifcnt;
+    ifcnt++;
+//      	  gmi_tag(model, g), gmi_tag(model, gf));
+    
+//    int res = gmi_is_in_closure_of(model, g, gf);
+    if (ff!=-1)
       printf("face with tag %d IS inside the face with tag %d\n",
       	  gmi_tag(model, g), gmi_tag(model, gf));
     else

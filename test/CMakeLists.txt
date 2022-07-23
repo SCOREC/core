@@ -183,11 +183,11 @@ endif()
 if(ENABLE_SIMMETRIX)
   test_exe_func(curvetest curvetest.cc)
   test_exe_func(curve_to_bezier curve_to_bezier.cc)
-  test_exe_func(inClosureOf_test inClosureOf_test.cc)
   test_exe_func(degenerate_test degenerateSurfs.cc)
   test_exe_func(simZBalance simZBalance.cc)
   test_exe_func(crack_test crack_test.cc)
 endif()
+test_exe_func(inClosureOf_test inClosureOf_test.cc)
 
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
