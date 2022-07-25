@@ -80,7 +80,10 @@ static void read_adj_table(const char* filename,
   EG_free(sup_filename);
   if (adj_table_file == NULL)
   {
-    gmi_fail("failed to open supplementary EGADS model file!");
+    /// No supplemental EGADS file, assume there is only one region
+    /// Don't initialize adjacency_table
+    return;
+    // gmi_fail("failed to open supplementary EGADS model file!");
   }
 
   int header[6];
@@ -119,6 +122,46 @@ static void read_adj_table(const char* filename,
     }
   }
   fclose(adj_table_file);
+}
+
+static void init_2D_adjacency(struct gmi_model* m,
+                              int *** adjacency_table)
+{
+  int nverts = m->n[0];
+  int nedges = m->n[1];
+  int nfaces = m->n[2];
+  int nregions = m->n[3];
+  int header[] = {nregions, nregions, nregions, nverts, nedges, nfaces};
+  int adjacent[] = {nverts, nedges, nfaces, nregions, nregions, nregions};
+
+  for (int i = 0; i < 6; ++i)
+  {
+    adjacency_table[i] = (int**)EG_alloc(sizeof(*(adjacency_table[i]))
+                                         * header[i]);
+    if (adjacency_table[i] == NULL) {
+      char fail[100];
+      sprintf(fail, "failed to alloc memory for adjacency_table[%d]", i);
+      /// TODO: this could cause memory leak
+      gmi_fail(fail);
+    }
+    for (int j = 0; j < header[i]; ++j) {
+      int nadjacent = adjacent[i];
+      adjacency_table[i][j] = (int*)EG_alloc(sizeof(*(adjacency_table[i][j]))
+                                             * (nadjacent+1));
+      if (adjacency_table[i][j] == NULL) {
+        char fail[100];
+        sprintf(fail, "failed to alloc memory for "
+                "adjacency_table[%d][%d]", i,j);
+        /// TODO: this could cause memory leak
+        gmi_fail(fail);
+      }
+      adjacency_table[i][j][0] = nadjacent;
+      for (int k = 0; k < nadjacent; ++k)
+      {
+        adjacency_table[i][j][k+1] = k+1;
+      }
+    }
+  }
 }
 
 /// TODO: consider optimizing adjacency tables and access
@@ -285,6 +328,8 @@ static int get_tag(struct gmi_model* m, struct gmi_ent* e)
 {
   (void)m;
   egads_ent* eg_ent = (egads_ent*)e;
+//   printf("dim: %d, ", eg_ent->dim);
+//   printf("tag!: %d\n", eg_ent->tag);
   return eg_ent->tag;
 }
 
@@ -694,7 +739,7 @@ struct gmi_model* gmi_egads_load(const char* filename)
   }
 
   int nregions = 1; // read adjacency file to find this number
-  int **adjacency_table[6];
+  int **adjacency_table[6] = { NULL };
   read_adj_table(filename, &nregions, adjacency_table);
 
   struct gmi_model* m = gmi_egads_init_model(eg_model, nregions);
@@ -856,6 +901,10 @@ struct gmi_model* gmi_egads_init_model(ego eg_model, int nregions)
 
 void gmi_egads_init_adjacency(struct gmi_model* m, int ***adjacency)
 {
+  if (adjacency[0] == NULL)
+  {
+    init_2D_adjacency(m, adjacency);
+  }
   egads_model *egm = (egads_model*)m;
   for (int i = 0; i < 6; ++i)
   {

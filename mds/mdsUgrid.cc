@@ -275,6 +275,7 @@ namespace {
         verts[j] = lookupVert(r, vtx[id*nverts+j]);
         apf::Vector3 vtx_coord;
         r->mesh->getPoint(verts[j], 0, vtx_coord);
+        std::cout << "";
       }
       apf::MeshEntity* f =
         apf::findElement(r->mesh, apfType, verts);
@@ -358,7 +359,7 @@ namespace {
         bool same_edge_id = true;
         for(size_t i=0; i<edge_id.size(); i++) {
           if (edge_id[0] != edge_id[i]) {
-            same_id = false;
+            same_edge_id = false;
             break;
           }
         }

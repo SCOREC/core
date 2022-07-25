@@ -38,6 +38,11 @@ message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
+# Use <PackageName>_ROOT cmake or environment variables when finding packages
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
 # Gets C99 support
 find_package(C99 REQUIRED)
 set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
@@ -98,6 +103,7 @@ if(ENABLE_EGADS)
   add_definitions(-DHAVE_EGADS)
 
   option(PUMI_USE_EGADSLITE "Build with EGADSlite" ON)
+  set(ESP_USE_EGADSLITE ${PUMI_USE_EGADSLITE})
   message(STATUS "PUMI_USE_EGADSLITE: ${PUMI_USE_EGADSLITE}")
 endif()
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
@@ -122,7 +128,7 @@ if(ENABLE_SIMMETRIX)
 endif()
 
 if(ENABLE_EGADS)
-  find_package(EGADS MODULE REQUIRED)
+  find_package(ESP REQUIRED COMPONENTS egads)
 endif()
 
 if(ENABLE_OMEGA_H)

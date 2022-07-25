@@ -17,16 +17,11 @@ set(HEADERS gmi_egads.h)
 
 add_library(gmi_egads ${SOURCES})
 
-target_include_directories(gmi_egads
-  PRIVATE
-    ${EGADS_INCLUDE_DIR}
-)
-
 target_link_libraries(gmi_egads
   PUBLIC
     gmi
   PRIVATE
-    ${EGADS_LIBRARIES}
+    ESP::egads
 )
 
 # Include directories
