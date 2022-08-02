@@ -137,26 +137,25 @@ endif()
 
 if(ENABLE_EGADS)
   set(MDIR ${MESHES}/egads)
-  mpi_test(split_box_and_cyl_4 4
+  mpi_test(split_box_and_cyl_2 2
     ./split
     "${MDIR}/box_and_cyl.egads"
     "${MDIR}/box_and_cyl.smb"
-    "box_and_cyl_4_.smb"
+    "box_and_cyl_2_.smb"
     2)
-  mpi_test(split_naca0012_4 4
+  mpi_test(split_naca0012_2 2
     ./split
     "${MDIR}/naca0012.egads"
     "${MDIR}/naca0012.smb"
-    "naca0012_4_.smb"
+    "naca0012_2_.smb"
     2)
-  mpi_test(split_sphere_4 4
+  mpi_test(split_sphere_2 2
     ./split
     "${MDIR}/sphere.egads"
     "${MDIR}/sphere.smb"
-    "sphere_4_.smb"
+    "sphere_2_.smb"
     2)
 endif(ENABLE_EGADS)
-
 
 if(ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4

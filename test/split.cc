@@ -5,7 +5,7 @@
 #include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
-#ifdef HAVE_EGADS
+#ifdef PUMI_HAS_EGADS
 #include "gmi_egads.h"
 #endif
 #ifdef HAVE_SIMMETRIX
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-#ifdef HAVE_EGADS
+#ifdef PUMI_HAS_EGADS
   gmi_register_egads();
   gmi_egads_start();
 #endif
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);
-#ifdef HAVE_EGADS
+#ifdef PUMI_HAS_EGADS
   gmi_egads_stop();
 #endif
 #ifdef HAVE_SIMMETRIX

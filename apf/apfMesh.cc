@@ -196,15 +196,6 @@ void Mesh::getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
   ModelEntity* from_g = toModel(e);
   if (g == from_g)
     return getParam(e, p);
-
-  // above comparison only compares pointer address, this check's the entity's
-  // dim and tag in case it's the same entity but a different point to it 
-  int from_dim = getModelType(from_g);
-  int from_tag = getModelTag(from_g);
-  int to_dim = getModelType(g);
-  int to_tag = getModelTag(g);
-  if ((from_dim == to_dim) && (from_tag == to_tag))
-    return getParam(e, p);
   
   gmi_ent* from = (gmi_ent*)from_g;
   gmi_ent* to = (gmi_ent*)g;

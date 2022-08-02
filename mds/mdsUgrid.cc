@@ -275,7 +275,6 @@ namespace {
         verts[j] = lookupVert(r, vtx[id*nverts+j]);
         apf::Vector3 vtx_coord;
         r->mesh->getPoint(verts[j], 0, vtx_coord);
-        std::cout << "";
       }
       apf::MeshEntity* f =
         apf::findElement(r->mesh, apfType, verts);

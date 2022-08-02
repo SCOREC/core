@@ -14,7 +14,6 @@
 #include "egads.h"
 
 #include "gmi.h"
-#include "gmi_egads_config.h"
 #include "gmi_egads.h"
 
 /** \brief initialize a gmi_model with filestream and number of regions */
