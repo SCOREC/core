@@ -136,22 +136,28 @@ if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
 endif()
 
 if(ENABLE_EGADS)
+  if(PUMI_USE_EGADSLITE)
+    set(EGADSXT egadslite)
+  else()
+    set(EGADSXT egads)
+  endif()
+  
   set(MDIR ${MESHES}/egads)
   mpi_test(split_box_and_cyl_2 2
     ./split
-    "${MDIR}/box_and_cyl.egads"
+    "${MDIR}/box_and_cyl.${EGADSXT}"
     "${MDIR}/box_and_cyl.smb"
     "box_and_cyl_2_.smb"
     2)
   mpi_test(split_naca0012_2 2
     ./split
-    "${MDIR}/naca0012.egads"
+    "${MDIR}/naca0012.${EGADSXT}"
     "${MDIR}/naca0012.smb"
     "naca0012_2_.smb"
     2)
   mpi_test(split_sphere_2 2
     ./split
-    "${MDIR}/sphere.egads"
+    "${MDIR}/sphere.${EGADSXT}"
     "${MDIR}/sphere.smb"
     "sphere_2_.smb"
     2)
