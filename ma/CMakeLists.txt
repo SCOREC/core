@@ -64,6 +64,8 @@ set(HEADERS
   maExtrude.h
   maDBG.h
   maStats.h
+  maAdapt.h
+  maRefine.h
 )
 
 # Add the ma library

@@ -7,11 +7,6 @@
 
 #include <PCU.h>
 #include <lionPrint.h>
-#include "crv.h"
-#include "crvAdapt.h"
-#include "crvShape.h"
-#include "crvTables.h"
-#include "crvShapeFixer.h"
 #include <maCoarsen.h>
 #include <maEdgeSwap.h>
 #include <maOperator.h>
@@ -19,6 +14,13 @@
 #include <maShape.h>
 #include <pcu_util.h>
 #include <iostream>
+#include "crv.h"
+#include "crvAdapt.h"
+#include "crvQuality.h"
+#include "crvShape.h"
+#include "crvTables.h"
+#include "crvShapeFixer.h"
+#include "crvOptimizations.h"
 
 /* This is similar to maShape.cc, conceptually, but different enough
  * that some duplicate code makes sense */
@@ -52,6 +54,361 @@ static bool hasTwoEntitiesOnBoundary(apf::Mesh* m, apf::MeshEntity* e, int dimen
 /* Mark Edges based on the invalidity code the element has been
  * tagged with.
  */
+
+static std::vector<int> getEdgeSequenceFromInvalidVertex(ma::Mesh* mesh, ma::Entity* e, int index)
+{
+  apf::MeshEntity* edges[6];
+  mesh->getDownward(e, 1, edges);
+
+  apf::MeshEntity* f[4];
+  int nf = mesh->getDownward(e, 2, f);
+  apf::MeshEntity* vf[3];
+  apf::MeshEntity* vt[4];
+  mesh->getDownward(e, 0, vt);
+
+  std::vector<int> a;
+  std::vector<int> b;
+
+  // get the vertex local number for face from the invalid vertex
+  for (int i = 0; i < nf; i++) {
+    mesh->getDownward(f[i], 0, vf);
+    int j = apf::findIn(vf, 3, vt[index]);
+
+    if (j != -1) {
+      a.push_back(i);
+      b.push_back(j);
+    }
+  }
+
+  //getJacobianDeterminant on each face at
+  double c[3]; //contains jacobian value
+  int cc[3];   //face index
+  apf::Vector3 xi;
+  apf::Matrix3x3 Jac;
+  for(size_t k = 0; k < a.size(); k++) {
+    if (b[k] == 0) xi = {0, 0, 0};
+    else if (b[k] == 1) xi = {1, 0, 0};
+    else xi = {0, 1, 0};
+
+    cc[k] = k;
+
+    apf::MeshElement* me = apf::createMeshElement(mesh, f[a[k]]);
+    apf::getJacobian(me, xi, Jac);
+    c[k] = apf::getJacobianDeterminant(Jac, 2);
+
+    apf::destroyMeshElement(me);
+  }
+
+  // sort min to max jacobian determinant
+  for (int i = 0; i < 3; i++) {
+    for (int j = i-1; j >= 0; --j) {
+      double k = c[j+1];
+      int kk = cc[j+1];
+      if ( k < c[j]) {
+      	c[j+1] = c[j];
+      	c[j] = k;
+      	cc[j+1] = cc[j];
+      	cc[j] = kk;
+      }
+    }
+  }
+
+  apf::MeshEntity* ef[3];
+  apf::MeshEntity* ve[2];
+  std::vector<int> aa;
+  //std::vector<int> bb;
+
+  // need to flag all adjacent edges
+  // hence only 2 faces would do
+  for (int i = 0; i < 2; i++) {
+    int nef = mesh->getDownward(f[a[cc[i]]], 1, ef);
+    for (int j = 0; j < nef; j++) {
+      mesh->getDownward(ef[j], 0, ve);
+      if (apf::findIn(ve, 2, vt[index]) != -1) {
+      	int k = apf::findIn(edges, 6, ef[j]);
+      	if (k != -1) {
+      	  if (aa.size() >= 2) {
+      	    bool contains = false;
+      	    for (std::size_t ii = 0; ii < aa.size(); ii++)
+      	      contains = contains || (k == aa[ii]);
+      	    if (contains == false)
+      	      aa.push_back(k);
+	  }
+	  else {
+	    aa.push_back(k);
+      	    //bb.push_back(mesh->getModelType(mesh->toModel(ef[j])));
+	  }
+	}
+      }
+    }
+  }
+
+  // aa has the index of the edges ordered
+  // min to max of adj face jacobian
+
+  return aa;
+
+}
+
+static void sortDesWrtFreqVector(std::vector<int> &f, std::vector<int> &a)
+{
+  for (std::size_t i = 0; i < f.size(); i++) {
+    for (int j = i-1; j >= 0; j--) {
+      int ko = f[j+1];
+      int ke = a[j+1];
+      if (ko > f[j]) {
+      	f[j+1] = f[j];
+      	a[j+1] = a[j];
+      	f[j] = ko;
+      	a[j] = ke;
+      }
+    }
+  }
+}
+
+static std::vector<int> sortEdgeIndexByFrequency(std::vector<int> &all)
+{
+  std::vector<int> freq, unqEntries;
+  freq.push_back(1);
+  unqEntries.push_back(all[0]);
+
+  for (std::size_t i = 1; i < all.size(); i++) {
+    bool milila = false;
+
+    for (std::size_t j = 0; j < unqEntries.size(); j++) {
+      milila = milila || (all[i] == unqEntries[j]);
+
+      if (all[i] == unqEntries[j]) {
+      	freq[j] = freq[j] + 1;
+      }
+    }
+    if (milila == false) {
+      unqEntries.push_back(all[i]);
+      freq.push_back(1);
+    }
+  }
+
+  sortDesWrtFreqVector(freq, unqEntries);
+
+  return unqEntries;
+}
+
+static std::vector<int> numOfUniqueFaces(std::vector<int> &ai)
+{
+  std::vector<int> aiEdgeNVtx;
+  std::vector<int> aiOnlyFace;
+  std::vector<int> aiOnlyEdge;
+  std::vector<int> aiOnlyVtx;
+  std::vector<int> aiOnlyTet;
+
+  std::vector<int> aiUniqueFace;
+  std::vector<int> FFE;
+
+  for (size_t i = 0; i < ai.size(); i++) {
+    if (ai[i] < 8) aiOnlyVtx.push_back(ai[i]);
+    else if (ai[i] > 7 && ai[i] < 14) aiOnlyEdge.push_back(ai[i]);
+    else if (ai[i] > 13 && ai[i] < 20) aiOnlyFace.push_back(ai[i]);
+    else aiOnlyTet.push_back(ai[i]);
+
+  }
+
+  int faceToEdgeInd[4][4] = {{-1, 0, 1, 2},
+			     {0, -1, 4, 3},
+			     {1, 4, -1, 5},
+			     {2, 3, 5, -1}};
+
+  int edgeToFaceInd[6][2] = {{0, 1},
+			     {0, 2},
+			     {0, 3},
+			     {1, 3},
+			     {1, 2},
+			     {2, 3}};
+
+  int edgeToVtx[6][2] = {{0, 1},
+			 {1, 2},
+			 {0, 2},
+			 {0, 3},
+			 {1, 3},
+			 {2, 3}};
+
+  for (std::size_t i = 0; i < aiOnlyFace.size(); i++) {
+    for (std::size_t j = 0; j < aiOnlyFace.size(); j++) {
+      if ((i != j) && (j > i)) {
+      	for (std::size_t k = 0; k < aiOnlyEdge.size(); k++) {
+      	  if (faceToEdgeInd[aiOnlyFace[i]-14][aiOnlyFace[j]-14] + 8 == aiOnlyEdge[k]) {
+      	    FFE.push_back(aiOnlyEdge[k]);
+      	    FFE.push_back(aiOnlyFace[j]);
+      	    FFE.push_back(aiOnlyFace[i]);
+      	    break;
+	  }
+	}
+	break;
+      }
+    }
+  }
+
+  bool hasDownVtx, alreadyIn;
+
+  for (size_t j = 0; j < aiOnlyEdge.size(); j++) {
+    hasDownVtx = false;
+    for (int jj = 0; jj < 2; jj++) {
+      //hasDownVtx = false;
+      for (size_t ii = 0; ii < aiOnlyVtx.size(); ii++) {
+      	hasDownVtx = hasDownVtx || (edgeToVtx[aiOnlyEdge[j]-8][jj] == aiOnlyVtx[ii] - 2);
+      }
+    }
+
+    if (hasDownVtx == false) {
+      for (int i = 0; i < 2; i++) {
+      	alreadyIn = false;
+      	for (size_t k = 0; k < aiOnlyFace.size(); k++) {
+      	  alreadyIn = alreadyIn || (edgeToFaceInd[aiOnlyEdge[j]-8][i] == aiOnlyFace[k]-14);
+	}
+	if (alreadyIn == false) {
+	  aiOnlyFace.push_back(edgeToFaceInd[aiOnlyEdge[j]-8][i] + 14);
+	}
+      }
+    }
+    else {
+      for (int i = 0; i < 2; i++) {
+      	for (size_t k = 0; k < aiOnlyFace.size(); k++) {
+      	  if (edgeToFaceInd[aiOnlyEdge[j]-8][i] == aiOnlyFace[k]-14) {
+      	    //aiOnlyFace.erase(aiOnlyFace.begin()+k);
+	  }
+	}
+      }
+    }
+  }
+
+  for (size_t j = 0; j < aiOnlyFace.size(); j++) {
+    aiUniqueFace.push_back(aiOnlyFace[j]);
+  }
+
+  ai.clear();
+
+  std::vector<int> forFaceMarking;
+
+  // TODO: to be cleaned up
+  //[number of unique faces, {unique face index}, {pairs of face face coomon edge invalids}]
+
+  if (aiUniqueFace.size() > 0) {
+    forFaceMarking.push_back(aiUniqueFace.size());
+    for (std::size_t i = 0; i < aiOnlyVtx.size(); i++)
+      ai.push_back(aiOnlyVtx[i]);
+    for (std::size_t i = 0; i < aiOnlyEdge.size(); i++)
+      ai.push_back(aiOnlyEdge[i]);
+    for (std::size_t i = 0; i < aiOnlyFace.size(); i++)
+      ai.push_back(aiOnlyFace[i]);
+    for (std::size_t i = 0; i < aiOnlyTet.size(); i++)
+      ai.push_back(aiOnlyTet[i]);
+    for (std::size_t i = 0; i < aiUniqueFace.size(); i++) {
+      forFaceMarking.push_back(aiUniqueFace[i]);
+    }
+    for (std::size_t i = 0; i < FFE.size(); i++)
+      forFaceMarking.push_back(FFE[i]);
+
+  }
+  else if (aiUniqueFace.size() == 0) {
+    forFaceMarking.push_back(0);
+    if (FFE.size() > 0) {
+      for (std::size_t i = 0; i < FFE.size(); i++)
+      	forFaceMarking.push_back(FFE[i]);
+    }
+    for (std::size_t i = 0; i < aiOnlyVtx.size(); i++)
+      ai.push_back(aiOnlyVtx[i]);
+    for (std::size_t i = 0; i < aiOnlyEdge.size(); i++)
+      ai.push_back(aiOnlyEdge[i]);
+    for (std::size_t i = 0; i < aiOnlyFace.size(); i++)
+      ai.push_back(aiOnlyFace[i]);
+  }
+  return forFaceMarking;
+}
+
+static int markAllEdges(ma::Mesh* m, ma::Entity* e,
+    std::vector<int> ai, ma::Entity* edges[6])
+{
+  std::vector<int> bb;
+  apf::MeshEntity* edf[3];
+  apf::MeshEntity* faces[4];
+  ma::Downward ed;
+  m->getDownward(e,1,ed);
+
+ //std::vector<int> ai = inspectInvalidies(aiall);
+  std::vector<int> faceInvalid = numOfUniqueFaces(ai);
+
+  if (ai.size() == 0) return 0;
+  if (ai.size() == (std::size_t) faceInvalid[0]) return 0;
+
+  for (size_t ii = 0; ii < ai.size(); ii++) {
+
+    int dim = (ai[ii]-2)/6;
+    int index = (ai[ii]-2) % 6;
+
+    switch (dim) {
+      case 0:
+      {
+      	//ma::Downward ed;
+      	//m->getDownward(e,1,ed);
+
+      	std::vector<int> aa = getEdgeSequenceFromInvalidVertex(m, e, index);
+      	PCU_ALWAYS_ASSERT(index < 4);
+      	for (size_t i = 0; i < aa.size(); i++)
+      	  bb.push_back(aa[i]);
+
+	break;
+      }
+
+      case 1:
+      {
+      	//ma::Downward ed;
+        //m->getDownward(e,1,ed);
+        bb.push_back(index);
+        bb.push_back(index);
+        break;
+      }
+      //break;
+      case 2:
+      {
+        // if we have an invalid face, operate on its edges
+        //ma::Downward edf, faces;
+        m->getDownward(e,2,faces);
+        m->getDownward(faces[index],1,edf);
+
+	// TODO : This loop seems to be doing nothing
+        for (int i = 0; i < 3; i++) {
+          int j = apf::findIn(ed, 6, edf[i]);
+          j++;
+          //if (j != -1)
+            //bb.push_back(j);
+	}
+        break;
+      }
+      //break;
+      case 3:
+      {
+        m->getDownward(e,1,edges);
+        return 6;
+      }
+      default:
+        fail("invalid quality tag in markEdges\n");
+        break;
+      }
+  }
+
+  int n = 0;
+  //std::vector<int> allinvEdges = sortEdgeIndexByType(m, e, bb);
+  std::vector<int> allinvEdges = sortEdgeIndexByFrequency(bb);
+
+  for (size_t i = 0; i < allinvEdges.size(); i++) {
+    if (m->getModelType(m->toModel(ed[allinvEdges[i]])) != 1) {
+      n++;
+      edges[n-1] = ed[allinvEdges[i]];
+    }
+  }
+
+  return n;
+}
+
 static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
     ma::Entity* edges[6])
 {
@@ -61,7 +418,6 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
   int index = (tag-2) % 6;
   int n = 0;
   int md = m->getDimension();
-
   switch (dim) {
     case 0:
     {
@@ -69,6 +425,7 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
       ma::Downward ed;
       m->getDownward(e,1,ed);
       n = md;
+
       if(md == 2){
         edges[0] = ed[index];
         edges[1] = ed[(index+2) % 3];
@@ -78,8 +435,8 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
         edges[1] = ed[tetVertEdges[index][1]];
         edges[2] = ed[tetVertEdges[index][2]];
       }
+      break;
     }
-    break;
     case 1:
     {
       // if we have a single invalid edge, operate on it
@@ -87,8 +444,8 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
       m->getDownward(e,1,ed);
       edges[0] = ed[index];
       n = 1;
+      break;
     }
-    break;
     case 2:
     {
       // if we have an invalid face, operate on its edges
@@ -99,17 +456,44 @@ static int markEdges(ma::Mesh* m, ma::Entity* e, int tag,
       edges[0] = ed[0];
       edges[1] = ed[1];
       edges[2] = ed[2];
+      break;
     }
-    break;
     case 3:
+    {
       m->getDownward(e,1,edges);
       n = 6;
       break;
+    }
     default:
       fail("invalid quality tag in markEdges\n");
       break;
   }
 
+  return n;
+}
+
+static int markUniqueFaces(ma::Mesh* m, ma::Entity* e, std::vector<int> ai,
+    ma::Entity* faces[4])
+{
+
+  if (ai.size() == 0) return 0;
+  std::vector<int> faceInvalid = numOfUniqueFaces(ai);
+  int n = 0;
+
+  ma::Downward fc;
+  m->getDownward(e, 2, fc);
+  ma::Downward ed;
+  m->getDownward(e, 1, ed);
+  if (faceInvalid[0] > 0) {
+    for (int i = 1; i < faceInvalid[0]+1; i++) {
+      int index = (faceInvalid[i] -2) % 6;
+
+      if (m->getModelType(m->toModel(fc[index])) == 3) {
+      	faces[n] = fc[index];
+      	n++;
+      }
+    }
+  }
   return n;
 }
 
@@ -158,10 +542,22 @@ public:
   virtual int getTargetDimension() {return md;}
   virtual bool shouldApply(ma::Entity* e)
   {
+    std::vector<int> ai = crv::getAllInvalidities(mesh, e);
+    mesh->getDownward(e, 1, edges);
+    int niv = ai.size();
+    ne = 0;
+    if (niv != 0) {
+      ne = markAllEdges(mesh, e, ai, edges);
+      simplex = e;
+    }
+    return (ne > 0);
+    /*
     int tag = crv::getTag(adapter,e);
     ne = markEdges(mesh,e,tag,edges);
+
     simplex = e;
     return (ne > 0);
+    */
   }
   virtual bool requestLocality(apf::CavityOp* o)
   {
@@ -172,7 +568,7 @@ public:
     for (int i = 0; i < ne; ++i){
       if (edgeSwap->run(edges[i])){
         ns++;
-        crv::clearTag(adapter,simplex);
+       // crv::clearTag(adapter,simplex);
         ma::clearFlag(adapter,edges[i],ma::COLLAPSE | ma::BAD_QUALITY);
         break;
       }
@@ -211,6 +607,7 @@ public:
   virtual bool shouldApply(ma::Entity* e)
   {
     int tag = crv::getTag(adapter,e);
+
     ne = markEdges(mesh,e,tag,edges);
     simplex = e;
     return (ne > 0);
@@ -488,6 +885,160 @@ public:
   int nr;
 };
 
+class FaceOptimizer : public ma::Operator
+{
+public:
+  FaceOptimizer(Adapt* a) {
+    adapter = a;
+    mesh = a->mesh;
+    faces[0] = faces[1] = faces[2] = faces[3] = 0;
+    simplex = 0;
+    md = mesh->getDimension();
+    numf = 0;
+    ns = 0;
+    nf = 0;
+  }
+  ~FaceOptimizer() {
+  }
+  virtual int getTargetDimension() {return md;}
+  virtual bool shouldApply(ma::Entity* e) {
+
+    std::vector<int> ai = crv::getAllInvalidities(mesh, e);
+    int niv = ai.size();
+    mesh->getDownward(e, 2, faces);
+    numf = 0;
+    if (niv != 0) {
+      numf = markUniqueFaces(mesh, e, ai, faces);
+      simplex = e;
+    }
+    return (numf > 0);
+  }
+
+  virtual bool requestLocality(apf::CavityOp* o)
+  {
+    return o->requestLocality(faces, numf);
+  }
+
+  virtual void apply(){
+    int invaliditySize = 0;
+    //mesh->getDownward(simplex, 2, faces);
+    if (numf == 0) return;
+    for (int i = 0; i < numf; i++ ) {
+      if (mesh->getModelType(mesh->toModel(faces[i])) != 3) continue;
+      //CrvFaceOptim *cfo = new CrvFaceOptim(adapter, faces[i], simplex, DETJ);
+      CrvFaceOptim *cfo = new CrvFaceOptim(adapter, faces[i], simplex, NIJK);
+      cfo->setMaxIter(100);
+      cfo->setTol(1e-8);
+      if (cfo->run(invaliditySize)) {
+	if (invaliditySize < 1) {
+	  ns++;
+	  delete cfo;
+	  break;
+	}
+      }
+      else {
+	nf++;
+	if (invaliditySize < 1) {
+	  delete cfo;
+	  break;
+	}
+      }
+      delete cfo;
+    }
+  }
+protected:
+  Adapt* adapter;
+  ma::Mesh* mesh;
+public:
+  ma::Entity* faces[4];
+  ma::Entity* simplex;
+  int numf;
+  int md;
+  int ns;
+  int nf;
+};
+
+class EdgeOptimizer : public ma::Operator
+{
+public:
+  EdgeOptimizer(Adapt* a) {
+    adapter = a;
+    mesh = a->mesh;
+    edges[0] = edges[1] = edges[2] = edges[3] = edges[4] = edges[5] = 0;
+    simplex = 0;
+    md = mesh->getDimension();
+    ns = 0;
+    nf = 0;
+    ne = 0;
+  }
+  ~EdgeOptimizer() {
+  }
+  virtual int getTargetDimension() {return md;}
+  virtual bool shouldApply(ma::Entity* e) {
+    std::vector<int> ai = crv::getAllInvalidities(mesh, e);
+    mesh->getDownward(e, 1, edges);
+    int niv = ai.size();
+    ne = 0;
+    if (niv != 0) {
+      ne = markAllEdges(mesh, e, ai, edges);
+      simplex = e;
+    }
+    return (ne > 0);
+  }
+
+  virtual bool requestLocality(apf::CavityOp* o)
+  {
+    return o->requestLocality(edges, ne);
+  }
+
+  virtual void apply() {
+    if (ne == 0) return;
+    for (int i = 0; i < ne; i++ ) {
+      int invaliditySize = 0;
+      CrvEntityOptim* ceo;
+
+      if (mesh->getModelType(mesh->toModel(edges[i])) == 3) {
+      	//ceo = new CrvInternalEdgeOptim(adapter, edges[i], simplex, DETJ);
+      	ceo = new CrvInternalEdgeOptim(adapter, edges[i], simplex, NIJK);
+      }
+      else {
+      	//ceo = new CrvBoundaryEdgeOptim(adapter, edges[i], simplex, DETJ);
+      	ceo = new CrvBoundaryEdgeOptim(adapter, edges[i], simplex, NIJK);
+      }
+
+      ceo->setMaxIter(100);
+      ceo->setTol(1e-8);
+
+      if (ceo->run(invaliditySize)) {
+	ns++;
+	if (invaliditySize < 1) {
+	  break;
+	  delete ceo;
+	}
+      }
+      else {
+	nf++;
+	if (invaliditySize < 1) {
+	  delete ceo;
+	  break;
+	}
+      }
+      delete ceo;
+    }
+  }
+protected:
+  Adapt* adapter;
+  ma::Mesh* mesh;
+  ma::Entity* edge;
+public:
+  int ne;
+  int md;
+  ma::Entity* edges[6];
+  ma::Entity* simplex;
+  int ns;
+  int nf;
+};
+
 static bool isCornerTriAngleLargeMetric(crv::Adapt *a,
     ma::Entity* tri, int index)
 {
@@ -670,32 +1221,76 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
  * and then use the results to mark edges, etc for
  * fixing
  */
-static int markEdgesToFix(Adapt* a, int flag)
+
+/* static int markEdgesToFix(Adapt* a, int flag) */
+/* { */
+/*   // do a invalidity check first */
+/*   int invalid = markInvalidEntities(a); */
+/*   if ( !invalid ) */
+/*     return 0; */
+/*   int count = 0; */
+
+/*   ma::Mesh* m = a->mesh; */
+/*   ma::Entity* e; */
+
+/*   // markEdges could have upto 6 edges marked!!! */
+/*   ma::Entity* edges[6]; */
+/*   ma::Iterator* it = m->begin(m->getDimension()); */
+  
+/*   while ((e = m->iterate(it))) */
+/*   { */
+/*     //int tag = crv::getTag(a,e); */
+/*     //int n = markEdges(m,e,tag,edges); */
+    
+/*     std::vector<int> ai = crv::getAllInvalidities(m, e); */
+/*     int niv = ai.size(); */
+
+/*     if (niv != 0) { */
+/*       int n = markAllEdges(m, e, ai, edges); */
+/*       for (int i = 0; i < n; ++i){ */
+/*       	ma::Entity* edge = edges[i]; */
+/*       	PCU_ALWAYS_ASSERT(edge); */
+
+/*       	if (edge && !ma::getFlag(a,edge,flag)) { */
+/*       	  ma::setFlag(a,edge,flag); */
+/*       	  if (a->mesh->isOwned(edge)) */
+/*       	    ++count; */
+/* 	} */
+/*       } */
+/*     } */
+/*   } */
+/*   m->end(it); */
+
+/*   return PCU_Add_Long(count); */
+/* } */
+
+/*
+static int markFacesToFix(Adapt* a, int flag)
 {
-  // do a invalidity check first
   int invalid = markInvalidEntities(a);
-  if ( !invalid )
+  if (!invalid)
     return 0;
   int count = 0;
 
   ma::Mesh* m = a->mesh;
   ma::Entity* e;
 
-  // markEdges could have upto 6 edges marked!!!
-  ma::Entity* edges[6];
+  ma::Entity* faces[4];
   ma::Iterator* it = m->begin(m->getDimension());
   while ((e = m->iterate(it)))
   {
-    int tag = crv::getTag(a,e);
-    int n = markEdges(m,e,tag,edges);
-    for (int i = 0; i < n; ++i){
-      ma::Entity* edge = edges[i];
-      PCU_ALWAYS_ASSERT(edge);
-      if (edge && !ma::getFlag(a,edge,flag))
-      {
-        ma::setFlag(a,edge,flag);
-        if (a->mesh->isOwned(edge))
-          ++count;
+    std::vector<int> ai = crv::getAllInvalidities(m, e);
+//    int tag = crv::getTag(a, e);
+//    int n = markFaces(m, e, tag, faces);
+    int n = markUniqueFaces(m, e, ai, faces); 
+    for (int i = 0; i < n; i++) {
+      ma::Entity* face = faces[i];
+      PCU_ALWAYS_ASSERT(face);
+      if (face && !ma::getFlag(a, face, flag)) {
+      	if (m->getModelType(m->toModel(face)) != 2)
+      	  ma::setFlag(a, face, flag);
+      	if (a->mesh->isOwned(face))
+      	  count++;
       }
     }
   }
@@ -703,7 +1298,7 @@ static int markEdgesToFix(Adapt* a, int flag)
 
   return PCU_Add_Long(count);
 }
-
+*/
 int fixLargeBoundaryAngles(Adapt* a)
 {
   double t0 = PCU_Time();
@@ -720,7 +1315,7 @@ int fixLargeBoundaryAngles(Adapt* a)
   return 0;
 }
 
-static void collapseInvalidEdges(Adapt* a)
+static int collapseInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
   ma::Mesh* m = a->mesh;
@@ -737,9 +1332,10 @@ static void collapseInvalidEdges(Adapt* a)
   double t1 = PCU_Time();
   ma::print("Collapsed %d bad edges "
       "in %f seconds",successCount, t1-t0);
+  return successCount;
 }
 
-static void swapInvalidEdges(Adapt* a)
+static int swapInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
   EdgeSwapper es(a);
@@ -747,9 +1343,10 @@ static void swapInvalidEdges(Adapt* a)
   double t1 = PCU_Time();
   ma::print("Swapped %d bad edges "
       "in %f seconds",es.ns, t1-t0);
+  return es.ns;
 }
 
-static void repositionInvalidEdges(Adapt* a)
+static int repositionInvalidEdges(Adapt* a)
 {
   double t0 = PCU_Time();
   EdgeReshaper es(a);
@@ -757,22 +1354,49 @@ static void repositionInvalidEdges(Adapt* a)
   double t1 = PCU_Time();
   ma::print("Repositioned %d bad edges "
       "in %f seconds",es.nr, t1-t0);
+  return es.nr;
+}
+
+static int optimizeInvalidEdges(Adapt* a)
+{
+  double t0 = PCU_Time();
+  EdgeOptimizer eo(a);
+  ma::applyOperator(a,&eo);
+  double t1 = PCU_Time();
+  ma::print("Optimized %d bad edges, failed %d edges "
+      "in %f seconds",eo.ns, eo.nf, t1-t0);
+  return eo.ns;
+}
+
+static int optimizeInvalidFaces(Adapt* a)
+{
+  double t0 = PCU_Time();
+  FaceOptimizer fo(a);
+  ma::applyOperator(a, &fo);
+  double t1 = PCU_Time();
+  ma::print("Optimized %d bad faces, failed %d faces "
+      "in %f seconds", fo.ns, fo.nf, t1-t0);
+  return fo.ns;
+}
+
+int fixInvalidFaces(Adapt* a)
+{
+  return optimizeInvalidFaces(a);
 }
 
 int fixInvalidEdges(Adapt* a)
 {
-  int count = markEdgesToFix(a,ma::BAD_QUALITY | ma::COLLAPSE );
-  if (! count){
-    return 0;
-  }
+  int count = 0;
 
   if(a->mesh->getShape()->getOrder() == 2)
-    repositionInvalidEdges(a);
-  collapseInvalidEdges(a);
-  swapInvalidEdges(a);
+    count += repositionInvalidEdges(a);
+  else
+    count += optimizeInvalidEdges(a);
+
+  count += collapseInvalidEdges(a);
+  count += swapInvalidEdges(a);
   return count;
 }
-
 
 struct IsBadCrvQuality : public ma::Predicate
 {
@@ -847,6 +1471,7 @@ void fixCrvElementShapes(Adapt* a)
     /* PCU_Add_Ints(&numEdgeRemoved,1); */
     /* if (PCU_Comm_Self() == 0) */
     /*   lion_oprint(1,"==> %d edges removal operations succeeded.\n", numEdgeRemoved); */
+    //fixInvalidFaces(a);
     count = markCrvBadQuality(a);
     ++i;
   } while(count < prev_count && i < 6); // the second conditions is to make sure this does not take long

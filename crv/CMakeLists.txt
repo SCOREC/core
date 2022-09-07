@@ -1,6 +1,7 @@
 # Package sources
 set(SOURCES
   crv.cc
+  crvDBG.cc
   crvAdapt.cc
   crvBernstein.cc
   crvBezier.cc
@@ -20,11 +21,20 @@ set(SOURCES
   crvTables.cc
   crvQuality.cc
   crvVtk.cc
+  LBFGS.cc
+  crvOptimizations.cc
+  crvObjectiveFunctions.cc
 )
 
 # Package headers
 set(HEADERS
   crv.h
+  crvAdapt.h
+  crvBezier.h
+  crvQuality.h
+  crvOptimizations.h
+  crvObjectiveFunctions.h
+  LBFGS.h
 )
 
 # Add the crv library

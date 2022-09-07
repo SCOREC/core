@@ -22,6 +22,14 @@
   * \brief the curving functions are contained in this namespace */
 namespace crv {
 
+
+/** \brief choices of objective function for reshape*/
+enum {
+  NIJK, // based on Jacobian coefficients
+  DETJ, // based on Jacobian Determinant Values at Integration Points
+  DETJNIJK // based on TODO : to be decided
+};
+
 /** \brief actually 1 greater than max order */
 static unsigned const MAX_ORDER = 19;
 
