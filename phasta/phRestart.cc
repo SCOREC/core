@@ -294,7 +294,10 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
     "meshCFL",
     "VMS_error",
     "err_tri_f",
-    "material_type"
+    "material_type",
+    "P_Filt",
+    "Shock_Ind",
+    "meshDC"
   };
   static char const* const known_rand_fields[] = {
     "rbParams"

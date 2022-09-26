@@ -28,6 +28,28 @@ c
 c-------------------------------------------------------------------------
 c
 c-------------------------------------------------------------------------
+
+      module core_ScalarSmoother
+      use iso_c_binding
+
+      interface
+
+        subroutine core_ShockVelSmoother(x1, x2, x3, numnp, V_i, V_o)
+     &    bind(C, NAME='core_ShockVelSmoother')
+        use iso_c_binding
+          integer(c_int),value :: numnp
+          real(c_double),intent(in),dimension(:) ::
+     &         x1(numnp), x2(numnp), x3(numnp), V_i(numnp)
+          real(c_double),intent(out) :: V_o(numnp)
+        end subroutine
+      end interface
+
+      end module
+
+
+c-------------------------------------------------------------------------
+c
+c-------------------------------------------------------------------------
       module core_mesh_quality
       use iso_c_binding
 c

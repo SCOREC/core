@@ -57,6 +57,9 @@ void core_get_pos_on_surf (double dx[], double dy[], double dz[], int numnp,
 
 void core_is_in_closure (int e_dim, int e_tag, int t_dim, int t_tag, int& answer);
 
+void core_ShockVelSmoother(double x1[], double x2[], double x3[], int numnp, 
+                         double V_i[], double V_o[]);
+
 void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
                         double& minvq, double& minfq);
 

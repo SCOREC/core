@@ -145,6 +145,42 @@ void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag) {
 extern"C"{
 #endif
 
+void core_ShockVelSmoother(double x1[], double x2[], double x3[], int numnp,
+                         double V_i[], double V_o[]) {
+   double** op = (double**)malloc(sizeof(double*) * numnp);
+   for (int i = 0; i < numnp; i++)
+     op[i] = (double*)malloc(sizeof(double) * 3);
+      // loop over all vertices
+   int counter = 0;
+   apf::Vector3 p;
+   apf::MeshEntity* v;
+   apf::MeshIterator* vit = m->begin(0);
+   while ((v = m->iterate(vit))) {
+     // get original mesh coordinates
+     m->getPoint(v, 0, p);
+     op[counter][0] = p[0];
+     op[counter][1] = p[1];
+     op[counter][2] = p[2];
+     // update the coordinates of current mesh
+     p[0] = x1[counter];
+     p[1] = x2[counter];
+     p[2] = x3[counter];
+     m->setPoint(v, 0, p);
+     counter++;
+   }
+   m->end(vit);
+   PCU_ALWAYS_ASSERT(counter==numnp);
+ 
+   //random operation to clear compiler warning
+   if (x1==x2){
+     x3=x3;  
+     V_o = V_i;
+     V_i = V_o;
+   }
+
+}
+
+
 /* input x1,x2,x3 are current coordinates of mesh in phasta
    output minq is the minimum quality of mesh */
 void core_measure_mesh (double x1[], double x2[], double x3[], int numnp,
