@@ -189,7 +189,7 @@ void readEntities(Reader* r,const char* fnameDmg, int emap[])
     iud = getLong(r); 
     for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
     nlde=getLong(r); 
-    fprintf(f, "%  ld\n", nlde);
+    fprintf(f, "  %ld\n", nlde);
     for(long j =0; j < nlde; ++j) {
       ilde=getLong(r); 
       if(ilde > 0 ) 
@@ -292,7 +292,7 @@ void readElement(Reader* r, long gmshType,long gtag)
     const int physType = static_cast<int>(getLong(r));
     PCU_ALWAYS_ASSERT(dim>=0 && dim<4);
     r->physicalType[dim].push_back(physType);
-    long gtag = getLong(r);
+//FIXME blocks compilation    long gtag = getLong(r);
     for (long i = 2; i < ntags; ++i)
       getLong(r); /* discard all other element tags */
   }

@@ -22,7 +22,7 @@ int main(int argc, char** argv)
   gmi_register_null();
   gmi_register_mesh();
   if(false) {
-    pf::Mesh2* m = apf::loadMdsFromGmsh(gmi_load(argv[1]), argv[2]);
+    apf::Mesh2* m = apf::loadMdsFromGmsh(gmi_load(argv[1]), argv[2]);
     // if input model is null derive a basic model for verify to pass.
     if (std::string(argv[1]).compare(".null") == 0)
       apf::deriveMdsModel(m);
