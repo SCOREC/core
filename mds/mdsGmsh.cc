@@ -326,7 +326,7 @@ void readElements(Reader* r, int* emap)
   int tagMapped;
   for (long i = 0; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &Edim, &gtag, &gmshType, &Elements_Block);
-    if (Edim > 0) {
+    if (Edim > 2) {
       int kstart=emap[100]; // lowest dim elements are edges so bottom of search 
       for (int k=1; k<Edim; ++k) kstart+=emap[100+k]; //higher dim element start higher
       int kend=kstart+emap[100+Edim];
@@ -337,7 +337,7 @@ void readElements(Reader* r, int* emap)
     }
     getLine(r);
     for (long j = 0; j < Elements_Block; ++j) {
-     if(Edim>=1) 
+     if(Edim>=3) 
        readElement(r,gmshType,tagMapped);
      else
        getLine(r); // do not put one dim elements in mds
