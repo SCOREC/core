@@ -189,7 +189,7 @@ void readEntities(Reader* r,const char* fnameDmg, int emap[])
     iud = getLong(r); 
     for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
     nlde=getLong(r); 
-    fprintf(f, "  %ld\n", nlde);
+    fprintf(f, "  %ld \n", nlde);
     for(long j =0; j < nlde; ++j) {
       ilde=getLong(r); 
       if(ilde > 0 ) 
@@ -326,18 +326,20 @@ void readElements(Reader* r, int* emap)
   int tagMapped;
   for (long i = 0; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &Edim, &gtag, &gmshType, &Elements_Block);
-    if (Edim > 2) {
-      int kstart=emap[100]; // lowest dim elements are edges so bottom of search 
-      for (int k=1; k<Edim; ++k) kstart+=emap[100+k]; //higher dim element start higher
-      int kend=kstart+emap[100+Edim];
-      for(int k=kstart; k < kend; ++k) { // have to search since map is backwards
-        if(emap[k] == gtag) 
-          tagMapped= k+1; // modVerts started from 1
+    if (Edim >= 0) {
+      int kstart=0;
+      for (int k=0; k<Edim; ++k) kstart+=emap[100+k]; //higher dim element start higher
+      int found=0;
+      int k=kstart;
+      while(!found){ // have to search since map is backwards
+         if(emap[k] == gtag) found=1; 
+         else k++;
       }
+      tagMapped= k+1; // modVerts started from 1
     }
     getLine(r);
     for (long j = 0; j < Elements_Block; ++j) {
-     if(Edim>=3) 
+     if(Edim>=0) 
        readElement(r,gmshType,tagMapped);
      else
        getLine(r); // do not put one dim elements in mds
