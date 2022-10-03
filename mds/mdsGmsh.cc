@@ -137,18 +137,20 @@ void readNode(Reader* r, int bm)
   getLine(r);
 }
 
-void readEntities(Reader* r,const char* fnameDmg, int emap[])
+void readEntities(Reader* r,const char* fnameDmg, int emap[], int nMVskip)
 {
   seekMarker(r, "$Entities");
   long nlde,ilde,iud,tag,isign;
   double x,y,z;
   FILE* f = fopen(fnameDmg, "w");
   sscanf(r->line, "%d %d %d %d", &emap[100], &emap[101], &emap[102], &emap[103]);
+  emap[100]-=nMVskip; // I can't seem to stop gmsh from writing construction vertices but we can require users to put them first 
   fprintf(f, "%d %d %d %d \n", emap[103], emap[102], emap[101], emap[100]); // just reverse order 
   fprintf(f, "%f %f %f \n ", 0.0, 0.0, 0.0); // Probaby model bounding box?
   fprintf(f, "%f %f %f \n", 0.0, 0.0, 0.0); // 
   getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
   int entCnt=0;
+  for (long i = 0; i < nMVskip; ++i) getLine(r);
   for (long i = 0; i < emap[100]; ++i){
 // reading full lines is ok with sscanf
     sscanf(r->line, "%ld %lf %lf %lf", &tag, &x, &y, &z);
@@ -236,13 +238,15 @@ void readEntities(Reader* r,const char* fnameDmg, int emap[])
   fclose(f);
 }
 
-void readNodes(Reader* r)
+void readNodes(Reader* r, int nMVskip)
 {
   seekMarker(r, "$Nodes");
   long Num_EntityBlocks,Num_Nodes,Nodes_Block,junk1,junk2,junk3;
   sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Nodes, &junk1, &junk2);
   getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
-  for (long i = 0; i < Num_EntityBlocks; ++i){
+  for (long i = 0; i < 3*nMVskip; ++i) getLine(r); // model vertices have 3 lines to skip
+//  for (long i = 0; i < Num_EntityBlocks; ++i){
+  for (long i = nMVskip; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &junk1, &junk2, &junk3, &Nodes_Block);
     long blockMap[Nodes_Block];
     for (long j = 0; j < Nodes_Block; ++j){
@@ -317,14 +321,19 @@ void readElement(Reader* r, long gmshType,long gtag)
   emap[100+d] = number of model verts of dimension d where d=[0..3]
   FIXME - extend the upper limit on model entity ids
 */
-void readElements(Reader* r, int* emap)
+void readElements(Reader* r, int* emap, int nMVskip)
 {
   seekMarker(r, "$Elements");
   long Num_EntityBlocks,Num_Elements,Elements_Block,Edim,gtag,gmshType,junk1,junk2;
   sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Elements, &junk1, &junk2);
   getLine(r); 
   int tagMapped;
-  for (long i = 0; i < Num_EntityBlocks; ++i){
+  for (long i = 0; i < nMVskip; ++i){
+    getLine(r);
+    getLine(r);
+  }
+//   for (long i = 0; i < Num_EntityBlocks; ++i){
+  for (long i = nMVskip; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &Edim, &gtag, &gmshType, &Elements_Block);
     if (Edim >= 0) {
       int kstart=0;
@@ -422,12 +431,12 @@ void readQuadratic(Reader* r, apf::Mesh2* m, const char* filename)
   freeReader(r);
 }
 
-void readGmsh(apf::Mesh2* m, const char* filename, int emap[])
+void readGmsh(apf::Mesh2* m, const char* filename, int emap[], int nMVskip)
 {
   Reader r;
   initReader(&r, m, filename);
-  readNodes(&r); // as near as I can tell neither v2 nor my v4 mods actually USE the classification information...I suppose because V2 had none my format changes did not exploit it. 
-  readElements(&r,emap);  // different story for Elements which do use the m that has the dmg info smuggle^2 though the reader r. Thuse we pass our emap down (I suppose we could put it in r too?
+  readNodes(&r,nMVskip); // as near as I can tell neither v2 nor my v4 mods actually USE the classification information...I suppose because V2 had none my format changes did not exploit it. 
+  readElements(&r,emap,nMVskip);  // different story for Elements which do use the m that has the dmg info smuggle^2 though the reader r. Thuse we pass our emap down (I suppose we could put it in r too?
   freeReader(&r);
   m->acceptChanges();
   if(false) // FIXME
@@ -439,32 +448,32 @@ void readGmsh(apf::Mesh2* m, const char* filename, int emap[])
 }  // closes original namespace 
 
 namespace apf {
-void gmshFindDmg(const char* fnameDmg, const char* filename, int emap[])
+void gmshFindDmg(const char* fnameDmg, const char* filename, int emap[], int nMVskip)
 {
   Reader r;
   
   Mesh2* m=NULL;
   initReader(&r, m,  filename);
-  readEntities(&r, fnameDmg,emap);
+  readEntities(&r, fnameDmg,emap,nMVskip);
   freeReader(&r);
 }
 
 
-Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename)
+Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, int nMVskip)
 {
   int emap[104]; //letting 0:99 (100) be the max entities until a stronger C++ coder fixes this
   Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-  readGmsh(m, filename,emap);
+  readGmsh(m, filename,emap,nMVskip);
   return m;
 }
 
-Mesh2* loadMdsDmgFromGmsh(const char*fnameDmg, const char* filename)
+Mesh2* loadMdsDmgFromGmsh(const char*fnameDmg, const char* filename, int nMVskip)
 {
   int emap[104]; //letting 99 be the max entities until a stronger C++ coder fixes this
                  // and 100+dim holds the number of model entities of a given dim
-  gmshFindDmg(fnameDmg, filename, emap);  // new function that scans $Entities and writes a dmg 
+  gmshFindDmg(fnameDmg, filename, emap,nMVskip);  // new function that scans $Entities and writes a dmg 
   Mesh2* m = makeEmptyMdsMesh(gmi_load(fnameDmg), 0, false);
-  readGmsh(m, filename,emap);
+  readGmsh(m, filename,emap,nMVskip);
   return m;
 }
 
