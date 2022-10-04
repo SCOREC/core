@@ -137,7 +137,7 @@ void readNode(Reader* r, int bm)
   getLine(r);
 }
 
-void readEntities(Reader* r,const char* fnameDmg, int emap[], int nMVskip, int pass)
+void readEntities(Reader* r,const char* fnameDmg, int emap[], int* nMVskip, int pass)
 {
   seekMarker(r, "$Entities");
   long nlde,ilde,iud,tag,isign;
@@ -145,21 +145,25 @@ void readEntities(Reader* r,const char* fnameDmg, int emap[], int nMVskip, int p
   FILE* f = fopen(fnameDmg, "w");
   sscanf(r->line, "%d %d %d %d", &emap[100], &emap[101], &emap[102], &emap[103]);
   if (pass==1) {
-    for (long i = 0; i < emap[100]  ++i){ 
+    int tmp=0;
+    getLine(r); 
+    for (long i = 0; i < emap[100];  ++i){ 
       sscanf(r->line, "%ld %lf %lf %lf %ld ", &tag, &x, &y, &z, &iud);
-      if(iud==0) nMVskip++; // this is a gmsh construction model vertex that has no adjacency so has to be skipped in real read/build of dmg.
+      if(iud==0) tmp++; // this is a gmsh construction model vertex that has no adjacency so has to be skipped in real read/build of dmg.
       getLine(r); 
    }
+   *nMVskip=tmp;
    return;
+  }
   else { // we have computed nMVskip in first pass
-    emap[100]-=nMVskip; // I can't seem to stop gmsh from writing construction vertices but we can require users to put them first 
+    emap[100]-=*nMVskip; // I can't seem to stop gmsh from writing construction vertices but we can require users to put them first 
     fprintf(f, "%d %d %d %d \n", emap[103], emap[102], emap[101], emap[100]); // just reverse order 
     fprintf(f, "%f %f %f \n ", 0.0, 0.0, 0.0); // Probaby model bounding box?
     fprintf(f, "%f %f %f \n", 0.0, 0.0, 0.0); // 
    
     getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
     int entCnt=0;
-    for (long i = 0; i < emap[100] + nVMskip; ++i){  // weird end reflects known skips but we need emap[100] correct in DMG
+    for (long i = 0; i < emap[100] + *nMVskip; ++i){  // weird end reflects known skips but we need emap[100] correct in DMG
       sscanf(r->line, "%ld %lf %lf %lf %ld ", &tag, &x, &y, &z, &iud);
       if(iud !=0 ) {
         emap[entCnt]=tag;   // map(dmgTag)=gmshTag is backward how we need but gmshTags dup
@@ -255,14 +259,13 @@ void readNodes(Reader* r, int* emap)
   getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
   for (long i = 0; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &edim, &etag, &junk3, &Nodes_Block);
+    int found=0;
     if(edim==0) {
-      int found=0;
-      int k=0
-      for (int k=0; k<emap[100],++k) {
+      for (int k=0; k<emap[100]; ++k) {
          if(emap[k]==etag) found=1;
       }
     }
-    if(found==1 || edim > 0) 
+    if(found==1 || edim > 0){ 
       long blockMap[Nodes_Block];
       for (long j = 0; j < Nodes_Block; ++j){
         getLine(r);
@@ -352,10 +355,9 @@ void readElements(Reader* r, int* emap)
   int tagMapped;
   for (long i = 0; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &Edim, &gtag, &gmshType, &Elements_Block);
+    int found=0;
     if(Edim==0) { // This only determines if model vertex is Physical if yes found=1
-      int found=0;
-      int k=0
-      for (int k=0; k<emap[100],++k) {
+      for (int k=0; k<emap[100]; ++k) {
          if(emap[k]==gtag) found=1;
       }
     } 
@@ -459,7 +461,7 @@ void readGmsh(apf::Mesh2* m, const char* filename, int emap[])
 {
   Reader r;
   initReader(&r, m, filename);
-  readNodes(&r); // as near as I can tell neither v2 nor my v4 mods actually USE the classification information...I suppose because V2 had none my format changes did not exploit it. 
+  readNodes(&r, emap); // as near as I can tell neither v2 nor my v4 mods actually USE the classification information...I suppose because V2 had none my format changes did not exploit it. 
   readElements(&r,emap);  // different story for Elements which do use the m that has the dmg info smuggle^2 though the reader r. Thuse we pass our emap down (I suppose we could put it in r too?
   freeReader(&r);
   m->acceptChanges();
@@ -478,11 +480,11 @@ void gmshFindDmg(const char* fnameDmg, const char* filename, int emap[])
   
   Mesh2* m=NULL;
   initReader(&r, m,  filename);
-  nMVskip=0;  // first pass is a scan of model vertices to find those that don't have Physical tags  and are thus construction if we reuire users to put true model vertices into Physical Groups. 
-  readEntities(&r, fnameDmg,emap,nMVskip,1);
+  int nMVskip=0;  // first pass is a scan of model vertices to find those that don't have Physical tags  and are thus construction if we reuire users to put true model vertices into Physical Groups. 
+  readEntities(&r, fnameDmg,emap,&nMVskip,1);
   freeReader(&r);
   initReader(&r, m,  filename);
-  readEntities(&r, fnameDmg,emap,nMVskip,2);
+  readEntities(&r, fnameDmg,emap,&nMVskip,2);
   freeReader(&r);
 }
 
