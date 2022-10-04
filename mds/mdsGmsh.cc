@@ -137,126 +137,147 @@ void readNode(Reader* r, int bm)
   getLine(r);
 }
 
-void readEntities(Reader* r,const char* fnameDmg, int emap[], int nMVskip)
+void readEntities(Reader* r,const char* fnameDmg, int emap[], int nMVskip, int pass)
 {
   seekMarker(r, "$Entities");
   long nlde,ilde,iud,tag,isign;
   double x,y,z;
   FILE* f = fopen(fnameDmg, "w");
   sscanf(r->line, "%d %d %d %d", &emap[100], &emap[101], &emap[102], &emap[103]);
-  emap[100]-=nMVskip; // I can't seem to stop gmsh from writing construction vertices but we can require users to put them first 
-  fprintf(f, "%d %d %d %d \n", emap[103], emap[102], emap[101], emap[100]); // just reverse order 
-  fprintf(f, "%f %f %f \n ", 0.0, 0.0, 0.0); // Probaby model bounding box?
-  fprintf(f, "%f %f %f \n", 0.0, 0.0, 0.0); // 
-  getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
-  int entCnt=0;
-  for (long i = 0; i < nMVskip; ++i) getLine(r);
-  for (long i = 0; i < emap[100]; ++i){
-// reading full lines is ok with sscanf
-    sscanf(r->line, "%ld %lf %lf %lf", &tag, &x, &y, &z);
-    emap[entCnt]=tag;   // map(dmgTag)=gmshTag is backward how we need but gmshTags dup
-    entCnt++; // vertex entities start from 1
-    fprintf(f, "%d %lf %lf %lf \n",entCnt,x,y,z);
-    getLine(r); 
-  }
-  for (long i = 0; i < emap[101]; ++i){
+  if (pass==1) {
+    for (long i = 0; i < emap[100]  ++i){ 
+      sscanf(r->line, "%ld %lf %lf %lf %ld ", &tag, &x, &y, &z, &iud);
+      if(iud==0) nMVskip++; // this is a gmsh construction model vertex that has no adjacency so has to be skipped in real read/build of dmg.
+      getLine(r); 
+   }
+   return;
+  else { // we have computed nMVskip in first pass
+    emap[100]-=nMVskip; // I can't seem to stop gmsh from writing construction vertices but we can require users to put them first 
+    fprintf(f, "%d %d %d %d \n", emap[103], emap[102], emap[101], emap[100]); // just reverse order 
+    fprintf(f, "%f %f %f \n ", 0.0, 0.0, 0.0); // Probaby model bounding box?
+    fprintf(f, "%f %f %f \n", 0.0, 0.0, 0.0); // 
+   
+    getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
+    int entCnt=0;
+    for (long i = 0; i < emap[100] + nVMskip; ++i){  // weird end reflects known skips but we need emap[100] correct in DMG
+      sscanf(r->line, "%ld %lf %lf %lf %ld ", &tag, &x, &y, &z, &iud);
+      if(iud !=0 ) {
+        emap[entCnt]=tag;   // map(dmgTag)=gmshTag is backward how we need but gmshTags dup
+        entCnt++; // vertex entities start from 1
+        fprintf(f, "%d %lf %lf %lf \n",entCnt,x,y,z);
+      }
+      getLine(r); 
+    }
+    for (long i = 0; i < emap[101]; ++i){
  // FAIL does not advance    sscanf(r->line, "%ld %lf %lf %lf", &tag, &x, &y, &z);
-    tag = getLong(r); 
-    emap[entCnt]=tag;
-    entCnt++;
-    fprintf(f, "%d", entCnt);
-    for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
-    iud = getLong(r); 
-    for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
-    nlde=getLong(r);  // 2 in straight edged models but...
-    for(long j =0; j < nlde; ++j) {
-      ilde=getLong(r);
-      int found=0;
-      int k=0;
-      while(!found){ // have to search since map is backwards
-         if(emap[k] == abs(ilde)) found=1; 
-         else k++;
+      tag = getLong(r); 
+      emap[entCnt]=tag;
+      entCnt++;
+      fprintf(f, "%d", entCnt);
+      for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
+      iud = getLong(r); 
+      for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
+      nlde=getLong(r);  // 2 in straight edged models but...
+      for(long j =0; j < nlde; ++j) {
+        ilde=getLong(r);
+        int found=0;
+        int k=0;
+        while(!found){ // have to search since map is backwards
+           if(emap[k] == abs(ilde)) found=1; 
+           else k++;
+        }
+        fprintf(f, " %d", k+1); // modVerts started from 1
       }
-      fprintf(f, " %d", k+1); // modVerts started from 1
-    }
-    fprintf(f, "\n");
-    getLine(r); 
-  }   
-  for (long i = 0; i < emap[102]; ++i){
-    tag = getLong(r); 
-    emap[entCnt]=tag; // new face tag map
-    entCnt++;
-    fprintf(f, "%d %d\n", entCnt, 1);
-    for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
-    iud = getLong(r); 
-    for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
-    nlde=getLong(r); 
-    fprintf(f, "  %ld \n", nlde);
-    for(long j =0; j < nlde; ++j) {
-      ilde=getLong(r); 
-      if(ilde > 0 ) 
-        isign=1;
-      else
-        isign=0;
-      int found=0;
-      int k=emap[100]; // edges start at this count
-      while(!found){ // have to search since map is backwards
-         if(emap[k] == abs(ilde)) found=1; 
-         else k++;
+      fprintf(f, "\n");
+      getLine(r); 
+    }   
+    for (long i = 0; i < emap[102]; ++i){
+      tag = getLong(r); 
+      emap[entCnt]=tag; // new face tag map
+      entCnt++;
+      fprintf(f, "%d %d\n", entCnt, 1);
+      for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
+      iud = getLong(r); 
+      for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
+      nlde=getLong(r); 
+      fprintf(f, "  %ld \n", nlde);
+      for(long j =0; j < nlde; ++j) {
+        ilde=getLong(r); 
+        if(ilde > 0 ) 
+          isign=1;
+        else
+          isign=0;
+        int found=0;
+        int k=emap[100]; // edges start at this count
+        while(!found){ // have to search since map is backwards
+           if(emap[k] == abs(ilde)) found=1; 
+           else k++;
+        }
+        fprintf(f, "    %d %ld \n", k+1,isign); 
       }
-      fprintf(f, "    %d %ld \n", k+1,isign); 
-    }
-    getLine(r); 
-  }   
-  for (long i = 0; i < emap[103]; ++i){ //not even sure that this all hangs with emap[103] > 1 but..
-    tag = getLong(r); 
-    emap[entCnt]=tag; // new region tag map
-    entCnt++;
-    fprintf(f, "%d %d \n", entCnt, 1);
-    for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
-    iud = getLong(r); 
-    for(long j =0; j < iud; ++j) getLong(r); // read past iud user tags
-    nlde=getLong(r); 
-    fprintf(f, "%ld \n", nlde);
-    for(long j =0; j < nlde; ++j) {
-      ilde=getLong(r); 
-      if(ilde > 0 ) 
-        isign=1;
-      else
-        isign=0;
-      int found=0;
-      int k=emap[100]+emap[101]; // faces start here
-      while(!found){ // have to search since map is backwards
-         if(emap[k] == abs(ilde)) found=1; 
-         else k++;
+      getLine(r); 
+    }   
+    for (long i = 0; i < emap[103]; ++i){ //not even sure that this all hangs with emap[103] > 1 but..
+      tag = getLong(r); 
+      emap[entCnt]=tag; // new region tag map
+      entCnt++;
+      fprintf(f, "%d %d \n", entCnt, 1);
+      for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
+      iud = getLong(r); 
+      for(long j =0; j < iud; ++j) getLong(r); // read past iud user tags
+      nlde=getLong(r); 
+      fprintf(f, "%ld \n", nlde);
+      for(long j =0; j < nlde; ++j) {
+        ilde=getLong(r); 
+        if(ilde > 0 ) 
+          isign=1;
+        else
+          isign=0;
+        int found=0;
+        int k=emap[100]+emap[101]; // faces start here
+        while(!found){ // have to search since map is backwards
+           if(emap[k] == abs(ilde)) found=1; 
+           else k++;
+        }
+        fprintf(f, "%d %ld \n", k+1,isign); 
       }
-      fprintf(f, "%d %ld \n", k+1,isign); 
-    }
-    getLine(r); 
-  }   
-  checkMarker(r, "$EndEntities");
-  fclose(f);
+      getLine(r); 
+    }   
+    checkMarker(r, "$EndEntities");
+    fclose(f);
+  }
 }
-
-void readNodes(Reader* r, int nMVskip)
+void readNodes(Reader* r, int* emap)
 {
   seekMarker(r, "$Nodes");
-  long Num_EntityBlocks,Num_Nodes,Nodes_Block,junk1,junk2,junk3;
+  long Num_EntityBlocks,Num_Nodes,Nodes_Block,edim,etag,junk1,junk2,junk3;
   sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Nodes, &junk1, &junk2);
   getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
-  for (long i = 0; i < 3*nMVskip; ++i) getLine(r); // model vertices have 3 lines to skip
-//  for (long i = 0; i < Num_EntityBlocks; ++i){
-  for (long i = nMVskip; i < Num_EntityBlocks; ++i){
-    sscanf(r->line, "%ld %ld %ld %ld", &junk1, &junk2, &junk3, &Nodes_Block);
-    long blockMap[Nodes_Block];
-    for (long j = 0; j < Nodes_Block; ++j){
-      getLine(r);
-      sscanf(r->line, "%ld", &blockMap[j]);
+  for (long i = 0; i < Num_EntityBlocks; ++i){
+    sscanf(r->line, "%ld %ld %ld %ld", &edim, &etag, &junk3, &Nodes_Block);
+    if(edim==0) {
+      int found=0;
+      int k=0
+      for (int k=0; k<emap[100],++k) {
+         if(emap[k]==etag) found=1;
+      }
     }
-    getLine(r);
-    for (long j = 0; j < Nodes_Block; ++j)
-      readNode(r,blockMap[j]);
-  }
+    if(found==1 || edim > 0) 
+      long blockMap[Nodes_Block];
+      for (long j = 0; j < Nodes_Block; ++j){
+        getLine(r);
+        sscanf(r->line, "%ld", &blockMap[j]);
+      }
+      getLine(r);
+      for (long j = 0; j < Nodes_Block; ++j)
+        readNode(r,blockMap[j]);  // has a genLine at end
+    } 
+    else { // skip the construction nodes
+      getLine(r); // block line only scanned
+      getLine(r); // node number
+      getLine(r); // coordinates
+    } 
+  }    
   checkMarker(r, "$EndNodes");
 }
 
@@ -321,21 +342,24 @@ void readElement(Reader* r, long gmshType,long gtag)
   emap[100+d] = number of model verts of dimension d where d=[0..3]
   FIXME - extend the upper limit on model entity ids
 */
-void readElements(Reader* r, int* emap, int nMVskip)
+
+void readElements(Reader* r, int* emap)
 {
   seekMarker(r, "$Elements");
   long Num_EntityBlocks,Num_Elements,Elements_Block,Edim,gtag,gmshType,junk1,junk2;
   sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Elements, &junk1, &junk2);
   getLine(r); 
   int tagMapped;
-  for (long i = 0; i < nMVskip; ++i){
-    getLine(r);
-    getLine(r);
-  }
-//   for (long i = 0; i < Num_EntityBlocks; ++i){
-  for (long i = nMVskip; i < Num_EntityBlocks; ++i){
+  for (long i = 0; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &Edim, &gtag, &gmshType, &Elements_Block);
-    if (Edim >= 0) {
+    if(Edim==0) { // This only determines if model vertex is Physical if yes found=1
+      int found=0;
+      int k=0
+      for (int k=0; k<emap[100],++k) {
+         if(emap[k]==gtag) found=1;
+      }
+    } 
+    if (found==1 || Edim > 0) {
       int kstart=0;
       for (int k=0; k<Edim; ++k) kstart+=emap[100+k]; //higher dim element start higher
       int found=0;
@@ -348,10 +372,10 @@ void readElements(Reader* r, int* emap, int nMVskip)
     }
     getLine(r);
     for (long j = 0; j < Elements_Block; ++j) {
-     if(Edim>=0) 
+     if(found==1 || Edim>0) 
        readElement(r,gmshType,tagMapped);
      else
-       getLine(r); // do not put one dim elements in mds
+       getLine(r);  // don't add non Physical nodes which will have found=0 (not in phsyical tag list)
     }
   }
   checkMarker(r, "$EndElements");
@@ -431,12 +455,12 @@ void readQuadratic(Reader* r, apf::Mesh2* m, const char* filename)
   freeReader(r);
 }
 
-void readGmsh(apf::Mesh2* m, const char* filename, int emap[], int nMVskip)
+void readGmsh(apf::Mesh2* m, const char* filename, int emap[])
 {
   Reader r;
   initReader(&r, m, filename);
-  readNodes(&r,nMVskip); // as near as I can tell neither v2 nor my v4 mods actually USE the classification information...I suppose because V2 had none my format changes did not exploit it. 
-  readElements(&r,emap,nMVskip);  // different story for Elements which do use the m that has the dmg info smuggle^2 though the reader r. Thuse we pass our emap down (I suppose we could put it in r too?
+  readNodes(&r); // as near as I can tell neither v2 nor my v4 mods actually USE the classification information...I suppose because V2 had none my format changes did not exploit it. 
+  readElements(&r,emap);  // different story for Elements which do use the m that has the dmg info smuggle^2 though the reader r. Thuse we pass our emap down (I suppose we could put it in r too?
   freeReader(&r);
   m->acceptChanges();
   if(false) // FIXME
@@ -448,32 +472,36 @@ void readGmsh(apf::Mesh2* m, const char* filename, int emap[], int nMVskip)
 }  // closes original namespace 
 
 namespace apf {
-void gmshFindDmg(const char* fnameDmg, const char* filename, int emap[], int nMVskip)
+void gmshFindDmg(const char* fnameDmg, const char* filename, int emap[])
 {
   Reader r;
   
   Mesh2* m=NULL;
   initReader(&r, m,  filename);
-  readEntities(&r, fnameDmg,emap,nMVskip);
+  nMVskip=0;  // first pass is a scan of model vertices to find those that don't have Physical tags  and are thus construction if we reuire users to put true model vertices into Physical Groups. 
+  readEntities(&r, fnameDmg,emap,nMVskip,1);
+  freeReader(&r);
+  initReader(&r, m,  filename);
+  readEntities(&r, fnameDmg,emap,nMVskip,2);
   freeReader(&r);
 }
 
 
-Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, int nMVskip)
+Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename)
 {
   int emap[104]; //letting 0:99 (100) be the max entities until a stronger C++ coder fixes this
   Mesh2* m = makeEmptyMdsMesh(g, 0, false);
-  readGmsh(m, filename,emap,nMVskip);
+  readGmsh(m, filename,emap);
   return m;
 }
 
-Mesh2* loadMdsDmgFromGmsh(const char*fnameDmg, const char* filename, int nMVskip)
+Mesh2* loadMdsDmgFromGmsh(const char*fnameDmg, const char* filename)
 {
   int emap[104]; //letting 99 be the max entities until a stronger C++ coder fixes this
                  // and 100+dim holds the number of model entities of a given dim
-  gmshFindDmg(fnameDmg, filename, emap,nMVskip);  // new function that scans $Entities and writes a dmg 
+  gmshFindDmg(fnameDmg, filename, emap);  // new function that scans $Entities and writes a dmg 
   Mesh2* m = makeEmptyMdsMesh(gmi_load(fnameDmg), 0, false);
-  readGmsh(m, filename,emap,nMVskip);
+  readGmsh(m, filename,emap);
   return m;
 }
 
