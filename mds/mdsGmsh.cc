@@ -249,6 +249,10 @@ void readEntities(Reader* r,const char* fnameDmg, int emap[], int* nMVskip, int 
     }   
     checkMarker(r, "$EndEntities");
     fclose(f);
+    FILE* f = fopen("emap.txt", "w");
+    fprintf(f,"%d %d %d %d \n", emap[100],emap[101],emap[102],emap[103]);
+    for (int i=0; i<entCnt; i++) fprintf(f,"%d %d \n", (i+1),emap[i]);
+    fclose(f);
   }
 }
 void readNodes(Reader* r, int* emap)
