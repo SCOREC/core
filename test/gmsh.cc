@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 
   const int gmshVersion = apf::gmshMajorVersion(gmsh.c_str());
   fprintf(stderr, "version %d\n", gmshVersion);
-  apf::Mesh2* m;
+  apf::Mesh2* m = NULL;
   if (gmshVersion == 2) {
     if (model.compare("none") == 0) {
       m = apf::loadMdsFromGmsh(gmi_load(".null"), gmsh.c_str());

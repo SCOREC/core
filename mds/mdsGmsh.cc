@@ -177,7 +177,7 @@ void readEntities(Reader* r,const char* fnameDmg)
     nlde=getLong(r);  // 2 in straight edged models but...
     for(long j =0; j < nlde; ++j) {
       ilde=getLong(r);
-      fprintf(f, " %d", abs(ilde)); // modVerts started from 1
+      fprintf(f, " %ld", std::abs(ilde)); // modVerts started from 1
     }
     fprintf(f, "\n");
     getLine(r); 
@@ -196,7 +196,7 @@ void readEntities(Reader* r,const char* fnameDmg)
         isign=1;
       else
         isign=0;
-      fprintf(f, "    %d %ld \n", abs(ilde),isign); 
+      fprintf(f, "    %ld %ld \n", std::abs(ilde),isign); 
     }
     getLine(r); 
   }   
@@ -214,7 +214,7 @@ void readEntities(Reader* r,const char* fnameDmg)
         isign=1;
       else
         isign=0;
-      fprintf(f, "%d %ld \n", abs(ilde),isign); 
+      fprintf(f, "%ld %ld \n", std::abs(ilde),isign); 
     }
     getLine(r); 
   }   
