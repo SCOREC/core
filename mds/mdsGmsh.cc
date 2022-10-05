@@ -97,6 +97,16 @@ long getLong(Reader* r)
   return x;
 }
 
+double getDouble(Reader* r)
+{
+  double x;
+  int nchars;
+  int ret = sscanf(r->word, "%lf%n", &x, &nchars);
+  PCU_ALWAYS_ASSERT(ret == 1);
+  r->word += nchars;
+  return x;
+}
+
 bool startsWith(char const* prefix, char const* s)
 {
   int ls = strlen(s);
@@ -118,23 +128,102 @@ void checkMarker(Reader* r, char const* marker)
   PCU_ALWAYS_ASSERT(startsWith(marker, r->line));
 }
 
-void readNode(Reader* r)
+void readNode(Reader* r, int bm)
 {
-  long id;
   Node n;
   apf::Vector3& p = n.point;
-  sscanf(r->line, "%ld %lf %lf %lf", &id, &p[0], &p[1], &p[2]);
-  r->nodeMap[id] = n;
+  sscanf(r->line, "%lf %lf %lf", &p[0], &p[1], &p[2]);
+  r->nodeMap[bm] = n;
   getLine(r);
 }
 
+void readEntities(Reader* r,const char* fnameDmg) 
+{
+  seekMarker(r, "$Entities");
+  long nlde,ilde,iud,tag,isign,nMV,nME,nMF,nMR;
+  double x,y,z;
+  FILE* f = fopen(fnameDmg, "w");
+  sscanf(r->line, "%ld %ld %ld %ld", &nMV, &nME, &nMF, &nMR);
+  fprintf(f, "%ld %ld %ld %ld \n", nMR, nMF, nME, nMV); // just reverse order 
+  fprintf(f, "%f %f %f \n ", 0.0, 0.0, 0.0); // Probaby model bounding box?
+  fprintf(f, "%f %f %f \n", 0.0, 0.0, 0.0); // 
+   
+  getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
+  for (long i = 0; i < nMV; ++i){  
+    sscanf(r->line, "%ld %lf %lf %lf %ld ", &tag, &x, &y, &z, &iud);
+    fprintf(f, "%ld %lf %lf %lf \n",tag,x,y,z);
+    getLine(r); 
+  }
+  for (long i = 0; i < nME; ++i){
+    tag = getLong(r); 
+    fprintf(f, "%ld", tag);
+    for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
+    iud = getLong(r); 
+    for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
+    nlde=getLong(r);  // 2 in straight edged models but...
+    for(long j =0; j < nlde; ++j) {
+      ilde=getLong(r);
+      fprintf(f, " %d", abs(ilde)); // modVerts started from 1
+    }
+    fprintf(f, "\n");
+    getLine(r); 
+  }
+  for (long i = 0; i < nMF; ++i){
+    tag = getLong(r); 
+    fprintf(f, "%ld %d\n", tag, 1);
+    for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
+    iud = getLong(r); 
+    for(long j =0; j < iud; ++j) isign=getLong(r); // read past iud user tags
+    nlde=getLong(r); 
+    fprintf(f, "  %ld \n", nlde);
+    for(long j =0; j < nlde; ++j) {
+      ilde=getLong(r); 
+      if(ilde > 0 ) 
+        isign=1;
+      else
+        isign=0;
+      fprintf(f, "    %d %ld \n", abs(ilde),isign); 
+    }
+    getLine(r); 
+  }   
+  for (long i = 0; i < nMR; ++i){ 
+    tag = getLong(r); 
+    fprintf(f, "%ld %d \n", tag, 1);
+    for (int i=0; i< 6; ++i) x=getDouble(r);  // read past min maxes
+    iud = getLong(r); 
+    for(long j =0; j < iud; ++j) getLong(r); // read past iud user tags
+    nlde=getLong(r); 
+    fprintf(f, "%ld \n", nlde);
+    for(long j =0; j < nlde; ++j) {
+      ilde=getLong(r); 
+      if(ilde > 0 ) 
+        isign=1;
+      else
+        isign=0;
+      fprintf(f, "%d %ld \n", abs(ilde),isign); 
+    }
+    getLine(r); 
+  }   
+  checkMarker(r, "$EndEntities");
+  fclose(f);
+}
 void readNodes(Reader* r)
 {
   seekMarker(r, "$Nodes");
-  long n = getLong(r);
-  getLine(r);
-  for (long i = 0; i < n; ++i)
-    readNode(r);
+  long Num_EntityBlocks,Num_Nodes,Nodes_Block,edim,etag,junk1,junk2,junk3;
+  sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Nodes, &junk1, &junk2);
+  getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
+  for (long i = 0; i < Num_EntityBlocks; ++i){
+    sscanf(r->line, "%ld %ld %ld %ld", &edim, &etag, &junk3, &Nodes_Block);
+    long blockMap[Nodes_Block];
+    for (long j = 0; j < Nodes_Block; ++j){
+      getLine(r);
+      sscanf(r->line, "%ld", &blockMap[j]);
+    }
+    getLine(r);
+    for (long j = 0; j < Nodes_Block; ++j)
+      readNode(r,blockMap[j]);  // has a genLine at end
+  }    
   checkMarker(r, "$EndNodes");
 }
 
@@ -149,34 +238,35 @@ apf::MeshEntity* lookupVert(Reader* r, long nodeId, apf::ModelEntity* g)
   return n.entity;
 }
 
-void readElement(Reader* r)
+void readElement(Reader* r, long gmshType,long gtag)
 {
   long id = getLong(r);
-  long gmshType = getLong(r);
   if (isQuadratic(gmshType))
     r->isQuadratic = true;
   int apfType = apfFromGmsh(gmshType);
   PCU_ALWAYS_ASSERT(0 <= apfType);
   int nverts = apf::Mesh::adjacentCount[apfType][0];
   int dim = apf::Mesh::typeDimension[apfType];
-  long ntags = getLong(r);
-  /* The Gmsh 4.9 documentation on the legacy 2.* format states:
-   * "By default, the first tag is the tag of the physical entity to which the
-   * element belongs; the second is the tag of the elementary model entity to
-   * which the element belongs; the third is the number of mesh partitions to
-   * which the element belongs, followed by the partition ids (negative
-   * partition ids indicate ghost cells). A zero tag is equivalent to no tag.
-   * Gmsh and most codes using the MSH 2 format require at least the first two
-   * tags (physical and elementary tags)."
-   * A physical entity is a user defined grouping of elementary model entities.
-   * An elementary model entity is a geometric model entity. */
-  PCU_ALWAYS_ASSERT(ntags >= 2);
-  const int physType = static_cast<int>(getLong(r));
-  PCU_ALWAYS_ASSERT(dim>=0 && dim<4);
-  r->physicalType[dim].push_back(physType);
-  long gtag = getLong(r);
-  for (long i = 2; i < ntags; ++i)
-    getLong(r); /* discard all other element tags */
+  if(false) { // FIXME
+    long ntags = getLong(r);
+    /* The Gmsh 4.9 documentation on the legacy 2.* format states:
+     * "By default, the first tag is the tag of the physical entity to which the
+     * element belongs; the second is the tag of the elementary model entity to
+     * which the element belongs; the third is the number of mesh partitions to
+     * which the element belongs, followed by the partition ids (negative
+     * partition ids indicate ghost cells). A zero tag is equivalent to no tag.
+     * Gmsh and most codes using the MSH 2 format require at least the first two
+     * tags (physical and elementary tags)."
+     * A physical entity is a user defined grouping of elementary model entities.
+     * An elementary model entity is a geometric model entity. */
+    PCU_ALWAYS_ASSERT(ntags >= 2);
+    const int physType = static_cast<int>(getLong(r));
+    PCU_ALWAYS_ASSERT(dim>=0 && dim<4);
+    r->physicalType[dim].push_back(physType);
+//FIXME blocks compilation    long gtag = getLong(r);
+    for (long i = 2; i < ntags; ++i)
+      getLong(r); /* discard all other element tags */
+  }
   apf::ModelEntity* g = r->mesh->findModelEntity(dim, gtag);
   apf::Downward verts;
   for (int i = 0; i < nverts; ++i) {
@@ -196,10 +286,16 @@ void readElement(Reader* r)
 void readElements(Reader* r)
 {
   seekMarker(r, "$Elements");
-  long n = getLong(r);
+  long Num_EntityBlocks,Num_Elements,Elements_Block,Edim,gtag,gmshType,junk1,junk2;
+  sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Elements, &junk1, &junk2);
   getLine(r);
-  for (long i = 0; i < n; ++i)
-    readElement(r);
+  for (long i = 0; i < Num_EntityBlocks; ++i){
+    sscanf(r->line, "%ld %ld %ld %ld", &Edim, &gtag, &gmshType, &Elements_Block);
+    getLine(r);
+    for (long j = 0; j < Elements_Block; ++j) {
+       readElement(r,gmshType,gtag);
+    }
+  }
   checkMarker(r, "$EndElements");
 }
 
@@ -284,19 +380,37 @@ void readGmsh(apf::Mesh2* m, const char* filename)
   readNodes(&r);
   readElements(&r);
   m->acceptChanges();
-  setElmPhysicalType(&r,m);
+  if(false) // FIXME
+    setElmPhysicalType(&r,m);
   freeReader(&r);
   if (r.isQuadratic)
     readQuadratic(&r, m, filename);
 }
-
-}
+}  // closes original namespace 
 
 namespace apf {
+void gmshFindDmg(const char* fnameDmg, const char* filename)
+{
+  Reader r;
+  
+  Mesh2* m=NULL;
+  initReader(&r, m,  filename);
+  readEntities(&r, fnameDmg);
+  freeReader(&r);
+}
+
 
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename)
 {
   Mesh2* m = makeEmptyMdsMesh(g, 0, false);
+  readGmsh(m, filename);
+  return m;
+}
+
+Mesh2* loadMdsDmgFromGmsh(const char*fnameDmg, const char* filename)
+{
+  gmshFindDmg(fnameDmg, filename);  // new function that scans $Entities and writes a dmg 
+  Mesh2* m = makeEmptyMdsMesh(gmi_load(fnameDmg), 0, false);
   readGmsh(m, filename);
   return m;
 }

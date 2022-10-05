@@ -21,10 +21,14 @@ int main(int argc, char** argv)
   }
   gmi_register_null();
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsFromGmsh(gmi_load(argv[1]), argv[2]);
-  // if input model is null derive a basic model for verify to pass.
-  if (std::string(argv[1]).compare(".null") == 0)
-    apf::deriveMdsModel(m);
+  if(false) {
+    apf::Mesh2* m = apf::loadMdsFromGmsh(gmi_load(argv[1]), argv[2]);
+    // if input model is null derive a basic model for verify to pass.
+    if (std::string(argv[1]).compare(".null") == 0)
+      apf::deriveMdsModel(m);
+  }
+  apf::Mesh2* m = apf::loadMdsDmgFromGmsh(argv[1], argv[2]);
+
   m->verify();
   m->writeNative(argv[3]);
   m->destroyNative();
