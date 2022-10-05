@@ -293,7 +293,7 @@ void readElement(Reader* r, long gmshType=-1, long gtag=-1)
     const int physType = static_cast<int>(getLong(r));
     PCU_ALWAYS_ASSERT(dim>=0 && dim<4);
     r->physicalType[dim].push_back(physType);
-    long gtag = getLong(r);
+    gtag = getLong(r);
     for (long i = 2; i < ntags; ++i)
       getLong(r); /* discard all other element tags */
   }
