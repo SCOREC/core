@@ -191,11 +191,18 @@ mpi_test(create_misSquare 1
   mis_test)
 
 set(MDIR ${MESHES}/gmsh)
-mpi_test(twoQuads 1
+mpi_test(gmshv2TwoQuads 1
   ./from_gmsh
   ".null"
   "${MDIR}/twoQuads.msh"
   "${MDIR}/twoQuads.smb")
+
+set(MDIR ${MESHES}/gmsh/v4)
+mpi_test(gmshV4AirFoil 1
+  ./from_gmsh
+  "${MDIR}/AirfoilDemo.dmg"
+  "${MDIR}/AirfoilDemo.msh"
+  "${MDIR}/AirfoilDemo.smb")
 
 set(MDIR ${MESHES}/ugrid)
 mpi_test(naca_ugrid 2
