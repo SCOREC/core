@@ -52,6 +52,8 @@ struct Reader {
   char* line;
   char* word;
   size_t linecap;
+  int major_version;
+  int minor_version;
   bool isQuadratic;
   std::map<long, Node> nodeMap;
   std::map<long, apf::MeshEntity*> entMap[4];
@@ -60,19 +62,6 @@ struct Reader {
   std::vector<int> physicalType[4];
 };
 
-void initReader(Reader* r, apf::Mesh2* m, const char* filename)
-{
-  r->mesh = m;
-  r->file = fopen(filename, "r");
-  if (!r->file) {
-    lion_eprint(1,"couldn't open Gmsh file \"%s\"\n",filename);
-    abort();
-  }
-  r->line = static_cast<char*>(malloc(1));
-  r->line[0] = '\0';
-  r->linecap = 1;
-  r->isQuadratic = false;
-}
 
 void freeReader(Reader* r)
 {
@@ -128,12 +117,37 @@ void checkMarker(Reader* r, char const* marker)
   PCU_ALWAYS_ASSERT(startsWith(marker, r->line));
 }
 
-void readNode(Reader* r, int bm)
+void initReader(Reader* r, apf::Mesh2* m, const char* filename)
+{
+  r->mesh = m;
+  r->file = fopen(filename, "r");
+  if (!r->file) {
+    lion_eprint(1,"couldn't open Gmsh file \"%s\"\n",filename);
+    abort();
+  }
+  r->line = static_cast<char*>(malloc(1));
+  r->line[0] = '\0';
+  r->linecap = 1;
+  r->isQuadratic = false;
+  seekMarker(r, "$MeshFormat");
+  int fileType, dataSize;
+  int ret = sscanf(r->line, "%d.%d %d %d\n",
+      &r->major_version, &r->minor_version, &fileType, &dataSize);
+  PCU_ALWAYS_ASSERT(ret==4);
+}
+
+void readNode(Reader* r, int bm=-1)
 {
   Node n;
   apf::Vector3& p = n.point;
-  sscanf(r->line, "%lf %lf %lf", &p[0], &p[1], &p[2]);
-  r->nodeMap[bm] = n;
+  if(r->major_version == 4) {
+    sscanf(r->line, "%lf %lf %lf", &p[0], &p[1], &p[2]);
+    r->nodeMap[bm] = n;
+  } else if(r->major_version == 2) {
+    long id;
+    sscanf(r->line, "%ld %lf %lf %lf", &id, &p[0], &p[1], &p[2]);
+    r->nodeMap[id] = n;
+  }
   getLine(r);
 }
 
@@ -207,8 +221,21 @@ void readEntities(Reader* r,const char* fnameDmg)
   checkMarker(r, "$EndEntities");
   fclose(f);
 }
-void readNodes(Reader* r)
+
+void readNodesV2(Reader* r)
 {
+  PCU_ALWAYS_ASSERT(r->major_version == 2);
+  seekMarker(r, "$Nodes");
+  long n = getLong(r);
+  getLine(r);
+  for (long i = 0; i < n; ++i)
+    readNode(r);
+  checkMarker(r, "$EndNodes");
+}
+
+void readNodesV4(Reader* r)
+{
+  PCU_ALWAYS_ASSERT(r->major_version == 4);
   seekMarker(r, "$Nodes");
   long Num_EntityBlocks,Num_Nodes,Nodes_Block,edim,etag,junk1,junk2,junk3;
   sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Nodes, &junk1, &junk2);
@@ -238,16 +265,19 @@ apf::MeshEntity* lookupVert(Reader* r, long nodeId, apf::ModelEntity* g)
   return n.entity;
 }
 
-void readElement(Reader* r, long gmshType,long gtag)
+void readElement(Reader* r, long gmshType=-1, long gtag=-1)
 {
   long id = getLong(r);
+  if(r->major_version == 2) {
+    gmshType = getLong(r);
+  }
   if (isQuadratic(gmshType))
     r->isQuadratic = true;
   int apfType = apfFromGmsh(gmshType);
   PCU_ALWAYS_ASSERT(0 <= apfType);
   int nverts = apf::Mesh::adjacentCount[apfType][0];
   int dim = apf::Mesh::typeDimension[apfType];
-  if(false) { // FIXME
+  if(r->major_version == 2) {
     long ntags = getLong(r);
     /* The Gmsh 4.9 documentation on the legacy 2.* format states:
      * "By default, the first tag is the tag of the physical entity to which the
@@ -263,7 +293,7 @@ void readElement(Reader* r, long gmshType,long gtag)
     const int physType = static_cast<int>(getLong(r));
     PCU_ALWAYS_ASSERT(dim>=0 && dim<4);
     r->physicalType[dim].push_back(physType);
-//FIXME blocks compilation    long gtag = getLong(r);
+    long gtag = getLong(r);
     for (long i = 2; i < ntags; ++i)
       getLong(r); /* discard all other element tags */
   }
@@ -283,8 +313,20 @@ void readElement(Reader* r, long gmshType,long gtag)
   getLine(r);
 }
 
-void readElements(Reader* r)
+void readElementsV2(Reader* r)
 {
+  PCU_ALWAYS_ASSERT(r->major_version == 2);
+  seekMarker(r, "$Elements");
+  long n = getLong(r);
+  getLine(r);
+  for (long i = 0; i < n; ++i)
+    readElement(r);
+  checkMarker(r, "$EndElements");
+}
+
+void readElementsV4(Reader* r)
+{
+  PCU_ALWAYS_ASSERT(r->major_version == 4);
   seekMarker(r, "$Elements");
   long Num_EntityBlocks,Num_Elements,Elements_Block,Edim,gtag,gmshType,junk1,junk2;
   sscanf(r->line, "%ld %ld %ld %ld", &Num_EntityBlocks, &Num_Elements, &junk1, &junk2);
@@ -377,24 +419,40 @@ void readGmsh(apf::Mesh2* m, const char* filename)
 {
   Reader r;
   initReader(&r, m, filename);
-  readNodes(&r);
-  readElements(&r);
-  m->acceptChanges();
-  if(false) // FIXME
+  if(r.major_version == 4) {
+    readNodesV4(&r);
+    readElementsV4(&r);
+    m->acceptChanges();
+  } else if(r.major_version == 2) {
+    readNodesV2(&r);
+    readElementsV2(&r);
+    m->acceptChanges();
     setElmPhysicalType(&r,m);
-  freeReader(&r);
+  }
   if (r.isQuadratic)
     readQuadratic(&r, m, filename);
+  freeReader(&r);
 }
 }  // closes original namespace 
 
 namespace apf {
+
+int gmshMajorVersion(const char* filename) {
+  Reader r;
+  Mesh2* m=NULL;
+  initReader(&r, m,  filename);
+  int version = r.major_version;
+  freeReader(&r);
+  return version;
+}
+
 void gmshFindDmg(const char* fnameDmg, const char* filename)
 {
   Reader r;
   
   Mesh2* m=NULL;
   initReader(&r, m,  filename);
+  PCU_ALWAYS_ASSERT(r.major_version==4);
   readEntities(&r, fnameDmg);
   freeReader(&r);
 }

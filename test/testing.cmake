@@ -193,16 +193,18 @@ mpi_test(create_misSquare 1
 set(MDIR ${MESHES}/gmsh)
 mpi_test(gmshv2TwoQuads 1
   ./from_gmsh
-  ".null"
+  "none"
   "${MDIR}/twoQuads.msh"
-  "${MDIR}/twoQuads.smb")
+  "${MDIR}/twoQuads.smb"
+  "${MDIR}/twoQuads.dmg")
 
 set(MDIR ${MESHES}/gmsh/v4)
 mpi_test(gmshV4AirFoil 1
   ./from_gmsh
-  "${MDIR}/AirfoilDemo.dmg"
+  "none"
   "${MDIR}/AirfoilDemo.msh"
-  "${MDIR}/AirfoilDemo.smb")
+  "${MDIR}/AirfoilDemo.smb"
+  "${MDIR}/AirfoilDemo.dmg")
 
 set(MDIR ${MESHES}/ugrid)
 mpi_test(naca_ugrid 2
