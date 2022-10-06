@@ -205,6 +205,9 @@ mpi_test(gmshV4AirFoil 1
   "${MDIR}/AirfoilDemo.msh"
   "${MDIR}/AirfoilDemo.smb"
   "${MDIR}/AirfoilDemo.dmg")
+add_test(NAME gmshV4AirFoil_dmgDiff
+  COMMAND diff -r ${MDIR}/AirfoilDemo.dmg AirfoilDemo_gold.dmg
+  WORKING_DIRECTORY ${MDIR})
 
 set(MDIR ${MESHES}/ugrid)
 mpi_test(naca_ugrid 2
