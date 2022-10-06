@@ -11,8 +11,6 @@
 #include "SimAdvModel.h"
 #include "SimUtil.h"
 #include "SimMessages.h"
-#include "SimError.h"
-#include "SimErrorCodes.h"
 #include "MeshSim.h"
 #include "SimAttribute.h"
 #include "AttributeTypes.h"
@@ -25,6 +23,17 @@
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
+
+#if SIMMODSUITE_MAJOR_VERSION >= 18
+  #include "SimInfo.h"
+  #include "SimInfoCodes.h"
+  #define SIM_ERROR(suffix,err) SimInfo_##suffix(err)
+  typedef pSimInfo pSimError;
+#else
+  #include "SimError.h"
+  #include "SimErrorCodes.h"
+  #define SIM_ERROR(suffix,err) SimError_##suffix(err)
+#endif
 
 #ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
@@ -46,13 +55,13 @@ static std::string acisExt = ".sat";
 static std::string paraExt = ".xmt_txt";
 static std::string paraExtshort = ".x_t";
 
-void printSimError(pSimError err)
-{
+void printSimError(pSimError err) {
   printf("Simmetrix error caught:\n");
-  printf("  Error code: %d\n",SimError_code(err));
-  printf("  Error string: %s\n",SimError_toString(err));
-  SimError_delete(err);
+  printf("  Error code: %d\n",SIM_ERROR(code,err));
+  printf("  Error string: %s\n",SIM_ERROR(code,err));
+  SIM_ERROR(delete,err);
 }
+
 
 void translateModel(std::string mdlName, pGModel* simmodel, pProgress& progress)
 {
