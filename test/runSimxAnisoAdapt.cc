@@ -14,10 +14,6 @@
 #include "MeshSimAdapt.h"
 #include "SimDiscrete.h"
 #include "SimMessages.h"
-#include "SimError.h"
-#include "SimErrorCodes.h"
-#include "SimMeshingErrorCodes.h"
-#include "SimDiscreteErrorCodes.h"
 #include <iostream>
 
 #include <cassert>
