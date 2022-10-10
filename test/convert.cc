@@ -196,13 +196,10 @@ int main(int argc, char** argv)
   pFace face;
   pRegion region;
   pVertex vrts[4];
-//  pVertex vrtsN[4]; 
   int dir, err;
   int count2D=0;
-//  int ExtruRootId=6176;
   pGFace gface;
   pGFace ExtruRootFace=NULL;
-//  pEntity ent;
   pVertex entV;
   pMesh meshP= PM_mesh	(sim_mesh, 0 );	
   
@@ -214,14 +211,6 @@ int main(int argc, char** argv)
   }
   assert(ExtruRootFace != NULL);
 
-//  GEN_regions(); //FIXME - needed?
-//  GEN_faces(); //FIXME - need face iterator, then call int id = GEN_tag(face); if(id==wantedId) ExtruRootFace=face);
-//  pGEntity ExtruRootFace=??  // is this a model tag number and if yes how do I find it....is it the face ID from SimModeler?
-  // ExtruRootFace  needs to be read in but not sure how yet
-// get the list of mesh rootfaces classified on the source geometric model face
-// assume this iterator will do?
-
-
   char coordfilename[64];
   char cnnfilename[64];
   sprintf(coordfilename, "geom.crd");
@@ -232,9 +221,6 @@ int main(int argc, char** argv)
   FIter fIter = M_classifiedFaceIter( meshP, ExtruRootFace, 0 ); // 0 says I don't want closure	  
   while ((face = FIter_next(fIter))) {
     dir=1;
-// get the ids of downward adjacent vertices, store that as an array of size 3
-//    int F_verticesArray	(face, v,  dir); // guessing zero as I think the element will number such that that the curl point inward
-//OR	
     listV= F_vertices(face, dir); 
     void *iter = 0;        // Must initialize to 0
     int i=0;
@@ -246,12 +232,6 @@ int main(int argc, char** argv)
     int nvert=i;
     PList_delete(listV);
 
-    //FIXME DELETE the plist
-
-//  We missed a step where we check to see if a 2D father has already been created or not and use previousy created ones for any of these
-//  three that already exist.  I suppose this is best accomplished by building a map of the 3D father nodes to a 2D father node number and
-//  increment that 2D father node counter as  we encounter nodes not yet on the list. This can aso take care of the fact that 3D father node
-//  needs to point a 2D fther node as well
     double coordNewPt[nvert][3];
     for(i=0; i< nvert ; i++) { //FIXME logic for quads
        int* markedData;
@@ -262,16 +242,6 @@ int main(int argc, char** argv)
          EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
          V_coord(vrts[i],coordNewPt[i]);
 
-//Worked         pGEntity pei=V_whatIn(vrts[i]);	
-//         if ((V_whatInType(vrts[i])==2) ;	
-//pGEntity V_whatIn	(	pVertex 	vertex	)	
-//Returns the model entity on which vertex is classified.
-
-//gType V_whatInType	(	pVertex 	vertex	)	
-         
-                    
-//           apfSIM::modelEntity* pei=meshP->toModel(vrts[i]);
-//         int mtag = meshP->getModelTag(meshP->toModel(vrts[i]));
         fprintf ( fcr, "%.15E %.15E %d \n", coordNewPt[i][0],coordNewPt[i][1], V_whatInType(vrts[i]));
        }  
     }
@@ -287,29 +257,25 @@ int main(int argc, char** argv)
        fprintf ( fcn, "%d ", fatherIds[i]);
     }
     fprintf ( fcn, "\n");
-//    fprintf ( fcn, "%d,%d,%d,\n", fatherIds[0],fatherIds[1],fatherIds[2]);
 
    dir=0;  // 1 fails
  // get the upward adjacent region srcRgn
     region = F_region(face, dir );  // 0 is the negative normal which I assume for a face on the boundary in is interior. 	
 
-// call Extrusion_3DRegionsAndLayerFaces(srcRgn,...)
     regions=PList_new();
     faces=PList_new();
    err = Extrusion_3DRegionsAndLayerFaces(region, regions, faces, 1); 
    if(err!=1 && !PCU_Comm_Self())
     fprintf(stderr, "Extrusion_3DRegionsAndLayerFaces returned %d for err \n", err);
     
-// for each face in the returned list of faces
-// presumably there is a pPList iterator somewhere for faces??   assume this gives me a faceN 
+   // for each face in the returned list of faces
    iter=0;
-   //pEntity sonFace;
    pFace sonFace;
    int iface=0;
    dir=0;
    while( (sonFace = (pFace)PList_next(faces, &iter)) ) { //loop over plist of vertices
     if(iface !=0) {  // root face is in the stack but we already took care of it above
-// get the downward adjacent vertices of face - they will be in the same order as the srcFace ids
+     // get the downward adjacent vertices of face - they will be in the same order as the srcFace ids
      listVn= F_vertices(sonFace, dir);
      void *iter2=0; // Must initialize to 0
      i=0;
@@ -330,23 +296,17 @@ int main(int argc, char** argv)
              distMin=dist;
           }
         }
-//FAIL        my2Dfath=fatherIds[i];  FAIL would have worked if Simmetrix Extrusions followed root ordering with dir 0 or 1 but they don't
         my2Dfath=fatherIds[iMin];
         int* vtxData = new int[1];
         vtxData[0] = my2Dfath;
         EN_attachDataPtr((pEntity)sonVtx,myFather,(void*)vtxData);
-//FAIL        i++;
      }
     PList_delete(listVn);
-     //FIXME DELETE the plist
     }
     iface++;
    }
-   //FIXME DELETE the plist
     PList_delete(faces);
 
-// set the fathers tag  TODO
-// assert that the x,y coordinates of each vertex matches the srcFace vertex coordinates within some relaxed tolerance - sanity check my assump    tion that face-to-vtx adjaceny is always the same order
   } //end root face iterator
 
 
