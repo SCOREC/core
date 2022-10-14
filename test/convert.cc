@@ -72,7 +72,7 @@ const char* smb_path = NULL;
 int should_log = 0;
 int should_fix_pyramids = 1;
 int should_attach_order = 0;
-int numExtruRootId =0;
+const char* extruRootPath = NULL;
 int ExtruRootId =0;
 bool found_bad_arg = false;
 
@@ -108,7 +108,7 @@ void getConfig(int argc, char** argv) {
       case 2: // enable simmetrix logging
         break;
       case 'e':
-        numExtruRootId = atoi(optarg);
+        extruRootPath = optarg;
         break;
       case 'n':
         gmi_native_path = optarg;
@@ -135,8 +135,8 @@ void getConfig(int argc, char** argv) {
   smb_path = argv[i++];
 
   if (!PCU_Comm_Self()) {
-    printf ("fix_pyramids %d attach_order %d enable_log %d numExtruRootId %d\n",
-            should_fix_pyramids, should_attach_order, should_log, numExtruRootId);
+    printf ("fix_pyramids %d attach_order %d enable_log %d extruRootPath %s\n",
+            should_fix_pyramids, should_attach_order, should_log, extruRootPath);
     printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
       gmi_native_path, gmi_path, sms_path, smb_path);
   }
@@ -212,113 +212,113 @@ int main(int argc, char** argv)
   FILE* fcr = fopen(coordfilename, "w");
   FILE* fcn = fopen(cnnfilename, "w");
 
-  FILE* fid = fopen("ExruRootID.txt", "r"); // helper file that contains all faces with extrusions
-// fstream file("ExtruRootIDs.txt");
-  for(int i=0; i<numExtruRootId; ++i) { 
- // file >> ExtruRootId;
-    fscanf(fid,"%d",&ExtruRootId);
-    fprintf(stderr,"ExtruRootId= %d \n",ExtruRootId);
-    //find the root face of the extrusion
-    GFIter gfIter=GM_faceIter(simModel);
-    while ( (gface=GFIter_next(gfIter))) {
-      int id = GEN_tag(gface); 
-      if(id==ExtruRootId) ExtruRootFace=gface;
-    }
-    assert(ExtruRootFace != NULL);
+  if(extruRootPath) {
+    FILE* fid = fopen(extruRootPath, "r"); // helper file that contains all faces with extrusions
+    assert(fid);
+    while(1 == fscanf(fid,"%d",&ExtruRootId)) {
+      fprintf(stderr,"ExtruRootId= %d \n",ExtruRootId);
+      //find the root face of the extrusion
+      GFIter gfIter=GM_faceIter(simModel);
+      while ( (gface=GFIter_next(gfIter))) {
+        int id = GEN_tag(gface);
+        if(id==ExtruRootId) ExtruRootFace=gface;
+      }
+      assert(ExtruRootFace != NULL);
 
-    FIter fIter = M_classifiedFaceIter( meshP, ExtruRootFace, 0 ); // 0 says I don't want closure	  
-    while ((face = FIter_next(fIter))) {
-      dir=1;
-      listV= F_vertices(face, dir); 
-      void *iter = 0;        // Must initialize to 0
-      int i=0;
-      while ((entV =(pVertex)PList_next(listV, &iter))) { //loop over plist of vertices
-        // Process each item in list
-        vrts[i] = (pVertex)entV;
-        i++;
-      }
-      int nvert=i;
-      PList_delete(listV);
-  
-      double coordNewPt[nvert][3];
-      for(i=0; i< nvert ; i++) { 
-         int* markedData;
-         if(!EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&markedData)){  // not sure about marked yet
-           count2D++;
-           int* vtxData = new int[1];
-           vtxData[0] = count2D;
-           EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
-           V_coord(vrts[i],coordNewPt[i]);
-  
-          fprintf ( fcr, "%.15E %.15E %d \n", coordNewPt[i][0],coordNewPt[i][1], V_whatInType(vrts[i]));
-         }  
-      }
+      FIter fIter = M_classifiedFaceIter( meshP, ExtruRootFace, 0 ); // 0 says I don't want closure
+      while ((face = FIter_next(fIter))) {
+        dir=1;
+        listV= F_vertices(face, dir);
+        void *iter = 0;        // Must initialize to 0
+        int i=0;
+        while ((entV =(pVertex)PList_next(listV, &iter))) { //loop over plist of vertices
+          // Process each item in list
+          vrts[i] = (pVertex)entV;
+          i++;
+        }
+        int nvert=i;
+        PList_delete(listV);
 
-      double coordFather[nvert][3];
-      int fatherIds[4]; //store the ids of the fathers (vertices) on the root face 
-      for(i=0; i< nvert ; i++) { 
-         int* fatherIdPtr;
-         const int exists = EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&fatherIdPtr);
-         assert(exists);
-         fatherIds[i] = fatherIdPtr[0];
-         V_coord(vrts[i],coordFather[i]);
-         fprintf ( fcn, "%d ", fatherIds[i]);
-      }
-      fprintf ( fcn, "\n");
-  
-      dir=0;  // 1 fails
-   // get the upward adjacent region srcRgn
-      region = F_region(face, dir );  // 0 is the negative normal which I assume for a face on the boundary in is interior. 	
-      if(region==NULL) { // try other dir
-        dir=1;  // 1 fails
-        region = F_region(face, dir );  // 0 is the negative normal which I assume for a face on the boundary in is interior. 	
-      }
+        double coordNewPt[nvert][3];
+        for(i=0; i< nvert ; i++) {
+          int* markedData;
+          if(!EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&markedData)){  // not sure about marked yet
+            count2D++;
+            int* vtxData = new int[1];
+            vtxData[0] = count2D;
+            EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
+            V_coord(vrts[i],coordNewPt[i]);
 
-      regions=PList_new();
-      faces=PList_new();
-      err = Extrusion_3DRegionsAndLayerFaces(region, regions, faces, 1); 
-      if(err!=1 && !PCU_Comm_Self())
-       fprintf(stderr, "Extrusion_3DRegionsAndLayerFaces returned %d for err \n", err);
-    
-     // for each face in the returned list of faces
-      iter=0;
-      pFace sonFace;
-      int iface=0;
-      dir=0;
-      while( (sonFace = (pFace)PList_next(faces, &iter)) ) { //loop over plist of vertices
-        if(iface !=0) {  // root face is in the stack but we already took care of it above
-         // get the downward adjacent vertices of face - they will be in the same order as the srcFace ids
-          listVn= F_vertices(sonFace, dir);
-          void *iter2=0; // Must initialize to 0
-          i=0;
-          int my2Dfath;
-          pVertex  sonVtx;
-          double dist, dx, dy, distMin;
-          double coordSon[3];
-          int iMin;
-          while( (sonVtx = (pVertex)PList_next(listVn, &iter2)) ) { //loop over plist of vertices
-             V_coord(sonVtx,coordSon);
-             distMin=1.0e7;
-             for(i=0; i< nvert; i++){
-               dx=coordSon[0]-coordFather[i][0];
-               dy=coordSon[1]-coordFather[i][1];
-               dist=dx*dx+dy*dy;
-               if(dist < distMin) {
+            fprintf ( fcr, "%.15E %.15E %d \n", coordNewPt[i][0],coordNewPt[i][1], V_whatInType(vrts[i]));
+          }
+        }
+
+        double coordFather[nvert][3];
+        int fatherIds[4]; //store the ids of the fathers (vertices) on the root face
+        for(i=0; i< nvert ; i++) {
+          int* fatherIdPtr;
+          const int exists = EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&fatherIdPtr);
+          assert(exists);
+          fatherIds[i] = fatherIdPtr[0];
+          V_coord(vrts[i],coordFather[i]);
+          fprintf ( fcn, "%d ", fatherIds[i]);
+        }
+        fprintf ( fcn, "\n");
+
+        dir=0;  // 1 fails
+        // get the upward adjacent region srcRgn
+        region = F_region(face, dir );  // 0 is the negative normal which I assume for a face on the boundary in is interior.
+        if(region==NULL) { // try other dir
+          dir=1;  // 1 fails
+          region = F_region(face, dir );  // 0 is the negative normal which I assume for a face on the boundary in is interior.
+        }
+
+        regions=PList_new();
+        faces=PList_new();
+        err = Extrusion_3DRegionsAndLayerFaces(region, regions, faces, 1);
+        if(err!=1 && !PCU_Comm_Self())
+          fprintf(stderr, "Extrusion_3DRegionsAndLayerFaces returned %d for err \n", err);
+
+        // for each face in the returned list of faces
+        iter=0;
+        pFace sonFace;
+        int iface=0;
+        dir=0;
+        while( (sonFace = (pFace)PList_next(faces, &iter)) ) { //loop over plist of vertices
+          if(iface !=0) {  // root face is in the stack but we already took care of it above
+            // get the downward adjacent vertices of face - they will be in the same order as the srcFace ids
+            listVn= F_vertices(sonFace, dir);
+            void *iter2=0; // Must initialize to 0
+            i=0;
+            int my2Dfath;
+            pVertex  sonVtx;
+            double dist, dx, dy, distMin;
+            double coordSon[3];
+            int iMin;
+            while( (sonVtx = (pVertex)PList_next(listVn, &iter2)) ) { //loop over plist of vertices
+              V_coord(sonVtx,coordSon);
+              distMin=1.0e7;
+              for(i=0; i< nvert; i++){
+                dx=coordSon[0]-coordFather[i][0];
+                dy=coordSon[1]-coordFather[i][1];
+                dist=dx*dx+dy*dy;
+                if(dist < distMin) {
                   iMin=i;
                   distMin=dist;
-               }
-             }
-             my2Dfath=fatherIds[iMin];
-             int* vtxData = new int[1];
-             vtxData[0] = my2Dfath;
-             EN_attachDataPtr((pEntity)sonVtx,myFather,(void*)vtxData);
-           }
-           PList_delete(listVn);
+                }
+              }
+              my2Dfath=fatherIds[iMin];
+              int* vtxData = new int[1];
+              vtxData[0] = my2Dfath;
+              EN_attachDataPtr((pEntity)sonVtx,myFather,(void*)vtxData);
+            }
+            PList_delete(listVn);
+          }
+          iface++;
         }
-        iface++;
-      }
-      PList_delete(faces);
-    } //end root face iterator
+        PList_delete(faces);
+      } //end root face iterator
+    }
   }
 
 
@@ -342,10 +342,6 @@ int main(int argc, char** argv)
   if (should_fix_pyramids) fixPyramids(mesh);
   mesh->verify();
   mesh->writeNative(smb_path);
-
-  auto ft = mesh->findTag("fathers2D");
-  convert_my_tag(mesh, ft);
-//  apf::writeVtkFiles("foo", mesh);
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
