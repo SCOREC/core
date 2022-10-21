@@ -84,6 +84,12 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
     --native-model=${MDIR}/geom.xmt_txt
     ${MDIR}/geom.smd ${MDIR}/geom.sms ${MDIR}/mdsMesh.smb
     WORKING_DIRECTORY ${MDIR})
+  add_test(NAME convertExtrudedRoots_diff_cnn
+    COMMAND diff -r geom.cnn geom_expected.cnn
+    WORKING_DIRECTORY ${MDIR})
+  add_test(NAME convertExtrudedRoots_diff_crd
+    COMMAND diff -r geom.crd geom_expected.crd
+    WORKING_DIRECTORY ${MDIR})
 endif()
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
