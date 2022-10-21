@@ -81,7 +81,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   set(MDIR ${MESHES}/simExtrusionInfo)
   mpi_test(convertExtrudedRoots 1 ${CMAKE_CURRENT_BINARY_DIR}/convert
     --model-face-root=${MDIR}/ExtruRootID.txt
-    --native_model=${MDIR}/geom.xmt_txt
+    --native-model=${MDIR}/geom.xmt_txt
     ${MDIR}/geom.smd ${MDIR}/geom.sms ${MDIR}/mdsMesh.smb
     WORKING_DIRECTORY ${MDIR})
 endif()
