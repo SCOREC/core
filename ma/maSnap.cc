@@ -60,7 +60,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     (range[periodicAxes][0] + range[periodicAxes][1]) / 2.0;
   for (int i = 0; i < 2; i++) {
     double candidateDegenParam = range[degenAxes][i];
-    double param[2];
+    double param[3] = {0,0,0};
     Vector uTan;
     Vector vTan;
     param[periodicAxes] = candidatePeriodicParam;

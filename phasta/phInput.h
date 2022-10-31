@@ -142,6 +142,7 @@ class Input
     int formEdges;
     int parmaLoops;
     int parmaVerbosity;
+    int writeVTK;
     /** \brief write the geombc file during in-memory data transfer
        between phasta and chef. */
     int writeGeomBCFiles;
@@ -201,6 +202,10 @@ class Input
     double simSizeUpperBound;
     /** \brief number of allowed mesh elements of adapted mesh */
     double simMaxAdaptMeshElements;
+    /* Stuff for spanwise averaging */
+    int spanAvg;
+    int nfathers;
+    int nsons;
 };
 
 int countNaturalBCs(Input& in);

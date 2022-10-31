@@ -66,9 +66,9 @@ void readCoords(FILE* f, unsigned numvtx, double* coordinates) {
 }
 
 void readElements(FILE* f, unsigned numelms, int numVtxPerElm,
-    unsigned numVerts, int* elements) {
+    unsigned numVerts, apf::Gid* elements) {
   unsigned i;
-  std::map<int, int> count;
+  std::map<apf::Gid, int> count;
   for (i = 0; i < numelms*numVtxPerElm; i++) {
     int vtxid;
     gmi_fscanf(f, 1, "%u", &vtxid);
@@ -80,7 +80,7 @@ void readElements(FILE* f, unsigned numelms, int numVtxPerElm,
 
 struct MeshInfo {
   double* coords;
-  int* elements;
+  apf::Gid* elements;
   unsigned elementType;
   unsigned numVerts;
   unsigned numElms;
@@ -95,7 +95,7 @@ void readMesh(const char* meshfilename, MeshInfo& mesh) {
       mesh.numVerts, mesh.numElms, mesh.numVtxPerElm);
   mesh.coords = new double[mesh.numVerts*3];
   readCoords(f, mesh.numVerts, mesh.coords);
-  mesh.elements = new int [mesh.numElms*mesh.numVtxPerElm];
+  mesh.elements = new apf::Gid [mesh.numElms*mesh.numVtxPerElm];
   readElements(f, mesh.numElms, mesh.numVtxPerElm, mesh.numVerts, mesh.elements);
   mesh.elementType = getElmType(mesh.numVtxPerElm);
   fclose(f);

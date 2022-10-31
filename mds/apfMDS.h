@@ -43,7 +43,7 @@ class MeshEntity;
 class Migration;
 
 /** \brief a map from global ids to vertex objects */
-typedef std::map<int, MeshEntity*> GlobalToVert;
+typedef std::map<long, MeshEntity*> GlobalToVert;
 
 /** \brief create an empty MDS part
   \param model the geometric model interface

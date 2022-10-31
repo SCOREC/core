@@ -30,6 +30,39 @@
 #include <stdlib.h>
 #include <cstring>
 #include <iostream>
+#include <malloc.h>
+
+static void print_stats(const char* name, double value)
+{
+  double min, max, avg;
+  min = PCU_Min_Double(value);
+  max = PCU_Max_Double(value);
+  avg = PCU_Add_Double(value);
+  avg /= PCU_Comm_Peers();
+  double imb = max / avg;
+  if (!PCU_Comm_Self())
+    printf("%s: min %f max %f avg %f imb %f\n", name, min, max, avg, imb);
+}
+
+#if defined(__linux__)
+
+static double get_chunks()
+{
+  struct mallinfo m = mallinfo();
+  return m.uordblks + m.hblkhd;
+}
+
+#else
+static double get_chunks()
+{
+  cheese
+  if(!PCU_Comm_Self())
+    printf("%s:%d: OS Not supported\n", __FILE__, __LINE__);
+  return(-1.0);
+}
+#endif
+
+
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -78,8 +111,10 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     m = loadMesh(g, in);
   else
     apf::printStats(m);
-  m->verify();
-  if (in.solutionMigration && !in.useAttachedFields)
+// Need to set a flag to enable avoiding this when short on time  m->verify();
+  if (in.useAttachedFields) 
+     lion_eprint(1,"because useAttachedFields set restart not read\n");
+  else if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);
@@ -134,6 +169,7 @@ namespace chef {
 namespace ph {
   void checkBalance(apf::Mesh2* m, ph::Input& in) {
     /* check if balancing was requested */
+      Parma_PrintPtnStats(m, "postSplit", false);
       if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
         ph::balance(in,m);
   }
@@ -148,9 +184,18 @@ namespace ph {
         in.isReorder )
     {
       apf::MeshTag* order = NULL;
+
+      print_stats("malloc used before Bfs", get_chunks());
+
       if (in.isReorder && PCU_Comm_Peers() > 1)
         order = Parma_BfsReorder(m);
+
+      print_stats("malloc used before reorder", get_chunks());
+
       apf::reorderMdsMesh(m,order);
+
+      print_stats("malloc used after reorder", get_chunks());
+
     }
   }
 
@@ -250,6 +295,8 @@ namespace chef {
     ph::Output out;
     out.openfile_write = openfile_write;
     bake(g,m,in,out);
+    if ((in.writeVTK) == 1)  apf::writeVtkFiles("rendered",m);
+
   }
   void cook(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl) {
