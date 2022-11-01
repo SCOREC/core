@@ -7,13 +7,14 @@ export PATH=/usr/share/lmod/lmod/libexec:$PATH
 
 #setup spack modules
 unset MODULEPATH
-module use /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core/
 
-module load gcc/7.3.0-bt47fwr
-module load cmake/3.12.1-wfk2b7e
-module load mpich
-module load zoltan/3.83-int32-gx3prjr
-module load simmetrix-simmodsuite/14.0-190928-snlypqg
+module unuse /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core
+module use /opt/scorec/spack/v0154_2/lmod/linux-rhel7-x86_64/Core
+module load gcc/10.1.0
+module load mpich/3.3.2
+module load simmetrix-simmodsuite/17.0-220516
+module load zoltan/3.83-int32
+module load cmake/3.20.0
 
 #cdash output root
 d=/lore/cwsmith/nightlyBuilds/
