@@ -83,8 +83,8 @@ string(REGEX REPLACE
   "\\3" SIMMODSUITE_MINOR_VERSION
   "${SIM_VERSION}")
 
-set(MIN_VALID_SIM_VERSION 12.0.190225)
-set(MAX_VALID_SIM_VERSION 18.0-220930)
+set(MIN_VALID_SIM_VERSION 15.0.191017)
+set(MAX_VALID_SIM_VERSION 18.0.220930)
 if( ${SKIP_SIMMETRIX_VERSION_CHECK} )
   message(STATUS "Skipping Simmetrix SimModSuite version check."
     " This may result in undefined behavior")
