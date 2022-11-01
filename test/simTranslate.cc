@@ -58,7 +58,7 @@ static std::string paraExtshort = ".x_t";
 void printSimError(pSimError err) {
   printf("Simmetrix error caught:\n");
   printf("  Error code: %d\n",SIM_ERROR(code,err));
-  printf("  Error string: %s\n",SIM_ERROR(code,err));
+  printf("  Error string: %s\n",SIM_ERROR(toString,err));
   SIM_ERROR(delete,err);
 }
 
