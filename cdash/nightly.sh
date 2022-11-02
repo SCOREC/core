@@ -9,6 +9,7 @@ export PATH=/usr/share/lmod/lmod/libexec:$PATH
 unset MODULEPATH
 
 module unuse /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core
+module use /opt/scorec/modules
 module use /opt/scorec/spack/v0154_2/lmod/linux-rhel7-x86_64/Core
 module load gcc/10.1.0
 module load mpich/3.3.2
@@ -24,10 +25,10 @@ cd $d
 
 touch $d/startedCoreNightly
 #run nightly.cmake script
-ctest -V --script $d/repos/core/cdash/nightly.cmake
+ctest -V --script $d/nightly.cmake
 touch $d/doneCoreNightly
 
 #create doxygen docs
 cd build/master
 make doc
-cp -r doc/html/* /net/web/scorec/scorec-web/htdocs/pumi/doxygen/.
+cp -r doc/html /net/web/scorec/scorec-web/htdocs/pumi/doxygen
