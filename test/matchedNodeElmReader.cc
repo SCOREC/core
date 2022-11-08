@@ -684,17 +684,17 @@ void readElements(FILE* f, FILE* fh, unsigned &dim,  apf::Gid& numElms,
 struct MeshInfo {
   double* coords;
   double* solution;
-  apf::Gid* elements;
+  apf::Gid* elements; //TODO store per block
   apf::Gid* matches;
   int* classification;
   int* fathers2D;
   unsigned dim;
-  unsigned elementType;
+  unsigned elementType; //TODO remove
   apf::Gid numVerts;
   int localNumVerts;
-  apf::Gid numElms;
-  int localNumElms;
-  unsigned numVtxPerElm;
+  apf::Gid numElms; //TODO does not appear to be used
+  int localNumElms; //TODO store per block 
+  unsigned numVtxPerElm; //TODO can be a pumi query?
 };
 
 void readMesh(const char* meshfilename,
@@ -758,6 +758,7 @@ void readMesh(const char* meshfilename,
   FILE* fh = fopen(connHeadfilename, "r");
   PCU_ALWAYS_ASSERT(f);
   PCU_ALWAYS_ASSERT(fh);
+//  now we went to do a readElements for each topology so 
   readElements(f,fh, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
@@ -809,6 +810,9 @@ int main(int argc, char** argv)
   apf::GlobalToVert outMap;
   PCU_Debug_Open();
   apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);
+// PLANNING: before we can call what used to be construct but is now assemble and finalise we will need to batch elements by topology
+// in the first pass we will keep the upstream reader that  has these as rectangular arrays and do a sort here into one 
+// group o
   delete [] m.elements;
   apf::alignMdsRemotes(mesh);
   apf::deriveMdsModel(mesh);
