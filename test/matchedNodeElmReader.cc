@@ -14,6 +14,12 @@
 #include <algorithm>
 #include <apfBox.h>
 
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <string>
+#include <regex>
+
 /* from https://github.com/SCOREC/core/issues/205
 0=fully interior of the volume
 1-6 =classified on face (not edge or vertex)
@@ -652,16 +658,73 @@ void readMatches(FILE* f, apf::Gid numvtx, int localnumvtx, apf::Gid** matches) 
 //  }
 }
 
-void readElements(FILE* f, FILE* fh, unsigned &dim,  apf::Gid& numElms,
+//static int starts_with(char const* with, char const* s) {
+//  int lw;
+//  int ls;
+//  lw = strlen(with);
+//  ls = strlen(s);
+//  if (ls < lw)
+//    return 0;
+//  return strncmp(with, s, lw) == 0;
+//}
+
+bool seekPart(std::ifstream& f, const std::string& marker) {
+  std::regex integer("^[[:digit:]]+$");
+  std::string line;
+  while (std::getline(f, line)) {
+    if (std::regex_match(line,integer)) {
+      std::cerr << "string object matched " << line << "\n";
+      if(line == marker) {
+        std::cerr << "found marker " << marker << "!\n";
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void rewindStream(std::ifstream& f) {
+  f.clear();
+  f.seekg(0);
+}
+
+/**
+fh = header file
+- fh = header file (there is only one for all processes), containing:
+   1 1  #No idea why we write this
+   3    #also not sure what this is used for
+   <numelTotal>  <maxNodesPerElement>
+   Part0
+       <numel_topo_1>   <NodesInElementTopo1>
+       <nmel_topo_2>   < NodesInElementTopo2>
+       ... for as many topos as are in  Part 0
+   Repeat the above bock for each part.
+- f = part file, each part gets a file that contains a rectangular array, one for each topology
+  present on that part, that provides element to vertexGlobalId connectivity in
+  the order listed in the section of the header file for that part
+**/
+void readElements(std::ifstream& f, std::ifstream& fh, unsigned &dim,  apf::Gid& numElms,
     unsigned& numVtxPerElm, int& localNumElms, apf::Gid** elements) {
-  rewind(f);
-  rewind(fh);
+  const int self = PCU_Comm_Self();;
+  //silence warnings -----
+  (void)dim;
+  (void)localNumElms;
+  (void)elements;
+  (void)numVtxPerElm;
+  (void)numElms;
+  //silence warnings -----
+
+  rewindStream(fh);
+  //find my parts header block
+  bool ret = seekPart(fh, std::to_string(self));
+  assert(ret);
+  exit(EXIT_FAILURE);
+
+  rewindStream(f);
+  /*
   int dimHeader[2];
-  gmi_fscanf(fh, 2, "%u %u", dimHeader, dimHeader+1);
-//  assert( dimHeader[0] == 1 && dimHeader[1] == 1);
-  gmi_fscanf(fh, 1, "%u", &dim);
-  gmi_fscanf(fh, 2, "%ld %u", &numElms, &numVtxPerElm);
-  int self = PCU_Comm_Self();;
+  unsigned maxVtxPerElm;
+  gmi_fscanf(fh, 2, "%ld %u", &numElms, &maxVtxPerElm);
   for (int j=0; j< self+1;j++)
      gmi_fscanf(fh, 2, "%d %u", &localNumElms, &numVtxPerElm);
   *elements = new apf::Gid[localNumElms*numVtxPerElm];
@@ -679,6 +742,7 @@ void readElements(FILE* f, FILE* fh, unsigned &dim,  apf::Gid& numElms,
     elmIdx++;
   }
   delete [] elmVtx;
+  */
 }
 
 struct MeshInfo {
@@ -754,15 +818,16 @@ void readMesh(const char* meshfilename,
   }
 
   sprintf(filename, "%s.%d",meshfilename,self);
-  FILE* f = fopen(filename, "r");
-  FILE* fh = fopen(connHeadfilename, "r");
-  PCU_ALWAYS_ASSERT(f);
-  PCU_ALWAYS_ASSERT(fh);
+  std::ifstream f(filename, std::ios::in);
+  PCU_ALWAYS_ASSERT(f.is_open());
+  std::ifstream fh(connHeadfilename, std::ios::in);
+  PCU_ALWAYS_ASSERT(fh.is_open());
 //  now we went to do a readElements for each topology so 
   readElements(f,fh, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
-  fclose(f);
+  fh.close();
+  f.close();
 }
 
 
@@ -805,7 +870,7 @@ int main(int argc, char** argv)
     fprintf(stderr, "isMatched %d\n", isMatched);
 
   //gmi_model* model = gmi_load(".null");
-  gmi_model* model = apf::makeMdsBox(2,2,2,1,1,1,0);
+  gmi_model* model = apf::makeMdsBoxModel(2,2,2,1,1,1,0);
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
   PCU_Debug_Open();
