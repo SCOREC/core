@@ -23,6 +23,7 @@ class Input
   public:
     Input();
     void load(const char* filename);
+    int txtCoord; //HACK added to get through compile
     int timeStepNumber;
     /** \brief this corresponds to the number of degrees of
       freedom in the solution field of the output restart file.
