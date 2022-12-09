@@ -86,7 +86,6 @@ BoxBuilder::BoxBuilder(int nx, int ny, int nz,
 void BoxBuilder::formModelTable()
 {
   int nd[4] = {0,0,0,0};
-//  int nds[4] = {31,11,1,0};
   for (int i = 0; i < mgrid.total(); ++i) {
     Indices mi = mgrid.out(i);
     int mdim = 0;
@@ -95,8 +94,6 @@ void BoxBuilder::formModelTable()
         ++mdim;
     modelTable[i].dim = mdim;
     modelTable[i].tag = nd[mdim]++;
-//    modelTable[i].tag = nds[mdim]++;
-//    nd[mdim]++;
   }
   for (int i = 0; i < 4; ++i)
     modelCounts[i] = nd[i];
