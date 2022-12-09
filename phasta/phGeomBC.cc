@@ -17,16 +17,6 @@ static std::string buildGeomBCFileName(std::string timestep_or_dat)
   return ss.str();
 }
 
-/* abandoned 
-static std::string buildCoordsFileName()
-{
-  std::stringstream ss;
-  int rank = PCU_Comm_Self() + 1;
-  ss << "coords."  << "." << rank;
-  return ss.str();
-}
-*/
-
 enum {
   MAX_PARAMS = 12
 };
