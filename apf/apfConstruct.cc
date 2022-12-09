@@ -202,13 +202,8 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
   lion_eprint(1, "%d done inside remotes \n",PCU_Comm_Self());
 }
 
-<<<<<<< HEAD
-void assemble(Mesh2* m, const int* conn, int nelem, int etype,
+void assemble(Mesh2* m, const Gid* conn, int nelem, int etype,
      GlobalToVert& globalToVert)
-=======
-void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
-    GlobalToVert& globalToVert)
->>>>>>> globalToVertCorruption
 {
   constructVerts(m, conn, nelem, etype, globalToVert);
   constructElements(m, conn, nelem, etype, globalToVert);
@@ -223,7 +218,7 @@ void finalise(Mesh2* m, GlobalToVert& globalToVert)
   m->acceptChanges();
 }
  
-void construct(Mesh2* m, const int* conn, int nelem, int etype,
+void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert)
 {
   assemble(m, conn, nelem, etype, globalToVert);
@@ -330,9 +325,6 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   delete [] c;
 }
 
-<<<<<<< HEAD
-void destruct(Mesh2* m, int*& conn, int& nelem, int &etype, int cellDim)
-=======
 void setMatches(Mesh2* m, const Gid* matches, int nverts,
     GlobalToVert& globalToVert)
 {
@@ -539,8 +531,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   m->destroyTag(matchGidTag);
 }
 
-void destruct(Mesh2* m, Gid*& conn, int& nelem, int &etype)
->>>>>>> globalToVertCorruption
+void destruct(Mesh2* m, Gid*& conn, int& nelem, int &etype, int cellDim)
 {
   if(cellDim == -1) cellDim = m->getDimension();
   //int dim = m->getDimension();
