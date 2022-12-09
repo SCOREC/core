@@ -269,8 +269,6 @@ static int align_copies(struct mds_net* net, struct mds* m)
   mds_id e;
   struct mds_copies* c;
   int did_change = 0;
-//  long countAll=0;
-//  long countDTC=0;
   for (d = 1; d < m->d; ++d){
     PCU_Comm_Begin();
     for (e = mds_begin(m, d); e != MDS_NONE; e = mds_next(m, e)) {
