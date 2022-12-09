@@ -330,12 +330,21 @@ void BoxBuilder::buildMeshAndModel()
   m->acceptChanges();
 }
 
-gmi_model* makeMdsBox(
+Mesh2* makeMdsBox(
+    int nex, int ney, int nez,
+    double wx, double wy, double wz, bool is)
+{
+  BoxBuilder bb(nex, ney, nez, wx, wy, wz, is);
+  return bb.m;
+}
+
+gmi_model* makeMdsBoxModel(
     int nex, int ney, int nez,
     double wx, double wy, double wz, bool is)
 {
   BoxBuilder bb(nex, ney, nez, wx, wy, wz, is);
   return bb.buildModel();
 }
+
 
 }

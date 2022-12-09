@@ -70,8 +70,13 @@ struct BoxBuilder
   \param wz z dimension width
   \param is true = simplical mesh, false = quad/hex
   \details set ny,nz=0 for a 1D mesh, set nz=0 for a 2D mesh */
-gmi_model* makeMdsBox(
+Mesh2* makeMdsBox(
     int nx, int ny, int nz, double wx, double wy, double wz, bool is);
+
+/** \brief see makeMdsBox - only creates geometric model */
+gmi_model* makeMdsBoxModel(
+    int nx, int ny, int nz, double wx, double wy, double wz, bool is);
+
 
 }
 
