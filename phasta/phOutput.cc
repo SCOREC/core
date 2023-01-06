@@ -978,7 +978,7 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
     while ((v = m->iterate(it))) { // loop over mesh vertices
       m->getIntTag(v,t,&tagNum);
       o.arrays.ifather[count] = tagNum;
-      if(nsons==0) ++o.arrays.nsonsArr[tagNum];  // increment the nsons counter 
+      if(nsons==0) ++o.arrays.nsonsArr[tagNum-1];  // increment the nsons counter 
       //std::cout<<"Tag number "<<tagNum<<std::endl;
       count++;
     }
