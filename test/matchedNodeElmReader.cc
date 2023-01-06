@@ -718,9 +718,14 @@ void readElements(std::ifstream& f, std::ifstream& fh, unsigned &dim,  apf::Gid&
   //find my parts header block
   bool ret = seekPart(fh, std::to_string(self));
   assert(ret);
-  exit(EXIT_FAILURE);
 
   rewindStream(f);
+
+  typedef std::pair<unsigned,unsigned> TopoInfo;
+  exit(EXIT_FAILURE);
+
+  TopoInfo a;
+
   /*
   int dimHeader[2];
   unsigned maxVtxPerElm;
@@ -772,7 +777,7 @@ void readMesh(const char* meshfilename,
 
   int self = PCU_Comm_Self();
 
-  char filename[64];
+  char filename[1024];
   sprintf(filename, "%s.%d",coordfilename,self);
     
   FILE* fc = fopen(filename , "r");
@@ -817,17 +822,18 @@ void readMesh(const char* meshfilename,
     fclose(fm);
   }
 
-  sprintf(filename, "%s.%d",meshfilename,self);
-  std::ifstream f(filename, std::ios::in);
-  PCU_ALWAYS_ASSERT(f.is_open());
-  std::ifstream fh(connHeadfilename, std::ios::in);
-  PCU_ALWAYS_ASSERT(fh.is_open());
+  std::stringstream ss;
+  ss << meshfilename << "." << self;
+  std::ifstream meshConnStream(ss.str());
+  PCU_ALWAYS_ASSERT(meshConnStream.is_open());
+  std::ifstream connHeadStream(connHeadfilename, std::ios::in);
+  PCU_ALWAYS_ASSERT(connHeadStream.is_open());
 //  now we went to do a readElements for each topology so 
-  readElements(f,fh, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
+  readElements(meshConnStream, connHeadStream, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
       mesh.localNumElms, &(mesh.elements));
   mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
-  fh.close();
-  f.close();
+  connHeadStream.close();
+  meshConnStream.close();
 }
 
 
