@@ -669,17 +669,15 @@ void readMatches(FILE* f, apf::Gid numvtx, int localnumvtx, apf::Gid** matches) 
 //}
 
 bool seekPart(std::ifstream& f, const std::string& marker) {
-  std::cerr << "marker: " << marker << "\n";
-  std::regex integer("^\\s+[[:digit:]]+$");
+  std::stringstream ss;
+  ss << "^\\s+" << marker << "$";
+  std::regex partId(ss.str());
   std::string line;
   while (std::getline(f, line)) {
-    std::cerr << "line: " << line << "\n";
-    if (std::regex_match(line,integer)) {
+    if (std::regex_match(line,partId)) {
       std::cerr << "string object matched " << line << "\n";
-      if(line == marker) {
-        std::cerr << "found marker " << marker << "!\n";
-        return true;
-      }
+      std::cerr << "found marker " << marker << "!\n";
+      return true;
     }
   }
   return false;
