@@ -683,7 +683,10 @@ bool seekPart(std::ifstream& f, const std::string& marker) {
   return false;
 }
 
-using BlockInfo = std::pair<long,int>;
+struct BlockInfo {
+  long numElms;
+  int vtxPerElm;
+};
 
 std::vector<BlockInfo> readTopoBlockInfo(std::ifstream& f) {
   std::vector<BlockInfo> blocks;
@@ -694,7 +697,7 @@ std::vector<BlockInfo> readTopoBlockInfo(std::ifstream& f) {
   while (std::getline(f, line)) {
     std::istringstream iss(line);
     if (!(iss >> blockSize >> vtxPerElement)) { break; } // error
-    blocks.push_back(BlockInfo(blockSize,vtxPerElement));
+    blocks.push_back({blockSize,vtxPerElement});
   }
   return blocks;
 }
@@ -705,87 +708,62 @@ void rewindStream(std::ifstream& f) {
 }
 
 /**
-fh = header file
-- fh = header file (there is only one for all processes), containing:
-   1 1  #No idea why we write this
-   3    #also not sure what this is used for
-   <numelTotal>  <maxNodesPerElement>
+fh = header file (there is only one for all processes), containing:
    Part0
        <numel_topo_1>   <NodesInElementTopo1>
        <nmel_topo_2>   < NodesInElementTopo2>
        ... for as many topos as are in  Part 0
    Repeat the above bock for each part.
+**/
+std::vector<BlockInfo> readHeader(std::ifstream& fh) {
+  rewindStream(fh);
+  const int self = PCU_Comm_Self();;
+  bool ret = seekPart(fh, std::to_string(self));
+  assert(ret);
+  auto blockInfo = readTopoBlockInfo(fh);
+  assert(blockInfo.size()>0);
+  for(auto b : blockInfo) {
+    std::cout << self << " " << b.numElms << " " << b.vtxPerElm << "\n";
+  }
+  return blockInfo;
+}
+
+/**
 - f = part file, each part gets a file that contains a rectangular array, one for each topology
   present on that part, that provides element to vertexGlobalId connectivity in
   the order listed in the section of the header file for that part
 **/
-void readElements(std::ifstream& f, std::ifstream& fh, unsigned &dim,  apf::Gid& numElms,
-    unsigned& numVtxPerElm, int& localNumElms, apf::Gid** elements) {
-  const int self = PCU_Comm_Self();;
-  //silence warnings -----
-  (void)dim;
-  (void)localNumElms;
-  (void)elements;
-  (void)numVtxPerElm;
-  (void)numElms;
-  //silence warnings -----
-
-  rewindStream(fh);
-  //find my parts header block
-  bool ret = seekPart(fh, std::to_string(self));
-  assert(ret);
-  auto blockInfo = readTopoBlockInfo(fh);
-  assert(ret);
-  for(auto b : blockInfo) {
-    std::cout << self << " " << b.first << " " << b.second << "\n";
-  }
-  PCU_Barrier();
-
+void readElements(std::ifstream& f, apf::Gid numElms,
+    unsigned numVtxPerElm, apf::Gid* elements) {
   rewindStream(f);
-
-  typedef std::pair<unsigned,unsigned> TopoInfo;
-  exit(EXIT_FAILURE);
-
-  TopoInfo a;
-
-  /*
-  int dimHeader[2];
-  unsigned maxVtxPerElm;
-  gmi_fscanf(fh, 2, "%ld %u", &numElms, &maxVtxPerElm);
-  for (int j=0; j< self+1;j++)
-     gmi_fscanf(fh, 2, "%d %u", &localNumElms, &numVtxPerElm);
-  *elements = new apf::Gid[localNumElms*numVtxPerElm];
-  int i;
-  unsigned j;
   unsigned elmIdx = 0;
   apf::Gid* elmVtx = new apf::Gid[numVtxPerElm];
-  for (i = 0; i < localNumElms; i++) {
-    for (j = 0; j < numVtxPerElm; j++)
-      gmi_fscanf(f, 1, "%ld", elmVtx+j);
-    for (j = 0; j < numVtxPerElm; j++) {
+  for (int i = 0; i < numElms; i++) {
+    for (unsigned j = 0; j < numVtxPerElm; j++)
+      f >> elmVtx[j];
+    for (unsigned j = 0; j < numVtxPerElm; j++) {
       const unsigned elmVtxIdx = elmIdx*numVtxPerElm+j;
-      (*elements)[elmVtxIdx] = --(elmVtx[j]); //export from matlab using 1-based indices
+      elements[elmVtxIdx] = --(elmVtx[j]); //export from matlab using 1-based indices
     }
     elmIdx++;
   }
   delete [] elmVtx;
-  */
 }
 
 struct MeshInfo {
   double* coords;
   double* solution;
-  apf::Gid* elements; //TODO store per block
+  std::vector<apf::Gid*> elements;
   apf::Gid* matches;
   int* classification;
   int* fathers2D;
   unsigned dim;
-  unsigned elementType; //TODO remove
+  std::vector<unsigned> elementType;
   apf::Gid numVerts;
   int localNumVerts;
-  apf::Gid numElms; //TODO does not appear to be used
-  int localNumElms; //TODO store per block 
-  unsigned numVtxPerElm; //TODO can be a pumi query?
+  std::vector<apf::Gid> numElms; //TODO does not appear to be used
+  std::vector<int> localNumElms; //TODO store per block 
+  std::vector<unsigned> numVtxPerElm; //TODO can be a pumi query?
 };
 
 void readMesh(const char* meshfilename,
@@ -796,6 +774,8 @@ void readMesh(const char* meshfilename,
     const char* solutionfilename,
     const char* connHeadfilename,
     MeshInfo& mesh) {
+
+  mesh.dim = 3; //FIXME
 
   int self = PCU_Comm_Self();
 
@@ -850,11 +830,15 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(meshConnStream.is_open());
   std::ifstream connHeadStream(connHeadfilename, std::ios::in);
   PCU_ALWAYS_ASSERT(connHeadStream.is_open());
-//  now we went to do a readElements for each topology so 
-  readElements(meshConnStream, connHeadStream, mesh.dim, mesh.numElms, mesh.numVtxPerElm,
-      mesh.localNumElms, &(mesh.elements));
-  mesh.elementType = getElmType(mesh.dim, mesh.numVtxPerElm);
+  auto blockInfo = readHeader(connHeadStream);
   connHeadStream.close();
+  for(auto b : blockInfo) {
+    mesh.numElms.push_back(b.numElms);
+    mesh.numVtxPerElm.push_back(b.vtxPerElm);
+    apf::Gid* elements = new apf::Gid[b.numElms*b.vtxPerElm];
+    readElements(meshConnStream, b.numElms, b.vtxPerElm, elements);
+    mesh.elementType.push_back(getElmType(mesh.dim, b.vtxPerElm));
+  }
   meshConnStream.close();
 }
 
@@ -902,16 +886,13 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
   PCU_Debug_Open();
-  apf::construct(mesh, m.elements, m.localNumElms, m.elementType, outMap);
-// PLANNING: before we can call what used to be construct but is now assemble and finalise we will need to batch elements by topology
-// in the first pass we will keep the upstream reader that  has these as rectangular arrays and do a sort here into one 
-// group o
-  delete [] m.elements;
+  for( size_t i=0; i< m.elements.size(); i++) {
+    apf::assemble(mesh, m.elements[i], m.numElms[i], m.elementType[i], outMap);
+    delete [] m.elements[i];
+  }
+  apf::finalise(mesh, outMap);
   apf::alignMdsRemotes(mesh);
   apf::deriveMdsModel(mesh);
-  /*for (int i=0; i<81; i++) {
-  std::cout<<m.coords[i]<<std::endl;
-  }*/
   apf::setCoords(mesh, m.coords, m.localNumVerts, outMap);
   delete [] m.coords;
   if( isMatched ) {
