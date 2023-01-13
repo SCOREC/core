@@ -683,6 +683,22 @@ bool seekPart(std::ifstream& f, const std::string& marker) {
   return false;
 }
 
+using BlockInfo = std::pair<long,int>;
+
+std::vector<BlockInfo> readTopoBlockInfo(std::ifstream& f) {
+  std::vector<BlockInfo> blocks;
+  long blockSize;
+  int vtxPerElement;
+
+  std::string line;
+  while (std::getline(f, line)) {
+    std::istringstream iss(line);
+    if (!(iss >> blockSize >> vtxPerElement)) { break; } // error
+    blocks.push_back(BlockInfo(blockSize,vtxPerElement));
+  }
+  return blocks;
+}
+
 void rewindStream(std::ifstream& f) {
   f.clear();
   f.seekg(0);
@@ -718,6 +734,12 @@ void readElements(std::ifstream& f, std::ifstream& fh, unsigned &dim,  apf::Gid&
   //find my parts header block
   bool ret = seekPart(fh, std::to_string(self));
   assert(ret);
+  auto blockInfo = readTopoBlockInfo(fh);
+  assert(ret);
+  for(auto b : blockInfo) {
+    std::cout << self << " " << b.first << " " << b.second << "\n";
+  }
+  PCU_Barrier();
 
   rewindStream(f);
 
