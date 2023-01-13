@@ -39,7 +39,7 @@ typedef std::map<Gid, MeshEntity*> GlobalToVert;
   assemble and finalise. The premise of assemble being 
   that it is called multiple times for a given cell type,
   across several different cell types in the input mesh. */
-void assemble(Mesh2* m, const int* conn, int nelem, int etype,
+void assemble(Mesh2* m, const apf::Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert);
 
 /** \brief finalise construction of a mixed-cell-type mesh from just a connectivity array
