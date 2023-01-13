@@ -675,8 +675,6 @@ bool seekPart(std::ifstream& f, const std::string& marker) {
   std::string line;
   while (std::getline(f, line)) {
     if (std::regex_match(line,partId)) {
-      std::cerr << "string object matched " << line << "\n";
-      std::cerr << "found marker " << marker << "!\n";
       return true;
     }
   }
