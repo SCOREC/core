@@ -759,9 +759,8 @@ struct MeshInfo {
   std::vector<unsigned> elementType;
   apf::Gid numVerts;
   int localNumVerts;
-  std::vector<apf::Gid> numElms; //TODO does not appear to be used
-  std::vector<int> localNumElms; //TODO store per block 
-  std::vector<unsigned> numVtxPerElm; //TODO can be a pumi query?
+  std::vector<apf::Gid> numElms;
+  std::vector<unsigned> numVtxPerElm;
 };
 
 void readMesh(const char* meshfilename,
