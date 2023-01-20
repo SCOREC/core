@@ -745,6 +745,7 @@ void readElements(std::ifstream& f, apf::Gid numElms,
     }
     elmIdx++;
   }
+  PCU_ALWAYS_ASSERT(numElms==elmIdx);
   delete [] elmVtx;
 }
 
