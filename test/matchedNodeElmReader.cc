@@ -836,6 +836,7 @@ void readMesh(const char* meshfilename,
     apf::Gid* elements = new apf::Gid[b.numElms*b.vtxPerElm];
     readElements(meshConnStream, b.numElms, b.vtxPerElm, elements);
     mesh.elementType.push_back(getElmType(mesh.dim, b.vtxPerElm));
+    mesh.elements.push_back(elements);
   }
   meshConnStream.close();
 }
