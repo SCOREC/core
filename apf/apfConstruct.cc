@@ -32,7 +32,6 @@ static void constructElements(
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
   int nev = apf::Mesh::adjacentCount[etype][0];
-  unsigned etypeL=1;
   for (int i = 0; i < nelem; ++i) {
     Downward verts;
     int offset = i * nev;
@@ -49,10 +48,12 @@ static void constructElements(
       } 
     }
 
+    unsigned etypeL;
     if(uniqueVerts==4) etypeL=apf::Mesh::TET;
-    if(uniqueVerts==5) etypeL=apf::Mesh::PYRAMID;
-    if(uniqueVerts==6) etypeL=apf::Mesh::PRISM;
-    if(uniqueVerts==8) etypeL=apf::Mesh::HEX;
+    else if(uniqueVerts==5) etypeL=apf::Mesh::PYRAMID;
+    else if(uniqueVerts==6) etypeL=apf::Mesh::PRISM;
+    else if(uniqueVerts==8) etypeL=apf::Mesh::HEX;
+    else PCU_ALWAYS_ASSERT(false);
     buildElement(m, interior, etypeL, verts);
   }
 }
