@@ -943,7 +943,7 @@ int main(int argc, char** argv)
   gmi_write_dmg(model, argv[8]);
   apf::writeVtkFiles("rendered",mesh);
   mesh->writeNative(argv[9]);
-  if(noVerify != 0) mesh->verify();
+  if(noVerify != 1) mesh->verify();
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
