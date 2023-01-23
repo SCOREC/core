@@ -900,6 +900,17 @@ int main(int argc, char** argv)
   }
   apf::MeshTag* tc = setMappedTag(mesh, "classification", m.classification, 1,
       m.localNumVerts, outMap);
+  { //debug - some verts don't have the classification tag...
+    apf::MeshEntity* v;
+    apf::MeshIterator* verts = mesh->begin(0);
+    int i=0;
+    while ((v = mesh->iterate(verts))) {
+      if(!mesh->hasTag(v,tc)) {
+        PCU_Debug_Print("%d missing tag\n", i);
+      }
+      i++;
+    }
+  }
   setClassification(model,mesh,tc);
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
