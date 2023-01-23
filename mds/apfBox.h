@@ -39,7 +39,7 @@ struct BoxBuilder
   std::vector<MeshEntity*> v;
   BoxBuilder(int nx, int ny, int nz,
       double wx, double wy, double wz,
-      bool is);
+      bool is, bool matched);
   void formModelTable();
   void addModelUse(gmi_base* gb, agm_bdry ab, Indices di);
   gmi_model* buildModel();
@@ -69,14 +69,10 @@ struct BoxBuilder
   \param wy y dimension width
   \param wz z dimension width
   \param is true = simplical mesh, false = quad/hex
+  \param matched true = matched mesh, false = otherwise
   \details set ny,nz=0 for a 1D mesh, set nz=0 for a 2D mesh */
 Mesh2* makeMdsBox(
-    int nx, int ny, int nz, double wx, double wy, double wz, bool is);
-
-/** \brief see makeMdsBox - only creates geometric model */
-gmi_model* makeMdsBoxModel(
-    int nx, int ny, int nz, double wx, double wy, double wz, bool is);
-
+    int nx, int ny, int nz, double wx, double wy, double wz, bool is, bool matched=false);
 
 }
 
