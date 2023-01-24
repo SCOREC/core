@@ -432,7 +432,9 @@ void readClassification(FILE* f, int localNumVtx, int** classification) {
     (*classification)[i] = mdlId;
     maxmdlId=std::max(maxmdlId,mdlId); 
   }
+  printf("maxmdlId,INTERIOR_REGION=%d %d\n",maxmdlId,INTERIOR_REGION);
   INTERIOR_REGION=maxmdlId-3000000; // correct if any vtx in region but will be negative if maxmdlId is on a face which is the case for 1 element in z... fix after reading model
+  printf("maxmdlId,INTERIOR_REGION=%d %d\n",maxmdlId,INTERIOR_REGION);
 }
 
 void readFathers(FILE* f, int localNumVtx, int** fathers) {
@@ -724,7 +726,9 @@ int main(int argc, char** argv)
  //  1 element in z has no vertices to tell us the region ID so we have to find it from the tag number of the region that is adjacent to a face whose tag number will be the max when there is no region.  We know we have this problem when INTERIOR_REGION is negative
   if(INTERIOR_REGION < 0) {
     int maxmdlId=0;
+    printf("maxmdlId,INTERIOR_REGION=%d %d\n",maxmdlId,INTERIOR_REGION);
     maxmdlId=1000000+INTERIOR_REGION;  // get back to maxmdlId found 
+    printf("maxmdlId,INTERIOR_REGION=%d %d\n",maxmdlId,INTERIOR_REGION);
     gmi_set* Rgns=gmi_adjacent(model,gmi_find(model,2,maxmdlId),3);
     for(int i=0; i<((Rgns->n)); i++) 
       INTERIOR_REGION=gmi_tag(model,Rgns->e[i]);
