@@ -732,8 +732,8 @@ std::vector<BlockInfo> readHeader(std::ifstream& fh) {
   the order listed in the section of the header file for that part
 **/
 void readElements(std::ifstream& f, apf::Gid numElms,
-    unsigned numVtxPerElm, apf::Gid* elements) {
-  rewindStream(f);
+    unsigned numVtxPerElm, apf::Gid* elements, bool rewind) {
+  if(rewind) rewindStream(f);
   unsigned elmIdx = 0;
   apf::Gid* elmVtx = new apf::Gid[numVtxPerElm];
   for (int i = 0; i < numElms; i++) {
@@ -830,11 +830,13 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(connHeadStream.is_open());
   auto blockInfo = readHeader(connHeadStream);
   connHeadStream.close();
+  bool rewind = true;
   for(auto b : blockInfo) {
     mesh.numElms.push_back(b.numElms);
     mesh.numVtxPerElm.push_back(b.vtxPerElm);
     apf::Gid* elements = new apf::Gid[b.numElms*b.vtxPerElm];
-    readElements(meshConnStream, b.numElms, b.vtxPerElm, elements);
+    readElements(meshConnStream, b.numElms, b.vtxPerElm, elements,rewind);
+    rewind=false;
     mesh.elementType.push_back(getElmType(mesh.dim, b.vtxPerElm));
     mesh.elements.push_back(elements);
   }
