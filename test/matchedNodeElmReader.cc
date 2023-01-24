@@ -882,8 +882,9 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     fprintf(stderr, "isMatched %d\n", isMatched);
 
-  apf::Mesh2* mesh = apf::makeMdsBox(2,2,2,1,1,1,0,isMatched);
-  gmi_model* model = mesh->getModel();
+  //gmi_model* model = gmi_load(".null");
+  gmi_model* model = apf::makeMdsBoxModel(2,2,2,1,1,1,0);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
   PCU_Debug_Open();
   for( size_t i=0; i< m.elements.size(); i++) {
