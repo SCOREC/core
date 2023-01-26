@@ -159,13 +159,15 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
   // create a tag on vertices fathers
   pMeshDataId myFather = MD_newMeshDataId( "fathers2D");
   
-  pPList listV,listVn,regions,faces;
+  pPList listV,listVn,faces,regions;
   pFace face;
   pRegion region;
   pVertex vrts[4];
   int dir, err;
   int count2D=0;
+  pGRegion gregion;
   pGFace gface;
+  pGEdge gedge;
   pGFace ExtruRootFace=NULL;
   pVertex entV;
   pMesh meshP= PM_mesh	(sim_mesh, 0 );	
@@ -207,13 +209,101 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       for(i=0; i< nvert ; i++) {
         int* markedData;
         if(!EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&markedData)){  // not sure about marked yet
+          gType  vClassDim;
+          pGEntity vConG;
+          int foundESTag = 0;
+          int foundETag = 0;
+          int foundEETag = 0;
+          pPList gRegions,gFaces,gEdges;
+          double coordGVSelf[3];
+          double coordGVOther[3];
+          double dx,dy;
+          vClassDim=V_whatInType(vrts[i]);
+          vConG=V_whatIn(vrts[i]);
+          int echeck;
+          switch(vClassDim) {
+            case 0:   // classified on vert so vert->edge->vert
+              foundESTag = GEN_tag( (pGVertex) vConG ); // found Extrusion Start Tag
+              gEdges = GV_edges( (pGVertex) vConG ); // pPList of model edges adjacent to root model vertex
+              for(int j = 0; j < PList_size( gEdges ); j++ ){
+                pGEdge gEdge = (pGEdge) PList_item( gEdges , j ); // candidate edge
+                pGVertex gVert0 = GE_vertex( gEdge , 0 );
+                pGVertex gVert1 = GE_vertex( gEdge , 1 );
+                if( gVert0 == (pGVertex) vConG) { //1 is at other end of edge
+                   GV_point( gVert1 , coordGVOther );
+                   GV_point( gVert0 , coordGVSelf );
+                   dx = coordGVOther[0] - coordGVSelf[0];
+                   dy = coordGVOther[1] - coordGVSelf[1];
+                   if( dx*dx + dy*dy < 1e-12 ) {
+                      foundETag = GEN_tag( gEdge );
+                      foundEETag = GEN_tag( gVert1 );
+                   }
+                } else { // 0 is at the other edge
+                   GV_point( gVert0 , coordGVOther );
+                   GV_point( gVert1 , coordGVSelf );
+                   dx = coordGVOther[0] - coordGVSelf[0];
+                   dy = coordGVOther[1] - coordGVSelf[1];
+                   if( dx*dx + dy*dy < 1e-12) {
+                      foundETag = GEN_tag(gEdge);
+                      foundEETag = GEN_tag(gVert0);
+                   }
+                }
+              } 
+              PList_delete(gEdges);
+              break; 
+            case 1:   // classified on edge so edge->face->edge
+              foundESTag = GEN_tag( (pGEdge) vConG ); // found Extrusion Start Tag
+              GE_point( (pGEdge) vConG , 0.5, coordGVSelf ); 
+              gFaces = GE_faces( (pGEdge) vConG); // pPList of model faces adjacent to root model edge
+              for(int j = 0; j < PList_size( gFaces ); j++ ){
+                pGFace gFace = (pGFace) PList_item( gFaces , j ); // candidate face
+                gEdges = GF_edges( gFace ); // pPList of model edges of jth adjacent face
+                for(int k = 0; j < PList_size( gEdges ); k++ ){ // loop over that pPlist
+                  pGEdge gEdge = (pGEdge)  PList_item( gEdges , k ); // candidate edge on candidate face
+                  if( gEdge != (pGEdge) vConG ) { // exclude root classified edge
+                    echeck = GE_point( gEdge , 0.5, coordGVOther ); 
+                    dx = coordGVOther[0] - coordGVSelf[0];
+                    dy = coordGVOther[1] - coordGVSelf[1];
+                    if( dx*dx + dy*dy < 1e-12) {
+                       foundETag = GEN_tag( gFace ); // found Extruded Tag
+                       foundEETag = GEN_tag( gEdge );   // found Extrusion End Tag
+                    }
+                  }
+                }
+                PList_delete(gEdges);
+              }
+              PList_delete(gFaces);
+              break; 
+            case 2:   // classified on face so face->region->face
+              foundESTag = GEN_tag( (pGFace) vConG ); // found Extrusion Start Tag
+              double parFace[2] { 0.5 , 0.5 }; 
+              echeck = GF_point( (pGFace) vConG, parFace , coordGVSelf );
+              gRegions = GF_regions( (pGFace) vConG ); //pPList of model regions adjacent to root model Fac
+              pGRegion gRegion = (pGRegion) PList_item( gRegions , 0 ); // there can be only one for extrusions
+              gFaces = GR_faces( gRegion );
+              for( int j = 0; j < PList_size( gFaces ); j++ ){
+                pGFace gFace = (pGFace) PList_item( gFaces , j );
+                if( gFace != (pGFace) vConG ) { // exclude root classified face
+                  echeck = GF_point( (pGFace) vConG , parFace , coordGVOther );
+                  dx = coordGVOther[0] - coordGVSelf[0];
+                  dy = coordGVOther[1] - coordGVSelf[1];
+                  if( dx*dx + dy*dy < 1e-12) {
+                    foundETag = GEN_tag( gRegion ); // found Extruded Tag
+                    foundEETag = GEN_tag( gFace );   // found Extrusion End Tag
+                  }
+                }
+              }
+              PList_delete( gFaces );
+              break; 
+          } 
+          assert(foundEETag != 0);
           count2D++;
           int* vtxData = new int[1];
           vtxData[0] = count2D;
           EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
           V_coord(vrts[i],coordNewPt[i]);
 
-          fprintf ( fcr, "%.15E %.15E %d \n", coordNewPt[i][0],coordNewPt[i][1], V_whatInType(vrts[i]));
+          fprintf ( fcr, "%.15E %.15E %d %d %d %d  \n", coordNewPt[i][0],coordNewPt[i][1], vClassDim, foundESTag, foundETag, foundEETag );
         }
       }
 
@@ -240,6 +330,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       regions=PList_new();
       faces=PList_new();
       err = Extrusion_3DRegionsAndLayerFaces(region, regions, faces, 1);
+      PList_delete(regions); // not used so delete
       if(err!=1 && !PCU_Comm_Self())
         fprintf(stderr, "Extrusion_3DRegionsAndLayerFaces returned %d for err \n", err);
 
