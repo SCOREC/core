@@ -188,6 +188,9 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 
   FILE* fid = fopen(extrusionFaceFile, "r"); // helper file that contains all faces with extrusions
   assert(fid);
+  double VdisTol=1e-12;
+  double EdisTol=1e-7;
+  double FdisTol=1e-7;
   while(1 == fscanf(fid,"%d",&ExtruRootId)) {
     fprintf(stderr,"ExtruRootId= %d \n",ExtruRootId);
     //find the root face of the extrusion
@@ -246,7 +249,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                    GV_point( gVert0 , coordGVSelf );
                    dx = coordGVOther[0] - coordGVSelf[0];
                    dy = coordGVOther[1] - coordGVSelf[1];
-                   if( dx*dx + dy*dy < 1e-12 ) {
+                   if( dx*dx + dy*dy < VdisTol ) {
                       foundETag = GEN_tag( gEdge );
                       foundEETag = GEN_tag( gVert1 );
                    }
@@ -255,7 +258,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                    GV_point( gVert1 , coordGVSelf );
                    dx = coordGVOther[0] - coordGVSelf[0];
                    dy = coordGVOther[1] - coordGVSelf[1];
-                   if( dx*dx + dy*dy < 1e-12) {
+                   if( dx*dx + dy*dy < VdisTol) {
                       foundETag = GEN_tag(gEdge);
                       foundEETag = GEN_tag(gVert0);
                    }
@@ -264,44 +267,8 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
               PList_delete(gEdges);
               break; 
             case 1:   // classified on edge so edge->face->edge
-/*               foundESTag=GEN_tag( (pGEdge) vConG); // found Extrusion Start Tag
-               pGVertex gVert0;
-               pGVertex gVert1;
-               gVert0=GE_vertex( (pGEdge) vConG,0);
-               gVert1=GE_vertex( (pGEdge) vConG,1);
-               GV_point(gVert0,coordGVOther); // reusing imperfectly named
-               GV_point(gVert1,coordGVSelf);  // reusing imperfectly named
-               coordGVSelf[0]=(coordGVOther[0]+coordGVSelf[0])/2; // avg x for edge centroid x
-               coordGVSelf[1]=(coordGVOther[1]+coordGVSelf[1])/2; // avg y for edge centroid y
-               gFaces=GE_faces((pGEdge)vConG); // pPList of model faces adjacent to root model edge
-               for(int j = 0; j < PList_size( gFaces ); j++){
-                 pGFace gFace = (pGFace)PList_item( gFaces , j ); // candidate face
-                 gEdges=GF_edges( gFace ); // pPList of model edges of jth adjacent face
-                 for(int k = 0; j < PList_size( gEdges ); k++){ // loop over that pPlist
-                   pGEdge gEdge=(pGEdge) PList_item(gEdges,k); // candidate edge on candidate face
-                   if(gEdge != (pGEdge) vConG) { // exclude root classified edge
-                     gVert0=GE_vertex( gEdge,0);
-                     gVert1=GE_vertex( gEdge,1);
-                     GV_point(gVert0,coordGVOther); // reusing imperfectly named
-                     GV_point(gVert0,coordGVOther1); 
-                     coordGVOther[0]=(coordGVOther[0]+coordGVOther1[0])/2; // avg x for edge centroid x
-                     coordGVOther[1]=(coordGVOther[1]+coordGVOther1[1])/2; // avg y for edge centroid y
-                     dx=(coordGVOther[0]-coordGVSelf[0]);
-                     dy=(coordGVOther[1]-coordGVSelf[1]);
-                     if(dx*dx+dy*dy < 1e-12) {
-                        foundETag=GEN_tag(gFace); // found Extruded Tag
-                        foundEETag=GEN_tag(gEdge);   // found Extrusion End Tag
-                     }
-                   }
-                 }
-                 PList_delete( gEdges );
-               }
-               PList_delete( gFaces );
-*/
-
               foundESTag = GEN_tag( (pGEdge) vConG ); // found Extrusion Start Tag
               GE_parRange ( (pGEdge) vConG, &pLow, &pHigh);
-//              GE_parRange ( (pGEdge) vConG, aLow, aHigh);
               parFace[0] = ( pLow + pHigh ) * 0.5;
               echeck = GE_point( (pGEdge) vConG , parFace[0], coordGVSelf ); 
               gFaces = GE_faces( (pGEdge) vConG); // pPList of model faces adjacent to root model edge
@@ -316,7 +283,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                     echeck = GE_point( gEdge , parFace[0], coordGVOther ); 
                     dx = coordGVOther[0] - coordGVSelf[0];
                     dy = coordGVOther[1] - coordGVSelf[1];
-                    if( dx*dx + dy*dy < 1e-12) {
+                    if( dx*dx + dy*dy < EdisTol) {
                        foundETag = GEN_tag( gFace ); // found Extruded Tag
                        foundEETag = GEN_tag( gEdge );   // found Extrusion End Tag
                     }
@@ -336,18 +303,20 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
               echeck = GF_point( (pGFace) vConG, parFace , coordGVSelf );
               gRegions = GF_regions( (pGFace) vConG ); //pPList of model regions adjacent to root model Fac
               pGRegion gRegion = (pGRegion) PList_item( gRegions , 0 ); // there can be only one for extrusions
+              int  currentTagRegion = GEN_tag( gRegion ); // candidate region's tag (debugging only)
               gFaces = GR_faces( gRegion );
               for( int j = 0; j < PList_size( gFaces ); j++ ){
                 pGFace gFace = (pGFace) PList_item( gFaces , j );
+                int  currentTag = GEN_tag( gFace ); // candidate face's tag (debugging only)
                 if( gFace != (pGFace) vConG ) { // exclude root classified face
                   GF_parRange ( gFace, 0, &pLow, &pHigh);
                   parFace[0] = ( pLow + pHigh ) * 0.5;
                   GF_parRange ( gFace, 1, &pLow, &pHigh);
                   parFace[1] = ( pLow + pHigh ) * 0.5;
-                  echeck = GF_point( (pGFace) vConG , parFace , coordGVOther );
+                  echeck = GF_point( (pGFace) gFace , parFace , coordGVOther );
                   dx = coordGVOther[0] - coordGVSelf[0];
                   dy = coordGVOther[1] - coordGVSelf[1];
-                  if( dx*dx + dy*dy < 1e-12) {
+                  if( dx*dx + dy*dy < FdisTol) {
                     foundETag = GEN_tag( gRegion ); // found Extruded Tag
                     foundEETag = GEN_tag( gFace );   // found Extrusion End Tag
                   }
