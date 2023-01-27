@@ -121,7 +121,7 @@ void getConfig(int argc, char** argv) {
         break;
       case '?':
         if (!PCU_Comm_Self())
-          printf ("warning: skipping unrecognized option\n");
+          printf ("warning: skipping unrecognized option \'%s\'\n", argv[optind-1]);
         break;
       default:
         if (!PCU_Comm_Self())
@@ -139,8 +139,6 @@ void getConfig(int argc, char** argv) {
   gmi_path = argv[i++];
   sms_path = argv[i++];
   smb_path = argv[i++];
-//  gmi_native_path= "/nobackup/uncompressed/Models/GustWing/2dCTS/SlicedGeomtryV12/sms2mds/geom.xmt_txt";
-  gmi_native_path= "geom.xmt_txt";
   if (!PCU_Comm_Self()) {
     printf ("fix_pyramids %d attach_order %d enable_log %d extruRootPath %s\n",
             should_fix_pyramids, should_attach_order, should_log, extruRootPath);
@@ -434,10 +432,13 @@ int main(int argc, char** argv)
   Progress_setDefaultCallback(progress);
 
   gmi_model* mdl;
-  if( gmi_native_path )
+  if( gmi_native_path ) {
+    if (!PCU_Comm_Self())
+      fprintf(stderr, "loading native model %s\n", gmi_native_path);
     mdl = gmi_sim_load(gmi_native_path,gmi_path);
-  else
+  } else {
     mdl = gmi_load(gmi_path);
+  }
 
   pGModel simModel = gmi_export_sim(mdl);
 /*
