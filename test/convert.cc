@@ -2,6 +2,7 @@
 #include <lionPrint.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
+#include "SimParasolidKrnl.h"
 #include <SimAdvMeshing.h>
 #include <SimUtil.h>
 #include <apfSIM.h>
@@ -20,8 +21,13 @@
 #include <iostream>
 #include <cassert>
 #include <getopt.h>
-
+#include <string.h>
 #include <stdio.h>
+
+using namespace std;
+
+
+
 
 apf::Field* convert_my_tag(apf::Mesh* m, apf::MeshTag* t) {
   apf::MeshEntity* vtx;
@@ -133,7 +139,8 @@ void getConfig(int argc, char** argv) {
   gmi_path = argv[i++];
   sms_path = argv[i++];
   smb_path = argv[i++];
-
+//  gmi_native_path= "/nobackup/uncompressed/Models/GustWing/2dCTS/SlicedGeomtryV12/sms2mds/geom.xmt_txt";
+  gmi_native_path= "geom.xmt_txt";
   if (!PCU_Comm_Self()) {
     printf ("fix_pyramids %d attach_order %d enable_log %d extruRootPath %s\n",
             should_fix_pyramids, should_attach_order, should_log, extruRootPath);
@@ -289,9 +296,9 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                  }
                  PList_delete( gEdges );
                }
-*/
-/*
                PList_delete( gFaces );
+*/
+
               foundESTag = GEN_tag( (pGEdge) vConG ); // found Extrusion Start Tag
               GE_parRange ( (pGEdge) vConG, &pLow, &pHigh);
 //              GE_parRange ( (pGEdge) vConG, aLow, aHigh);
@@ -301,7 +308,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
               for(int j = 0; j < PList_size( gFaces ); j++ ){
                 pGFace gFace = (pGFace) PList_item( gFaces , j ); // candidate face
                 gEdges = GF_edges( gFace ); // pPList of model edges of jth adjacent face
-                for(int k = 0; j < PList_size( gEdges ); k++ ){ // loop over that pPlist
+                for(int k = 0; k < PList_size( gEdges ); k++ ){ // loop over that pPlist
                   pGEdge gEdge = (pGEdge)  PList_item( gEdges , k ); // candidate edge on candidate face
                   if( gEdge != (pGEdge) vConG ) { // exclude root classified edge
                     GE_parRange ( gEdge, &pLow, &pHigh);
@@ -318,7 +325,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                 PList_delete(gEdges);
               }
               PList_delete(gFaces);
-*/
+
               break; 
             case 2:   // classified on face so face->region->face
               foundESTag = GEN_tag( (pGFace) vConG ); // found Extrusion Start Tag
@@ -349,7 +356,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
               PList_delete( gFaces );
               break; 
           } 
-//          assert(foundEETag != 0);
+          assert(foundEETag != 0);
           count2D++;
           int* vtxData = new int[1];
           vtxData[0] = count2D;
@@ -462,7 +469,26 @@ int main(int argc, char** argv)
     mdl = gmi_sim_load(gmi_native_path,gmi_path);
   else
     mdl = gmi_load(gmi_path);
+
   pGModel simModel = gmi_export_sim(mdl);
+/*
+  pParasolidNativeModel nModel = ParasolidNM_createFromFile(gmi_native_path,0);
+  pGModel    Amodel = GAM_createFromNativeModel(nModel,progress); 
+*/
+/* leaving this litle model tester in for a while
+  pGModel    Amodel = simModel;
+  double coordGVOther[3];
+  pGVertex gvertex;
+  GVIter gvIter=GM_vertexIter(Amodel);
+  while ( (gvertex=GVIter_next(gvIter))) {
+    int id = GEN_tag(gvertex);
+    GV_point( gvertex , coordGVOther );
+    cout<< id << " tag and coords " << coordGVOther[0] << " "  << coordGVOther[1]<< " " << coordGVOther[2] <<endl; 
+  }
+  GVIter_delete(gvIter);
+  assert(false);
+*/
+
   double t0 = PCU_Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
   double t1 = PCU_Time();
