@@ -198,6 +198,15 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       if(id==ExtruRootId) ExtruRootFace=gface;
     }
     assert(ExtruRootFace != NULL);
+    // notes for next version 
+    // we could get the region, get a list of vertices for the region, loop over those vertices to find the extrusion length
+    // then instead of checking matching x,y of opposite ends of the extrusion, abs(zroot - zOppositeRoot) matching the extrusion 
+    // length gives the match
+    // Note if we want to handle extrusions not purely in z, the normal to ExtruRootFace provides an axis to project a vector between     // the centers of the root and candidate oppositeRoot entity on to.
+
+    // all of the above assumes translation extrusion.  Rotation extrusion (sweeping extruded entiy over an arc of some angle about 
+    // a given axis) is useful but this would require some code change.  The principle is the same.  Every root entity has another 
+    // oppositeRoot entity whose position obeys a fixed angle rotation about a fixed axis.
 
     FIter fIter = M_classifiedFaceIter( meshP, ExtruRootFace, 0 ); // 0 says I don't want closure
     while ((face = FIter_next(fIter))) {
