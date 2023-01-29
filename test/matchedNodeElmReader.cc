@@ -92,7 +92,7 @@ int findRegionTag2Face(gmi_model* model, int* cAll, int nverts) {
   int ifound=0;
   while (inc<nverts && ifound==0) {
     if(cOrdered[inc] < 2000000) {
-      return 0 //  there were not two distinct faces in the provided list
+      return 0; //  there were not two distinct faces in the provided list
     } else if ( cOrdered[inc]==cOrdered[0]) {  // same as max...keep looking
       inc++;
     } else {
