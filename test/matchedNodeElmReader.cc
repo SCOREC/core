@@ -92,8 +92,7 @@ int findRegionTag2Face(gmi_model* model, int* cAll, int nverts) {
   int ifound=0;
   while (inc<nverts && ifound==0) {
     if(cOrdered[inc] < 2000000) {
-      ifound=-1; // won't happen for wedge but might for tet handle later 
-      assert(false); 
+      return 0 //  there were not two distinct faces in the provided list
     } else if ( cOrdered[inc]==cOrdered[0]) {  // same as max...keep looking
       inc++;
     } else {
@@ -193,7 +192,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
           nverts=2;
           int ctri[2]={cmax,cmin};
           int rtag = findRegionTag2Face(model, ctri, nverts);
-          assert(rtag!=0);
+          assert(rtag!=0); // bad input list of ctri (e.g., not two distinct faces)
           mesh->setModelEntity(e,getMdlRegion(mesh,rtag));
        } else { 
 //FAILS  ROLL OUR OWN         int res = gmi_is_in_closure_of(model,gmi_find(model,dimMin,tagMin), gmi_find(model,dimMax,tagMax));
@@ -300,7 +299,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     } else if(cmin >= 2000000) { // all nodes on  model face(s?)
         if(cmax != cmin) { // all on faces but not all on same so classified on interior
           rtag = findRegionTag2Face(model, ctri, nverts);
-          assert(rtag!=0);
+          assert(rtag!=0); // bad input list of ctri (e.g., not two distinct faces)
           mesh->setModelEntity(f,getMdlRegion(mesh,rtag));
         } else { // all on same face so classify on that one
           mesh->setModelEntity(f,getMdlFace(mesh,cmax-2000000));
@@ -346,9 +345,9 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
         ifaceS++;
       }
       gmi_end(model,gi);
-      if(faceFound != nverts ) { // none of the model face's closure held all verts classificaton  so interior wedges can sit in corner with a face with 1 vertcex on each of two faces and other one on the edge that intersects the two faces (or a model vertex) so the above fails in this LITERAL conner case)
+      if(faceFound != nverts ) { // none of the model face's closure held all verts classificaton  so interior wedges can sit in corner with a face with 1 vertex on each of two faces and other one on the edge that intersects the two faces (or a model vertex) so the above fails in this LITERAL conner case)
         rtag = findRegionTag2Face(model, ctri, nverts);
-        assert(rtag!=0);
+        assert(rtag!=0); //bad input list of ctri (e.g., not two distinct faces)  POSSIBLE yet unseen/unhandled case
         mesh->setModelEntity(f,getMdlRegion(mesh,rtag));
       }
     }
@@ -382,7 +381,7 @@ void setRgnClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
       mesh->setModelEntity(rgn,getMdlRegion(mesh,cmax-3000000));
     } else {
       int rtag = findRegionTag2Face(model, cAll, nverts);
-      assert(rtag!=0);
+      assert(rtag!=0); // bad input list of ctri (e.g., not two distinct faces)  POSSIBLE yet unseen/unhandled case
       mesh->setModelEntity(rgn,getMdlRegion(mesh,rtag));
     }
   }
