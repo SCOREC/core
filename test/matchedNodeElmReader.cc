@@ -40,11 +40,18 @@
 //#define INTERIOR_REGION 0
 int INTERIOR_REGION=0; // initialized but will be checked from read input
 
-apf::ModelEntity* getMdlRgn(gmi_model* model) {
-  apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
-      gmi_find(model, 3, INTERIOR_REGION));
-  PCU_ALWAYS_ASSERT(rgn);
-  return rgn;
+//Manifold single region apf::ModelEntity* getMdlRgn(gmi_model* model) {
+//Manifold single region   apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
+//Manifold single region       gmi_find(model, 3, INTERIOR_REGION));
+//Manifold single region   PCU_ALWAYS_ASSERT(rgn);
+//Manifold single region   return rgn;
+//Manifold single region }
+
+
+apf::ModelEntity* getMdlRegion(apf::Mesh2* mesh, int tag) {
+  apf::ModelEntity* region = mesh->findModelEntity(3,tag);
+  PCU_ALWAYS_ASSERT(region);
+  return region;
 }
 
 apf::ModelEntity* getMdlFace(apf::Mesh2* mesh, int tag) {
@@ -63,6 +70,45 @@ apf::ModelEntity* getMdlVtx(apf::Mesh2* mesh, int tag) {
   apf::ModelEntity* vertex = mesh->findModelEntity(0,tag);
   PCU_ALWAYS_ASSERT(vertex);
   return vertex;
+}
+
+int findRegionTag2Face(gmi_model* model, int* cAll, int nverts) {
+  int cOrdered[nverts];
+  int rtag, cmax,jmax;
+  int cLocal[nverts];
+  for(int i=0; i<nverts; i++) cLocal[i]=cAll[i];
+  for(int i=0; i<nverts; i++) {
+    cmax=-100;
+    for(int j=0; j<nverts; j++) { 
+      cmax=std::max(cmax,cLocal[j]);
+      if(cmax==cLocal[j]) jmax=j;
+    }
+    cOrdered[i]=cmax;
+    cLocal[jmax]=-100;
+  }   
+  gmi_ent* maxFace = gmi_find(model,2,cOrdered[0]-2000000);  
+  int inc=1;
+  int ifound=0;
+  while (inc<nverts && ifound==0) {
+    if(cOrdered[inc] < 2000000) {
+      ifound=-1; // won't happen for wedge but might for tet handle later assert(false); 
+    } else if ( cOrdered[inc]==cOrdered[0]) {  // same as max...keep looking
+      inc++;
+    } else {
+      ifound=1;
+      gmi_ent* minFace = gmi_find(model,2,cOrdered[inc]-2000000);  
+      gmi_set* RegionsAdjMax = gmi_adjacent(model,maxFace,3);
+      gmi_set* RegionsAdjMin = gmi_adjacent(model,minFace,3);
+      for (int i = 0; i < RegionsAdjMax->n; i++) {
+        for (int j = 0; j < RegionsAdjMin->n; j++) {
+          if(RegionsAdjMax->e[i]==RegionsAdjMin->e[j]){
+            rtag=gmi_tag(model,RegionsAdjMax->e[j]);
+            return rtag;
+          }
+        }
+      }
+    }
+  }
 }
 
 void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxClass) {
@@ -87,8 +133,9 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
 //                          2000000 to mdlConvert's dmg tag number for faces,
 //                          3000000 to mdlConvert's dmg tag number for regions
     if (c >= 3000000 ) {
-       INTERIOR_REGION=c-3000000;
-       mesh->setModelEntity(v,getMdlRgn(model));
+//       INTERIOR_REGION=c-3000000;
+//       mesh->setModelEntity(v,getMdlRgn(model));
+       mesh->setModelEntity(v,getMdlRegion(mesh,c-3000000));
        //cint++;
     } else if (c >= 2000000) {
        mesh->setModelEntity(v,getMdlFace(mesh,c-2000000));
@@ -118,7 +165,8 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
   int k,ff;
   double distFromDebug1;
 //  apf::Vector3 xd1(-0.54864, 7.44015e-06, 0.0397148 );
-  apf::Vector3 xd1(-2.63644, -0.953687, 0.00762);
+//  apf::Vector3 xd1(-2.63644, -0.953687, 0.00762);
+  apf::Vector3 xd1(-0.0047625, -0.477012, 0.1);
   apf::Vector3 xd2(0.914478, 0.0145401, 0.04 );
   apf::Vector3 dx1;
   apf::Vector3 dx2;
@@ -129,7 +177,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
     mesh->getAdjacent(e, 0, verts);
 
     int nverts = verts.size();
-    if(1==0) {
+    if(1==1) {
     Centroid=apf::getLinearCentroid(mesh,e);
     dx1=xd1-Centroid;
  //   dx2=xd2-Centroid;
@@ -148,11 +196,11 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
       cmax=std::max(cmax,c);
       cmin=std::min(cmin,c);
     }
-    if(1==0 && distFromDebug1 < 1e-3) {
+    if(1==1 && distFromDebug1 < 1e-8) {
          fprintf(stderr, "%d %d %.15e %.15E %.15E \n", cmin, cmax, Centroid[0], Centroid[1], Centroid[2]);
          for (int i=0; i < nverts; i++) {
             mesh->getPoint(verts[i],0,tmp);
-//            fprintf(stderr, "%d %.15e %.15E %.15E \n", i , tmp[0], tmp[1], tmp[2]);
+            fprintf(stderr, "%d %.15e %.15E %.15E \n", i , tmp[0], tmp[1], tmp[2]);
          }
     }
     int dimMin=cmin/1000000;
@@ -160,15 +208,38 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
     int tagMin=cmin-dimMin*1000000;
     int tagMax=cmax-dimMax*1000000;
     if (cmax >= 3000000) {
-       INTERIOR_REGION=cmax-3000000;
-       mesh->setModelEntity(e,getMdlRgn(model));
+//       INTERIOR_REGION=cmax-3000000;
+//       mesh->setModelEntity(e,getMdlRgn(model));
+       mesh->setModelEntity(e,getMdlRegion(mesh,cmax-3000000));
        //cint++;
     } else if (cmax >= 2000000) {  //max is a face
        if(cmin==cmax) { //min is same face -> correct face to cls
           mesh->setModelEntity(e,getMdlFace(mesh,cmax-2000000));
           //cface++;
        } else if (cmin >= 2000000) { // min is a DIFFERENT face -> interior
-          mesh->setModelEntity(e,getMdlRgn(model));
+          nverts=2;
+          int ctri[2]={cmax,cmin};
+          int rtag = findRegionTag2Face(model, ctri, nverts);
+          mesh->setModelEntity(e,getMdlRegion(mesh,rtag));
+//         assert(false);
+/*
+         gmi_ent* maxFace = gmi_find(model,2,cmax-2000000);  
+         gmi_ent* minFace = gmi_find(model,2,cmin-2000000);  
+         gmi_set* RegionsAdjMax = gmi_adjacent(model,maxFace,3);
+         gmi_set* RegionsAdjMin = gmi_adjacent(model,minFace,3);
+         for (int i = 0; i < RegionsAdjMax->n; i++) {
+           for (int j = 0; j < RegionsAdjMin->n; j++) {
+             if(RegionsAdjMax->e[i]==RegionsAdjMin->e[j]){
+               int rtag=gmi_tag(model,RegionsAdjMax->e[j]);
+               mesh->setModelEntity(e,getMdlRegion(mesh,rtag));
+             }
+           }
+         }
+//  HARD  I need to ask what region(s) each face is part of the closure/shell_of_faces of
+//   I then need to intersect those two region list to find the right region 
+//  NOT THIS EASY         mesh->setModelEntity(e,getMdlRegion(mesh,c-3000000));
+//          mesh->setModelEntity(e,getMdlRgn(model));
+*/
        } else { 
 //FAILS  ROLL OUR OWN         int res = gmi_is_in_closure_of(model,gmi_find(model,dimMin,tagMin), gmi_find(model,dimMax,tagMax));
           ff=-1;
@@ -189,7 +260,9 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
           if( ff!=-1 ) { // is it in cls
             mesh->setModelEntity(e,getMdlFace(mesh,cmax-2000000));
           } else  // edge not in closure so interior
-          mesh->setModelEntity(e,getMdlRgn(model));
+            assert(false); // hoping we don't get here
+//            mesh->setModelEntity(e,getMdlRegion(mesh,c-3000000));
+//          mesh->setModelEntity(e,getMdlRgn(model));
        }
     } else if (cmax >= 1000000) { // max is an edge
        if (cmin == cmax)  // cls on same edge 
@@ -199,7 +272,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
          gmi_set* minFaces = gmi_adjacent(model,gmi_find(model,1,tagMin),2);  
          for (int i = 0; i < maxFaces->n; i++) {
            for (int j = 0; j < minFaces->n; j++) {
-             if(minFaces->e[i]==maxFaces->e[j]){
+             if(minFaces->e[j]==maxFaces->e[i]){
                int fftag=gmi_tag(model,maxFaces->e[j]);
                mesh->setModelEntity(e,getMdlFace(mesh,fftag));
              }
@@ -208,12 +281,16 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
        } else mesh->setModelEntity(e,getMdlEdge(mesh,cmax-1000000)); // min is vtx thus max is correct edge to classify
     
     } else if (cmax < 1000000) { // two model verts so this is a 1 elm in z mesh
-         gmi_set* maxEdges = gmi_adjacent(model,gmi_find(model,1,tagMax),1);  
-         gmi_set* minEdges = gmi_adjacent(model,gmi_find(model,1,tagMin),1);  
+         gmi_set* maxEdges = gmi_adjacent(model,gmi_find(model,0,tagMax),1);  
+         gmi_set* minEdges = gmi_adjacent(model,gmi_find(model,0,tagMin),1);  
+         int nMaxEdges=maxEdges->n;
+         int nMinEdges=minEdges->n;
          for (int i = 0; i < maxEdges->n; i++) {
+           int tEmax=gmi_tag(model,maxEdges->e[i]);
            for (int j = 0; j < minEdges->n; j++) {
-             if(minEdges->e[i]==maxEdges->e[j]){
-               int fftag=gmi_tag(model,maxEdges->e[j]);
+             int tEmin=gmi_tag(model,minEdges->e[j]);
+             if(minEdges->e[j]==maxEdges->e[i]){
+               int fftag=gmi_tag(model,maxEdges->e[i]);
                mesh->setModelEntity(e,getMdlEdge(mesh,fftag));
              }
            }
@@ -236,32 +313,24 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   (void)vtxClass;
   apf::MeshIterator* it = mesh->begin(2);
   apf::MeshEntity* f;
-  int c;
+  int c,rtag;
   apf::Adjacent verts;
-
   double distFromDebug1;
-//  apf::Vector3 xd1(-0.54864, 7.44015e-06, 0.0397148 );
   apf::Vector3 xd1(-2.63644, -0.953687, 0.00762);
   apf::Vector3 xd2(0.914478, 0.0145401, 0.04 );
   apf::Vector3 dx1;
   apf::Vector3 dx2;
   apf::Vector3 tmp;
   apf::Vector3 Centroid;
-
   while( (f = mesh->iterate(it)) ) {
     mesh->getAdjacent(f, 0, verts);
     int nverts = verts.size();
     if(1==0) {
     Centroid=apf::getLinearCentroid(mesh,f);
     dx1=xd1-Centroid;
- //   dx2=xd2-Centroid;
     distFromDebug1=dx1[0]*dx1[0]
                   +dx1[1]*dx1[1]
                   +dx1[2]*dx1[2];
-/*    distFromDebug2=dx2[0]*dx2[0]
-                  +dx2[1]*dx2[1]
-                  +dx2[2]*dx2[2];
-*/
     }
     int cmin=100000000;
     int cmax=-100;
@@ -272,21 +341,20 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
       cmax=std::max(cmax,c);
       ctri[i]=c;
     }
-//    if(std::min(distFromDebug1,distFromDebug2) < 1e-12) {
     if(1==0 && distFromDebug1 < 1e-3) {
          fprintf(stderr, "%d %d %.15e %.15E %.15E \n", cmin, cmax, Centroid[0], Centroid[1], Centroid[2]);
          for (int i=0; i < nverts; i++) {
-            mesh->getPoint(verts[i],0,tmp);
-//            fprintf(stderr, "%d %.15e %.15E %.15E \n", i , tmp[0], tmp[1], tmp[2]);
+            mesh->getPoint(verts[i],0,tmp); //            fprintf(stderr, "%d %.15e %.15E %.15E \n", i , tmp[0], tmp[1], tmp[2]);
          }
     }
     if (cmax >= 3000000) { // at least one vertex is interior -> cls interior
        INTERIOR_REGION=cmax-3000000;
-       mesh->setModelEntity(f,getMdlRgn(model));
-       //cint++;
+       mesh->setModelEntity(f,getMdlRegion(mesh,cmax-3000000)); //       mesh->setModelEntity(f,getMdlRgn(model)); //cint++;
     } else if(cmin >= 2000000) { // all nodes on  model face(s?)
         if(cmax != cmin) { // all on faces but not all on same so classified on interior
-          mesh->setModelEntity(f,getMdlRgn(model));
+          rtag = findRegionTag2Face(model, ctri, nverts);
+          mesh->setModelEntity(f,getMdlRegion(mesh,rtag));
+//          assert(false); // should not happen with extrustions but will for tets //          mesh->setModelEntity(f,getMdlRegion(mesh,c-3000000)); //          mesh->setModelEntity(f,getMdlRgn(model));
         } else { // all on same face so classify on that one
           mesh->setModelEntity(f,getMdlFace(mesh,cmax-2000000));
         }
@@ -298,8 +366,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
       int faceFound=0;
       int ifaceS=0;
       while ( (gf=gmi_next(model,gi)) && faceFound != nverts ) {
-        faceFound=0;
-        i=0;
+        faceFound=0; i=0;
         while(i<nverts && faceFound==i){ // check all verts but one not found == not in face
           ff=-1;
           dimi=ctri[i]/1000000;
@@ -332,8 +399,47 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
         ifaceS++;
       }
       gmi_end(model,gi);
-      if(faceFound != nverts ) // none of the model face's closure held all verts classificaton  so interior
-        mesh->setModelEntity(f,getMdlRgn(model));
+      if(faceFound != nverts ) { // none of the model face's closure held all verts classificaton  so interior wedges can sit in corner with a face with 1 vertcex on each of two faces and other one on the edge that intersects the two faces (or a model vertex) so the above fails in this LITERAL conner case)
+        rtag = findRegionTag2Face(model, ctri, nverts);
+        mesh->setModelEntity(f,getMdlRegion(mesh,rtag));
+/*
+        int cOrdered[nverts];
+        int jmax;
+        apf::MeshEntity* rgn;
+        for(int i=0; i<nverts; i++) {
+          cmax=-100;
+          for(int j=0; j<nverts; j++) { 
+            cmax=std::max(cmax,ctri[j]);
+            if(cmax==ctri[j]) jmax=j;
+          }
+          cOrdered[i]=cmax;
+          ctri[jmax]=-100;
+        }   
+        gmi_ent* maxFace = gmi_find(model,2,cOrdered[0]-2000000);  
+        int inc=1;
+        int ifound=0;
+        while (inc<nverts && ifound==0) {
+          if(cOrdered[inc] < 2000000) {
+            ifound=-1; // won't happen for wedge but might for tet handle later assert(false); 
+          } else if ( cOrdered[inc]==cOrdered[0]) {  // same as max...keep looking
+               inc++;
+          } else {
+            ifound=1;
+            gmi_ent* minFace = gmi_find(model,2,cOrdered[inc]-2000000);  
+            gmi_set* RegionsAdjMax = gmi_adjacent(model,maxFace,3);
+            gmi_set* RegionsAdjMin = gmi_adjacent(model,minFace,3);
+            for (int i = 0; i < RegionsAdjMax->n; i++) {
+              for (int j = 0; j < RegionsAdjMin->n; j++) {
+                if(RegionsAdjMax->e[i]==RegionsAdjMin->e[j]){
+                  int rtag=gmi_tag(model,RegionsAdjMax->e[j]);
+                  mesh->setModelEntity(rgn,getMdlRegion(mesh,rtag));
+                }
+              }
+            }
+          }
+        }
+*/
+      }
     }
   }
   mesh->end(it);
@@ -342,20 +448,82 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
 /** \brief set the mesh region classification
   \details hacked to set the classification to the same geometric model region
 */
-void setRgnClassification(gmi_model* model, apf::Mesh2* mesh) {
-  apf::ModelEntity* mdlRgn = getMdlRgn(model);
+//manifold void setRgnClassification(gmi_model* model, apf::Mesh2* mesh) {
+void setRgnClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxClass) {
+  (void)model;
+  (void)mesh;
+  (void)vtxClass;
+  int c;
+  apf::Adjacent verts;
+//manifold  apf::ModelEntity* mdlRgn = getMdlRgn(model);
   apf::MeshIterator* it = mesh->begin(3);
   apf::MeshEntity* rgn;
-  while( (rgn = mesh->iterate(it)) )
-    mesh->setModelEntity(rgn,mdlRgn);
+//  while( (rgn = mesh->iterate(it)) ) 
+//manifold    mesh->setModelEntity(rgn,mdlRgn);
+  while( (rgn = mesh->iterate(it)) ) {
+// plan    for this mesh region get all its vertices, find the max c from a loop over those vertices and call the next line
+    mesh->getAdjacent(rgn, 0, verts);
+    int nverts = verts.size();
+    int cmax=-100;
+    int jmax,rtag;
+    int cAll[nverts];
+    int cOrdered[nverts];
+    for(int i=0; i<nverts; i++) {
+      mesh->getIntTag(verts[i],vtxClass,&c);
+      cmax=std::max(cmax,c);
+      cAll[i]=c;
+    }
+    if(cmax > 3000000) {
+      mesh->setModelEntity(rgn,getMdlRegion(mesh,cmax-3000000));
+    } else {
+      rtag = findRegionTag2Face(model, cAll, nverts);
+      mesh->setModelEntity(rgn,getMdlRegion(mesh,rtag));
+     // wedges can sit in corner with 2 vertices on the model each of two faces and other two on the edge that intersects the two faces (or a model vertex) so the above fails in this LITERAL conner case)
+/*
+      for(int i=0; i<nverts; i++) {
+        cmax=-100;
+        for(int j=0; j<nverts; j++) { 
+          cmax=std::max(cmax,cAll[j]);
+          if(cmax==cAll[j]) jmax=j;
+        }
+        cOrdered[i]=cmax;
+        cAll[jmax]=-100;
+      }   
+      gmi_ent* maxFace = gmi_find(model,2,cOrdered[0]-2000000);  
+      int inc=1;
+      int ifound=0;
+      while (inc<8 && ifound==0) {
+        if(cOrdered[inc] < 2000000) {
+          ifound=-1; // there were not two unique faces (should not happen)
+          assert(false); 
+        } else if ( cOrdered[inc]==cOrdered[0]) {  // same as max...keep looking
+             inc++;
+        } else {
+          ifound=1;
+          gmi_ent* minFace = gmi_find(model,2,cOrdered[inc]-2000000);  
+          gmi_set* RegionsAdjMax = gmi_adjacent(model,maxFace,3);
+          gmi_set* RegionsAdjMin = gmi_adjacent(model,minFace,3);
+          for (int i = 0; i < RegionsAdjMax->n; i++) {
+            for (int j = 0; j < RegionsAdjMin->n; j++) {
+              if(RegionsAdjMax->e[i]==RegionsAdjMin->e[j]){
+                int rtag=gmi_tag(model,RegionsAdjMax->e[j]);
+                mesh->setModelEntity(rgn,getMdlRegion(mesh,rtag));
+              }
+            }
+          }
+        }
+      }
+*/
+    }
+  }
   mesh->end(it);
 }
 
 void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
-  setRgnClassification(model,mesh);
-  setFaceClassification(model,mesh,t);
-  setEdgeClassification(model,mesh,t);
   setVtxClassification(model,mesh,t); 
+  setEdgeClassification(model,mesh,t);
+  setFaceClassification(model,mesh,t);
+  setRgnClassification(model,mesh,t);
   mesh->acceptChanges();
 }
 

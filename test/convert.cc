@@ -171,7 +171,6 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
   int dir, err;
   int count2D=0;
   pGFace gface;
-  pGFace ExtruRootFace=NULL;
   pVertex entV;
   pMesh meshP= PM_mesh	(sim_mesh, 0 );	
 
@@ -188,6 +187,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
   double EdisTol=1e-7;
   double FdisTol=1e-7;
   while(1 == fscanf(fid,"%d",&ExtruRootId)) {
+    pGFace ExtruRootFace=NULL;
     fprintf(stderr,"ExtruRootId= %d \n",ExtruRootId);
     //find the root face of the extrusion
     GFIter gfIter=GM_faceIter(simModel);
@@ -205,6 +205,40 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
     // all of the above assumes translation extrusion.  Rotation extrusion (sweeping extruded entiy over an arc of some angle about 
     // a given axis) is useful but this would require some code change.  The principle is the same.  Every root entity has another 
     // oppositeRoot entity whose position obeys a fixed angle rotation about a fixed axis.
+    pPList gRegions,gFaces,gEdges,gVertices;
+    double parFace[2]; 
+    double normal[3]; 
+    double pLow, pHigh;
+    double coordGVSelf[3];
+    double coordGVOther[3];
+    double xmin[3] = {1.0e8, 1.0e8, 1.0e8};
+    double xmax[3] = {-1.0e8, -1.0e8, -1.0e8};
+    GF_parRange ( ExtruRootFace, 0, &pLow, &pHigh);
+    parFace[0] = ( pLow + pHigh ) * 0.5;
+    GF_parRange ( ExtruRootFace, 1, &pLow, &pHigh);
+    parFace[1] = ( pLow + pHigh ) * 0.5;
+    GF_normal(ExtruRootFace,parFace,normal);
+    gRegions=GF_regions(ExtruRootFace); //pPList of model regions adjacent to root model Fac
+    pGRegion gRegion = (pGRegion) PList_item( gRegions , 0 ); // there can be only one for extrusions
+    gVertices = GR_vertices(gRegion);
+    for( int j = 0; j < PList_size( gVertices ); j++ ){
+      pGVertex gVertex = (pGVertex) PList_item( gVertices , j );
+      GV_point( gVertex , coordGVOther );
+      for( int i = 0; i < 3; i++) {
+        xmin[i]=std::min(xmin[i],coordGVOther[i]);
+        xmax[i]=std::max(xmax[i],coordGVOther[i]);
+      }
+    }
+    // just in case normal is not a unit vector
+    double nLength=(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
+    for( int i = 0; i < 3; i++) normal[i]=normal[i]/nLength;
+
+    double sepVec[3];
+    for( int i = 0; i < 3; i++) sepVec[i]=xmax[i]-xmin[i];  
+    double ExtruDistance=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
+    PList_delete(gRegions);
+    PList_delete(gVertices);
+   
 
     FIter fIter = M_classifiedFaceIter( meshP, ExtruRootFace, 0 ); // 0 says I don't want closure
     while ((face = FIter_next(fIter))) {
@@ -229,14 +263,9 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
           int foundESTag = 0;
           int foundETag = 0;
           int foundEETag = 0;
-          pPList gRegions,gFaces,gEdges;
-          double coordGVSelf[3];
-          double coordGVOther[3];
-          double dx,dy;
+          double de; //dx,dy;
           vClassDim=V_whatInType(vrts[i]);
           vConG=V_whatIn(vrts[i]);
-          double parFace[2]; 
-          double pLow, pHigh;
           if(vClassDim == 0) {// classified on vert so vert->edge->vert
               foundESTag = GEN_tag( (pGVertex) vConG ); // found Extrusion Start Tag
               gEdges = GV_edges( (pGVertex) vConG ); // pPList of model edges adjacent to root model vertex
@@ -247,18 +276,24 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                 if( gVert0 == (pGVertex) vConG) { //1 is at other end of edge
                    GV_point( gVert1 , coordGVOther );
                    GV_point( gVert0 , coordGVSelf );
-                   dx = coordGVOther[0] - coordGVSelf[0];
-                   dy = coordGVOther[1] - coordGVSelf[1];
-                   if( dx*dx + dy*dy < VdisTol ) {
+//                   dx = coordGVOther[0] - coordGVSelf[0];
+//                   dy = coordGVOther[1] - coordGVSelf[1];
+//                   if( dx*dx + dy*dy < VdisTol ) {
+                   for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
+                   de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
+                   if( abs(de-ExtruDistance) < VdisTol ) {
                       foundETag = GEN_tag( gEdge );
                       foundEETag = GEN_tag( gVert1 );
                    }
                 } else { // 0 is at the other edge
                    GV_point( gVert0 , coordGVOther );
                    GV_point( gVert1 , coordGVSelf );
-                   dx = coordGVOther[0] - coordGVSelf[0];
-                   dy = coordGVOther[1] - coordGVSelf[1];
-                   if( dx*dx + dy*dy < VdisTol) {
+//                   dx = coordGVOther[0] - coordGVSelf[0];
+//                   dy = coordGVOther[1] - coordGVSelf[1];
+//                   if( dx*dx + dy*dy < VdisTol) {
+                   for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
+                   de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
+                   if( abs(de-ExtruDistance) < VdisTol ) {
                       foundETag = GEN_tag(gEdge);
                       foundEETag = GEN_tag(gVert0);
                    }
@@ -280,9 +315,12 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                     GE_parRange ( gEdge, &pLow, &pHigh);
                     parFace[0] = ( pLow + pHigh ) * 0.5;
                     GE_point( gEdge , parFace[0], coordGVOther ); 
-                    dx = coordGVOther[0] - coordGVSelf[0];
-                    dy = coordGVOther[1] - coordGVSelf[1];
-                    if( dx*dx + dy*dy < EdisTol) {
+//                    dx = coordGVOther[0] - coordGVSelf[0];
+//                    dy = coordGVOther[1] - coordGVSelf[1];
+//                    if( dx*dx + dy*dy < EdisTol) {
+                    for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
+                    de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
+                    if( abs(de-ExtruDistance) < VdisTol ) {
                        foundETag = GEN_tag( gFace ); // found Extruded Tag
                        foundEETag = GEN_tag( gEdge );   // found Extrusion End Tag
                     }
@@ -309,9 +347,12 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                   GF_parRange ( gFace, 1, &pLow, &pHigh);
                   parFace[1] = ( pLow + pHigh ) * 0.5;
                   GF_point( (pGFace) gFace , parFace , coordGVOther );
-                  dx = coordGVOther[0] - coordGVSelf[0];
-                  dy = coordGVOther[1] - coordGVSelf[1];
-                  if( dx*dx + dy*dy < FdisTol) {
+//                  dx = coordGVOther[0] - coordGVSelf[0];
+//                  dy = coordGVOther[1] - coordGVSelf[1];
+//                  if( dx*dx + dy*dy < FdisTol) {
+                  for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
+                  de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
+                  if( abs(de-ExtruDistance) < VdisTol ) {
                     foundETag = GEN_tag( gRegion ); // found Extruded Tag
                     foundEETag = GEN_tag( gFace );   // found Extrusion End Tag
                   }
