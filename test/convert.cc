@@ -184,8 +184,6 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
   FILE* fid = fopen(extrusionFaceFile, "r"); // helper file that contains all faces with extrusions
   assert(fid);
   double VdisTol=1e-12;
-  double EdisTol=1e-7;
-  double FdisTol=1e-7;
   while(1 == fscanf(fid,"%d",&ExtruRootId)) {
     pGFace ExtruRootFace=NULL;
     fprintf(stderr,"ExtruRootId= %d \n",ExtruRootId);
@@ -196,13 +194,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       if(id==ExtruRootId) ExtruRootFace=gface;
     }
     assert(ExtruRootFace != NULL);
-    // notes for next version 
-    // we could get the region, get a list of vertices for the region, loop over those vertices to find the extrusion length
-    // then instead of checking matching x,y of opposite ends of the extrusion, abs(zroot - zOppositeRoot) matching the extrusion 
-    // length gives the match
-    // Note if we want to handle extrusions not purely in z, the normal to ExtruRootFace provides an axis to project a vector between     // the centers of the root and candidate oppositeRoot entity on to.
-
-    // all of the above assumes translation extrusion.  Rotation extrusion (sweeping extruded entiy over an arc of some angle about 
+    // all of the work so far assumes translation extrusion.  Rotation extrusion (sweeping extruded entiy over an arc of some angle about 
     // a given axis) is useful but this would require some code change.  The principle is the same.  Every root entity has another 
     // oppositeRoot entity whose position obeys a fixed angle rotation about a fixed axis.
     pPList gRegions,gFaces,gEdges,gVertices;
@@ -276,9 +268,6 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                 if( gVert0 == (pGVertex) vConG) { //1 is at other end of edge
                    GV_point( gVert1 , coordGVOther );
                    GV_point( gVert0 , coordGVSelf );
-//                   dx = coordGVOther[0] - coordGVSelf[0];
-//                   dy = coordGVOther[1] - coordGVSelf[1];
-//                   if( dx*dx + dy*dy < VdisTol ) {
                    for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
                    de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
                    if( abs(de-ExtruDistance) < VdisTol ) {
@@ -288,9 +277,6 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                 } else { // 0 is at the other edge
                    GV_point( gVert0 , coordGVOther );
                    GV_point( gVert1 , coordGVSelf );
-//                   dx = coordGVOther[0] - coordGVSelf[0];
-//                   dy = coordGVOther[1] - coordGVSelf[1];
-//                   if( dx*dx + dy*dy < VdisTol) {
                    for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
                    de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
                    if( abs(de-ExtruDistance) < VdisTol ) {
@@ -315,9 +301,6 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                     GE_parRange ( gEdge, &pLow, &pHigh);
                     parFace[0] = ( pLow + pHigh ) * 0.5;
                     GE_point( gEdge , parFace[0], coordGVOther ); 
-//                    dx = coordGVOther[0] - coordGVSelf[0];
-//                    dy = coordGVOther[1] - coordGVSelf[1];
-//                    if( dx*dx + dy*dy < EdisTol) {
                     for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
                     de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
                     if( abs(de-ExtruDistance) < VdisTol ) {
@@ -347,9 +330,6 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
                   GF_parRange ( gFace, 1, &pLow, &pHigh);
                   parFace[1] = ( pLow + pHigh ) * 0.5;
                   GF_point( (pGFace) gFace , parFace , coordGVOther );
-//                  dx = coordGVOther[0] - coordGVSelf[0];
-//                  dy = coordGVOther[1] - coordGVSelf[1];
-//                  if( dx*dx + dy*dy < FdisTol) {
                   for( int i = 0; i < 3; i++) sepVec[i]=coordGVOther[i]-coordGVSelf[i];  
                   de=abs(sepVec[0]*normal[0]+sepVec[1]*normal[1]+sepVec[2]*normal[2]);
                   if( abs(de-ExtruDistance) < VdisTol ) {
