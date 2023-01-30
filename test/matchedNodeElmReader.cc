@@ -110,7 +110,17 @@ int findRegionTag2Face(gmi_model* model, int* cAll, int nverts) {
       }
     }
   }
-  return 0;
+  return -1;
+}
+
+int findRegionTag1Face(gmi_model* model, int cmax) {
+  int rtag,dimE, cnd;
+  dimE=cmax/1000000;
+  cnd=cmax-dimE*1000000;
+  gmi_ent* maxE = gmi_find(model,dimE,cnd);  
+  gmi_set* RegionsAdjMax = gmi_adjacent(model,maxE,3);
+  rtag=gmi_tag(model,RegionsAdjMax->e[0]);
+  return rtag;
 }
 
 void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxClass) {
@@ -150,7 +160,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
   apf::Adjacent verts;
   int k,ff;
   double distFromDebug1;
-  apf::Vector3 xd1(-0.0047625, -0.477012, 0.1);
+  apf::Vector3 xd1(0.000509276, 0, 0.0797419);
   apf::Vector3 dx1;
   apf::Vector3 dx2;
   apf::Vector3 tmp;
@@ -192,7 +202,7 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
           nverts=2;
           int ctri[2]={cmax,cmin};
           int rtag = findRegionTag2Face(model, ctri, nverts);
-          assert(rtag!=0); // bad input list of ctri (e.g., not two distinct faces)
+          assert(rtag != -1); // bad input list of ctri (e.g., not two distinct faces)
           mesh->setModelEntity(e,getMdlRegion(mesh,rtag));
        } else { 
 //FAILS  ROLL OUR OWN         int res = gmi_is_in_closure_of(model,gmi_find(model,dimMin,tagMin), gmi_find(model,dimMax,tagMax));
@@ -213,8 +223,10 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
           }  
           if( ff!=-1 ) { // is it in cls
             mesh->setModelEntity(e,getMdlFace(mesh,cmax-2000000));
-          } else  // edge not in closure so interior
-            assert(false); // hoping we don't get here
+          } else { // edge not in closure so interior
+            int rtag = findRegionTag1Face(model, cmax) ;
+            mesh->setModelEntity(e,getMdlRegion(mesh,rtag));
+          }
        }
     } else if (cmax >= 1000000) { // max is an edge
        if (cmin == cmax)  // cls on same edge 
@@ -264,7 +276,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
   int c,rtag;
   apf::Adjacent verts;
   double distFromDebug1;
-  apf::Vector3 xd1(-2.63644, -0.953687, 0.00762);
+  apf::Vector3 xd1(-0.597998, 0.41004, 0.08);
   apf::Vector3 dx1;
   apf::Vector3 dx2;
   apf::Vector3 tmp;
@@ -288,7 +300,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
       cmax=std::max(cmax,c);
       ctri[i]=c;
     }
-    if(1==0 && distFromDebug1 < 1e-3) {
+    if(0==1 && distFromDebug1 < 1e-11) {
          fprintf(stderr, "%d %d %.15e %.15E %.15E \n", cmin, cmax, Centroid[0], Centroid[1], Centroid[2]);
          for (int i=0; i < nverts; i++) {
             mesh->getPoint(verts[i],0,tmp); //            fprintf(stderr, "%d %.15e %.15E %.15E \n", i , tmp[0], tmp[1], tmp[2]);
@@ -299,7 +311,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
     } else if(cmin >= 2000000) { // all nodes on  model face(s?)
         if(cmax != cmin) { // all on faces but not all on same so classified on interior
           rtag = findRegionTag2Face(model, ctri, nverts);
-          assert(rtag!=0); // bad input list of ctri (e.g., not two distinct faces)
+          assert(rtag!=-1); // bad input list of ctri (e.g., not two distinct faces)
           mesh->setModelEntity(f,getMdlRegion(mesh,rtag));
         } else { // all on same face so classify on that one
           mesh->setModelEntity(f,getMdlFace(mesh,cmax-2000000));
@@ -347,7 +359,7 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
       gmi_end(model,gi);
       if(faceFound != nverts ) { // none of the model face's closure held all verts classificaton  so interior wedges can sit in corner with a face with 1 vertex on each of two faces and other one on the edge that intersects the two faces (or a model vertex) so the above fails in this LITERAL conner case)
         rtag = findRegionTag2Face(model, ctri, nverts);
-        assert(rtag!=0); //bad input list of ctri (e.g., not two distinct faces)  POSSIBLE yet unseen/unhandled case
+        assert(rtag!=-1); //bad input list of ctri (e.g., not two distinct faces)  POSSIBLE yet unseen/unhandled case
         mesh->setModelEntity(f,getMdlRegion(mesh,rtag));
       }
     }
@@ -377,11 +389,11 @@ void setRgnClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
       cmax=std::max(cmax,c);
       cAll[i]=c;
     }
-    if(cmax > 3000000) {
+    if(cmax >= 3000000) {
       mesh->setModelEntity(rgn,getMdlRegion(mesh,cmax-3000000));
     } else {
       int rtag = findRegionTag2Face(model, cAll, nverts);
-      assert(rtag!=0); // bad input list of ctri (e.g., not two distinct faces)  POSSIBLE yet unseen/unhandled case
+      assert(rtag!=-1); // bad input list of ctri (e.g., not two distinct faces)  POSSIBLE yet unseen/unhandled case
       mesh->setModelEntity(rgn,getMdlRegion(mesh,rtag));
     }
   }
