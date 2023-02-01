@@ -35,26 +35,9 @@ static void constructElements(
   for (int i = 0; i < nelem; ++i) {
     Downward verts;
     int offset = i * nev;
-    Gid vCur=conn[offset];
-    int uniqueVerts=1;
-    verts[0]=globalToVert[vCur];
-    Gid vPrev=vCur;
-    for (int j = 1; j < nev; ++j) {
-      vCur=conn[j+offset];
-      if (vCur != vPrev) { // multi-topology determined by repeating last used vtx
-         verts[j] = globalToVert[vCur]; 
-         uniqueVerts++;
-         vPrev=vCur; // for next check
-      } 
-    }
-
-    unsigned etypeL;
-    if(uniqueVerts==4) etypeL=apf::Mesh::TET;
-    else if(uniqueVerts==5) etypeL=apf::Mesh::PYRAMID;
-    else if(uniqueVerts==6) etypeL=apf::Mesh::PRISM;
-    else if(uniqueVerts==8) etypeL=apf::Mesh::HEX;
-    else PCU_ALWAYS_ASSERT(false);
-    buildElement(m, interior, etypeL, verts);
+    for (int j = 0; j < nev; ++j)
+      verts[j] = globalToVert[conn[j + offset]];
+    buildElement(m, interior, etype, verts);
   }
 }
 
