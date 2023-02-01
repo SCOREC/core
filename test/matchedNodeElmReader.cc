@@ -768,7 +768,6 @@ int main(int argc, char** argv)
   gmi_model* model = gmi_load(argv[1]);
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
-  PCU_Debug_Open();
   for( size_t i=0; i< m.elements.size(); i++) {
     apf::assemble(mesh, m.elements[i], m.numElms[i], m.elementType[i], outMap);
     delete [] m.elements[i];
@@ -789,35 +788,16 @@ int main(int argc, char** argv)
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
  
-  if( strcmp(argv[5], "NULL") ) {
-    apf::MeshTag* tf = setMappedTag(mesh, "fathers2D", m.fathers2D, 1,
-      m.localNumVerts, outMap);
-    (void) tf;
+  if( strcmp(argv[6], "NULL") ) {
+    setMappedTag(mesh, "fathers2D", m.fathers2D, 1, m.localNumVerts, outMap);
   } else if(!PCU_Comm_Self())
     fprintf(stderr, "fathers2D not requested \n");
-
-  //mesh->destroyTag(tf);
 
   if(0==1) {
   apf::MeshTag* ts = setMappedTag(mesh, "solution", m.solution, 5,
       m.localNumVerts, outMap);
   (void) ts;
   }
-
-
-  /* // Print the father2D tags
-  apf::MeshEntity* v;
-  apf::MeshIterator* it = mesh->begin(0);
-  apf::MeshTag* t = mesh->findTag("fathers2D");
-  if (t==NULL) {std::cout<<"Didn't find tag"<<std::endl;}
-  int tagNum; 
-  int count = 0;
-  while ((v = mesh->iterate(it))) { // loop over mesh vertices
-    mesh->getIntTag(v,t,&tagNum);
-    std::cout<<"Tag number "<<tagNum<<std::endl;
-    count++;
-  }
-  mesh->end(it);*/
 
   if(!PCU_Comm_Self())
     fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
