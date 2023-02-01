@@ -732,9 +732,10 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   lion_set_verbosity(1);
   int noVerify=0;    // maintain default of verifying if not explicitly requesting it off
-  if( argc < 10 ) {
+  if( argc < 11 ) {
     if( !PCU_Comm_Self() ) {
-      printf("Usage: %s <ascii mesh connectivity .cnn> "
+      printf("Usage: %s <input dmg model> "
+          "<ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
           "<ascii vertex matching flag .match> "
           "<ascii vertex classification flag .class> "
@@ -755,7 +756,7 @@ int main(int argc, char** argv)
 
   double t0 = PCU_Time();
   MeshInfo m;
-  readMesh(argv[1],argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],m);
+  readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
@@ -764,9 +765,7 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     fprintf(stderr, "isMatched %d\n", isMatched);
 
-  //gmi_model* model = gmi_load(".null");
-  gmi_model* model = gmi_load("outModelr.dmg");
-//  gmi_model* model = apf::makeMdsBox(2,2,2,1,1,1,0);
+  gmi_model* model = gmi_load(argv[1]);
   apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
   apf::GlobalToVert outMap;
   PCU_Debug_Open();
@@ -786,17 +785,6 @@ int main(int argc, char** argv)
   }
   apf::MeshTag* tc = setMappedTag(mesh, "classification", m.classification, 1,
       m.localNumVerts, outMap);
-  { //debug - some verts don't have the classification tag...
-    apf::MeshEntity* v;
-    apf::MeshIterator* verts = mesh->begin(0);
-    int i=0;
-    while ((v = mesh->iterate(verts))) {
-      if(!mesh->hasTag(v,tc)) {
-        PCU_Debug_Print("%d missing tag\n", i);
-      }
-      i++;
-    }
-  }
   setClassification(model,mesh,tc);
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
@@ -836,9 +824,9 @@ int main(int argc, char** argv)
   if(noVerify != 1) mesh->verify();
 
   outMap.clear();
-  gmi_write_dmg(model, argv[8]);
+  gmi_write_dmg(model, argv[9]);
   apf::writeVtkFiles("rendered",mesh);
-  mesh->writeNative(argv[9]);
+  mesh->writeNative(argv[10]);
   if(noVerify != 1) mesh->verify();
 
   mesh->destroyNative();
