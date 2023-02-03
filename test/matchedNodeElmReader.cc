@@ -692,7 +692,7 @@ void readMesh(const char* meshfilename,
     sprintf(filename, "%s.%d",fathers2Dfilename,self);
     FILE* fff = fopen(filename, "r");
     PCU_ALWAYS_ASSERT(fff);
-    readFathers(fff, mesh.localNumVerts, &(mesh.fathers2D)); // note we re-use classification reader
+    readFathers(fff, mesh.localNumVerts, &(mesh.fathers2D));
     fclose(fff);
   }
 
@@ -784,12 +784,14 @@ int main(int argc, char** argv)
   }
   apf::MeshTag* tc = setMappedTag(mesh, "classification", m.classification, 1,
       m.localNumVerts, outMap);
+  delete [] m.classification;
   setClassification(model,mesh,tc);
   apf::removeTagFromDimension(mesh, tc, 0);
   mesh->destroyTag(tc);
  
   if( strcmp(argv[6], "NULL") ) {
     setMappedTag(mesh, "fathers2D", m.fathers2D, 1, m.localNumVerts, outMap);
+    delete [] m.fathers2D;
   } else if(!PCU_Comm_Self())
     fprintf(stderr, "fathers2D not requested \n");
 
