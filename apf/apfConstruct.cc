@@ -65,9 +65,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     }
     ifirst++;
   }
-  PCU_Barrier();
   Gid max = getMax(globalToVert);  // seems like we read this and know it already on every rank so why compute with global comm?
-  PCU_Barrier();
   ifirst=0;
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
@@ -236,15 +234,6 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   tmpL=(to+1)*(long)quotient-start; 
   tmpInt=tmpL;
   int n = std::min(tmpInt, nverts);
-  if(n > 1000) {
-     Gid sizeToSend=n*3*sizeof(double);
-     lion_eprint(1, "setCoords int overflow of: self=%ld,mySize=%ld,total=%ld, n=%ld,to=%ld, quotient=%ld, remainder=%ld start=%ld, peers=%ld, sizeToSend=%ld, nverts=%u \n",self,mySize,total,n,to,quotient,remainder,start,peers,sizeToSend,nverts);
-//  Gid peersG = PCU_Comm_Peers();
-//    Gid quotientG = total / peersG;
-//  Gid remainderG = total % peersG;
-//     lion_eprint(1, "setCoords Gid0test: self=%d,mySize=%d,total=%ld, quotientG=%ld, remainderG=%ld,peers=%ld \n",self,mySize,total,quotientG,remainderG,peersG);
-}
-  PCU_Barrier();
 
   while (nverts > 0) {
     PCU_COMM_PACK(to, start);
