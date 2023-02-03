@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <cstring>
 #include <iostream>
-#include <malloc.h>
+#include <pumi.h>
 
 static void print_stats(const char* name, double value)
 {
@@ -43,26 +43,6 @@ static void print_stats(const char* name, double value)
   if (!PCU_Comm_Self())
     printf("%s: min %f max %f avg %f imb %f\n", name, min, max, avg, imb);
 }
-
-#if defined(__linux__)
-
-static double get_chunks()
-{
-  struct mallinfo m = mallinfo();
-  return m.uordblks + m.hblkhd;
-}
-
-#else
-static double get_chunks()
-{
-  cheese
-  if(!PCU_Comm_Self())
-    printf("%s:%d: OS Not supported\n", __FILE__, __LINE__);
-  return(-1.0);
-}
-#endif
-
-
 
 #define SIZET(a) static_cast<size_t>(a)
 
@@ -185,16 +165,16 @@ namespace ph {
     {
       apf::MeshTag* order = NULL;
 
-      print_stats("malloc used before Bfs", get_chunks());
+      print_stats("malloc used before Bfs", pumi_getMem());
 
       if (in.isReorder && PCU_Comm_Peers() > 1)
         order = Parma_BfsReorder(m);
 
-      print_stats("malloc used before reorder", get_chunks());
+      print_stats("malloc used before reorder", pumi_getMem());
 
       apf::reorderMdsMesh(m,order);
 
-      print_stats("malloc used after reorder", get_chunks());
+      print_stats("malloc used after reorder", pumi_getMem());
 
     }
   }
