@@ -108,6 +108,8 @@ int findRegionTag2Face(gmi_model* model, int* cAll, int nverts) {
           }
         }
       }
+      free(RegionsAdjMax);
+      free(RegionsAdjMin);
     }
   }
   return -1;
@@ -120,6 +122,7 @@ int findRegionTag1Face(gmi_model* model, int cmax) {
   gmi_ent* maxE = gmi_find(model,dimE,cnd);  
   gmi_set* RegionsAdjMax = gmi_adjacent(model,maxE,3);
   rtag=gmi_tag(model,RegionsAdjMax->e[0]);
+  free(RegionsAdjMax);
   return rtag;
 }
 
@@ -218,9 +221,11 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
               gmi_set* Verts = gmi_adjacent(model,Edges->e[k],0);
               for (int j = 0; j < Verts->n; j++)  
                 if(ge==Verts->e[j]) ff=j;
+              free(Verts);
             }
             k++;
           }  
+          free(Edges);
           if( ff!=-1 ) { // is it in cls
             mesh->setModelEntity(e,getMdlFace(mesh,cmax-2000000));
           } else { // edge not in closure so interior
@@ -242,6 +247,8 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
              }
            }
          }
+         free(maxFaces);
+         free(minFaces);
        } else mesh->setModelEntity(e,getMdlEdge(mesh,cmax-1000000)); // min is vtx thus max is correct edge to classify
     
     } else if (cmax < 1000000) { // two model verts so this is a 1 elm in z mesh
@@ -255,7 +262,8 @@ void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxC
              }
            }
          }
-      
+         free(maxEdges);
+         free(minEdges);
     } else { // should never get here since cmax < 10000000 is a vtx
             fprintf(stderr, "edge classification of these vert failed %d  %d \n", cmin, cmax);
     }
@@ -343,9 +351,11 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
                 gmi_set* Verts = gmi_adjacent(model,Edges->e[k],0);
                 for (int j = 0; j < Verts->n; j++)  
                    if(ge==Verts->e[j]) ff=j;
+                free(Verts);
               }
               k++;
             }  
+            free(Edges);
           }  
           if( ff!=-1 ) faceFound++;
           i++;
