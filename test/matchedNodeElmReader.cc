@@ -100,16 +100,21 @@ int findRegionTag2Face(gmi_model* model, int* cAll, int nverts) {
       gmi_ent* minFace = gmi_find(model,2,cOrdered[inc]-2000000);  
       gmi_set* RegionsAdjMax = gmi_adjacent(model,maxFace,3);
       gmi_set* RegionsAdjMin = gmi_adjacent(model,minFace,3);
+      bool found=false;
       for (int i = 0; i < RegionsAdjMax->n; i++) {
         for (int j = 0; j < RegionsAdjMin->n; j++) {
           if(RegionsAdjMax->e[i]==RegionsAdjMin->e[j]){
             rtag=gmi_tag(model,RegionsAdjMax->e[j]);
-            return rtag;
+            found=true;
+            break;
           }
         }
       }
       free(RegionsAdjMax);
       free(RegionsAdjMin);
+      if(found) {
+        return rtag;
+      }
     }
   }
   return -1;
