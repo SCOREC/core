@@ -804,7 +804,6 @@ int main(int argc, char** argv)
   if(noVerify != 1) mesh->verify();
 
   outMap.clear();
-  gmi_write_dmg(model, argv[9]);
   apf::writeVtkFiles("rendered",mesh);
   mesh->writeNative(argv[10]);
   if(noVerify != 1) mesh->verify();
