@@ -269,8 +269,8 @@ static int align_copies(struct mds_net* net, struct mds* m)
   mds_id e;
   struct mds_copies* c;
   int did_change = 0;
-  PCU_Comm_Begin();
-  for (d = 1; d < m->d; ++d)
+  for (d = 1; d < m->d; ++d){
+    PCU_Comm_Begin();
     for (e = mds_begin(m, d); e != MDS_NONE; e = mds_next(m, e)) {
       c = mds_get_copies(net, e);
       if (!c)
@@ -278,10 +278,11 @@ static int align_copies(struct mds_net* net, struct mds* m)
       if (owns_copies(e, c))
         downs_to_copies(m, e, c);
     }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
-    if (recv_down_copies(net, m))
-      did_change = 1;
+    PCU_Comm_Send();
+    while (PCU_Comm_Receive())
+      if (recv_down_copies(net, m))
+        did_change = 1;
+  }
   return PCU_Or(did_change);
 }
 

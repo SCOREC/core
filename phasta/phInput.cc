@@ -62,6 +62,7 @@ static void setDefaults(Input& in)
   in.parmaVerbosity = 1; //fairly quiet
   in.writeGeomBCFiles = 0;  // write additional geombc file for vis in streaming
   in.writeRestartFiles = 0;  // write additional restart file for vis in streaming
+  in.writeVTK = 0; 
   in.ramdisk = 0;
   in.meshqCrtn = 0.027; 
   in.elementImbalance = 1.03;
@@ -89,6 +90,9 @@ static void setDefaults(Input& in)
   in.simSizeLowerBound = 0.0;
   in.simSizeUpperBound = 1.0e16;
   in.simMaxAdaptMeshElements = 1.0e16;
+  in.spanAvg = 0; // prepare and write spanwise average arrays
+  in.nfathers = 0; // number of father nodes (# of pts in xy (2D) plane for z averaging)
+  in.nsons = 0; // number of sons for each father (constant nz for each father ONLY for ijk grids)
 }
 
 Input::Input()
@@ -148,6 +152,7 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   intMap["axisymmetry"] = &in.axisymmetry;
   intMap["parmaLoops"] = &in.parmaLoops;
   intMap["parmaVerbosity"] = &in.parmaVerbosity;
+  intMap["writeVTK"] = &in.writeVTK;
   intMap["writeGeomBCFiles"] = &in.writeGeomBCFiles;
   intMap["writeRestartFiles"] = &in.writeRestartFiles;
   intMap["ramdisk"] = &in.ramdisk;
@@ -176,6 +181,9 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
   dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
   dblMap["simMaxAdaptMeshElements"] = &in.simMaxAdaptMeshElements;
+  intMap["spanAverage"] = &in.spanAvg;
+  intMap["nfathers"] = &in.nfathers;
+  intMap["nsons"] = &in.nsons;
 }
 
 template <class T>

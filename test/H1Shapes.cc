@@ -148,7 +148,6 @@ void testH1(
       if(0==PCU_Comm_Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
-    int count = 0;
     while( (ent = m->iterate(it)) ) {
       int type = m->getType(ent);
       int non = h1Field->getShape()->countNodesOn(type);
@@ -170,7 +169,6 @@ void testH1(
         }
       }
       apf::destroyMeshElement(me);
-      count++;
     }
     m->end(it);
   }
@@ -181,7 +179,6 @@ void testH1(
 
     double L2Error = 0.;
     it = m->begin(d);
-    int count = 0;
     while( (ent = m->iterate(it)) ) {
       apf::MeshElement* me = apf::createMeshElement(m, ent);
       apf::Vector3 x;
@@ -209,7 +206,6 @@ void testH1(
       L2Error += err;
       apf::destroyElement(el);
       apf::destroyMeshElement(me);
-      count++;
     }
     m->end(it);
 

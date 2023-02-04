@@ -168,14 +168,12 @@ static int fixInvalidElements(crv::Adapt* a)
             + crv::fixInvalidEdges(a);
   int originalCount = count;
   int prev_count;
-  int i = 0;
   do {
     if ( ! count)
       break;
     prev_count = count;
     count = crv::fixLargeBoundaryAngles(a)
           + crv::fixInvalidEdges(a);
-    ++i;
   } while(count < prev_count);
 
   crv::fixLargeBoundaryAngles(a);

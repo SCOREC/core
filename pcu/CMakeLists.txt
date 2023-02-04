@@ -14,6 +14,7 @@ set(SOURCES
   pcu_coll.c
   pcu_io.c
   pcu_buffer.c
+  pcu_mem.c
   pcu_mpi.c
   pcu_msg.c
   pcu_order.c

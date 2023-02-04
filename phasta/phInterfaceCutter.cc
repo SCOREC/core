@@ -246,7 +246,6 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   apf::Migration* plan = new apf::Migration(m);
   apf::Parts residence;
 
-  int nDG = 0;
   while ((f = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(f);
     if (m->getModelType(me) != faceDim)
@@ -256,7 +255,6 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
     if (!ph::isInterface(m->getModel(), gf, fbcs))
       continue;
 
-    ++nDG;
     apf::DgCopies dgCopies;
     m->getDgCopies(f, dgCopies);
 

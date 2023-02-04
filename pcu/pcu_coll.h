@@ -33,6 +33,7 @@ void pcu_min_doubles(void* local, void* incoming, size_t size);
 void pcu_add_ints(void* local, void* incoming, size_t size);
 void pcu_min_ints(void* local, void* incoming, size_t size);
 void pcu_max_ints(void* local, void* incoming, size_t size);
+void pcu_max_longs(void* local, void* incoming, size_t size);
 void pcu_add_longs(void* local, void* incoming, size_t size);
 void pcu_add_sizets(void* local, void* incoming, size_t size);
 void pcu_min_sizets(void* local, void* incoming, size_t size);
