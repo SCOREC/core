@@ -202,6 +202,31 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
+set(MDIR ${MESHES}/matchedNodeElementReader)
+mpi_test(matchedNodeElementReader_p1 1
+  ./matchedNodeElmReader
+  "${MDIR}/model.dmg"
+  "${MDIR}/1part/geom3D.cnndt"
+  "${MDIR}/1part/geom3D.coord"
+  "${MDIR}/1part/geom3D.match"
+  "${MDIR}/1part/geom3D.class"
+  "${MDIR}/1part/geom3D.fathr"
+  "NULL"
+  "${MDIR}/1part/geom3DHead.cnn"
+  "geom.dmg" "geom.smb")
+
+mpi_test(matchedNodeElementReader_p4 4
+  ./matchedNodeElmReader
+  "${MDIR}/model.dmg"
+  "${MDIR}/4part/geom3D.cnndt"
+  "${MDIR}/4part/geom3D.coord"
+  "${MDIR}/4part/geom3D.match"
+  "${MDIR}/4part/geom3D.class"
+  "${MDIR}/4part/geom3D.fathr"
+  "NULL"
+  "${MDIR}/4part/geom3DHead.cnn"
+  "geom.dmg" "geom.smb")
+
 set(MDIR ${MESHES}/gmsh)
 mpi_test(gmshv2TwoQuads 1
   ./from_gmsh

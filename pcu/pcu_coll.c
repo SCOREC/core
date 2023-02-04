@@ -88,6 +88,15 @@ void pcu_max_ints(void* local, void* incoming, size_t size)
     a[i] = MAX(a[i],b[i]);
 }
 
+void pcu_max_longs(void* local, void* incoming, size_t size)
+{
+  long* a = local;
+  long* b= incoming;
+  size_t n = size/sizeof(long);
+  for (size_t i=0; i < n; ++i)
+    a[i] = MAX(a[i],b[i]);
+}
+
 void pcu_min_sizets(void* local, void* incoming, size_t size)
 {
   size_t* a = local;

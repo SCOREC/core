@@ -152,7 +152,7 @@ target_compile_features(core INTERFACE cxx_std_11)
 scorec_export_library(core)
 
 #check for mallinfo2
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   include(CheckCXXSymbolExists)
   check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
   if(PUMI_HAS_MALLINFO2)

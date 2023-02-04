@@ -30,7 +30,7 @@ typedef vector<vec>    mat;
 void printModelStats(pGModel model);
 void makeSimxModelAndMesh(
     double* coords, int nverts,
-    int*    conn,   int nelem,
+    apf::Gid*    conn,   int nelem,
     pMesh& mesh, pDiscreteModel& model,
     pVertex* vReturn, pEntity* eReturn);
 bool checkVertexOrder(
@@ -147,7 +147,7 @@ int main(int argc, char** argv)
   m->verify();
 
   // extract the coordinates and connectivities
-  int* conn;
+  apf::Gid* conn;
   double* coords;
   int nelem;
   int etype;
@@ -258,7 +258,7 @@ void printModelStats(pGModel model)
 
 void makeSimxModelAndMesh(
     double* coords, int nverts,
-    int*    conn,   int nelem,
+    apf::Gid*    connGid,   int nelem,
     pMesh& mesh, pDiscreteModel& model,
     pVertex* vReturn, pEntity* eReturn)
 {
@@ -268,6 +268,12 @@ void makeSimxModelAndMesh(
     elementType[i] = 10;
 
   Sim_setMessageHandler(0);
+
+  const int connSize = 4*nelem;
+  int* conn = new int[connSize];
+  for(int i=0; i<connSize; i++) {
+    conn[i] = static_cast<int>(connGid[i]);
+  }
 
   mesh = M_new(0,0);
   if(M_importFromData(mesh,nverts,coords,nelem,
@@ -300,6 +306,7 @@ void makeSimxModelAndMesh(
     GM_release(model);
     return;
   }
+  delete [] conn;
 }
 
 bool checkVertexOrder(
@@ -500,7 +507,7 @@ static void getSizeAndFramesFromArray(
 void destructSimxMesh(
     pMesh mesh,
     double*& adaptedCoords,
-    int*& adaptedConns,
+    apf::Gid*& adaptedConns,
     int& nverts, int& nelem,
     vector<apf::Vector3>&  adaptedSizes,
     vector<apf::Matrix3x3>& adaptedFrames)
@@ -509,7 +516,7 @@ void destructSimxMesh(
   nelem  = countRegions(mesh);
 
   adaptedCoords = new double[3*nverts];
-  adaptedConns  = new int[4*nelem];
+  adaptedConns  = new apf::Gid[4*nelem];
 
   VIter vertices;
   RIter regions;
@@ -540,10 +547,10 @@ void destructSimxMesh(
   i=0;
   while( (region = RIter_next(regions)) ){
     regionVerts = R_vertices(region,0);
-    vector<int> ids;
+    vector<apf::Gid> ids;
     for(j=0; j < 4; j++){
       vertex = (pVertex)PList_item(regionVerts,j);
-      int id = EN_id((pEntity)vertex);
+      apf::Gid id = EN_id((pEntity)vertex);
       ids.push_back(id);
     }
     // simmetrix's local ordering is different from pumi's
@@ -581,7 +588,7 @@ apf::Mesh2* convertToPumi(
     const char* frameName)
 {
   double* adaptedCoords;
-  int*	  adaptedConns;
+  apf::Gid* adaptedConns;
   int adaptedNumVerts, adaptedNumElems;
   vector<apf::Vector3> adaptedSizes;
   vector<apf::Matrix3x3> adaptedFrames;
