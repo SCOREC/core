@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <cstring>
 #include <iostream>
-#include <pumi.h>
 
 static void print_stats(const char* name, double value)
 {
@@ -165,16 +164,16 @@ namespace ph {
     {
       apf::MeshTag* order = NULL;
 
-      print_stats("malloc used before Bfs", pumi_getMem());
+      print_stats("malloc used before Bfs", PCU_GetMem());
 
       if (in.isReorder && PCU_Comm_Peers() > 1)
         order = Parma_BfsReorder(m);
 
-      print_stats("malloc used before reorder", pumi_getMem());
+      print_stats("malloc used before reorder", PCU_GetMem());
 
       apf::reorderMdsMesh(m,order);
 
-      print_stats("malloc used after reorder", pumi_getMem());
+      print_stats("malloc used after reorder", PCU_GetMem());
 
     }
   }

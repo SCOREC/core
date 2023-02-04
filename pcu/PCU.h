@@ -128,6 +128,9 @@ void PCU_Protect(void);
 /*MPI_Wtime() equivalent*/
 double PCU_Time(void);
 
+/*Memory usage*/
+double PCU_GetMem(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
