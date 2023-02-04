@@ -110,7 +110,6 @@ void testNedelec(
     else
       lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
-    int count = 0;
     while( (ent = m->iterate(it)) ) {
       int type = m->getType(ent);
       int non = ndField->getShape()->countNodesOn(type);
@@ -137,7 +136,6 @@ void testNedelec(
       	apf::setScalar(ndField, ent, i, dof);
       }
       apf::destroyMeshElement(me);
-      count++;
     }
     m->end(it);
   }
@@ -147,7 +145,6 @@ void testNedelec(
   double L2ErrorE = 0.;
   double L2ErrorCurlE = 0.;
   it = m->begin(3);
-  int count = 0;
   while( (ent = m->iterate(it)) ) {
     apf::MeshElement* me = apf::createMeshElement(m, ent);
     apf::Vector3 x;
@@ -168,7 +165,6 @@ void testNedelec(
     L2ErrorCurlE += eCurlValue * eCurlValue;
     apf::destroyMeshElement(me);
     apf::destroyElement(el);
-    count++;
   }
   m->end(it);
 

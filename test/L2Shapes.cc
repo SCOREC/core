@@ -104,7 +104,6 @@ void testL2(
       if(0==PCU_Comm_Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
-    int count = 0;
     while( (ent = m->iterate(it)) ) {
       int type = m->getType(ent);
       int non = l2Field->getShape()->countNodesOn(type);
@@ -119,7 +118,6 @@ void testL2(
       	apf::setVector(l2Field, ent, i, value);
       }
       apf::destroyMeshElement(me);
-      count++;
     }
     m->end(it);
   }
@@ -128,7 +126,6 @@ void testL2(
   // Verify that interpolated solution field agrees with exact field.
   double L2ErrorE = 0.;
   it = m->begin(dim);
-  int count = 0;
   while( (ent = m->iterate(it)) ) {
     apf::MeshElement* me = apf::createMeshElement(m, ent);
     apf::Vector3 x;
@@ -146,7 +143,6 @@ void testL2(
     L2ErrorE += err;
     apf::destroyMeshElement(me);
     apf::destroyElement(el);
-    count++;
   }
   m->end(it);
 
@@ -181,7 +177,6 @@ void testL2writeNative(
       if(0==PCU_Comm_Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
-    int count = 0;
     while( (ent = m->iterate(it)) ) {
       int type = m->getType(ent);
       int non = l2Field->getShape()->countNodesOn(type);
@@ -195,7 +190,6 @@ void testL2writeNative(
         apf::setVector(l2Field, ent, i, value);
       }
       apf::destroyMeshElement(me);
-      count++;
     }
     m->end(it);
   }

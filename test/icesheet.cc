@@ -180,7 +180,6 @@ int setModelClassification(gmi_model* model,
 
 void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxType) {
   int numbdryfaces = 0;
-  int markedfaces = 0;
   int skippedfaces = 0;
   std::map<int,int> faceClass;
 
@@ -205,8 +204,6 @@ void setFaceClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtx
       counttaggedvtx += vtx_type_num[i];
     PCU_ALWAYS_ASSERT(counttaggedvtx==3);
     int isSet = setModelClassification(model, mesh, vtx_type_num, face, faceClass);
-    if( isSet == 1 )
-      markedfaces++;
     if(isSet == 0)
       skippedfaces++;
     if( isSet == 0 || isSet == 1 )
