@@ -614,7 +614,7 @@ std::vector<BlockInfo> readHeader(std::ifstream& fh) {
   rewindStream(fh);
   const int self = PCU_Comm_Self();;
   bool ret = seekPart(fh, std::to_string(self));
-  assert(ret);
+  PCU_ALWAYS_ASSERT(ret);
   auto blockInfo = readTopoBlockInfo(fh);
   assert(blockInfo.size()>0);
   for(auto b : blockInfo) {
