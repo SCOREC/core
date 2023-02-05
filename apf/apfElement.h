@@ -15,6 +15,7 @@
 namespace apf {
 
 class EntityShape;
+class FieldShape;
 class VectorElement;
 
 class Element
@@ -32,7 +33,9 @@ class Element
     MeshEntity* getEntity() {return entity;}
     Mesh* getMesh() {return mesh;}
     EntityShape* getShape() {return shape;}
+    FieldShape* getFieldShape() {return field->getShape();}
     void getComponents(Vector3 const& xi, double* c);
+    void getElementNodeData(NewArray<double>& d);
   protected:
     void init(Field* f, MeshEntity* e, VectorElement* p);
     void getNodeData();

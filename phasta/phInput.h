@@ -23,6 +23,7 @@ class Input
   public:
     Input();
     void load(const char* filename);
+    int txtCoord; //HACK added to get through compile
     int timeStepNumber;
     /** \brief this corresponds to the number of degrees of
       freedom in the solution field of the output restart file.
@@ -142,6 +143,7 @@ class Input
     int formEdges;
     int parmaLoops;
     int parmaVerbosity;
+    int writeVTK;
     /** \brief write the geombc file during in-memory data transfer
        between phasta and chef. */
     int writeGeomBCFiles;
@@ -201,6 +203,10 @@ class Input
     double simSizeUpperBound;
     /** \brief number of allowed mesh elements of adapted mesh */
     double simMaxAdaptMeshElements;
+    /* Stuff for spanwise averaging */
+    int spanAvg;
+    int nfathers;
+    int nsons;
 };
 
 int countNaturalBCs(Input& in);

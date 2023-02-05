@@ -6,14 +6,17 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.0)
 
-project(SCOREC VERSION 2.2.2 LANGUAGES CXX C)
+project(SCOREC VERSION 2.2.7 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
 
-option(SCOREC_ENABLE_CXX11 "enable compilation with c++11 support" NO)
-
 option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
+
+#requre c++11 without extensions
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSION OFF)
+set(CMAKE_CXX_STANDARD 11)
 
 xsdk_begin_package()
 bob_begin_package()
@@ -52,6 +55,9 @@ message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 option(IS_TESTING "Build for CTest" OFF)
 message(STATUS "IS_TESTING: ${IS_TESTING}")
 
+set(MESHES "${CMAKE_SOURCE_DIR}/pumi-meshes" CACHE STRING "Directory of test meshes")
+message(STATUS "MESHES: ${MESHES}")
+
 option(BUILD_EXES "Build executables" ON)
 message(STATUS "BUILD_EXES: ${BUILD_EXES}")
 
@@ -72,7 +78,7 @@ set(VALGRIND_ARGS "" CACHE STRING
   "the command line arguments to VALGRIND")
 
 # smoke test target - a few tests are defined later with the 'SMOKE_TEST' label
-add_custom_target(test_install
+add_custom_target(check
   COMMAND ${CMAKE_CTEST_COMMAND} -L SMOKE_TEST
   COMMENT "running a smoke test on the installed binaries")
 
@@ -96,6 +102,7 @@ option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in u
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
+option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
 
 if(ENABLE_SIMMETRIX)
@@ -120,7 +127,7 @@ endif()
 if(ENABLE_OMEGA_H)
   # find the omega_h library
   set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
-  set(Omega_h_REQUIRED_VERSION 9.0.0)
+  set(Omega_h_REQUIRED_VERSION ${PUMI_USE_OMEGA_H_VERSION})
   bob_public_dep(Omega_h)
 endif()
 
@@ -150,6 +157,7 @@ add_subdirectory(pumi)
 add_subdirectory(ma)
 add_subdirectory(crv)
 add_subdirectory(spr)
+add_subdirectory(ree)
 add_subdirectory(sam)
 add_subdirectory(phasta)
 add_subdirectory(stk)
@@ -161,8 +169,21 @@ add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
 if(ENABLE_CGNS)
   target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
+  target_compile_features(core INTERFACE cxx_std_14)
+else()
+  target_compile_features(core INTERFACE cxx_std_11)
 endif()
 scorec_export_library(core)
+
+#check for mallinfo2
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  include(CheckCXXSymbolExists)
+  check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
+  if(PUMI_HAS_MALLINFO2)
+    target_compile_definitions(core INTERFACE -DPUMI_HAS_MALLINFO2)
+    target_compile_definitions(pcu PRIVATE -DPUMI_HAS_MALLINFO2)
+  endif()
+endif()
 
 if(BUILD_EXES)
   add_subdirectory(test)

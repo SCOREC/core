@@ -60,5 +60,17 @@ void createCavityMesh(ma::Adapt* a,
     ma::EntitySet& tets,
     const char* prefix);
 
+void visualizeSizeField(
+    apf::Mesh2* m,
+    apf::Field* sizes,
+    apf::Field* frames,
+    int smapleSize[2],
+    double userScale,
+    const char* OutputPrefix);
+void uniformAdaptByModelTag(
+    apf::Mesh2* m,
+    int mtype,
+    int mtag,
+    int level);
 }
 #endif

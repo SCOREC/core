@@ -62,50 +62,9 @@ double pumi_getTime()
   return double(ruse_now.ru_utime.tv_sec) + double(ruse_now.ru_utime.tv_usec)/1000000.0;
 }
 
-#if defined(__APPLE__)
-
-#include <mach/task.h>
-#include <mach/mach_init.h>
-
-#elif defined(__bgq__)
-
-//the BG/Q headers have warning-triggering
-//code in them.
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
-#include <spi/include/kernel/memory.h>
-
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
-#else
-
-#include <malloc.h> //warning - this is GNU-specific
-
-#endif
-
 double pumi_getMem()
 {
-  const double M = 1024*1024;
-#if defined(__APPLE__)
-  bool resident = true;
-  struct task_basic_info t_info;
-  mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
-  task_info(current_task(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
-  size_t size = (resident ? t_info.resident_size : t_info.virtual_size);
-  return (double)size/M;
-#elif defined(__bgq__)
-  size_t heap;
-  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
-  return (double)heap/M;
-#else
-  struct mallinfo meminfo_now = mallinfo();
-  return ((double)meminfo_now.arena)/M;
-#endif
+  return PCU_GetMem();
 }
 
 void pumi_printTimeMem(const char* msg, double time, double memory)

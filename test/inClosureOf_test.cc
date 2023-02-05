@@ -29,7 +29,6 @@ int main(int argc, char** argv)
   gmi_sim_start();
   gmi_register_sim();
 #endif
-  gmi_register_mesh();
 
   gmi_model* model = gmi_load(modelFile); // read the model here
 

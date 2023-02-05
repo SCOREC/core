@@ -44,6 +44,53 @@ void convertInterpolationPoints(apf::Mesh2* m, apf::MeshEntity* e,
   apf::destroyElement(elem);
 }
 
+void interpolatingToBezier(apf::Mesh2* m)
+{
+  apf::FieldShape * fs = m->getShape();
+  int order = fs->getOrder();
+
+  int md = m->getDimension();
+  int blendingOrder = getBlendingOrder(apf::Mesh::simplexTypes[md]);
+  // go downward, and convert interpolating to control points
+  int startDim = md - (blendingOrder > 0);
+
+  for(int d = startDim; d >= 1; --d){
+    if(!fs->hasNodesIn(d)) continue;
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
+    apf::NewArray<double> c;
+    getBezierTransformationCoefficients(order,
+        apf::Mesh::simplexTypes[d],c);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(d);
+    while ((e = m->iterate(it))){
+      if(m->isOwned(e))
+        convertInterpolationPoints(m,e,n,ne,c);
+    }
+    m->end(it);
+  }
+  // if we have a full representation, we need to place internal nodes on
+  // triangles and tetrahedra
+  for(int d = 2; d <= md; ++d){
+    if(!fs->hasNodesIn(d) ||
+        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
+    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
+    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
+    apf::NewArray<double> c;
+    getInternalBezierTransformationCoefficients(m,order,1,
+        apf::Mesh::simplexTypes[d],c);
+    apf::MeshEntity* e;
+    apf::MeshIterator* it = m->begin(d);
+    while ((e = m->iterate(it))){
+      if(!isBoundaryEntity(m,e) && m->isOwned(e))
+        convertInterpolationPoints(m,e,n-ne,ne,c);
+    }
+    m->end(it);
+  }
+  apf::synchronize(m->getCoordinateField());
+
+}
+
 void snapToInterpolate(apf::Mesh2* m, apf::MeshEntity* e, bool isNew)
 {
   PCU_ALWAYS_ASSERT(m->canSnap());
@@ -125,49 +172,7 @@ bool InterpolatingCurver::run()
 
 void BezierCurver::convertInterpolatingToBezier()
 {
-  apf::FieldShape * fs = m_mesh->getShape();
-  int order = fs->getOrder();
-
-  int md = m_mesh->getDimension();
-  int blendingOrder = getBlendingOrder(apf::Mesh::simplexTypes[md]);
-  // go downward, and convert interpolating to control points
-  int startDim = md - (blendingOrder > 0);
-
-  for(int d = startDim; d >= 1; --d){
-    if(!fs->hasNodesIn(d)) continue;
-    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-    apf::NewArray<double> c;
-    getBezierTransformationCoefficients(order,
-        apf::Mesh::simplexTypes[d],c);
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m_mesh->begin(d);
-    while ((e = m_mesh->iterate(it))){
-      if(m_mesh->isOwned(e))
-        convertInterpolationPoints(m_mesh,e,n,ne,c);
-    }
-    m_mesh->end(it);
-  }
-  // if we have a full representation, we need to place internal nodes on
-  // triangles and tetrahedra
-  for(int d = 2; d <= md; ++d){
-    if(!fs->hasNodesIn(d) ||
-        getBlendingOrder(apf::Mesh::simplexTypes[d])) continue;
-    int n = fs->getEntityShape(apf::Mesh::simplexTypes[d])->countNodes();
-    int ne = fs->countNodesOn(apf::Mesh::simplexTypes[d]);
-    apf::NewArray<double> c;
-    getInternalBezierTransformationCoefficients(m_mesh,order,1,
-        apf::Mesh::simplexTypes[d],c);
-    apf::MeshEntity* e;
-    apf::MeshIterator* it = m_mesh->begin(d);
-    while ((e = m_mesh->iterate(it))){
-      if(!isBoundaryEntity(m_mesh,e) && m_mesh->isOwned(e))
-        convertInterpolationPoints(m_mesh,e,n-ne,ne,c);
-    }
-    m_mesh->end(it);
-  }
-
-  synchronize();
+  interpolatingToBezier(m_mesh);
 }
 
 bool BezierCurver::run()

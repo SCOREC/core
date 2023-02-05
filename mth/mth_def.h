@@ -57,12 +57,12 @@ template <class T, unsigned M, unsigned N>
 void transpose(Matrix<T,M,N> const& a,
     Matrix<T,N,M>& b)
 {
-  unsigned m = a.rows();
+  unsigned m = a.cols();
   unsigned n = a.rows();
   b.resize(m, n);
   for (unsigned i=0; i < m; ++i)
-  for (unsigned j=0; j < n; ++j)
-    b(j,i) = a(i,j);
+    for (unsigned j=0; j < n; ++j)
+      b(i,j) = a(j,i);
 }
 
 template <class T>

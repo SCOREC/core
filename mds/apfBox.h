@@ -73,6 +73,11 @@ struct BoxBuilder
 Mesh2* makeMdsBox(
     int nx, int ny, int nz, double wx, double wy, double wz, bool is);
 
+/** \brief see makeMdsBox - only creates geometric model */
+gmi_model* makeMdsBoxModel(
+    int nx, int ny, int nz, double wx, double wy, double wz, bool is);
+
+
 }
 
 #endif

@@ -25,6 +25,7 @@ set(SOURCES
   maLayerCollapse.cc
   maMatch.cc
   maSolutionTransfer.cc
+  maSolutionTransferHelper.cc
   maSnap.cc
   maEdgeSwap.cc
   maShape.cc

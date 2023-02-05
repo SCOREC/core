@@ -500,7 +500,6 @@ class BezierHandler : public ma::ShapeHandler
       int P = fs->getOrder();
       int n = fs->getEntityShape(apf::Mesh::EDGE)->countNodes();
 
-      int numNewElements = 0;
       int numNewTriangles = 0;
       int numMiddleEdges = 0; // upper bound
 
@@ -531,8 +530,6 @@ class BezierHandler : public ma::ShapeHandler
 
         if (newType == apf::Mesh::TRIANGLE)
           numNewTriangles++;
-        if (newType == apf::Mesh::TET)
-          numNewElements++;
         // zero new entities
         bool snap = isBoundaryEntity(mesh,newEntities[i]) && shouldSnap;
         if (newType != apf::Mesh::EDGE)

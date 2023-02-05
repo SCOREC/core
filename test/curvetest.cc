@@ -142,7 +142,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
     crv::BezierCurver bc(m,order,0);
     bc.run();
     Linear sf(m);
-    ma::Input* in = ma::configure(m,&sf);
+    ma::Input* in = ma::makeAdvanced(ma::configure(m,&sf));
     in->shouldSnap = true;
     in->shouldTransferParametric = true;
     in->maximumIterations = 1;
@@ -157,7 +157,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
     crv::BezierCurver bc(m,order,1);
     bc.run();
     Linear sf(m);
-    ma::Input* in = ma::configure(m,&sf);
+    ma::Input* in = ma::makeAdvanced(ma::configure(m,&sf));
     in->shouldSnap = true;
     in->shouldTransferParametric = true;
     in->maximumIterations = 1;

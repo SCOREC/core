@@ -27,6 +27,7 @@ void setMatField(apf::Mesh* mesh, apf::Field* nodal_fld)
     apf::Matrix3x3 F(1+5*coords[0], 0, 2*coords[1], 0, 1+coords[1], 0, 0, 0, 1+3*coords[2]);
     apf::setMatrix(nodal_fld, ent, 0, F);
   }
+  mesh->end(it);
 }
 
 class MatrixDerivIntegrator : public apf::Integrator
@@ -107,10 +108,14 @@ int main(int argc, char* argv[])
   std::cout<<"Setting matrix derivatives"<<std::endl;
   apf::Integrator * set_matrix_deriv = new MatrixDerivIntegrator(order, nodal_matrix_fld, matrix_deriv);
   set_matrix_deriv->process(mesh);
+  delete set_matrix_deriv;
   std::cout<<"Checking values"<<std::endl;
   apf::Integrator * check_matrix_deriv = new CheckMatrixDerivIntegrator(order, matrix_deriv);
   check_matrix_deriv->process(mesh);
+  delete check_matrix_deriv;
   std::cout<<"Done"<<std::endl;
+  mesh->destroyNative();
+  apf::destroyMesh(mesh);
   PCU_Comm_Free();
   MPI_Finalize();
   return 0;

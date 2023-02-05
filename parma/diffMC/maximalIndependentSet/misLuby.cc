@@ -402,7 +402,6 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
   vector<int> rmtNodesToRemove;
 
   int isInMis = 0;
-  int loopCount = 0;
   int tag = 0;
   int numNodesAdded;
   do {
@@ -461,7 +460,6 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     rmtNodesToRemove.clear();
 
     numNodesAdded = PCU_Add_Int(numNodesAdded);
-    loopCount++;
   } while (numNodesAdded > 0);
 
   return isInMis;

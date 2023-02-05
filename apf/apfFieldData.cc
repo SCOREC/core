@@ -3,6 +3,7 @@
 #include "apfShape.h"
 #include <pcu_util.h>
 #include <cstdlib>
+#include <iostream>
 
 namespace apf {
 
@@ -208,6 +209,45 @@ void reorderData(T const dataIn[], T dataOut[], int const order[], int nc, int n
   }
 }
 
+// This is only used to reorder the data for interior face nodes on a face of
+// a Nedelec tet, where each node on the face contains 2 dof values.
+template <class T>
+void reorderDataNedelec(
+    T const dataIn[],
+    T dataOut[],
+    int const order[],
+    int nc,
+    int nn,
+    int type)
+{
+  if (type == Mesh::TRIANGLE)
+    for (int i = 0; i < nn; ++i) {
+      if(order[2*nn+i])
+      {
+	dataOut[i*nc] = (order[i] >= 0) ?
+	  dataIn[ order[i] ] : -dataIn[ -(order[i]+1) ];
+      }
+      else
+	dataOut[i*nc] = 0.;
+
+      if(order[3*nn+i])
+      {
+	dataOut[i*nc] += (order[1*nn+i] >= 0) ?
+	  dataIn[ order[1*nn+i] ] : -dataIn[ -(order[1*nn+i]+1) ];
+      }
+    }
+  else if (type == Mesh::EDGE)
+    for (int i = 0; i < nn; ++i) {
+      int oi = order[i] >= 0 ? order[i] : -(order[i]+1);
+      for (int j = 0; j < nc; ++j)
+	dataOut[oi * nc + j] =
+	  order[i] >= 0 ? dataIn[i * nc + j] : -dataIn[i * nc + j];
+    }
+  else
+    PCU_ALWAYS_ASSERT_VERBOSE(0,
+    	"type has to be Mesh::EDGE or Mesh::TRIANGLE!");
+}
+
 template <class T>
 int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
 {
@@ -227,23 +267,51 @@ int FieldDataOf<T>::getElementData(MeshEntity* entity, NewArray<T>& data)
   apf::DynamicArray<T> adata;
   int n = 0;
   for (int d = 0; d <= ed; ++d) {
-    if (fs->hasNodesIn(d)) {
-      Downward a;
-      int na = mesh->getDownward(entity,d,a);
-      for (int i = 0; i < na; ++i) {
-        int nan = fs->countNodesOn(mesh->getType(a[i]));
-        if (nan > 1 && ed != d) { /* multiple shared nodes, check alignment */
-          order.setSize(nen); /* nen >= nan */
-          adata.setSize(nen); /* setSize is no-op for the same size */
+    if (!fs->hasNodesIn(d)) continue;
+    Downward a;
+    int na = mesh->getDownward(entity,d,a);
+    for (int i = 0; i < na; ++i) {
+      int nan = fs->countNodesOn(mesh->getType(a[i]));
+      // for vector shapes (i.e., nedelec) direction matters for nan>=1
+      if (fs->isVectorShape()) {
+        if (nan >= 1 && ed != d) {
+          // The 1st nen ints is the 1st contribution
+          // The 2nd nen ints is the 2nd contribution
+          // The 3rd nen ints tells whether to add 1st contribution
+          // The 4th nen ints tells whether to add 2st contribution
+          order.setSize(4*nen);
+          adata.setSize(nen);
           es->alignSharedNodes(mesh, entity, a[i], &order[0]);
           get(a[i], &adata[0]);
-          reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
-        } else if (nan) { /* non-zero set of nodes, either one
-                             or not shared */
-          get(a[i], &data[n]);
+          // We would want to have a different reorder here to handle
+          // the fact that order now includes some extra info
+          int dtype = mesh->getType(a[i]);
+          reorderDataNedelec<T>(&adata[0], &data[n], &order[0], nc, nan, dtype);
         }
-        n += nc * nan;
+        // this else is required to add the dofs associated with the tet
+        else
+          get(a[i], &data[n]);
       }
+      // for non vector shapes direction matters for nan>1
+      else {
+	if (nan > 1 && ed != d) { /* multiple shared nodes, check alignment */
+	  order.setSize(nen); /* nen >= nan */
+	  adata.setSize(nen); /* setSize is no-op for the same size */
+	  // Note: The above efficiency consideration does not account for the
+	  // fact that nc might be very large (e.g. nc = 9 for matrix fields)
+	  // and for such cases setting the size of adata to "nen" is not enough.
+	  // Hence the need for the following line.
+	  if (nan*nc > nen)
+	    adata.setSize(nan*nc);
+	  es->alignSharedNodes(mesh, entity, a[i], &order[0]);
+	  get(a[i], &adata[0]);
+	  reorderData<T>(&adata[0], &data[n], &order[0], nc, nan);
+	} else if (nan) { /* non-zero set of nodes, either one
+			    or not shared */
+	  get(a[i], &data[n]);
+	}
+      }
+      n += nc * nan;
     }
   }
   PCU_ALWAYS_ASSERT(n == nc * nen);

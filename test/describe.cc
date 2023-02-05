@@ -32,7 +32,11 @@ static double get_peak()
 
 static double get_peak()
 {
+#if defined(__GNUG__) && defined(PUMI_HAS_MALLINFO2)
+  return mallinfo2().arena;
+#elif defined(__GNUG__)
   return mallinfo().arena;
+#endif
 }
 
 #else
@@ -62,7 +66,11 @@ static void print_stats(const char* name, double value)
 
 static double get_chunks()
 {
+#if defined(__GNUG__) && defined(PUMI_HAS_MALLINFO2)
+  struct mallinfo2 m = mallinfo2();
+#elif defined(__GNUG__)
   struct mallinfo m = mallinfo();
+#endif
   return m.uordblks + m.hblkhd;
 }
 
@@ -101,6 +109,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   print_stats("malloc used before", get_chunks());
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  m->verify();
   print_stats("kernel heap", get_peak());
   print_stats("malloc used", get_chunks());
   Parma_PrintPtnStats(m, "");

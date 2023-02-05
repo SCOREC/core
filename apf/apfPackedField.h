@@ -20,6 +20,7 @@ class PackedField : public Field
     virtual ~PackedField() {}
     virtual Element* getElement(VectorElement* e);
     virtual int getValueType() const {return PACKED;}
+    virtual int getShapeType() const {return SCALAR;}
     virtual int countComponents() const {return components;}
     virtual void project(Field* from);
     virtual void axpy(double a, Field* x);

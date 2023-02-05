@@ -394,7 +394,10 @@ void ghost_sendEntities(Ghosting* plan, int entDim,
 void pumi_ghost_create(pMesh m, Ghosting* plan)
 // *********************************************************
 {
-  if (PCU_Comm_Peers()==1) return;
+  if (PCU_Comm_Peers()==1) {
+    delete plan;
+    return;
+  }
  
   std::vector<apf::Field*> fields;
   std::vector<apf::Field*> frozen_fields;

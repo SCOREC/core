@@ -7,6 +7,7 @@ void start_sim(const char* logfile)
   Sim_readLicenseFile(0);
   if (logfile)
     Sim_logOn(logfile);
+  is_started = true;
 }
 
 void stop_sim()
@@ -16,3 +17,7 @@ void stop_sim()
   MS_exit();
 }
 
+bool is_sim_started()
+{
+  return is_started;
+}

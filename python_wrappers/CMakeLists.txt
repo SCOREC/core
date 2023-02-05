@@ -4,7 +4,7 @@
 # TODO: MPI4PY mpich build has to be the same as the one scorec is
 # built with. That is if OPENMPI is being used for building scorec,
 # an MPI4PY build with OPENMPI must be used.
-find_package(Python2 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python REQUIRED COMPONENTS Interpreter Development)
 find_package(MPI4PY REQUIRED)
 message(STATUS "MPI4PY_VENDOR is ${MPI4PY_VENDOR}")
 include_directories(${MPI4PY_INCLUDE_DIR})
@@ -44,10 +44,11 @@ set_property(TARGET pyCore
   ${CMAKE_SOURCE_DIR}/ma
   ${CMAKE_SOURCE_DIR}/can
   ${CMAKE_SOURCE_DIR}/spr
+  ${CMAKE_SOURCE_DIR}/crv
 )
 
 set(pyCoreDepLibs
-  Python2::Python
+  Python::Python
   core)
 
 if(ENABLE_SIMMETRIX)
