@@ -498,8 +498,12 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   apf::Field* errField = m->findField("errors");
   if (errField)
     apf::destroyField(errField);
-  if (m->findField("solution"))
+  if (m->findField("solution")) {
+    if (!PCU_Comm_Self()) {
+      lion_oprint(1,"writing solution field");
+    }
     detachAndWriteField(in, m, f, "solution");
+  }
   if (m->findField("time derivative of solution"))
     detachAndWriteField(in, m, f, "time derivative of solution");
   if (m->findField("motion_coords"))

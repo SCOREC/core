@@ -845,13 +845,14 @@ static void getInitialConditions(BCs& bcs, Output& o)
       lion_oprint(1,"All attribute-based initial conditions, "
              "if any, "
              "are ignored due to request for SolutionMigration\n");
-    return;
+    //return;
   }
   apf::Mesh* m = o.mesh;
   apf::NewArray<double> s(in.ensa_dof);
   apf::NewArray<double> matValue(1);
   apf::Field* f = m->findField("solution");
   PCU_ALWAYS_ASSERT(f);
+  lion_oprint(1,"DBG: Found solution field");
   apf::MeshIterator* it = m->begin(3);
   apf::MeshEntity* e;
   gmi_model* gm = m->getModel();

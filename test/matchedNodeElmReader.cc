@@ -722,7 +722,7 @@ void readMesh(const char* meshfilename,
   readCoords(fc, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
  
-  if(0==1) {
+  if(1==1) {
   sprintf(filename, "%s.%d",solutionfilename,self);
   FILE* fs = fopen(filename, "r");
   PCU_ALWAYS_ASSERT(fs);
@@ -837,7 +837,7 @@ int main(int argc, char** argv)
 
   //mesh->destroyTag(tf);
 
-  if(0==1) {
+  if(1==1) {
   apf::MeshTag* ts = setMappedTag(mesh, "solution", m.solution, 5,
       m.localNumVerts, outMap);
   (void) ts;
