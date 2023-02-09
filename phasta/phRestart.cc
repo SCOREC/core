@@ -393,12 +393,20 @@ int readTagsAndAttachField(Input& in, apf::Mesh* m)
     apf::DynamicArray<double> d(5);
     m->getDoubleTag(v,t,&(d[0]));
     //lion_oprint(1,"Read tag: %f %f %f %f %f\n",d[0],d[1],d[2],d[3],d[4]);
-    data[iv+0] = d[0];  
+    // Below is not the right ordering
+    /*data[iv+0] = d[0];  
     data[iv+1] = d[1];  
     data[iv+2] = d[2];  
     data[iv+3] = d[3];  
     data[iv+4] = d[4];
-    iv += out_size; 
+    iv += out_size; */
+    // Let's try this
+    data[iv+n*0] = d[0];
+    data[iv+n*1] = d[1];
+    data[iv+n*2] = d[2];
+    data[iv+n*3] = d[3];
+    data[iv+n*4] = d[4];
+    iv += 1; 
   }
   m->end(it);
 
@@ -502,7 +510,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
 
 void readTagsAndAttachFields(Input& in, apf::Mesh* m) {
   double t0 = PCU_Time();
-  while( readTagsAndAttachField(in,m) ) {}
+  readTagsAndAttachField(in,m);
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
     lion_oprint(1,"fields read and attached in %f seconds\n", t1 - t0);
