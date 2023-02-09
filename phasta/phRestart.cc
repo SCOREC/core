@@ -371,7 +371,8 @@ int readAndAttachField(
 int readTagsAndAttachField(Input& in, apf::Mesh* m)
 {
   int n = m->count(0);
-  double* data = (double*)malloc(sizeof(double) * n);
+  int out_size = in.ensa_dof;
+  double* data = (double*)malloc(sizeof(double) * n * out_size);
   for (int i = 0; i < n; ++i)
     data[i] = i;
 
@@ -384,25 +385,31 @@ int readTagsAndAttachField(Input& in, apf::Mesh* m)
       lion_oprint(1,"Did not find tag solution when reading from mesh\n");
     return 1;
   } else if (t != NULL) {
-    if (!PCU_Comm_Self())
-      lion_oprint(1,"Found tag solution when reading from mesh\n");
+    //if (!PCU_Comm_Self())
+    //  lion_oprint(1,"Found tag solution when reading from mesh\n");
   }
+  int iv = 0;
   while ((v = m->iterate(it))) { // loop over mesh vertices
     apf::DynamicArray<double> d(5);
     m->getDoubleTag(v,t,&(d[0]));
-    lion_oprint(1,"Read tag: %f %f %f %f %f\n",d[0],d[1],d[2],d[3],d[4]);  
+    //lion_oprint(1,"Read tag: %f %f %f %f %f\n",d[0],d[1],d[2],d[3],d[4]);
+    data[iv+0] = d[0];  
+    data[iv+1] = d[1];  
+    data[iv+2] = d[2];  
+    data[iv+3] = d[3];  
+    data[iv+4] = d[4];
+    iv += out_size; 
   }
   m->end(it);
 
   // Attach the field to the mesh
-  int out_size = in.ensa_dof;
-  if (m->findField("solution")) {
+  /*if (m->findField("solution")) {
     if (!PCU_Comm_Self())
       lion_eprint(1, "field \"%s\" already attached to the mesh, "
                       "ignoring request to re-attach...\n", "solution");
-  } else {
-    attachField(m, "solution", data, out_size);
-  }
+  } else {*/
+  attachField(m, "solution", data, out_size);
+  //}
   
   free(data);
   return 1;
