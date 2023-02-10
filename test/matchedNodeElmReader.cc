@@ -73,10 +73,10 @@ apf::ModelEntity* getMdlVtx(apf::Mesh2* mesh, int tag) {
 }
 
 int findRegionTag2Face(gmi_model* model, int* cAll, int nverts) {
-  int cOrdered[nverts];
+  std::vector<int> cOrdered(nverts);
   int jmax=0;
   int rtag, cmax;
-  int cLocal[nverts];
+  std::vector<int> cLocal(nverts);
   for(int i=0; i<nverts; i++) cLocal[i]=cAll[i];
   for(int i=0; i<nverts; i++) {
     cmax=-100;
@@ -398,7 +398,7 @@ void setRgnClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
     mesh->getAdjacent(rgn, 0, verts);
     int nverts = verts.size();
     int cmax=-100;
-    int cAll[nverts];
+    std::vector<int> cAll(nverts);
     for(int i=0; i<nverts; i++) {
       mesh->getIntTag(verts[i],vtxClass,&c);
       cmax=std::max(cmax,c);
@@ -407,7 +407,7 @@ void setRgnClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
     if(cmax >= 3000000) {
       mesh->setModelEntity(rgn,getMdlRegion(mesh,cmax-3000000));
     } else {
-      int rtag = findRegionTag2Face(model, cAll, nverts);
+      int rtag = findRegionTag2Face(model, cAll.data(), nverts);
       assert(rtag!=-1); // bad input list of ctri (e.g., not two distinct faces)  POSSIBLE yet unseen/unhandled case
       mesh->setModelEntity(rgn,getMdlRegion(mesh,rtag));
     }

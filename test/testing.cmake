@@ -507,6 +507,94 @@ if(ENABLE_ZOLTAN)
     "4" "rib" "reptn" "1"
   )
 endif()
+
+if(ENABLE_CGNS AND ENABLE_ZOLTAN)
+#
+# sort of an arbitrary choice
+set(numProcs 4)
+#
+set(CGNSDIR ${MESHES}/cgns/basic)
+#
+# 2D tests including for mixed cells
+#
+mpi_test(cgns_2d_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/4quads.cgns"
+  4quads.smb
+  additional)
+mpi_test(cgns_2d_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/5quad1Tri.cgns"
+  5quad1Tri.smb
+  additional)
+mpi_test(cgns_2d_3 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/5quad2Tri.cgns"
+  5quad2Tri.smb
+  additional)
+mpi_test(cgns_2d_4 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/9tris.cgns"
+  9tris.smb
+  additional)
+#
+# 3D tests including for mixed cells
+#
+mpi_test(cgns_3d_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/3D/tets_pyra.cgns"
+  tets_pyra.smb
+  additional)
+mpi_test(cgns_3d_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/3D/hexs.cgns"
+  hexs.smb
+  additional)
+#
+# 3D BCS tests
+#
+set(numProcs 5)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/3D)
+#
+mpi_test(cgns_bcs_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/mixed.cgns"
+  bcs1.smb
+  additional)
+
+mpi_test(cgns_bcs_hex ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/8hexs.cgns"
+  bcshex.smb
+  additional)
+#
+# 2D BCS tests
+#
+set(numProcs 4)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/2D)
+#
+mpi_test(cgns_bcs_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/4quads.cgns"
+  bcs2.smb
+  additional)
+#
+# 1D BCS tests
+#
+set(numProcs 3)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/1D)
+#
+mpi_test(cgns_bcs_3 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/edges.cgns"
+  bcs3.smb
+  additional)
+
+endif(ENABLE_CGNS AND ENABLE_ZOLTAN)
+
 mpi_test(construct 4
   ./construct
   "${MDIR}/cube.dmg"

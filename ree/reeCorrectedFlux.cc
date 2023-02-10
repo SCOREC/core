@@ -50,7 +50,7 @@ static void setupCorrectFlux(
 
   cf->correctedFlux = correctedFlux;
   int nc = apf::countComponents(cf->correctedFlux);
-  double zeros[nc];
+  double* zeros = new double[nc];
   for (int i = 0; i < nc; i++)
     zeros[i] = 0.;
   apf::MeshEntity* tet;
@@ -66,6 +66,7 @@ static void setupCorrectFlux(
     apf::destroyMeshElement(me);
   }
   cf->mesh->end(it);
+  delete [] zeros;
 }
 
 typedef std::vector<apf::MeshEntity*> EntityVector;
@@ -229,24 +230,26 @@ static void computeCorrectedFlux(FaceCavity* fc)
     apf::Vector3 theta_plus_tk1 = theta_vector1 + tk1;
 
     // get and set components in the auxiliary field
-    double comp1[nc];
+    double* comp1 = new double[nc];
     apf::getComponents(fc->correctflux->correctedFlux, firstTet, n, comp1);
     int id1 = tet1_pos * 3;
     comp1[id1] = theta_plus_tk1[0];
     comp1[id1+1] = theta_plus_tk1[1];
     comp1[id1+2] = theta_plus_tk1[2];
     apf::setComponents(fc->correctflux->correctedFlux, firstTet, n, comp1);
+    delete [] comp1;
 
     if (up.n == 2) {
       tk2 = tk * -1.;
       apf::Vector3 theta_plus_tk2 = theta_vector2 + tk2;
-      double comp2[nc];
+      double* comp2 = new double[nc];
       apf::getComponents(fc->correctflux->correctedFlux, secondTet, n, comp2);
       int id2 = tet2_pos * 3;
       comp2[id2] = theta_plus_tk2[0];
       comp2[id2+1] = theta_plus_tk2[1];
       comp2[id2+2] = theta_plus_tk2[2];
       apf::setComponents(fc->correctflux->correctedFlux, secondTet, n, comp2);
+      delete [] comp2;
     }
   }
   apf::destroyElement(fel);
