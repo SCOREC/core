@@ -242,7 +242,7 @@ void readNodesV4(Reader* r)
   getLine(r); // because readNode gets the next line we need this outside  for Nodes_Block
   for (long i = 0; i < Num_EntityBlocks; ++i){
     sscanf(r->line, "%ld %ld %ld %ld", &edim, &etag, &junk3, &Nodes_Block);
-    long blockMap[Nodes_Block];
+    long* blockMap = new long[Nodes_Block];
     for (long j = 0; j < Nodes_Block; ++j){
       getLine(r);
       sscanf(r->line, "%ld", &blockMap[j]);
@@ -250,6 +250,7 @@ void readNodesV4(Reader* r)
     getLine(r);
     for (long j = 0; j < Nodes_Block; ++j)
       readNode(r,blockMap[j]);  // has a genLine at end
+    delete [] blockMap;
   }    
   checkMarker(r, "$EndNodes");
 }
