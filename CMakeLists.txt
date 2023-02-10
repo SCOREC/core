@@ -16,7 +16,9 @@ option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
 #requre c++11 without extensions
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSION OFF)
-set(CMAKE_CXX_STANDARD 11)
+if(NOT ENABLE_CGNS)
+  set(CMAKE_CXX_STANDARD 11)
+endif()
 
 xsdk_begin_package()
 bob_begin_package()
@@ -36,6 +38,7 @@ if(NOT USE_XSDK_DEFAULTS)
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
   if(ENABLE_CGNS) #takes precedence over SCOREC_ENABLE_CXX11
+    message(STATUS "enabling cxx14")
     bob_cxx14_flags()
   elseif(SCOREC_ENABLE_CXX11)
     bob_cxx11_flags()
