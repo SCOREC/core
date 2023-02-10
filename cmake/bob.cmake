@@ -92,6 +92,18 @@ function(bob_cxx11_flags)
   set(CMAKE_CXX_FLAGS "${FLAGS}" PARENT_SCOPE)
 endfunction(bob_cxx11_flags)
 
+function(bob_cxx14_flags)
+  set(FLAGS "${CMAKE_CXX_FLAGS}")
+  # clang only: -Werror=return-stack-address -Werror=mismatched-tags
+  set(FLAGS "${FLAGS} --std=c++14 -Wall -Wextra -Wpedantic -Werror -Wno-extra-semi -Werror=unused-parameter -Wno-error=deprecated-declarations")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (${PROJECT_NAME}_CXX_WARNINGS)
+      set(FLAGS "${FLAGS} -Wno-c++98-compat-pedantic -Wno-c++98-compat")
+    endif()
+  endif()
+  set(CMAKE_CXX_FLAGS "${FLAGS}" PARENT_SCOPE)
+endfunction(bob_cxx14_flags)
+
 function(bob_end_cxx_flags)
   set(${PROJECT_NAME}_CXX_FLAGS "" CACHE STRING "Override all C++ compiler flags")
   set(${PROJECT_NAME}_EXTRA_CXX_FLAGS "" CACHE STRING "Extra C++ compiler flags")

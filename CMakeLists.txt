@@ -16,7 +16,9 @@ option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
 #requre c++11 without extensions
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSION OFF)
-set(CMAKE_CXX_STANDARD 11)
+if(NOT ENABLE_CGNS)
+  set(CMAKE_CXX_STANDARD 11)
+endif()
 
 xsdk_begin_package()
 bob_begin_package()
@@ -25,12 +27,22 @@ if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
 endif()
 
+# require c++14
+option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
+message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
+
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+  if(ENABLE_CGNS) #takes precedence over SCOREC_ENABLE_CXX11
+    message(STATUS "enabling cxx14")
+    bob_cxx14_flags()
+  elseif(SCOREC_ENABLE_CXX11)
+    bob_cxx11_flags()
+  endif()
 endif()
 message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
@@ -95,6 +107,7 @@ message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
 option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
+
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
@@ -121,6 +134,15 @@ if(ENABLE_OMEGA_H)
   bob_public_dep(Omega_h)
 endif()
 
+if(ENABLE_CGNS)
+  set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(CGNS)
+  #CGNS does not provide cmake targets :(
+  include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
+  set(SCOREC_USE_HDF5_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(HDF5)
+  add_definitions(-DHAVE_CGNS)
+endif()
 
 # Include the SCOREC project packages
 add_subdirectory(lion)
@@ -148,7 +170,12 @@ add_subdirectory(omega_h)
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
-target_compile_features(core INTERFACE cxx_std_11)
+if(ENABLE_CGNS)
+  target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
+  target_compile_features(core INTERFACE cxx_std_14)
+else()
+  target_compile_features(core INTERFACE cxx_std_11)
+endif()
 scorec_export_library(core)
 
 #check for mallinfo2

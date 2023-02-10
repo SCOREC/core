@@ -31,6 +31,10 @@ set(SOURCES
   mdsUgrid.cc
 )
 
+if(ENABLE_CGNS)
+  set(SOURCES ${SOURCES} mdsCGNS.cc)
+endif(ENABLE_CGNS)
+
 # Package headers
 set(HEADERS
   apfMDS.h
@@ -58,6 +62,11 @@ target_link_libraries(mds
      gmi
      apf
    )
+
+if(ENABLE_CGNS)
+  message(STATUS ${CGNS_LIBRARIES})
+  target_link_libraries(mds PRIVATE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+endif(ENABLE_CGNS)
 
 scorec_export_library(mds)
 

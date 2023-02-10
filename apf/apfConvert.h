@@ -12,6 +12,7 @@
   \brief algorithms for mesh format conversion */
 
 #include <map>
+#include <vector>
 
 namespace apf {
 
@@ -20,6 +21,7 @@ class Mesh2;
 class MeshTag; //Extra?
 class ModelEntity;
 class MeshEntity;
+using NewElements = std::vector<MeshEntity*>;
 
 /** \brief convert one mesh data structure to another
   \details this function will fill in a structure that fully
@@ -39,7 +41,7 @@ typedef std::map<Gid, MeshEntity*> GlobalToVert;
   assemble and finalise. The premise of assemble being 
   that it is called multiple times for a given cell type,
   across several different cell types in the input mesh. */
-void assemble(Mesh2* m, const apf::Gid* conn, int nelem, int etype,
+NewElements assemble(Mesh2* m, const apf::Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert);
 
 /** \brief finalise construction of a mixed-cell-type mesh from just a connectivity array
@@ -66,7 +68,7 @@ void finalise(Mesh2* m, GlobalToVert& globalToVert);
 
   Note that all vertices will have zero coordinates, so
   it is often good to use apf::setCoords after this. */
-void construct(Mesh2* m, const Gid* conn, int nelem, int etype,
+NewElements construct(Mesh2* m, const apf::Gid* conn, int nelem, int etype,
     GlobalToVert& globalToVert);
 
 /** \brief Assign coordinates to the mesh
