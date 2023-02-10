@@ -708,7 +708,7 @@ void readMesh(const char* meshfilename,
 
   int self = PCU_Comm_Self();
 
-  char filename[64];
+  char filename[1024];
   sprintf(filename, "%s.%d",coordfilename,self);
     
   FILE* fc = fopen(filename , "r");

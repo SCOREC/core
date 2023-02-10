@@ -373,8 +373,6 @@ int readTagsAndAttachField(Input& in, apf::Mesh* m)
   int n = m->count(0);
   int out_size = in.ensa_dof;
   double* data = (double*)malloc(sizeof(double) * n * out_size);
-  for (int i = 0; i < n; ++i)
-    data[i] = i;
 
   // Read the tag from the mesh
   apf::MeshEntity* v;
@@ -385,22 +383,13 @@ int readTagsAndAttachField(Input& in, apf::Mesh* m)
       lion_oprint(1,"Did not find tag solution when reading from mesh\n");
     return 1;
   } else if (t != NULL) {
-    //if (!PCU_Comm_Self())
-    //  lion_oprint(1,"Found tag solution when reading from mesh\n");
+    if (!PCU_Comm_Self())
+      lion_oprint(1,"Found tag solution when reading from mesh\n");
   }
   int iv = 0;
   while ((v = m->iterate(it))) { // loop over mesh vertices
     apf::DynamicArray<double> d(5);
     m->getDoubleTag(v,t,&(d[0]));
-    //lion_oprint(1,"Read tag: %f %f %f %f %f\n",d[0],d[1],d[2],d[3],d[4]);
-    // Below is not the right ordering
-    /*data[iv+0] = d[0];  
-    data[iv+1] = d[1];  
-    data[iv+2] = d[2];  
-    data[iv+3] = d[3];  
-    data[iv+4] = d[4];
-    iv += out_size; */
-    // Let's try this
     data[iv+n*0] = d[0];
     data[iv+n*1] = d[1];
     data[iv+n*2] = d[2];
@@ -411,13 +400,7 @@ int readTagsAndAttachField(Input& in, apf::Mesh* m)
   m->end(it);
 
   // Attach the field to the mesh
-  /*if (m->findField("solution")) {
-    if (!PCU_Comm_Self())
-      lion_eprint(1, "field \"%s\" already attached to the mesh, "
-                      "ignoring request to re-attach...\n", "solution");
-  } else {*/
   attachField(m, "solution", data, out_size);
-  //}
   
   free(data);
   return 1;
@@ -561,12 +544,8 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   apf::Field* errField = m->findField("errors");
   if (errField)
     apf::destroyField(errField);
-  if (m->findField("solution")) {
-    if (!PCU_Comm_Self()) {
-      lion_oprint(1,"writing solution field");
-    }
+  if (m->findField("solution"))
     detachAndWriteField(in, m, f, "solution");
-  }
   if (m->findField("time derivative of solution"))
     detachAndWriteField(in, m, f, "time derivative of solution");
   if (m->findField("motion_coords"))
