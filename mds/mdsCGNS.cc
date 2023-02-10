@@ -1161,7 +1161,8 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
         if (std::get<1>(ret) > 0)
         {
           const std::vector<cgsize_t> vertexIDs = std::get<0>(ret);
-          localElements.emplace_back(apf::assemble(mesh, vertexIDs.data(), std::get<1>(ret), type, globalToVert)); // corresponding finalize below
+          std::vector<long> vertexIDs_l(vertexIDs.begin(), vertexIDs.end());
+          localElements.emplace_back(apf::assemble(mesh, vertexIDs_l.data(), std::get<1>(ret), type, globalToVert)); // corresponding finalize below
           const auto nverts = sizes[0];
           const auto ordinates = ReadCGNSCoords(cgid, base, zone, ncoords, nverts, vertexIDs, globalToVert);
 
