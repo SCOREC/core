@@ -85,6 +85,18 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
   m->getUp(e, up);
   int upwardCount = up.n;
 
+  /* this is here for some spiderwebby simmetrix meshes */
+  if (upwardCount >= 200) {
+    std::stringstream ss;
+    ss << "warning: entity of type " << m->getType(e)
+      << " at " << getLinearCentroid(m, e) << " has "
+      << upwardCount << " upward adjacencies\n";
+    // use a stringstream to prevent output from different procs mixing
+    std::string s = ss.str();
+    lion_eprint(1,"%s",s.c_str());
+    PCU_ALWAYS_ASSERT(upwardCount < MDS_SET_MAX);
+  }
+
   /* check for duplicates in the upward list */
   for (int i = 0; i < upwardCount; ++i)
     for (int j = i + 1; j < upwardCount; ++j)
@@ -170,16 +182,7 @@ static void verifyUp(Mesh* m, UpwardCounts& guc,
     if (!adjacentToUpwardGhost && abort_on_error)
       fail(s.c_str()); 
   }
-  /* this is here for some spiderwebby simmetrix meshes */
-  if (upwardCount >= 200) {
-    std::stringstream ss;
-    ss << "warning: entity of type " << m->getType(e)
-      << " at " << getLinearCentroid(m, e) << " has "
-      << upwardCount << " upward adjacencies\n";
-    // use a stringstream to prevent output from different procs mixing
-    std::string s = ss.str();
-    lion_eprint(1,"%s",s.c_str());
-  }
+
 }
 
 static void verifyResidence(Mesh* m, MeshEntity* e)
