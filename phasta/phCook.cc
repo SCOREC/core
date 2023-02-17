@@ -104,7 +104,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::adapt(in, m);
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
-  if (in.simmetrixMesh == 0)
+  if (in.simmetrixMesh == 0 && (in.splitFactor) > 1 )
     plan = ph::split(in, m);
 }
 
@@ -249,9 +249,27 @@ namespace ph {
   }
 }
 
+namespace {
+  ph::Input input;
+  ph::Output output;
+  ph::BCs boundary;
+  struct GroupCode : public Parma_GroupCode {
+    apf::Mesh2* mesh;
+    void run(int) {
+      ph::checkBalance(mesh,input);
+      ph::preprocess(mesh,input,output,boundary);
+    }
+  };  
+}
+
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
+    int shrinkFactor=1;
+    if(in.splitFactor < 0) {
+       shrinkFactor=-1*in.splitFactor; 
+       in.splitFactor=1; // this is used in to set readers so if shrinking need to read all
+    }
     PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
@@ -262,10 +280,20 @@ namespace chef {
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll(comm);
-    if (in.simmetrixMesh == 0)
+    if (in.simmetrixMesh == 0 && in.splitFactor > 1)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    ph::checkBalance(m,in);
-    ph::preprocess(m,in,out,bcs);
+    if (in.simmetrixMesh == 0 && shrinkFactor > 1){
+      GroupCode code;
+      apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+      code.mesh=m;
+      input=in;
+      output=out;
+      boundary=bcs;
+      Parma_ShrinkPartition(code.mesh, shrinkFactor, code);
+    } else {
+      ph::checkBalance(m,in);
+      ph::preprocess(m,in,out,bcs);
+    }
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
