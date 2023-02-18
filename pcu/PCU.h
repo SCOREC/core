@@ -77,6 +77,8 @@ void PCU_Min_Ints(int* p, size_t n);
 int PCU_Min_Int(int x);
 void PCU_Max_Ints(int* p, size_t n);
 int PCU_Max_Int(int x);
+void PCU_Max_Longs(long* p, size_t n);
+long PCU_Max_Long(long x);
 int PCU_Or(int c);
 int PCU_And(int c);
 
@@ -125,6 +127,9 @@ void PCU_Protect(void);
 
 /*MPI_Wtime() equivalent*/
 double PCU_Time(void);
+
+/*Memory usage*/
+double PCU_GetMem(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -28,9 +28,15 @@ set(APF_SOURCES
   apfShape.cc
   apfIPShape.cc
   apfHierarchic.cc
+  apfPolyBasis1D.cc
+  apfNedelec.cc
+  apfL2Shapes.cc
+  apfH1Shapes.cc
   apfVector.cc
   apfVectorElement.cc
   apfVectorField.cc
+  apfMixedVectorElement.cc
+  apfMixedVectorField.cc
   apfPackedField.cc
   apfNumbering.cc
   apfMixedNumbering.cc
@@ -50,6 +56,10 @@ set(APF_SOURCES
   apfSimplexAngleCalcs.cc
   apfFile.cc
 )
+
+if(ENABLE_CGNS)
+  set(APF_SOURCES ${APF_SOURCES} apfCGNS.cc)
+endif(ENABLE_CGNS)
 
 set(APF_HEADERS
   apf.h

@@ -17,7 +17,11 @@ set(HEADERS
 
 # Add the apf_omega_h library
 add_library(apf_omega_h ${SOURCES})
-target_compile_options(apf_omega_h PUBLIC "-std=c++11")
+if(ENABLE_CGNS)
+  target_compile_options(apf_omega_h PUBLIC "-std=c++14")
+else()
+  target_compile_options(apf_omega_h PUBLIC "-std=c++11")
+endif()
 
 # Include directories
 target_include_directories(apf_omega_h INTERFACE

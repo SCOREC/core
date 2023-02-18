@@ -141,12 +141,10 @@ void unMarkBadQuality(Adapt* a)
   Mesh* m = a->mesh;
   Iterator* it;
   Entity* e;
-  int count = 0;
   it = m->begin(m->getDimension());
   while ((e = m->iterate(it))) {
     if (getFlag(a, e, ma::BAD_QUALITY))
       clearFlag(a, e, ma::BAD_QUALITY);
-    count++;
   }
   m->end(it);
 }
@@ -652,6 +650,7 @@ class LargeAngleTriFixer : public Operator
       apf::MeshElement* me = apf::createMeshElement(mesh, tri);
       Vector center(1./3.,1./3.,1./3.);
       sf->getTransform(me,center,Q);
+      apf::destroyMeshElement(me);
 
       // pick the edge opposite to the largest angle (in metric) for swap
       Entity* edges[3];

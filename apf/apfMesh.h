@@ -573,6 +573,10 @@ void changeMeshShape(Mesh* m, FieldShape* newShape, bool project = true);
   \details see apf::unfreezeField */
 void unfreezeFields(Mesh* m);
 
+/** \brief freeze all associated fields
+  \details see apf::freezeField */
+void freezeFields(Mesh* m);
+
 /** \brief count the number of mesh entities classified on a model entity */
 int countEntitiesOn(Mesh* m, ModelEntity* me, int dim);
 

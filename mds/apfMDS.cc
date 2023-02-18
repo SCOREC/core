@@ -410,7 +410,7 @@ class MeshMDS : public Mesh2
     MeshTag* createIntTag(const char* name, int size)
     {
       mds_tag* tag;
-      PCU_ALWAYS_ASSERT(!mds_find_tag(&mesh->tags, name));
+      PCU_ALWAYS_ASSERT_VERBOSE(!mds_find_tag(&mesh->tags, name), name);
       tag = mds_create_tag(&(mesh->tags),name,
           sizeof(int)*size, Mesh::INT);
       return reinterpret_cast<MeshTag*>(tag);
@@ -600,7 +600,7 @@ class MeshMDS : public Mesh2
       apf::destroyField(coordinateField);
       coordinateField = 0;
       gmi_model* model = static_cast<gmi_model*>(mesh->user_model);
-      if (ownsModel)
+      if (ownsModel && model)
         gmi_destroy(model);
       mds_apf_destroy(mesh);
       mesh = 0;
@@ -632,6 +632,11 @@ class MeshMDS : public Mesh2
     }
 
 //seol
+    void clearRemotes(MeshEntity* e)
+    {
+      mds_set_copies(&mesh->remotes, &mesh->mds, fromEnt(e), 0);
+    }
+
     void addGhost(MeshEntity* e, int p, MeshEntity* r)
     {
       mds_copy c;
@@ -1054,10 +1059,10 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
   PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
           "MeshTag name \"_vert_id\" is used internally in this method\n");
-  apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
+  apf::MeshTag* vIDTag = mesh->createLongTag("_vert_id", 1);
   for (apf::GlobalToVert::iterator vit = globalToVert.begin();
-       vit != globalToVert.end(); vit++) {
-    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+       vit !=  globalToVert.end(); vit++) {
+    mesh->setLongTag(vit->second, vIDTag, &(vit->first));
   }
 
   // Reserve tags used for model faces
@@ -1170,10 +1175,10 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
   PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
           "MeshTag name \"_vert_id\" is used internally in this method\n");
-  apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
+  apf::MeshTag* vIDTag = mesh->createLongTag("_vert_id", 1);
   for (apf::GlobalToVert::iterator vit = globalToVert.begin();
        vit != globalToVert.end(); vit++) {
-    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+    mesh->setLongTag(vit->second, vIDTag, &(vit->first));
   }
 
   // Reserve tags used for model edges

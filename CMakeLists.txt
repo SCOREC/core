@@ -6,14 +6,19 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.0)
 
-project(SCOREC VERSION 2.2.0 LANGUAGES CXX C)
+project(SCOREC VERSION 2.2.7 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
 
-option(SCOREC_ENABLE_CXX11 "enable compilation with c++11 support" NO)
-
 option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
+
+#requre c++11 without extensions
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSION OFF)
+if(NOT ENABLE_CGNS)
+  set(CMAKE_CXX_STANDARD 11)
+endif()
 
 xsdk_begin_package()
 bob_begin_package()
@@ -22,13 +27,20 @@ if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
 endif()
 
+# require c++14
+option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
+message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
+
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
-  if(SCOREC_ENABLE_CXX11)
+  if(ENABLE_CGNS) #takes precedence over SCOREC_ENABLE_CXX11
+    message(STATUS "enabling cxx14")
+    bob_cxx14_flags()
+  elseif(SCOREC_ENABLE_CXX11)
     bob_cxx11_flags()
   endif()
 endif()
@@ -45,6 +57,9 @@ message(STATUS "CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
 
 option(IS_TESTING "Build for CTest" OFF)
 message(STATUS "IS_TESTING: ${IS_TESTING}")
+
+set(MESHES "${CMAKE_SOURCE_DIR}/pumi-meshes" CACHE STRING "Directory of test meshes")
+message(STATUS "MESHES: ${MESHES}")
 
 option(BUILD_EXES "Build executables" ON)
 message(STATUS "BUILD_EXES: ${BUILD_EXES}")
@@ -66,7 +81,7 @@ set(VALGRIND_ARGS "" CACHE STRING
   "the command line arguments to VALGRIND")
 
 # smoke test target - a few tests are defined later with the 'SMOKE_TEST' label
-add_custom_target(test_install
+add_custom_target(check
   COMMAND ${CMAKE_CTEST_COMMAND} -L SMOKE_TEST
   COMMENT "running a smoke test on the installed binaries")
 
@@ -90,7 +105,9 @@ option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in u
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
+option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
+
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
@@ -113,8 +130,18 @@ endif()
 if(ENABLE_OMEGA_H)
   # find the omega_h library
   set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
-  set(Omega_h_REQUIRED_VERSION 9.0.0)
+  set(Omega_h_REQUIRED_VERSION ${PUMI_USE_OMEGA_H_VERSION})
   bob_public_dep(Omega_h)
+endif()
+
+if(ENABLE_CGNS)
+  set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(CGNS)
+  #CGNS does not provide cmake targets :(
+  include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
+  set(SCOREC_USE_HDF5_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(HDF5)
+  add_definitions(-DHAVE_CGNS)
 endif()
 
 # Include the SCOREC project packages
@@ -133,6 +160,7 @@ add_subdirectory(pumi)
 add_subdirectory(ma)
 add_subdirectory(crv)
 add_subdirectory(spr)
+add_subdirectory(ree)
 add_subdirectory(sam)
 add_subdirectory(phasta)
 add_subdirectory(stk)
@@ -142,7 +170,23 @@ add_subdirectory(omega_h)
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
+if(ENABLE_CGNS)
+  target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
+  target_compile_features(core INTERFACE cxx_std_14)
+else()
+  target_compile_features(core INTERFACE cxx_std_11)
+endif()
 scorec_export_library(core)
+
+#check for mallinfo2
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  include(CheckCXXSymbolExists)
+  check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
+  if(PUMI_HAS_MALLINFO2)
+    target_compile_definitions(core INTERFACE -DPUMI_HAS_MALLINFO2)
+    target_compile_definitions(pcu PRIVATE -DPUMI_HAS_MALLINFO2)
+  endif()
+endif()
 
 if(BUILD_EXES)
   add_subdirectory(test)

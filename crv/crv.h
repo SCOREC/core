@@ -37,6 +37,9 @@ int getBlendingOrder(const int type);
 /** \brief count invalid elements of the mesh */
 int countNumberInvalidElements(apf::Mesh2* m);
 
+/** \brief converts Interpolating nodes to Control points for a Bezier mesh*/
+void interpolatingToBezier(apf::Mesh2* m);
+
 /** \brief Base Mesh curving object
   \details P is the order, S is the space dimension,
   different from the mesh dimension, used to distinguish between planar 2D
@@ -118,6 +121,11 @@ ma::Input* configureShapeCorrection(
   \details see maInput.h for details.
   note that this function will delete the Input object */
 void adapt(ma::Input* in);
+
+/** \brief crv adapt with custom configuration
+  \details see maInput.h for details.
+  note that this function will delete the Input object */
+void adapt(const ma::Input* in);
 
 /** \brief crv stats to get statistic information about the mesh
   \details statistic considered are (1)final/desired edge-lengths

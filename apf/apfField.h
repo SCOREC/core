@@ -25,7 +25,7 @@ class FieldBase
               FieldData* d);
     virtual ~FieldBase();
     /* returns the number of components per node:
-       1 for a scalar field
+       1 for a scalar field and Nedelec type fields
        3 for a vector field
        9 for a matrix field, etc. */
     virtual int countComponents() const = 0;
@@ -54,7 +54,15 @@ class Field : public FieldBase
 {
   public:
     virtual Element* getElement(VectorElement* e) = 0;
+    // Think of this as the dof types, that is:
+    // ScalarField will have 1 dof per node
+    // VectorField will have 3 dof per noed
+    // MixedVectorField (eg Nedelec) will have 1 dof per node
     virtual int getValueType() const = 0;
+    // Think of this as the number of components for the shape, that is:
+    // Regular shape function will have 1 value per node, but Nedelec type
+    // shapes will have 3 values per node
+    virtual int getShapeType() const = 0;
     virtual int getScalarType() {return Mesh::DOUBLE;}
     FieldDataOf<double>* getData();
     virtual void project(Field* from) = 0;

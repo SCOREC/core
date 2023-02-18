@@ -949,12 +949,11 @@ static void makeDirectories(const char* prefix, int type, int n)
 
 void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
 {
-  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(0, 1, false);
+  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(NULL, 1, false);
   apf::Field* f = m->getCoordinateField();
   apf::MeshEntity* ent;
   apf::MeshIterator* it;
   it = m->begin(1);
-  int count = 0;
   while( (ent = m->iterate(it)) )
   {
     if(!m->isOwned(ent)) continue;
@@ -989,18 +988,14 @@ void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
       v[1] = vs[i+1];
       apf::buildElement(wireMesh, 0, apf::Mesh::EDGE, v);
     }
-    count++;
   }
-  // wireMesh is not a valid mesh, so neither of the following will work!
-  /* apf::deriveMdsModel(wireMesh); */
-  /* wireMesh->acceptChanges(); */
-  /* wireMesh->verify(); */
+  m->end(it);
   apf::printStats(wireMesh);
   std::stringstream ss;
   ss << prefix << "_wire";
   apf::writeVtkFiles(ss.str().c_str(),wireMesh);
-  /* wireMesh->destroyNative(); */
-  /* apf::destroyMesh(wireMesh); */
+  wireMesh->destroyNative();
+  apf::destroyMesh(wireMesh);
 }
 
 

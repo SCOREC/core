@@ -3,6 +3,7 @@
 #include <lionPrint.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
+#include <gmi_null.h>
 #include <crv.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -42,12 +43,15 @@ int main( int argc, char* argv[])
   gmi_register_sim();
 #endif
   gmi_register_mesh();
+  gmi_register_null();
   crv::getBezier(2);//hack to make sure curved meshes can be serialized!
   GroupCode code;
   code.mesh = apf::loadMdsMesh(argv[1], argv[2]);
   code.meshFile = argv[3];
   apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
   Parma_ShrinkPartition(code.mesh, atoi(argv[4]), code);
+  code.mesh->destroyNative();
+  apf::destroyMesh(code.mesh);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();

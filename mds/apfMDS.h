@@ -31,7 +31,12 @@
   \brief Interface to the compact Mesh Data Structure */
 
 #include <map>
-
+//
+// AJP: including apf.h for single define: CGNSBCMap
+// AJP: alternative is to allow common cgns base header
+//      but trying to avoid that since it's not core functionality
+#include <apf.h> 
+//
 struct gmi_model;
 
 namespace apf {
@@ -41,9 +46,10 @@ class Mesh2;
 class MeshTag;
 class MeshEntity;
 class Migration;
+class Field;
 
 /** \brief a map from global ids to vertex objects */
-typedef std::map<int, MeshEntity*> GlobalToVert;
+typedef std::map<long, MeshEntity*> GlobalToVert;
 
 /** \brief create an empty MDS part
   \param model the geometric model interface
@@ -192,7 +198,16 @@ int getMdsIndex(Mesh2* in, MeshEntity* e);
   so call apf::reorderMdsMesh after any mesh modification. */
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
+Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
+
+// names of mesh data to read from file: (VERTEX, VelocityX; CellCentre, Pressure)
+Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap, const std::vector<std::pair<std::string, std::string>>& meshData);
+
+int gmshMajorVersion(const char* filename);
+
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
+
+Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename);
 
 Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
 

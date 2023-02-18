@@ -13,6 +13,7 @@
 #include "apfDynamicArray.h"
 
 #include <vector>
+#include <map>
 #include <limits>
 
 /** \file apf.h
@@ -34,6 +35,7 @@ class Field;
 class Element;
 class Mesh;
 class MeshEntity;
+class MeshTag;
 class VectorElement;
 /** \brief Mesh Elements represent the mesh coordinate vector field. */
 typedef VectorElement MeshElement;
@@ -43,7 +45,7 @@ template <class T> class ReductionOp;
 template <class T> class ReductionSum;
 
 /** \brief Base class for applying operations to make a Field consistent
-  * in parallel 
+  * in parallel
   * \details This function gets applied pairwise to the Field values
   * from every partition, resulting in a single unique value.  No guarantees
   * are made about the order in which this function is applied to the
@@ -603,6 +605,19 @@ void getShapeValues(Element* e, Vector3 const& local,
 void getShapeGrads(Element* e, Vector3 const& local,
     NewArray<Vector3>& grads);
 
+/** \brief Returns the vector shape function values at a point
+ *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
+  */
+void getVectorShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
+
+/** \brief Returns the vector curl shape function values at a point
+ *  \details used only for Nedelec shapes
+ *  (Piola transformation used to map from parent to physical coordinates)
+  */
+void getCurlShapeValues(Element* e, Vector3 const& local,
+    NewArray<Vector3>& values);
 
 /** \brief Retrieve the apf::FieldShape used by a field
   */
@@ -628,6 +643,28 @@ for (t::iterator i = (w).begin(); \
 #define APF_CONST_ITERATE(t,w,i) \
 for (t::const_iterator i = (w).begin(); \
      (i) != (w).end(); ++(i))
+
+struct CGNSInfo
+{
+  // cgns_bc_name
+  std::string cgnsBCSName;
+  /* tag value
+
+    Tag value holds [0, 1] as a
+    marker to indicate mesh_entities 
+    within bc group. 1="in group", 0="not in group"
+    Tags set on vertices, edges, faces, and cells
+  */
+  apf::MeshTag* bcsMarkerTag = nullptr;
+  // model dimension
+  int mdlDim = -1;
+  // model id
+  int mdlId = -1;
+};
+
+//using CGNSBCMap = std::map<std::string, std::vector<std::tuple<std::string, apf::MeshTag *, int>>>;
+using CGNSBCMap = std::map<std::string, std::vector<CGNSInfo>>;
+void writeCGNS(const char *prefix, Mesh *m, const CGNSBCMap &cgnsBCMap);
 
 /** \brief Write a set of parallel VTK Unstructured Mesh files from an apf::Mesh
   * with binary (base64) encoding and zlib compression (if LION_COMPRESS=ON)
@@ -665,6 +702,12 @@ void writeASCIIVtkFiles(const char* prefix, Mesh* m);
   */
 void writeASCIIVtkFiles(const char* prefix, Mesh* m,
     std::vector<std::string> writeFields);
+
+/** \brief Output .vtk files with ASCII encoding for this part.
+  \details this function is useful for debugging meshes with Nedelec 
+  fields on them.
+  */
+void writeNedelecVtkFiles(const char* prefix, Mesh* m);
 
 /** \brief Return the location of a gaussian integration point.
   \param type the element type, from apf::Mesh::getType

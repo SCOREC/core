@@ -115,6 +115,7 @@ target_link_libraries(ph
       parma
       pcu
       apf_zoltan
+      pumi
     )
 if(ENABLE_SIMMETRIX)
   target_link_libraries(ph PUBLIC

@@ -34,9 +34,25 @@ FieldShape::~FieldShape()
 {
 }
 
+void EntityShape::getLocalVectorCurls(Mesh* , MeshEntity* ,
+	  Vector3 const&, NewArray<Vector3>&) const
+{
+  fail("unimplemented getLocalVectorCurls called");
+}
+
 void FieldShape::getNodeXi(int, int, Vector3&)
 {
   fail("unimplemented getNodeXi called");
+}
+
+void FieldShape::getNodeTangent(int, int, Vector3&)
+{
+  fail("unimplemented getNodeTangent called");
+}
+
+bool FieldShape::isVectorShape()
+{
+  return false;
 }
 
 void FieldShape::registerSelf(const char* name_)
@@ -62,6 +78,10 @@ FieldShape* getShapeByName(const char* name)
   getIPShape(2,1);
   getVoronoiShape(2,1);
   getIPFitShape(2,1);
+  getNedelec(1);
+  getL2Shape(0, apf::Mesh::TRIANGLE);
+  getL2Shape(0, apf::Mesh::TET);
+  getH1Shape(1);
   std::string s(name);
   if (registry.count(s))
     return registry[s];
@@ -86,6 +106,11 @@ class Linear : public FieldShape
             Vector3 const&, NewArray<Vector3>&) const
         {
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 1;}
     };
     class Edge : public EntityShape
@@ -105,6 +130,11 @@ class Linear : public FieldShape
           grads[0] = Vector3(-0.5,0,0);
           grads[1] = Vector3( 0.5,0,0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 2;}
     };
     class Triangle : public EntityShape
@@ -126,6 +156,11 @@ class Linear : public FieldShape
           grads[1] = Vector3( 1, 0,0);
           grads[2] = Vector3( 0, 1,0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 3;}
     };
     class Quad : public EntityShape
@@ -158,6 +193,11 @@ class Linear : public FieldShape
           grads[2] = Vector3( l1y, l1x,0)/4;
           grads[3] = Vector3(-l1y, l0x,0)/4;
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 4;}
     };
     class Tetrahedron : public EntityShape
@@ -181,6 +221,11 @@ class Linear : public FieldShape
           grads[2] = Vector3( 0, 1, 0);
           grads[3] = Vector3( 0, 0, 1);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 4;}
     };
     class Prism : public EntityShape
@@ -228,6 +273,11 @@ class Linear : public FieldShape
           grads[4] = tg[1] * up   + eg[1] * nt[1];
           grads[5] = tg[2] * up   + eg[1] * nt[2];
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 6;}
     };
     class Pyramid : public EntityShape
@@ -265,6 +315,11 @@ class Linear : public FieldShape
           grads[3] = Vector3(-l1y * l0z,  l0x * l0z, -l0x * l1y) / 8;
           grads[4] = Vector3(0,0,0.5);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 5;}
     };
     class Hexahedron : public EntityShape
@@ -309,6 +364,11 @@ class Linear : public FieldShape
           grads[6] = Vector3( l1y * l1z,  l1x * l1z,  l1x * l1y) / 8;
           grads[7] = Vector3(-l1y * l1z,  l0x * l1z,  l0x * l1y) / 8;
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 8;}
     };
     EntityShape* getEntityShape(int type)
@@ -376,6 +436,11 @@ class QuadraticBase : public FieldShape
           grads[1] = Vector3((2*xi[0]+1)/2.0,0,0);
           grads[2] = Vector3(-2*xi[0],0,0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 3;}
     };
     class Triangle : public EntityShape
@@ -406,6 +471,11 @@ class QuadraticBase : public FieldShape
           grads[4] = Vector3(4*xi[1],4*xi[0],0);
           grads[5] = Vector3(-4*xi[1],4*(xi2-xi[1]),0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 6;}
     };
     class Tetrahedron : public EntityShape
@@ -445,6 +515,11 @@ class QuadraticBase : public FieldShape
           grads[8] = Vector3(4*xi[2],0,4*xi[0]);
           grads[9] = Vector3(0,4*xi[2],4*xi[1]);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 10;}
     };
     EntityShape* getEntityShape(int type)
@@ -544,6 +619,11 @@ class LagrangeQuadratic : public QuadraticBase
               -2.0*e*(1-(n*n)),
               -2.0*n*(1-(e*e)), 0.0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 9;}
     };
     EntityShape* getEntityShape(int type)
@@ -616,6 +696,11 @@ class SerendipityQuadratic : public QuadraticBase
         grads[6] = Vector3(-xi[0] - xi[0]*xi[1],  0.5 - xi[0]*xi[0]/2.0, 0.0);
         grads[7] = Vector3(xi[1]*xi[1]/2.0 - 0.5,   xi[0]*xi[1] - xi[1], 0.0);
       }
+      void getVectorValues(Mesh*, MeshEntity*,
+	  Vector3 const&, NewArray<Vector3>&) const
+      {
+	  fail("getVectorValues not defined for nodal shapes");
+      }
       int countNodes() const {return 8;}
     };
     EntityShape* getEntityShape(int type)
@@ -661,6 +746,11 @@ class LagrangeCubic : public FieldShape
             Vector3 const&, NewArray<Vector3>&) const
         {
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 1;}
     };
     class Edge : public EntityShape
@@ -686,6 +776,11 @@ class LagrangeCubic : public FieldShape
           dN[2] = Vector3(27./16.*(3.*xi*xi-2./3.*xi-1.), 0, 0);
           dN[3] = Vector3(27./16.*(-3.*xi*xi-2./3.*xi+1.), 0, 0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 4;}
     };
     class Triangle : public EntityShape
@@ -730,6 +825,11 @@ class LagrangeCubic : public FieldShape
           dN[8] = (gl3*(3.*l1*l1-l1) + gl1*(6.*l3*l1-l3))*9./2.;
           dN[9] = (gl1*l2*l3+gl2*l1*l3+gl3*l1*l2)*27.;
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 10;}
         void alignSharedNodes(Mesh* m, MeshEntity* elem,
             MeshEntity* edge, int order[]) {
@@ -811,6 +911,11 @@ class LagrangeCubic : public FieldShape
           dN[18] = (gl1*l2*l3 + gl2*l1*l3 + gl3*l1*l2)*27.;
           dN[19] = (gl0*l2*l3 + gl2*l0*l3 + gl3*l0*l2)*27.;
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for nodal shapes");
+	}
         int countNodes() const {return 20;}
         void alignSharedNodes(Mesh* m, MeshEntity* elem,
             MeshEntity* edge, int order[]) {
@@ -933,6 +1038,11 @@ class Constant : public FieldShape
           grads.allocate(1);
           grads[0] = Vector3( 0, 0, 0);
         }
+        void getVectorValues(Mesh*, MeshEntity*,
+            Vector3 const&, NewArray<Vector3>&) const
+	{
+	  fail("getVectorValues not defined for constant shapes");
+	}
         int countNodes() const {return 1;}
         int getDimension() const {return D;}
     };
@@ -959,6 +1069,20 @@ class Constant : public FieldShape
         return 0;
    }
     int getOrder() {return 0;}
+    void getNodeXi(int type, int node, Vector3& xi)
+    {
+      PCU_ALWAYS_ASSERT(node == 0);
+      if (type == Mesh::VERTEX)
+        xi = Vector3(0., 0., 0.);
+      else if (type == Mesh::EDGE)
+        xi = Vector3(0., 0., 0.);
+      else if (type == Mesh::TRIANGLE)
+        xi = Vector3(1./3., 1./3., 0);
+      else if (type == Mesh::TET)
+        xi = Vector3(1./4., 1./4., 1./4.);
+      else
+        PCU_ALWAYS_ASSERT_VERBOSE(0, "non implemented for non simplex types!");
+    }
   private:
     std::string name;
 };
@@ -977,6 +1101,115 @@ FieldShape* getConstant(int dimension)
 int countElementNodes(FieldShape* s, int type)
 {
   return s->getEntityShape(type)->countNodes();
+}
+
+void getElementNodeXis(FieldShape* s, int type,
+    apf::NewArray<apf::Vector3>& xis)
+{
+  PCU_ALWAYS_ASSERT_VERBOSE(isSimplex(type),
+      "Only implemented for simplex types!");
+
+  static apf::Vector3 const vert_vert_xi[1] = {
+      apf::Vector3(0,0,0)
+  };
+  static apf::Vector3 const edge_vert_xi[2] = {
+      apf::Vector3(-1,0,0),
+      apf::Vector3(1,0,0),
+  };
+  static apf::Vector3 const tri_vert_xi[3] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+  };
+  static apf::Vector3 const tet_vert_xi[4] = {
+      apf::Vector3(0,0,0),
+      apf::Vector3(1,0,0),
+      apf::Vector3(0,1,0),
+      apf::Vector3(0,0,1),
+  };
+
+  static apf::Vector3 const* const elem_vert_xi[apf::Mesh::TYPES] = {
+      vert_vert_xi,
+      edge_vert_xi,
+      tri_vert_xi,
+      0, /* quad */
+      tet_vert_xi,
+      0, /* hex */
+      0, /* prism */
+      0  /* pyramid */
+  };
+
+  if (!xis.allocated())
+    xis.allocate(countElementNodes(s, type));
+  else
+    xis.resize(countElementNodes(s, type));
+
+  int td = apf::Mesh::typeDimension[type];
+  apf::Vector3 childXi, parentXi;
+  int evi = 0;
+
+  int row = 0;
+  for(int d = 0; d <= td; ++d){
+    int nDown = apf::Mesh::adjacentCount[type][d];
+    int bt = apf::Mesh::simplexTypes[d];
+    apf::EntityShape* shape = apf::getLagrange(1)->getEntityShape(bt);
+    int non = s->countNodesOn(bt);
+    for(int j = 0; j < nDown; ++j){
+      for(int x = 0; x < non; ++x){
+        s->getNodeXi(bt, x, childXi);
+        apf::NewArray<double> shape_vals;
+
+        shape->getValues(0, 0, childXi, shape_vals);
+        parentXi.zero();
+        evi = j;
+        for (int i = 0; i < apf::Mesh::adjacentCount[bt][0]; ++i) {
+          if(bt == apf::Mesh::EDGE && type == apf::Mesh::TRIANGLE)
+            evi = apf::tri_edge_verts[j][i];
+          else if(bt == apf::Mesh::EDGE && type == apf::Mesh::TET)
+            evi = apf::tet_edge_verts[j][i];
+          else if(bt == apf::Mesh::TRIANGLE && type == apf::Mesh::TET)
+            evi = apf::tet_tri_verts[j][i];
+          else if(bt == type)
+            evi = i;
+          parentXi += elem_vert_xi[type][evi] * shape_vals[i];
+        }
+        xis[row] = parentXi;
+        ++row;
+      }
+    }
+  }
+  PCU_ALWAYS_ASSERT(row == s->getEntityShape(type)->countNodes());
+}
+
+void getElementNodeXis(FieldShape* s, Mesh* m, MeshEntity* e,
+    apf::NewArray<apf::Vector3>& xis)
+{
+  int type = m->getType(e);
+  if (!xis.allocated())
+    xis.allocate(countElementNodes(s, type));
+  else
+    xis.resize(countElementNodes(s, type));
+
+  int td = apf::Mesh::typeDimension[type];
+  apf::Vector3 childXi, parentXi;
+
+  int row = 0;
+  for(int d = 0; d <= td; ++d){
+    MeshEntity* down[12];
+    int nDown = m->getDownward(e, d, down);
+    int bt = apf::Mesh::simplexTypes[d];
+    int non = s->countNodesOn(bt);
+    if (!non) continue;
+    for(int j = 0; j < nDown; ++j){
+      for(int x = 0; x < non; ++x){
+        s->getNodeXi(bt, x, childXi);
+        xis[row] = (bt != type) ?
+          boundaryToElementXi(m, down[j], e, childXi) : childXi;
+        ++row;
+      }
+    }
+  }
+  PCU_ALWAYS_ASSERT(row == s->getEntityShape(type)->countNodes());
 }
 
 }//namespace apf

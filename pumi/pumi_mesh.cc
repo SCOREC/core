@@ -162,17 +162,9 @@ pumi::~pumi()
     delete [] num_own_ent;
     delete [] num_global_ent;
   }
-  delete _instance;
-  _instance = NULL;
 }
 
-pumi* pumi::_instance=NULL;
-pumi* pumi::instance()
-{
-  if (_instance==NULL)
-    _instance = new pumi();
-  return _instance;
-}
+
 
 apf::Migration* getPlan(apf::Mesh* m, int num_target_part)
 {
