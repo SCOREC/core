@@ -104,7 +104,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::adapt(in, m);
   if (in.tetrahedronize)
     ph::tetrahedronize(in, m);
-  if (in.simmetrixMesh == 0 && (in.splitFactor) > 1 )
+  if (in.simmetrixMesh == 0)
     plan = ph::split(in, m);
 }
 
@@ -250,10 +250,10 @@ namespace ph {
 }
 
 namespace {
-  ph::Input input;
-  ph::Output output;
-  ph::BCs boundary;
   struct GroupCode : public Parma_GroupCode {
+    ph::Input input;
+    ph::Output output;
+    ph::BCs boundary;
     apf::Mesh2* mesh;
     void run(int) {
       ph::checkBalance(mesh,input);
@@ -265,8 +265,9 @@ namespace {
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
-    int shrinkFactor=1;
+    int shrinkFactor=0;
     if(in.splitFactor < 0) {
+       fprintf(stderr, "cake1\n");
        shrinkFactor=-1*in.splitFactor; 
        in.splitFactor=1; // this is used in to set readers so if shrinking need to read all
     }
@@ -280,15 +281,16 @@ namespace chef {
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan);
     switchToAll(comm);
-    if (in.simmetrixMesh == 0 && in.splitFactor > 1)
+    if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
     if (in.simmetrixMesh == 0 && shrinkFactor > 1){
+      fprintf(stderr, "cake\n");
       GroupCode code;
       apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
       code.mesh=m;
-      input=in;
-      output=out;
-      boundary=bcs;
+      code.input=in;
+      code.output=out;
+      code.boundary=bcs;
       Parma_ShrinkPartition(code.mesh, shrinkFactor, code);
     } else {
       ph::checkBalance(m,in);
