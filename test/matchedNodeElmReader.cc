@@ -567,7 +567,8 @@ void readMatches(FILE* f, apf::Gid numvtx, int localnumvtx, apf::Gid** matches) 
 
 bool seekPart(std::ifstream& f, const std::string& marker) {
   std::stringstream ss;
-  ss << "^\\s+" << marker << "$";
+  //ss << "^\\s+" << marker << "$";
+  ss << "\\s+" << marker;
   std::regex partId(ss.str());
   std::string line;
   while (std::getline(f, line)) {
@@ -688,7 +689,7 @@ void readMesh(const char* meshfilename,
   readCoords(fc, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
  
-  if(0==1) {
+  if(1==1) {
   sprintf(filename, "%s.%d",solutionfilename,self);
   FILE* fs = fopen(filename, "r");
   PCU_ALWAYS_ASSERT(fs);
@@ -757,7 +758,7 @@ int main(int argc, char** argv)
           "<ascii vertex fathers2D flag .fathers2D> "
           "<ascii solution flag .soln> "
           "<ascii conn header> "
-          "<output model .dmg> <output mesh .smb>"
+          "<output model .dmg> <output mesh .smb> "
           "turn off verify mesh if equal 1 (on if you give nothing)\n",
           argv[0]);
     }
@@ -767,14 +768,16 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  if( argc == 11 ) noVerify=atoi(argv[10]);
+  if( argc == 12 ) noVerify=atoi(argv[11]);
+  if(!PCU_Comm_Self())
+    fprintf(stderr, "Set noVerify to %d\n", noVerify);
 
   double t0 = PCU_Time();
   MeshInfo m;
   readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m);
 
   bool isMatched = true;
-  if( !strcmp(argv[3], "NULL") )
+  if( !strcmp(argv[4], "NULL") )
     isMatched = false;
 
   if(!PCU_Comm_Self())
@@ -810,7 +813,7 @@ int main(int argc, char** argv)
   } else if(!PCU_Comm_Self())
     fprintf(stderr, "fathers2D not requested \n");
 
-  if(0==1) {
+  if(1==1) {
   apf::MeshTag* ts = setMappedTag(mesh, "solution", m.solution, 5,
       m.localNumVerts, outMap);
   (void) ts;

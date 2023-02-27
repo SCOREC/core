@@ -28,6 +28,8 @@ void attachZeroSolution(Input& in, apf::Mesh* m);
 
 void detachField(apf::Field* f, double*& data, int& size);
 
+void readTagsAndAttachFields(Input& in, apf::Mesh* m);
+
 }
 
 #endif

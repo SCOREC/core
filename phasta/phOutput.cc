@@ -840,7 +840,7 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
 static void getInitialConditions(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
-  if (in.solutionMigration) {
+  if (in.solutionMigration || in.useAttachedFields) {
     if (!PCU_Comm_Self())
       lion_oprint(1,"All attribute-based initial conditions, "
              "if any, "

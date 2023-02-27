@@ -373,6 +373,44 @@ int readAndAttachField(
   return 1;
 }
 
+int readTagsAndAttachField(Input& in, apf::Mesh* m)
+{
+  int n = m->count(0);
+  int out_size = in.ensa_dof;
+  double* data = (double*)malloc(sizeof(double) * n * out_size);
+
+  // Read the tag from the mesh
+  apf::MeshEntity* v;
+  apf::MeshIterator* it = m->begin(0);
+  apf::MeshTag* t = m->findTag("solution");
+  if (t==NULL) {
+    if (!PCU_Comm_Self())
+      lion_oprint(1,"Did not find tag solution when reading from mesh\n");
+    return 1;
+  } else if (t != NULL) {
+    if (!PCU_Comm_Self())
+      lion_oprint(1,"Found tag solution when reading from mesh\n");
+  }
+  int iv = 0;
+  while ((v = m->iterate(it))) { // loop over mesh vertices
+    apf::DynamicArray<double> d(5);
+    m->getDoubleTag(v,t,&(d[0]));
+    data[iv+n*0] = d[0];
+    data[iv+n*1] = d[1];
+    data[iv+n*2] = d[2];
+    data[iv+n*3] = d[3];
+    data[iv+n*4] = d[4];
+    iv += 1; 
+  }
+  m->end(it);
+
+  // Attach the field to the mesh
+  attachField(m, "solution", data, out_size);
+  
+  free(data);
+  return 1;
+}
+
 void detachAndWriteField(
     Input& in,
     apf::Mesh* m,
@@ -485,6 +523,14 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   if (!PCU_Comm_Self())
     lion_oprint(1,"fields read and attached in %f seconds\n", t1 - t0);
   if(in.printIOtime) phastaio_printStats();
+}
+
+void readTagsAndAttachFields(Input& in, apf::Mesh* m) {
+  double t0 = PCU_Time();
+  readTagsAndAttachField(in,m);
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    lion_oprint(1,"fields read and attached in %f seconds\n", t1 - t0);
 }
 
 static void destroyIfExists(apf::Mesh* m, const char* name)
