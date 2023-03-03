@@ -267,7 +267,6 @@ namespace chef {
       ph::Input& in, ph::Output& out) {
     int shrinkFactor=0;
     if(in.splitFactor < 0) {
-       fprintf(stderr, "cake1\n");
        shrinkFactor=-1*in.splitFactor; 
        in.splitFactor=1; // this is used in to set readers so if shrinking need to read all
     }
