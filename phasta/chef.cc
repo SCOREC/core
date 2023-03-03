@@ -52,7 +52,12 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_model* g = 0;
   apf::Mesh2* m = 0;
-  chef::cook(g,m);
+  std::string inputPath = "adapt.inp";
+  if(argc==2) inputPath = argv[1];
+  fprintf(stderr, "reading inp %s\n", inputPath.c_str());
+  ph::Input in;
+  in.load(inputPath.c_str());
+  chef::cook(g,m,in);
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
