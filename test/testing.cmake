@@ -334,6 +334,13 @@ if(ENABLE_ZOLTAN)
     ./torus_ma_test
     "${MESHES}/torus/torus.dmg"
     "${MESHES}/torus/4imb/torus.smb")
+  mpi_test(ma_2dLayersOff 1
+    ./ma_test
+    "${MESHES}/2dlayersNoAdapt/model.dmg"
+    "${MESHES}/2dlayersNoAdapt/mesh.smb"
+    "doNotAdapt" "8")
+  set_tests_properties(ma_2dLayersOff PROPERTIES
+    PASS_REGULAR_EXPRESSION "number of triangle 18698")
 endif()
 mpi_test(tet_serial 1
   ./tetrahedronize
