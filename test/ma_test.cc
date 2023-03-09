@@ -16,9 +16,10 @@
 class Linear : public ma::IsotropicFunction
 {
   public:
-    Linear(ma::Mesh* m)
+    Linear(ma::Mesh* m, double refFactor)
     {
       mesh = m;
+      refineFactor = refFactor;
       average = ma::getAverageEdgeLength(m);
       ma::getBoundingBox(m,lower,upper);
     }
@@ -26,13 +27,14 @@ class Linear : public ma::IsotropicFunction
     {
       ma::Vector p = ma::getPosition(mesh,v);
       double x = (p[0] - lower[0])/(upper[0] - lower[0]);
-      return average*(4*x+2)/3;
+      return average*(4*x+2)/refineFactor;
     }
   private:
     ma::Mesh* mesh;
     double average;
     ma::Vector lower;
     ma::Vector upper;
+    double refineFactor;
 };
 
 int main(int argc, char** argv)
@@ -41,6 +43,7 @@ int main(int argc, char** argv)
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   const char* layerTagString = (argc==4) ? argv[3] : "";
+  const double adaptRefineFactor = (argc==5) ? atoi(argv[4]) : 3;
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
@@ -54,7 +57,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
-  Linear sf(m);
+  Linear sf(m,adaptRefineFactor);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   in->shouldRunPreZoltan = true;
   in->shouldRunMidParma = true;
