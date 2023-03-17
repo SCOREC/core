@@ -251,13 +251,15 @@ namespace ph {
 
 namespace {
   struct GroupCode : public Parma_GroupCode {
-    ph::Input input;
-    ph::Output output;
-    ph::BCs boundary;
+    ph::Input* input;
+    ph::BCs* boundary;
     apf::Mesh2* mesh;
     void run(int) {
-      ph::checkBalance(mesh,input);
-      ph::preprocess(mesh,input,output,boundary);
+      ph::Output groupOut;
+      //streaming not supported from group code!
+      groupOut.openfile_write = chef::openfile_write;
+      ph::checkBalance(mesh,*input);
+      ph::preprocess(mesh,*input,groupOut,*boundary);
     }
   };  
 }
@@ -287,9 +289,8 @@ namespace chef {
       GroupCode code;
       apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
       code.mesh=m;
-      code.input=in;
-      code.output=out;
-      code.boundary=bcs;
+      code.input=&in;
+      code.boundary=&bcs;
       Parma_ShrinkPartition(code.mesh, shrinkFactor, code);
     } else {
       ph::checkBalance(m,in);

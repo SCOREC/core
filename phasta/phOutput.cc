@@ -992,6 +992,11 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
 
 Output::~Output()
 {
+  //If the partition was shrunk (reduced part count) then
+  //preprocessing will not be run on all ranks.  In this case
+  //nOwnedNodes will still be zero.
+  if(!nOwnedNodes) return;
+
   delete [] arrays.coordinates;
   delete [] arrays.ilwork;
   delete [] arrays.ilworkf;
