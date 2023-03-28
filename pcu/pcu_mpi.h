@@ -23,21 +23,35 @@ typedef struct
 void pcu_make_message(pcu_message* m);
 void pcu_free_message(pcu_message* m);
 
+struct pcu_mpi_t_t;
 typedef struct
 {
-  int (*size)(void);
-  int (*rank)(void);
-  void (*send)(pcu_message* m, MPI_Comm comm);
-  bool (*done)(pcu_message* m);
-  bool (*receive)(pcu_message* m, MPI_Comm comm);
-} pcu_mpi;
+  int (*size)(struct pcu_mpi_t_t*);
+  int (*rank)(struct pcu_mpi_t_t*);
+  void (*send)(struct pcu_mpi_t_t *, pcu_message* m, MPI_Comm comm);
+  bool (*done)(struct pcu_mpi_t_t*, pcu_message* m);
+  bool (*receive)(struct pcu_mpi_t_t*, pcu_message* m, MPI_Comm comm);
+  void (*construct)(struct pcu_mpi_t_t*, MPI_Comm comm);
+  void (*destruct)(struct pcu_mpi_t_t*);
+} pcu_mpi_vtable;
 
-void pcu_set_mpi(pcu_mpi* m);
-pcu_mpi* pcu_get_mpi(void);
-int pcu_mpi_size(void);
-int pcu_mpi_rank(void);
-void pcu_mpi_send(pcu_message* m, MPI_Comm comm);
-bool pcu_mpi_done(pcu_message* m);
-bool pcu_mpi_receive(pcu_message* m, MPI_Comm comm);
+struct pcu_mpi_t_t
+{
+  pcu_mpi_vtable const* vtable;
+  MPI_Comm original_comm;
+  MPI_Comm user_comm;
+  MPI_Comm coll_comm;
+  int rank;
+  int size;
+};
+typedef struct pcu_mpi_t_t pcu_mpi_t;
+
+int pcu_mpi_size(pcu_mpi_t*);
+int pcu_mpi_rank(pcu_mpi_t*);
+void pcu_mpi_send(pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
+bool pcu_mpi_done(pcu_mpi_t*, pcu_message* m);
+bool pcu_mpi_receive(pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
+pcu_mpi_t* pcu_mpi_init(MPI_Comm comm);
+void pcu_mpi_finalize(pcu_mpi_t**);
 
 #endif

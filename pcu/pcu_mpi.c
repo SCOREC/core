@@ -9,8 +9,7 @@
 *******************************************************************************/
 #include "pcu_mpi.h"
 #include "pcu_util.h"
-
-static pcu_mpi* global_mpi;
+#include "pcu_pmpi.h"
 
 void pcu_make_message(pcu_message* m)
 {
@@ -22,47 +21,49 @@ void pcu_free_message(pcu_message* m)
   pcu_free_buffer(&(m->buffer));
 }
 
-void pcu_set_mpi(pcu_mpi* m)
+int pcu_mpi_size(pcu_mpi_t* self)
 {
-  global_mpi = m;
+  return pcu_pmpi_size(self);
 }
 
-pcu_mpi* pcu_get_mpi(void)
+int pcu_mpi_rank(pcu_mpi_t* self)
 {
-  return global_mpi;
+  return pcu_pmpi_rank(self);
 }
 
-int pcu_mpi_size(void)
-{
-  return global_mpi->size();
-}
-
-int pcu_mpi_rank(void)
-{
-  return global_mpi->rank();
-}
-
-static void check_rank(int rank)
+static void check_rank(pcu_mpi_t* self, int rank)
 {
   (void)rank;
   PCU_ALWAYS_ASSERT(0 <= rank);
-  PCU_ALWAYS_ASSERT(rank < pcu_mpi_size());
+  PCU_ALWAYS_ASSERT(rank < pcu_mpi_size(self));
 }
 
-void pcu_mpi_send(pcu_message* m, MPI_Comm comm)
+void pcu_mpi_send(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
-  check_rank(m->peer);
-  global_mpi->send(m,comm);
+  check_rank(self, m->peer);
+  // verify that the communicator is one of the user or collective communicators
+  //int user_result, coll_result;
+  //MPI_Comm_compare(comm, self->user_comm, &user_result);
+  //MPI_Comm_compare(comm, self->coll_comm, &coll_result);
+  //PCU_ALWAYS_ASSERT(user_result == MPI_IDENT || coll_result == MPI_IDENT);
+  PCU_ALWAYS_ASSERT(comm == self->user_comm || comm == self->coll_comm);
+  pcu_pmpi_send(self, m, comm);
 }
 
-bool pcu_mpi_done(pcu_message* m)
+bool pcu_mpi_done(pcu_mpi_t* self, pcu_message* m)
 {
-  return global_mpi->done(m);
+  return pcu_pmpi_done(self, m);
 }
 
-bool pcu_mpi_receive(pcu_message* m, MPI_Comm comm)
+bool pcu_mpi_receive(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
   if (m->peer != MPI_ANY_SOURCE)
-    check_rank(m->peer);
-  return global_mpi->receive(m,comm);
+    check_rank(self, m->peer);
+  return pcu_pmpi_receive(self, m, comm);
+}
+pcu_mpi_t* pcu_mpi_init(MPI_Comm comm) {
+  return pcu_pmpi_init(comm);
+}
+void pcu_mpi_finalize(pcu_mpi_t** mpi) {
+  pcu_pmpi_finalize(mpi);
 }
