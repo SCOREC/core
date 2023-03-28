@@ -751,7 +751,7 @@ void PCU_Switch_Comm(MPI_Comm new_comm)
   MPI_Comm_compare(new_comm, global_mpi->original_comm, &result);
   if (result != MPI_IDENT) {
     pcu_mpi_finalize(&global_mpi);
-    pcu_mpi_init(new_comm);
+    global_mpi = pcu_mpi_init(new_comm);
   }
 }
 
