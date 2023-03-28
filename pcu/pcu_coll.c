@@ -223,7 +223,7 @@ bool pcu_progress_coll(pcu_mpi_t* mpi, pcu_coll* c)
    then odd multiples of 2 into even ones, etc...
    until rank 0 has all inputs merged */
 
-static int reduce_begin_bit(pcu_mpi_t*)
+static int reduce_begin_bit(pcu_mpi_t* mpi)
 {
   return 1;
 }
@@ -250,7 +250,7 @@ static int reduce_action(pcu_mpi_t* mpi, int bit)
   return pcu_coll_recv;
 }
 
-static int reduce_shift(pcu_mpi_t*, int bit)
+static int reduce_shift(pcu_mpi_t* mpi, int bit)
 {
   return bit << 1;
 }
@@ -278,7 +278,7 @@ static int bcast_begin_bit(pcu_mpi_t* mpi)
   return bit;
 }
 
-static bool bcast_end_bit(pcu_mpi_t *, int bit)
+static bool bcast_end_bit(pcu_mpi_t * mpi, int bit)
 {
   return bit == 0;
 }
@@ -297,7 +297,7 @@ static int bcast_action(pcu_mpi_t* mpi, int bit)
   return pcu_coll_send;
 }
 
-static int bcast_shift(pcu_mpi_t *, int bit)
+static int bcast_shift(pcu_mpi_t * mpi, int bit)
 {
   return bit >> 1;
 }
@@ -318,7 +318,7 @@ static pcu_pattern bcast =
    "Parallel Prefix (Scan) Algorithms for MPI".
 */
 
-static int scan_up_begin_bit(pcu_mpi_t*)
+static int scan_up_begin_bit(pcu_mpi_t* mpi)
 {
   return 1;
 }
@@ -371,7 +371,7 @@ static int scan_up_peer(pcu_mpi_t* mpi, int bit)
   return -1;
 }
 
-static int scan_up_shift(pcu_mpi_t*, int bit)
+static int scan_up_shift(pcu_mpi_t* mpi, int bit)
 {
   return bit << 1;
 }
@@ -390,7 +390,7 @@ static int scan_down_begin_bit(pcu_mpi_t* mpi)
   return 1 << floor_log2(pcu_mpi_size(mpi));
 }
 
-static bool scan_down_end_bit(pcu_mpi_t*, int bit)
+static bool scan_down_end_bit(pcu_mpi_t* mpi, int bit)
 {
   return bit == 1;
 }
@@ -440,7 +440,7 @@ static int scan_down_peer(pcu_mpi_t * mpi, int bit)
   return -1;
 }
 
-static int scan_down_shift(pcu_mpi_t*, int bit)
+static int scan_down_shift(pcu_mpi_t* mpi, int bit)
 {
   return bit >> 1;
 }
