@@ -14,22 +14,12 @@
 
 #include <stdbool.h>
 
-void pcu_pmpi_init(MPI_Comm comm);
-void pcu_pmpi_finalize(void);
-int  pcu_pmpi_size(void);
-int  pcu_pmpi_rank(void);
-void pcu_pmpi_send(pcu_message* m, MPI_Comm comm);
-bool pcu_pmpi_receive(pcu_message* m, MPI_Comm comm);
-void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm);
-bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm);
-bool pcu_pmpi_done(pcu_message* m);
-
-void pcu_pmpi_switch(MPI_Comm new_comm);
-MPI_Comm pcu_pmpi_comm(void);
-
-extern pcu_mpi pcu_pmpi;
-
-extern MPI_Comm pcu_user_comm;
-extern MPI_Comm pcu_coll_comm;
+pcu_mpi_t* pcu_pmpi_init(MPI_Comm comm);
+void pcu_pmpi_finalize(pcu_mpi_t** m);
+int pcu_pmpi_size(pcu_mpi_t* self);
+int pcu_pmpi_rank(pcu_mpi_t* self);
+void pcu_pmpi_send(pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
+bool pcu_pmpi_receive(pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
+bool pcu_pmpi_done(pcu_mpi_t*, pcu_message* m);
 
 #endif

@@ -13,51 +13,62 @@
 #include <stdlib.h>
 #include <limits.h>
 
-static int global_size;
-static int global_rank;
+void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm);
+bool pcu_pmpi_receive2(pcu_mpi_t*, pcu_message* m, int tag, MPI_Comm comm);
+void pcu_pmpi_destruct(pcu_mpi_t* self);
+void pcu_pmpi_construct(pcu_mpi_t* self, MPI_Comm comm);
 
-MPI_Comm original_comm;
-MPI_Comm pcu_user_comm;
-MPI_Comm pcu_coll_comm;
-
-pcu_mpi pcu_pmpi =
+static pcu_mpi_vtable pcu_pmpi_vtable =
 { .size = pcu_pmpi_size,
   .rank = pcu_pmpi_rank,
   .send = pcu_pmpi_send,
   .done = pcu_pmpi_done,
-  .receive = pcu_pmpi_receive };
+  .receive = pcu_pmpi_receive,
+  .construct = pcu_pmpi_construct,
+  .destruct = pcu_pmpi_destruct };
 
-void pcu_pmpi_init(MPI_Comm comm)
+pcu_mpi_t* pcu_pmpi_init(MPI_Comm comm)
 {
-  original_comm = comm;
-  MPI_Comm_dup(comm,&pcu_user_comm);
-  MPI_Comm_dup(comm,&pcu_coll_comm);
-  MPI_Comm_size(comm,&global_size);
-  MPI_Comm_rank(comm,&global_rank);
+  pcu_mpi_t* m = (pcu_mpi_t*)malloc(sizeof(pcu_mpi_t));
+  pcu_pmpi_construct(m,comm);
+  return m;
 }
 
-void pcu_pmpi_finalize(void)
+void pcu_pmpi_finalize(pcu_mpi_t** m)
 {
-  MPI_Comm_free(&pcu_user_comm);
-  MPI_Comm_free(&pcu_coll_comm);
+  (*m)->vtable->destruct(*m);
+  free(*m);
+  *m = NULL;
+}
+void pcu_pmpi_destruct(pcu_mpi_t* self) {
+  MPI_Comm_free(&(self->user_comm));
+  MPI_Comm_free(&(self->coll_comm));
+}
+void pcu_pmpi_construct(pcu_mpi_t* self, MPI_Comm comm) {
+  self->original_comm = comm;
+  MPI_Comm_dup(comm,&(self->user_comm));
+  MPI_Comm_dup(comm,&(self->coll_comm));
+  MPI_Comm_size(comm,&(self->size));
+  MPI_Comm_rank(comm,&(self->rank));
+  self->vtable = &pcu_pmpi_vtable;
 }
 
-int pcu_pmpi_size(void)
+int pcu_pmpi_size(pcu_mpi_t* self)
 {
-  return global_size;
+  return self->size;
 }
 
-int pcu_pmpi_rank(void)
+int pcu_pmpi_rank(pcu_mpi_t* self)
 {
-  return global_rank;
+  return self->rank;
 }
 
-void pcu_pmpi_send(pcu_message* m, MPI_Comm comm)
+void pcu_pmpi_send(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
-  pcu_pmpi_send2(m,0,comm);
+  pcu_pmpi_send2(self, m,0,comm);
 }
 
-void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm)
+void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
   if( m->buffer.size > (size_t)INT_MAX ) {
     fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
@@ -73,19 +84,19 @@ void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm)
       &(m->request));
 }
 
-bool pcu_pmpi_done(pcu_message* m)
+bool pcu_pmpi_done(pcu_mpi_t* self, pcu_message* m)
 {
   int flag;
   MPI_Test(&(m->request),&flag,MPI_STATUS_IGNORE);
   return flag;
 }
 
-bool pcu_pmpi_receive(pcu_message* m, MPI_Comm comm)
+bool pcu_pmpi_receive(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
-  return pcu_pmpi_receive2(m,0,comm);
+  return pcu_pmpi_receive2(self, m,0,comm);
 }
 
-bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm)
+bool pcu_pmpi_receive2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
   MPI_Status status;
   int flag;
@@ -106,15 +117,3 @@ bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm)
       MPI_STATUS_IGNORE);
   return true;
 }
-
-void pcu_pmpi_switch(MPI_Comm new_comm)
-{
-  pcu_pmpi_finalize();
-  pcu_pmpi_init(new_comm);
-}
-
-MPI_Comm pcu_pmpi_comm(void)
-{
-  return original_comm;
-}
-
