@@ -15,33 +15,20 @@
 
 void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm);
 bool pcu_pmpi_receive2(pcu_mpi_t*, pcu_message* m, int tag, MPI_Comm comm);
-void pcu_pmpi_destruct(pcu_mpi_t* self);
-void pcu_pmpi_construct(pcu_mpi_t* self, MPI_Comm comm);
 
-
-pcu_mpi_t* pcu_pmpi_init(MPI_Comm comm)
+void pcu_pmpi_init(MPI_Comm comm, pcu_mpi_t* self)
 {
-  pcu_mpi_t* m = (pcu_mpi_t*)malloc(sizeof(pcu_mpi_t));
-  pcu_pmpi_construct(m,comm);
-  return m;
-}
-
-void pcu_pmpi_finalize(pcu_mpi_t** m)
-{
-  pcu_pmpi_destruct(*m);
-  free(*m);
-  *m = NULL;
-}
-void pcu_pmpi_destruct(pcu_mpi_t* self) {
-  MPI_Comm_free(&(self->user_comm));
-  MPI_Comm_free(&(self->coll_comm));
-}
-void pcu_pmpi_construct(pcu_mpi_t* self, MPI_Comm comm) {
   self->original_comm = comm;
   MPI_Comm_dup(comm,&(self->user_comm));
   MPI_Comm_dup(comm,&(self->coll_comm));
   MPI_Comm_size(comm,&(self->size));
   MPI_Comm_rank(comm,&(self->rank));
+}
+
+void pcu_pmpi_finalize(pcu_mpi_t* self)
+{
+  MPI_Comm_free(&(self->user_comm));
+  MPI_Comm_free(&(self->coll_comm));
 }
 
 int pcu_pmpi_size(pcu_mpi_t* self)

@@ -61,9 +61,9 @@ bool pcu_mpi_receive(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
     check_rank(self, m->peer);
   return pcu_pmpi_receive(self, m, comm);
 }
-pcu_mpi_t* pcu_mpi_init(MPI_Comm comm) {
-  return pcu_pmpi_init(comm);
+void pcu_mpi_init(MPI_Comm comm, pcu_mpi_t* mpi) {
+  pcu_pmpi_init(comm, mpi);
 }
-void pcu_mpi_finalize(pcu_mpi_t** mpi) {
+void pcu_mpi_finalize(pcu_mpi_t* mpi) {
   pcu_pmpi_finalize(mpi);
 }
