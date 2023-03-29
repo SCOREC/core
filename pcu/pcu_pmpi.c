@@ -18,14 +18,6 @@ bool pcu_pmpi_receive2(pcu_mpi_t*, pcu_message* m, int tag, MPI_Comm comm);
 void pcu_pmpi_destruct(pcu_mpi_t* self);
 void pcu_pmpi_construct(pcu_mpi_t* self, MPI_Comm comm);
 
-static pcu_mpi_vtable pcu_pmpi_vtable =
-{ .size = pcu_pmpi_size,
-  .rank = pcu_pmpi_rank,
-  .send = pcu_pmpi_send,
-  .done = pcu_pmpi_done,
-  .receive = pcu_pmpi_receive,
-  .construct = pcu_pmpi_construct,
-  .destruct = pcu_pmpi_destruct };
 
 pcu_mpi_t* pcu_pmpi_init(MPI_Comm comm)
 {
@@ -36,7 +28,7 @@ pcu_mpi_t* pcu_pmpi_init(MPI_Comm comm)
 
 void pcu_pmpi_finalize(pcu_mpi_t** m)
 {
-  (*m)->vtable->destruct(*m);
+  pcu_pmpi_destruct(*m);
   free(*m);
   *m = NULL;
 }
@@ -50,7 +42,6 @@ void pcu_pmpi_construct(pcu_mpi_t* self, MPI_Comm comm) {
   MPI_Comm_dup(comm,&(self->coll_comm));
   MPI_Comm_size(comm,&(self->size));
   MPI_Comm_rank(comm,&(self->rank));
-  self->vtable = &pcu_pmpi_vtable;
 }
 
 int pcu_pmpi_size(pcu_mpi_t* self)
