@@ -42,14 +42,18 @@
 #include <limits.h> /*INT_MAX*/
 #include <stdlib.h> /*abort*/
 
-enum state { uninit, init };
-static enum state global_state = uninit;
-static pcu_msg global_pmsg;
-static pcu_mpi_t* global_mpi;
+typedef enum { pcu_state_uninit, pcu_state_init } pcu_state_enum ;
+typedef struct {
+  pcu_state_enum state;
+  pcu_msg pmsg;
+  pcu_mpi_t* mpi;
+} pcu_t;
+
+static pcu_t global_pcu = {.state=pcu_state_uninit};
 
 static pcu_msg* get_msg()
 {
-  return &global_pmsg;
+  return &(global_pcu.pmsg);
 }
 
 /** \brief Initializes the PCU library.
@@ -59,11 +63,11 @@ static pcu_msg* get_msg()
  */
 int PCU_Comm_Init(void)
 {
-  if (global_state != uninit)
+  if (global_pcu.state != pcu_state_uninit)
     reel_fail("nested calls to Comm_Init");
-  global_mpi = pcu_mpi_init(MPI_COMM_WORLD);
-  pcu_make_msg(&global_pmsg);
-  global_state = init;
+  global_pcu.mpi = pcu_mpi_init(MPI_COMM_WORLD);
+  pcu_make_msg(&(global_pcu.pmsg));
+  global_pcu.state = pcu_state_init;
   /* turn ordering on by default, call
      PCU_Comm_Order(false) after PCU_Comm_Init
      to disable this */
@@ -77,13 +81,13 @@ int PCU_Comm_Init(void)
  */
 int PCU_Comm_Free(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Free called before Comm_Init");
-  if (global_pmsg.order)
-    pcu_order_free(global_pmsg.order);
-  pcu_free_msg(&global_pmsg);
-  pcu_mpi_finalize(&global_mpi);
-  global_state = uninit;
+  if (global_pcu.pmsg.order)
+    pcu_order_free(global_pcu.pmsg.order);
+  pcu_free_msg(&global_pcu.pmsg);
+  pcu_mpi_finalize(&global_pcu.mpi);
+  global_pcu.state = pcu_state_uninit;
   return PCU_SUCCESS;
 }
 
@@ -98,9 +102,9 @@ int PCU_Comm_Free(void)
  */
 int PCU_Comm_Self(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Self called before Comm_Init");
-  return pcu_mpi_rank(global_mpi);
+  return pcu_mpi_rank(global_pcu.mpi);
 }
 
 /** \brief Returns the number of threads in the program.
@@ -109,9 +113,9 @@ int PCU_Comm_Self(void)
  */
 int PCU_Comm_Peers(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Peers called before Comm_Init");
-  return pcu_mpi_size(global_mpi);
+  return pcu_mpi_size(global_pcu.mpi);
 }
 
 /** \brief Begins a PCU communication phase.
@@ -122,9 +126,9 @@ int PCU_Comm_Peers(void)
 */
 void PCU_Comm_Begin(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Begin called before Comm_Init");
-  pcu_msg_start(global_mpi, get_msg());
+  pcu_msg_start(global_pcu.mpi, get_msg());
 }
 
 /** \brief Packs data to be sent to \a to_rank.
@@ -135,9 +139,9 @@ void PCU_Comm_Begin(void)
  */
 int PCU_Comm_Pack(int to_rank, const void* data, size_t size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Pack called before Comm_Init");
-  if ((to_rank < 0)||(to_rank >= pcu_mpi_size(global_mpi)))
+  if ((to_rank < 0)||(to_rank >= pcu_mpi_size(global_pcu.mpi)))
     reel_fail("Invalid rank in Comm_Pack");
   if ( size > (size_t)INT_MAX ) {
 	  fprintf(stderr, "ERROR Attempting to pack a PCU message whose size exceeds INT_MAX... exiting\n");
@@ -156,9 +160,9 @@ int PCU_Comm_Pack(int to_rank, const void* data, size_t size)
  */
 int PCU_Comm_Send(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Send called before Comm_Init");
-  pcu_msg_send(global_mpi, get_msg());
+  pcu_msg_send(global_pcu.mpi, get_msg());
   return PCU_SUCCESS;
 }
 
@@ -175,12 +179,12 @@ int PCU_Comm_Send(void)
  */
 bool PCU_Comm_Listen(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Listen called before Comm_Init");
   pcu_msg* m = get_msg();
   if (m->order)
-    return pcu_order_receive(global_mpi, m->order, m);
-  return pcu_msg_receive(global_mpi, m);
+    return pcu_order_receive(global_pcu.mpi, m->order, m);
+  return pcu_msg_receive(global_pcu.mpi, m);
 }
 
 /** \brief Returns in * \a from_rank the sender of the current received buffer.
@@ -188,7 +192,7 @@ bool PCU_Comm_Listen(void)
  */
 int PCU_Comm_Sender(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Sender called before Comm_Init");
   pcu_msg* m = get_msg();
   if (m->order)
@@ -201,7 +205,7 @@ int PCU_Comm_Sender(void)
  */
 bool PCU_Comm_Unpacked(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Unpacked called before Comm_Init");
   pcu_msg* m = get_msg();
   if (m->order)
@@ -221,7 +225,7 @@ bool PCU_Comm_Unpacked(void)
  */
 int PCU_Comm_Unpack(void* data, size_t size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Unpack called before Comm_Init");
   pcu_msg* m = get_msg();
   if (m->order)
@@ -233,7 +237,7 @@ int PCU_Comm_Unpack(void* data, size_t size)
 
 void PCU_Comm_Order(bool on)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Order called before Comm_Init");
   pcu_msg* m = get_msg();
   if (on && (!m->order))
@@ -247,9 +251,9 @@ void PCU_Comm_Order(bool on)
 /** \brief Blocking barrier over all threads. */
 void PCU_Barrier(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Barrier called before Comm_Init");
-  pcu_barrier(global_mpi, &(get_msg()->coll));
+  pcu_barrier(global_pcu.mpi, &(get_msg()->coll));
 }
 
 /** \brief Performs an Allreduce sum of double arrays.
@@ -260,9 +264,9 @@ void PCU_Barrier(void)
   */
 void PCU_Add_Doubles(double* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Add_Doubles called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_add_doubles,p,n*sizeof(double));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_add_doubles,p,n*sizeof(double));
 }
 
 double PCU_Add_Double(double x)
@@ -277,9 +281,9 @@ double PCU_Add_Double(double x)
   */
 void PCU_Min_Doubles(double* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Min_Doubles called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_min_doubles,p,n*sizeof(double));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_min_doubles,p,n*sizeof(double));
 }
 
 double PCU_Min_Double(double x)
@@ -294,9 +298,9 @@ double PCU_Min_Double(double x)
   */
 void PCU_Max_Doubles(double* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Max_Doubles called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_max_doubles,p,n*sizeof(double));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_max_doubles,p,n*sizeof(double));
 }
 
 double PCU_Max_Double(double x)
@@ -311,9 +315,9 @@ double PCU_Max_Double(double x)
   */
 void PCU_Add_Ints(int* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Add_Ints called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_add_ints,p,n*sizeof(int));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_add_ints,p,n*sizeof(int));
 }
 
 int PCU_Add_Int(int x)
@@ -328,9 +332,9 @@ int PCU_Add_Int(int x)
   */
 void PCU_Add_Longs(long* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Add_Longs called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_add_longs,p,n*sizeof(long));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_add_longs,p,n*sizeof(long));
 }
 
 long PCU_Add_Long(long x)
@@ -345,9 +349,9 @@ long PCU_Add_Long(long x)
   */
 void PCU_Add_SizeTs(size_t* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Add_SizeTs called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_add_sizets,p,n*sizeof(size_t));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_add_sizets,p,n*sizeof(size_t));
 }
 
 size_t PCU_Add_SizeT(size_t x)
@@ -361,9 +365,9 @@ size_t PCU_Add_SizeT(size_t x)
 /** \brief Performs an Allreduce minimum of size_t unsigned integers
   */
 void PCU_Min_SizeTs(size_t* p, size_t n) {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Min_SizeTs called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_min_sizets,p,n*sizeof(size_t));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_min_sizets,p,n*sizeof(size_t));
 }
 
 size_t PCU_Min_SizeT(size_t x) {
@@ -376,9 +380,9 @@ size_t PCU_Min_SizeT(size_t x) {
 /** \brief Performs an Allreduce maximum of size_t unsigned integers
   */
 void PCU_Max_SizeTs(size_t* p, size_t n) {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Max_SizeTs called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_max_sizets,p,n*sizeof(size_t));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_max_sizets,p,n*sizeof(size_t));
 }
 
 size_t PCU_Max_SizeT(size_t x) {
@@ -396,13 +400,13 @@ size_t PCU_Max_SizeT(size_t x) {
   */
 void PCU_Exscan_Ints(int* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Exscan_Ints called before Comm_Init");
   int* originals;
   NOTO_MALLOC(originals,n);
   for (size_t i=0; i < n; ++i)
     originals[i] = p[i];
-  pcu_scan(global_mpi, &(get_msg()->coll),pcu_add_ints,p,n*sizeof(int));
+  pcu_scan(global_pcu.mpi, &(get_msg()->coll),pcu_add_ints,p,n*sizeof(int));
   //convert inclusive scan to exclusive
   for (size_t i=0; i < n; ++i)
     p[i] -= originals[i];
@@ -420,13 +424,13 @@ int PCU_Exscan_Int(int x)
 /** \brief See PCU_Exscan_Ints */
 void PCU_Exscan_Longs(long* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Exscan_Longs called before Comm_Init");
   long* originals;
   NOTO_MALLOC(originals,n);
   for (size_t i=0; i < n; ++i)
     originals[i] = p[i];
-  pcu_scan(global_mpi, &(get_msg()->coll),pcu_add_longs,p,n*sizeof(long));
+  pcu_scan(global_pcu.mpi, &(get_msg()->coll),pcu_add_longs,p,n*sizeof(long));
   //convert inclusive scan to exclusive
   for (size_t i=0; i < n; ++i)
     p[i] -= originals[i];
@@ -445,9 +449,9 @@ long PCU_Exscan_Long(long x)
   */
 void PCU_Min_Ints(int* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Min_Ints called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_min_ints,p,n*sizeof(int));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_min_ints,p,n*sizeof(int));
 }
 
 int PCU_Min_Int(int x)
@@ -462,9 +466,9 @@ int PCU_Min_Int(int x)
   */
 void PCU_Max_Ints(int* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Max_Ints called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_max_ints,p,n*sizeof(int));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_max_ints,p,n*sizeof(int));
 }
 
 int PCU_Max_Int(int x)
@@ -478,9 +482,9 @@ int PCU_Max_Int(int x)
   */
 void PCU_Max_Longs(long* p, size_t n)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Max_Longs called before Comm_Init");
-  pcu_allreduce(global_mpi, &(get_msg()->coll),pcu_max_longs,p,n*sizeof(long));
+  pcu_allreduce(global_pcu.mpi, &(get_msg()->coll),pcu_max_longs,p,n*sizeof(long));
 }
 
 long PCU_Max_Long(long x)
@@ -509,43 +513,43 @@ int PCU_And(int c)
  */
 int PCU_Proc_Self(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Proc_Self called before Comm_Init");
-  return pcu_mpi_rank(global_mpi);
+  return pcu_mpi_rank(global_pcu.mpi);
 }
 
 /** \brief Returns the number of processes.
  */
 int PCU_Proc_Peers(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Proc_Peers called before Comm_Init");
-  return pcu_mpi_size(global_mpi);
+  return pcu_mpi_size(global_pcu.mpi);
 }
 
 /** \brief Similar to PCU_Comm_Self, returns the rank as an argument.
  */
 int PCU_Comm_Rank(int* rank)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Rank called before Comm_Init");
-  *rank = pcu_mpi_rank(global_mpi);
+  *rank = pcu_mpi_rank(global_pcu.mpi);
   return PCU_SUCCESS;
 }
 
 /** \brief Similar to PCU_Comm_Peers, returns the size as an argument. */
 int PCU_Comm_Size(int* size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Size called before Comm_Init");
-  *size = pcu_mpi_size(global_mpi);
+  *size = pcu_mpi_size(global_pcu.mpi);
   return PCU_SUCCESS;
 }
 
 /** \brief Returns true iff PCU has been initialized */
 bool PCU_Comm_Initialized(void)
 {
-  return global_state == init;
+  return global_pcu.state == pcu_state_init;
 }
 
 /** \brief Deprecated, see PCU_Comm_Begin.
@@ -553,9 +557,9 @@ bool PCU_Comm_Initialized(void)
 int PCU_Comm_Start(PCU_Method method)
 {
   (void)method; //warning silencer
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Start called before Comm_Init");
-  pcu_msg_start(global_mpi,get_msg());
+  pcu_msg_start(global_pcu.mpi,get_msg());
   return PCU_SUCCESS;
 }
 
@@ -566,9 +570,9 @@ int PCU_Comm_Start(PCU_Method method)
  */
 int PCU_Comm_Packed(int to_rank, size_t* size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Packed called before Comm_Init");
-  if ((to_rank < 0)||(to_rank >= pcu_mpi_size(global_mpi)))
+  if ((to_rank < 0)||(to_rank >= pcu_mpi_size(global_pcu.mpi)))
     reel_fail("Invalid rank in Comm_Packed");
   *size = pcu_msg_packed(get_msg(),to_rank);
   return PCU_SUCCESS;
@@ -585,9 +589,9 @@ int PCU_Comm_Packed(int to_rank, size_t* size)
  */
 int PCU_Comm_Write(int to_rank, const void* data, size_t size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Write called before Comm_Init");
-  if ((to_rank < 0)||(to_rank >= pcu_mpi_size(global_mpi)))
+  if ((to_rank < 0)||(to_rank >= pcu_mpi_size(global_pcu.mpi)))
     reel_fail("Invalid rank in Comm_Write");
   pcu_msg* msg = get_msg();
   PCU_MSG_PACK(msg,to_rank,size);
@@ -618,7 +622,7 @@ bool PCU_Comm_Receive(void)
  */
 bool PCU_Comm_Read(int* from_rank, void** data, size_t* size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Read called before Comm_Init");
   if (!PCU_Comm_Receive())
     return false;
@@ -649,7 +653,7 @@ static void append(char* s, size_t size, const char* format, ...)
 
 void PCU_Debug_Open(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Debug_Open called before Comm_Init");
 
   const int fanout = 2048;
@@ -677,7 +681,7 @@ void PCU_Debug_Open(void)
 /** \brief like fprintf, contents go to debugN.txt */
 void PCU_Debug_Print(const char* format, ...)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Debug_Print called before Comm_Init");
   pcu_msg* msg = get_msg();
   if ( ! msg->file)
@@ -692,7 +696,7 @@ void PCU_Debug_Print(const char* format, ...)
 /** \brief Similar to PCU_Comm_Sender, returns the rank as an argument. */
 int PCU_Comm_From(int* from_rank)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_From called before Comm_Init");
   pcu_msg* m = get_msg();
   if (m->order)
@@ -709,7 +713,7 @@ int PCU_Comm_From(int* from_rank)
  */
 int PCU_Comm_Received(size_t* size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Received called before Comm_Init");
   pcu_msg* m = get_msg();
   if (m->order)
@@ -727,7 +731,7 @@ int PCU_Comm_Received(size_t* size)
  */
 void* PCU_Comm_Extract(size_t size)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Comm_Extract called before Comm_Init");
   pcu_msg* m = get_msg();
   if (m->order)
@@ -745,13 +749,13 @@ void* PCU_Comm_Extract(size_t size)
  */
 void PCU_Switch_Comm(MPI_Comm new_comm)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Switch_Comm called before Comm_Init");
   int result;
-  MPI_Comm_compare(new_comm, global_mpi->original_comm, &result);
+  MPI_Comm_compare(new_comm, global_pcu.mpi->original_comm, &result);
   if (result != MPI_IDENT) {
-    pcu_mpi_finalize(&global_mpi);
-    global_mpi = pcu_mpi_init(new_comm);
+    pcu_mpi_finalize(&(global_pcu.mpi));
+    global_pcu.mpi = pcu_mpi_init(new_comm);
   }
 }
 
@@ -762,9 +766,9 @@ void PCU_Switch_Comm(MPI_Comm new_comm)
  */
 MPI_Comm PCU_Get_Comm(void)
 {
-  if (global_state == uninit)
+  if (global_pcu.state == pcu_state_uninit)
     reel_fail("Get_Comm called before Comm_Init");
-  return global_mpi->original_comm;
+  return global_pcu.mpi->original_comm;
 }
 
 /** \brief Return the time in seconds since some time in the past
