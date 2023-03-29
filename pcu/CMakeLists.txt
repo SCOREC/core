@@ -10,6 +10,7 @@ message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 # Package sources
 set(SOURCES
   pcu.c
+  pcu2.c
   pcu_aa.c
   pcu_coll.c
   pcu_io.c
