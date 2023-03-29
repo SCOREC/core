@@ -14,8 +14,8 @@
 
 #include <stdbool.h>
 
-pcu_mpi_t* pcu_pmpi_init(MPI_Comm comm);
-void pcu_pmpi_finalize(pcu_mpi_t** m);
+void pcu_pmpi_init(MPI_Comm comm, pcu_mpi_t* mpi);
+void pcu_pmpi_finalize(pcu_mpi_t* m);
 int pcu_pmpi_size(pcu_mpi_t* self);
 int pcu_pmpi_rank(pcu_mpi_t* self);
 void pcu_pmpi_send(pcu_mpi_t*, pcu_message* m, MPI_Comm comm);

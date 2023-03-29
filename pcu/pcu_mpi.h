@@ -37,7 +37,7 @@ int pcu_mpi_rank(pcu_mpi_t*);
 void pcu_mpi_send(pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
 bool pcu_mpi_done(pcu_mpi_t*, pcu_message* m);
 bool pcu_mpi_receive(pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
-pcu_mpi_t* pcu_mpi_init(MPI_Comm comm);
-void pcu_mpi_finalize(pcu_mpi_t**);
+void pcu_mpi_init(MPI_Comm comm, pcu_mpi_t* mpi);
+void pcu_mpi_finalize(pcu_mpi_t* mpi);
 
 #endif
