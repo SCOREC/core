@@ -28,6 +28,7 @@ set(SOURCES
 # Package headers
 set(HEADERS
   PCU.h
+  PCU2.h
   pcu_io.h
   pcu_util.h
   reel/reel.h
