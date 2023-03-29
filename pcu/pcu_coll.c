@@ -170,6 +170,8 @@ static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
 
 void pcu_make_coll(pcu_mpi_t* mpi, pcu_coll* c, pcu_pattern* p, pcu_merge* m)
 {
+  // silence warning
+  (void)mpi;
   c->pattern = p;
   c->merge = m;
 }
@@ -225,6 +227,8 @@ bool pcu_progress_coll(pcu_mpi_t* mpi, pcu_coll* c)
 
 static int reduce_begin_bit(pcu_mpi_t* mpi)
 {
+  // silence warning
+  (void)mpi;
   return 1;
 }
 
@@ -252,6 +256,8 @@ static int reduce_action(pcu_mpi_t* mpi, int bit)
 
 static int reduce_shift(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit << 1;
 }
 
@@ -280,6 +286,8 @@ static int bcast_begin_bit(pcu_mpi_t* mpi)
 
 static bool bcast_end_bit(pcu_mpi_t * mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit == 0;
 }
 
@@ -299,6 +307,8 @@ static int bcast_action(pcu_mpi_t* mpi, int bit)
 
 static int bcast_shift(pcu_mpi_t * mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit >> 1;
 }
 
@@ -320,6 +330,8 @@ static pcu_pattern bcast =
 
 static int scan_up_begin_bit(pcu_mpi_t* mpi)
 {
+  // silence warning
+  (void)mpi;
   return 1;
 }
 
@@ -373,6 +385,8 @@ static int scan_up_peer(pcu_mpi_t* mpi, int bit)
 
 static int scan_up_shift(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit << 1;
 }
 
@@ -392,6 +406,8 @@ static int scan_down_begin_bit(pcu_mpi_t* mpi)
 
 static bool scan_down_end_bit(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit == 1;
 }
 
@@ -442,6 +458,8 @@ static int scan_down_peer(pcu_mpi_t * mpi, int bit)
 
 static int scan_down_shift(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit >> 1;
 }
 
@@ -507,6 +525,8 @@ bool pcu_barrier_done(pcu_mpi_t* mpi, pcu_coll* c)
 
 void pcu_barrier(pcu_mpi_t* mpi, pcu_coll* c)
 {
+  // silence warning
+  (void)mpi;
   pcu_begin_barrier(mpi, c);
   while( ! pcu_barrier_done(mpi, c));
 }

@@ -53,7 +53,7 @@ static pcu_t global_pcu = {.state=pcu_state_uninit};
  */
 int PCU_Comm_Init(void)
 {
-  PCU_Comm_Init_2(&global_pcu);
+  return PCU_Comm_Init_2(&global_pcu);
 }
 
 /** \brief Frees all PCU library structures.
@@ -504,7 +504,7 @@ void PCU_Switch_Comm(MPI_Comm new_comm)
  */
 MPI_Comm PCU_Get_Comm(void)
 {
-  PCU_Get_Comm_2(&global_pcu);
+  return PCU_Get_Comm_2(&global_pcu);
 }
 
 /** \brief Return the time in seconds since some time in the past
