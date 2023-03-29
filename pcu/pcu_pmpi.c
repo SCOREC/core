@@ -48,6 +48,8 @@ void pcu_pmpi_send(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 
 void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
+  // silence warning
+  (void)self;
   if( m->buffer.size > (size_t)INT_MAX ) {
     fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
     abort();
@@ -64,6 +66,8 @@ void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 
 bool pcu_pmpi_done(pcu_mpi_t* self, pcu_message* m)
 {
+  // silence warning
+  (void)self;
   int flag;
   MPI_Test(&(m->request),&flag,MPI_STATUS_IGNORE);
   return flag;
@@ -71,11 +75,15 @@ bool pcu_pmpi_done(pcu_mpi_t* self, pcu_message* m)
 
 bool pcu_pmpi_receive(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
+  // silence warning
+  (void)self;
   return pcu_pmpi_receive2(self, m,0,comm);
 }
 
 bool pcu_pmpi_receive2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
+  // silence warning
+  (void)self;
   MPI_Status status;
   int flag;
   MPI_Iprobe(m->peer,tag,comm,&flag,&status);

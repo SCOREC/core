@@ -774,10 +774,14 @@ MPI_Comm PCU_Get_Comm_2(pcu_t* pcu)
  */
 double PCU_Time_2(pcu_t* pcu)
 {
+  // silence warning
+  (void)pcu;
   return MPI_Wtime();
 }
 
 void PCU_Protect_2(pcu_t* pcu)
 {
+  // silence warning
+  (void)pcu;
   reel_protect();
 }
