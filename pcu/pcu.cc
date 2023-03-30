@@ -411,7 +411,8 @@ int PCU_Proc_Peers(void) {
 int PCU_Comm_Rank(int *rank) {
   if (global_pcu == nullptr)
     reel_fail("Comm_Rank called before Comm_Init");
-  return global_pcu->Self();
+  *rank = global_pcu->Self();
+  return PCU_SUCCESS;
 }
 
 /** \brief Similar to PCU_Comm_Peers, returns the size as an argument. */
