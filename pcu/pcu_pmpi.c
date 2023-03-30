@@ -13,8 +13,8 @@
 #include <stdlib.h>
 #include <limits.h>
 
-void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm);
-bool pcu_pmpi_receive2(pcu_mpi_t*, pcu_message* m, int tag, MPI_Comm comm);
+void pcu_pmpi_send2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm);
+bool pcu_pmpi_receive2(const pcu_mpi_t*, pcu_message* m, int tag, MPI_Comm comm);
 
 void pcu_pmpi_init(MPI_Comm comm, pcu_mpi_t* self)
 {
@@ -31,22 +31,22 @@ void pcu_pmpi_finalize(pcu_mpi_t* self)
   MPI_Comm_free(&(self->coll_comm));
 }
 
-int pcu_pmpi_size(pcu_mpi_t* self)
+int pcu_pmpi_size(const pcu_mpi_t* self)
 {
   return self->size;
 }
 
-int pcu_pmpi_rank(pcu_mpi_t* self)
+int pcu_pmpi_rank(const pcu_mpi_t* self)
 {
   return self->rank;
 }
 
-void pcu_pmpi_send(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
+void pcu_pmpi_send(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
   pcu_pmpi_send2(self, m,0,comm);
 }
 
-void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
+void pcu_pmpi_send2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
   // silence warning
   (void)self;
@@ -64,7 +64,7 @@ void pcu_pmpi_send2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
       &(m->request));
 }
 
-bool pcu_pmpi_done(pcu_mpi_t* self, pcu_message* m)
+bool pcu_pmpi_done(const pcu_mpi_t* self, pcu_message* m)
 {
   // silence warning
   (void)self;
@@ -73,14 +73,14 @@ bool pcu_pmpi_done(pcu_mpi_t* self, pcu_message* m)
   return flag;
 }
 
-bool pcu_pmpi_receive(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
+bool pcu_pmpi_receive(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
   // silence warning
   (void)self;
   return pcu_pmpi_receive2(self, m,0,comm);
 }
 
-bool pcu_pmpi_receive2(pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
+bool pcu_pmpi_receive2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
   // silence warning
   (void)self;

@@ -21,41 +21,36 @@ void pcu_free_message(pcu_message* m)
   pcu_free_buffer(&(m->buffer));
 }
 
-int pcu_mpi_size(pcu_mpi_t* self)
+int pcu_mpi_size(const pcu_mpi_t* self)
 {
   return pcu_pmpi_size(self);
 }
 
-int pcu_mpi_rank(pcu_mpi_t* self)
+int pcu_mpi_rank(const pcu_mpi_t* self)
 {
   return pcu_pmpi_rank(self);
 }
 
-static void check_rank(pcu_mpi_t* self, int rank)
+static void check_rank(const pcu_mpi_t* self, int rank)
 {
   (void)rank;
   PCU_ALWAYS_ASSERT(0 <= rank);
   PCU_ALWAYS_ASSERT(rank < pcu_mpi_size(self));
 }
 
-void pcu_mpi_send(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
+void pcu_mpi_send(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
   check_rank(self, m->peer);
-  // verify that the communicator is one of the user or collective communicators
-  //int user_result, coll_result;
-  //MPI_Comm_compare(comm, self->user_comm, &user_result);
-  //MPI_Comm_compare(comm, self->coll_comm, &coll_result);
-  //PCU_ALWAYS_ASSERT(user_result == MPI_IDENT || coll_result == MPI_IDENT);
   PCU_ALWAYS_ASSERT(comm == self->user_comm || comm == self->coll_comm);
   pcu_pmpi_send(self, m, comm);
 }
 
-bool pcu_mpi_done(pcu_mpi_t* self, pcu_message* m)
+bool pcu_mpi_done(const pcu_mpi_t* self, pcu_message* m)
 {
   return pcu_pmpi_done(self, m);
 }
 
-bool pcu_mpi_receive(pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
+bool pcu_mpi_receive(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
   if (m->peer != MPI_ANY_SOURCE)
     check_rank(self, m->peer);
