@@ -31,17 +31,6 @@ extern "C" {
 
 typedef void pcu_merge(void* local, void* incoming, size_t size);
 void pcu_merge_assign(void* local, void* incoming, size_t size);
-void pcu_add_doubles(void* local, void* incoming, size_t size);
-void pcu_max_doubles(void* local, void* incoming, size_t size);
-void pcu_min_doubles(void* local, void* incoming, size_t size);
-void pcu_add_ints(void* local, void* incoming, size_t size);
-void pcu_min_ints(void* local, void* incoming, size_t size);
-void pcu_max_ints(void* local, void* incoming, size_t size);
-void pcu_max_longs(void* local, void* incoming, size_t size);
-void pcu_add_longs(void* local, void* incoming, size_t size);
-void pcu_add_sizets(void* local, void* incoming, size_t size);
-void pcu_min_sizets(void* local, void* incoming, size_t size);
-void pcu_max_sizets(void* local, void* incoming, size_t size);
 
 /* Enumerated actions that a rank takes during one
    step of the communication pattern */
