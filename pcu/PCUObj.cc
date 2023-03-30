@@ -7,6 +7,10 @@
 #include "reel.h"
 #include <algorithm>
 #include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <climits>
+#include <cstring>
+#include <cerrno>
+#include <cstdarg>
 namespace pcu {
 
 int PCU::Peers() const noexcept { return pcu_mpi_size(mpi_); }
