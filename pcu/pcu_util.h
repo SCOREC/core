@@ -22,17 +22,32 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
 } /* extern "C" */
 #endif
 
-#define PCU_ALWAYS_ASSERT(cond)                   \
-  do {                                            \
-    if (! (cond)) {                               \
-      char omsg[2048];                            \
-      sprintf(omsg, "%s failed at %s + %d \n",    \
-        #cond, __FILE__, __LINE__);               \
-      PCU_Assert_Fail(omsg);                      \
-    }                                             \
-  } while (0)
+#define PCU_DO_PRAGMA_(x) _Pragma (#x)
+#define PCU_DO_PRAGMA(x) PCU_DO_PRAGMA_(x)
 
+#define PCU_IGNORE_DIAGNOSTIC_START(x) \
+  PCU_DO_PRAGMA(GCC diagnostic push) \
+  PCU_DO_PRAGMA(GCC diagnostic ignored #x) \
+  PCU_DO_PRAGMA(clang diagnostic push) \
+  PCU_DO_PRAGMA(clang diagnostic ignored #x)
+
+#define PCU_IGNORE_DIAGNOSTIC_END \
+  PCU_DO_PRAGMA(GCC diagnostic pop) \
+  PCU_DO_PRAGMA(clang diagnostic pop)
+
+#define PCU_ALWAYS_ASSERT(cond) \
+  PCU_IGNORE_DIAGNOSTIC_START(-Wdeprecated-declarations)      \
+  do {                                                      \
+    if (! (cond)) {                                         \
+      char omsg[2048];                                      \
+      sprintf(omsg, "%s failed at %s + %d \n",              \
+        #cond, __FILE__, __LINE__);                         \
+      PCU_Assert_Fail(omsg);                                \
+    }                                                       \
+  } while (0)                                               \
+  PCU_IGNORE_DIAGNOSTIC_END
 #define PCU_ALWAYS_ASSERT_VERBOSE(cond, msg)      \
+  PCU_IGNORE_DIAGNOSTIC_START(-Wdeprecated-declarations)      \
   do {                                            \
     if (! (cond)) {                               \
       char omsg[2048];                            \
@@ -40,7 +55,8 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
         #cond, __FILE__, __LINE__, msg);          \
       PCU_Assert_Fail(omsg);                      \
     }                                             \
-  } while(0)
+  } while(0)                                      \
+  PCU_IGNORE_DIAGNOSTIC_END
 
 #ifdef NDEBUG
 #define PCU_DEBUG_ASSERT(cond)
