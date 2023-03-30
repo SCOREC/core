@@ -9,8 +9,7 @@ message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 
 # Package sources
 set(SOURCES
-  pcu.c
-  pcu2.c
+        pcu.cc
   pcu_aa.c
   pcu_coll.c
   pcu_io.c
@@ -23,15 +22,15 @@ set(SOURCES
   pcu_util.c
   noto/noto_malloc.c
   reel/reel.c
-)
+  PCUObj.cc)
 
 # Package headers
 set(HEADERS
   PCU.h
-  PCU2.h
-  pcu_io.h
+        pcu_io.h
   pcu_util.h
   reel/reel.h
+  pcu_defines.h
 )
 
 # Add the pcu library

@@ -33,6 +33,7 @@ void pcu_merge_assign(void* local, void* incoming, size_t size)
   memcpy(local,incoming,size);
 }
 
+// TODO remove once struct fully inplace
 void pcu_add_doubles(void* local, void* incoming, size_t size)
 {
   double* a = local;

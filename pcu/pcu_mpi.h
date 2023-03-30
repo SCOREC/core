@@ -13,6 +13,10 @@
 #include "pcu_buffer.h"
 #include <mpi.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
   pcu_buffer buffer;
@@ -23,14 +27,15 @@ typedef struct
 void pcu_make_message(pcu_message* m);
 void pcu_free_message(pcu_message* m);
 
-typedef struct
+struct pcu_mpi_struct
 {
   MPI_Comm original_comm;
   MPI_Comm user_comm;
   MPI_Comm coll_comm;
   int rank;
   int size;
-} pcu_mpi_t;
+};
+typedef struct pcu_mpi_struct pcu_mpi_t;
 
 int pcu_mpi_size(const pcu_mpi_t*);
 int pcu_mpi_rank(const pcu_mpi_t*);
@@ -40,4 +45,7 @@ bool pcu_mpi_receive(const pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
 void pcu_mpi_init(MPI_Comm comm, pcu_mpi_t* mpi);
 void pcu_mpi_finalize(pcu_mpi_t* mpi);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

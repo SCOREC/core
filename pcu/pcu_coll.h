@@ -12,6 +12,10 @@
 
 #include "pcu_mpi.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* The PCU Collectives system (pcu_coll for short) implements
    non-blocking collective operations based loosely on binary-tree
    or binomial communication patterns.
@@ -88,4 +92,7 @@ void pcu_begin_barrier(pcu_mpi_t*,pcu_coll* c);
 bool pcu_barrier_done(pcu_mpi_t*, pcu_coll* c);
 void pcu_barrier(pcu_mpi_t*, pcu_coll* c);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //PCU_COLL_H

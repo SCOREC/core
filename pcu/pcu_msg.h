@@ -14,6 +14,10 @@
 #include "pcu_aa.h"
 #include "pcu_io.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* the PCU Messenger (pcu_msg for short) system implements
    a non-blocking Bulk Synchronous Parallel communication model
    it is based on PCU non-blocking Collectives and pcu_mpi,
@@ -60,4 +64,7 @@ int pcu_msg_received_from(pcu_msg* m);
 size_t pcu_msg_received_size(pcu_msg* m);
 void pcu_free_msg(pcu_msg* m);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //PCU_MSG_H
