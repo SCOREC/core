@@ -862,5 +862,5 @@ if (PCU_COMPRESS)
   endif()
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
   mpi_test(chef10 4 ${CMAKE_CURRENT_BINARY_DIR}/chef adapt.reducePartCount.inp
-    WORKING_DIRECTORY ${MDIR}/${RUNDIR})
+    WORKING_DIRECTORY ${MDIR}/run)
 endif()
