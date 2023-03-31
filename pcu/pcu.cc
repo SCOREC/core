@@ -457,7 +457,7 @@ int PCU_Comm_Packed(int to_rank, size_t *size) {
 int PCU_Comm_Write(int to_rank, const void *data, size_t size) {
   if (global_pcu == nullptr)
     reel_fail("Comm_Write called before Comm_Init");
-  return global_pcu->Pack(to_rank, data, size);
+  return global_pcu->Write(to_rank, data, size);
 }
 
 /** \brief Convenience wrapper over Listen and Unpacked */
@@ -542,10 +542,7 @@ void *PCU_Comm_Extract(size_t size) {
 void PCU_Switch_Comm(MPI_Comm new_comm) {
   if (global_pcu == nullptr)
     reel_fail("Switch_Comm called before Comm_Init");
-  if (new_comm != global_pcu->GetMPIComm()) {
-    delete global_pcu;
-    global_pcu = new pcu::PCU(new_comm);
-  }
+  global_pcu->SwitchMPIComm(new_comm);
 }
 
 /** \brief Return the current MPI communicator

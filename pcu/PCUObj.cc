@@ -31,7 +31,7 @@ int PCU::Send() noexcept {
   pcu_msg_send(mpi_, msg_);
   return PCU_SUCCESS;
 }
-bool PCU::Receive(void) noexcept {
+bool PCU::Receive() noexcept {
   while (Unpacked())
     if (!Listen())
       return false;
@@ -149,9 +149,9 @@ void PCU::DebugOpen() noexcept {
   noto_free(path);
 }
 
-double GetMem(void) noexcept { return pcu_get_mem(); }
-void Protect(void) noexcept { reel_protect(); }
-double Time(void) noexcept { return MPI_Wtime(); }
+double GetMem() noexcept { return pcu_get_mem(); }
+void Protect() noexcept { reel_protect(); }
+double Time() noexcept { return MPI_Wtime(); }
 
 void PCU::DebugPrint(const char *format, ...) noexcept {
   va_list args;
@@ -176,7 +176,9 @@ PCU::PCU(MPI_Comm comm) {
   Order(true);
 }
 PCU::~PCU() noexcept {
+  pcu_mpi_finalize(mpi_);
   delete mpi_;
+  pcu_free_msg(msg_);
   delete msg_;
 }
 PCU::PCU(PCU &&other) noexcept {
@@ -189,6 +191,16 @@ PCU &PCU::operator=(PCU && other) noexcept {
   return *this;
 }
 MPI_Comm PCU::GetMPIComm() const noexcept { return mpi_->original_comm; }
+
+MPI_Comm PCU::SwitchMPIComm(MPI_Comm newcomm) noexcept {
+  if(newcomm == mpi_->original_comm) {
+    return mpi_->original_comm;
+  }
+  auto original_comm = mpi_->original_comm;
+  pcu_mpi_finalize(mpi_);
+  pcu_mpi_init(newcomm, mpi_);
+  return original_comm;
+}
 
 /* template implementations */
 template <typename T> void PCU::Add(T *p, size_t n) noexcept {
