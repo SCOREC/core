@@ -69,16 +69,27 @@ public:
   /* Debug functions */
   void DebugOpen() noexcept;
 
+  MPI_Comm SwitchMPIComm(MPI_Comm) noexcept;
+
+  //struct MPIComms {
+  //  MPI_Comm original;
+  //  MPI_Comm user;
+  //  MPI_Comm coll;
+  //};
+  // takes ownership of newcomms.user & newcomms.coll
+  // user responsibility to free returned user/coll comm
+  //MPIComms SwitchMPIComms(MPIComms& newcomms) noexcept;
+
 private:
   pcu_msg_struct *msg_;
   pcu_mpi_struct *mpi_;
 };
 /*stack trace helpers using GNU/Linux*/
-void Protect(void) noexcept;
+void Protect() noexcept;
 /*Memory usage*/
-[[nodiscard]] double GetMem(void) noexcept;
+[[nodiscard]] double GetMem() noexcept;
 /*MPI_Wtime() equivalent*/
-[[nodiscard]] double Time(void) noexcept;
+[[nodiscard]] double Time() noexcept;
 
 /* explicit instantiations of template functions */
 #define PCU_EXPL_INST_DECL(T)                                                  \
