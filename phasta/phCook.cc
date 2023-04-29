@@ -285,7 +285,6 @@ namespace chef {
     if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
     if (in.simmetrixMesh == 0 && shrinkFactor > 1){
-      fprintf(stderr, "cake\n");
       GroupCode code;
       apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
       code.mesh=m;
