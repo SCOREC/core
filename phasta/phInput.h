@@ -201,6 +201,22 @@ class Input
     double simSizeUpperBound;
     /** \brief number of allowed mesh elements of adapted mesh */
     double simMaxAdaptMeshElements;
+    /** \brief bool of whether to use shock guided adaptation */
+    int shockGuidedAdaptation;
+    /** \brief isotropic element size for shock guided adaptation */
+    double isotropicShockSize;
+    /** \brief bool of whether to use anisotropic shock adaptation */
+    int anisotropicShockAdaptation; 
+    /** \brief anisotropic aspect ratio (uses isotropic size for normal direction) */
+    double anisotropicShockAR;
+    /** \brief factor to scale entire adapted mesh size field by */
+    double sizeScaleFactor;
+    /** \brief 0 or 1 for whether to perform manual mesh resampling */
+    int manualMeshResample;
+    /** \brief 0 or 1 for whether to perform shock ID and segmentation procedures */
+    int shockIDSegment;
+    /** \brief 0 or 1 for whether to perform shock extension procedures */
+    int extendShocks;
 };
 
 int countNaturalBCs(Input& in);

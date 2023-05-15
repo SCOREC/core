@@ -89,6 +89,14 @@ static void setDefaults(Input& in)
   in.simSizeLowerBound = 0.0;
   in.simSizeUpperBound = 1.0e16;
   in.simMaxAdaptMeshElements = 1.0e16;
+  in.shockGuidedAdaptation = 0;
+  in.isotropicShockSize = 1.0;
+  in.anisotropicShockAdaptation = 0;
+  in.anisotropicShockAR = 8;
+  in.sizeScaleFactor = 1.0;
+  in.manualMeshResample = 0;
+  in.shockIDSegment = 0;
+  in.extendShocks = 0;
 }
 
 Input::Input()
@@ -176,6 +184,14 @@ static void formMaps(Input& in, StringMap& stringMap, IntMap& intMap, DblMap& db
   dblMap["simSizeLowerBound"] = &in.simSizeLowerBound;
   dblMap["simSizeUpperBound"] = &in.simSizeUpperBound;
   dblMap["simMaxAdaptMeshElements"] = &in.simMaxAdaptMeshElements;
+  intMap["shockGuidedAdaptation"] = &in.shockGuidedAdaptation;
+  dblMap["isotropicShockSize"] = &in.isotropicShockSize;
+  intMap["anisotropicShockAdaptation"] = &in.anisotropicShockAdaptation;
+  dblMap["anisotropicShockAR"] = &in.anisotropicShockAR;
+  dblMap["sizeScaleFactor"] = &in.sizeScaleFactor;
+  intMap["manualMeshResample"] = &in.manualMeshResample;
+  intMap["shockIDSegment"] = &in.shockIDSegment;
+  intMap["extendShocks"] = &in.extendShocks;
 }
 
 template <class T>
