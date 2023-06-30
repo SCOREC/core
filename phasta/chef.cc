@@ -54,7 +54,6 @@ int main(int argc, char** argv)
   apf::Mesh2* m = 0;
   std::string inputPath = "adapt.inp";
   if(argc==2) inputPath = argv[1];
-  fprintf(stderr, "reading inp %s\n", inputPath.c_str());
   ph::Input in;
   in.load(inputPath.c_str());
   chef::cook(g,m,in);
