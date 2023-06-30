@@ -354,26 +354,6 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
       params[0] * params[1], 2, params);
-// start effort to write coords to a flat ascii file for each part
-  int npts=params[0];
-  char coordfilename[64];
-  //bzero((void*)coordfilename,64);
- if (o.txtCoord == 1) {
-  int rank = PCU_Comm_Self() + 1;
-  sprintf(coordfilename, "coords.%d",rank);
-  FILE* fc = fopen(coordfilename, "w");
-  fprintf ( fc, "%d \n", npts );
-  double x,y,z;
-      
-  for  (int j = 0; j < npts; j++) {
-     x=o.arrays.coordinates[j];
-     y=o.arrays.coordinates[j+npts];
-     z=o.arrays.coordinates[j+2*npts];
-    fprintf ( fc, "%.15E,%.15E,%.15E,\n", x,y,z);
-  }
-  fclose(fc);
-  }
-
   writeInt(f, "number of processors", PCU_Comm_Peers());
   writeInt(f, "size of ilwork array", o.nlwork);
   if (o.nlwork)

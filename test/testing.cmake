@@ -867,4 +867,7 @@ if (PCU_COMPRESS)
       ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
       WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
   endif()
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
+  mpi_test(chef10 4 ${CMAKE_CURRENT_BINARY_DIR}/chef adapt.reducePartCount.inp
+    WORKING_DIRECTORY ${MDIR}/run)
 endif()
