@@ -265,7 +265,7 @@ void Kill(const int fid)
   }
 }
 
-auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
+std::map<int, std::array<double, 3>> ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
 {
   // Read min required as defined by consecutive range
   // make one based as ReadElements makes zero based
@@ -389,7 +389,7 @@ void SimpleElementPartition(std::vector<cgsize_t> &numberToReadPerProc, std::vec
 using Pair = std::pair<cgsize_t, cgsize_t>;
 using LocalElementRanges = std::vector<Pair>; // one based
 
-auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
+std::tuple<std::vector<cgsize_t>, cgsize_t> ReadElements(int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
 {
   std::vector<cgsize_t> numberToReadPerProc;
   std::vector<cgsize_t> startingIndex;
