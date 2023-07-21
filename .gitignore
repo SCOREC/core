@@ -1,2 +1,6 @@
 build
 settings.json
+
+## LSP data
+.cache
+compile_commands.json
