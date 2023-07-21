@@ -560,7 +560,7 @@ mpi_test(cgns_3d_2 ${numProcs}
 #
 # 3D BCS tests
 #
-set(numProcs 5)
+set(numProcs 4)
 #
 set(CGNSDIR ${MESHES}/cgns/withBCS/3D)
 #

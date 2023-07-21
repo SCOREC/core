@@ -54,6 +54,8 @@ message(STATUS "IS_TESTING: ${IS_TESTING}")
 
 set(MESHES "${CMAKE_SOURCE_DIR}/pumi-meshes" CACHE STRING "Directory of test meshes")
 message(STATUS "MESHES: ${MESHES}")
+get_filename_component(MESHES ${MESHES} ABSOLUTE)
+message(STATUS "Using absolute file path MESHES: ${MESHES}")
 
 option(BUILD_EXES "Build executables" ON)
 message(STATUS "BUILD_EXES: ${BUILD_EXES}")
