@@ -200,7 +200,7 @@ void getInteriorConnectivityCGNS(Output& o, int block, apf::DynamicArray<int>& c
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ien[block][elem][vert] + 1; /* FORTRAN indexing */
+      c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]]; // plus 1 built in + 1; /* FORTRAN indexing */
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
@@ -214,7 +214,7 @@ void getBoundaryConnectivityCGNS(Output& o, int block, apf::DynamicArray<int>& c
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ienb[block][elem][vert] + 1;
+      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]]; // plus 1 built in + 1;
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
@@ -232,10 +232,10 @@ void getInterfaceConnectivityCGNS // not extended yet other than transpose
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert0; ++vert)
-      c[i++] = o.arrays.ienif0[block][elem][vert] + 1;
+      c[i++] = o.arrays.ncorp[o.arrays.ienif0[block][elem][vert]]; // plus 1 built in + 1;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert1; ++vert)
-      c[i++] = o.arrays.ienif1[block][elem][vert] + 1;
+      c[i++] = o.arrays.ncorp[o.arrays.ienif1[block][elem][vert]]; // plus 1 built in + 1;
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
