@@ -19,7 +19,7 @@ static lcorp_t count_owned(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_n
 static lcorp_t count_local(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_nodes);
 
 
-void gen_ncorp(Output& o)
+void gen_ncorp(Output& o )
 {
         apf::Mesh* m = o.mesh;
 	int part;
@@ -40,7 +40,7 @@ void gen_ncorp(Output& o)
 	memset(o.arrays.ncorp, 0, sizeof(gcorp_t)*(num_nodes));
 	owned = count_owned(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
 	local = count_local(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
-	// conpar.iownnodes = owned+local;
+	o.iownnodes = owned+local;
 #ifdef PRINT_EVERYTHING
 	printf("%d: %d local only nodes\n", part, local);
 	printf("%d: %d owned nodes\n", part, owned);
@@ -74,6 +74,7 @@ void gen_ncorp(Output& o)
 		local_start_id += owner_counts[i];
 	}
 	local_start_id++; //Fortran numbering
+        o.local_start_id = local_start_id;
 #ifdef PRINT_EVERYTHING
 	printf("%d: %d\n", part, local_start_id);
 #endif
@@ -200,7 +201,7 @@ void getInteriorConnectivityCGNS(Output& o, int block, apf::DynamicArray<int>& c
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]]; // plus 1 built in + 1; /* FORTRAN indexing */
+      c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]-1]; // input is 0-based,  out is  1-based do drop the +1
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
@@ -214,7 +215,7 @@ void getBoundaryConnectivityCGNS(Output& o, int block, apf::DynamicArray<int>& c
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]]; // plus 1 built in + 1;
+      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]-1]; 
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
@@ -232,10 +233,10 @@ void getInterfaceConnectivityCGNS // not extended yet other than transpose
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert0; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienif0[block][elem][vert]]; // plus 1 built in + 1;
+      c[i++] = o.arrays.ncorp[o.arrays.ienif0[block][elem][vert]-1]; 
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert1; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienif1[block][elem][vert]]; // plus 1 built in + 1;
+      c[i++] = o.arrays.ncorp[o.arrays.ienif1[block][elem][vert]-1]; 
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
@@ -291,6 +292,26 @@ void writeCGNSgbc(Output& o, std::string path, int timestep)
   std::string timestep_or_dat;
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
   gen_ncorp( o );
+//  o carries
+//     o.arrays.ncorp[on-rank-node-number(0-based)] => PETSc global node number (1-based)
+//     o.iownnodes => nodes owned by this rank
+//     o.local_start_id => this rank's first node number (1-based and also which must be a long long int)
+
+
+// condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite. 
+  int num_nodes=m->count(0);
+  int icount=0;
+  gcorp_t gnod; 
+  double* x = new double[o.iownnodes * 3];
+  for (int inode = 0; inode < num_nodes; ++inode){
+    gnod=o.arrays.ncorp[inode];
+    if(gnod >= o.local_start_id && gnod <= o.local_start_id + o.iownnodes -1) { // coordinate to write 
+       for (int j = 0; j < 3; ++j) 
+         x[j*o.iownnodes+icount]= o.arrays.coordinates[j*num_nodes+inode];
+       icount++;
+    }
+  }
+
   
   if (! timestep)
     timestep_or_dat = "dat";
@@ -307,6 +328,7 @@ void writeCGNSgbc(Output& o, std::string path, int timestep)
   }
   ph_write_preamble(f);
   int params[MAX_PARAMS];
+  
 /* all of these strings are looked for by the other programs
    reading this format, so don't fix spelling errors or
    other silliness, it has already been set in stone */
