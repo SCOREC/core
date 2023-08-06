@@ -224,6 +224,8 @@ namespace ph {
       out.openfile_write = fn;
     }
     ph::writeGeomBC(out, subDirPath); //write geombc
+    if ( in.writeCGNSFiles ) 
+    ph::writeCGNS(out, subDirPath); //write CGNS
     if(!PCU_Comm_Self())
       ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();

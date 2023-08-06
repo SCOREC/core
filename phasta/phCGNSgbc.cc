@@ -180,7 +180,7 @@ static lcorp_t count_owned(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_n
 
 
 // renamed, retained but not yet updated
-static std::string buildCGNSgbcFileName(std::string timestep_or_dat)
+static std::string buildCGNSFileName(std::string timestep_or_dat)
 {
   std::stringstream ss;
   int rank = PCU_Comm_Self() + 1;
@@ -283,13 +283,12 @@ void writeBlocksCGNS(FILE* f, Output& o)
 
 
 
-// retaining in case it is useful but only renamed at this point
-void writeCGNSgbc(Output& o, std::string path, int timestep)
+// WIP
+void writeCGNS(Output& o, std::string path)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
   std::stringstream tss; 
-  std::string timestep_or_dat;
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
   gen_ncorp( o );
 //  o carries
@@ -313,20 +312,14 @@ void writeCGNSgbc(Output& o, std::string path, int timestep)
   }
 
   
-  if (! timestep)
-    timestep_or_dat = "dat";
-  else {
-    tss << timestep;   
-    timestep_or_dat = tss.str();
-  }
-  path += buildCGNSgbcFileName(timestep_or_dat);
-  phastaio_setfile(GEOMBC_WRITE);
-  FILE* f = o.openfile_write(o, path.c_str());
-  if (!f) {
-    lion_eprint(1,"failed to open \"%s\"!\n", path.c_str());
-    abort();
-  }
-  ph_write_preamble(f);
+//  path += buildCGNSFileName(timestep_or_dat);
+//  phastaio_setfile(GEOMBC_WRITE);
+//  FILE* f = o.openfile_write(o, path.c_str());
+//  if (!f) {
+//    lion_eprint(1,"failed to open \"%s\"!\n", path.c_str());
+//    abort();
+//  }
+//  ph_write_preamble(f);
   int params[MAX_PARAMS];
   
 /* all of these strings are looked for by the other programs
