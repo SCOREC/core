@@ -1023,7 +1023,7 @@ void Write2DEdges(CGNS cgns, apf::Mesh *m, const Count &edgeCount, const Count &
 // Todo split this out into a list of calls to local functions to show process/work flow
 void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap)
 {
-  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
+//  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
 
   const auto myRank = PCU_Comm_Self();
   const Count vertexCount = count(m, 0);

@@ -137,7 +137,7 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
 /* an array of integers of size nfather that has nsons in each entry */
   int* nsonsArr;
 /* an array that maps on-rank-node-number (input) to PETSc global-node-number */
-  long long int* ncorp;
+  long int* ncorp;
 };
 
 
@@ -155,9 +155,9 @@ struct Output
   int nMaxElementNodes;
   int nEssentialBCNodes;
   int nOverlapEdges;
-  long long int local_start_id; /* this rank's first global node number (1 based) */
-  long long int numGlobalNodes; 
-  long long int numGlobalVolumeElements; 
+  long int local_start_id; /* this rank's first global node number (1 based) */
+  long int numGlobalNodes; 
+  long int numGlobalVolumeElements; 
   int iownnodes;  /*  how many node this rank owns */
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */

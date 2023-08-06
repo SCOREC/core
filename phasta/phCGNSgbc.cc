@@ -16,13 +16,12 @@
 #endif
 typedef int lcorp_t;
 #define NCORP_MPI_T MPI_INTEGER
-typedef long long int gcorp_t;
 
 namespace ph {
 
 
-static lcorp_t count_owned(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_nodes);
-static lcorp_t count_local(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_nodes);
+static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
+static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
 
 
 void gen_ncorp(Output& o )
@@ -33,17 +32,17 @@ void gen_ncorp(Output& o )
 	int i;
 	lcorp_t nilwork = o.nlwork;
         int num_nodes=m->count(0);
-	o.arrays.ncorp = new gcorp_t[num_nodes];
+	o.arrays.ncorp = new cgsize_t[num_nodes];
 	lcorp_t owned;
 	lcorp_t local;
 	lcorp_t* owner_counts;
-	gcorp_t  local_start_id;
-	gcorp_t  gid;
+	cgsize_t  local_start_id;
+	cgsize_t  gid;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &part);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_parts);
 
-	memset(o.arrays.ncorp, 0, sizeof(gcorp_t)*(num_nodes));
+	memset(o.arrays.ncorp, 0, sizeof(cgsize_t)*(num_nodes));
 	owned = count_owned(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
 	local = count_local(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
 	o.iownnodes = owned+local;
@@ -127,7 +126,7 @@ void gen_ncorp(Output& o )
 
 }
 
-static lcorp_t count_local(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_nodes)
+static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes)
 {
 	int i;
 	lcorp_t num_local = 0;
@@ -139,7 +138,7 @@ static lcorp_t count_local(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_n
 	}
 	return(num_local);
 }
-static lcorp_t count_owned(int* ilwork, int nlwork,gcorp_t* ncorp_tmp, int num_nodes)
+static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes)
 {
 	int numtask = ilwork[0];
 	int itkbeg = 0; //task offset
@@ -206,7 +205,7 @@ enum {
 };
 
 // renamed, update is only a transpose to match CNGS.  Parallel will require mapping here or later to global numbering
-void getInteriorConnectivityCGNS(Output& o, int block, gcorp_t* c)
+void getInteriorConnectivityCGNS(Output& o, int block, cgsize_t* c)
 {
   int nelem = o.blocks.interior.nElements[block];
   int nvert = o.blocks.interior.keys[block].nElementVertices;
@@ -219,7 +218,7 @@ void getInteriorConnectivityCGNS(Output& o, int block, gcorp_t* c)
 }
 
 //renamed, update is both a transpose to match CNGS and reduction to only filling the first number of vertices on the boundary whereas PHAST wanted full volume
-void getBoundaryConnectivityCGNS(Output& o, int block, gcorp_t* c)
+void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c)
 {
   int nelem = o.blocks.boundary.nElements[block];
 // CGNS wants surface elements  int nvert = o.blocks.boundary.keys[block].nElementVertices;
@@ -271,7 +270,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   int params[MAX_PARAMS];
  
   int E;
-  gcorp_t e_owned, e_start,e_end; 
+  cgsize_t e_owned, e_start,e_end; 
 
   /* create data node for elements */
   if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
@@ -285,8 +284,8 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
 //    fillBlockKeyParams(params, k);
     e_owned = o.blocks.interior.nElements[i];
     int nvert = o.blocks.interior.keys[i].nElementVertices;
-    gcorp_t e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
-    getInteriorConnectivityCGNS(o, i, &e);
+    cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
+    getInteriorConnectivityCGNS(o, i, e);
     /* create data node for elements */
     // will start testing with single topology, all hex so allow hardcode for pass 1
     //nvert can case switch this or enumv like PETSc
@@ -305,9 +304,9 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     params[0] = o.blocks.boundary.nElements[i];
     e_owned = params[0];
     int nvert = o.blocks.boundary.keys[i].nBoundaryFaceEdges;
-    gcorp_t e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
+    cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
 //    fillBlockKeyParams(params, k);
-    getBoundaryConnectivityCGNS(o, i, &e);
+    getBoundaryConnectivityCGNS(o, i, e);
 //    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 8, params);
 // this is probably the easiest path to getting the list that tells us the face (through surfID of smd) that each boundary element face is on
     phrase = getBlockKeyPhrase(k, "nbc codes ");
@@ -376,7 +375,7 @@ void writeCGNS(Output& o, std::string path)
 // condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite. 
   int num_nodes=m->count(0);
 //V2
-  gcorp_t gnod; 
+  cgsize_t gnod; 
   start=o.local_start_id;
   end=start+o.iownnodes-1;
   double* x = new double[o.iownnodes];
@@ -396,7 +395,7 @@ void writeCGNS(Output& o, std::string path)
 //V1 that KEJ wrote mothballed for V2 that mimics PETSc
 /*
   int icount=0;
-  gcorp_t gnod; 
+  cgsize_t gnod; 
   double* x = new double[o.iownnodes * 3];
   for (int inode = 0; inode < num_nodes; ++inode){
     gnod=o.arrays.ncorp[inode];

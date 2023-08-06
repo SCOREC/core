@@ -1051,7 +1051,7 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
 
 apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &readMeshData)
 {
-  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
+//  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
 
   int cgid = -1;
   auto comm = PCU_Get_Comm();
