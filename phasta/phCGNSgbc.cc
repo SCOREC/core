@@ -8,6 +8,12 @@
 #include <cstdlib>
 #include <string.h>
 #include <assert.h>
+#ifdef HAVE_CGNS
+//
+#include <cgns_io.h>
+#include <pcgnslib.h>
+//
+#endif
 typedef int lcorp_t;
 #define NCORP_MPI_T MPI_INTEGER
 typedef long long int gcorp_t;
@@ -75,6 +81,12 @@ void gen_ncorp(Output& o )
 	}
 	local_start_id++; //Fortran numbering
         o.local_start_id = local_start_id;
+
+// also get the global number of nodes
+	o.numGlobalNodes=0;
+	for(i=0;i<num_parts;i++) 
+	   o.numGlobalNodes += owner_counts[i];
+
 #ifdef PRINT_EVERYTHING
 	printf("%d: %d\n", part, local_start_id);
 #endif
@@ -184,7 +196,8 @@ static std::string buildCGNSFileName(std::string timestep_or_dat)
 {
   std::stringstream ss;
   int rank = PCU_Comm_Self() + 1;
-  ss << "geombc." << timestep_or_dat << "." << rank;
+//  ss << "geombc." << timestep_or_dat << "." << rank;
+  ss << "chefO." << timestep_or_dat;
   return ss.str();
 }
 
@@ -288,13 +301,37 @@ void writeCGNS(Output& o, std::string path)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
-  std::stringstream tss; 
+  int         cgid = -1;
+
+  std::string timestep_or_dat;
+//  if (! timestep)
+    timestep_or_dat = "cgns";
+//  else {
+//    tss << timestep;   
+//    timestep_or_dat = tss.str();
+//  }
+//  cgp_mpi_comm();
+//  cgp_open('chefOut.cgns', CG_MODE_WRITE, &cgid);
+//static std::string buildCGNSFileName(std::string timestep_or_dat)
+//  path += buildCGNSFileName(timestep_or_dat);
+  static char *outfile = "chefOut.cgns";
+ // if (!PCU_Comm_Self())
+    cgp_mpi_comm(MPI_COMM_WORLD);
+    cgp_open(outfile, CG_MODE_READ, &cgid);
+  
+//FAILED    cgp_open('chefO.cgns', CG_MODE_READ, &cgid);
+//    PetscCheck(cgid > 0, PETSC_COMM_SELF, PETSC_ERR_LIB, "cg_open(\"%s\",...) did not return a valid file ID", filename);
+     
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
   gen_ncorp( o );
 //  o carries
 //     o.arrays.ncorp[on-rank-node-number(0-based)] => PETSc global node number (1-based)
 //     o.iownnodes => nodes owned by this rank
 //     o.local_start_id => this rank's first node number (1-based and also which must be a long long int)
+//     o.numGlobalNodes
+       int numel=m->count(m->getDimension());
+       PCU_Add_Ints(&numel,1);
+       o.numGlobalVolumeElements = numel;
 
 
 // condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite. 

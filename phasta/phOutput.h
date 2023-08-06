@@ -156,6 +156,8 @@ struct Output
   int nEssentialBCNodes;
   int nOverlapEdges;
   long long int local_start_id; /* this rank's first global node number (1 based) */
+  long long int numGlobalNodes; 
+  long long int numGlobalVolumeElements; 
   int iownnodes;  /*  how many node this rank owns */
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
