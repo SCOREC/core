@@ -206,30 +206,30 @@ enum {
 };
 
 // renamed, update is only a transpose to match CNGS.  Parallel will require mapping here or later to global numbering
-void getInteriorConnectivityCGNS(Output& o, int block, apf::DynamicArray<int>& c)
+void getInteriorConnectivityCGNS(Output& o, int block, gcorp_t* c)
 {
   int nelem = o.blocks.interior.nElements[block];
   int nvert = o.blocks.interior.keys[block].nElementVertices;
-  c.setSize(nelem * nvert);
+//  c.setSize(nelem * nvert);
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
       c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]-1]; // input is 0-based,  out is  1-based do drop the +1
-  PCU_ALWAYS_ASSERT(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
 //renamed, update is both a transpose to match CNGS and reduction to only filling the first number of vertices on the boundary whereas PHAST wanted full volume
-void getBoundaryConnectivityCGNS(Output& o, int block, apf::DynamicArray<int>& c)
+void getBoundaryConnectivityCGNS(Output& o, int block, gcorp_t* c)
 {
   int nelem = o.blocks.boundary.nElements[block];
 // CGNS wants surface elements  int nvert = o.blocks.boundary.keys[block].nElementVertices;
   int nvert = o.blocks.boundary.keys[block].nBoundaryFaceEdges;
-  c.setSize(nelem * nvert);
+  //c.setSize(nelem * nvert);
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
       c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]-1]; 
-  PCU_ALWAYS_ASSERT(i == c.getSize());
+  PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
 void getInterfaceConnectivityCGNS // not extended yet other than transpose
@@ -266,32 +266,56 @@ void getNaturalBCCodesCGNS(Output& o, int block, apf::DynamicArray<int>& codes)
 }
 
 // renamed and calling the renamed functions above with output writes commented as they are PHASTA file style
-void writeBlocksCGNS(FILE* f, Output& o)
+void writeBlocksCGNS(int F,int B,int Z, Output& o)
 {
-  apf::DynamicArray<int> c;
   int params[MAX_PARAMS];
+ 
+  int E;
+  gcorp_t e_owned, e_start,e_end; 
+
+  /* create data node for elements */
+  if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
+    cgp_error_exit();
+ 
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
+ 
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
     params[0] = o.blocks.interior.nElements[i];
 //    fillBlockKeyParams(params, k);
-    getInteriorConnectivityCGNS(o, i, c);
-//    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 7, params);
+    e_owned = o.blocks.interior.nElements[i];
+    int nvert = o.blocks.interior.keys[i].nElementVertices;
+    gcorp_t e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
+    getInteriorConnectivityCGNS(o, i, &e);
+    /* create data node for elements */
+    // will start testing with single topology, all hex so allow hardcode for pass 1
+    //nvert can case switch this or enumv like PETSc
+    if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
+    cgp_error_exit();
+    MPI_Exscan(&e_owned, &e_start, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+    e_end=e_start+e_owned -1;
+    /* write the element connectivity in parallel */
+    if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
+        cgp_error_exit();
+    free(e);   
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity boundary ");
     params[0] = o.blocks.boundary.nElements[i];
+    e_owned = params[0];
+    int nvert = o.blocks.boundary.keys[i].nBoundaryFaceEdges;
+    gcorp_t e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
 //    fillBlockKeyParams(params, k);
-    getBoundaryConnectivityCGNS(o, i, c);
+    getBoundaryConnectivityCGNS(o, i, &e);
 //    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 8, params);
 // this is probably the easiest path to getting the list that tells us the face (through surfID of smd) that each boundary element face is on
     phrase = getBlockKeyPhrase(k, "nbc codes ");
     apf::DynamicArray<int> codes;
     getNaturalBCCodesCGNS(o, i, codes);
+    free(e);   
 //    ph_write_ints(f, phrase.c_str(), &codes[0], codes.getSize(), 8, params);
   }
-
 }
 
 
@@ -331,7 +355,7 @@ void writeCGNS(Output& o, std::string path)
 //     o.numGlobalNodes
     ncells=m->count(m->getDimension());
     ncells=PCU_Add_Long(ncells);
-// may not need    o.numGlobalVolumeElements = ncells;
+    o.numGlobalVolumeElements = ncells;
  
     sizes[0]=o.numGlobalNodes;
     sizes[1]=ncells;
@@ -384,49 +408,8 @@ void writeCGNS(Output& o, std::string path)
   }
 */
 
-  
-//  path += buildCGNSFileName(timestep_or_dat);
-//  phastaio_setfile(GEOMBC_WRITE);
-//  FILE* f = o.openfile_write(o, path.c_str());
-//  if (!f) {
-//    lion_eprint(1,"failed to open \"%s\"!\n", path.c_str());
-//    abort();
-//  }
-//  ph_write_preamble(f);
-  int params[MAX_PARAMS];
-  
-/* all of these strings are looked for by the other programs
-   reading this format, so don't fix spelling errors or
-   other silliness, it has already been set in stone */
-/*
-  writeInt(f, "number of nodes", m->count(0));
-  writeInt(f, "number of modes", o.nOverlapNodes);
-  writeInt(f, "number of shapefunctions soved on processor", 0);
-  writeInt(f, "number of global modes", 0);
-  writeInt(f, "number of interior elements", m->count(m->getDimension()));
-  writeInt(f, "number of boundary elements", o.nBoundaryElements);
-  writeInt(f, "maximum number of element nodes", o.nMaxElementNodes);
-  writeInt(f, "number of interior tpblocks", o.blocks.interior.getSize());
-  writeInt(f, "number of boundary tpblocks", o.blocks.boundary.getSize());
-  writeInt(f, "number of nodes with Dirichlet BCs", o.nEssentialBCNodes);
-
-  params[0] = m->count(0);
-  params[1] = 3;
-  ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
-      params[0] * params[1], 2, params);
-  writeInt(f, "number of processors", PCU_Comm_Peers());
-  writeInt(f, "size of ilwork array", o.nlwork);
-  params[0] = m->count(0);
-  writeInts(f, " mode number map from partition to global",
-      o.arrays.globalNodeNumbers, m->count(0));
-  writeBlocksCGNS(f, o);
-  writeInts(f, "bc mapping array", o.arrays.nbc, m->count(0));
-  writeInts(f, "bc codes array", o.arrays.ibc, o.nEssentialBCNodes);
-  apf::DynamicArray<double> bc;
-  PHASTAIO_CLOSETIME(fclose(f);)
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-    lion_oprint(1,"geombc file written in %f seconds\n", t1 - t0);
-*/
+  writeBlocksCGNS(F,B,Z, o);
+//  if (!PCU_Comm_Self())
+//    lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
 }
 }
