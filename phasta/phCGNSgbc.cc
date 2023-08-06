@@ -301,7 +301,6 @@ void writeCGNS(Output& o, std::string path)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
-  int         cgid = -1;
 
   std::string timestep_or_dat;
 //  if (! timestep)
@@ -311,31 +310,67 @@ void writeCGNS(Output& o, std::string path)
 //    timestep_or_dat = tss.str();
 //  }
 //  cgp_mpi_comm();
-//  cgp_open('chefOut.cgns', CG_MODE_WRITE, &cgid);
+//  cgp_open('chefOut.cgns', CG_MODE_WRITE, &F);
 //static std::string buildCGNSFileName(std::string timestep_or_dat)
 //  path += buildCGNSFileName(timestep_or_dat);
   static char *outfile = "chefOut.cgns";
+  int  F, B, Z, E, S, Fs, A, Cx, Cy, Cz;
+  cgsize_t sizes[3],*e, start, end, ncells;
+//   ^^^^^^  need to be sure this is long since using PCU_Add_Long below even when not needed
  // if (!PCU_Comm_Self())
-    cgp_mpi_comm(MPI_COMM_WORLD);
-    cgp_open(outfile, CG_MODE_READ, &cgid);
   
-//FAILED    cgp_open('chefO.cgns', CG_MODE_READ, &cgid);
-//    PetscCheck(cgid > 0, PETSC_COMM_SELF, PETSC_ERR_LIB, "cg_open(\"%s\",...) did not return a valid file ID", filename);
+//FAILED    cgp_open('chefO.cgns', CG_MODE_READ, &F);
+//    PetscCheck(F > 0, PETSC_COMM_SELF, PETSC_ERR_LIB, "cg_open(\"%s\",...) did not return a valid file ID", filename);
      
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
-  gen_ncorp( o );
+    gen_ncorp( o );
 //  o carries
 //     o.arrays.ncorp[on-rank-node-number(0-based)] => PETSc global node number (1-based)
 //     o.iownnodes => nodes owned by this rank
 //     o.local_start_id => this rank's first node number (1-based and also which must be a long long int)
 //     o.numGlobalNodes
-       int numel=m->count(m->getDimension());
-       PCU_Add_Ints(&numel,1);
-       o.numGlobalVolumeElements = numel;
+    ncells=m->count(m->getDimension());
+    ncells=PCU_Add_Long(ncells);
+// may not need    o.numGlobalVolumeElements = ncells;
+ 
+    sizes[0]=o.numGlobalNodes;
+    sizes[1]=ncells;
+    sizes[0];
+    cgp_mpi_comm(MPI_COMM_WORLD);
+    if ( cgp_open(outfile, CG_MODE_READ, &F) ||
+        cg_base_write(F, "Base", 3, 3, &B) ||
+        cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
+        cgp_error_exit();
+    /* create data nodes for coordinates */
+
+    if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
+        cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateY", &Cy) ||
+        cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateZ", &Cz))
+        cgp_error_exit();
 
 
 // condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite. 
   int num_nodes=m->count(0);
+//V2
+  gcorp_t gnod; 
+  start=o.local_start_id;
+  end=start+o.iownnodes-1;
+  double* x = new double[o.iownnodes];
+  for (int j = 0; j < 3; ++j) {
+    int icount=0;
+    for (int inode = 0; inode < num_nodes; ++inode){
+      gnod=o.arrays.ncorp[inode];
+      if(gnod >= start && gnod <= end) { // coordinate to write 
+         x[icount]= o.arrays.coordinates[j*num_nodes+inode];
+         icount++;
+      }
+      if(j==0) cgp_coord_write_data(F, B, Z, Cx, &start, &end, x);
+      if(j==1) cgp_coord_write_data(F, B, Z, Cy, &start, &end, x);
+      if(j==2) cgp_coord_write_data(F, B, Z, Cz, &start, &end, x);
+    }
+  }
+//V1 that KEJ wrote mothballed for V2 that mimics PETSc
+/*
   int icount=0;
   gcorp_t gnod; 
   double* x = new double[o.iownnodes * 3];
@@ -347,6 +382,7 @@ void writeCGNS(Output& o, std::string path)
        icount++;
     }
   }
+*/
 
   
 //  path += buildCGNSFileName(timestep_or_dat);
