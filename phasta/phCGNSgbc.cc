@@ -297,6 +297,12 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start+1, e_end, e))
         cgp_error_exit();
+    printf("%ld, %ld \n", e_start+1, e_end);
+    for (int ne=0; ne<e_owned; ++ne)
+	printf("%d, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld \n", (ne+1),
+         e[ne*8+0],e[ne*8+1],e[ne*8+2],e[ne*8+3],
+         e[ne*8+4],e[ne*8+5],e[ne*8+6],e[ne*8+7]);
+       
     free(e);   
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
@@ -389,6 +395,9 @@ void writeCGNS(Output& o, std::string path)
          icount++;
       }
     }
+    printf("%ld, %ld \n", start, end);
+    for (int ne=0; ne<num_nodes; ++ne)
+	printf("%d, %f \n", (ne+1), x[ne]);
     if(j==0) cgp_coord_write_data(F, B, Z, Cx, &start, &end, x);
     if(j==1) cgp_coord_write_data(F, B, Z, Cy, &start, &end, x);
     if(j==2) cgp_coord_write_data(F, B, Z, Cz, &start, &end, x);
