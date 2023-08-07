@@ -287,8 +287,24 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     /* create data node for elements */
     // will start testing with single topology, all hex so allow hardcode for pass 1
     //nvert can case switch this or enumv like PETSc
-    if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
-    cgp_error_exit();
+    switch(nvert){
+      case 4: 
+        if (cgp_section_write(F, B, Z, "Tet", CG_TETRA_4, 1, o.numGlobalVolumeElements, 0, &E))
+           cgp_error_exit();
+        break;
+      case 5:
+        if (cgp_section_write(F, B, Z, "Pyr", CG_PYRA_5, 1, o.numGlobalVolumeElements, 0, &E))
+           cgp_error_exit();
+        break;
+      case 6:
+        if (cgp_section_write(F, B, Z, "Wdg", CG_PENTA_6, 1, o.numGlobalVolumeElements, 0, &E))
+           cgp_error_exit();
+        break;
+      case 8: 
+        if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
+           cgp_error_exit();
+        break;
+    }
     e_start=0;
 //    if(num_parts !=1)  
     MPI_Exscan(&e_owned, &e_start, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
@@ -297,11 +313,13 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start+1, e_end, e))
         cgp_error_exit();
+if(0==1){
     printf("%ld, %ld \n", e_start+1, e_end);
     for (int ne=0; ne<e_owned; ++ne)
 	printf("%d, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld \n", (ne+1),
          e[ne*8+0],e[ne*8+1],e[ne*8+2],e[ne*8+3],
          e[ne*8+4],e[ne*8+5],e[ne*8+6],e[ne*8+7]);
+}
        
     free(e);   
   }
@@ -372,6 +390,7 @@ void writeCGNS(Output& o, std::string path)
         cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
         cgp_error_exit();
     /* create data nodes for coordinates */
+    cg_set_file_type(CG_FILE_HDF5);
 
     if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
         cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateY", &Cy) ||
@@ -395,9 +414,11 @@ void writeCGNS(Output& o, std::string path)
          icount++;
       }
     }
+if(0==1) {
     printf("%ld, %ld \n", start, end);
     for (int ne=0; ne<num_nodes; ++ne)
 	printf("%d, %f \n", (ne+1), x[ne]);
+}
     if(j==0) if(cgp_coord_write_data(F, B, Z, Cx, &start, &end, x)) cgp_error_exit();
     if(j==1) if(cgp_coord_write_data(F, B, Z, Cy, &start, &end, x)) cgp_error_exit();
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
