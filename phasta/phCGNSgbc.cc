@@ -366,7 +366,7 @@ void writeCGNS(Output& o, std::string path)
     sizes[0]=o.numGlobalNodes;
     sizes[1]=ncells;
     sizes[2]=0;
-    cgp_mpi_comm(MPI_COMM_WORLD);
+    if(cgp_mpi_comm(MPI_COMM_WORLD)) cgp_error_exit;
     if ( cgp_open(outfile, CG_MODE_WRITE, &F) ||
         cg_base_write(F, "Base", 3, 3, &B) ||
         cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
@@ -398,9 +398,9 @@ void writeCGNS(Output& o, std::string path)
     printf("%ld, %ld \n", start, end);
     for (int ne=0; ne<num_nodes; ++ne)
 	printf("%d, %f \n", (ne+1), x[ne]);
-    if(j==0) cgp_coord_write_data(F, B, Z, Cx, &start, &end, x);
-    if(j==1) cgp_coord_write_data(F, B, Z, Cy, &start, &end, x);
-    if(j==2) cgp_coord_write_data(F, B, Z, Cz, &start, &end, x);
+    if(j==0) if(cgp_coord_write_data(F, B, Z, Cx, &start, &end, x)) cgp_error_exit();
+    if(j==1) if(cgp_coord_write_data(F, B, Z, Cy, &start, &end, x)) cgp_error_exit();
+    if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
 //V1 that KEJ wrote mothballed for V2 that mimics PETSc
 /*
@@ -418,7 +418,7 @@ void writeCGNS(Output& o, std::string path)
 */
 
   writeBlocksCGNS(F,B,Z, o);
-  cgp_close(F);    
+  if(cgp_close(F)) cgp_error_exit();    
 //  if (!PCU_Comm_Self())
 //    lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
 }
