@@ -388,10 +388,10 @@ void writeCGNS(Output& o, std::string path)
          x[icount]= o.arrays.coordinates[j*num_nodes+inode];
          icount++;
       }
-      if(j==0) cgp_coord_write_data(F, B, Z, Cx, &start, &end, x);
-      if(j==1) cgp_coord_write_data(F, B, Z, Cy, &start, &end, x);
-      if(j==2) cgp_coord_write_data(F, B, Z, Cz, &start, &end, x);
     }
+    if(j==0) cgp_coord_write_data(F, B, Z, Cx, &start, &end, x);
+    if(j==1) cgp_coord_write_data(F, B, Z, Cy, &start, &end, x);
+    if(j==2) cgp_coord_write_data(F, B, Z, Cz, &start, &end, x);
   }
 //V1 that KEJ wrote mothballed for V2 that mimics PETSc
 /*
