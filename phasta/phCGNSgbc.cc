@@ -213,7 +213,7 @@ void getInteriorConnectivityCGNS(Output& o, int block, cgsize_t* c)
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]-1]; // input is 0-based,  out is  1-based do drop the +1
+      c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]]; // input is 0-based,  out is  1-based do drop the +1
   PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
@@ -227,7 +227,7 @@ void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c)
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]-1]; 
+      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]]; 
   PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
@@ -359,7 +359,7 @@ void writeCGNS(Output& o, std::string path)
  
     sizes[0]=o.numGlobalNodes;
     sizes[1]=ncells;
-    sizes[0];
+    sizes[2]=0;
     cgp_mpi_comm(MPI_COMM_WORLD);
     if ( cgp_open(outfile, CG_MODE_WRITE, &F) ||
         cg_base_write(F, "Base", 3, 3, &B) ||
@@ -409,6 +409,7 @@ void writeCGNS(Output& o, std::string path)
 */
 
   writeBlocksCGNS(F,B,Z, o);
+  cgp_close(F);    
 //  if (!PCU_Comm_Self())
 //    lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
 }
