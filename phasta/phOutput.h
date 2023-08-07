@@ -4,6 +4,13 @@
 #include "phInput.h"
 #include "phBlock.h"
 #include "phBC.h"
+#ifdef HAVE_CGNS
+//
+#include <cgns_io.h>
+#include <pcgnslib.h>
+//
+#endif
+
 
 namespace apf {
 class Mesh;
@@ -137,7 +144,10 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
 /* an array of integers of size nfather that has nsons in each entry */
   int* nsonsArr;
 /* an array that maps on-rank-node-number (input) to PETSc global-node-number */
-  long int* ncorp;
+// worked but  long int* ncorp;
+#ifdef HAVE_CGNS
+  cgsize_t* ncorp;
+#endif
 };
 
 
@@ -155,9 +165,11 @@ struct Output
   int nMaxElementNodes;
   int nEssentialBCNodes;
   int nOverlapEdges;
-  long int local_start_id; /* this rank's first global node number (1 based) */
-  long int numGlobalNodes; 
-  long int numGlobalVolumeElements; 
+#ifdef HAVE_CGNS
+  cgsize_t local_start_id; /* this rank's first global node number (1 based) */
+  cgsize_t numGlobalNodes; 
+  cgsize_t numGlobalVolumeElements; 
+#endif
   int iownnodes;  /*  how many node this rank owns */
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */
