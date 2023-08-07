@@ -271,11 +271,9 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
  
   int E;
   cgsize_t e_owned, e_start,e_end; 
+//  int num_parts;
+//  MPI_Comm_size(MPI_COMM_WORLD, &num_parts);
 
-  /* create data node for elements */
-  if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
-    cgp_error_exit();
- 
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
  
     BlockKey& k = o.blocks.interior.keys[i];
@@ -291,10 +289,13 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     //nvert can case switch this or enumv like PETSc
     if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
     cgp_error_exit();
+    e_start=0;
+//    if(num_parts !=1)  
     MPI_Exscan(&e_owned, &e_start, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-    e_end=e_start+e_owned -1;
+       
+    e_end=e_start+e_owned;
     /* write the element connectivity in parallel */
-    if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
+    if (cgp_elements_write_data(F, B, Z, E, e_start+1, e_end, e))
         cgp_error_exit();
     free(e);   
   }
@@ -360,7 +361,7 @@ void writeCGNS(Output& o, std::string path)
     sizes[1]=ncells;
     sizes[0];
     cgp_mpi_comm(MPI_COMM_WORLD);
-    if ( cgp_open(outfile, CG_MODE_READ, &F) ||
+    if ( cgp_open(outfile, CG_MODE_WRITE, &F) ||
         cg_base_write(F, "Base", 3, 3, &B) ||
         cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
         cgp_error_exit();
