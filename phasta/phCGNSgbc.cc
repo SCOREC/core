@@ -376,7 +376,7 @@ void writeCGNS(Output& o, std::string path)
 //  cgp_open('chefOut.cgns', CG_MODE_WRITE, &F);
 //static std::string buildCGNSFileName(std::string timestep_or_dat)
 //  path += buildCGNSFileName(timestep_or_dat);
-  static char *outfile = "chefOut.cgns";
+  static char outfile[] = "chefOut.cgns";
   int  F, B, Z, E, S, Fs, A, Cx, Cy, Cz;
   cgsize_t sizes[3],*e, start, end, ncells;
 //   ^^^^^^  need to be sure this is long since using PCU_Add_Long below even when not needed
