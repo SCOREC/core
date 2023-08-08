@@ -83,7 +83,7 @@ void gen_ncorp(Output& o )
 
 // also get the global number of nodes
 	o.numGlobalNodes=0;
-	for(i=0;i<num_parts;i++) 
+	for(i=0;i<num_parts;i++)
 	   o.numGlobalNodes += owner_counts[i];
 
 #ifdef PRINT_EVERYTHING
@@ -138,6 +138,7 @@ static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_
 	}
 	return(num_local);
 }
+
 static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes)
 {
 	int numtask = ilwork[0];
@@ -227,7 +228,7 @@ void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c)
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]]; 
+      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]];
   PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
@@ -245,10 +246,10 @@ void getInterfaceConnectivityCGNS // not extended yet other than transpose
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert0; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienif0[block][elem][vert]-1]; 
+      c[i++] = o.arrays.ncorp[o.arrays.ienif0[block][elem][vert]-1];
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert1; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienif1[block][elem][vert]-1]; 
+      c[i++] = o.arrays.ncorp[o.arrays.ienif1[block][elem][vert]-1];
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
@@ -258,7 +259,7 @@ void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
   int nelem = o.blocks.boundary.nElements[block];
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
-      codes[i++] = o.arrays.ibcb[block][elem][1]; //srfID is the second number so 1  
+      codes[i++] = o.arrays.ibcb[block][elem][1]; //srfID is the second number so 1
 // if we wanted we could use PHASTA's bit in coding in the first number to us attributes to set
 // arbitrary combinations of BCs but leaving that out for now
 }
@@ -268,8 +269,8 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
 {
   int params[MAX_PARAMS];
   int E;
-  cgsize_t e_owned, e_start,e_end; 
-  cgsize_t e_startg,e_endg; 
+  cgsize_t e_owned, e_start,e_end;
+  cgsize_t e_startg,e_endg;
   cgsize_t e_written=0;
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
     BlockKey& k = o.blocks.interior.keys[i];
@@ -283,12 +284,12 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     e_startg=1+e_written; // start for the elements of this topology
     e_endg=e_written + PCU_Add_Long(e_owned); // end for the elements of this topology
     switch(nvert){
-      case 4: 
+      case 4:
         if (cgp_section_write(F, B, Z, "Tet", CG_TETRA_4, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
       case 5:
-    free(e);   
+    free(e);
         if (cgp_section_write(F, B, Z, "Pyr", CG_PYRA_5, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
@@ -296,7 +297,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
         if (cgp_section_write(F, B, Z, "Wdg", CG_PENTA_6, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
-      case 8: 
+      case 8:
 //        if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
         if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, e_startg, e_endg, 0, &E))
            cgp_error_exit();
@@ -317,7 +318,7 @@ if(0==1){
          e[ne*8+0],e[ne*8+1],e[ne*8+2],e[ne*8+3],
          e[ne*8+4],e[ne*8+5],e[ne*8+6],e[ne*8+7]);
 }
-    free(e);   
+    free(e);
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
@@ -329,7 +330,7 @@ if(0==1){
     e_startg=1+e_written; // start for the elements of this topology
     e_endg=e_written + PCU_Add_Long(e_owned); // end for the elements of this topology
     switch(nvert){
-      case 3: 
+      case 3:
         if (cgp_section_write(F, B, Z, "Tri", CG_TETRA_4, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
@@ -345,7 +346,7 @@ if(0==1){
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
-    free(e);   
+    free(e);
     int* srfID = (int *)malloc(nvert * e_owned * sizeof(int));
     getNaturalBCCodesCGNS(o, i, srfID);
     printf("%ld, %ld \n", e_start+1, e_end);
@@ -357,8 +358,6 @@ if(0==1){
   }
 }
 
-
-
 // WIP
 void writeCGNS(Output& o, std::string path)
 {
@@ -369,7 +368,7 @@ void writeCGNS(Output& o, std::string path)
 //  if (! timestep)
     timestep_or_dat = "cgns";
 //  else {
-//    tss << timestep;   
+//    tss << timestep;
 //    timestep_or_dat = tss.str();
 //  }
 //  cgp_mpi_comm();
@@ -381,10 +380,10 @@ void writeCGNS(Output& o, std::string path)
   cgsize_t sizes[3],*e, start, end, ncells;
 //   ^^^^^^  need to be sure this is long since using PCU_Add_Long below even when not needed
  // if (!PCU_Comm_Self())
-  
+
 //FAILED    cgp_open('chefO.cgns', CG_MODE_READ, &F);
 //    PetscCheck(F > 0, PETSC_COMM_SELF, PETSC_ERR_LIB, "cg_open(\"%s\",...) did not return a valid file ID", filename);
-     
+
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
     gen_ncorp( o );
 //  o carries
@@ -395,7 +394,7 @@ void writeCGNS(Output& o, std::string path)
     ncells=m->count(m->getDimension());
     ncells=PCU_Add_Long(ncells);
     o.numGlobalVolumeElements = ncells;
- 
+
     sizes[0]=o.numGlobalNodes;
     sizes[1]=ncells;
     sizes[2]=0;
@@ -413,10 +412,10 @@ void writeCGNS(Output& o, std::string path)
         cgp_error_exit();
 
 
-// condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite. 
+// condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite.
   int num_nodes=m->count(0);
 //V2
-  cgsize_t gnod; 
+  cgsize_t gnod;
   start=o.local_start_id;
   end=start+o.iownnodes-1;
   double* x = new double[o.iownnodes];
@@ -424,7 +423,7 @@ void writeCGNS(Output& o, std::string path)
     int icount=0;
     for (int inode = 0; inode < num_nodes; ++inode){
       gnod=o.arrays.ncorp[inode];
-      if(gnod >= start && gnod <= end) { // coordinate to write 
+      if(gnod >= start && gnod <= end) { // coordinate to write
          x[icount]= o.arrays.coordinates[j*num_nodes+inode];
          icount++;
       }
@@ -441,12 +440,12 @@ if(0==1) {
 //V1 that KEJ wrote mothballed for V2 that mimics PETSc
 /*
   int icount=0;
-  cgsize_t gnod; 
+  cgsize_t gnod;
   double* x = new double[o.iownnodes * 3];
   for (int inode = 0; inode < num_nodes; ++inode){
     gnod=o.arrays.ncorp[inode];
-    if(gnod >= o.local_start_id && gnod <= o.local_start_id + o.iownnodes -1) { // coordinate to write 
-       for (int j = 0; j < 3; ++j) 
+    if(gnod >= o.local_start_id && gnod <= o.local_start_id + o.iownnodes -1) { // coordinate to write
+       for (int j = 0; j < 3; ++j)
          x[j*o.iownnodes+icount]= o.arrays.coordinates[j*num_nodes+inode];
        icount++;
     }
@@ -454,7 +453,7 @@ if(0==1) {
 */
 
   writeBlocksCGNS(F,B,Z, o);
-  if(cgp_close(F)) cgp_error_exit();    
+  if(cgp_close(F)) cgp_error_exit();
 //  if (!PCU_Comm_Self())
 //    lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
 }
