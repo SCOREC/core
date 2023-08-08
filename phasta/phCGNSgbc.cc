@@ -253,15 +253,14 @@ void getInterfaceConnectivityCGNS // not extended yet other than transpose
 }
 
 // renamed but not updated yet
-void getNaturalBCCodesCGNS(Output& o, int block, apf::DynamicArray<int>& codes)
+void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
 {
   int nelem = o.blocks.boundary.nElements[block];
-  codes.setSize(nelem * 2); 
   size_t i = 0;
-  for (int j = 0; j < 2; ++j)
-    for (int elem = 0; elem < nelem; ++elem)
-      codes[i++] = o.arrays.ibcb[block][elem][j];
-  PCU_ALWAYS_ASSERT(i == codes.getSize());
+  for (int elem = 0; elem < nelem; ++elem)
+      codes[i++] = o.arrays.ibcb[block][elem][1]; //srfID is the second number so 1  
+// if we wanted we could use PHASTA's bit in coding in the first number to us attributes to set
+// arbitrary combinations of BCs but leaving that out for now
 }
 
 // renamed and calling the renamed functions above with output writes commented as they are PHASTA file style
@@ -289,6 +288,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
            cgp_error_exit();
         break;
       case 5:
+    free(e);   
         if (cgp_section_write(F, B, Z, "Pyr", CG_PYRA_5, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
@@ -321,7 +321,6 @@ if(0==1){
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
-    std::string phrase = getBlockKeyPhrase(k, "connectivity boundary ");
     params[0] = o.blocks.boundary.nElements[i];
     e_owned = params[0];
     int nvert = o.blocks.boundary.keys[i].nBoundaryFaceEdges;
@@ -346,11 +345,15 @@ if(0==1){
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
-// this is probably the easiest path to getting the list that tells us the face (through surfID of smd) that each boundary element face is on
-    phrase = getBlockKeyPhrase(k, "nbc codes ");
-    apf::DynamicArray<int> codes;
-    getNaturalBCCodesCGNS(o, i, codes);
     free(e);   
+    int* srfID = (int *)malloc(nvert * e_owned * sizeof(int));
+    getNaturalBCCodesCGNS(o, i, srfID);
+    printf("%ld, %ld \n", e_start+1, e_end);
+    for (int ne=0; ne<e_owned; ++ne)
+	printf("%d, %d \n", (ne+1),srfID[ne]);
+//  I am not sure if you want to put the code here to generate the face BC "node" but srfID has
+//  a number from 1 to 6 for the same numbered surfaces as we use in the box
+
   }
 }
 
