@@ -268,51 +268,48 @@ void getNaturalBCCodesCGNS(Output& o, int block, apf::DynamicArray<int>& codes)
 void writeBlocksCGNS(int F,int B,int Z, Output& o)
 {
   int params[MAX_PARAMS];
- 
   int E;
   cgsize_t e_owned, e_start,e_end; 
-//  int num_parts;
-//  MPI_Comm_size(MPI_COMM_WORLD, &num_parts);
-
+  cgsize_t e_startg,e_endg; 
+  cgsize_t e_written=0;
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
- 
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
     params[0] = o.blocks.interior.nElements[i];
-//    fillBlockKeyParams(params, k);
     e_owned = o.blocks.interior.nElements[i];
     int nvert = o.blocks.interior.keys[i].nElementVertices;
     cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
     getInteriorConnectivityCGNS(o, i, e);
     /* create data node for elements */
-    // will start testing with single topology, all hex so allow hardcode for pass 1
-    //nvert can case switch this or enumv like PETSc
+    e_startg=1+e_written; // start for the elements of this topology
+    e_endg=e_written + PCU_Add_Long(e_owned); // end for the elements of this topology
     switch(nvert){
       case 4: 
-        if (cgp_section_write(F, B, Z, "Tet", CG_TETRA_4, 1, o.numGlobalVolumeElements, 0, &E))
+        if (cgp_section_write(F, B, Z, "Tet", CG_TETRA_4, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
       case 5:
-        if (cgp_section_write(F, B, Z, "Pyr", CG_PYRA_5, 1, o.numGlobalVolumeElements, 0, &E))
+        if (cgp_section_write(F, B, Z, "Pyr", CG_PYRA_5, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
       case 6:
-        if (cgp_section_write(F, B, Z, "Wdg", CG_PENTA_6, 1, o.numGlobalVolumeElements, 0, &E))
+        if (cgp_section_write(F, B, Z, "Wdg", CG_PENTA_6, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
       case 8: 
-        if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
+//        if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, 1, o.numGlobalVolumeElements, 0, &E))
+        if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
     }
     e_start=0;
-//    if(num_parts !=1)  
     MPI_Exscan(&e_owned, &e_start, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-       
-    e_end=e_start+e_owned;
+    e_start+=1+e_written; // my ranks global element start 1-based
+    e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
     /* write the element connectivity in parallel */
-    if (cgp_elements_write_data(F, B, Z, E, e_start+1, e_end, e))
+    if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
+    e_written=e_endg; // update count of elements written
 if(0==1){
     printf("%ld, %ld \n", e_start+1, e_end);
     for (int ne=0; ne<e_owned; ++ne)
@@ -320,7 +317,6 @@ if(0==1){
          e[ne*8+0],e[ne*8+1],e[ne*8+2],e[ne*8+3],
          e[ne*8+4],e[ne*8+5],e[ne*8+6],e[ne*8+7]);
 }
-       
     free(e);   
   }
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
@@ -330,15 +326,31 @@ if(0==1){
     e_owned = params[0];
     int nvert = o.blocks.boundary.keys[i].nBoundaryFaceEdges;
     cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
-//    fillBlockKeyParams(params, k);
     getBoundaryConnectivityCGNS(o, i, e);
-//    ph_write_ints(f, phrase.c_str(), &c[0], c.getSize(), 8, params);
+    e_startg=1+e_written; // start for the elements of this topology
+    e_endg=e_written + PCU_Add_Long(e_owned); // end for the elements of this topology
+    switch(nvert){
+      case 3: 
+        if (cgp_section_write(F, B, Z, "Tri", CG_TETRA_4, e_startg, e_endg, 0, &E))
+           cgp_error_exit();
+        break;
+      case 4:
+        if (cgp_section_write(F, B, Z, "Quad", CG_QUAD_4, e_startg, e_endg, 0, &E))
+           cgp_error_exit();
+        break;
+    }
+    e_start=0;
+    MPI_Exscan(&e_owned, &e_start, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+    e_start+=1+e_written; // my ranks global element start 1-based
+    e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
+    /* write the element connectivity in parallel */
+    if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
+        cgp_error_exit();
 // this is probably the easiest path to getting the list that tells us the face (through surfID of smd) that each boundary element face is on
     phrase = getBlockKeyPhrase(k, "nbc codes ");
     apf::DynamicArray<int> codes;
     getNaturalBCCodesCGNS(o, i, codes);
     free(e);   
-//    ph_write_ints(f, phrase.c_str(), &codes[0], codes.getSize(), 8, params);
   }
 }
 
