@@ -147,6 +147,7 @@ void gen_ncorp(Output& o )
         MPI_Status stat[numtask];
         int maxfront=0;
         int lfront;
+        itkbeg=0;
         for (int itask=0; itask<numtask; ++itask) {
           iacc   = o.arrays.ilwork[itkbeg + 2];
           numseg = o.arrays.ilwork[itkbeg + 4];
