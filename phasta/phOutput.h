@@ -170,6 +170,7 @@ struct Output
   cgsize_t numGlobalNodes; 
   cgsize_t numGlobalVolumeElements; 
 #endif
+  int writeCGNSFiles;
   int iownnodes;  /*  how many node this rank owns */
   int nlwork; /* size of arrays.ilwork */
   int nlworkf; /* size of arrays.ilworkf */

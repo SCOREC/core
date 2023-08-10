@@ -1,4 +1,5 @@
 #include <PCU.h>
+#include "phInput.h"
 #include "phOutput.h"
 #include "phIO.h"
 #include "phiotimer.h"
@@ -123,6 +124,97 @@ void gen_ncorp(Output& o )
 	}
 	//char code[] = "out";
 	//int ione = 1;
+     int rank = PCU_Comm_Self() + 0;
+     for (int ipart=0; ipart<num_parts; ++ipart){
+        if(rank==ipart) { // my turn
+           printf("ncorp %d, %d, %d \n", rank, num_nodes,o.iownnodes);
+           for (int inod=0; inod<num_nodes; ++inod) printf("%ld ", o.arrays.ncorp[inod]);
+           printf(" \n");
+           
+        }
+        PCU_Barrier();
+     }
+
+
+     for (int ipart=0; ipart<num_parts; ++ipart){
+        if(rank==ipart) { // my turn
+           printf("ilwork %d, %d, %d \n", rank, o.nlwork,o.arrays.ilwork[0]);
+           int ist=0;
+           for (int itask=0; itask<o.arrays.ilwork[0]; ++itask) {
+              printf("%d  ",itask);
+              for (int itt=1; itt<5; ++itt)  printf("%d ", o.arrays.ilwork[ist+itt]);
+              printf(" \n");
+              int pnumseg=o.arrays.ilwork[ist+4];
+              for (int is=0; is<pnumseg; ++is) { 
+                 printf("%d, %d, %d \n",is,o.arrays.ilwork[ist+5+2*is],o.arrays.ilwork[ist+6+2*is]);
+              } 
+           }
+        }
+        PCU_Barrier();
+     }
+
+     cgsize_t* ncorp = new cgsize_t[num_nodes];
+
+     if(num_parts > 1) {
+// translating a commuInt out from PHASTA to c
+        int numtask=o.arrays.ilwork[0];
+        int itkbeg = 0; // 0-based arrays 
+        int itag, iacc, iother, numseg, isgbeg;
+        MPI_Datatype sevsegtype[numtask];
+//first do what ctypes does for setup
+//other stuff long int?
+        int maxseg=30; // set to 30,0000 for real problems
+        int isbegin[maxseg];
+        int lenseg[maxseg];
+        int ioffset[maxseg];
+        MPI_Request  req[numtask];
+        MPI_Status stat[numtask];
+        int maxfront=0;
+        int lfront;
+        for (int itask=0; itask<numtask; ++itask) {
+          iacc   = o.arrays.ilwork[itkbeg + 2];
+          numseg = o.arrays.ilwork[itkbeg + 4];
+         // ctypes.f decrements itkbeg+3 by one for rank 0-based.  do that where used below
+          lfront=0;
+//  debug         numseg=1; 
+          for(int is=0; is<numseg; ++is){
+             isbegin[is]= o.arrays.ilwork[itkbeg+3+2*(is+1)] -1 ; // ilwork was created for 1-based
+             lenseg[is]= o.arrays.ilwork[itkbeg+4+2*(is+1)];
+             lfront+=lenseg[is];
+          }
+          maxfront=std::max(maxfront,lfront);
+          for ( int iseg=0; iseg<numseg; ++iseg) ioffset[iseg] = isbegin[iseg] - isbegin[0];
+          MPI_Type_indexed (numseg, lenseg, ioffset,MPI_LONG_LONG_INT, &sevsegtype[itask]);
+          MPI_Type_commit (&sevsegtype[itask]);
+          itkbeg+=4+2*numseg;
+        }
+
+        int m = 0; 
+        itkbeg=0;
+        for (int itask=0; itask<numtask; ++itask) {
+          itag   = o.arrays.ilwork[itkbeg + 1];
+          iacc   = o.arrays.ilwork[itkbeg + 2];
+          iother = o.arrays.ilwork[itkbeg + 3] - 1; // MPI is 0 based but this was prepped wrong
+          numseg = o.arrays.ilwork[itkbeg + 4]; /// not used
+          isgbeg = o.arrays.ilwork[itkbeg + 5] - 1;
+          if (iacc==0){ 
+             MPI_Irecv(&o.arrays.ncorp[isgbeg], 1, sevsegtype[itask],iother, itag, MPI_COMM_WORLD, &req[m]);
+          } else {
+             MPI_Isend(&o.arrays.ncorp[isgbeg], 1, sevsegtype[itask],iother, itag, MPI_COMM_WORLD, &req[m]);
+          }
+          itkbeg+=4+2*numseg;
+          m      = m + 1; 
+        }
+        MPI_Waitall(m, req, stat);
+      }
+     for (int ipart=0; ipart<num_parts; ++ipart){
+        if(rank==ipart) { // my turn
+           for (int inod=0; inod<num_nodes; ++inod) printf("%ld ", o.arrays.ncorp[inod]);
+           printf(" \n");
+           
+        }
+        PCU_Barrier();
+     }
 
 }
 
@@ -272,6 +364,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   cgsize_t e_owned, e_start,e_end;
   cgsize_t e_startg,e_endg;
   cgsize_t e_written=0;
+  int rank= PCU_Comm_Self() +1;
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
@@ -311,6 +404,13 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
     e_written=e_endg; // update count of elements written
+
+    printf("interior cnn %d, %ld, %ld \n", rank, e_start, e_end);
+    for (int ne=0; ne<e_owned; ++ne) {
+      printf("%d, %d ", rank,(ne+1));
+      for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
+      printf("\n");
+    }
 if(0==1){
     printf("%ld, %ld \n", e_start+1, e_end);
     for (int ne=0; ne<e_owned; ++ne)
@@ -320,6 +420,7 @@ if(0==1){
 }
     free(e);
   }
+  if(o.writeCGNSFiles > 2) {
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
     params[0] = o.blocks.boundary.nElements[i];
@@ -346,16 +447,23 @@ if(0==1){
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
-    free(e);
+    printf("boundary cnn %d, %ld, %ld \n", rank, e_start, e_end);
+    for (int ne=0; ne<e_owned; ++ne) {
+      printf("%d, %d ", rank,(ne+1));
+      for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
+      printf("\n");
+    }
+    free(e);   
     int* srfID = (int *)malloc(nvert * e_owned * sizeof(int));
     getNaturalBCCodesCGNS(o, i, srfID);
     printf("%ld, %ld \n", e_start+1, e_end);
     for (int ne=0; ne<e_owned; ++ne)
-	printf("%d, %d \n", (ne+1),srfID[ne]);
+	printf("%d, %d, %d \n", rank, (ne+1),srfID[ne]);
 //  I am not sure if you want to put the code here to generate the face BC "node" but srfID has
 //  a number from 1 to 6 for the same numbered surfaces as we use in the box
 
   }
+ }
 }
 
 // WIP
@@ -363,6 +471,7 @@ void writeCGNS(Output& o, std::string path)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
+  int rank = PCU_Comm_Self() + 0;
 
   std::string timestep_or_dat;
 //  if (! timestep)
@@ -385,6 +494,39 @@ void writeCGNS(Output& o, std::string path)
 //    PetscCheck(F > 0, PETSC_COMM_SELF, PETSC_ERR_LIB, "cg_open(\"%s\",...) did not return a valid file ID", filename);
 
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
+if(0==1) {
+    int igo=0;
+    double work=9.0e33;
+    while (igo==0) {
+       work=work*0.9999999999;
+       if(work<=1) igo=1;
+    }
+}
+    int num_nodes=m->count(0);
+// debug prints:w
+//     for (int ipart=0; ipart<num_parts; ++ipart){
+////        if(rank==ipart) { // my turn
+           printf("ilwork %d, %d, %d \n", rank, o.nlwork,o.arrays.ilwork[0]);
+           int ist=0;
+           for (int itask=0; itask<o.arrays.ilwork[0]; ++itask) {
+              printf("%d  ",itask);
+              for (int itt=1; itt<5; ++itt)  printf("%d ", o.arrays.ilwork[ist+itt]);
+              printf(" \n");
+              int pnumseg=o.arrays.ilwork[ist+4];
+              for (int is=0; is<pnumseg; ++is) { 
+                 printf("%d, %d, %d \n",is,o.arrays.ilwork[ist+5+2*is],o.arrays.ilwork[ist+6+2*is]);
+              } 
+           }
+//        }
+  //      PCU_Barrier();
+//     }
+    printf("xyz %d, %d \n", rank, num_nodes);
+    for (int inode = 0; inode < num_nodes; ++inode){
+      printf("%d ",inode+1);
+      for (int j=0; j<3; ++j) printf("%f ", o.arrays.coordinates[j*num_nodes+inode]);
+      printf(" \n");
+   }
+
     gen_ncorp( o );
 //  o carries
 //     o.arrays.ncorp[on-rank-node-number(0-based)] => PETSc global node number (1-based)
@@ -413,7 +555,6 @@ void writeCGNS(Output& o, std::string path)
 
 
 // condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite.
-  int num_nodes=m->count(0);
 //V2
   cgsize_t gnod;
   start=o.local_start_id;
@@ -451,7 +592,7 @@ if(0==1) {
     }
   }
 */
-
+  if(o.writeCGNSFiles > 1) 
   writeBlocksCGNS(F,B,Z, o);
   if(cgp_close(F)) cgp_error_exit();
 //  if (!PCU_Comm_Self())
