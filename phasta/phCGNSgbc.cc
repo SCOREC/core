@@ -326,10 +326,11 @@ void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
 void writeBlocksCGNS(int F,int B,int Z, Output& o)
 {
   int params[MAX_PARAMS];
-  int E;
+  int E,S,Fs;
   cgsize_t e_owned, e_start,e_end;
   cgsize_t e_startg,e_endg;
   cgsize_t e_written=0;
+  int rank = PCU_Comm_Self() ;
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
@@ -366,8 +367,23 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
+        /* create a centered solution */
+    if (cg_sol_write(F, B, Z, "RankCellOwner", CG_CellCenter, &S) ||
+        cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
+        cgp_error_exit();
+    /* create the field data for this process */
+    int* d = (int *)malloc(e_owned * sizeof(int));
+    for (int n = 0; n < e_owned; n++) 
+            d[n] = rank;
+    /* write the solution field data in parallel */
+// from example    if (cgp_field_write_data(F, B, Z, S, Fs, &start, &end, d))
+    if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
+        cgp_error_exit();
+
+
     e_written=e_endg; // update count of elements written
     free(e);
+    free(d);
   }
   if(o.writeCGNSFiles > 2) {
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
@@ -399,6 +415,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     free(e);
     int* srfID = (int *)malloc(nvert * e_owned * sizeof(int));
     getNaturalBCCodesCGNS(o, i, srfID);
+
 //  I am not sure if you want to put the code here to generate the face BC "node" but srfID has
 //  a number from 1 to 6 for the same numbered surfaces as we use in the box
 
