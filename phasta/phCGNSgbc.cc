@@ -347,7 +347,6 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
            cgp_error_exit();
         break;
       case 5:
-    free(e);
         if (cgp_section_write(F, B, Z, "Pyr", CG_PYRA_5, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
