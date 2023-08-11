@@ -458,7 +458,7 @@ if(1==1){
       e_endg=e_written + numBelTP; // end for the elements of this topology
       switch(nvert){
         case 3:
-          if (cgp_section_write(F, B, Z, "Tri", CG_TETRA_4, e_startg, e_endg, 0, &E))
+          if (cgp_section_write(F, B, Z, "Tri", CG_TRI_3, e_startg, e_endg, 0, &E))
             cgp_error_exit();
           break;
         case 4:
