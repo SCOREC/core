@@ -302,9 +302,18 @@ void getInteriorConnectivityCGNS(Output& o, int block, cgsize_t* c)
   int nelem = o.blocks.interior.nElements[block];
   int nvert = o.blocks.interior.keys[block].nElementVertices;
   size_t i = 0;
-  for (int elem = 0; elem < nelem; ++elem)
-    for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]]; // input is 0-based,  out is  1-based do drop the +1
+  if(nvert==4) { //prepped for PHASTA's negative volume tets so flip second and third vertex
+    for (int elem = 0; elem < nelem; ++elem){
+        c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][0]];
+        c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][2]];
+        c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][1]];
+        c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][3]];
+     }
+  } else {
+    for (int elem = 0; elem < nelem; ++elem)
+      for (int vert = 0; vert < nvert; ++vert)
+        c[i++] = o.arrays.ncorp[o.arrays.ien[block][elem][vert]]; // input is 0-based,  out is  1-based do drop the +1
+  }
   PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
@@ -313,11 +322,30 @@ void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c)
 {
   int nelem = o.blocks.boundary.nElements[block];
 // CGNS wants surface elements  int nvert = o.blocks.boundary.keys[block].nElementVertices;
+  int nvertVol = o.blocks.boundary.keys[block].nElementVertices;
   int nvert = o.blocks.boundary.keys[block].nBoundaryFaceEdges;
   size_t i = 0;
-  for (int elem = 0; elem < nelem; ++elem)
-    for (int vert = 0; vert < nvert; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][vert]];
+//  int* lnode[4];
+  std::vector<int> lnode={0,1,2,3}; // Standard pattern of first 4 (or 3)
+  // PHASTA's use of volume elements has an lnode array that maps the surface nodes from the volume numbering.  We need it here too
+  //  see hierarchic.f but note that is fortran numbering
+  if(nvertVol==4) lnode={0, 2, 1, -1};             // tet is first three but opposite normal of others to go with neg volume
+//  if(nvertVol==5 && nvert==4) lnode={0, 1, 2, 3};  // pyramid quad is first 4
+  if(nvertVol==5 && nvert==3) lnode={0, 4, 1, -1}; // pyramid tri is a fortran map of 1 5 2 
+  if(nvertVol==6 && nvert==4) lnode={0, 3, 4, 1};  // wedge quad is a fortran map of 1 4 5 2
+//  if(nvertVol==6 && nvert==3) lnode={0, 1, 2, -1}; // wedge tri first three
+//  if(nvertVol==8) lnode={0, 1, 2, 3};              // hex  first 4
+/*  if(nvertVol==4) { //see interior above
+    for (int elem = 0; elem < nelem; ++elem){
+        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][0]];
+        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][2]];
+        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][1]];
+    } 
+  } else { */
+    for (int elem = 0; elem < nelem; ++elem)
+      for (int vert = 0; vert < nvert; ++vert)
+        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][lnode[vert]]];
+//  }
   PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
@@ -441,7 +469,7 @@ if(1==1){
   }
   if(o.writeCGNSFiles > 2) {
     cgsize_t eVolElm=e_written;
-    cgsize_t eBelWritten=0;
+    cgsize_t e_belWritten=0;
     cgsize_t totOnRankBel=0;
     for (int i = 0; i < o.blocks.boundary.getSize(); ++i) 
       totOnRankBel += o.blocks.boundary.nElements[i];
@@ -483,8 +511,9 @@ if(1==1){
     }
 }
       free(e);
-      getNaturalBCCodesCGNS(o, i, &srfID[eBelWritten]);
-      eBelWritten+=e_owned;
+      getNaturalBCCodesCGNS(o, i, &srfID[e_belWritten]);
+      e_written+=e_owned;
+      e_belWritten+=e_owned;
     }
 
     printf("%ld ", totOnRankBel);
@@ -496,7 +525,7 @@ if(1==1){
          cgp_error_exit();
     /* write the user data for this process */
     e_start=1;
-    e_end=eBelWritten; // user data is ranged differently than field data
+    e_end=e_belWritten; // user data is ranged differently than field data
     printf("Bndy %ld, %ld %d, %d, %d, %d \n", e_start, e_end, rank,Fsb,Fsb2);
     if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
         cgp_array_write_data(Fsb2, &rank, &rank, &e_end))
