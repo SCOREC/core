@@ -425,93 +425,86 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
         cgp_error_exit();
   }
   if(o.writeCGNSFiles > 2) {
-  cgsize_t eVolElm=e_written;
-  for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
-    BlockKey& k = o.blocks.boundary.keys[i];
-    params[0] = o.blocks.boundary.nElements[i];
-    e_owned = params[0];
-    int nvert = o.blocks.boundary.keys[i].nBoundaryFaceEdges;
-    cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
-    getBoundaryConnectivityCGNS(o, i, e);
-    e_startg=1+e_written; // start for the elements of this topology
-    cgsize_t  numBelTP = PCU_Add_Long(e_owned); // number of elements of this topology
-    e_endg=e_written + numBelTP; // end for the elements of this topology
-    switch(nvert){
-      case 3:
-        if (cgp_section_write(F, B, Z, "Tri", CG_TETRA_4, e_startg, e_endg, 0, &E))
-           cgp_error_exit();
-        break;
-      case 4:
-        if (cgp_section_write(F, B, Z, "Quad", CG_QUAD_4, e_startg, e_endg, 0, &E))
-           cgp_error_exit();
-        break;
-    }
-    e_start=0;
-    auto type = getMpiType( cgsize_t() );
-    MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
-    e_start+=1+e_written; // my ranks global element start 1-based
-    e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
-    /* write the element connectivity in parallel */
-    if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
-        cgp_error_exit();
-    free(e);
-    int* srfID = (int *)malloc( e_owned * sizeof(int));
-    int* nBelVec = (int *)malloc( 1 * sizeof(int));
-    getNaturalBCCodesCGNS(o, i, srfID);
-    printf("%ld ", numBelTP);
-        /* create a centered solution on boundary faces ONLY for srfID */
-    if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
-//done above          cg_user_data_write("User Data") ||
-          cg_gorel(F, "User Data", 0, NULL) ||
-         cgp_array_write("srfID", CG_Integer, 1,&numBelTP, &Fsb) ||
-         cgp_array_write("nBelOnRank", CG_Integer, 1, &num_parts, &Fsb2))
-        cgp_error_exit();
-    /* create the field data for this process */
-    e_start-=eVolElm;
-    e_end-=eVolElm;
-    nBelVec[0]=e_owned;
-    printf("Bndy %ld, %ld %d, %d, %d, %d \n", e_start, e_end, nBelVec[0],rank,Fsb,Fsb2);
-//    for (int ibel=0; ibel<e_owned; ++ibel) printf("%d, %d \n", ibel, srfID[ibel]);
-    if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
-        cgp_array_write_data(Fsb2, &rank, &rank, nBelVec))
-        cgp_error_exit();
-    printf("%ld, %ld \n", e_start+1, e_end);
-
-    int num_ranks;
-    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    if (num_ranks > 1) {
-      printf("Boundary conditions cannot be written in parallel right now\n");
-    } else {
-      // waaay too large, but works as proof of concept
-      cgsize_t (*bc_elems)[e_owned] = (cgsize_t (*)[e_owned])calloc(6 * e_owned, sizeof(cgsize_t));
-      cgsize_t bc_elems_count[6] = {0};
-      for (int elem_id=0; elem_id<e_owned; ++elem_id) {
-        int BCid = srfID[elem_id] - 1;
-        bc_elems[BCid][bc_elems_count[BCid]] = elem_id + eVolElm + 1;
-        bc_elems_count[BCid]++;
+    cgsize_t eVolElm=e_written;
+    for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
+      BlockKey& k = o.blocks.boundary.keys[i];
+      params[0] = o.blocks.boundary.nElements[i];
+      e_owned = params[0];
+      int nvert = o.blocks.boundary.keys[i].nBoundaryFaceEdges;
+      cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
+      getBoundaryConnectivityCGNS(o, i, e);
+      e_startg=1+e_written; // start for the elements of this topology
+      cgsize_t  numBelTP = PCU_Add_Long(e_owned); // number of elements of this topology
+      e_endg=e_written + numBelTP; // end for the elements of this topology
+      switch(nvert){
+        case 3:
+          if (cgp_section_write(F, B, Z, "Tri", CG_TETRA_4, e_startg, e_endg, 0, &E))
+            cgp_error_exit();
+          break;
+        case 4:
+          if (cgp_section_write(F, B, Z, "Quad", CG_QUAD_4, e_startg, e_endg, 0, &E))
+            cgp_error_exit();
+          break;
       }
-      // for (int BCid = 0; BCid < 6; BCid++) {
-      //   printf("BCid %d, nelems %ld: ", BCid, bc_elems_count[BCid]);
-      //   for (int nelem = 0; nelem < bc_elems_count[BCid]; nelem++){
-      //     printf("%ld, ", bc_elems[BCid][nelem]);
-      //   }
-      //   printf("\n");
-      // }
+      e_start=0;
+      auto type = getMpiType( cgsize_t() );
+      MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
+      e_start+=1+e_written; // my ranks global element start 1-based
+      e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
+      /* write the element connectivity in parallel */
+      if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
+          cgp_error_exit();
+      free(e);
+      int* srfID = (int *)malloc( e_owned * sizeof(int));
+      int* nBelVec = (int *)malloc( 1 * sizeof(int));
+      getNaturalBCCodesCGNS(o, i, srfID);
+      printf("%ld ", numBelTP);
+          /* create a centered solution on boundary faces ONLY for srfID */
+      if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+  //done above          cg_user_data_write("User Data") ||
+            cg_gorel(F, "User Data", 0, NULL) ||
+          cgp_array_write("srfID", CG_Integer, 1,&numBelTP, &Fsb) ||
+          cgp_array_write("nBelOnRank", CG_Integer, 1, &num_parts, &Fsb2))
+          cgp_error_exit();
+      /* create the field data for this process */
+      e_start-=eVolElm;
+      e_end-=eVolElm;
+      nBelVec[0]=e_owned;
+      printf("Bndy %ld, %ld %d, %d, %d, %d \n", e_start, e_end, nBelVec[0],rank,Fsb,Fsb2);
+  //    for (int ibel=0; ibel<e_owned; ++ibel) printf("%d, %d \n", ibel, srfID[ibel]);
+      if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
+          cgp_array_write_data(Fsb2, &rank, &rank, nBelVec))
+          cgp_error_exit();
+      printf("%ld, %ld \n", e_start+1, e_end);
 
-      int BC_index;
-      for (int BCid = 0; BCid < 6; BCid++) {
-        char BC_name[33];
-        snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
-        // printf("%s\n", BC_name);
-        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), bc_elems_count[BCid], bc_elems[BCid], &BC_index))
-          cg_error_exit();
-        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
-        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
+      int num_ranks;
+      MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
+      if (num_ranks > 1) {
+        printf("Boundary conditions cannot be written in parallel right now\n");
+      } else {
+        // waaay too large, but works as proof of concept
+        cgsize_t (*bc_elems)[e_owned] = (cgsize_t (*)[e_owned])calloc(6 * e_owned, sizeof(cgsize_t));
+        cgsize_t bc_elems_count[6] = {0};
+        for (int elem_id=0; elem_id<e_owned; ++elem_id) {
+          int BCid = srfID[elem_id] - 1;
+          bc_elems[BCid][bc_elems_count[BCid]] = elem_id + eVolElm + 1;
+          bc_elems_count[BCid]++;
+        }
+
+        int BC_index;
+        for (int BCid = 0; BCid < 6; BCid++) {
+          char BC_name[33];
+          snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
+          // printf("%s\n", BC_name);
+          if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), bc_elems_count[BCid], bc_elems[BCid], &BC_index))
+            cg_error_exit();
+          if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
+          if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
+        }
+
+        free(bc_elems);
       }
-
-      free(bc_elems);
     }
-  }
   }
 }
 
