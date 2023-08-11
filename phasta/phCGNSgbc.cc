@@ -206,7 +206,16 @@ void gen_ncorp(Output& o )
         }
         MPI_Waitall(m, req, stat);
       }
-
+if(1==1) {
+     for (int ipart=0; ipart<num_parts; ++ipart){
+        if(part==ipart) { // my turn
+           for (int inod=0; inod<num_nodes; ++inod) printf("%ld ", o.arrays.ncorp[inod]);
+           printf(" \n");
+           
+        }
+        PCU_Barrier();
+     }
+}
 }
 
 static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes)
@@ -401,10 +410,17 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     for (int n = 0; n < e_owned; n++) 
             d[n] = rank;
     /* write the solution field data in parallel */
-// from example    if (cgp_field_write_data(F, B, Z, S, Fs, &start, &end, d))
     if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
         cgp_error_exit();
 
+if(1==1){
+    printf("interior cnn %d, %ld, %ld \n", rank, e_start, e_end);
+    for (int ne=0; ne<e_owned; ++ne) {
+      printf("%d, %d ", rank,(ne+1));
+      for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
+      printf("\n");
+    }
+}
 
     e_written=e_endg; // update count of elements written
     free(e);
@@ -458,6 +474,14 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
       /* write the element connectivity in parallel */
       if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
           cgp_error_exit();
+if(1==1){
+    printf("boundary cnn %d, %ld, %ld \n", rank, e_start, e_end);
+    for (int ne=0; ne<e_owned; ++ne) {
+      printf("%d, %d ", rank,(ne+1));
+      for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
+      printf("\n");
+    }
+}
       free(e);
       getNaturalBCCodesCGNS(o, i, &srfID[eBelWritten]);
       eBelWritten+=e_owned;
@@ -477,6 +501,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
         cgp_array_write_data(Fsb2, &rank, &rank, &e_end))
         cgp_error_exit();
+
 
     if (num_parts > 1) {
       printf("Boundary conditions cannot be written in parallel right now\n");
@@ -521,7 +546,37 @@ void writeCGNS(Output& o, std::string path)
   cgsize_t sizes[3],*e, start, end, ncells;
 
     int num_nodes=m->count(0);
-
+// debug prints
+if(0==1){
+    for (int ipart=0; ipart<num_parts; ++ipart){
+        if(rank==ipart) { // my turn
+           printf("ilwork %d, %d, %d \n", rank, o.nlwork,o.arrays.ilwork[0]);
+           int ist=0;
+           for (int itask=0; itask<o.arrays.ilwork[0]; ++itask) {
+              printf("%d  ",itask);
+              for (int itt=1; itt<5; ++itt)  printf("%d ", o.arrays.ilwork[ist+itt]);
+              printf(" \n");
+              int pnumseg=o.arrays.ilwork[ist+4];
+              for (int is=0; is<pnumseg; ++is) { 
+                 printf("%d, %d, %d \n",is,o.arrays.ilwork[ist+5+2*is],o.arrays.ilwork[ist+6+2*is]);
+              } 
+           }
+       }
+       PCU_Barrier();
+     }
+}
+if(1==1){
+  for (int ipart=0; ipart<num_parts; ++ipart){
+        if(rank==ipart) { // my turn    printf("xyz %d, %d \n", rank, num_nodes);
+    for (int inode = 0; inode < num_nodes; ++inode){
+      printf("%d ",inode+1);
+      for (int j=0; j<3; ++j) printf("%f ", o.arrays.coordinates[j*num_nodes+inode]);
+      printf(" \n");
+   }
+       }
+       PCU_Barrier();
+     }
+}
 
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
     gen_ncorp( o );
@@ -564,6 +619,11 @@ void writeCGNS(Output& o, std::string path)
          icount++;
       }
     }
+if(0==1) {
+    printf("%ld, %ld \n", start, end);
+    for (int ne=0; ne<num_nodes; ++ne)
+	printf("%d, %f \n", (ne+1), x[ne]);
+}
     if(j==0) if(cgp_coord_write_data(F, B, Z, Cx, &start, &end, x)) cgp_error_exit();
     if(j==1) if(cgp_coord_write_data(F, B, Z, Cy, &start, &end, x)) cgp_error_exit();
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
