@@ -18,8 +18,29 @@
 typedef int lcorp_t;
 #define NCORP_MPI_T MPI_INTEGER
 
-namespace ph {
+namespace  {
 
+template<class T>
+MPI_Datatype getMpiType(T) {
+  MPI_Datatype mpitype;
+  //determine the type based on what is being sent
+  if( std::is_same<T, double>::value ) {
+    mpitype = MPI_DOUBLE;
+  } else if ( std::is_same<T, int64_t>::value ) {
+    mpitype = MPI_INT64_T;
+  } else if ( std::is_same<T, int32_t>::value ) {
+    mpitype = MPI_INT32_T;
+  } else {
+    assert(false);
+    fprintf(stderr, "Unknown type in %s... exiting\n", __func__);
+    exit(EXIT_FAILURE);
+  }
+  return mpitype;
+}
+
+}
+
+namespace ph {
 
 static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
 static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
@@ -161,7 +182,8 @@ void gen_ncorp(Output& o )
           }
           maxfront=std::max(maxfront,lfront);
           for ( int iseg=0; iseg<numseg; ++iseg) ioffset[iseg] = isbegin[iseg] - isbegin[0];
-          MPI_Type_indexed (numseg, lenseg, ioffset,MPI_LONG_LONG_INT, &sevsegtype[itask]);
+          auto type = getMpiType( cgsize_t() );
+          MPI_Type_indexed (numseg, lenseg, ioffset,type, &sevsegtype[itask]);
           MPI_Type_commit (&sevsegtype[itask]);
           itkbeg+=4+2*numseg;
         }
@@ -283,7 +305,6 @@ void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c)
   int nelem = o.blocks.boundary.nElements[block];
 // CGNS wants surface elements  int nvert = o.blocks.boundary.keys[block].nElementVertices;
   int nvert = o.blocks.boundary.keys[block].nBoundaryFaceEdges;
-  //c.setSize(nelem * nvert);
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert; ++vert)
@@ -305,10 +326,10 @@ void getInterfaceConnectivityCGNS // not extended yet other than transpose
   size_t i = 0;
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert0; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienif0[block][elem][vert]-1];
+      c[i++] = o.arrays.ncorp[o.arrays.ienif0[block][elem][vert]];
   for (int elem = 0; elem < nelem; ++elem)
     for (int vert = 0; vert < nvert1; ++vert)
-      c[i++] = o.arrays.ncorp[o.arrays.ienif1[block][elem][vert]-1];
+      c[i++] = o.arrays.ncorp[o.arrays.ienif1[block][elem][vert]];
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
@@ -327,11 +348,13 @@ void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
 void writeBlocksCGNS(int F,int B,int Z, Output& o)
 {
   int params[MAX_PARAMS];
-  int E,S,Fs;
+  int E,S,Fs,Fs2,Fsb,Fsb2;
   cgsize_t e_owned, e_start,e_end;
   cgsize_t e_startg,e_endg;
   cgsize_t e_written=0;
-  int rank = PCU_Comm_Self() ;
+  const int nparts = PCU_Comm_Peers();
+  cgsize_t  num_parts=nparts;
+  cgsize_t rank = PCU_Comm_Self() ;
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
@@ -362,7 +385,8 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
         break;
     }
     e_start=0;
-    MPI_Exscan(&e_owned, &e_start, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+    auto type = getMpiType( cgsize_t() );
+    MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
     e_start+=1+e_written; // my ranks global element start 1-based
     e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
     /* write the element connectivity in parallel */
@@ -385,8 +409,23 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     e_written=e_endg; // update count of elements written
     free(e);
     free(d);
+
+        /* create Helper array for number of elements on rank */
+     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+//done for coords          cg_user_data_write("User Data") ||
+          cg_gorel(F, "User Data", 0, NULL) ||
+         cgp_array_write("nIelOnRank", CG_Integer, 1, &num_parts, &Fs2))
+        cgp_error_exit();
+    /* create the field data for this process */
+    int* nIelVec = (int *)malloc( 1 * sizeof(int));
+    nIelVec[0]=e_owned;
+    rank+=1;
+    printf("Intr %d, %d, %d, %d \n", nIelVec[0],rank,Fs,Fs2);
+    if ( cgp_array_write_data(Fs2, &rank, &rank, nIelVec))
+        cgp_error_exit();
   }
   if(o.writeCGNSFiles > 2) {
+  cgsize_t eVolElm=e_written;
   for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
     BlockKey& k = o.blocks.boundary.keys[i];
     params[0] = o.blocks.boundary.nElements[i];
@@ -395,7 +434,8 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
     getBoundaryConnectivityCGNS(o, i, e);
     e_startg=1+e_written; // start for the elements of this topology
-    e_endg=e_written + PCU_Add_Long(e_owned); // end for the elements of this topology
+    cgsize_t  numBelTP = PCU_Add_Long(e_owned); // number of elements of this topology
+    e_endg=e_written + numBelTP; // end for the elements of this topology
     switch(nvert){
       case 3:
         if (cgp_section_write(F, B, Z, "Tri", CG_TETRA_4, e_startg, e_endg, 0, &E))
@@ -407,64 +447,50 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
         break;
     }
     e_start=0;
-    MPI_Exscan(&e_owned, &e_start, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+    auto type = getMpiType( cgsize_t() );
+    MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
     e_start+=1+e_written; // my ranks global element start 1-based
     e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
     free(e);
-    int* srfID = (int *)malloc(nvert * e_owned * sizeof(int));
+    int* srfID = (int *)malloc( e_owned * sizeof(int));
+    int* nBelVec = (int *)malloc( 1 * sizeof(int));
     getNaturalBCCodesCGNS(o, i, srfID);
-    printf("%ld, %ld \n", e_start+1, e_end);
-
-    int num_ranks;
-    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-    if (num_ranks > 1) {
-      printf("Boundary conditions cannot be written in parallel right now\n");
-    } else {
-      // waaay too large, but works as proof of concept
-      cgsize_t (*bc_elems)[e_owned] = (cgsize_t (*)[e_owned])calloc(6 * e_owned, sizeof(cgsize_t));
-      cgsize_t bc_elems_count[6] = {0};
-      for (int ne=0; ne<e_owned; ++ne) {
-        int BCid = srfID[ne] - 1;
-        bc_elems[BCid][bc_elems_count[BCid]] = ne+1;
-        bc_elems_count[BCid]++;
-      }
-      // for (int BCid = 0; BCid < 6; BCid++) {
-      //   printf("BCid %d, nelems %ld: ", BCid, bc_elems_count[BCid]);
-      //   for (int nelem = 0; nelem < bc_elems_count[BCid]; nelem++){
-      //     printf("%ld, ", bc_elems[BCid][nelem]);
-      //   }
-      //   printf("\n");
-      // }
-
-      int BC_index;
-      for (int BCid = 0; BCid < 6; BCid++) {
-        char BC_name[33];
-        snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
-        // printf("%s\n", BC_name);
-        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), bc_elems_count[BCid], bc_elems[BCid], &BC_index))
-          cg_error_exit();
-        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
-        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
-      }
-
-      free(bc_elems);
-    }
+    printf("%ld ", numBelTP);
+        /* create a centered solution on boundary faces ONLY for srfID */
+    if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+//done above          cg_user_data_write("User Data") ||
+          cg_gorel(F, "User Data", 0, NULL) ||
+         cgp_array_write("srfID", CG_Integer, 1,&numBelTP, &Fsb) ||
+         cgp_array_write("nBelOnRank", CG_Integer, 1, &num_parts, &Fsb2))
+        cgp_error_exit();
+    /* create the field data for this process */
+    e_start-=eVolElm;
+    e_end-=eVolElm;
+    nBelVec[0]=e_owned;
+    printf("Bndy %ld, %ld %d, %d, %d, %d \n", e_start, e_end, nBelVec[0],rank,Fsb,Fsb2);
+//    for (int ibel=0; ibel<e_owned; ++ibel) printf("%d, %d \n", ibel, srfID[ibel]);
+    if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
+        cgp_array_write_data(Fsb2, &rank, &rank, nBelVec))
+        cgp_error_exit();
   }
- }
+  }
 }
 
 void writeCGNS(Output& o, std::string path)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
-  int rank = PCU_Comm_Self() + 0;
+  cgsize_t  rank = PCU_Comm_Self() + 0;
+  int nparts;
+  MPI_Comm_size(MPI_COMM_WORLD, &nparts);
+  cgsize_t  num_parts=nparts;
 
   std::string timestep_or_dat;
   static char outfile[] = "chefOut.cgns";
-  int  F, B, Z, E, S, Fs, A, Cx, Cy, Cz;
+  int  F, B, Z, E, S, Fs, Fs2, A, Cx, Cy, Cz;
   cgsize_t sizes[3],*e, start, end, ncells;
 
     int num_nodes=m->count(0);
@@ -515,6 +541,19 @@ void writeCGNS(Output& o, std::string path)
     if(j==1) if(cgp_coord_write_data(F, B, Z, Cy, &start, &end, x)) cgp_error_exit();
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
+        /* create Helper array for number of elements on rank */
+     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+          cg_user_data_write("User Data") ||
+          cg_gorel(F, "User Data", 0, NULL) ||
+         cgp_array_write("nCoordsOnRank", CG_Integer, 1, &num_parts, &Fs2))
+        cgp_error_exit();
+    /* create the field data for this process */
+    int* nCoordVec = (int *)malloc( 1 * sizeof(int));
+    nCoordVec[0]=o.iownnodes;
+    rank+=1;
+    printf("Coor %d, %d, %d, \n", nCoordVec[0],rank,Fs2);
+    if ( cgp_array_write_data(Fs2, &rank, &rank, nCoordVec))
+        cgp_error_exit();
   if(o.writeCGNSFiles > 1) 
   writeBlocksCGNS(F,B,Z, o);
   if(cgp_close(F)) cgp_error_exit();
