@@ -412,7 +412,6 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
 
         /* create Helper array for number of elements on rank */
      if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
-//done for coords          cg_user_data_write("User Data") ||
           cg_gorel(F, "User Data", 0, NULL) ||
          cgp_array_write("nIelOnRank", CG_Integer, 1, &num_parts, &Fs2))
         cgp_error_exit();
@@ -461,7 +460,6 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
       printf("%ld ", numBelTP);
           /* create a centered solution on boundary faces ONLY for srfID */
       if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
-  //done above          cg_user_data_write("User Data") ||
             cg_gorel(F, "User Data", 0, NULL) ||
           cgp_array_write("srfID", CG_Integer, 1,&numBelTP, &Fsb) ||
           cgp_array_write("nBelOnRank", CG_Integer, 1, &num_parts, &Fsb2))
@@ -477,9 +475,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
           cgp_error_exit();
       printf("%ld, %ld \n", e_start+1, e_end);
 
-      int num_ranks;
-      MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
-      if (num_ranks > 1) {
+      if (num_parts > 1) {
         printf("Boundary conditions cannot be written in parallel right now\n");
       } else {
         // waaay too large, but works as proof of concept
