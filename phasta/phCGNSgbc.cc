@@ -475,7 +475,6 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
         cgp_array_write_data(Fsb2, &rank, &rank, nBelVec))
         cgp_error_exit();
-  }
     printf("%ld, %ld \n", e_start+1, e_end);
 
     int num_ranks;
@@ -486,9 +485,9 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
       // waaay too large, but works as proof of concept
       cgsize_t (*bc_elems)[e_owned] = (cgsize_t (*)[e_owned])calloc(6 * e_owned, sizeof(cgsize_t));
       cgsize_t bc_elems_count[6] = {0};
-      for (int ne=0; ne<e_owned; ++ne) {
-        int BCid = srfID[ne] - 1;
-        bc_elems[BCid][bc_elems_count[BCid]] = ne+1;
+      for (int elem_id=0; elem_id<e_owned; ++elem_id) {
+        int BCid = srfID[elem_id] - 1;
+        bc_elems[BCid][bc_elems_count[BCid]] = elem_id + eVolElm + 1;
         bc_elems_count[BCid]++;
       }
       // for (int BCid = 0; BCid < 6; BCid++) {
@@ -512,6 +511,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
 
       free(bc_elems);
     }
+  }
   }
 }
 
