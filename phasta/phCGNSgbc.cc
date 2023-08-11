@@ -2,6 +2,7 @@
 #include "phOutput.h"
 #include "phIO.h"
 #include "phiotimer.h"
+#include <cstdio>
 #include <sstream>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -475,6 +476,42 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
         cgp_array_write_data(Fsb2, &rank, &rank, nBelVec))
         cgp_error_exit();
   }
+    printf("%ld, %ld \n", e_start+1, e_end);
+
+    int num_ranks;
+    MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
+    if (num_ranks > 1) {
+      printf("Boundary conditions cannot be written in parallel right now\n");
+    } else {
+      // waaay too large, but works as proof of concept
+      cgsize_t (*bc_elems)[e_owned] = (cgsize_t (*)[e_owned])calloc(6 * e_owned, sizeof(cgsize_t));
+      cgsize_t bc_elems_count[6] = {0};
+      for (int ne=0; ne<e_owned; ++ne) {
+        int BCid = srfID[ne] - 1;
+        bc_elems[BCid][bc_elems_count[BCid]] = ne+1;
+        bc_elems_count[BCid]++;
+      }
+      // for (int BCid = 0; BCid < 6; BCid++) {
+      //   printf("BCid %d, nelems %ld: ", BCid, bc_elems_count[BCid]);
+      //   for (int nelem = 0; nelem < bc_elems_count[BCid]; nelem++){
+      //     printf("%ld, ", bc_elems[BCid][nelem]);
+      //   }
+      //   printf("\n");
+      // }
+
+      int BC_index;
+      for (int BCid = 0; BCid < 6; BCid++) {
+        char BC_name[33];
+        snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
+        // printf("%s\n", BC_name);
+        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), bc_elems_count[BCid], bc_elems[BCid], &BC_index))
+          cg_error_exit();
+        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
+        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
+      }
+
+      free(bc_elems);
+    }
   }
 }
 
