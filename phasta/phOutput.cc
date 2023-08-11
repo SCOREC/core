@@ -21,12 +21,6 @@
 #include <stdlib.h>
 #include <typeinfo>
 #include <pcu_util.h>
-#ifdef HAVE_CGNS
-//
-#include <cgns_io.h>
-#include <pcgnslib.h>
-//
-#endif
 
 namespace ph {
 
