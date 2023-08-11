@@ -425,6 +425,11 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   }
   if(o.writeCGNSFiles > 2) {
     cgsize_t eVolElm=e_written;
+    cgsize_t eBelWritten=0;
+    cgsize_t totOnRankBel=0;
+    for (int i = 0; i < o.blocks.boundary.getSize(); ++i) 
+      totOnRankBel += o.blocks.boundary.nElements[i];
+    int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
     for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
       BlockKey& k = o.blocks.boundary.keys[i];
       params[0] = o.blocks.boundary.nElements[i];
@@ -454,52 +459,49 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
       if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
           cgp_error_exit();
       free(e);
-      int* srfID = (int *)malloc( e_owned * sizeof(int));
-      int* nBelVec = (int *)malloc( 1 * sizeof(int));
-      getNaturalBCCodesCGNS(o, i, srfID);
-      printf("%ld ", numBelTP);
-          /* create a centered solution on boundary faces ONLY for srfID */
-      if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
-            cg_gorel(F, "User Data", 0, NULL) ||
-          cgp_array_write("srfID", CG_Integer, 1,&numBelTP, &Fsb) ||
-          cgp_array_write("nBelOnRank", CG_Integer, 1, &num_parts, &Fsb2))
-          cgp_error_exit();
-      /* create the field data for this process */
-      e_start-=eVolElm;
-      e_end-=eVolElm;
-      nBelVec[0]=e_owned;
-      printf("Bndy %ld, %ld %d, %d, %d, %d \n", e_start, e_end, nBelVec[0],rank,Fsb,Fsb2);
-  //    for (int ibel=0; ibel<e_owned; ++ibel) printf("%d, %d \n", ibel, srfID[ibel]);
-      if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
-          cgp_array_write_data(Fsb2, &rank, &rank, nBelVec))
-          cgp_error_exit();
-      printf("%ld, %ld \n", e_start+1, e_end);
+      getNaturalBCCodesCGNS(o, i, &srfID[eBelWritten]);
+      eBelWritten+=e_owned;
+    }
 
-      if (num_parts > 1) {
-        printf("Boundary conditions cannot be written in parallel right now\n");
-      } else {
-        // waaay too large, but works as proof of concept
-        cgsize_t (*bc_elems)[e_owned] = (cgsize_t (*)[e_owned])calloc(6 * e_owned, sizeof(cgsize_t));
-        cgsize_t bc_elems_count[6] = {0};
-        for (int elem_id=0; elem_id<e_owned; ++elem_id) {
-          int BCid = srfID[elem_id] - 1;
-          bc_elems[BCid][bc_elems_count[BCid]] = elem_id + eVolElm + 1;
-          bc_elems_count[BCid]++;
-        }
+    printf("%ld ", totOnRankBel);
+        /* setup User Data for boundary faces */
+    if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+         cg_gorel(F, "User Data", 0, NULL) ||
+         cgp_array_write("srfID", CG_Integer, 1,&totOnRankBel, &Fsb) ||
+         cgp_array_write("nBelOnRank", CG_Integer, 1, &num_parts, &Fsb2))
+         cgp_error_exit();
+    /* write the user data for this process */
+    e_start=1;
+    e_end=eBelWritten; // user data is ranged differently than field data
+    printf("Bndy %ld, %ld %d, %d, %d, %d \n", e_start, e_end, rank,Fsb,Fsb2);
+    if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
+        cgp_array_write_data(Fsb2, &rank, &rank, &e_end))
+        cgp_error_exit();
 
-        int BC_index;
-        for (int BCid = 0; BCid < 6; BCid++) {
-          char BC_name[33];
-          snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
-          // printf("%s\n", BC_name);
-          if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), bc_elems_count[BCid], bc_elems[BCid], &BC_index))
-            cg_error_exit();
-          if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
-          if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
-        }
-
-        free(bc_elems);
+    if (num_parts > 1) {
+      printf("Boundary conditions cannot be written in parallel right now\n");
+    } else {
+      // waaay too large, but works as proof of concept
+      cgsize_t (*bc_elems)[totOnRankBel] = (cgsize_t (*)[totOnRankBel])calloc(6 * totOnRankBel, sizeof(cgsize_t));
+      cgsize_t bc_elems_count[6] = {0};
+      for (int elem_id=0; elem_id<totOnRankBel; ++elem_id) {
+        int BCid = srfID[elem_id] - 1;
+        bc_elems[BCid][bc_elems_count[BCid]] = elem_id + eVolElm + 1;
+        bc_elems_count[BCid]++;
       }
+
+      int BC_index;
+      for (int BCid = 0; BCid < 6; BCid++) {
+        char BC_name[33];
+        snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
+        // printf("%s\n", BC_name);
+        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), bc_elems_count[BCid], bc_elems[BCid], &BC_index))
+          cg_error_exit();
+        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
+        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
+      }
+
+      free(bc_elems);
     }
   }
 }
