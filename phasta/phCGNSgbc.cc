@@ -392,6 +392,10 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   const int nparts = PCU_Comm_Peers();
   cgsize_t  num_parts=nparts;
   cgsize_t rank = PCU_Comm_Self() ;
+   /* create a centered solution */
+  if (cg_sol_write(F, B, Z, "RankOfWriter", CG_CellCenter, &S) ||
+      cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
+      cgp_error_exit();
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
@@ -403,21 +407,27 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     /* create data node for elements */
     e_startg=1+e_written; // start for the elements of this topology
     e_endg=e_written + PCU_Add_Long(e_owned); // end for the elements of this topology
+//    char Ename[33];
+    char Ename[5];
     switch(nvert){
       case 4:
-        if (cgp_section_write(F, B, Z, "Tet", CG_TETRA_4, e_startg, e_endg, 0, &E))
+        snprintf(Ename, 4, "Tet");
+        if (cgp_section_write(F, B, Z, Ename, CG_TETRA_4, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
       case 5:
-        if (cgp_section_write(F, B, Z, "Pyr", CG_PYRA_5, e_startg, e_endg, 0, &E))
+        snprintf(Ename, 4, "Pyr");
+        if (cgp_section_write(F, B, Z, Ename, CG_PYRA_5, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
       case 6:
-        if (cgp_section_write(F, B, Z, "Wdg", CG_PENTA_6, e_startg, e_endg, 0, &E))
+        snprintf(Ename, 4, "Wdg");
+        if (cgp_section_write(F, B, Z, Ename, CG_PENTA_6, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
       case 8:
-        if (cgp_section_write(F, B, Z, "Hex", CG_HEXA_8, e_startg, e_endg, 0, &E))
+        snprintf(Ename, 4, "Hex");
+        if (cgp_section_write(F, B, Z, Ename, CG_HEXA_8, e_startg, e_endg, 0, &E))
            cgp_error_exit();
         break;
     }
@@ -429,17 +439,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
-        /* create a centered solution */
-    if (cg_sol_write(F, B, Z, "RankCellOwner", CG_CellCenter, &S) ||
-        cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
-        cgp_error_exit();
-    /* create the field data for this process */
-    int* d = (int *)malloc(e_owned * sizeof(int));
-    for (int n = 0; n < e_owned; n++) 
-            d[n] = rank;
-    /* write the solution field data in parallel */
-    if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
-        cgp_error_exit();
+    e_written=e_endg; // update count of elements written
 
 if(1==1){
     printf("interior cnn %d, %ld, %ld \n", rank, e_start, e_end);
@@ -449,28 +449,47 @@ if(1==1){
       printf("\n");
     }
 }
-
-    e_written=e_endg; // update count of elements written
     free(e);
+
+//    /* create the field data for this process */
+    int* d = (int *)malloc(e_owned * sizeof(int));
+    for (int n = 0; n < e_owned; n++) 
+            d[n] = rank;
+//    /* write the solution field data in parallel */
+    if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
+        cgp_error_exit();
     free(d);
 
-        /* create Helper array for number of elements on rank */
-     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+
+//    char UserDataName[33];
+//    snprintf(UserDataName, 33, "n%sOnRank", Ename);
+    char UserDataName[11];
+        snprintf(UserDataName, 11, "n%sOnRank", Ename);
+        /* create Helper array for number of elements on rank of a given topology */
+    if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
           cg_gorel(F, "User Data", 0, NULL) ||
-         cgp_array_write("nIelOnRank", CG_Integer, 1, &num_parts, &Fs2))
+//         cgp_array_write("nIelOnRank", CG_Integer, 1, &num_parts, &Fs2))
+         cgp_array_write(UserDataName, CG_Integer, 1, &num_parts, &Fs2))
         cgp_error_exit();
     /* create the field data for this process */
-    int* nIelVec = (int *)malloc( 1 * sizeof(int));
-    nIelVec[0]=e_owned;
-    rank+=1;
-    printf("Intr %d, %d, %d, %d \n", nIelVec[0],rank,Fs,Fs2);
-    if ( cgp_array_write_data(Fs2, &rank, &rank, nIelVec))
+//    int* nIelVec = (int *)malloc( 1 * sizeof(int));
+//    nIelVec[0]=e_owned;
+    int nIelVec=e_owned;
+    cgsize_t  rankP1=rank+1;
+    printf("Intr, %s,  %d, %d, %d, %d \n", UserDataName, nIelVec,rank,Fs,Fs2);
+    if ( cgp_array_write_data(Fs2, &rankP1, &rankP1, &nIelVec))
         cgp_error_exit();
-  }
+  } // end of loop over blocks
+
+
+
+
   if(o.writeCGNSFiles > 2) {
     cgsize_t eVolElm=e_written;
     cgsize_t e_belWritten=0;
     cgsize_t totOnRankBel=0;
+    int triCount=0;
+    int quadCount=0;
     for (int i = 0; i < o.blocks.boundary.getSize(); ++i) 
       totOnRankBel += o.blocks.boundary.nElements[i];
     int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
@@ -484,13 +503,19 @@ if(1==1){
       e_startg=1+e_written; // start for the elements of this topology
       cgsize_t  numBelTP = PCU_Add_Long(e_owned); // number of elements of this topology
       e_endg=e_written + numBelTP; // end for the elements of this topology
+      if(nvert==3) triCount++;
+      if(nvert==4) quadCount++;
+      char Ename[7];
+
       switch(nvert){
         case 3:
-          if (cgp_section_write(F, B, Z, "Tri", CG_TRI_3, e_startg, e_endg, 0, &E))
+          snprintf(Ename, 5, "Tri%d",triCount);
+          if (cgp_section_write(F, B, Z, Ename, CG_TRI_3, e_startg, e_endg, 0, &E))
             cgp_error_exit();
           break;
         case 4:
-          if (cgp_section_write(F, B, Z, "Quad", CG_QUAD_4, e_startg, e_endg, 0, &E))
+          snprintf(Ename, 6, "Quad%d",quadCount);
+          if (cgp_section_write(F, B, Z, Ename, CG_QUAD_4, e_startg, e_endg, 0, &E))
             cgp_error_exit();
           break;
       }
@@ -514,23 +539,33 @@ if(1==1){
       getNaturalBCCodesCGNS(o, i, &srfID[e_belWritten]);
       e_written+=e_owned;
       e_belWritten+=e_owned;
-    }
 
+      char UserDataName[12];
+      snprintf(UserDataName, 13, "n%sOnRank", Ename);
+      if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+           cg_gorel(F, "User Data", 0, NULL) ||
+           cgp_array_write(UserDataName, CG_Integer, 1, &num_parts, &Fsb2))
+           cgp_error_exit();
+      printf("Bndy %s, %ld, %ld %d, %d, %d, %d \n", UserDataName, e_start, e_end, rank,Fsb,Fsb2);
+      cgsize_t rankP1=rank+1;
+      if (cgp_array_write_data(Fsb2, &rankP1, &rankP1, &e_end))
+          cgp_error_exit();
+
+    }
+// srfID is for ALL Boundary faces
     printf("%ld ", totOnRankBel);
-        /* setup User Data for boundary faces */
+    /* setup User Data for boundary faces */
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
          cg_gorel(F, "User Data", 0, NULL) ||
-         cgp_array_write("srfID", CG_Integer, 1,&totOnRankBel, &Fsb) ||
-         cgp_array_write("nBelOnRank", CG_Integer, 1, &num_parts, &Fsb2))
+         cgp_array_write("srfID", CG_Integer, 1,&totOnRankBel, &Fsb)) 
          cgp_error_exit();
     /* write the user data for this process */
     e_start=1;
     e_end=e_belWritten; // user data is ranged differently than field data
-    printf("Bndy %ld, %ld %d, %d, %d, %d \n", e_start, e_end, rank,Fsb,Fsb2);
-    if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID) ||
-        cgp_array_write_data(Fsb2, &rank, &rank, &e_end))
+    printf("Bndy %s, %ld, %ld %d, %d, %d, %d \n", "srfID", e_start, e_end, rank,Fsb,Fsb2);
+    cgsize_t rankP1=rank+1;
+    if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID))
         cgp_error_exit();
-
 
     if (num_parts > 1) {
       printf("Boundary conditions cannot be written in parallel right now\n");
