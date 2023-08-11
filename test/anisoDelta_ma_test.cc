@@ -104,7 +104,7 @@ private:
 };
 
 int main(int argc, char** argv) {
-  PCU_ALWAYS_ASSERT(argc == 4);
+  PCU_ALWAYS_ASSERT(argc == 3);
   const char *modelFile = argv[1];
   const char *meshFile = argv[2];
   bool logInterpolation = true;
@@ -159,8 +159,8 @@ int main(int argc, char** argv) {
   ma::stats(m, in->sizeField, lengths, qualities, true);// we need to define
   // the size fields in order to get the lengths and qualities
 
-  std::ostringstream len_fileNameStream("lengths_");
-  len_fileNameStream << PCU_Comm_Self() << ".txt";
+  std::ostringstream len_fileNameStream;
+  len_fileNameStream << "lengths_" << PCU_Comm_Self() << ".txt";
   std::string len_fileName = len_fileNameStream.str();
   std::ofstream len_file;
   len_file.open (len_fileName.c_str());
@@ -169,8 +169,8 @@ int main(int argc, char** argv) {
   }
   len_file.close();
 
-  std::ostringstream qua_fileNameStream("qualities_");
-  qua_fileNameStream << PCU_Comm_Self() << ".txt";
+  std::ostringstream qua_fileNameStream;
+  qua_fileNameStream << "qualities_" << PCU_Comm_Self() << ".txt";
   std::string qua_fileName = qua_fileNameStream.str();
   std::ofstream qua_file;
   qua_file.open (qua_fileName.c_str());
