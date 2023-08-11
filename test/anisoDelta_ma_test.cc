@@ -143,9 +143,10 @@ int main(int argc, char** argv) {
   // test/highOrderSizeFields.cc
   ma::Input* in = ma::configure (m, &sf, 0, logInterpolation);
   in-> shouldRunPreZoltan = true;
-  in-> shouldRunMidParma = true;
-  in-> shouldRunPostParma = true;
-  in-> shouldRefineLayer = true;
+  in-> shouldRunPostZoltan = true;
+  in-> shouldRunMidParma = false;
+  in-> shouldRunPostParma = false;
+  in-> shouldRefineLayer = false;
   in-> goodQuality = 0.027;
 
   in->maximumIterations = 10;
