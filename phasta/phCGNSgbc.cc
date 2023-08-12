@@ -49,22 +49,20 @@ static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_
 void gen_ncorp(Output& o )
 {
         apf::Mesh* m = o.mesh;
-	int part;
-	int num_parts;
 	int i;
 	lcorp_t nilwork = o.nlwork;
         int num_nodes=m->count(0);
-	o.arrays.ncorp = new cgsize_t[num_nodes];
+        o.arrays.ncorp = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t));
 	lcorp_t owned;
 	lcorp_t local;
 	lcorp_t* owner_counts;
 	cgsize_t  local_start_id;
 	cgsize_t  gid;
 
-	MPI_Comm_rank(MPI_COMM_WORLD, &part);
-	MPI_Comm_size(MPI_COMM_WORLD, &num_parts);
+        const int num_parts = PCU_Comm_Peers();
+        const int part = PCU_Comm_Self() ;
 
-	memset(o.arrays.ncorp, 0, sizeof(cgsize_t)*(num_nodes));
+        for(int i=0; i < num_nodes; i++) o.arrays.ncorp[i]=0;
 	owned = count_owned(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
 	local = count_local(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
 	o.iownnodes = owned+local;
@@ -76,7 +74,7 @@ void gen_ncorp(Output& o )
 	assert( owned+local <= num_nodes );
 
 	owner_counts = (lcorp_t*) malloc(sizeof(lcorp_t)*num_parts);
-	memset(owner_counts, 0, sizeof(lcorp_t)*num_parts);
+        for(int i=0; i < num_parts; i++) owner_counts[i]=0;
 	owner_counts[part] = owned+local;
 #ifdef PRINT_EVERYTHING
 	for(i=0;i<num_parts;i++)
@@ -85,8 +83,7 @@ void gen_ncorp(Output& o )
 	}
 	printf("\n");
 #endif
-	MPI_Allgather(MPI_IN_PLACE, 1, NCORP_MPI_T, owner_counts,
-		       	1, NCORP_MPI_T, MPI_COMM_WORLD);
+	MPI_Allgather(MPI_IN_PLACE, 1, NCORP_MPI_T, owner_counts, 1, NCORP_MPI_T, MPI_COMM_WORLD);
 #ifdef PRINT_EVERYTHING
 	for(i=0;i<num_parts;i++)
 	{
@@ -102,11 +99,6 @@ void gen_ncorp(Output& o )
 	}
 	local_start_id++; //Fortran numbering
         o.local_start_id = local_start_id;
-
-// also get the global number of nodes
-	o.numGlobalNodes=0;
-	for(i=0;i<num_parts;i++)
-	   o.numGlobalNodes += owner_counts[i];
 
 #ifdef PRINT_EVERYTHING
 	printf("%d: %d\n", part, local_start_id);
@@ -145,7 +137,6 @@ void gen_ncorp(Output& o )
 	}
 	//char code[] = "out";
 	//int ione = 1;
-     cgsize_t* ncorp = new cgsize_t[num_nodes];
 
      if(num_parts > 1) {
 // translating a commuInt out from PHASTA to c
@@ -162,11 +153,19 @@ void gen_ncorp(Output& o )
         int itag, iacc, iother, isgbeg;
         MPI_Datatype sevsegtype[numtask];
 //first do what ctypes does for setup
-        int isbegin[maxseg];
-        int lenseg[maxseg];
-        int ioffset[maxseg];
-        MPI_Request  req[numtask];
-        MPI_Status stat[numtask];
+        int* isbegin;
+        int* lenseg;
+        int* ioffset;
+	isbegin = (int*) malloc(sizeof(int) * maxseg);
+	lenseg  = (int*) malloc(sizeof(int) * maxseg);
+	ioffset = (int*) malloc(sizeof(int) * maxseg);
+// no VLA        MPI_Request  req[numtask];
+// no VLA        MPI_Status stat[numtask];
+
+        int maxtask=1000;
+        assert(maxtask>=numtask);
+        MPI_Request  req[maxtask];
+        MPI_Status stat[maxtask];
         int maxfront=0;
         int lfront;
         itkbeg=0;
@@ -187,6 +186,9 @@ void gen_ncorp(Output& o )
           MPI_Type_commit (&sevsegtype[itask]);
           itkbeg+=4+2*numseg;
         }
+        free(isbegin);
+        free(lenseg);
+        free(ioffset);
 
         int m = 0; 
         itkbeg=0;
@@ -206,7 +208,7 @@ void gen_ncorp(Output& o )
         }
         MPI_Waitall(m, req, stat);
       }
-if(1==1) {
+if(1==0) {
      for (int ipart=0; ipart<num_parts; ++ipart){
         if(part==ipart) { // my turn
            for (int inod=0; inod<num_nodes; ++inod) printf("%ld ", o.arrays.ncorp[inod]);
@@ -287,7 +289,6 @@ static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_
 static std::string buildCGNSFileName(std::string timestep_or_dat)
 {
   std::stringstream ss;
-  int rank = PCU_Comm_Self() + 1;
   ss << "chefO." << timestep_or_dat;
   return ss.str();
 }
@@ -321,31 +322,18 @@ void getInteriorConnectivityCGNS(Output& o, int block, cgsize_t* c)
 void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c)
 {
   int nelem = o.blocks.boundary.nElements[block];
-// CGNS wants surface elements  int nvert = o.blocks.boundary.keys[block].nElementVertices;
   int nvertVol = o.blocks.boundary.keys[block].nElementVertices;
   int nvert = o.blocks.boundary.keys[block].nBoundaryFaceEdges;
   size_t i = 0;
-//  int* lnode[4];
   std::vector<int> lnode={0,1,2,3}; // Standard pattern of first 4 (or 3)
   // PHASTA's use of volume elements has an lnode array that maps the surface nodes from the volume numbering.  We need it here too
   //  see hierarchic.f but note that is fortran numbering
   if(nvertVol==4) lnode={0, 2, 1, -1};             // tet is first three but opposite normal of others to go with neg volume
-//  if(nvertVol==5 && nvert==4) lnode={0, 1, 2, 3};  // pyramid quad is first 4
   if(nvertVol==5 && nvert==3) lnode={0, 4, 1, -1}; // pyramid tri is a fortran map of 1 5 2 
   if(nvertVol==6 && nvert==4) lnode={0, 3, 4, 1};  // wedge quad is a fortran map of 1 4 5 2
-//  if(nvertVol==6 && nvert==3) lnode={0, 1, 2, -1}; // wedge tri first three
-//  if(nvertVol==8) lnode={0, 1, 2, 3};              // hex  first 4
-/*  if(nvertVol==4) { //see interior above
-    for (int elem = 0; elem < nelem; ++elem){
-        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][0]];
-        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][2]];
-        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][1]];
-    } 
-  } else { */
-    for (int elem = 0; elem < nelem; ++elem)
-      for (int vert = 0; vert < nvert; ++vert)
-        c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][lnode[vert]]];
-//  }
+  for (int elem = 0; elem < nelem; ++elem)
+    for (int vert = 0; vert < nvert; ++vert)
+      c[i++] = o.arrays.ncorp[o.arrays.ienb[block][elem][lnode[vert]]];
   PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
 
@@ -370,7 +358,7 @@ void getInterfaceConnectivityCGNS // not extended yet other than transpose
   PCU_ALWAYS_ASSERT(i == c.getSize());
 }
 
-// renamed but not updated yet
+// renamed stripped down to just give srfID
 void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
 {
   int nelem = o.blocks.boundary.nElements[block];
@@ -381,7 +369,7 @@ void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
 // arbitrary combinations of BCs but leaving that out for now
 }
 
-// renamed and calling the renamed functions above with output writes commented as they are PHASTA file style
+// renamed and calling the renamed functions above with output writes now to CGNS
 void writeBlocksCGNS(int F,int B,int Z, Output& o)
 {
   int params[MAX_PARAMS];
@@ -389,10 +377,11 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   cgsize_t e_owned, e_start,e_end;
   cgsize_t e_startg,e_endg;
   cgsize_t e_written=0;
-  const int nparts = PCU_Comm_Peers();
-  cgsize_t  num_parts=nparts;
-  cgsize_t rank = PCU_Comm_Self() ;
-   /* create a centered solution */
+  const int num_parts = PCU_Comm_Peers();
+  const cgsize_t num_parts_cg=num_parts;
+  const int part = PCU_Comm_Self() ;
+  const cgsize_t part_cg=part;
+  /* create a centered solution */
   if (cg_sol_write(F, B, Z, "RankOfWriter", CG_CellCenter, &S) ||
       cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
       cgp_error_exit();
@@ -406,8 +395,8 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     getInteriorConnectivityCGNS(o, i, e);
     /* create data node for elements */
     e_startg=1+e_written; // start for the elements of this topology
-    e_endg=e_written + PCU_Add_Long(e_owned); // end for the elements of this topology
-//    char Ename[33];
+    long safeArg=e_owned; // e_owned is cgsize_t which could be an 32 or 64 bit int
+    e_endg=e_written + PCU_Add_Long(safeArg); // end for the elements of this topology
     char Ename[5];
     switch(nvert){
       case 4:
@@ -434,17 +423,17 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     e_start=0;
     auto type = getMpiType( cgsize_t() );
     MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
-    e_start+=1+e_written; // my ranks global element start 1-based
-    e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
+    e_start+=1+e_written; // my parts global element start 1-based
+    e_end=e_start+e_owned-1;  // my parts global element stop 1-based
     /* write the element connectivity in parallel */
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
     e_written=e_endg; // update count of elements written
 
-if(1==1){
-    printf("interior cnn %d, %ld, %ld \n", rank, e_start, e_end);
+if(1==0){
+    printf("interior cnn %d, %ld, %ld \n", part, e_start, e_end);
     for (int ne=0; ne<e_owned; ++ne) {
-      printf("%d, %d ", rank,(ne+1));
+      printf("%d, %d ", part,(ne+1));
       for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
       printf("\n");
     }
@@ -454,34 +443,26 @@ if(1==1){
 //    /* create the field data for this process */
     int* d = (int *)malloc(e_owned * sizeof(int));
     for (int n = 0; n < e_owned; n++) 
-            d[n] = rank;
+            d[n] = part;
 //    /* write the solution field data in parallel */
     if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
         cgp_error_exit();
     free(d);
 
-
-//    char UserDataName[33];
-//    snprintf(UserDataName, 33, "n%sOnRank", Ename);
     char UserDataName[11];
         snprintf(UserDataName, 11, "n%sOnRank", Ename);
-        /* create Helper array for number of elements on rank of a given topology */
+        /* create Helper array for number of elements on part of a given topology */
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
           cg_gorel(F, "User Data", 0, NULL) ||
-//         cgp_array_write("nIelOnRank", CG_Integer, 1, &num_parts, &Fs2))
-         cgp_array_write(UserDataName, CG_Integer, 1, &num_parts, &Fs2))
+         cgp_array_write(UserDataName, CG_Integer, 1, &num_parts_cg, &Fs2))
         cgp_error_exit();
     /* create the field data for this process */
-//    int* nIelVec = (int *)malloc( 1 * sizeof(int));
-//    nIelVec[0]=e_owned;
     int nIelVec=e_owned;
-    cgsize_t  rankP1=rank+1;
-    printf("Intr, %s,  %d, %d, %d, %d \n", UserDataName, nIelVec,rank,Fs,Fs2);
-    if ( cgp_array_write_data(Fs2, &rankP1, &rankP1, &nIelVec))
+    cgsize_t  partP1=part+1;
+    printf("Intr, %s,  %d, %d, %d, %d \n", UserDataName, nIelVec,part,Fs,Fs2);
+    if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nIelVec))
         cgp_error_exit();
   } // end of loop over blocks
-
-
 
 
   if(o.writeCGNSFiles > 2) {
@@ -490,9 +471,13 @@ if(1==1){
     cgsize_t totOnRankBel=0;
     int triCount=0;
     int quadCount=0;
-    for (int i = 0; i < o.blocks.boundary.getSize(); ++i) 
+    int nblkb = o.blocks.boundary.getSize(); 
+    for (int i = 0; i < nblkb; ++i) 
       totOnRankBel += o.blocks.boundary.nElements[i];
     int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
+    int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
+    int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
+    int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
     for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
       BlockKey& k = o.blocks.boundary.keys[i];
       params[0] = o.blocks.boundary.nElements[i];
@@ -501,7 +486,8 @@ if(1==1){
       cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
       getBoundaryConnectivityCGNS(o, i, e);
       e_startg=1+e_written; // start for the elements of this topology
-      cgsize_t  numBelTP = PCU_Add_Long(e_owned); // number of elements of this topology
+      long safeArg=e_owned; // e_owned is cgsize_t which could be an 32 or 64 bit int
+      cgsize_t  numBelTP = PCU_Add_Long(safeArg); // number of elements of this topology
       e_endg=e_written + numBelTP; // end for the elements of this topology
       if(nvert==3) triCount++;
       if(nvert==4) quadCount++;
@@ -522,51 +508,69 @@ if(1==1){
       e_start=0;
       auto type = getMpiType( cgsize_t() );
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
-      e_start+=1+e_written; // my ranks global element start 1-based
-      e_end=e_start+e_owned-1;  // my ranks global element stop 1-based
+      e_start+=1+e_written; // my parts global element start 1-based
+      e_end=e_start+e_owned-1;  // my parts global element stop 1-based
       /* write the element connectivity in parallel */
       if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
           cgp_error_exit();
-if(1==1){
-    printf("boundary cnn %d, %ld, %ld \n", rank, e_start, e_end);
+      printf("boundary cnn %d, %ld, %ld \n", part, e_start, e_end);
+if(1==0){
     for (int ne=0; ne<e_owned; ++ne) {
-      printf("%d, %d ", rank,(ne+1));
+      printf("%d, %d ", part,(ne+1));
       for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
       printf("\n");
     }
 }
       free(e);
       getNaturalBCCodesCGNS(o, i, &srfID[e_belWritten]);
-      e_written+=e_owned;
-      e_belWritten+=e_owned;
+      for (int j = 0; j < (int) e_owned; ++j) srfIDidx[e_belWritten+j]=e_start+j;
+      startBelBlk[i]=e_start; // provides start point for each block in srfID
+      endBelBlk[i]=e_end; // provides end point for each block in srfID
+      e_written=e_endg;
+      e_belWritten+=e_owned; // this is tracking written by this rank as we unpack srfID later
 
       char UserDataName[12];
       snprintf(UserDataName, 13, "n%sOnRank", Ename);
       if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
            cg_gorel(F, "User Data", 0, NULL) ||
-           cgp_array_write(UserDataName, CG_Integer, 1, &num_parts, &Fsb2))
+           cgp_array_write(UserDataName, CG_Integer, 1, &num_parts_cg, &Fsb2))
            cgp_error_exit();
-      printf("Bndy %s, %ld, %ld %d, %d, %d, %d \n", UserDataName, e_start, e_end, rank,Fsb,Fsb2);
-      cgsize_t rankP1=rank+1;
-      if (cgp_array_write_data(Fsb2, &rankP1, &rankP1, &e_end))
+      printf("Bndy %s, %ld, %d, %d \n", UserDataName, e_owned, part,Fsb2);
+      cgsize_t partP1=part+1;
+      if (cgp_array_write_data(Fsb2, &partP1, &partP1, &e_owned))
           cgp_error_exit();
-
     }
 // srfID is for ALL Boundary faces
-    printf("%ld ", totOnRankBel);
+//    long safeArg=totOnRankBel; // is cgsize_t which could be an 32 or 64 bit int
+//    cgsize_t  totBel = PCU_Add_Long(safeArg); // number of elements of this topology
+    cgsize_t  totBel = e_written-eVolElm;
+    printf("%ld %ld ", totOnRankBel,totBel);
     /* setup User Data for boundary faces */
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
          cg_gorel(F, "User Data", 0, NULL) ||
-         cgp_array_write("srfID", CG_Integer, 1,&totOnRankBel, &Fsb)) 
+         cgp_array_write("srfID", CG_Integer, 1,&totBel, &Fsb)) 
          cgp_error_exit();
     /* write the user data for this process */
-    e_start=1;
-    e_end=e_belWritten; // user data is ranged differently than field data
-    printf("Bndy %s, %ld, %ld %d, %d, %d, %d \n", "srfID", e_start, e_end, rank,Fsb,Fsb2);
-    cgsize_t rankP1=rank+1;
-    if (cgp_array_write_data(Fsb, &e_start, &e_end, srfID))
-        cgp_error_exit();
+    e_written=0; //recycling  eVolElm holds 
+    for (int i = 0; i < nblkb; ++i) {
+      int e_startB=startBelBlk[i]-eVolElm; // srfID is only for bel....matches linear order with eVolElm offset from 
+                                       // bel# that starts from last volume element
+//      int e_endB=endBelBlk[i]-eVolElm;
+//      e_owned=e_endB-estartB;
+      e_owned=endBelBlk[i]-startBelBlk[i]+1;
+      e_start=0;
+      auto type = getMpiType( cgsize_t() );
+      MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
+      e_start+=1+e_written; // my parts global element start 1-based
+      e_end=e_start+e_owned-1;  // my parts global element stop 1-based
 
+      printf("Bndy %s, %ld, %ld, %ld, %d, %d, %d \n", "srfID", e_start, e_end, e_owned, i, part,Fsb);
+      if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
+        cgp_error_exit();
+      long safeArg=e_owned; // is cgsize_t which could be an 32 or 64 bit int
+      e_written += PCU_Add_Long(safeArg); // number of elements of this topology
+    }
+// ZonalBC data   When made parallel be mindful of srfID being in segments on each rank....NOT globally ordered but srIDidx gives global idx in same order. 
     if (num_parts > 1) {
       printf("Boundary conditions cannot be written in parallel right now\n");
     } else {
@@ -599,22 +603,21 @@ void writeCGNS(Output& o, std::string path)
 {
   double t0 = PCU_Time();
   apf::Mesh* m = o.mesh;
-  cgsize_t  rank = PCU_Comm_Self() + 0;
-  int nparts;
-  MPI_Comm_size(MPI_COMM_WORLD, &nparts);
-  cgsize_t  num_parts=nparts;
+  const int num_parts = PCU_Comm_Peers();
+  const int part = PCU_Comm_Self() ;
+  const cgsize_t  num_parts_cg=num_parts;
 
   std::string timestep_or_dat;
   static char outfile[] = "chefOut.cgns";
   int  F, B, Z, E, S, Fs, Fs2, A, Cx, Cy, Cz;
-  cgsize_t sizes[3],*e, start, end, ncells;
+  cgsize_t sizes[3],*e, start, end;
 
-    int num_nodes=m->count(0);
-// debug prints
-if(0==1){
+  int num_nodes=m->count(0);
+
+if(0==1){  // ilwork debugging
     for (int ipart=0; ipart<num_parts; ++ipart){
-        if(rank==ipart) { // my turn
-           printf("ilwork %d, %d, %d \n", rank, o.nlwork,o.arrays.ilwork[0]);
+        if(part==ipart) { // my turn
+           printf("ilwork %d, %d, %d \n", part, o.nlwork,o.arrays.ilwork[0]);
            int ist=0;
            for (int itask=0; itask<o.arrays.ilwork[0]; ++itask) {
               printf("%d  ",itask);
@@ -629,9 +632,10 @@ if(0==1){
        PCU_Barrier();
      }
 }
-if(1==1){
+if(1==0){
   for (int ipart=0; ipart<num_parts; ++ipart){
-        if(rank==ipart) { // my turn    printf("xyz %d, %d \n", rank, num_nodes);
+    if(part==ipart) { // my turn    
+    printf("xyz %d, %d \n", part, num_nodes);
     for (int inode = 0; inode < num_nodes; ++inode){
       printf("%d ",inode+1);
       for (int j=0; j<3; ++j) printf("%f ", o.arrays.coordinates[j*num_nodes+inode]);
@@ -643,37 +647,36 @@ if(1==1){
 }
 
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
-    gen_ncorp( o );
+  gen_ncorp( o );
 //  o carries
 //     o.arrays.ncorp[on-rank-node-number(0-based)] => PETSc global node number (1-based)
 //     o.iownnodes => nodes owned by this rank
 //     o.local_start_id => this rank's first node number (1-based and also which must be a long long int)
-//     o.numGlobalNodes
-    ncells=m->count(m->getDimension());
-    ncells=PCU_Add_Long(ncells);
-    o.numGlobalVolumeElements = ncells;
 
-    sizes[0]=o.numGlobalNodes;
-    sizes[1]=ncells;
-    sizes[2]=0;
-    if(cgp_mpi_comm(MPI_COMM_WORLD)) cgp_error_exit;
-    if ( cgp_open(outfile, CG_MODE_WRITE, &F) ||
-        cg_base_write(F, "Base", 3, 3, &B) ||
-        cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
-        cgp_error_exit();
+  long safeArg=o.iownnodes; // cgsize_t could be an int
+  sizes[0]=PCU_Add_Long(safeArg);
+  int ncells=m->count(m->getDimension()); // this ranks number of elements
+  safeArg=ncells; // cgsize_t could be an int
+  sizes[1]=PCU_Add_Long(safeArg);
+  sizes[2]=0;
+  if(cgp_mpi_comm(MPI_COMM_WORLD)) cgp_error_exit;
+  if ( cgp_open(outfile, CG_MODE_WRITE, &F) ||
+       cg_base_write(F, "Base", 3, 3, &B) ||
+       cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
+       cgp_error_exit();
     /* create data nodes for coordinates */
-    cg_set_file_type(CG_FILE_HDF5);
+  cg_set_file_type(CG_FILE_HDF5);
 
-    if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
-        cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateY", &Cy) ||
-        cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateZ", &Cz))
-        cgp_error_exit();
+  if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
+      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateY", &Cy) ||
+      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateZ", &Cz))
+      cgp_error_exit();
 
-// condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.  Seeing now PETSc CGNS writer did one coordinate at a time which is probably better....feel free to rewrite.
+// condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.
   cgsize_t gnod;
   start=o.local_start_id;
   end=start+o.iownnodes-1;
-  double* x = new double[o.iownnodes];
+  double* x = (double *)malloc(o.iownnodes * sizeof(double));
   for (int j = 0; j < 3; ++j) {
     int icount=0;
     for (int inode = 0; inode < num_nodes; ++inode){
@@ -692,19 +695,19 @@ if(0==1) {
     if(j==1) if(cgp_coord_write_data(F, B, Z, Cy, &start, &end, x)) cgp_error_exit();
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
-        /* create Helper array for number of elements on rank */
-     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
-          cg_user_data_write("User Data") ||
-          cg_gorel(F, "User Data", 0, NULL) ||
-         cgp_array_write("nCoordsOnRank", CG_Integer, 1, &num_parts, &Fs2))
-        cgp_error_exit();
-    /* create the field data for this process */
-    int* nCoordVec = (int *)malloc( 1 * sizeof(int));
-    nCoordVec[0]=o.iownnodes;
-    rank+=1;
-    printf("Coor %d, %d, %d, \n", nCoordVec[0],rank,Fs2);
-    if ( cgp_array_write_data(Fs2, &rank, &rank, nCoordVec))
-        cgp_error_exit();
+  free (x);
+  /* create Helper array for number of elements on rank */
+  if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
+       cg_user_data_write("User Data") ||
+       cg_gorel(F, "User Data", 0, NULL) ||
+       cgp_array_write("nCoordsOnRank", CG_Integer, 1, &num_parts_cg, &Fs2))
+       cgp_error_exit();
+  /* create the field data for this process */
+  int nCoordVec=o.iownnodes;
+  cgsize_t partP1=part+1;
+  printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
+  if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nCoordVec))
+       cgp_error_exit();
   if(o.writeCGNSFiles > 1) 
   writeBlocksCGNS(F,B,Z, o);
   if(cgp_close(F)) cgp_error_exit();
