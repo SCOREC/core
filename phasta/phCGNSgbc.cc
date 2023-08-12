@@ -40,6 +40,38 @@ MPI_Datatype getMpiType(T) {
 
 }
 
+// https://www.geeksforgeeks.org/sorting-array-according-another-array-using-pair-stl/
+// Sort an array according to
+// other using pair in STL.
+#include <bits/stdc++.h>
+using namespace std;
+ 
+// Function to sort character array b[]
+// according to the order defined by a[]
+void pairsort(int a[], int b[], int n)
+{
+    pair<int, char> pairt[n];
+ 
+    // Storing the respective array
+    // elements in pairs.
+    for (int i = 0; i < n; i++)
+    {
+        pairt[i].first = a[i];
+        pairt[i].second = b[i];
+    }
+ 
+    // Sorting the pair array.
+    sort(pairt, pairt + n);
+     
+    // Modifying original arrays
+    for (int i = 0; i < n; i++)
+    {
+        a[i] = pairt[i].first;
+        b[i] = pairt[i].second;
+    }
+}
+
+
 namespace ph {
 
 static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
@@ -468,7 +500,8 @@ if(1==0){
   if(o.writeCGNSFiles > 2) {
     cgsize_t eVolElm=e_written;
     cgsize_t e_belWritten=0;
-    cgsize_t totOnRankBel=0;
+//    cgsize_t totOnRankBel=0;
+    int totOnRankBel=0;
     int triCount=0;
     int quadCount=0;
     int nblkb = o.blocks.boundary.getSize(); 
@@ -544,7 +577,8 @@ if(1==0){
 //    long safeArg=totOnRankBel; // is cgsize_t which could be an 32 or 64 bit int
 //    cgsize_t  totBel = PCU_Add_Long(safeArg); // number of elements of this topology
     cgsize_t  totBel = e_written-eVolElm;
-    printf("%ld %ld ", totOnRankBel,totBel);
+//    printf("%ld %ld ", totOnRankBel,totBel);
+    printf("%d %ld ", totOnRankBel,totBel);
     /* setup User Data for boundary faces */
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
          cg_gorel(F, "User Data", 0, NULL) ||
@@ -571,6 +605,82 @@ if(1==0){
       e_written += PCU_Add_Long(safeArg); // number of elements of this topology
     }
 // ZonalBC data   When made parallel be mindful of srfID being in segments on each rank....NOT globally ordered but srIDidx gives global idx in same order. 
+    int* srfIDG = (int *)malloc( totBel * sizeof(int));
+    int* srfIDGidx = (int *)malloc( totBel * sizeof(int));
+    int* rcounts = (int *)malloc( num_parts * sizeof(int));
+    int* displs = (int *)malloc( num_parts * sizeof(int));
+    auto type_cg = getMpiType( cgsize_t() );
+    auto type_i = getMpiType( int() );
+    MPI_Gather(&totOnRankBel,1,type_i,rcounts,1,type_i,0,MPI_COMM_WORLD);
+    displs[0]=0;
+    if(part==0){ 
+       for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
+if(1==1){
+      for(int ip=0; ip< num_parts; ++ip)  printf("%ld ", rcounts[ip]);
+      printf("\n");
+      for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]);
+      printf("\n");
+}
+    }   
+   MPI_Gatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,0,MPI_COMM_WORLD);
+   MPI_Gatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,0,MPI_COMM_WORLD);
+if(1==1){
+      if(part==0) {
+         printf(" srfID GLOBAL    ");
+         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
+         printf("\n");
+         printf(" srfIDidx GLOBAL ");
+         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
+         printf("\n");
+      }
+      printf("rank %d ",part);
+      printf(" srfID on Part ");
+      for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]);
+      printf("\n");
+      printf(" srfIDidx on Part ");
+      for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]);
+      printf("\n");
+}
+    if(part==0) pairsort(srfIDG,srfIDGidx,totBel);
+if(1==1){
+      if(part==0) {
+         printf(" srfID GLOBAL    ");
+         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
+         printf("\n");
+         printf(" srfIDidx GLOBAL ");
+         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
+         printf("\n");
+      }
+}
+      if(part==0) {
+      int BC_scan=0;
+      cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
+      for (int BCid = 1; BCid < 7; BCid++) {
+        int imatch=0;
+        while (srfIDG[BC_scan]==BCid) {
+            eBC[imatch]=srfIDGidx[BC_scan];
+            BC_scan++;
+            imatch++;
+        }
+        int BC_index;
+        char BC_name[33];
+        snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
+        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), imatch, eBC,  &BC_index))
+          cg_error_exit();
+        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
+        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
+
+if(1==1) {
+        printf(" srfID =%d    ",BCid);
+        for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
+        printf("\n");
+}
+      }
+      free(eBC);
+      }   
+                  
+     
+//James Work
     if (num_parts > 1) {
       printf("Boundary conditions cannot be written in parallel right now\n");
     } else {
