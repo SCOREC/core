@@ -611,9 +611,10 @@ if(1==0){
     int* displs = (int *)malloc( num_parts * sizeof(int));
     auto type_cg = getMpiType( cgsize_t() );
     auto type_i = getMpiType( int() );
-    MPI_Gather(&totOnRankBel,1,type_i,rcounts,1,type_i,0,MPI_COMM_WORLD);
+//FAIL    MPI_Gather(&totOnRankBel,1,type_i,rcounts,1,type_i,0,MPI_COMM_WORLD);
+    MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
     displs[0]=0;
-    if(part==0){ 
+//    if(part==0){ 
        for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
 if(1==1){
       for(int ip=0; ip< num_parts; ++ip)  printf("%ld ", rcounts[ip]);
@@ -621,9 +622,9 @@ if(1==1){
       for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]);
       printf("\n");
 }
-    }   
-   MPI_Gatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,0,MPI_COMM_WORLD);
-   MPI_Gatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,0,MPI_COMM_WORLD);
+//    }   
+   MPI_Allgatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,MPI_COMM_WORLD);
+   MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
 if(1==1){
       if(part==0) {
          printf(" srfID GLOBAL    ");
@@ -641,7 +642,8 @@ if(1==1){
       for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]);
       printf("\n");
 }
-    if(part==0) pairsort(srfIDG,srfIDGidx,totBel);
+//    if(part==0) pairsort(srfIDG,srfIDGidx,totBel);
+      pairsort(srfIDG,srfIDGidx,totBel);
 if(1==1){
       if(part==0) {
          printf(" srfID GLOBAL    ");
@@ -656,7 +658,7 @@ if(1==1){
       cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
       for (int BCid = 1; BCid < 7; BCid++) {
         int imatch=0;
-      if(part==0) {
+//      if(part==0) {
         while (srfIDG[BC_scan]==BCid) {
             eBC[imatch]=srfIDGidx[BC_scan];
             BC_scan++;
@@ -667,7 +669,7 @@ if(1==1) {
         for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
         printf("\n");
 }
-      } else imatch=1;
+//      } else imatch=1;
         int BC_index;
         char BC_name[33];
         snprintf(BC_name, 33, "SurfID_%d", BCid );
