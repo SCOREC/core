@@ -167,8 +167,6 @@ struct Output
   int nOverlapEdges;
 #ifdef HAVE_CGNS
   cgsize_t local_start_id; /* this rank's first global node number (1 based) */
-  cgsize_t numGlobalNodes; 
-  cgsize_t numGlobalVolumeElements; 
   int iownnodes;  /*  how many node this rank owns */
 #endif
   int writeCGNSFiles;
