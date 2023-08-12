@@ -652,32 +652,32 @@ if(1==1){
          printf("\n");
       }
 }
-      if(part==0) {
       int BC_scan=0;
       cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
       for (int BCid = 1; BCid < 7; BCid++) {
         int imatch=0;
+      if(part==0) {
         while (srfIDG[BC_scan]==BCid) {
             eBC[imatch]=srfIDGidx[BC_scan];
             BC_scan++;
             imatch++;
         }
-        int BC_index;
-        char BC_name[33];
-        snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
-        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), imatch, eBC,  &BC_index))
-          cg_error_exit();
-        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
-        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
-
 if(1==1) {
         printf(" srfID =%d    ",BCid);
         for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
         printf("\n");
 }
+      } else imatch=1;
+        int BC_index;
+        char BC_name[33];
+        snprintf(BC_name, 33, "SurfID_%d", BCid );
+        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), imatch, eBC,  &BC_index))
+          cg_error_exit();
+        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
+        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
+
       }
       free(eBC);
-      }   
                   
      
 //James Work
