@@ -46,11 +46,11 @@ MPI_Datatype getMpiType(T) {
 #include <bits/stdc++.h>
 using namespace std;
  
-// Function to sort character array b[]
+// Function to sort integer array b[]
 // according to the order defined by a[]
 void pairsort(int a[], int b[], int n)
 {
-    pair<int, char> pairt[n];
+    pair<int, int> pairt[n];
  
     // Storing the respective array
     // elements in pairs.
@@ -69,6 +69,33 @@ void pairsort(int a[], int b[], int n)
         a[i] = pairt[i].first;
         b[i] = pairt[i].second;
     }
+}
+void pairDeal6sort(int a[], int b[], int n)
+{
+    int c[6]={0}; 
+    for (int i = 0; i < n; i++) c[a[i]-1]++;  // count number each type in a pre-scan
+    int** p = new int*[6];
+    for (int i = 0; i < 6; i++) p[i]=new int[c[i]];
+    int** idx = new int*[6];
+    for (int i = 0; i < 6; i++) idx[i]=new int[c[i]];
+    for (int i = 0; i < 6; i++) c[i]=0;
+    int isrfM1;
+    for (int i = 0; i < n; i++)
+    {
+       isrfM1=a[i]-1;
+       p[isrfM1][c[isrfM1]]=b[i];
+       idx[isrfM1][c[isrfM1]]=a[i];
+       c[isrfM1]++;
+    }
+    int igc=0;
+    for (int j = 0; j < 6; j++){
+      for (int i = 0; i < c[j]; i++) {
+        b[igc] = p[j][i];
+        a[igc] = idx[j][i];
+        igc++;
+      }
+    }
+    assert(igc==n);
 }
 
 
@@ -611,78 +638,71 @@ if(1==0){
     int* displs = (int *)malloc( num_parts * sizeof(int));
     auto type_cg = getMpiType( cgsize_t() );
     auto type_i = getMpiType( int() );
-//FAIL    MPI_Gather(&totOnRankBel,1,type_i,rcounts,1,type_i,0,MPI_COMM_WORLD);
     MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
     displs[0]=0;
-//    if(part==0){ 
-       for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
+    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
 if(1==1){
-      for(int ip=0; ip< num_parts; ++ip)  printf("%ld ", rcounts[ip]);
-      printf("\n");
-      for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]);
-      printf("\n");
+    for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]);
+    printf("\n");
 }
-//    }   
-   MPI_Allgatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,MPI_COMM_WORLD);
-   MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
+    MPI_Allgatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,MPI_COMM_WORLD);
+    MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
 if(1==1){
-      if(part==0) {
-         printf(" srfID GLOBAL    ");
-         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
-         printf("\n");
-         printf(" srfIDidx GLOBAL ");
-         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
-         printf("\n");
+    if(part==0) {
+      printf(" srfID GLOBAL    ");
+       for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
+       printf("\n");
+       printf(" srfIDidx GLOBAL ");
+       for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
+       printf("\n");
+    }
+    printf("rank %d ",part);
+    printf(" srfID on Part ");
+    for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]);
+    printf("\n");
+    printf(" srfIDidx on Part ");
+    for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]);
+    printf("\n");
+}
+//     pairsort(srfIDG,srfIDGidx,totBel);
+     pairDeal6sort(srfIDG,srfIDGidx,totBel);
+if(1==1){
+    if(part==0) {
+      printf(" srfID GLOBAL    ");
+      for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
+      printf("\n");
+      printf(" srfIDidx GLOBAL ");
+      for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
+      printf("\n");
+    }
+}
+    int BC_scan=0;
+    cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
+    for (int BCid = 1; BCid < 7; BCid++) {
+      int imatch=0;
+      while (srfIDG[BC_scan]==BCid) {
+        eBC[imatch]=srfIDGidx[BC_scan];
+        BC_scan++;
+        imatch++;
       }
-      printf("rank %d ",part);
-      printf(" srfID on Part ");
-      for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]);
-      printf("\n");
-      printf(" srfIDidx on Part ");
-      for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]);
-      printf("\n");
-}
-//    if(part==0) pairsort(srfIDG,srfIDGidx,totBel);
-      pairsort(srfIDG,srfIDGidx,totBel);
-if(1==1){
-      if(part==0) {
-         printf(" srfID GLOBAL    ");
-         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
-         printf("\n");
-         printf(" srfIDidx GLOBAL ");
-         for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
-         printf("\n");
-      }
-}
-      int BC_scan=0;
-      cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
-      for (int BCid = 1; BCid < 7; BCid++) {
-        int imatch=0;
-//      if(part==0) {
-        while (srfIDG[BC_scan]==BCid) {
-            eBC[imatch]=srfIDGidx[BC_scan];
-            BC_scan++;
-            imatch++;
-        }
 if(1==1) {
-        printf(" srfID =%d    ",BCid);
-        for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
-        printf("\n");
+      printf(" srfID =%d    ",BCid);
+      for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
+      printf("\n");
 }
-//      } else imatch=1;
-        int BC_index;
-        char BC_name[33];
-        snprintf(BC_name, 33, "SurfID_%d", BCid );
-        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), imatch, eBC,  &BC_index))
-          cg_error_exit();
-        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
-        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
+      int BC_index;
+      char BC_name[33];
+      snprintf(BC_name, 33, "SurfID_%d", BCid );
+      if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), imatch, eBC,  &BC_index))
+         cg_error_exit();
+      if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
+      if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
 
-      }
-      free(eBC);
+    }
+    free(eBC);
                   
-     
 //James Work
+/*
     if (num_parts > 1) {
       printf("Boundary conditions cannot be written in parallel right now\n");
     } else {
@@ -707,7 +727,7 @@ if(1==1) {
       }
 
       free(bc_elems);
-    }
+    } */
   }
 }
 
