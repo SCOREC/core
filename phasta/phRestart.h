@@ -27,6 +27,8 @@ void detachAndWriteSolution(Input& in, Output& out,
 void attachZeroSolution(Input& in, apf::Mesh* m);
 
 void detachField(apf::Field* f, double*& data, int& size);
+void detachField(apf::Mesh* m, const char* fieldname, double*& data, int& size);
+
 
 }
 
