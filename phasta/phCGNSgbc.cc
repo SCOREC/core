@@ -9,6 +9,12 @@
 #include <cstdlib>
 #include <string.h>
 #include <assert.h>
+#include "phRestart.h"
+#include <apf.h>
+#include <apfField.h>
+#include "apfShape.h"
+
+
 #ifdef HAVE_CGNS
 //
 #include <cgns_io.h>
@@ -96,10 +102,66 @@ void pairDeal6sort(int a[], int b[], int n)
       }
     }
     assert(igc==n);
+    free(p);
+    free(idx);
 }
 
 
 namespace ph {
+
+/*
+void detachField(
+    apf::Field* f,
+    double*& data,
+    int& size)
+{
+  apf::Mesh* m = apf::getMesh(f);
+  size = apf::countComponents(f);
+  size_t n = m->count(0);
+  apf::NewArray<double> c(size);
+  data = (double*)malloc(sizeof(double) * size * m->count(0));
+  apf::MeshEntity* e;
+  size_t i = 0;
+  apf::MeshIterator* it = m->begin(0);
+  while ((e = m->iterate(it))) {
+    apf::getComponents(f, e, 0, &c[0]);
+    for (int j = 0; j < size; ++j)
+      data[j * n + i] = c[j];
+    ++i;
+  }
+  m->end(it);
+  PCU_ALWAYS_ASSERT(i == n);
+  apf::destroyField(f);
+}
+*/
+/*
+void detachField(
+    apf::Mesh* m,
+    const char* fieldname,
+    double*& data,
+    int& size)
+{
+  apf::Field* f = m->findField(fieldname);
+  PCU_ALWAYS_ASSERT(f);
+//  detachField(f, data, size);
+  size = apf::countComponents(f);
+  size_t n = m->count(0);
+  apf::NewArray<double> c(size);
+  data = (double*)malloc(sizeof(double) * size * m->count(0));
+  apf::MeshEntity* e;
+  size_t i = 0;
+  apf::MeshIterator* it = m->begin(0);
+  while ((e = m->iterate(it))) {
+    apf::getComponents(f, e, 0, &c[0]);
+    for (int j = 0; j < size; ++j)
+      data[j * n + i] = c[j];
+    ++i;
+  }
+  m->end(it);
+  PCU_ALWAYS_ASSERT(i == n);
+  apf::destroyField(f);
+}
+*/
 
 static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
 static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
@@ -444,6 +506,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   if (cg_sol_write(F, B, Z, "RankOfWriter", CG_CellCenter, &S) ||
       cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
       cgp_error_exit();
+  printf("S=%d \n",S);
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
@@ -641,13 +704,13 @@ if(1==0){
     MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
     displs[0]=0;
     for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
-if(1==1){
+if(0==1){
     for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]);
     printf("\n");
 }
     MPI_Allgatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,MPI_COMM_WORLD);
     MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
-if(1==1){
+if(0==1){
     if(part==0) {
       printf(" srfID GLOBAL    ");
        for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
@@ -666,7 +729,7 @@ if(1==1){
 }
 //     pairsort(srfIDG,srfIDGidx,totBel);
      pairDeal6sort(srfIDG,srfIDGidx,totBel);
-if(1==1){
+if(0==1){
     if(part==0) {
       printf(" srfID GLOBAL    ");
       for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
@@ -685,7 +748,7 @@ if(1==1){
         BC_scan++;
         imatch++;
       }
-if(1==1) {
+if(0==1) {
       printf(" srfID =%d    ",BCid);
       for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
       printf("\n");
@@ -742,6 +805,8 @@ void writeCGNS(Output& o, std::string path)
   std::string timestep_or_dat;
   static char outfile[] = "chefOut.cgns";
   int  F, B, Z, E, S, Fs, Fs2, A, Cx, Cy, Cz;
+  int Fp, Fu, Fv, Fw, FT;
+  int Sp, Su, Sv, Sw, ST;
   cgsize_t sizes[3],*e, start, end;
 
   int num_nodes=m->count(0);
@@ -828,6 +893,66 @@ if(0==1) {
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
   free (x);
+  /* create a nodal solution */
+  char fieldName[12];
+  snprintf(fieldName, 13, "solution");
+  printf("solution=%s",fieldName);
+  double* data;
+  int size;
+  detachField(o.mesh, fieldName, data, size);
+  assert(size==5);
+
+//    /* create the field data for this process */
+  double* p = (double *)malloc(o.iownnodes * sizeof(double));
+  double* u = (double *)malloc(o.iownnodes * sizeof(double));
+  double* v = (double *)malloc(o.iownnodes * sizeof(double));
+  double* w = (double *)malloc(o.iownnodes * sizeof(double));
+  double* T = (double *)malloc(o.iownnodes * sizeof(double));
+  int icount=0;
+  for (int n = 0; n < num_nodes; n++) {
+    gnod=o.arrays.ncorp[n];
+    if(gnod >= start && gnod <= end) { // solution to write
+         p[icount]= data[0*num_nodes+n];
+         u[icount]= data[1*num_nodes+n];
+         v[icount]= data[2*num_nodes+n];
+         w[icount]= data[3*num_nodes+n];
+         T[icount]= data[4*num_nodes+n];
+         icount++;
+    }
+  }
+//    /* write the solution field data in parallel */
+  if (cg_sol_write(F, B, Z, "Solution", CG_Vertex, &Sp) ||
+      cgp_field_write(F, B, Z, Sp, CG_RealDouble, "Pressure", &Fp))
+      cgp_error_exit();
+  printf("Sp=%d \n",Sp);
+  if (cgp_field_write_data(F, B, Z, Sp, Fp, &start, &end, p))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "VelocityX", &Fu))
+      cgp_error_exit();
+  printf("Su=%d \n",Su);
+  if (cgp_field_write_data(F, B, Z, Sp, Fu, &start, &end, u))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "VelocityY", &Fv))
+      cgp_error_exit();
+  printf("Sv=%d \n",Sv);
+  if (cgp_field_write_data(F, B, Z, Sp, Fv, &start, &end, v))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "VelocityZ", &Fw))
+      cgp_error_exit();
+  printf("Sw=%d \n",Sw);
+  if (cgp_field_write_data(F, B, Z, Sp, Fw, &start, &end, w))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "Temperature", &FT))
+      cgp_error_exit();
+  printf("ST=%d \n",ST);
+  if (cgp_field_write_data(F, B, Z, Sp, FT, &start, &end, T))
+      cgp_error_exit();
+  free(p);
+  free(u);
+  free(v);
+  free(w);
+  free(T);
+  free(data);
   /* create Helper array for number of elements on rank */
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
        cg_user_data_write("User Data") ||
@@ -843,5 +968,8 @@ if(0==1) {
   if(o.writeCGNSFiles > 1) 
   writeBlocksCGNS(F,B,Z, o);
   if(cgp_close(F)) cgp_error_exit();
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
 }
 } // namespace
