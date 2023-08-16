@@ -109,235 +109,162 @@ void pairDeal6sort(int a[], int b[], int n)
 
 namespace ph {
 
-/*
-void detachField(
-    apf::Field* f,
-    double*& data,
-    int& size)
-{
-  apf::Mesh* m = apf::getMesh(f);
-  size = apf::countComponents(f);
-  size_t n = m->count(0);
-  apf::NewArray<double> c(size);
-  data = (double*)malloc(sizeof(double) * size * m->count(0));
-  apf::MeshEntity* e;
-  size_t i = 0;
-  apf::MeshIterator* it = m->begin(0);
-  while ((e = m->iterate(it))) {
-    apf::getComponents(f, e, 0, &c[0]);
-    for (int j = 0; j < size; ++j)
-      data[j * n + i] = c[j];
-    ++i;
-  }
-  m->end(it);
-  PCU_ALWAYS_ASSERT(i == n);
-  apf::destroyField(f);
-}
-*/
-/*
-void detachField(
-    apf::Mesh* m,
-    const char* fieldname,
-    double*& data,
-    int& size)
-{
-  apf::Field* f = m->findField(fieldname);
-  PCU_ALWAYS_ASSERT(f);
-//  detachField(f, data, size);
-  size = apf::countComponents(f);
-  size_t n = m->count(0);
-  apf::NewArray<double> c(size);
-  data = (double*)malloc(sizeof(double) * size * m->count(0));
-  apf::MeshEntity* e;
-  size_t i = 0;
-  apf::MeshIterator* it = m->begin(0);
-  while ((e = m->iterate(it))) {
-    apf::getComponents(f, e, 0, &c[0]);
-    for (int j = 0; j < size; ++j)
-      data[j * n + i] = c[j];
-    ++i;
-  }
-  m->end(it);
-  PCU_ALWAYS_ASSERT(i == n);
-  apf::destroyField(f);
-}
-*/
-
 static lcorp_t count_owned(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
 static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes);
 
 
-void gen_ncorp(Output& o )
-{
-        apf::Mesh* m = o.mesh;
-	int i;
-	lcorp_t nilwork = o.nlwork;
-        int num_nodes=m->count(0);
-        o.arrays.ncorp = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t));
-	lcorp_t owned;
-	lcorp_t local;
-	lcorp_t* owner_counts;
-	cgsize_t  local_start_id;
-	cgsize_t  gid;
-
-        const int num_parts = PCU_Comm_Peers();
-        const int part = PCU_Comm_Self() ;
-
-        for(int i=0; i < num_nodes; i++) o.arrays.ncorp[i]=0;
-	owned = count_owned(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
-	local = count_local(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
-	o.iownnodes = owned+local;
-#ifdef PRINT_EVERYTHING
-	printf("%d: %d local only nodes\n", part, local);
-	printf("%d: %d owned nodes\n", part, owned);
-#endif
-	assert( owned <= num_nodes );
-	assert( owned+local <= num_nodes );
-
-	owner_counts = (lcorp_t*) malloc(sizeof(lcorp_t)*num_parts);
-        for(int i=0; i < num_parts; i++) owner_counts[i]=0;
-	owner_counts[part] = owned+local;
-#ifdef PRINT_EVERYTHING
-	for(i=0;i<num_parts;i++)
-	{
-		printf("%d,", owner_counts[i]);
-	}
-	printf("\n");
-#endif
-	MPI_Allgather(MPI_IN_PLACE, 1, NCORP_MPI_T, owner_counts, 1, NCORP_MPI_T, MPI_COMM_WORLD);
-#ifdef PRINT_EVERYTHING
-	for(i=0;i<num_parts;i++)
-	{
-		printf("%d,", owner_counts[i]);
-	}
-	printf("\n");
-#endif
-	local_start_id=0;
-	for(i=0;i<part;i++) //TODO: MPI_Exscan()?
-	{
-// global so needs long long
-		local_start_id += owner_counts[i];
-	}
-	local_start_id++; //Fortran numbering
-        o.local_start_id = local_start_id;
-
-#ifdef PRINT_EVERYTHING
-	printf("%d: %d\n", part, local_start_id);
-#endif
-// global so needs long long
-	gid = local_start_id;
-        if(gid<0) printf("part,gid, %d %ld",part,gid);
-        assert(gid>=0);
-	for(i=0;i<num_nodes;i++) //assign owned node's numbers
-	{
-		//if shared, owned 1
-			//if shared, slave -1
-			//if local only, 0
-		if(o.arrays.ncorp[i] == 1)
-		{
-// global so needs long long
-			o.arrays.ncorp[i]=gid;
-                        assert(o.arrays.ncorp[i]>=0);
-
-// global so needs long long
-			gid++;
-			continue;
-		}
-		if(o.arrays.ncorp[i] == 0)
-		{
-			o.arrays.ncorp[i] = gid;
-                        assert(o.arrays.ncorp[i]>=0);
-			gid++;
-			continue;
-		}
-		if(o.arrays.ncorp[i] == -1)
-		{
-			o.arrays.ncorp[i] = 0; //commu() adds, so zero slaves
-		}
-
-	}
-	//char code[] = "out";
-	//int ione = 1;
-
-     if(num_parts > 1) {
-// translating a commuInt out from PHASTA to c
-        int numtask=o.arrays.ilwork[0];
-        int itkbeg=0;
-        int maxseg=1;
-        int numseg;
-        for (int itask=0; itask<numtask; ++itask) {
-          numseg = o.arrays.ilwork[itkbeg + 4];
-          maxseg=std::max(numseg,maxseg);
-          itkbeg+=4+2*numseg;
-        }
+void commuInt(Output& o, cgsize_t* global)
+{ // translating a commuInt out from PHASTA to c
+  int numtask=o.arrays.ilwork[0];
+  int itkbeg=0;
+  int maxseg=1;
+  int numseg;
+  for (int itask=0; itask<numtask; ++itask) {
+    numseg = o.arrays.ilwork[itkbeg + 4];
+    maxseg=std::max(numseg,maxseg);
+    itkbeg+=4+2*numseg;
+  }
          
-        int itag, iacc, iother, isgbeg;
-        MPI_Datatype sevsegtype[numtask];
+  int itag, iacc, iother, isgbeg;
+  MPI_Datatype sevsegtype[numtask];
 //first do what ctypes does for setup
-        int* isbegin;
-        int* lenseg;
-        int* ioffset;
-	isbegin = (int*) malloc(sizeof(int) * maxseg);
-	lenseg  = (int*) malloc(sizeof(int) * maxseg);
-	ioffset = (int*) malloc(sizeof(int) * maxseg);
+  int* isbegin;
+  int* lenseg;
+  int* ioffset;
+  isbegin = (int*) malloc(sizeof(int) * maxseg);
+  lenseg  = (int*) malloc(sizeof(int) * maxseg);
+  ioffset = (int*) malloc(sizeof(int) * maxseg);
 // no VLA        MPI_Request  req[numtask];
 // no VLA        MPI_Status stat[numtask];
+  int maxtask=1000;
+  assert(maxtask>=numtask);
+  MPI_Request  req[maxtask];
+  MPI_Status stat[maxtask];
+  int maxfront=0;
+  int lfront;
+  itkbeg=0;
+  for (int itask=0; itask<numtask; ++itask) {
+    iacc   = o.arrays.ilwork[itkbeg + 2];
+    numseg = o.arrays.ilwork[itkbeg + 4];
+    // ctypes.f decrements itkbeg+3 by one for rank 0-based.  do that where used below
+    lfront=0; 
+    for(int is=0; is<numseg; ++is){
+      isbegin[is]= o.arrays.ilwork[itkbeg+3+2*(is+1)] -1 ; // ilwork was created for 1-based
+      lenseg[is]= o.arrays.ilwork[itkbeg+4+2*(is+1)];
+      lfront+=lenseg[is];
+    }
+    maxfront=std::max(maxfront,lfront);
+    for ( int iseg=0; iseg<numseg; ++iseg) ioffset[iseg] = isbegin[iseg] - isbegin[0];
+    auto type = getMpiType( cgsize_t() );
+    MPI_Type_indexed (numseg, lenseg, ioffset,type, &sevsegtype[itask]);
+    MPI_Type_commit (&sevsegtype[itask]);
+    itkbeg+=4+2*numseg;
+  }
+  free(isbegin);
+  free(lenseg);
+  free(ioffset);
 
-        int maxtask=1000;
-        assert(maxtask>=numtask);
-        MPI_Request  req[maxtask];
-        MPI_Status stat[maxtask];
-        int maxfront=0;
-        int lfront;
-        itkbeg=0;
-        for (int itask=0; itask<numtask; ++itask) {
-          iacc   = o.arrays.ilwork[itkbeg + 2];
-          numseg = o.arrays.ilwork[itkbeg + 4];
-         // ctypes.f decrements itkbeg+3 by one for rank 0-based.  do that where used below
-          lfront=0; 
-          for(int is=0; is<numseg; ++is){
-             isbegin[is]= o.arrays.ilwork[itkbeg+3+2*(is+1)] -1 ; // ilwork was created for 1-based
-             lenseg[is]= o.arrays.ilwork[itkbeg+4+2*(is+1)];
-             lfront+=lenseg[is];
-          }
-          maxfront=std::max(maxfront,lfront);
-          for ( int iseg=0; iseg<numseg; ++iseg) ioffset[iseg] = isbegin[iseg] - isbegin[0];
-          auto type = getMpiType( cgsize_t() );
-          MPI_Type_indexed (numseg, lenseg, ioffset,type, &sevsegtype[itask]);
-          MPI_Type_commit (&sevsegtype[itask]);
-          itkbeg+=4+2*numseg;
-        }
-        free(isbegin);
-        free(lenseg);
-        free(ioffset);
+  int m = 0; 
+  itkbeg=0;
+  for (int itask=0; itask<numtask; ++itask) {
+    itag   = o.arrays.ilwork[itkbeg + 1];
+    iacc   = o.arrays.ilwork[itkbeg + 2];
+    iother = o.arrays.ilwork[itkbeg + 3] - 1; // MPI is 0 based but this was prepped wrong
+    numseg = o.arrays.ilwork[itkbeg + 4]; /// not used
+    isgbeg = o.arrays.ilwork[itkbeg + 5] - 1;
+    if (iacc==0){ 
+      MPI_Irecv(&global[isgbeg], 1, sevsegtype[itask],iother, itag, MPI_COMM_WORLD, &req[m]);
+    } else {
+      MPI_Isend(&global[isgbeg], 1, sevsegtype[itask],iother, itag, MPI_COMM_WORLD, &req[m]);
+    }
+    itkbeg+=4+2*numseg;
+    m      = m + 1; 
+  }
+  MPI_Waitall(m, req, stat);
+}
 
-        int m = 0; 
-        itkbeg=0;
-        for (int itask=0; itask<numtask; ++itask) {
-          itag   = o.arrays.ilwork[itkbeg + 1];
-          iacc   = o.arrays.ilwork[itkbeg + 2];
-          iother = o.arrays.ilwork[itkbeg + 3] - 1; // MPI is 0 based but this was prepped wrong
-          numseg = o.arrays.ilwork[itkbeg + 4]; /// not used
-          isgbeg = o.arrays.ilwork[itkbeg + 5] - 1;
-          if (iacc==0){ 
-             MPI_Irecv(&o.arrays.ncorp[isgbeg], 1, sevsegtype[itask],iother, itag, MPI_COMM_WORLD, &req[m]);
-          } else {
-             MPI_Isend(&o.arrays.ncorp[isgbeg], 1, sevsegtype[itask],iother, itag, MPI_COMM_WORLD, &req[m]);
-          }
-          itkbeg+=4+2*numseg;
-          m      = m + 1; 
-        }
-        MPI_Waitall(m, req, stat);
-      }
-if(1==0) {
-     for (int ipart=0; ipart<num_parts; ++ipart){
-        if(part==ipart) { // my turn
-           for (int inod=0; inod<num_nodes; ++inod) printf("%ld ", o.arrays.ncorp[inod]);
-           printf(" \n");
-           
-        }
-        PCU_Barrier();
-     }
+void gen_ncorp(Output& o )
+{
+  apf::Mesh* m = o.mesh;
+  int i;
+  lcorp_t nilwork = o.nlwork;
+  int num_nodes=m->count(0);
+  o.arrays.ncorp = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t));
+  lcorp_t owned;
+  lcorp_t local;
+  lcorp_t* owner_counts;
+  cgsize_t  local_start_id;
+  cgsize_t  gid;
+
+  const int num_parts = PCU_Comm_Peers();
+  const int part = PCU_Comm_Self() ;
+
+  for(int i=0; i < num_nodes; i++) o.arrays.ncorp[i]=0;
+  owned = count_owned(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
+  local = count_local(o.arrays.ilwork, nilwork, o.arrays.ncorp, num_nodes);
+  o.iownnodes = owned+local;
+#ifdef PRINT_EVERYTHING
+  printf("%d: %d local only nodes\n", part, local);
+  printf("%d: %d owned nodes\n", part, owned);
+#endif
+  assert( owned <= num_nodes );
+  assert( owned+local <= num_nodes );
+
+  owner_counts = (lcorp_t*) malloc(sizeof(lcorp_t)*num_parts);
+  for(int i=0; i < num_parts; i++) owner_counts[i]=0;
+  owner_counts[part] = owned+local;
+#ifdef PRINT_EVERYTHING
+  for(i=0;i<num_parts;i++)
+    printf("%d,", owner_counts[i]);
+  printf("\n");
+#endif
+  MPI_Allgather(MPI_IN_PLACE, 1, NCORP_MPI_T, owner_counts, 1, NCORP_MPI_T, MPI_COMM_WORLD);
+#ifdef PRINT_EVERYTHING
+  for(i=0;i<num_parts;i++)
+    printf("%d,", owner_counts[i]);
+  printf("\n");
+#endif
+  local_start_id=0;
+  for(i=0;i<part;i++) //TODO: MPI_Exscan()?
+    local_start_id += owner_counts[i];
+  local_start_id++; //Fortran numbering
+  o.local_start_id = local_start_id;
+#ifdef PRINT_EVERYTHING
+  printf("%d: %d\n", part, local_start_id);
+#endif
+  gid = local_start_id;
+  if(gid<0) printf("part,gid, %d %ld",part,gid);
+  assert(gid>=0);
+  for(i=0;i<num_nodes;i++) //assign owned node's numbers
+  { //if shared, owned 1 //if shared, slave -1 //if local only, 0
+    if(o.arrays.ncorp[i] == 1)
+    {
+      o.arrays.ncorp[i]=gid;
+      assert(o.arrays.ncorp[i]>=0);
+      gid++;
+      continue;
+    }
+    if(o.arrays.ncorp[i] == 0)
+    {
+      o.arrays.ncorp[i] = gid;
+      assert(o.arrays.ncorp[i]>=0);
+      gid++;
+      continue;
+    }
+    if(o.arrays.ncorp[i] == -1)
+      o.arrays.ncorp[i] = 0; //commu() adds, so zero slaves
+  } //char code[] = "out"; //int ione = 1;
+
+  if(num_parts > 1) 
+    commuInt(o, o.arrays.ncorp);
+if(1==1) {
+  for (int ipart=0; ipart<num_parts; ++ipart){
+    if(part==ipart) { // my turn
+      for (int inod=0; inod<num_nodes; ++inod) printf("%ld ", o.arrays.ncorp[inod]);
+        printf(" \n");
+    }
+    PCU_Barrier();
+  }
 }
 }
 
@@ -491,6 +418,7 @@ void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
 }
 
 // renamed and calling the renamed functions above with output writes now to CGNS
+
 void writeBlocksCGNS(int F,int B,int Z, Output& o)
 {
   int params[MAX_PARAMS];
@@ -502,7 +430,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   const cgsize_t num_parts_cg=num_parts;
   const int part = PCU_Comm_Self() ;
   const cgsize_t part_cg=part;
-  /* create a centered solution */
+  // create a centered solution 
   if (cg_sol_write(F, B, Z, "RankOfWriter", CG_CellCenter, &S) ||
       cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
       cgp_error_exit();
@@ -515,7 +443,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     int nvert = o.blocks.interior.keys[i].nElementVertices;
     cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
     getInteriorConnectivityCGNS(o, i, e);
-    /* create data node for elements */
+    // create data node for elements 
     e_startg=1+e_written; // start for the elements of this topology
     long safeArg=e_owned; // e_owned is cgsize_t which could be an 32 or 64 bit int
     e_endg=e_written + PCU_Add_Long(safeArg); // end for the elements of this topology
@@ -547,7 +475,7 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
     e_start+=1+e_written; // my parts global element start 1-based
     e_end=e_start+e_owned-1;  // my parts global element stop 1-based
-    /* write the element connectivity in parallel */
+    // write the element connectivity in parallel 
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
     e_written=e_endg; // update count of elements written
@@ -562,35 +490,34 @@ if(1==0){
 }
     free(e);
 
-//    /* create the field data for this process */
+//     create the field data for this process 
     int* d = (int *)malloc(e_owned * sizeof(int));
     for (int n = 0; n < e_owned; n++) 
             d[n] = part;
-//    /* write the solution field data in parallel */
+//     write the solution field data in parallel 
     if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
         cgp_error_exit();
     free(d);
 
     char UserDataName[11];
         snprintf(UserDataName, 11, "n%sOnRank", Ename);
-        /* create Helper array for number of elements on part of a given topology */
+        // create Helper array for number of elements on part of a given topology 
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
-          cg_gorel(F, "User Data", 0, NULL) ||
+         cg_gorel(F, "User Data", 0, NULL) ||
          cgp_array_write(UserDataName, CG_Integer, 1, &num_parts_cg, &Fs2))
-        cgp_error_exit();
-    /* create the field data for this process */
+         cgp_error_exit();
+    // create the field data for this process 
     int nIelVec=e_owned;
     cgsize_t  partP1=part+1;
     printf("Intr, %s,  %d, %d, %d, %d \n", UserDataName, nIelVec,part,Fs,Fs2);
     if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nIelVec))
         cgp_error_exit();
-  } // end of loop over blocks
+  } // end of loop over interior blocks
 
 
   if(o.writeCGNSFiles > 2) {
     cgsize_t eVolElm=e_written;
     cgsize_t e_belWritten=0;
-//    cgsize_t totOnRankBel=0;
     int totOnRankBel=0;
     int triCount=0;
     int quadCount=0;
@@ -599,6 +526,11 @@ if(1==0){
       totOnRankBel += o.blocks.boundary.nElements[i];
     int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
     int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
+    int** srfIDCnn1 = new int*[nblkb];
+    int** srfIDCnn2 = new int*[nblkb];
+    int* srfID1OnBlk = (int *)malloc( nblkb * sizeof(int));
+    int* srfID2OnBlk = (int *)malloc( nblkb * sizeof(int));
+
     int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
     int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
     for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
@@ -615,7 +547,6 @@ if(1==0){
       if(nvert==3) triCount++;
       if(nvert==4) quadCount++;
       char Ename[7];
-
       switch(nvert){
         case 3:
           snprintf(Ename, 5, "Tri%d",triCount);
@@ -633,27 +564,43 @@ if(1==0){
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
       e_start+=1+e_written; // my parts global element start 1-based
       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
-      /* write the element connectivity in parallel */
+      // write the element connectivity in parallel 
       if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
           cgp_error_exit();
       printf("boundary cnn %d, %ld, %ld \n", part, e_start, e_end);
 if(1==0){
-    for (int ne=0; ne<e_owned; ++ne) {
-      printf("%d, %d ", part,(ne+1));
-      for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
-      printf("\n");
-    }
+    for (int ne=0; ne<e_owned; ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
 }
-      free(e);
       getNaturalBCCodesCGNS(o, i, &srfID[e_belWritten]);
+      int icnt1=0;
+      int icnt2=0;
+      for (int ne=0; ne<e_owned; ++ne){ //count srfID =1 and 2 on this part,block
+         if(srfID[ebelWritten+i]==1) icnt1++; 
+         if(srfID[ebelWritten+i]==2) icnt2++;
+      } 
+      srfIDCnn1[i]=new int[icnt1*3];
+      srfIDCnn2[i]=new int[icnt2*3];
+      srfID1OnBlk[i]=icnt1;
+      srfID2OnBlk[i]=icnt2;
+      for (int ne=0; ne<e_owned; ++ne){
+         if(srfID[ebelWritten+i]==1){ 
+           srfIDCnn1[i][j1++]=e[ne*nv+0];
+           srfIDCnn1[i][j1++]=e[ne*nv+1];
+           srfIDCnn1[i][j1++]=e[ne*nv+2];
+         }
+         if(srfID[ebelWritten+i]==2) {
+           srfIDCnn1[i][j2++]=e[ne*nv+0];
+           srfIDCnn1[i][j2++]=e[ne*nv+1];
+           srfIDCnn1[i][j2++]=e[ne*nv+2];
+         }
+      } 
+
       for (int j = 0; j < (int) e_owned; ++j) srfIDidx[e_belWritten+j]=e_start+j;
       startBelBlk[i]=e_start; // provides start point for each block in srfID
       endBelBlk[i]=e_end; // provides end point for each block in srfID
       e_written=e_endg;
       e_belWritten+=e_owned; // this is tracking written by this rank as we unpack srfID later
-
-      char UserDataName[12];
-      snprintf(UserDataName, 13, "n%sOnRank", Ename);
+      char UserDataName[12]; snprintf(UserDataName, 13, "n%sOnRank", Ename);
       if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
            cg_gorel(F, "User Data", 0, NULL) ||
            cgp_array_write(UserDataName, CG_Integer, 1, &num_parts_cg, &Fsb2))
@@ -664,82 +611,85 @@ if(1==0){
           cgp_error_exit();
     }
 // srfID is for ALL Boundary faces
-//    long safeArg=totOnRankBel; // is cgsize_t which could be an 32 or 64 bit int
-//    cgsize_t  totBel = PCU_Add_Long(safeArg); // number of elements of this topology
     cgsize_t  totBel = e_written-eVolElm;
-//    printf("%ld %ld ", totOnRankBel,totBel);
     printf("%d %ld ", totOnRankBel,totBel);
-    /* setup User Data for boundary faces */
+    // setup User Data for boundary faces 
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
          cg_gorel(F, "User Data", 0, NULL) ||
          cgp_array_write("srfID", CG_Integer, 1,&totBel, &Fsb)) 
          cgp_error_exit();
-    /* write the user data for this process */
+    // write the user data for this process 
     e_written=0; //recycling  eVolElm holds 
     for (int i = 0; i < nblkb; ++i) {
       int e_startB=startBelBlk[i]-eVolElm; // srfID is only for bel....matches linear order with eVolElm offset from 
                                        // bel# that starts from last volume element
-//      int e_endB=endBelBlk[i]-eVolElm;
-//      e_owned=e_endB-estartB;
       e_owned=endBelBlk[i]-startBelBlk[i]+1;
       e_start=0;
       auto type = getMpiType( cgsize_t() );
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
       e_start+=1+e_written; // my parts global element start 1-based
       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
-
       printf("Bndy %s, %ld, %ld, %ld, %d, %d, %d \n", "srfID", e_start, e_end, e_owned, i, part,Fsb);
       if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
         cgp_error_exit();
       long safeArg=e_owned; // is cgsize_t which could be an 32 or 64 bit int
       e_written += PCU_Add_Long(safeArg); // number of elements of this topology
     }
-// ZonalBC data   When made parallel be mindful of srfID being in segments on each rank....NOT globally ordered but srIDidx gives global idx in same order. 
-    int* srfIDG = (int *)malloc( totBel * sizeof(int));
-    int* srfIDGidx = (int *)malloc( totBel * sizeof(int));
+// stack  connectivities on rank before gather (should preserve order)
     int* rcounts = (int *)malloc( num_parts * sizeof(int));
     int* displs = (int *)malloc( num_parts * sizeof(int));
+    int numsurfID1onRank=0;
+    int numsurfID2onRank=0;
+    for (int i = 1; i < nblkb; ++i) numsurfID1onRank+=srfID1onBlk[i];
+    for (int i = 1; i < nblkb; ++i) numsurfID2onRank+=srfID2onBlk[i];
+    int* srfIDCnn1AllBlocks = (int *)malloc(numsurfID1onRank*3 * sizeof(int));
+    int* srfIDCnn2AllBlocks = (int *)malloc(numsurfID2onRank*3 * sizeof(int));
+    for (int i = 0; i < nblkb; ++i) {
+      for (int j = 0; j < srfID1onBlk[i]*3; ++j) srfIDcnn1AllBlocks[k++]=srfIDcnn1[i][j];
+      for (int j = 0; j < srfID2onBlk[i]*3; ++j) srfIDcnn2AllBlocks[k++]=srfIDcnn2[i][j];
+    }
+    int ncon=numsurfID1onRank*3;
+    MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
+    displs[0]=0;
+    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
+if(0==1){ for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]); printf("\n"); }
+    int GsrfID1cnt=displs[num_parts-1]+displs[num_parts-1];
+    int* srfID1Gcnn = (int *)malloc( GsrfID1cnt * sizeof(int));
+    MPI_Allgatherv(srfIDcnn1AllBlocks,ncon,type_i,srfID1Gcnn,rcounts,displs,type_i,MPI_COMM_WORLD);
+    ncon=numsurfID2onRank*3;
+    MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
+    displs[0]=0;
+    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
+if(0==1){ for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]); printf("\n"); }
+    int GsrfID2cnt=displs[num_parts-1]+displs[num_parts-1];
+    assert(GsrfIC1cnt==GsrfID2cnt);
+    int* srfID2Gcnn = (int *)malloc( GsrfID2cnt * sizeof(int));
+    MPI_Allgatherv(srfIDcnn2AllBlocks,ncon,type_i,srfID2Gcnn,rcounts,displs,type_i,MPI_COMM_WORLD);
+tbc 
+// ZonalBC data 
+    int* srfIDG = (int *)malloc( totBel * sizeof(int));
+    int* srfIDGidx = (int *)malloc( totBel * sizeof(int));
     auto type_cg = getMpiType( cgsize_t() );
     auto type_i = getMpiType( int() );
     MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
     displs[0]=0;
     for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
-if(0==1){
-    for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]);
-    printf("\n");
-}
+if(0==1){ for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]); printf("\n"); }
     MPI_Allgatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,MPI_COMM_WORLD);
     MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
-if(0==1){
-    if(part==0) {
-      printf(" srfID GLOBAL    ");
-       for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
-       printf("\n");
-       printf(" srfIDidx GLOBAL ");
-       for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
-       printf("\n");
-    }
-    printf("rank %d ",part);
-    printf(" srfID on Part ");
-    for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]);
-    printf("\n");
-    printf(" srfIDidx on Part ");
-    for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]);
-    printf("\n");
-}
-//     pairsort(srfIDG,srfIDGidx,totBel);
-     pairDeal6sort(srfIDG,srfIDGidx,totBel);
-if(0==1){
-    if(part==0) {
-      printf(" srfID GLOBAL    ");
-      for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]);
-      printf("\n");
-      printf(" srfIDidx GLOBAL ");
-      for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]);
-      printf("\n");
-    }
+if(0==1){ if(part==0) {
+    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
+    printf("rank %d ",part); printf(" srfID on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]); printf("\n");
+    printf(" srfIDidx on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]); printf("\n"); }
+//    pairsort(srfIDG,srfIDGidx,totBel);
+    pairDeal6sort(srfIDG,srfIDGidx,totBel);
+if(0==1){ if(part==0) {
+    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
 }
     int BC_scan=0;
+    int imatch1;
     cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
     for (int BCid = 1; BCid < 7; BCid++) {
       int imatch=0;
@@ -748,10 +698,14 @@ if(0==1){
         BC_scan++;
         imatch++;
       }
+//reorder SurfID = 2 list to match order of SurfID 1 to support periodicity 
+      if(BCid==1) imatch1=imatch;
+      if(BCid==2) {
+        assert(imatch==imatch1); //
+        for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
+      } //incomplete         
 if(0==1) {
-      printf(" srfID =%d    ",BCid);
-      for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]);
-      printf("\n");
+      printf(" srfID =%d    ",BCid); for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]); printf("\n");
 }
       int BC_index;
       char BC_name[33];
@@ -760,38 +714,9 @@ if(0==1) {
          cg_error_exit();
       if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
       if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
-
     }
     free(eBC);
-                  
-//James Work
-/*
-    if (num_parts > 1) {
-      printf("Boundary conditions cannot be written in parallel right now\n");
-    } else {
-      // waaay too large, but works as proof of concept
-      cgsize_t (*bc_elems)[totOnRankBel] = (cgsize_t (*)[totOnRankBel])calloc(6 * totOnRankBel, sizeof(cgsize_t));
-      cgsize_t bc_elems_count[6] = {0};
-      for (int elem_id=0; elem_id<totOnRankBel; ++elem_id) {
-        int BCid = srfID[elem_id] - 1;
-        bc_elems[BCid][bc_elems_count[BCid]] = elem_id + eVolElm + 1;
-        bc_elems_count[BCid]++;
-      }
-
-      int BC_index;
-      for (int BCid = 0; BCid < 6; BCid++) {
-        char BC_name[33];
-        snprintf(BC_name, 33, "SurfID_%d", BCid + 1);
-        // printf("%s\n", BC_name);
-        if(cg_boco_write(F, B, Z, BC_name, CGNS_ENUMV(BCTypeUserDefined), CGNS_ENUMV(PointList), bc_elems_count[BCid], bc_elems[BCid], &BC_index))
-          cg_error_exit();
-        if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
-        if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
-      }
-
-      free(bc_elems);
-    } */
-  }
+  } // processing boundary elments
 }
 
 void writeCGNS(Output& o, std::string path)
@@ -811,7 +736,7 @@ void writeCGNS(Output& o, std::string path)
 
   int num_nodes=m->count(0);
 
-if(0==1){  // ilwork debugging
+if(1==1){  // ilwork debugging
     for (int ipart=0; ipart<num_parts; ++ipart){
         if(part==ipart) { // my turn
            printf("ilwork %d, %d, %d \n", part, o.nlwork,o.arrays.ilwork[0]);
@@ -829,7 +754,7 @@ if(0==1){  // ilwork debugging
        PCU_Barrier();
      }
 }
-if(1==0){
+if(1==1){
   for (int ipart=0; ipart<num_parts; ++ipart){
     if(part==ipart) { // my turn    
     printf("xyz %d, %d \n", part, num_nodes);
@@ -861,7 +786,7 @@ if(1==0){
        cg_base_write(F, "Base", 3, 3, &B) ||
        cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
        cgp_error_exit();
-    /* create data nodes for coordinates */
+    // create data nodes for coordinates 
   cg_set_file_type(CG_FILE_HDF5);
 
   if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
@@ -893,7 +818,39 @@ if(0==1) {
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
   free (x);
-  /* create a nodal solution */
+/* abort....matcched mesh was needed but this breaks our approach to building ncorp
+  cgsize_t* gizmin = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t));
+  cgsize_t* gizmax = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t));
+  double zmin=-0.5;
+  double zmax=65;
+  double eps=1e-3;
+  double z;
+  for (int inode = 0; inode < num_nodes; ++inode){
+      gnod=o.arrays.ncorp[inode];
+      z= o.arrays.coordinates[2*num_nodes+inode];
+      if( abs(z-zmin) < eps) {
+         gizmin[inode]=gnod;
+         gizmax[inode]=-1*(part+1);
+      } else if(abs(zmax-z)<eps){
+         gizmax[inode]=gnod;
+         gizmin[inode]=-1*(part+1);
+      } else {
+         gizmin[inode]=-1*(part+1);
+         gizmax[inode]=-1*(part+1);
+      }
+  }
+if(1==1) {
+      printf(" gizmin bc on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmin[is]); printf("\n");
+      printf(" gizmax bc on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmax[is]); printf("\n");
+}
+  commuInt(o, gizmax);
+  commuInt(o, gizmin);
+if(1==1) {
+      printf(" gizmin ac on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmin[is]); printf("\n");
+      printf(" gizmax ac on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmax[is]); printf("\n");
+}
+ */ 
+  // create a nodal solution 
   char fieldName[12];
   snprintf(fieldName, 13, "solution");
   printf("solution=%s",fieldName);
@@ -902,7 +859,7 @@ if(0==1) {
   detachField(o.mesh, fieldName, data, size);
   assert(size==5);
 
-//    /* create the field data for this process */
+//     create the field data for this process 
   double* p = (double *)malloc(o.iownnodes * sizeof(double));
   double* u = (double *)malloc(o.iownnodes * sizeof(double));
   double* v = (double *)malloc(o.iownnodes * sizeof(double));
@@ -920,7 +877,7 @@ if(0==1) {
          icount++;
     }
   }
-//    /* write the solution field data in parallel */
+//     write the solution field data in parallel 
   if (cg_sol_write(F, B, Z, "Solution", CG_Vertex, &Sp) ||
       cgp_field_write(F, B, Z, Sp, CG_RealDouble, "Pressure", &Fp))
       cgp_error_exit();
@@ -953,13 +910,13 @@ if(0==1) {
   free(w);
   free(T);
   free(data);
-  /* create Helper array for number of elements on rank */
+  // create Helper array for number of elements on rank 
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
        cg_user_data_write("User Data") ||
        cg_gorel(F, "User Data", 0, NULL) ||
        cgp_array_write("nCoordsOnRank", CG_Integer, 1, &num_parts_cg, &Fs2))
        cgp_error_exit();
-  /* create the field data for this process */
+  // create the field data for this process 
   int nCoordVec=o.iownnodes;
   cgsize_t partP1=part+1;
   printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
