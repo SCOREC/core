@@ -718,6 +718,7 @@ if(1==0){     printf("Stack2 %d %d, %d, %d, %d, %d\n",part, GsrfID2cnt, ncon, nb
     int nmatchFace=GsrfID1cnt/3;
     double* srfID2Gcen = (double *)malloc( GsrfID2cnt * sizeof(double));
     MPI_Allgatherv(srfIDCen2AllBlocks,ncon,type_d,srfID2Gcen,rcounts,displs,type_d,MPI_COMM_WORLD);
+    const  float  Lz=abs(srfID2Gcen[2]-srfID1Gcen[2]);
 if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1Gcen[ip*3+0]); printf("\n"); }
 if(1==0){  printf("%d part srfID 1 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1Gcen[ip*3+1]); printf("\n"); }
 if(1==0){  printf("%d part srfID 1 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1Gcen[ip*3+2]); printf("\n"); }
@@ -805,6 +806,8 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
 // ZonalBC data 
     int* srfIDG = (int *)malloc( totBel * sizeof(int));
     int* srfIDGidx = (int *)malloc( totBel * sizeof(int));
+    cgsize_t* donor2 = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
+    cgsize_t* periodic1 = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
     auto type_cg = getMpiType( cgsize_t() );
     MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
     displs[0]=0;
@@ -837,15 +840,13 @@ if(1==0){ if(part==0) {
       }
 //reorder SurfID = 1 and 2 using idmapD{1,2} based on distance to support periodicity 
       if(BCid==1) {
-        cgsize_t* eBCtmp = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
-        for (int i = 0; i < nmatchFace; i++) eBCtmp[i]=eBC[imapD1[i]];
-        for (int i = 0; i < nmatchFace; i++) eBC[i]=eBCtmp[i];
+        for (int i = 0; i < nmatchFace; i++) periodic1[i]=eBC[imapD1[i]];
+        for (int i = 0; i < nmatchFace; i++) eBC[i]=periodic1[i];
 if(1==1&&part==1){ printf(" srfIDidx 1 "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", eBC[is]); printf("\n"); }
       }       
       if(BCid==2) {
-        cgsize_t* eBCtmp = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
-        for (int i = 0; i < nmatchFace; i++) eBCtmp[i]=eBC[imapD2[i]];
-        for (int i = 0; i < nmatchFace; i++) eBC[i]=eBCtmp[i];
+        for (int i = 0; i < nmatchFace; i++) donor2[i]=eBC[imapD2[i]];
+        for (int i = 0; i < nmatchFace; i++) eBC[i]=donor2[i];
 if(1==1&&part==1){ printf(" srfIDidx 2 "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", eBC[is]); printf("\n"); }
       }       
 if(0==1) {
@@ -859,6 +860,16 @@ if(0==1) {
       if(cg_goto(F, B, "Zone_t", 1, "ZoneBC_t", 1, "BC_t", BC_index, "end")) cg_error_exit();;
       if(cg_gridlocation_write(CGNS_ENUMV(FaceCenter))) cg_error_exit();
     }
+    int cgconn;
+    if (cg_conn_write(F, B, Z, "Periodic Connectivity",
+          CGNS_ENUMV(FaceCenter), CGNS_ENUMV(Abutting1to1),
+          CGNS_ENUMV(PointList), nmatchFace, periodic1, "Zone",
+          CGNS_ENUMV(Unstructured), CGNS_ENUMV(PointListDonor),
+          CGNS_ENUMV(Integer), nmatchFace, donor2, &cgconn)) cgp_error_exit();
+    const float  RotationCenter[3]={0};
+    const float  RotationAngle[3]={0};
+    const float  Translation[3]={0,0,-Lz};
+    if (cg_conn_periodic_write(F, B, Z, cgconn, RotationCenter, RotationAngle, Translation)) cgp_error_exit();
     free(imapD1); free(imapD2);
     free(eBC); free(srfIDG); free(srfIDGidx);
   } // processing boundary elments
