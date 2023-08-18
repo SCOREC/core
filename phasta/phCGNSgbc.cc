@@ -127,8 +127,10 @@ void pairDeal6sort(int a[], int b[], int n)
       }
     }
     assert(igc==n);
-    delete idx;
-    delete p;
+    for (int i = 0; i < 6; i++) delete [] p[i];
+    for (int i = 0; i < 6; i++) delete [] idx[i];
+    delete [] idx;
+    delete [] p;
 }
 
 
@@ -664,7 +666,7 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
     // write the user data for this process 
     e_written=0; //recycling  eVolElm holds 
     for (int i = 0; i < nblkb; ++i) {
-      int e_startB=startBelBlk[i]-eVolElm; // srfID is only for bel....matches linear order with eVolElm offset from 
+      int e_startB=startBelBlk[i]-eVolElm-1; // srfID is only for bel....matches linear order with eVolElm offset from 
                                        // bel# that starts from last volume element
       e_owned=endBelBlk[i]-startBelBlk[i]+1;
       e_start=0;
@@ -694,7 +696,9 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
       for (int j = 0; j < srfID2OnBlk[i]*3; ++j) srfIDCen2AllBlocks[k2++]=srfIDCen2[i][j];
     }
     free(srfID1OnBlk); free(srfID2OnBlk);
-    delete srfIDCen1; delete srfIDCen2;
+    for (int i = 0; i < nblkb; ++i) delete [] srfIDCen1[i];
+    for (int i = 0; i < nblkb; ++i) delete [] srfIDCen2[i];
+    delete [] srfIDCen1; delete [] srfIDCen2;
     int ncon=numsurfID1onRank*3;
     auto type_i = getMpiType( int() );
     MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
@@ -829,15 +833,25 @@ if(1==0){ if(part==0) {
     printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
 }
     int BC_scan=0;
-    int imatch1;
     cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
     for (int BCid = 1; BCid < 7; BCid++) {
       int imatch=0;
-      while (srfIDG[BC_scan]==BCid) {
+// valgrind likes this?
+      for (int ib = BC_scan; ib < totBel; ib++) {
+        if(srfIDG[ib]==BCid){
+          eBC[imatch]=srfIDGidx[BC_scan];
+          BC_scan++;
+          imatch++;
+        } else  break;
+      }
+ 
+/* works but valgrind no likey
+      while (srfIDG[BC_scan]==BCid&&BC_scan<totBel) {
         eBC[imatch]=srfIDGidx[BC_scan];
         BC_scan++;
         imatch++;
       }
+*/
 //reorder SurfID = 1 and 2 using idmapD{1,2} based on distance to support periodicity 
       if(BCid==1) {
         for (int i = 0; i < nmatchFace; i++) periodic1[i]=eBC[imapD1[i]];
