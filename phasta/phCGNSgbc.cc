@@ -649,25 +649,18 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
     }
     *totBel = *e_written-eVolElm;
 }
-void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int nblkb)
+void writeCGNS_UserData(int F,int B, int* srfID,  int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, cgsize_t *eVolElm, int nblkb)
 {
-// srfID is for ALL Boundary faces
-    const int num_parts = PCU_Comm_Peers();
-    const cgsize_t num_parts_cg=num_parts;
-    const int part = PCU_Comm_Self() ;
-    const cgsize_t part_cg=part;
     cgsize_t e_owned, e_start,e_end;
     int Fsb;
-    cgsize_t  eVolElm = *e_written-*totBel;
     // setup User Data for boundary faces 
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
          cg_gorel(F, "User Data", 0, NULL) ||
          cgp_array_write("srfID", CG_Integer, 1,totBel, &Fsb)) 
          cgp_error_exit();
     // write the user data for this process 
-    *e_written=0; //recycling  eVolElm holds 
     for (int i = 0; i < nblkb; ++i) {
-      int e_startB=startBelBlk[i]-eVolElm-1; // srfID is only for bel....matches linear order with eVolElm offset from 
+      int e_startB=startBelBlk[i]-*eVolElm-1; // srfID is only for bel....matches linear order with eVolElm offset from 
                                        // bel# that starts from last volume element
       e_owned=endBelBlk[i]-startBelBlk[i]+1;
       e_start=0;
@@ -675,64 +668,20 @@ void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, 
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
       e_start+=1+*e_written; // my parts global element start 1-based
       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
-      printf("Bndy %s, %ld, %ld, %ld, %d, %d, %d \n", "srfID", e_start, e_end, e_owned, i, part,Fsb);
+      printf("Bndy %s, %ld, %ld, %ld,  %d, %d \n", "srfID", e_start, e_end, e_owned, i, Fsb);
       if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
         cgp_error_exit();
       long safeArg=e_owned; // is cgsize_t which could be an 32 or 64 bit int
       *e_written += PCU_Add_Long(safeArg); // number of elements of this topology
     }
-// stack  connectivities on rank before gather (should preserve order)
-    int* rcounts = (int *)malloc( num_parts * sizeof(int));
-    int* displs = (int *)malloc( num_parts * sizeof(int));
-    int numsurfID1onRank=0;
-    int numsurfID2onRank=0;
-    for (int i = 0; i < nblkb; ++i) numsurfID1onRank+=srfID1OnBlk[i];
-    for (int i = 0; i < nblkb; ++i) numsurfID2onRank+=srfID2OnBlk[i];
-    double* srfIDCen1AllBlocks = (double *)malloc(numsurfID1onRank*3 * sizeof(double));
-    double* srfIDCen2AllBlocks = (double *)malloc(numsurfID2onRank*3 * sizeof(double));
-    int k1=0;
-    int k2=0;
-    for (int i = 0; i < nblkb; ++i) {
-      for (int j = 0; j < srfID1OnBlk[i]*3; ++j) srfIDCen1AllBlocks[k1++]=srfIDCen1[i][j];
-      for (int j = 0; j < srfID2OnBlk[i]*3; ++j) srfIDCen2AllBlocks[k2++]=srfIDCen2[i][j];
-    }
-    int ncon=numsurfID1onRank*3;
-    auto type_i = getMpiType( int() );
-    MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
-    displs[0]=0;
-    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
-if(1==0){ printf("displs1 %d ",part);for(int ip=0; ip< num_parts; ++ip) printf("% ld ", displs[ip]); printf("\n"); }
-    int GsrfID1cnt=displs[num_parts-1]+rcounts[num_parts-1];
-if(1==0){    printf("Stack1 %d %d, %d, %d, %d, %d\n",part, GsrfID1cnt, ncon, nblkb, numsurfID1onRank, numsurfID2onRank);}
-    double* srfID1GCen = (double *)malloc( GsrfID1cnt * sizeof(double));
-    auto type_d = getMpiType( double() );
-    MPI_Allgatherv(srfIDCen1AllBlocks,ncon,type_d,srfID1GCen,rcounts,displs,type_d,MPI_COMM_WORLD);
-// srfID=2 repeats
-    ncon=numsurfID2onRank*3;
-    MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
-    displs[0]=0;
-    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
-if(1==0){ printf("displs2 %d ",part);for(int ip=0; ip< num_parts; ++ip) printf("% ld ", displs[ip]); printf("\n"); }
-    int GsrfID2cnt=displs[num_parts-1]+rcounts[num_parts-1];
-if(1==0){     printf("Stack2 %d %d, %d, %d, %d, %d\n",part, GsrfID2cnt, ncon, nblkb, numsurfID1onRank, numsurfID2onRank);}
-    assert(GsrfID1cnt==GsrfID2cnt);
-    int nmatchFace=GsrfID1cnt/3;
-    double* srfID2GCen = (double *)malloc( GsrfID2cnt * sizeof(double));
-    MPI_Allgatherv(srfIDCen2AllBlocks,ncon,type_d,srfID2GCen,rcounts,displs,type_d,MPI_COMM_WORLD);
-    const  float  Lz=abs(srfID2GCen[2]-srfID1GCen[2]);
-if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+0]); printf("\n"); }
-if(1==0){  printf("%d part srfID 1 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+1]); printf("\n"); }
-if(1==0){  printf("%d part srfID 1 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+2]); printf("\n"); }
-       PCU_Barrier();
-if(1==0){  printf("%d part srfID 2 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+0]); printf("\n"); }
-if(1==0){  printf("%d part srfID 2 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+1]); printf("\n"); }
-if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+2]); printf("\n"); }
-    free(srfIDCen1AllBlocks); free(srfIDCen2AllBlocks);
+
+}
+void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* imapD1, int*imapD2)
+{
+    int* imapD2v = (int *)malloc( nmatchFace * sizeof(int));
     double* srfID1distSq = (double *)malloc( nmatchFace * sizeof(double));
     double* srfID2distSq = (double *)malloc( nmatchFace * sizeof(double));
-    int* imapD1 = (int *)malloc( nmatchFace * sizeof(int));
-    int* imapD2 = (int *)malloc( nmatchFace * sizeof(int));
-    int* imapD2v = (int *)malloc( nmatchFace * sizeof(int));
+    const int part = PCU_Comm_Self() ;
     double xc=10; // true cubes with uniform meshes set up ties  (good for debugging/verifying that dumb search backup works)
     for (int i = 0; i < nmatchFace; ++i) {
       srfID1distSq[i]=(srfID1GCen[i*3+0]-xc)*(srfID1GCen[i*3+0]-xc) 
@@ -800,9 +749,67 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
       printf(" imapD1 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD1[is]); printf("\n"); 
       printf(" srfID2dist GLOBAL "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
       printf(" imapD2 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD2[is]); printf("\n"); }
-    free(srfID1GCen); free(srfID2GCen);
     free(srfID1distSq); free(srfID2distSq);
     free(imapD2v);
+}
+void gatherCentroid(double** srfIDCen,int* srfIDOnBlk, double** srfIDGCen, int *nmatchFace, int nblkb)
+{
+// stack  connectivities on rank before gather (should preserve order)
+    const int num_parts = PCU_Comm_Peers();
+    int* rcounts = (int *)malloc( num_parts * sizeof(int));
+    int* displs = (int *)malloc( num_parts * sizeof(int));
+    int numSurfIDOnRank=0;
+    for (int i = 0; i < nblkb; ++i) numSurfIDOnRank+=srfIDOnBlk[i];
+    double* srfIDCenAllBlocks = (double *)malloc(numSurfIDOnRank*3 * sizeof(double));
+    int k1=0;
+    for (int i = 0; i < nblkb; ++i) 
+      for (int j = 0; j < srfIDOnBlk[i]*3; ++j) srfIDCenAllBlocks[k1++]=srfIDCen[i][j];
+    int ncon=numSurfIDOnRank*3;
+    auto type_i = getMpiType( int() );
+    MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
+    displs[0]=0;
+    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
+    int GsrfIDcnt=displs[num_parts-1]+rcounts[num_parts-1];
+    *nmatchFace=GsrfIDcnt/3;
+    *srfIDGCen = (double *)malloc( GsrfIDcnt * sizeof(double));
+if(1==0){ printf("displs1 ");for(int ip=0; ip< num_parts; ++ip) printf("% ld ", displs[ip]); printf("\n"); }
+    auto type_d = getMpiType( double() );
+    MPI_Allgatherv(srfIDCenAllBlocks,ncon,type_d,*srfIDGCen,rcounts,displs,type_d,MPI_COMM_WORLD);
+    free(srfIDCenAllBlocks); 
+}
+
+void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int nblkb)
+{
+// srfID is for ALL Boundary faces
+    const int num_parts = PCU_Comm_Peers();
+    const cgsize_t num_parts_cg=num_parts;
+    const int part = PCU_Comm_Self() ;
+    const cgsize_t part_cg=part;
+    int* rcounts = (int *)malloc( num_parts * sizeof(int));
+    int* displs = (int *)malloc( num_parts * sizeof(int));
+    cgsize_t e_owned, e_start,e_end;
+    int Fsb;
+    cgsize_t  eVolElm = *e_written-*totBel;
+    *e_written=0; //recycling  eVolElm holds 
+    writeCGNS_UserData(F,B, srfID,  startBelBlk, endBelBlk, e_written, totBel, &eVolElm, nblkb);
+    double* srfID1GCen; 
+    double* srfID2GCen; 
+    int nmatchFace1,nmatchFace;
+    gatherCentroid(srfIDCen1,srfID1OnBlk,&srfID1GCen,&nmatchFace1, nblkb);
+    gatherCentroid(srfIDCen2,srfID2OnBlk,&srfID2GCen,&nmatchFace, nblkb);
+    assert(nmatchFace1==nmatchFace);
+    const  float  Lz=abs(srfID2GCen[2]-srfID1GCen[2]);
+if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+0]); printf("\n"); }
+if(1==0){  printf("%d part srfID 1 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+1]); printf("\n"); }
+if(1==0){  printf("%d part srfID 1 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+2]); printf("\n"); }
+       PCU_Barrier();
+if(1==0){  printf("%d part srfID 2 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+0]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+1]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+2]); printf("\n"); }
+    int* imapD1 = (int *)malloc( nmatchFace * sizeof(int));
+    int* imapD2 = (int *)malloc( nmatchFace * sizeof(int));
+    sortID1andID2(srfID1GCen,srfID2GCen,nmatchFace, imapD1, imapD2);
+    free(srfID1GCen); free(srfID2GCen);
 // ZonalBC data 
     int* srfIDG = (int *)malloc( *totBel * sizeof(int));
     int* srfIDGidx = (int *)malloc( *totBel * sizeof(int));
@@ -812,6 +819,7 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
     int totOnRankBel=0;
     for (int i = 0; i < nblkb; ++i) 
       totOnRankBel += o.blocks.boundary.nElements[i];
+    auto type_i = getMpiType( int() );
     MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
     displs[0]=0;
     for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
@@ -834,7 +842,6 @@ if(1==0){ if(part==0) {
     cgsize_t* eBC = (cgsize_t *)malloc(*totBel * sizeof(cgsize_t));
     for (int BCid = 1; BCid < 7; BCid++) {
       int imatch=0;
-// valgrind likes this?
       for (int ib = BC_scan; ib < *totBel; ib++) {
         if(srfIDG[ib]==BCid){
           eBC[imatch]=srfIDGidx[BC_scan];
@@ -842,14 +849,6 @@ if(1==0){ if(part==0) {
           imatch++;
         } else  break;
       }
- 
-/* works but valgrind no likey
-      while (srfIDG[BC_scan]==BCid&&BC_scan<*totBel) {
-        eBC[imatch]=srfIDGidx[BC_scan];
-        BC_scan++;
-        imatch++;
-      }
-*/
 //reorder SurfID = 1 and 2 using idmapD{1,2} based on distance to support periodicity 
       if(BCid==1) {
         for (int i = 0; i < nmatchFace; i++) periodic1[i]=eBC[imapD1[i]];
@@ -885,6 +884,63 @@ if(0==1) {
     free(imapD1); free(imapD2);
     free(eBC); free(srfIDG); free(srfIDGidx);
 } 
+void CGNS_NodalSolution(int F,int B,int Z, Output& o)
+{
+  // create a nodal solution 
+  char fieldName[12];
+  snprintf(fieldName, 13, "solution");
+  printf("solution=%s",fieldName);
+  double* data;
+  int size, S,Q;
+  detachField(o.mesh, fieldName, data, size);
+  assert(size==5);
+
+//     create the field data for this process 
+  double* p = (double *)malloc(o.iownnodes * sizeof(double));
+  double* u = (double *)malloc(o.iownnodes * sizeof(double));
+  double* v = (double *)malloc(o.iownnodes * sizeof(double));
+  double* w = (double *)malloc(o.iownnodes * sizeof(double));
+  double* T = (double *)malloc(o.iownnodes * sizeof(double));
+  int icount=0;
+  int num_nodes=o.mesh->count(0);
+  cgsize_t gnod,start,end;
+  start=o.local_start_id;
+  end=start+o.iownnodes-1;
+  for (int n = 0; n < num_nodes; n++) {
+    gnod=o.arrays.ncorp[n];
+    if(gnod >= start && gnod <= end) { // solution to write
+         p[icount]= data[0*num_nodes+n];
+         u[icount]= data[1*num_nodes+n];
+         v[icount]= data[2*num_nodes+n];
+         w[icount]= data[3*num_nodes+n];
+         T[icount]= data[4*num_nodes+n];
+         icount++;
+    }
+  }
+//     write the solution field data in parallel 
+  if (cg_sol_write(F, B, Z, "Solution", CG_Vertex, &S) ||
+      cgp_field_write(F, B, Z, S, CG_RealDouble, "Pressure", &Q))
+      cgp_error_exit();
+  if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, p))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "VelocityX", &Q))
+      cgp_error_exit();
+  if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, u))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "VelocityY", &Q))
+      cgp_error_exit();
+  if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, v))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "VelocityZ", &Q))
+      cgp_error_exit();
+  if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, w))
+      cgp_error_exit();
+  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "Temperature", &Q))
+      cgp_error_exit();
+  if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, T))
+      cgp_error_exit();
+  free(p); free(u); free(v); free(w); free(T); free(data);
+}
 
 void writeCGNS(Output& o, std::string path)
 {
@@ -897,8 +953,6 @@ void writeCGNS(Output& o, std::string path)
   std::string timestep_or_dat;
   static char outfile[] = "chefOut.cgns";
   int  F, B, Z, E, S, Fs, Fs2, A, Cx, Cy, Cz;
-  int Fp, Fu, Fv, Fw, FT;
-  int Sp, Su, Sv, Sw, ST;
   cgsize_t sizes[3],*e, start, end;
 
   int num_nodes=m->count(0);
@@ -985,56 +1039,7 @@ if(0==1) {
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
   free (x);
-  // create a nodal solution 
-  char fieldName[12];
-  snprintf(fieldName, 13, "solution");
-  printf("solution=%s",fieldName);
-  double* data;
-  int size;
-  detachField(o.mesh, fieldName, data, size);
-  assert(size==5);
-
-//     create the field data for this process 
-  double* p = (double *)malloc(o.iownnodes * sizeof(double));
-  double* u = (double *)malloc(o.iownnodes * sizeof(double));
-  double* v = (double *)malloc(o.iownnodes * sizeof(double));
-  double* w = (double *)malloc(o.iownnodes * sizeof(double));
-  double* T = (double *)malloc(o.iownnodes * sizeof(double));
-  int icount=0;
-  for (int n = 0; n < num_nodes; n++) {
-    gnod=o.arrays.ncorp[n];
-    if(gnod >= start && gnod <= end) { // solution to write
-         p[icount]= data[0*num_nodes+n];
-         u[icount]= data[1*num_nodes+n];
-         v[icount]= data[2*num_nodes+n];
-         w[icount]= data[3*num_nodes+n];
-         T[icount]= data[4*num_nodes+n];
-         icount++;
-    }
-  }
-//     write the solution field data in parallel 
-  if (cg_sol_write(F, B, Z, "Solution", CG_Vertex, &Sp) ||
-      cgp_field_write(F, B, Z, Sp, CG_RealDouble, "Pressure", &Fp))
-      cgp_error_exit();
-  if (cgp_field_write_data(F, B, Z, Sp, Fp, &start, &end, p))
-      cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "VelocityX", &Fu))
-      cgp_error_exit();
-  if (cgp_field_write_data(F, B, Z, Sp, Fu, &start, &end, u))
-      cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "VelocityY", &Fv))
-      cgp_error_exit();
-  if (cgp_field_write_data(F, B, Z, Sp, Fv, &start, &end, v))
-      cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "VelocityZ", &Fw))
-      cgp_error_exit();
-  if (cgp_field_write_data(F, B, Z, Sp, Fw, &start, &end, w))
-      cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, Sp, CG_RealDouble, "Temperature", &FT))
-      cgp_error_exit();
-  if (cgp_field_write_data(F, B, Z, Sp, FT, &start, &end, T))
-      cgp_error_exit();
-  free(p); free(u); free(v); free(w); free(T); free(data);
+  CGNS_NodalSolution(F,B,Z,o);
   // create Helper array for number of elements on rank 
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
        cg_user_data_write("User Data") ||
@@ -1047,8 +1052,7 @@ if(0==1) {
   printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
   if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nCoordVec))
        cgp_error_exit();
-//  if(o.writeCGNSFiles > 1) 
-// got split into 4  writeBlocksCGNS(F,B,Z, o);
+
   cgsize_t e_written=0; 
   cgsize_t totBel;
   writeBlocksCGNSinteror(F,B,Z,o,&e_written);
