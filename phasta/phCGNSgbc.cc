@@ -368,10 +368,6 @@ static std::string buildCGNSFileName(std::string timestep_or_dat)
   return ss.str();
 }
 
-enum {
-  MAX_PARAMS = 12
-};
-
 // update is only a transpose to match CNGS.  
 void getInteriorConnectivityCGNS(Output& o, int block, cgsize_t* c)
 {
@@ -394,7 +390,7 @@ void getInteriorConnectivityCGNS(Output& o, int block, cgsize_t* c)
 }
 
 // update is both a transpose to match CNGS and reduction to only filling the first number of vertices on the boundary whereas PHASTA wanted full volume
-void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c, double* ecenx, double* eceny, double* ecenz)
+void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c, double* eCenx, double* eCeny, double* eCenz)
 {
   int nelem = o.blocks.boundary.nElements[block];
   int nvertVol = o.blocks.boundary.keys[block].nElementVertices;
@@ -409,19 +405,19 @@ void getBoundaryConnectivityCGNS(Output& o, int block, cgsize_t* c, double* ecen
   if(nvertVol==5 && nvert==3) lnode={0, 4, 1, -1}; // pyramid tri is a fortran map of 1 5 2 
   if(nvertVol==6 && nvert==4) lnode={0, 3, 4, 1};  // wedge quad is a fortran map of 1 4 5 2
   for (int elem = 0; elem < nelem; ++elem){
-    ecenx[elem]=0;
-    eceny[elem]=0;
-    ecenz[elem]=0;
+    eCenx[elem]=0;
+    eCeny[elem]=0;
+    eCenz[elem]=0;
     for (int vert = 0; vert < nvert; ++vert){
       phGnod=o.arrays.ienb[block][elem][lnode[vert]]; //actually it is on-rank Global 
       c[i++] = o.arrays.ncorp[phGnod]; // PETSc truely global
-      ecenx[elem]+=o.arrays.coordinates[0*num_nodes+phGnod];
-      eceny[elem]+=o.arrays.coordinates[1*num_nodes+phGnod];
-      ecenz[elem]+=o.arrays.coordinates[2*num_nodes+phGnod];
+      eCenx[elem]+=o.arrays.coordinates[0*num_nodes+phGnod];
+      eCeny[elem]+=o.arrays.coordinates[1*num_nodes+phGnod];
+      eCenz[elem]+=o.arrays.coordinates[2*num_nodes+phGnod];
     }
-    ecenx[elem]/=nvert; // only necessary if you really want to use this as a correct centroid rather than comparison
-    eceny[elem]/=nvert; // only necessary if you really want to use this as a correct centroid rather than comparison
-    ecenz[elem]/=nvert; // only necessary if you really want to use this as a correct centroid rather than comparison
+    eCenx[elem]/=nvert; // only necessary if you really want to use this as a correct Centroid rather than comparison
+    eCeny[elem]/=nvert; // only necessary if you really want to use this as a correct Centroid rather than comparison
+    eCenz[elem]/=nvert; // only necessary if you really want to use this as a correct Centroid rather than comparison
    }
   PCU_ALWAYS_ASSERT(i == nelem*nvert);
 }
@@ -460,13 +456,11 @@ void getNaturalBCCodesCGNS(Output& o, int block, int* codes)
 
 // renamed and calling the renamed functions above with output writes now to CGNS
 
-void writeBlocksCGNS(int F,int B,int Z, Output& o)
+void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
 {
-  int params[MAX_PARAMS];
   int E,S,Fs,Fs2,Fsb,Fsb2;
   cgsize_t e_owned, e_start,e_end;
   cgsize_t e_startg,e_endg;
-  cgsize_t e_written=0;
   const int num_parts = PCU_Comm_Peers();
   const cgsize_t num_parts_cg=num_parts;
   const int part = PCU_Comm_Self() ;
@@ -478,15 +472,14 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
   for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
     BlockKey& k = o.blocks.interior.keys[i];
     std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
-    params[0] = o.blocks.interior.nElements[i];
     e_owned = o.blocks.interior.nElements[i];
     int nvert = o.blocks.interior.keys[i].nElementVertices;
     cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
     getInteriorConnectivityCGNS(o, i, e);
     // create data node for elements 
-    e_startg=1+e_written; // start for the elements of this topology
+    e_startg=1+*e_written; // start for the elements of this topology
     long safeArg=e_owned; // e_owned is cgsize_t which could be an 32 or 64 bit int
-    e_endg=e_written + PCU_Add_Long(safeArg); // end for the elements of this topology
+    e_endg=*e_written + PCU_Add_Long(safeArg); // end for the elements of this topology
     char Ename[5];
     switch(nvert){
       case 4:
@@ -513,12 +506,12 @@ void writeBlocksCGNS(int F,int B,int Z, Output& o)
     e_start=0;
     auto type = getMpiType( cgsize_t() );
     MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
-    e_start+=1+e_written; // my parts global element start 1-based
+    e_start+=1+*e_written; // my parts global element start 1-based
     e_end=e_start+e_owned-1;  // my parts global element stop 1-based
     // write the element connectivity in parallel 
     if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
         cgp_error_exit();
-    e_written=e_endg; // update count of elements written
+    *e_written=e_endg; // update count of elements written
 
 if(1==0){
     printf("interior cnn %d, %ld, %ld \n", part, e_start, e_end);
@@ -553,40 +546,38 @@ if(1==0){
     if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nIelVec))
         cgp_error_exit();
   } // end of loop over interior blocks
-
-
-  if(o.writeCGNSFiles > 2) {
-    cgsize_t eVolElm=e_written;
+}
+void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int* endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int nblkb)
+{
+//  if(o.writeCGNSFiles > 2) {
+    int E,Fsb,Fsb2;
+    const int num_parts = PCU_Comm_Peers();
+    const cgsize_t num_parts_cg=num_parts;
+    const int part = PCU_Comm_Self() ;
+    const cgsize_t part_cg=part;
+    cgsize_t e_owned, e_start,e_end;
+    cgsize_t e_startg,e_endg;
+    cgsize_t eVolElm=*e_written;
     cgsize_t e_belWritten=0;
-    int totOnRankBel=0;
     int triCount=0;
     int quadCount=0;
-    int nblkb = o.blocks.boundary.getSize(); 
+    int totOnRankBel=0;
     for (int i = 0; i < nblkb; ++i) 
       totOnRankBel += o.blocks.boundary.nElements[i];
-    int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
-    int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
-    double** srfIDCen1 = new double*[nblkb];
-    double** srfIDCen2 = new double*[nblkb];
-    int* srfID1OnBlk = (int *)malloc( nblkb * sizeof(int));
-    int* srfID2OnBlk = (int *)malloc( nblkb * sizeof(int));
 
-    int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
-    int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
     for (int i = 0; i < o.blocks.boundary.getSize(); ++i) {
       BlockKey& k = o.blocks.boundary.keys[i];
-      params[0] = o.blocks.boundary.nElements[i];
-      e_owned = params[0];
+      e_owned = o.blocks.boundary.nElements[i];
       int nvert = o.blocks.boundary.keys[i].nBoundaryFaceEdges;
       cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
-      double* ecenx = (double *)malloc( e_owned * sizeof(double));
-      double* eceny = (double *)malloc( e_owned * sizeof(double));
-      double* ecenz = (double *)malloc( e_owned * sizeof(double));
-      getBoundaryConnectivityCGNS(o, i, e,ecenx,eceny,ecenz);
-      e_startg=1+e_written; // start for the elements of this topology
+      double* eCenx = (double *)malloc( e_owned * sizeof(double));
+      double* eCeny = (double *)malloc( e_owned * sizeof(double));
+      double* eCenz = (double *)malloc( e_owned * sizeof(double));
+      getBoundaryConnectivityCGNS(o, i, e,eCenx,eCeny,eCenz);
+      e_startg=1+*e_written; // start for the elements of this topology
       long safeArg=e_owned; // e_owned is cgsize_t which could be an 32 or 64 bit int
       cgsize_t  numBelTP = PCU_Add_Long(safeArg); // number of elements of this topology
-      e_endg=e_written + numBelTP; // end for the elements of this topology
+      e_endg=*e_written + numBelTP; // end for the elements of this topology
       if(nvert==3) triCount++;
       if(nvert==4) quadCount++;
       char Ename[7];
@@ -605,7 +596,7 @@ if(1==0){
       e_start=0;
       auto type = getMpiType( cgsize_t() );
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
-      e_start+=1+e_written; // my parts global element start 1-based
+      e_start+=1+*e_written; // my parts global element start 1-based
       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
       // write the element connectivity in parallel 
       if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
@@ -629,22 +620,22 @@ if(1==0){
       int j2=0;
       for (int ne=0; ne<e_owned; ++ne){
          if(srfID[e_belWritten+ne]==1){ 
-           srfIDCen1[i][j1++]=ecenx[ne];
-           srfIDCen1[i][j1++]=eceny[ne];
-           srfIDCen1[i][j1++]=ecenz[ne];
+           srfIDCen1[i][j1++]=eCenx[ne];
+           srfIDCen1[i][j1++]=eCeny[ne];
+           srfIDCen1[i][j1++]=eCenz[ne];
          }
          if(srfID[e_belWritten+ne]==2) {
-           srfIDCen2[i][j2++]=ecenx[ne];
-           srfIDCen2[i][j2++]=eceny[ne];
-           srfIDCen2[i][j2++]=ecenz[ne];
+           srfIDCen2[i][j2++]=eCenx[ne];
+           srfIDCen2[i][j2++]=eCeny[ne];
+           srfIDCen2[i][j2++]=eCenz[ne];
          }
       } 
-      free(ecenx); free(eceny); free(ecenz);
+      free(eCenx); free(eCeny); free(eCenz);
 if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icnt2, j1, j2, e_owned, srfID1OnBlk[i],srfID2OnBlk[i]);}
       for (int j = 0; j < (int) e_owned; ++j) srfIDidx[e_belWritten+j]=e_start+j;
       startBelBlk[i]=e_start; // provides start point for each block in srfID
       endBelBlk[i]=e_end; // provides end point for each block in srfID
-      e_written=e_endg;
+      *e_written=e_endg;
       e_belWritten+=e_owned; // this is tracking written by this rank as we unpack srfID later
       char UserDataName[12]; snprintf(UserDataName, 13, "n%sOnRank", Ename);
       if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
@@ -656,15 +647,25 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
       if (cgp_array_write_data(Fsb2, &partP1, &partP1, &e_owned))
           cgp_error_exit();
     }
+    *totBel = *e_written-eVolElm;
+}
+void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int nblkb)
+{
 // srfID is for ALL Boundary faces
-    cgsize_t  totBel = e_written-eVolElm;
+    const int num_parts = PCU_Comm_Peers();
+    const cgsize_t num_parts_cg=num_parts;
+    const int part = PCU_Comm_Self() ;
+    const cgsize_t part_cg=part;
+    cgsize_t e_owned, e_start,e_end;
+    int Fsb;
+    cgsize_t  eVolElm = *e_written-*totBel;
     // setup User Data for boundary faces 
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
          cg_gorel(F, "User Data", 0, NULL) ||
-         cgp_array_write("srfID", CG_Integer, 1,&totBel, &Fsb)) 
+         cgp_array_write("srfID", CG_Integer, 1,totBel, &Fsb)) 
          cgp_error_exit();
     // write the user data for this process 
-    e_written=0; //recycling  eVolElm holds 
+    *e_written=0; //recycling  eVolElm holds 
     for (int i = 0; i < nblkb; ++i) {
       int e_startB=startBelBlk[i]-eVolElm-1; // srfID is only for bel....matches linear order with eVolElm offset from 
                                        // bel# that starts from last volume element
@@ -672,13 +673,13 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
       e_start=0;
       auto type = getMpiType( cgsize_t() );
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
-      e_start+=1+e_written; // my parts global element start 1-based
+      e_start+=1+*e_written; // my parts global element start 1-based
       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
       printf("Bndy %s, %ld, %ld, %ld, %d, %d, %d \n", "srfID", e_start, e_end, e_owned, i, part,Fsb);
       if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
         cgp_error_exit();
       long safeArg=e_owned; // is cgsize_t which could be an 32 or 64 bit int
-      e_written += PCU_Add_Long(safeArg); // number of elements of this topology
+      *e_written += PCU_Add_Long(safeArg); // number of elements of this topology
     }
 // stack  connectivities on rank before gather (should preserve order)
     int* rcounts = (int *)malloc( num_parts * sizeof(int));
@@ -695,10 +696,6 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
       for (int j = 0; j < srfID1OnBlk[i]*3; ++j) srfIDCen1AllBlocks[k1++]=srfIDCen1[i][j];
       for (int j = 0; j < srfID2OnBlk[i]*3; ++j) srfIDCen2AllBlocks[k2++]=srfIDCen2[i][j];
     }
-    free(srfID1OnBlk); free(srfID2OnBlk);
-    for (int i = 0; i < nblkb; ++i) delete [] srfIDCen1[i];
-    for (int i = 0; i < nblkb; ++i) delete [] srfIDCen2[i];
-    delete [] srfIDCen1; delete [] srfIDCen2;
     int ncon=numsurfID1onRank*3;
     auto type_i = getMpiType( int() );
     MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
@@ -707,9 +704,9 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
 if(1==0){ printf("displs1 %d ",part);for(int ip=0; ip< num_parts; ++ip) printf("% ld ", displs[ip]); printf("\n"); }
     int GsrfID1cnt=displs[num_parts-1]+rcounts[num_parts-1];
 if(1==0){    printf("Stack1 %d %d, %d, %d, %d, %d\n",part, GsrfID1cnt, ncon, nblkb, numsurfID1onRank, numsurfID2onRank);}
-    double* srfID1Gcen = (double *)malloc( GsrfID1cnt * sizeof(double));
+    double* srfID1GCen = (double *)malloc( GsrfID1cnt * sizeof(double));
     auto type_d = getMpiType( double() );
-    MPI_Allgatherv(srfIDCen1AllBlocks,ncon,type_d,srfID1Gcen,rcounts,displs,type_d,MPI_COMM_WORLD);
+    MPI_Allgatherv(srfIDCen1AllBlocks,ncon,type_d,srfID1GCen,rcounts,displs,type_d,MPI_COMM_WORLD);
 // srfID=2 repeats
     ncon=numsurfID2onRank*3;
     MPI_Allgather(&ncon,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
@@ -720,16 +717,16 @@ if(1==0){ printf("displs2 %d ",part);for(int ip=0; ip< num_parts; ++ip) printf("
 if(1==0){     printf("Stack2 %d %d, %d, %d, %d, %d\n",part, GsrfID2cnt, ncon, nblkb, numsurfID1onRank, numsurfID2onRank);}
     assert(GsrfID1cnt==GsrfID2cnt);
     int nmatchFace=GsrfID1cnt/3;
-    double* srfID2Gcen = (double *)malloc( GsrfID2cnt * sizeof(double));
-    MPI_Allgatherv(srfIDCen2AllBlocks,ncon,type_d,srfID2Gcen,rcounts,displs,type_d,MPI_COMM_WORLD);
-    const  float  Lz=abs(srfID2Gcen[2]-srfID1Gcen[2]);
-if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1Gcen[ip*3+0]); printf("\n"); }
-if(1==0){  printf("%d part srfID 1 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1Gcen[ip*3+1]); printf("\n"); }
-if(1==0){  printf("%d part srfID 1 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1Gcen[ip*3+2]); printf("\n"); }
+    double* srfID2GCen = (double *)malloc( GsrfID2cnt * sizeof(double));
+    MPI_Allgatherv(srfIDCen2AllBlocks,ncon,type_d,srfID2GCen,rcounts,displs,type_d,MPI_COMM_WORLD);
+    const  float  Lz=abs(srfID2GCen[2]-srfID1GCen[2]);
+if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+0]); printf("\n"); }
+if(1==0){  printf("%d part srfID 1 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+1]); printf("\n"); }
+if(1==0){  printf("%d part srfID 1 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+2]); printf("\n"); }
        PCU_Barrier();
-if(1==0){  printf("%d part srfID 2 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2Gcen[ip*3+0]); printf("\n"); }
-if(1==0){  printf("%d part srfID 2 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2Gcen[ip*3+1]); printf("\n"); }
-if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2Gcen[ip*3+2]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+0]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+1]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+2]); printf("\n"); }
     free(srfIDCen1AllBlocks); free(srfIDCen2AllBlocks);
     double* srfID1distSq = (double *)malloc( nmatchFace * sizeof(double));
     double* srfID2distSq = (double *)malloc( nmatchFace * sizeof(double));
@@ -738,12 +735,12 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
     int* imapD2v = (int *)malloc( nmatchFace * sizeof(int));
     double xc=10; // true cubes with uniform meshes set up ties  (good for debugging/verifying that dumb search backup works)
     for (int i = 0; i < nmatchFace; ++i) {
-      srfID1distSq[i]=(srfID1Gcen[i*3+0]-xc)*(srfID1Gcen[i*3+0]-xc) 
-                   +srfID1Gcen[i*3+1]*srfID1Gcen[i*3+1] 
-                   +srfID1Gcen[i*3+2]*srfID1Gcen[i*3+2]; 
-      srfID2distSq[i]=(srfID2Gcen[i*3+0]-xc)*(srfID2Gcen[i*3+0]-xc) 
-                   +srfID2Gcen[i*3+1]*srfID2Gcen[i*3+1] 
-                   +srfID2Gcen[i*3+2]*srfID2Gcen[i*3+2]; 
+      srfID1distSq[i]=(srfID1GCen[i*3+0]-xc)*(srfID1GCen[i*3+0]-xc) 
+                   +srfID1GCen[i*3+1]*srfID1GCen[i*3+1] 
+                   +srfID1GCen[i*3+2]*srfID1GCen[i*3+2]; 
+      srfID2distSq[i]=(srfID2GCen[i*3+0]-xc)*(srfID2GCen[i*3+0]-xc) 
+                   +srfID2GCen[i*3+1]*srfID2GCen[i*3+1] 
+                   +srfID2GCen[i*3+2]*srfID2GCen[i*3+2]; 
       imapD1[i]=i;
       imapD2[i]=i;
     }
@@ -775,18 +772,18 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
     for (int i = 0; i < nmatchFace; ++i) {
         iclose1=imapD1[i];
         iclose2=imapD2[i];
-        d1=srfID1Gcen[(iclose1)*3+0]-srfID2Gcen[(iclose2)*3+0];
-        d2=srfID1Gcen[(iclose1)*3+1]-srfID2Gcen[(iclose2)*3+1];
+        d1=srfID1GCen[(iclose1)*3+0]-srfID2GCen[(iclose2)*3+0];
+        d2=srfID1GCen[(iclose1)*3+1]-srfID2GCen[(iclose2)*3+1];
         vDistSq= d1*d1+d2*d2;
         if(vDistSq < tol2) {
            imapD2v[i]=imapD2[i];
-        } else {// centroid for i-1 did not match-> search list srfID=2 list to find true match
+        } else {// Centroid for i-1 did not match-> search list srfID=2 list to find true match
           vDSmin=vDistSq;
           DistFails++;
           for (int j = 0; j < nmatchFace; ++j) {   // if this turns out to be taken a lot then it could be narrowed e.g. j=max(0,i-50), j< i+min(matchFace,i+50),
             iclose2=imapD2[j];
-            d1=srfID1Gcen[(iclose1)*3+0]-srfID2Gcen[(iclose2)*3+0];
-            d2=srfID1Gcen[(iclose1)*3+1]-srfID2Gcen[(iclose2)*3+1];
+            d1=srfID1GCen[(iclose1)*3+0]-srfID2GCen[(iclose2)*3+0];
+            d2=srfID1GCen[(iclose1)*3+1]-srfID2GCen[(iclose2)*3+1];
             vDistSq= d1*d1+d2*d2;
             if(vDistSq<vDSmin) {
               vDSmin=vDistSq;
@@ -803,16 +800,18 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
       printf(" imapD1 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD1[is]); printf("\n"); 
       printf(" srfID2dist GLOBAL "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
       printf(" imapD2 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD2[is]); printf("\n"); }
-    free(srfID1Gcen); free(srfID2Gcen);
+    free(srfID1GCen); free(srfID2GCen);
     free(srfID1distSq); free(srfID2distSq);
     free(imapD2v);
-
 // ZonalBC data 
-    int* srfIDG = (int *)malloc( totBel * sizeof(int));
-    int* srfIDGidx = (int *)malloc( totBel * sizeof(int));
+    int* srfIDG = (int *)malloc( *totBel * sizeof(int));
+    int* srfIDGidx = (int *)malloc( *totBel * sizeof(int));
     cgsize_t* donor2 = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
     cgsize_t* periodic1 = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
     auto type_cg = getMpiType( cgsize_t() );
+    int totOnRankBel=0;
+    for (int i = 0; i < nblkb; ++i) 
+      totOnRankBel += o.blocks.boundary.nElements[i];
     MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
     displs[0]=0;
     for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
@@ -821,23 +820,22 @@ if(0==1){ for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]); printf(
     MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
     free(rcounts); free(displs);
 if(0==1){ if(part==0) {
-    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
-    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
+    printf(" srfID GLOBAL    "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
     printf("rank %d ",part); printf(" srfID on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]); printf("\n");
     printf(" srfIDidx on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]); printf("\n"); }
-    free(srfID); free(srfIDidx); 
-//    pairsort(srfIDG,srfIDGidx,totBel);
-    pairDeal6sort(srfIDG,srfIDGidx,totBel);
+//    pairsort(srfIDG,srfIDGidx,*totBel);
+    pairDeal6sort(srfIDG,srfIDGidx,*totBel);
 if(1==0){ if(part==0) {
-    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
-    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
+    printf(" srfID GLOBAL    "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
 }
     int BC_scan=0;
-    cgsize_t* eBC = (cgsize_t *)malloc(totBel * sizeof(cgsize_t));
+    cgsize_t* eBC = (cgsize_t *)malloc(*totBel * sizeof(cgsize_t));
     for (int BCid = 1; BCid < 7; BCid++) {
       int imatch=0;
 // valgrind likes this?
-      for (int ib = BC_scan; ib < totBel; ib++) {
+      for (int ib = BC_scan; ib < *totBel; ib++) {
         if(srfIDG[ib]==BCid){
           eBC[imatch]=srfIDGidx[BC_scan];
           BC_scan++;
@@ -846,7 +844,7 @@ if(1==0){ if(part==0) {
       }
  
 /* works but valgrind no likey
-      while (srfIDG[BC_scan]==BCid&&BC_scan<totBel) {
+      while (srfIDG[BC_scan]==BCid&&BC_scan<*totBel) {
         eBC[imatch]=srfIDGidx[BC_scan];
         BC_scan++;
         imatch++;
@@ -886,8 +884,7 @@ if(0==1) {
     if (cg_conn_periodic_write(F, B, Z, cgconn, RotationCenter, RotationAngle, Translation)) cgp_error_exit();
     free(imapD1); free(imapD2);
     free(eBC); free(srfIDG); free(srfIDGidx);
-  } // processing boundary elments
-}
+} 
 
 void writeCGNS(Output& o, std::string path)
 {
@@ -988,38 +985,6 @@ if(0==1) {
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
   free (x);
-/* abort....matcched mesh was needed but this breaks our approach to building ncorp
-  cgsize_t* gizmin = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t));
-  cgsize_t* gizmax = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t));
-  double zmin=-0.5;
-  double zmax=65;
-  double eps=1e-3;
-  double z;
-  for (int inode = 0; inode < num_nodes; ++inode){
-      gnod=o.arrays.ncorp[inode];
-      z= o.arrays.coordinates[2*num_nodes+inode];
-      if( abs(z-zmin) < eps) {
-         gizmin[inode]=gnod;
-         gizmax[inode]=-1*(part+1);
-      } else if(abs(zmax-z)<eps){
-         gizmax[inode]=gnod;
-         gizmin[inode]=-1*(part+1);
-      } else {
-         gizmin[inode]=-1*(part+1);
-         gizmax[inode]=-1*(part+1);
-      }
-  }
-if(1==1) {
-      printf(" gizmin bc on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmin[is]); printf("\n");
-      printf(" gizmax bc on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmax[is]); printf("\n");
-}
-  commuInt(o, gizmax);
-  commuInt(o, gizmin);
-if(1==1) {
-      printf(" gizmin ac on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmin[is]); printf("\n");
-      printf(" gizmax ac on part %d ",part); for(int is=0; is< num_nodes; ++is)  printf("%d ", gizmax[is]); printf("\n");
-}
- */ 
   // create a nodal solution 
   char fieldName[12];
   snprintf(fieldName, 13, "solution");
@@ -1069,12 +1034,7 @@ if(1==1) {
       cgp_error_exit();
   if (cgp_field_write_data(F, B, Z, Sp, FT, &start, &end, T))
       cgp_error_exit();
-  free(p);
-  free(u);
-  free(v);
-  free(w);
-  free(T);
-  free(data);
+  free(p); free(u); free(v); free(w); free(T); free(data);
   // create Helper array for number of elements on rank 
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
        cg_user_data_write("User Data") ||
@@ -1087,8 +1047,31 @@ if(1==1) {
   printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
   if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nCoordVec))
        cgp_error_exit();
-  if(o.writeCGNSFiles > 1) 
-  writeBlocksCGNS(F,B,Z, o);
+//  if(o.writeCGNSFiles > 1) 
+// got split into 4  writeBlocksCGNS(F,B,Z, o);
+  cgsize_t e_written=0; 
+  cgsize_t totBel;
+  writeBlocksCGNSinteror(F,B,Z,o,&e_written);
+  int nblkb = o.blocks.boundary.getSize(); 
+  double** srfIDCen1 = new double*[nblkb];
+  double** srfIDCen2 = new double*[nblkb];
+  int totOnRankBel=0;
+  for (int i = 0; i < nblkb; ++i) 
+    totOnRankBel += o.blocks.boundary.nElements[i];
+  int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
+  int* srfID1OnBlk = (int *)malloc( nblkb * sizeof(int));
+  int* srfID2OnBlk = (int *)malloc( nblkb * sizeof(int));
+  int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
+  int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
+  int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
+  writeBlocksCGNSboundary(F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, &totBel, nblkb);
+  writeCGNSboundary      (F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, &totBel, nblkb);
+  free(srfID); free(srfIDidx);
+  free(srfID1OnBlk); free(srfID2OnBlk);
+  free(startBelBlk); free(endBelBlk);
+  for (int i = 0; i < nblkb; ++i) delete [] srfIDCen1[i];
+  for (int i = 0; i < nblkb; ++i) delete [] srfIDCen2[i];
+  delete [] srfIDCen1; delete [] srfIDCen2;
   if(cgp_close(F)) cgp_error_exit();
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())
