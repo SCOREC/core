@@ -48,7 +48,7 @@ MPI_Datatype getMpiType(T) {
 
 // https://www.geeksforgeeks.org/sorting-array-according-another-array-using-pair-stl/
 // Sort an array according to
-// other using pair in STL.
+// other using pair in STL.  Modified to be real-int pair (for distance matching) and in a separate routine, two integers (for idx sort by surfID)  
 #include <bits/stdc++.h>
 using namespace std;
  
@@ -649,7 +649,7 @@ if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
     }
     *totBel = *e_written-eVolElm;
 }
-void writeCGNS_UserData(int F,int B, int* srfID,  int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, cgsize_t *eVolElm, int nblkb)
+void writeCGNS_UserData_srfID(int F,int B, int* srfID,  int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, cgsize_t *eVolElm, int nblkb)
 {
     cgsize_t e_owned, e_start,e_end;
     int Fsb;
@@ -660,7 +660,7 @@ void writeCGNS_UserData(int F,int B, int* srfID,  int* startBelBlk, int *endBelB
          cgp_error_exit();
     // write the user data for this process 
     for (int i = 0; i < nblkb; ++i) {
-      int e_startB=startBelBlk[i]-*eVolElm-1; // srfID is only for bel....matches linear order with eVolElm offset from 
+      int e_startB=0; //startBelBlk[i]-*eVolElm-1; // srfID is only for bel....matches linear order with eVolElm offset from 
                                        // bel# that starts from last volume element
       e_owned=endBelBlk[i]-startBelBlk[i]+1;
       e_start=0;
@@ -668,7 +668,7 @@ void writeCGNS_UserData(int F,int B, int* srfID,  int* startBelBlk, int *endBelB
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
       e_start+=1+*e_written; // my parts global element start 1-based
       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
-      printf("Bndy %s, %ld, %ld, %ld,  %d, %d \n", "srfID", e_start, e_end, e_owned, i, Fsb);
+      printf("BndyUserData %s, %ld, %ld, %ld,  %d, %d %d \n", "srfID", e_start, e_end, e_owned, i, e_startB,*totBel);
       if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
         cgp_error_exit();
       long safeArg=e_owned; // is cgsize_t which could be an 32 or 64 bit int
@@ -701,8 +701,8 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
       printf(" srfID2dist GLOBAL B "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
       printf(" imapD2 GLOBAL B     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD2[is]); printf("\n"); }
     }
-    pairsortDI(srfID1distSq,imapD1,nmatchFace);
-    pairsortDI(srfID2distSq,imapD2,nmatchFace);
+    pairsortDI(srfID1distSq,imapD1,nmatchFace); // imapD1 puts elements with srfID=1 in order of increasing disatnce from pt 10, 0 0 
+    pairsortDI(srfID2distSq,imapD2,nmatchFace); // imapD1 puts elements with srfID=2 in order of increasing disatnce from pt 10, 0 0 
 
     if(1==0){ if(part==0) {
       printf(" srfID1dist GLOBAL "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
@@ -713,7 +713,6 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
       printf(" imapD2 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD2[is]); printf("\n"); }
     }
 
-    double tol=1.0e-12;
     double tol2=1.0e-14;
     int jclosest, iclose1, iclose2;
     double d1,d2,vDistSq,vDSmin;
@@ -726,7 +725,7 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
         vDistSq= d1*d1+d2*d2;
         if(vDistSq < tol2) {
            imapD2v[i]=imapD2[i];
-        } else {// Centroid for i-1 did not match-> search list srfID=2 list to find true match
+        } else {// Centroid for i did not match-> search list srfID=2 list to find true match
           vDSmin=vDistSq;
           DistFails++;
           for (int j = 0; j < nmatchFace; ++j) {   // if this turns out to be taken a lot then it could be narrowed e.g. j=max(0,i-50), j< i+min(matchFace,i+50),
@@ -737,8 +736,10 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
             if(vDistSq<vDSmin) {
               vDSmin=vDistSq;
               jclosest=j;
+              if(vDistSq<tol2) break;
             } 
           }
+          assert(vDistSq<tol2);
           imapD2v[i]=imapD2[jclosest];
         } 
     } 
@@ -752,7 +753,7 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
     free(srfID1distSq); free(srfID2distSq);
     free(imapD2v);
 }
-void gatherCentroid(double** srfIDCen,int* srfIDOnBlk, double** srfIDGCen, int *nmatchFace, int nblkb)
+void AllgatherCentroid(double** srfIDCen,int* srfIDOnBlk, double** srfIDGCen, int *nmatchFace, int nblkb)
 {
 // stack  connectivities on rank before gather (should preserve order)
     const int num_parts = PCU_Comm_Peers();
@@ -777,7 +778,36 @@ if(1==0){ printf("displs1 ");for(int ip=0; ip< num_parts; ++ip) printf("% ld ", 
     MPI_Allgatherv(srfIDCenAllBlocks,ncon,type_d,*srfIDGCen,rcounts,displs,type_d,MPI_COMM_WORLD);
     free(srfIDCenAllBlocks); 
 }
-
+void Allgather2IntAndSort(int* srfID, int* srfIDidx,Output& o,int* srfIDG, int* srfIDGidx, int nblkb)
+{
+    const int num_parts = PCU_Comm_Peers();
+    const int part = PCU_Comm_Self() ;
+    const cgsize_t part_cg=part;
+    int* rcounts = (int *)malloc( num_parts * sizeof(int));
+    int* displs = (int *)malloc( num_parts * sizeof(int));
+    int totOnRankBel=0;
+    for (int i = 0; i < nblkb; ++i) 
+      totOnRankBel += o.blocks.boundary.nElements[i];
+    auto type_i = getMpiType( int() );
+    MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
+    displs[0]=0;
+    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
+    int totBel=displs[num_parts-1]+rcounts[num_parts-1];
+if(0==1){ for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]); printf("\n"); }
+    MPI_Allgatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,MPI_COMM_WORLD);
+    MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
+    free(rcounts); free(displs);
+if(0==1){ if(part==0) {
+    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
+    printf("rank %d ",part); printf(" srfID on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]); printf("\n");
+    printf(" srfIDidx on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]); printf("\n"); }
+//    pairsort(srfIDG,srfIDGidx,totBel);
+    pairDeal6sort(srfIDG,srfIDGidx,totBel);
+if(1==0){ if(part==0) {
+    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); } }
+}
 void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int nblkb)
 {
 // srfID is for ALL Boundary faces
@@ -791,12 +821,12 @@ void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, 
     int Fsb;
     cgsize_t  eVolElm = *e_written-*totBel;
     *e_written=0; //recycling  eVolElm holds 
-    writeCGNS_UserData(F,B, srfID,  startBelBlk, endBelBlk, e_written, totBel, &eVolElm, nblkb);
+    writeCGNS_UserData_srfID(F,B, srfID,  startBelBlk, endBelBlk, e_written, totBel, &eVolElm, nblkb);
     double* srfID1GCen; 
     double* srfID2GCen; 
     int nmatchFace1,nmatchFace;
-    gatherCentroid(srfIDCen1,srfID1OnBlk,&srfID1GCen,&nmatchFace1, nblkb);
-    gatherCentroid(srfIDCen2,srfID2OnBlk,&srfID2GCen,&nmatchFace, nblkb);
+    AllgatherCentroid(srfIDCen1,srfID1OnBlk,&srfID1GCen,&nmatchFace1, nblkb);
+    AllgatherCentroid(srfIDCen2,srfID2OnBlk,&srfID2GCen,&nmatchFace, nblkb);
     assert(nmatchFace1==nmatchFace);
     const  float  Lz=abs(srfID2GCen[2]-srfID1GCen[2]);
 if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+0]); printf("\n"); }
@@ -815,29 +845,7 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
     int* srfIDGidx = (int *)malloc( *totBel * sizeof(int));
     cgsize_t* donor2 = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
     cgsize_t* periodic1 = (cgsize_t *)malloc(nmatchFace * sizeof(cgsize_t));
-    auto type_cg = getMpiType( cgsize_t() );
-    int totOnRankBel=0;
-    for (int i = 0; i < nblkb; ++i) 
-      totOnRankBel += o.blocks.boundary.nElements[i];
-    auto type_i = getMpiType( int() );
-    MPI_Allgather(&totOnRankBel,1,type_i,rcounts,1,type_i,MPI_COMM_WORLD);
-    displs[0]=0;
-    for (int i = 1; i < num_parts; ++i) displs[i]=displs[i-1]+rcounts[i-1]; 
-if(0==1){ for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]); printf("\n"); }
-    MPI_Allgatherv(srfID,totOnRankBel,type_i,srfIDG,rcounts,displs,type_i,MPI_COMM_WORLD);
-    MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
-    free(rcounts); free(displs);
-if(0==1){ if(part==0) {
-    printf(" srfID GLOBAL    "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
-    printf(" srfIDidx GLOBAL "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
-    printf("rank %d ",part); printf(" srfID on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]); printf("\n");
-    printf(" srfIDidx on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]); printf("\n"); }
-//    pairsort(srfIDG,srfIDGidx,*totBel);
-    pairDeal6sort(srfIDG,srfIDGidx,*totBel);
-if(1==0){ if(part==0) {
-    printf(" srfID GLOBAL    "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
-    printf(" srfIDidx GLOBAL "); for(int is=0; is< *totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
-}
+    Allgather2IntAndSort(srfID, srfIDidx,o,srfIDG, srfIDGidx,nblkb);
     int BC_scan=0;
     cgsize_t* eBC = (cgsize_t *)malloc(*totBel * sizeof(cgsize_t));
     for (int BCid = 1; BCid < 7; BCid++) {
@@ -941,7 +949,40 @@ void CGNS_NodalSolution(int F,int B,int Z, Output& o)
       cgp_error_exit();
   free(p); free(u); free(v); free(w); free(T); free(data);
 }
+void CGNS_Coordinates(int F,int B,int Z,Output& o)
+{
+   int Cx,Cy,Cz;
+  if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
+      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateY", &Cy) ||
+      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateZ", &Cz))
+      cgp_error_exit();
 
+// condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.
+  int num_nodes=o.mesh->count(0);
+  cgsize_t gnod;
+  cgsize_t start=o.local_start_id;
+  cgsize_t end=start+o.iownnodes-1;
+  double* x = (double *)malloc(o.iownnodes * sizeof(double));
+  for (int j = 0; j < 3; ++j) {
+    int icount=0;
+    for (int inode = 0; inode < num_nodes; ++inode){
+      gnod=o.arrays.ncorp[inode];
+      if(gnod >= start && gnod <= end) { // coordinate to write
+         x[icount]= o.arrays.coordinates[j*num_nodes+inode];
+         icount++;
+      }
+    }
+if(0==1) {
+    printf("%ld, %ld \n", start, end);
+    for (int ne=0; ne<num_nodes; ++ne)
+	printf("%d, %f \n", (ne+1), x[ne]);
+}
+    if(j==0) if(cgp_coord_write_data(F, B, Z, Cx, &start, &end, x)) cgp_error_exit();
+    if(j==1) if(cgp_coord_write_data(F, B, Z, Cy, &start, &end, x)) cgp_error_exit();
+    if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
+  }
+  free (x);
+}
 void writeCGNS(Output& o, std::string path)
 {
   double t0 = PCU_Time();
@@ -949,14 +990,11 @@ void writeCGNS(Output& o, std::string path)
   const int num_parts = PCU_Comm_Peers();
   const int part = PCU_Comm_Self() ;
   const cgsize_t  num_parts_cg=num_parts;
-
   std::string timestep_or_dat;
   static char outfile[] = "chefOut.cgns";
   int  F, B, Z, E, S, Fs, Fs2, A, Cx, Cy, Cz;
   cgsize_t sizes[3],*e, start, end;
-
   int num_nodes=m->count(0);
-
 if(1==0){  // ilwork debugging
     for (int ipart=0; ipart<num_parts; ++ipart){
         if(part==ipart) { // my turn
@@ -988,14 +1026,12 @@ if(1==0){
        PCU_Barrier();
      }
 }
-
 // copied gen_ncorp from PHASTA to help map on-rank numbering to CGNS/PETSC friendly global numbering
   gen_ncorp( o );
 //  o carries
 //     o.arrays.ncorp[on-rank-node-number(0-based)] => PETSc global node number (1-based)
 //     o.iownnodes => nodes owned by this rank
 //     o.local_start_id => this rank's first node number (1-based and also which must be a long long int)
-
   long safeArg=o.iownnodes; // cgsize_t could be an int
   sizes[0]=PCU_Add_Long(safeArg);
   int ncells=m->count(m->getDimension()); // this ranks number of elements
@@ -1009,36 +1045,7 @@ if(1==0){
        cgp_error_exit();
     // create data nodes for coordinates 
   cg_set_file_type(CG_FILE_HDF5);
-
-  if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
-      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateY", &Cy) ||
-      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateZ", &Cz))
-      cgp_error_exit();
-
-// condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.
-  cgsize_t gnod;
-  start=o.local_start_id;
-  end=start+o.iownnodes-1;
-  double* x = (double *)malloc(o.iownnodes * sizeof(double));
-  for (int j = 0; j < 3; ++j) {
-    int icount=0;
-    for (int inode = 0; inode < num_nodes; ++inode){
-      gnod=o.arrays.ncorp[inode];
-      if(gnod >= start && gnod <= end) { // coordinate to write
-         x[icount]= o.arrays.coordinates[j*num_nodes+inode];
-         icount++;
-      }
-    }
-if(0==1) {
-    printf("%ld, %ld \n", start, end);
-    for (int ne=0; ne<num_nodes; ++ne)
-	printf("%d, %f \n", (ne+1), x[ne]);
-}
-    if(j==0) if(cgp_coord_write_data(F, B, Z, Cx, &start, &end, x)) cgp_error_exit();
-    if(j==1) if(cgp_coord_write_data(F, B, Z, Cy, &start, &end, x)) cgp_error_exit();
-    if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
-  }
-  free (x);
+  CGNS_Coordinates(F,B,Z,o);
   CGNS_NodalSolution(F,B,Z,o);
   // create Helper array for number of elements on rank 
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
@@ -1052,7 +1059,6 @@ if(0==1) {
   printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
   if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nCoordVec))
        cgp_error_exit();
-
   cgsize_t e_written=0; 
   cgsize_t totBel;
   writeBlocksCGNSinteror(F,B,Z,o,&e_written);
