@@ -730,7 +730,6 @@ int main(int argc, char** argv)
           "<ascii vertex fathers2D flag .fathers2D> "
           "<ascii solution flag .soln> "
           "<ascii conn header see MGEN for format if using Matlab> "
-          "<output model .dmg> <output mesh .smb>"
           "turn off verify mesh if equal 1 (on if you give nothing)\n",
           argv[0]);
     }
@@ -740,14 +739,14 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  if( argc == 11 ) noVerify=atoi(argv[10]);
+  if( argc == 11 ) noVerify=atoi(argv[9]);
 
   double t0 = PCU_Time();
   MeshInfo m;
   readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m);
 
   bool isMatched = true;
-  if( !strcmp(argv[3], "NULL") )
+  if( !strcmp(argv[4], "NULL") )
     isMatched = false;
 
   if(!PCU_Comm_Self())
@@ -795,7 +794,7 @@ int main(int argc, char** argv)
 
   outMap.clear();
   apf::writeVtkFiles("rendered",mesh);
-  mesh->writeNative(argv[10]);
+  mesh->writeNative(argv[9]);
   if(noVerify != 1) mesh->verify();
 
   mesh->destroyNative();
