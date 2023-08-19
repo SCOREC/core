@@ -23,6 +23,8 @@
 #endif
 typedef int lcorp_t;
 #define NCORP_MPI_T MPI_INTEGER
+extern cgsize_t nDbgCG=50;
+extern int nDbgI=50;
 
 namespace  {
 
@@ -56,7 +58,7 @@ using namespace std;
 // according to the order defined by a[]
 void pairsortDI(double a[], int b[], int n)
 {
-    pair<double, int> pairt[n];
+       pair<double, int> *pairt = new pair<double, int>[n];  // when done    delete pairt;
  
     // Storing the respective array
     // elements in pairs.
@@ -75,13 +77,14 @@ void pairsortDI(double a[], int b[], int n)
         a[i] = pairt[i].first;
         b[i] = pairt[i].second;
     }
+    delete pairt;
 }
 
 // Function to sort integer array b[]
 // according to the order defined by a[]
 void pairsort(int a[], int b[], int n)
 {
-    pair<int, int> pairt[n];
+    pair<double, int> *pairt = new pair<double, int>[n];
  
     // Storing the respective array
     // elements in pairs.
@@ -100,6 +103,7 @@ void pairsort(int a[], int b[], int n)
         a[i] = pairt[i].first;
         b[i] = pairt[i].second;
     }
+    delete pairt;
 }
 void pairDeal6sort(int a[], int b[], int n)
 {
@@ -515,7 +519,7 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
 
 if(1==0){
     printf("interior cnn %d, %ld, %ld \n", part, e_start, e_end);
-    for (int ne=0; ne<e_owned; ++ne) {
+    for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) {
       printf("%d, %d ", part,(ne+1));
       for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
       printf("\n");
@@ -603,7 +607,7 @@ void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfI
           cgp_error_exit();
       printf("boundary cnn %d, %ld, %ld \n", part, e_start, e_end);
 if(1==0){
-    for (int ne=0; ne<e_owned; ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
+    for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
 }
       getNaturalBCCodesCGNS(o, i, &srfID[e_belWritten]);
       int icnt1=0;
@@ -631,7 +635,7 @@ if(1==0){
          }
       } 
       free(eCenx); free(eCeny); free(eCenz);
-if(1==0){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icnt2, j1, j2, e_owned, srfID1OnBlk[i],srfID2OnBlk[i]);}
+if(1==1){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icnt2, j1, j2, e_owned, srfID1OnBlk[i],srfID2OnBlk[i]);}
       for (int j = 0; j < (int) e_owned; ++j) srfIDidx[e_belWritten+j]=e_start+j;
       startBelBlk[i]=e_start; // provides start point for each block in srfID
       endBelBlk[i]=e_end; // provides end point for each block in srfID
@@ -682,35 +686,35 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
     double* srfID1distSq = (double *)malloc( nmatchFace * sizeof(double));
     double* srfID2distSq = (double *)malloc( nmatchFace * sizeof(double));
     const int part = PCU_Comm_Self() ;
-    double xc=10; // true cubes with uniform meshes set up ties  (good for debugging/verifying that dumb search backup works)
+    double xc=0.1; // true cubes with uniform meshes and other symmetries set up ties  (good for debugging/verifying that dumb search backup works)
     for (int i = 0; i < nmatchFace; ++i) {
       srfID1distSq[i]=(srfID1GCen[i*3+0]-xc)*(srfID1GCen[i*3+0]-xc) 
                    +srfID1GCen[i*3+1]*srfID1GCen[i*3+1] 
-                   +srfID1GCen[i*3+2]*srfID1GCen[i*3+2]; 
+                   +srfID1GCen[i*3+2]*srfID1GCen[i*3+2]; // periodicity always in Z then could be omitted
       srfID2distSq[i]=(srfID2GCen[i*3+0]-xc)*(srfID2GCen[i*3+0]-xc) 
                    +srfID2GCen[i*3+1]*srfID2GCen[i*3+1] 
-                   +srfID2GCen[i*3+2]*srfID2GCen[i*3+2]; 
+                   +srfID2GCen[i*3+2]*srfID2GCen[i*3+2]; // periodicity always in Z then could be omitted
       imapD1[i]=i;
       imapD2[i]=i;
     }
     if(1==0){ if(part==0) {
-      printf(" srfID1dist GLOBAL B "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
-      printf(" imapD1 GLOBAL B     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD1[is]); printf("\n"); }
+      printf(" srfID1dist GLOBAL B "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
+      printf(" imapD1 GLOBAL B     "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", imapD1[is]); printf("\n"); }
     }
     if(1==0){ if(part==0) {
-      printf(" srfID2dist GLOBAL B "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
-      printf(" imapD2 GLOBAL B     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD2[is]); printf("\n"); }
+      printf(" srfID2dist GLOBAL B "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
+      printf(" imapD2 GLOBAL B     "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", imapD2[is]); printf("\n"); }
     }
-    pairsortDI(srfID1distSq,imapD1,nmatchFace); // imapD1 puts elements with srfID=1 in order of increasing disatnce from pt 10, 0 0 
-    pairsortDI(srfID2distSq,imapD2,nmatchFace); // imapD1 puts elements with srfID=2 in order of increasing disatnce from pt 10, 0 0 
+    pairsortDI(srfID1distSq,imapD1,nmatchFace); // imapD1 puts elements with srfID=1 in order of increasing distance from pt 0.1, 0 0 
+    pairsortDI(srfID2distSq,imapD2,nmatchFace); // imapD1 puts elements with srfID=2 in order of increasing distance from pt 0.1, 0 0 
 
     if(1==0){ if(part==0) {
-      printf(" srfID1dist GLOBAL "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
-      printf(" imapD1 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD1[is]); printf("\n"); }
+      printf(" srfID1dist GLOBAL "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
+      printf(" imapD1 GLOBAL     "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", imapD1[is]); printf("\n"); }
     }
     if(1==0){ if(part==0) {
-      printf(" srfID2dist GLOBAL "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
-      printf(" imapD2 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD2[is]); printf("\n"); }
+      printf(" srfID2dist GLOBAL "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
+      printf(" imapD2 GLOBAL     "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", imapD2[is]); printf("\n"); }
     }
 
     double tol2=1.0e-14;
@@ -746,10 +750,10 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
     for (int i = 0; i < nmatchFace; ++i) imapD2[i]=imapD2v[i];
     if(1==1&&part==0) {
       printf("Number of Distance Failures=%d\n ",DistFails);
-      printf(" srfID1dist GLOBAL "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
-      printf(" imapD1 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD1[is]); printf("\n"); 
-      printf(" srfID2dist GLOBAL "); for(int is=0; is< nmatchFace; ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
-      printf(" imapD2 GLOBAL     "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", imapD2[is]); printf("\n"); }
+      printf(" srfID1dist GLOBAL "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
+      printf(" imapD1 GLOBAL     "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", imapD1[is]); printf("\n"); 
+      printf(" srfID2dist GLOBAL "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%f ", srfID2distSq[is]); printf("\n");
+      printf(" imapD2 GLOBAL     "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", imapD2[is]); printf("\n"); }
     free(srfID1distSq); free(srfID2distSq);
     free(imapD2v);
 }
@@ -798,15 +802,15 @@ if(0==1){ for(int ip=0; ip< num_parts; ++ip) printf("%ld ", displs[ip]); printf(
     MPI_Allgatherv(srfIDidx,totOnRankBel,type_i,srfIDGidx,rcounts,displs,type_i,MPI_COMM_WORLD);
     free(rcounts); free(displs);
 if(0==1){ if(part==0) {
-    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
-    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
-    printf("rank %d ",part); printf(" srfID on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfID[is]); printf("\n");
-    printf(" srfIDidx on Part "); for(int is=0; is< totOnRankBel; ++is)  printf("%d ", srfIDidx[is]); printf("\n"); }
+    printf(" srfID GLOBAL    "); for(int is=0; is< std::min(nDbgI,totBel); ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< std::min(nDbgI,totBel); ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); }
+    printf("rank %d ",part); printf(" srfID on Part "); for(int is=0; is< std::min(nDbgI,totOnRankBel); ++is)  printf("%d ", srfID[is]); printf("\n");
+    printf(" srfIDidx on Part "); for(int is=0; is< std::min(nDbgI,totOnRankBel); ++is)  printf("%d ", srfIDidx[is]); printf("\n"); }
 //    pairsort(srfIDG,srfIDGidx,totBel);
     pairDeal6sort(srfIDG,srfIDGidx,totBel);
 if(1==0){ if(part==0) {
-    printf(" srfID GLOBAL    "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDG[is]); printf("\n");
-    printf(" srfIDidx GLOBAL "); for(int is=0; is< totBel; ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); } }
+    printf(" srfID GLOBAL    "); for(int is=0; is< std::min(nDbgI,totBel); ++is)  printf("%d ", srfIDG[is]); printf("\n");
+    printf(" srfIDidx GLOBAL "); for(int is=0; is< std::min(nDbgI,totBel); ++is)  printf("%d ", srfIDGidx[is]); printf("\n"); } }
 }
 void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int nblkb)
 {
@@ -815,8 +819,6 @@ void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, 
     const cgsize_t num_parts_cg=num_parts;
     const int part = PCU_Comm_Self() ;
     const cgsize_t part_cg=part;
-    int* rcounts = (int *)malloc( num_parts * sizeof(int));
-    int* displs = (int *)malloc( num_parts * sizeof(int));
     cgsize_t e_owned, e_start,e_end;
     int Fsb;
     cgsize_t  eVolElm = *e_written-*totBel;
@@ -828,14 +830,15 @@ void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, 
     AllgatherCentroid(srfIDCen1,srfID1OnBlk,&srfID1GCen,&nmatchFace1, nblkb);
     AllgatherCentroid(srfIDCen2,srfID2OnBlk,&srfID2GCen,&nmatchFace, nblkb);
     assert(nmatchFace1==nmatchFace);
-    const  float  Lz=abs(srfID2GCen[2]-srfID1GCen[2]);
-if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+0]); printf("\n"); }
-if(1==0){  printf("%d part srfID 1 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+1]); printf("\n"); }
-if(1==0){  printf("%d part srfID 1 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID1GCen[ip*3+2]); printf("\n"); }
+//   compute the translation while we still have ordered centroids data  Assuming Translation = donor minus periodic but documents unclear
+    const float  Translation[3]={ (srfID2GCen[0]-srfID1GCen[0]), (srfID2GCen[1]-srfID1GCen[1]), (srfID2GCen[2]-srfID1GCen[2])};
+if(1==0){  printf("%d part srfID 1 xc ",part); for(int ip=0; ip< std::min(nDbgI,nmatchFace); ++ip) printf("%f ", srfID1GCen[ip*3+0]); printf("\n"); }
+if(1==0){  printf("%d part srfID 1 yc ",part); for(int ip=0; ip< std::min(nDbgI,nmatchFace); ++ip) printf("%f ", srfID1GCen[ip*3+1]); printf("\n"); }
+if(1==0){  printf("%d part srfID 1 zc ",part); for(int ip=0; ip< std::min(nDbgI,nmatchFace); ++ip) printf("%f ", srfID1GCen[ip*3+2]); printf("\n"); }
        PCU_Barrier();
-if(1==0){  printf("%d part srfID 2 xc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+0]); printf("\n"); }
-if(1==0){  printf("%d part srfID 2 yc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+1]); printf("\n"); }
-if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++ip) printf("%f ", srfID2GCen[ip*3+2]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 xc ",part); for(int ip=0; ip< std::min(nDbgI,nmatchFace); ++ip) printf("%f ", srfID2GCen[ip*3+0]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 yc ",part); for(int ip=0; ip< std::min(nDbgI,nmatchFace); ++ip) printf("%f ", srfID2GCen[ip*3+1]); printf("\n"); }
+if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< std::min(nDbgI,nmatchFace); ++ip) printf("%f ", srfID2GCen[ip*3+2]); printf("\n"); }
     int* imapD1 = (int *)malloc( nmatchFace * sizeof(int));
     int* imapD2 = (int *)malloc( nmatchFace * sizeof(int));
     sortID1andID2(srfID1GCen,srfID2GCen,nmatchFace, imapD1, imapD2);
@@ -861,15 +864,15 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< nmatchFace; ++i
       if(BCid==1) {
         for (int i = 0; i < nmatchFace; i++) periodic1[i]=eBC[imapD1[i]];
         for (int i = 0; i < nmatchFace; i++) eBC[i]=periodic1[i];
-if(1==1&&part==1){ printf(" srfIDidx 1 "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", eBC[is]); printf("\n"); }
+if(1==1&&part==1){ printf(" srfIDidx 1 "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", eBC[is]); printf("\n"); }
       }       
       if(BCid==2) {
         for (int i = 0; i < nmatchFace; i++) donor2[i]=eBC[imapD2[i]];
         for (int i = 0; i < nmatchFace; i++) eBC[i]=donor2[i];
-if(1==1&&part==1){ printf(" srfIDidx 2 "); for(int is=0; is< nmatchFace; ++is)  printf("%d ", eBC[is]); printf("\n"); }
+if(1==1&&part==1){ printf(" srfIDidx 2 "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", eBC[is]); printf("\n"); }
       }       
 if(0==1) {
-      printf(" srfID =%d    ",BCid); for(int is=0; is< imatch; ++is)  printf("%d ", eBC[is]); printf("\n");
+      printf(" srfID =%d    ",BCid); for(int is=0; is< std::min(nDbgI,imatch); ++is)  printf("%d ", eBC[is]); printf("\n");
 }
       int BC_index;
       char BC_name[33];
@@ -887,7 +890,6 @@ if(0==1) {
           CGNS_ENUMV(Integer), nmatchFace, donor2, &cgconn)) cgp_error_exit();
     const float  RotationCenter[3]={0};
     const float  RotationAngle[3]={0};
-    const float  Translation[3]={0,0,-Lz};
     if (cg_conn_periodic_write(F, B, Z, cgconn, RotationCenter, RotationAngle, Translation)) cgp_error_exit();
     free(imapD1); free(imapD2);
     free(eBC); free(srfIDG); free(srfIDGidx);
@@ -974,7 +976,7 @@ void CGNS_Coordinates(int F,int B,int Z,Output& o)
     }
 if(0==1) {
     printf("%ld, %ld \n", start, end);
-    for (int ne=0; ne<num_nodes; ++ne)
+    for (int ne=0; ne<std::min(icount,nDbgI); ++ne)
 	printf("%d, %f \n", (ne+1), x[ne]);
 }
     if(j==0) if(cgp_coord_write_data(F, B, Z, Cx, &start, &end, x)) cgp_error_exit();
@@ -1017,7 +1019,7 @@ if(1==0){
   for (int ipart=0; ipart<num_parts; ++ipart){
     if(part==part) { // my turn    
     printf("xyz %d, %d \n", part, num_nodes);
-    for (int inode = 0; inode < num_nodes; ++inode){
+    for (int inode = 0; inode < std::min(nDbgI,num_nodes); ++inode){
       printf("%d ",inode+1);
       for (int j=0; j<3; ++j) printf("%f ", o.arrays.coordinates[j*num_nodes+inode]);
       printf(" \n");
