@@ -473,9 +473,33 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
   if (cg_sol_write(F, B, Z, "RankOfWriter", CG_CellCenter, &S) ||
       cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
       cgp_error_exit();
-  for (int i = 0; i < o.blocks.interior.getSize(); ++i) {
+  int nblki= o.blocks.interior.getSize();
+  if(nblki==1) { // this part has only one toplogy
+    int nvert = o.blocks.interior.keys[0].nElementVertices;
+    if( nvert==4) {// need to make an empty wedge block
+        e_owned=0;
+ //       cgsize_t* e = (cgsize_t *)malloc(nvert * 1 * sizeof(cgsize_t));
+        e_startg=1+*e_written; // start for the elements of this topology
+        long safeArg=e_owned; // e_owned is cgsize_t which could be an 32 or 64 bit int
+        e_endg=*e_written + PCU_Add_Long(safeArg); // end for the elements of this topology
+        char Ename[5];
+        snprintf(Ename, 4, "Wdg");
+        if (cgp_section_write(F, B, Z, Ename, CG_PENTA_6, e_startg, e_endg, 0, &E))
+           cgp_error_exit();
+       e_start=0;
+       auto type = getMpiType( cgsize_t() );
+       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
+       e_start+=1+*e_written; // my parts global element start 1-based
+// fail??       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
+       e_end=e_start;  // my parts global element stop 1-based
+       // write the element connectivity in parallel 
+       if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, NULL))
+          cgp_error_exit();
+    }     
+    //free(e);
+  }
+  for (int i = 0; i < nblki; ++i) { 
     BlockKey& k = o.blocks.interior.keys[i];
-    std::string phrase = getBlockKeyPhrase(k, "connectivity interior ");
     e_owned = o.blocks.interior.nElements[i];
     int nvert = o.blocks.interior.keys[i].nElementVertices;
     cgsize_t* e = (cgsize_t *)malloc(nvert * e_owned * sizeof(cgsize_t));
@@ -519,13 +543,13 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
 
 if(1==1){
     printf("interior cnn %d, %ld, %ld \n", part, e_start, e_end);
-    for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) {
-      printf("%d, %d ", part,(ne+1));
-      for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
-      printf("\n");
-    }
+//    for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) {
+//      printf("%d, %d ", part,(ne+1));
+//      for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]);
+//      printf("\n");
+//    }
 }
-    free(e);
+/* not fixed for multi-topology yet
 
 //     create the field data for this process 
     int* d = (int *)malloc(e_owned * sizeof(int));
@@ -535,7 +559,6 @@ if(1==1){
     if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
         cgp_error_exit();
     free(d);
-
     char UserDataName[11];
         snprintf(UserDataName, 11, "n%sOnRank", Ename);
         // create Helper array for number of elements on part of a given topology 
@@ -549,7 +572,34 @@ if(1==1){
     printf("Intr, %s,  %d, %d, %d, %d \n", UserDataName, nIelVec,part,Fs,Fs2);
     if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nIelVec))
         cgp_error_exit();
+*/
   } // end of loop over interior blocks
+  if(nblki==1) { // this part has only one toplogy
+    int nvert = o.blocks.interior.keys[0].nElementVertices;
+    if( nvert==6) {// need to make an empty tet block
+        e_owned=0;
+//        cgsize_t* e = (cgsize_t *)malloc(nvert * 1 * sizeof(cgsize_t));
+        e_startg=1+*e_written; // start for the elements of this topology
+        long safeArg=e_owned; // e_owned is cgsize_t which could be an 32 or 64 bit int
+        e_endg=*e_written + PCU_Add_Long(safeArg); // end for the elements of this topology
+        char Ename[5];
+        snprintf(Ename, 4, "Tet");
+        if (cgp_section_write(F, B, Z, Ename, CG_TETRA_4, e_startg, e_endg, 0, &E))
+           cgp_error_exit();
+       e_start=0;
+       auto type = getMpiType( cgsize_t() );
+       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
+       e_start+=1+*e_written; // my parts global element start 1-based
+// fail??       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
+       e_end=e_start;  // my parts global element stop 1-based
+       // write the element connectivity in parallel 
+       if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, NULL))
+          cgp_error_exit();
+    }     
+    //free(e);
+  }
+  PCU_Barrier();
+  printf("rank=%d reached end of BlockInterior",part);
 }
 void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int* endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int nblkb)
 {
@@ -928,7 +978,7 @@ if(0==1) {
           CGNS_ENUMV(Integer), nmatchFace, donor2, &cgconn)) cgp_error_exit();
     const float  RotationCenter[3]={0};
     const float  RotationAngle[3]={0};
-    const float  Translation[3]={TranslationD[0],TranslationD[2],TranslationD[2]};
+    const float  Translation[3]={TranslationD[0],TranslationD[1],TranslationD[2]};
 
     if (cg_conn_periodic_write(F, B, Z, cgconn, RotationCenter, RotationAngle, Translation)) cgp_error_exit();
     free(imapD1); free(imapD2);
