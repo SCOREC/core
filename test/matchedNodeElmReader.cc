@@ -720,7 +720,7 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   lion_set_verbosity(1);
   int noVerify=0;    // maintain default of verifying if not explicitly requesting it off
-  if( argc < 11 ) {
+  if( argc < 10 ) {
     if( !PCU_Comm_Self() ) {
       printf("Usage: %s <input dmg model> no rank but .rank added to next 6 "
           "<ascii mesh connectivity cnn> "
