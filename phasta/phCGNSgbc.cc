@@ -517,7 +517,7 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
         cgp_error_exit();
     *e_written=e_endg; // update count of elements written
 
-if(1==0){
+if(1==1){
     printf("interior cnn %d, %ld, %ld \n", part, e_start, e_end);
     for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) {
       printf("%d, %d ", part,(ne+1));
