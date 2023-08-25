@@ -1,0 +1,76 @@
+CGNS output from Chef
+
+
+
+This document is to describe work done to get CGNS output from Chef.
+
+
+
+Before doing that, I am going to list EXPECTATIONS of CGNS and how they align or not with classic Chef/PHASTA vs. PETSc/CEED-PHASTA  (defs rank=part=process?.I will use part) 
+
+I)  CGNS expects global numbering for mesh nodes and elements and that numbering MUST start from 1 (not zero).   
+
+II) The global numbering of elements is inclusive of both volume elements and boundary elements and also inclusive of all topologies with the numbering-start determined by what order you write them to file (might not be a requirement but simplest way when streaming).
+
+III) If using parallel writing (which we will have to do for any realistic size mesh), the ownership of the writer must be exclusive (write no data you don?t own),  continuous (no skipped global numbers), and linearly increasing with part number (e.g., rank0 starts from 1 and ends on nOwnedByRank0, rank1 starts from nOwnedByRank0+1 and ends on nOwnedByRank1+nOwnedbyRank0 and so on). 
+
+
+
+
+
+Going to a separate enumeration to discuss how that translated to our work on that now:
+
+Starting with the most basic, CGNS has the concept of a Base.  We keep life simple and only have 1 base. 
+CGNS has the concept of a Zone.  Someday if we get into overset grids (not likely) we might have more but for now, we only support 1 zone.
+Within a Zone we will always be type Unstructured and a few things must be described while others are optional. CGNS provides writer ?functions?  cg_<various> or cgp_<various>  and these have a structure that one function establishes the file-node in the file/database and then you are able call a second function to write the data at that node (this is a little bit like PHASTAIO?s notion of write/read header followed by write/read data). cg_ means all parallel processes must have identical data to write while cgp_ allows each process to write its portion of the data and CGNS collects (interpret collect as MPIO collective operations) that data within an HDF5 file. 
+Chef was co-developed with PHASTA to avoid global numbering and instead number from 0 to n_entity-1 on each rank when parallel and have separate data structures which tracked which rank owned a given entity and which ranks had remote copies of those entities.  Chef created data structures for PHASTA to use to manage this partition-specific ownership. Thus, before we can write any parallel distributed data with the  CGNS functions described in 3.,  we needed to create a map from PHASTA?s numbering to a numbering that satisfies I)-III).  Since that global node numbering is basically the same as PETSc with a shift by 1, I copied code from PHASTA that did that for  use withPETSc solvers (common/gen_ncorp.c) and modified it.  That also needed functionality of commuInt.f to communicate ownership on part boundaries  back to all the replicas on other parts (which in turn required a chunk of code from ctypes.f) translated to C. All of this code makes use of the ilwork data structure that helps PHASTA know how to setup and efficiently perform peer-to-peer communication. At the end of this code insertion/translation, we have an ncorp array that maps from PHASTA/Chef numbering to CGNS numbering on each part and thus we can start to now describe the arrays that are written.
+CGNS of course has to store coordinates.  It does so as flat double lists one dimension at a time so that means CoordinatesX then CoordinatesY, then CoordinatesZ for us.  To be clear, to use the cgp mid-level functions to write these in parallel, PHASTA/Chef?s part coordinate list must be sifted down to just its owners using ncorp described in 4. and pass that compact ownership array satisfying I)-III) data through the cgp_write functions (both file-node creation  and parallel data write).
+Next in our output, though not absolutely required is Solution.  Similarly to step 5., CGNS has a function to create a file-node for Solution and then you add as many fields as needed to that (currently I have only coded Pressure, VelocityX, VelocityY, VelocityZ, and Temperature.  Note CGNS is a standard and they mandate the name of these and any additional fields we might want to add to this so read the docs.  As with 5. these have to be sifted and mapped through ncorp to convert PHASTA/Chef?s numbering to a compact array that can be written in parallel using the cgp writers.  Note, as of 4.4.0, it looks to be possible to aggregate the writes described in 5. and 6. through cgp_coord_multi_* and cgp_field_multi_* respectively but this has not been explored yet. 
+Next in the file is some User Data that was a backdoor to writing some data in parallel  and to support parallel read with less work that I may describe more later but is not required by CGNS so skipping for now. 
+Next is a cell-centered solution file (that just means one value per 3D element or cell) that I put the RankOfWriterfield in. This is likely what the PETSc reader will use to understand the partition that Chef used to write this file and if that part-count matches the PETSc reader and solver, the file can be read and processed to derive all the parallel data structures PETSc/CEED-PHASTA?s need. CGNS issue filed to determine if they have a standard for this and if not interest in developing one. 
+Next is the first 3D element topology connectivity.  Basically we create a separate node for each element topology, establish global numbering by rank (easy as there are no replicas of elements and thus the ownership range was established definitively by the partitioner and thus the ownership range just jumps by the number of that element type on a given part).  If multi-topology, this repeats for the rest of the 3D element topologies. 
+Next is the first 2D boundary element topology  which follows concepts of  9 for it and subsequent other 2D boundary element topologies.  At this time we have elected to write all the elements of a given topology in a single CGNS file-node even if they are distributed across multiples geometric model surfaces (not the only option).  Note, since ALL cgp and cg writes are collective, all ranks, even those without boundary elements (or interior elements of a given topology) must participate.  Obviously the same for the MPI_Exscan, and PCU collectives.  
+It was decided/chose in the first pass to forgo writing ZonalBCs based on nodes in favor of writing them as mesh-sets (CGNS calls them PointLists abstracting the face numbers to the non-existent point at the centroid of the mesh face) which are face numbers with a particular surfID set in the smd (GUI if Simmetrix model-based) or spj (flat text file if working with a dmg model as we do with MATLAB->MGEN-MNER or SIMMETRIX->{MDLCONVERT,CONVERT(withExtrude)} ) workflows to get to chef inputs.  PETSc will then parse these mesh-sets into DMLabels for the boundary of the mesh. Then, it will handle Dirichlet and Neumann boundary conditions as it normally does (based on yaml input as to what type of BC is on a particular surfID number). For now we have a rather rigid prototype code that is limited to processing and writing 6  distinct mesh sets (one for each of the 6 faces of our topological box).  It should not be hard to extend and generalize this code but we took this shortcut in the first version of this code.  CGNS clearly supports direct nodal/Dirichlet PointSet but we have CHOSEN not to pursue this in the first pass.
+Last but certainly not least is a file-node called ZonalGridConnectivity which is how CGNS  encodes periodic boundary conditions as can be seen in the first/only leaf under that file-node Periodic Connectivity. This has been setup rigidly to assume that the faces listed in PointList are ordered in the same way as the faces listed in PointListDonor and further that surfID=2 is the donor and surfID=1 is the periodic partner of the donor.  This is again a shortcut or hardcoded link that assumes that the spj file has put surfID=1 on the face that is the periodic match for the face that it has surfID=2.  These meshes obviously need to be matched meshes and this creates an issue we still need to resolve (will describe soon).  The code currently computes the translation between the two periodic planes.  I found the documentation unclear but assumed that vector was FROM the donor To the periodic plane.  In the current inputs to the test codes the donor (surfID=2) is at zMax while the periodic plane (surfID=1) is as zMin so this makes the Translation[3]={0,0,-Lz} but that might be backwards and would certainly be flipped if I got the FROM/TO flipped (here Lz is unsigned as it is the spanwise domain width).  I made the code general to use the first element with a surfID=2's centroid coordinates - the first element with a surfID=1's centroid coordinates (this picks up a y component of 1e-21 due to roundoff). 
+
+
+While the above is functional, the already mentioned ambiguity  and the following issues/limitations remain unresolved:
+
+
+
+If we feed the current code a matched mesh ncorp will be computed incorrectly for every point that is on a part boundary that is also matched.  The reason for this is that ilwork was set up for PHASTA?s needs and capabilities.  As noted above PHASTA has replica nodes as REAL nodes  (nodes with local node ranges) that it uses for all on-rank work and then the on-rank numbers do their parallel assembly with the true OWNER node which in this case is not the node they physically share on the periodic plane but instead ilwork sets up a communication with the donor for that node.  Consequently, if we use the ilwork data structure as it is made for PHASTA, ncorp will map that node to a global node number on the donor plane.  Again ilwork is only used in PHASTA for assembling equations so this is right for PHASTA but will foul PETSc by providing a connectivity that gives global node numbers with coordinates on the donor plane. 
+Currently ZonalBC does not support parallel BC writing (cg available but not cgp).   James is working with the CGNS development group to develop cgp_ptset_* for reading/writing PointSet data (which is also used for ZonalGridConnectivity), but for now we are doing MPI_Allgather{v} operations so that cg is correct.  Note it is Allgather and not Gather because CGNS does not let part 0 write in serial but instead requires all ranks to have the same data and all to call cg with that same data to have this work correctly.  We are told by CGNS developers (and this seems like it has to be true) that only part=0 is actually writing but we have observed that any non-matching data on part!=0 results in a failure of cg. This is a potential scalability issue but seems likely to be addressed through the development of cgp for ZonalBCs. 
+
+
+Discussion of ISSUE 1) I just put this question to Jed and James in the GitHub PR but in doing so I think it is clear that CGNS does need global node numbers for the perioidic replicas of the owner/donor nodes.  Thus we do need to do one of the following:
+
+A) Turn off matching (creates another conflict), 
+
+B) suppress it during certain stages of chef?s work, or similarly 
+
+C) alter the code to not add this type of mapping in ilwork. 
+
+
+
+The conflict with A) might be limited  to Simmetrix wedge-tet meshes that won?t match when there is an unstructured mesh region (like tets).  TBH, on small meshes I can?t get matching to work anyway.  This is what we are currently doing and this has forced us to re-discover matching through reordering the donor and periodic mesh sets to have their centroids match.  To make this tractable, I did a MPI_Gather of the data to part 0 and did a serial sort there.  This will eventually hit scalability issues (less of an issue for Q3 as they are 3^d more coarse than Q1 meshes) but still not pretty.  If we could keep matching on AND we were able to disable it from ilwork so that we build the global numbering that CGNS wants (periodic-nodes/replicas have a global node number) then we MIGHT be able to use matching  to order the periodic-mesh set to match the order of the donor-mesh-set in parallel and avoid this serial bottleneck.  
+
+
+
+CWS and KEJ discussed the following organization of options:
+
+I) Use SCOREC/core matching
+
+II) Order periodic faces without use of SCOREC/core matching information
+
+
+
+I) further breaks into the following steps and branches
+
+To have matching available requires one of the following a)  replication of ilwork to ilworkCGNS structure without accounting for periodic matching so that it will build an ncorp as if matching were not present or b) POSSIBLY if filterMatching flag is set, existing ilwork will create a PHASTA input set that is lacking periodicity and thus correct correct for CGNS and yet the matching information is saved and can be restored for use in CGNS code to determine matching 
+The second aspect is how to do that matching.  Since inputs coming from matchedNodeElement reader ONLY have VERTEX matching.  Here again 3 options are possible:  a) make the matching check for matches of nodes through face connectivity,   b) make inputs to MNER richer to include face matching (likely available during mesh generation),  c) develop code within MNER to elevate matching information to edges and faces (as is done with classification though this is far easier due to classification being to a geometric model that is simple enough to be on all ranks AND model entities are far fewer and this is currently limited to extrusions anyway but so is periodicity so not really a limitation),
+
+
+II) also breaks into at least 2 branches:
+
+distance of centroid collected to rank0 and sorted (current approach) which we will likely use as long as mesh size on periodic plane does not make this intractable. 
+OR breadth first search that starts with a single matched face (seed) and then finds adds neighboring faces to a list from which the next in some order (could be centroidal distance or other) is chosen.  If mesh is matched, this ordering can proceed in parallel for both the donor and the periodic mesh set. When a face is added that touches a part boundary, existing part boundary adjacency information is used to continue the search on another rank. 
