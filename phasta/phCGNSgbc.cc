@@ -77,7 +77,7 @@ void pairsortDI(double a[], int b[], int n)
         a[i] = pairt[i].first;
         b[i] = pairt[i].second;
     }
-    delete pairt;
+    delete [] pairt;
 }
 
 // Function to sort integer array b[]
@@ -103,7 +103,7 @@ void pairsort(int a[], int b[], int n)
         a[i] = pairt[i].first;
         b[i] = pairt[i].second;
     }
-    delete pairt;
+    delete [] pairt;
 }
 void pairDeal6sort(int a[], int b[], int n)
 {
@@ -611,10 +611,6 @@ void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfI
     int iblkC[2];
     int estart[2];
     int nvC,nvert,nvAll,invC;
-    for (int j = 0; j < nblkb; ++j) { // check all blocks
-      BlockKey& k = o.blocks.boundary.keys[j];
-      nvert = o.blocks.boundary.keys[j].nBoundaryFaceEdges;
-    }
     for (int i = 0; i < 2; ++i) { // check all topologies
       nvAll=0;
       nvC=nvMap[i];
@@ -667,7 +663,8 @@ if(0==1)        printf("boundary cnn %d, %ld, %ld \n", part, e_start, e_end);
 if(1==0){
     for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
 }
-        int idx=(*nStackedOnRank) - 1;
+        int idx;
+        idx =((*nStackedOnRank) - 1);
         if(invC!=0) {
           free(e);
 //moved above          getNaturalBCCodesCGNS(o, iblkC[, &srfID[e_belWritten]);
@@ -714,7 +711,7 @@ if(0==1)        printf("Bndy %s, %ld, %d, %d \n", UserDataName, e_owned, part,Fs
     } // loop over both topos
     *totBel = *e_written-eVolElm;
 }
-void writeCGNS_UserData_srfID(int F,int B, int* srfID,  int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, cgsize_t *eVolElm, int nStackedOnRank)
+void writeCGNS_UserData_srfID(int F,int B, Output& o, int* srfID,  int* startBelBlk, int *endBelBlk, cgsize_t *e_written, cgsize_t *totBel, cgsize_t *eVolElm, int nStackedOnRank)
 {
     cgsize_t e_owned, e_start,e_end;
     int Fsb;
@@ -724,31 +721,46 @@ void writeCGNS_UserData_srfID(int F,int B, int* srfID,  int* startBelBlk, int *e
          cgp_array_write("srfID", CGNS_ENUMV(Integer), 1,totBel, &Fsb)) 
          cgp_error_exit();
     // write the user data for this process 
+    int nblkb = o.blocks.boundary.getSize(); 
     int nvMap[2] = {3,4};
     int iblkC[2];
     int estart[2];
     int nvC,nvert,nvAll,invC;
     for (int i = 0; i < 2; ++i) { // at most, 2 blocks (assumed as we have (untested) collapsed/stacked blocks withe same number of verts)
-      e_owned=0;
-      if(i<nStackedOnRank) 
-        e_owned=endBelBlk[i]-startBelBlk[i]+1;
-     int e_startB=startBelBlk[i]; // srfID is only for bel....matches linear order with eVolElm offset from 
-                                       // bel# that starts from last volume element
-      e_start=0;
-      auto type = getMpiType( cgsize_t() );
-      MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
-      e_start+=1+*e_written; // my parts global element start 1-based
-      e_end=e_start+e_owned-1;  // my parts global element stop 1-based
-if(0==1)      printf("BndyUserData %s, %ld, %ld, %ld,  %d, %d %d \n", "srfID", e_start, e_end, e_owned, i, e_startB,*totBel);
-      if(i<nStackedOnRank){ 
-        if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
-        cgp_error_exit();
-      } else { 
-        if (cgp_array_write_data(Fsb, &e_start, &e_end, NULL))
-        cgp_error_exit();
+      nvAll=0;
+      nvC=nvMap[i];
+      invC=0;
+      for (int j = 0; j < nblkb; ++j) { // check all blocks
+        BlockKey& k = o.blocks.boundary.keys[j];
+        nvert = o.blocks.boundary.keys[j].nBoundaryFaceEdges;
+        if(nvert==nvC) {
+           invC=1;
+        } 
       }
-      long safeArg=e_owned; // is cgsize_t which could be an 32 or 64 bit int
-      *e_written += PCU_Add_Long(safeArg); // number of elements of this topology
+      nvAll= PCU_Add_Int(invC); // add across all
+      if(nvAll!=0) { //nvC present on at least 1 rank
+        e_owned=0;
+        int e_startB=0;
+        if(i<nStackedOnRank) {
+          e_owned=endBelBlk[i]-startBelBlk[i]+1;
+          e_startB=startBelBlk[i]; // srfID is only for bel....matches linear order with eVolElm offset from 
+        }                                 // bel# that starts from last volume element
+        e_start=0;
+        auto type = getMpiType( cgsize_t() );
+        MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
+        e_start+=1+*e_written; // my parts global element start 1-based
+        e_end=e_start+e_owned-1;  // my parts global element stop 1-based
+if(0==1)      printf("BndyUserData %s, %ld, %ld, %ld,  %d, %d %d \n", "srfID", e_start, e_end, e_owned, i, e_startB,*totBel);
+        if(i<nStackedOnRank){ 
+          if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
+          cgp_error_exit();
+        } else { 
+          if (cgp_array_write_data(Fsb, &e_start, &e_end, NULL))
+          cgp_error_exit();
+        }
+        long safeArg=e_owned; // is cgsize_t which could be an 32 or 64 bit int
+        *e_written += PCU_Add_Long(safeArg); // number of elements of this topology
+      }
     }
 
 }
@@ -918,7 +930,7 @@ void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, 
     int Fsb;
     cgsize_t  eVolElm = *e_written-*totBel;
     *e_written=0; //recycling  eVolElm holds 
-    writeCGNS_UserData_srfID(F,B, srfID,  startBelBlk, endBelBlk, e_written, totBel, &eVolElm, nStackedOnRank);
+    writeCGNS_UserData_srfID(F,B, o, srfID,  startBelBlk, endBelBlk, e_written, totBel, &eVolElm, nStackedOnRank );
     double* srfID1GCen; 
     double* srfID2GCen; 
     int nmatchFace1,nmatchFace;
@@ -1185,7 +1197,7 @@ if(0==1)  printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
   int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
   int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
   int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
-  int nStackedOnRank;
+  int nStackedOnRank=0;
   writeBlocksCGNSboundary(F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, &totBel, &nStackedOnRank, nblkb);
   writeCGNSboundary      (F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, totOnRankBel, &totBel,  nStackedOnRank);
   free(srfID); free(srfIDidx);
