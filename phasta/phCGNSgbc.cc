@@ -595,7 +595,6 @@ if(1==1){
     } // end if ANY rank has this topology
   } // end of loop over ALL topologies
   PCU_Barrier();
-  printf("rank=%d reached end of BlockInterior\n",part);
 }
 void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int* endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int *nStackedOnRank, int nblkb)
 {
@@ -697,8 +696,8 @@ if(1==0){
           free(eCenx); free(eCeny); free(eCenz);
 if(1==1){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icnt2, j1, j2, e_owned, srfID1OnBlk[i],srfID2OnBlk[i]);}
           for (int j = 0; j < (int) e_owned; ++j) srfIDidx[e_belWritten+j]=e_start+j;
-          startBelBlk[idx]=e_start; // provides start point for each block in srfID
-          endBelBlk[idx]=e_end; // provides end point for each block in srfID
+          startBelBlk[idx]=e_start-eVolElm; // provides start point for each block in srfID 
+          endBelBlk[idx]=e_end-eVolElm; // provides end point for each block in srfID
         }
         *e_written=e_endg;
         e_belWritten+=e_owned; // this is tracking written by this rank as we unpack srfID later
@@ -945,7 +944,6 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< std::min(nDbgI,
     int* imapD2 = (int *)malloc( nmatchFace * sizeof(int));
     if(part==0) sortID1andID2(srfID1GCen,srfID2GCen,nmatchFace, imapD1, imapD2);
     PCU_Barrier();
-    printf("Barrier %d %d",part,nmatchFace);
     MPI_Bcast(imapD1,nmatchFace,type_i,0, MPI_COMM_WORLD);
     MPI_Bcast(imapD2,nmatchFace,type_i,0, MPI_COMM_WORLD);
     auto type_d = getMpiType( double() );
