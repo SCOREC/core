@@ -464,22 +464,22 @@ void topoSwitch(char* Ename, int nvert,int F,int B,int Z,int *E, cgsize_t e_star
   switch(nvert){
     case 4:
       snprintf(Ename, 4, "Tet");
-      if (cgp_section_write(F, B, Z, Ename, CG_TETRA_4, e_startg, e_endg, 0, &Ep))
+      if (cgp_section_write(F, B, Z, Ename, CGNS_ENUMV(TETRA_4), e_startg, e_endg, 0, &Ep))
          cgp_error_exit();
       break;
     case 5:
       snprintf(Ename, 4, "Pyr");
-      if (cgp_section_write(F, B, Z, Ename, CG_PYRA_5, e_startg, e_endg, 0, &Ep))
+      if (cgp_section_write(F, B, Z, Ename, CGNS_ENUMV(PYRA_5), e_startg, e_endg, 0, &Ep))
           cgp_error_exit();
       break;
     case 6:
       snprintf(Ename, 4, "Wdg");
-      if (cgp_section_write(F, B, Z, Ename, CG_PENTA_6, e_startg, e_endg, 0, &Ep))
+      if (cgp_section_write(F, B, Z, Ename, CGNS_ENUMV(PENTA_6), e_startg, e_endg, 0, &Ep))
           cgp_error_exit();
       break;
     case 8:
       snprintf(Ename, 4, "Hex");
-      if (cgp_section_write(F, B, Z, Ename, CG_HEXA_8, e_startg, e_endg, 0, &Ep))
+      if (cgp_section_write(F, B, Z, Ename, CGNS_ENUMV(HEXA_8), e_startg, e_endg, 0, &Ep))
           cgp_error_exit();
       break;
   }
@@ -492,12 +492,12 @@ void topoSwitchB(char* Ename, int nvert,int F,int B,int Z,int *E, cgsize_t e_sta
   switch(nvert){
     case 3:
       snprintf(Ename, 4, "Tri");
-      if (cgp_section_write(F, B, Z, Ename, CG_TRI_3, e_startg, e_endg, 0, &Ep))
+      if (cgp_section_write(F, B, Z, Ename, CGNS_ENUMV(TRI_3), e_startg, e_endg, 0, &Ep))
             cgp_error_exit();
       break;
     case 4:
       snprintf(Ename, 5, "Quad");
-      if (cgp_section_write(F, B, Z, Ename, CG_QUAD_4, e_startg, e_endg, 0, &Ep))
+      if (cgp_section_write(F, B, Z, Ename, CGNS_ENUMV(QUAD_4), e_startg, e_endg, 0, &Ep))
             cgp_error_exit();
       break;
   }
@@ -516,8 +516,8 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
   const int part = PCU_Comm_Self() ;
   const cgsize_t part_cg=part;
   // create a centered solution 
-  if (cg_sol_write(F, B, Z, "RankOfWriter", CG_CellCenter, &S) ||
-      cgp_field_write(F, B, Z, S, CG_Integer, "RankOfWriter", &Fs))
+  if (cg_sol_write(F, B, Z, "RankOfWriter", CGNS_ENUMV(CellCenter), &S) ||
+      cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "RankOfWriter", &Fs))
       cgp_error_exit();
   int nblki= o.blocks.interior.getSize();
   int nvMap[4] = {4,5,6,8};
@@ -574,7 +574,7 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
       // create Helper array for number of elements on part of a given topology 
       if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
            cg_gorel(F, "User Data", 0, NULL) ||
-           cgp_array_write(UserDataName, CG_Integer, 1, &num_parts_cg, &Fs2))
+           cgp_array_write(UserDataName, CGNS_ENUMV(Integer), 1, &num_parts_cg, &Fs2))
            cgp_error_exit();
         // create the field data for this process 
       int nIelVec=e_owned;
@@ -705,7 +705,7 @@ if(1==1){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
         char UserDataName[12]; snprintf(UserDataName, 13, "n%sOnRank", Ename);
         if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
              cg_gorel(F, "User Data", 0, NULL) ||
-             cgp_array_write(UserDataName, CG_Integer, 1, &num_parts_cg, &Fsb2))
+             cgp_array_write(UserDataName, CGNS_ENUMV(Integer), 1, &num_parts_cg, &Fsb2))
              cgp_error_exit();
         printf("Bndy %s, %ld, %d, %d \n", UserDataName, e_owned, part,Fsb2);
         cgsize_t partP1=part+1;
@@ -722,7 +722,7 @@ void writeCGNS_UserData_srfID(int F,int B, int* srfID,  int* startBelBlk, int *e
     // setup User Data for boundary faces 
     if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
          cg_gorel(F, "User Data", 0, NULL) ||
-         cgp_array_write("srfID", CG_Integer, 1,totBel, &Fsb)) 
+         cgp_array_write("srfID", CGNS_ENUMV(Integer), 1,totBel, &Fsb)) 
          cgp_error_exit();
     // write the user data for this process 
     int nvMap[2] = {3,4};
@@ -1038,24 +1038,24 @@ void CGNS_NodalSolution(int F,int B,int Z, Output& o)
     }
   }
 //     write the solution field data in parallel 
-  if (cg_sol_write(F, B, Z, "Solution", CG_Vertex, &S) ||
-      cgp_field_write(F, B, Z, S, CG_RealDouble, "Pressure", &Q))
+  if (cg_sol_write(F, B, Z, "Solution", CGNS_ENUMV(Vertex), &S) ||
+      cgp_field_write(F, B, Z, S, CGNS_ENUMV(RealDouble), "Pressure", &Q))
       cgp_error_exit();
   if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, p))
       cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "VelocityX", &Q))
+  if ( cgp_field_write(F, B, Z, S, CGNS_ENUMV(RealDouble), "VelocityX", &Q))
       cgp_error_exit();
   if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, u))
       cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "VelocityY", &Q))
+  if ( cgp_field_write(F, B, Z, S, CGNS_ENUMV(RealDouble), "VelocityY", &Q))
       cgp_error_exit();
   if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, v))
       cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "VelocityZ", &Q))
+  if ( cgp_field_write(F, B, Z, S, CGNS_ENUMV(RealDouble), "VelocityZ", &Q))
       cgp_error_exit();
   if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, w))
       cgp_error_exit();
-  if ( cgp_field_write(F, B, Z, S, CG_RealDouble, "Temperature", &Q))
+  if ( cgp_field_write(F, B, Z, S, CGNS_ENUMV(RealDouble), "Temperature", &Q))
       cgp_error_exit();
   if (cgp_field_write_data(F, B, Z, S, Q, &start, &end, T))
       cgp_error_exit();
@@ -1064,9 +1064,9 @@ void CGNS_NodalSolution(int F,int B,int Z, Output& o)
 void CGNS_Coordinates(int F,int B,int Z,Output& o)
 {
    int Cx,Cy,Cz;
-  if (cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateX", &Cx) ||
-      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateY", &Cy) ||
-      cgp_coord_write(F, B, Z, CG_RealDouble, "CoordinateZ", &Cz))
+  if (cgp_coord_write(F, B, Z, CGNS_ENUMV(RealDouble), "CoordinateX", &Cx) ||
+      cgp_coord_write(F, B, Z, CGNS_ENUMV(RealDouble), "CoordinateY", &Cy) ||
+      cgp_coord_write(F, B, Z, CGNS_ENUMV(RealDouble), "CoordinateZ", &Cz))
       cgp_error_exit();
 
 // condense out vertices owned by another rank in a new array, x, whose slices are ready for CGNS.
@@ -1153,7 +1153,7 @@ if(1==0){
   if(cgp_mpi_comm(MPI_COMM_WORLD)) cgp_error_exit;
   if ( cgp_open(outfile, CG_MODE_WRITE, &F) ||
        cg_base_write(F, "Base", 3, 3, &B) ||
-       cg_zone_write(F, B, "Zone", sizes, CG_Unstructured, &Z))
+       cg_zone_write(F, B, "Zone", sizes, CGNS_ENUMV(Unstructured), &Z))
        cgp_error_exit();
     // create data nodes for coordinates 
   cg_set_file_type(CG_FILE_HDF5);
@@ -1163,7 +1163,7 @@ if(1==0){
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
        cg_user_data_write("User Data") ||
        cg_gorel(F, "User Data", 0, NULL) ||
-       cgp_array_write("nCoordsOnRank", CG_Integer, 1, &num_parts_cg, &Fs2))
+       cgp_array_write("nCoordsOnRank", CGNS_ENUMV(Integer), 1, &num_parts_cg, &Fs2))
        cgp_error_exit();
   // create the field data for this process 
   int nCoordVec=o.iownnodes;
