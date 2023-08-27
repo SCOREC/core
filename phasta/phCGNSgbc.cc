@@ -483,7 +483,7 @@ void topoSwitch(char* Ename, int nvert,int F,int B,int Z,int *E, cgsize_t e_star
           cgp_error_exit();
       break;
   }
-  printf("%d %d %d %s %ld %ld %d\n",F,B,Z,Ename,e_startg,e_endg,Ep);
+if(0==1)  printf("%d %d %d %s %ld %ld %d\n",F,B,Z,Ename,e_startg,e_endg,Ep);
   *E=Ep;
 }
 void topoSwitchB(char* Ename, int nvert,int F,int B,int Z,int *E, cgsize_t e_startg,cgsize_t e_endg)
@@ -501,7 +501,7 @@ void topoSwitchB(char* Ename, int nvert,int F,int B,int Z,int *E, cgsize_t e_sta
             cgp_error_exit();
       break;
   }
-  printf("%d %d %d %s %ld %ld %d\n",F,B,Z,Ename,e_startg,e_endg,Ep);
+if(0==1)  printf("%d %d %d %s %ld %ld %d\n",F,B,Z,Ename,e_startg,e_endg,Ep);
   *E=Ep;
 }
 
@@ -579,11 +579,11 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
         // create the field data for this process 
       int nIelVec=e_owned;
       cgsize_t  partP1=part+1;
-      printf("Intr, %s,  %d, %d, %d, %d \n", UserDataName, nIelVec,part,Fs,Fs2);
+if(0==1)      printf("Intr, %s,  %d, %d, %d, %d \n", UserDataName, nIelVec,part,Fs,Fs2);
       if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nIelVec))
            cgp_error_exit();
 
-if(1==1){
+if(0==1){
     printf("interior cnn %s %d %ld %ld \n", Ename,part, e_start, e_end);
 //    for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) {
 //      printf("%d, %d ", part,(ne+1));
@@ -663,7 +663,7 @@ void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfI
         // write the element connectivity in parallel 
         if (cgp_elements_write_data(F, B, Z, E, e_start, e_end, e))
             cgp_error_exit();
-        printf("boundary cnn %d, %ld, %ld \n", part, e_start, e_end);
+if(0==1)        printf("boundary cnn %d, %ld, %ld \n", part, e_start, e_end);
 if(1==0){
     for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
 }
@@ -694,7 +694,7 @@ if(1==0){
              }
           } 
           free(eCenx); free(eCeny); free(eCenz);
-if(1==1){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icnt2, j1, j2, e_owned, srfID1OnBlk[i],srfID2OnBlk[i]);}
+if(0==1){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icnt2, j1, j2, e_owned, srfID1OnBlk[i],srfID2OnBlk[i]);}
           for (int j = 0; j < (int) e_owned; ++j) srfIDidx[e_belWritten+j]=e_start+j;
           startBelBlk[idx]=e_start-eVolElm; // provides start point for each block in srfID 
           endBelBlk[idx]=e_end-eVolElm; // provides end point for each block in srfID
@@ -706,7 +706,7 @@ if(1==1){      printf("CentroidCounts %d %d %d %d %d %d %d %d\n",part,icnt1, icn
              cg_gorel(F, "User Data", 0, NULL) ||
              cgp_array_write(UserDataName, CGNS_ENUMV(Integer), 1, &num_parts_cg, &Fsb2))
              cgp_error_exit();
-        printf("Bndy %s, %ld, %d, %d \n", UserDataName, e_owned, part,Fsb2);
+if(0==1)        printf("Bndy %s, %ld, %d, %d \n", UserDataName, e_owned, part,Fsb2);
         cgsize_t partP1=part+1;
         if (cgp_array_write_data(Fsb2, &partP1, &partP1, &e_owned))
             cgp_error_exit();
@@ -739,7 +739,7 @@ void writeCGNS_UserData_srfID(int F,int B, int* srfID,  int* startBelBlk, int *e
       MPI_Exscan(&e_owned, &e_start, 1, type , MPI_SUM, MPI_COMM_WORLD);
       e_start+=1+*e_written; // my parts global element start 1-based
       e_end=e_start+e_owned-1;  // my parts global element stop 1-based
-      printf("BndyUserData %s, %ld, %ld, %ld,  %d, %d %d \n", "srfID", e_start, e_end, e_owned, i, e_startB,*totBel);
+if(0==1)      printf("BndyUserData %s, %ld, %ld, %ld,  %d, %d %d \n", "srfID", e_start, e_end, e_owned, i, e_startB,*totBel);
       if(i<nStackedOnRank){ 
         if (cgp_array_write_data(Fsb, &e_start, &e_end, &srfID[e_startB]))
         cgp_error_exit();
@@ -820,7 +820,7 @@ void sortID1andID2(double* srfID1GCen,double* srfID2GCen, int nmatchFace, int* i
         } 
     } 
     for (int i = 0; i < nmatchFace; ++i) imapD2[i]=imapD2v[i];
-    if(1==1&&part==0) {
+    if(0==1&&part==0) {
       printf("Number of Distance Failures=%d\n ",DistFails);
       printf(" srfID1dist GLOBAL "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%f ", srfID1distSq[is]); printf("\n");
       printf(" imapD1 GLOBAL     "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", imapD1[is]); printf("\n"); 
@@ -970,12 +970,12 @@ if(1==0){  printf("%d part srfID 2 zc ",part); for(int ip=0; ip< std::min(nDbgI,
       if(BCid==1) {
         for (int i = 0; i < nmatchFace; i++) periodic1[i]=eBC[imapD1[i]];
         for (int i = 0; i < nmatchFace; i++) eBC[i]=periodic1[i];
-if(1==1&&part==1){ printf(" srfIDidx 1 "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", eBC[is]); printf("\n"); }
+if(0==1&&part==1){ printf(" srfIDidx 1 "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", eBC[is]); printf("\n"); }
       }       
       if(BCid==2) {
         for (int i = 0; i < nmatchFace; i++) donor2[i]=eBC[imapD2[i]];
         for (int i = 0; i < nmatchFace; i++) eBC[i]=donor2[i];
-if(1==1&&part==1){ printf(" srfIDidx 2 "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", eBC[is]); printf("\n"); }
+if(0==1&&part==1){ printf(" srfIDidx 2 "); for(int is=0; is< std::min(nDbgI,nmatchFace); ++is)  printf("%d ", eBC[is]); printf("\n"); }
       }       
 if(0==1) {
       printf(" srfID =%d    ",BCid); for(int is=0; is< std::min(nDbgI,imatch); ++is)  printf("%d ", eBC[is]); printf("\n");
@@ -1007,7 +1007,7 @@ void CGNS_NodalSolution(int F,int B,int Z, Output& o)
   // create a nodal solution 
   char fieldName[12];
   snprintf(fieldName, 13, "solution");
-  printf("solution=%s",fieldName);
+if(0==1)  printf("solution=%s",fieldName);
   double* data;
   int size, S,Q;
   detachField(o.mesh, fieldName, data, size);
@@ -1105,7 +1105,7 @@ void writeCGNS(Output& o, std::string path)
   int  F, B, Z, E, S, Fs, Fs2, A, Cx, Cy, Cz;
   cgsize_t sizes[3],*e, start, end;
   int num_nodes=m->count(0);
-if(1==0){  // ilwork debugging
+if(0==1){  // ilwork debugging
     for (int ipart=0; ipart<num_parts; ++ipart){
         if(part==ipart) { // my turn
            printf("ilwork %d, %d, %d \n", part, o.nlwork,o.arrays.ilwork[0]);
@@ -1123,7 +1123,7 @@ if(1==0){  // ilwork debugging
        PCU_Barrier();
      }
 }
-if(1==0){
+if(0==1){
   for (int ipart=0; ipart<num_parts; ++ipart){
     if(part==part) { // my turn    
     printf("xyz %d, %d \n", part, num_nodes);
@@ -1166,7 +1166,7 @@ if(1==0){
   // create the field data for this process 
   int nCoordVec=o.iownnodes;
   cgsize_t partP1=part+1;
-  printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
+if(0==1)  printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
   if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nCoordVec))
        cgp_error_exit();
   cgsize_t e_written=0; 
