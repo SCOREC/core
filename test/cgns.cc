@@ -119,7 +119,7 @@ pMesh toPumi(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return pm;
 }
 
-auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
+std::function<void()> additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
 {
   // seems essential to make pm first before calling balance or reorder...
   auto pm = toPumi(prefix, g, mesh);

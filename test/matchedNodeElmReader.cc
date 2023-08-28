@@ -20,33 +20,6 @@
 #include <string>
 #include <regex>
 
-/* from https://github.com/SCOREC/core/issues/205
-0=fully interior of the volume
-1-6 =classified on face (not edge or vertex)
-11-22 = classified on model edge (not end points which are model vertices)
-31-38 = classified on a model vertex.
-*/
-
-/* tags on vertices */
-#define INTERIORTAG  0
-#define FACE 1
-#define FACE_LAST 6
-#define EDGE 11
-#define EDGE_LAST 22
-#define VERTEX 31
-#define VERTEX_LAST 38
-
-/* model entity ids */
-//#define INTERIOR_REGION 0
-//int INTERIOR_REGION=0; // initialized but will be checked from read input
-
-//Manifold single region apf::ModelEntity* getMdlRgn(gmi_model* model) {
-//Manifold single region   apf::ModelEntity* rgn = reinterpret_cast<apf::ModelEntity*>(
-//Manifold single region       gmi_find(model, 3, INTERIOR_REGION));
-//Manifold single region   PCU_ALWAYS_ASSERT(rgn);
-//Manifold single region   return rgn;
-//Manifold single region }
-
 
 apf::ModelEntity* getMdlRegion(apf::Mesh2* mesh, int tag) {
   apf::ModelEntity* region = mesh->findModelEntity(3,tag);
@@ -747,17 +720,16 @@ int main(int argc, char** argv)
   PCU_Comm_Init();
   lion_set_verbosity(1);
   int noVerify=0;    // maintain default of verifying if not explicitly requesting it off
-  if( argc < 11 ) {
+  if( argc < 10 ) {
     if( !PCU_Comm_Self() ) {
-      printf("Usage: %s <input dmg model> "
-          "<ascii mesh connectivity .cnn> "
+      printf("Usage: %s <input dmg model> no rank but .rank added to next 6 "
+          "<ascii mesh connectivity cnn> "
           "<ascii vertex coordinates .crd> "
           "<ascii vertex matching flag .match> "
           "<ascii vertex classification flag .class> "
           "<ascii vertex fathers2D flag .fathers2D> "
           "<ascii solution flag .soln> "
-          "<ascii conn header> "
-          "<output model .dmg> <output mesh .smb>"
+          "<ascii conn header see MGEN for format if using Matlab> "
           "turn off verify mesh if equal 1 (on if you give nothing)\n",
           argv[0]);
     }
@@ -767,14 +739,14 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  if( argc == 11 ) noVerify=atoi(argv[10]);
+  if( argc == 11 ) noVerify=atoi(argv[9]);
 
   double t0 = PCU_Time();
   MeshInfo m;
   readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m);
 
   bool isMatched = true;
-  if( !strcmp(argv[3], "NULL") )
+  if( !strcmp(argv[4], "NULL") )
     isMatched = false;
 
   if(!PCU_Comm_Self())
@@ -822,7 +794,7 @@ int main(int argc, char** argv)
 
   outMap.clear();
   apf::writeVtkFiles("rendered",mesh);
-  mesh->writeNative(argv[10]);
+  mesh->writeNative(argv[9]);
   if(noVerify != 1) mesh->verify();
 
   mesh->destroyNative();

@@ -69,6 +69,90 @@ else()
   set(GXT dmg)
 endif()
 
+if(ENABLE_CGNS AND SIM_DOT_VERSION VERSION_GREATER 12.0.171000)
+  set(MDIR ${MESHES}/phasta/cube_CGNS)
+  mpi_test(chef-CGNS-multitopology1 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/multiTopology/mner/Chef/1-1-Chef)
+  add_test(NAME chef-CGNS-multitopology1-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/multiTopology/mner/Chef/1-1-Chef)
+
+  mpi_test(chef-CGNS-multitopology2 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/multiTopology/mner/Chef/2-1-Chef)
+  add_test(NAME chef-CGNS-multitopology2-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/multiTopology/mner/Chef/2-1-Chef)
+
+  mpi_test(chef-CGNS-multitopology4 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/multiTopology/mner/Chef/4-1-Chef)
+  add_test(NAME chef-CGNS-multitopology4-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/multiTopology/mner/Chef/4-1-Chef)
+endif()
+
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND AND ENABLE_CGNS AND SIM_DOT_VERSION VERSION_GREATER 12.0.171000)
+  set(MDIR ${MESHES}/phasta/cube_CGNS)
+  mpi_test(chef-CGNS-8hex1 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mds8Hex/Chef/1-1-Chef)
+  add_test(NAME chef-CGNS-8hex1-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mds8Hex/Chef/1-1-Chef)
+
+  mpi_test(chef-CGNS-8hex2 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mds8Hex/Chef/2-1-Chef)
+  add_test(NAME chef-CGNS-8hex2-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mds8Hex/Chef/2-1-Chef)
+
+  mpi_test(chef-CGNS-smallTet1 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mds-SmallestTet/Chef/1-1-Chef)
+  add_test(NAME chef-CGNS-smallTet1-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mds-SmallestTet/Chef/1-1-Chef)
+
+  mpi_test(chef-CGNS-smallTet2 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mds-SmallestTet/Chef/2-1-Chef)
+  add_test(NAME chef-CGNS-smallTet2-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mds-SmallestTet/Chef/2-1-Chef)
+
+  mpi_test(chef-CGNS-AllHex1 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllHex/Chef/1-1-Chef)
+  add_test(NAME chef-CGNS-AllHex1-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllHex/Chef/1-1-Chef)
+
+  mpi_test(chef-CGNS-AllHex2 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllHex/Chef/2-1-Chef)
+  add_test(NAME chef-CGNS-AllHex2-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllHex/Chef/2-1-Chef)
+
+  mpi_test(chef-CGNS-AllTet 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllTet/Chef/1-1-Chef)
+  add_test(NAME chef-CGNS-AllTet-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllTet/Chef/1-1-Chef)
+
+  mpi_test(chef-CGNS-AllTet2 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllTet/Chef/2-1-Chef)
+  add_test(NAME chef-CGNS-AllTet2-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllTet/Chef/2-1-Chef)
+
+  mpi_test(chef-CGNS-AllWedge1 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllWedge/Chef/1-1-Chef)
+  add_test(NAME chef-CGNS-AllWedge1-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllWedge/Chef/1-1-Chef)
+
+  mpi_test(chef-CGNS-AllWedge2 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllWedge/Chef/2-1-Chef)
+  add_test(NAME chef-CGNS-AllWedge2-diff
+    COMMAND cgnsdiff  chefOut.cgns correct.cgns
+    WORKING_DIRECTORY ${MDIR}/sms2mdsAllWedge/Chef/2-1-Chef)
+endif()
+
 set(MDIR ${MESHES}/phasta/dg)
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
@@ -560,7 +644,7 @@ mpi_test(cgns_3d_2 ${numProcs}
 #
 # 3D BCS tests
 #
-set(numProcs 5)
+set(numProcs 4)
 #
 set(CGNSDIR ${MESHES}/cgns/withBCS/3D)
 #

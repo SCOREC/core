@@ -147,6 +147,8 @@ class Input
     /** \brief write the geombc file during in-memory data transfer
        between phasta and chef. */
     int writeGeomBCFiles;
+    /* \brief write CGNS files for pre-processing */
+    int writeCGNSFiles;
     /** \brief write the restart file during in-memory data transfer
        between phasta and chef. */
     int writeRestartFiles;

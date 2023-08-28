@@ -11,6 +11,7 @@
 #include "apfNumberingClass.h"
 #include "apfShape.h"
 #include "apfFieldData.h"
+#include <functional>
 #include <pcu_util.h>
 #include <lionPrint.h>
 //
@@ -269,9 +270,16 @@ void WriteTags(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *
   }
 }
 */
-void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity *>> &orderedEnts, const std::vector<std::pair<cgsize_t, cgsize_t>> &ranges, const std::vector<apf::MeshEntity *> &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m)
+
+typedef std::vector<apf::MeshEntity *> VecMeshEntity_t;
+typedef std::pair<cgsize_t, cgsize_t> CGRange_t;
+
+void WriteFields(const CGNS &cgns, const std::vector<VecMeshEntity_t> &orderedEnts, const std::vector<CGRange_t> &ranges, const VecMeshEntity_t &orderedVertices, const int &vStart, const int &vEnd, apf::Mesh *m)
 {
-  const auto writeField = [&m, &cgns](apf::Field *f, const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &numComponents, const int &component, const std::string &fieldName, const int &start, const int &end, int &fieldIndex) {
+  typedef std::function<void (apf::MeshEntity *elem, apf::FieldDataOf<double> *fieldData, std::vector<double> &ddata, const int &numComponents, const int &component)>  innerLambda_t;
+  typedef std::function<void (const int &solIndex, std::vector<double> &ddata, const cgsize_t *rmin, const cgsize_t *rmax, const int &globalSize, const int &fieldIndex)> postLambda_t;
+
+  const auto writeField = [&m, &cgns](apf::Field *f, const VecMeshEntity_t  &orderedEnt, const int &solIndex, const innerLambda_t &inner, const postLambda_t &post, const int &numComponents, const int &component, const std::string &fieldName, const int &start, const int &end, int &fieldIndex) {
     std::vector<double> data;
 
     cgsize_t rmin[3];
@@ -281,7 +289,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     rmax[0] = end;
 
     apf::FieldDataOf<double> *fieldData = f->getData();
-    for (const auto &e : orderedEnts)
+    for (const auto &e : orderedEnt)
     {
       if (fieldData->hasEntity(e) && m->isOwned(e))
       {
@@ -310,7 +318,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     }
   };
 
-  const auto loopCellFields = [&m, &writeField](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const auto &ranges) {
+  const auto loopCellFields = [&m, &writeField](const std::vector<VecMeshEntity_t> &orderedEnts, const int &solIndex, const innerLambda_t &inner, const postLambda_t &post, const std::vector<CGRange_t> &ranges) {
     for (int i = 0; i < m->countFields(); ++i)
     {
       apf::Field *f = m->getField(i);
@@ -335,7 +343,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     }
   };
 
-  const auto loopVertexFields = [&m, &writeField](const auto &orderedEnts, const int &solIndex, const auto &inner, const auto &post, const int &vStart, const int &vEnd) {
+  const auto loopVertexFields = [&m, &writeField](const VecMeshEntity_t &orderedVertices, const int &solIndex, const innerLambda_t &inner, const postLambda_t &post, const int &vStart, const int &vEnd) {
     for (int i = 0; i < m->countFields(); ++i)
     {
       apf::Field *f = m->getField(i);
@@ -352,12 +360,12 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
           fieldNameNew += "_[" + std::to_string(component) + "]";
 
         //std::cout << "VERTEX " << fieldNameNew << " " << fieldName << " " << component << " " << numComponents << std::endl;
-        writeField(f, orderedEnts, solIndex, inner, post, numComponents, component, fieldNameNew, vStart, vEnd, fieldIndex);
+        writeField(f, orderedVertices, solIndex, inner, post, numComponents, component, fieldNameNew, vStart, vEnd, fieldIndex);
       }
     }
   };
 
-  const auto postLambda = [&cgns](const int &solIndex, std::vector<double> &ddata, const cgsize_t *rmin, const cgsize_t *rmax, const int &globalSize, const int &fieldIndex) {
+  const postLambda_t postLambda = [&cgns](const int &solIndex, std::vector<double> &ddata, const cgsize_t *rmin, const cgsize_t *rmax, const int &globalSize, const int &fieldIndex) {
     if (globalSize > 0)
     {
       if (cgp_field_write_data(cgns.index, cgns.base, cgns.zone, solIndex, fieldIndex, &rmin[0], &rmax[0],
@@ -366,7 +374,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     }
   };
 
-  const auto innerLambda = [](apf::MeshEntity *elem, apf::FieldDataOf<double> *fieldData, std::vector<double> &ddata, const int &numComponents, const int &component) {
+  const innerLambda_t innerLambda = [](apf::MeshEntity *elem, apf::FieldDataOf<double> *fieldData, std::vector<double> &ddata, const int &numComponents, const int &component) {
     std::vector<double> vals(numComponents, -12345);
     fieldData->get(elem, vals.data());
     //std::cout << numComponents << " " << component << " " << vals[0] << std::endl;
@@ -390,7 +398,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
   }
 }
 
-auto WriteVertices(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn)
+std::tuple<VecMeshEntity_t, int, int> WriteVertices(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn)
 {
   int Cx = -1;
   int Cy = -1;
@@ -412,7 +420,7 @@ auto WriteVertices(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbering *gvn)
       cgp_error_exit();
   }
 
-  std::vector<apf::MeshEntity *> orderedVertices;
+  VecMeshEntity_t orderedVertices;
   cgsize_t vertexMin[3];
   cgsize_t vertexMax[3];
   cgsize_t contigRange = -1;
@@ -574,7 +582,10 @@ CellElementReturn WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbe
 
 void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, const int &cellCount, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap, const std::map<apf::Mesh::Type, CGNS_ENUMT(ElementType_t)> &apf2cgns, apf::GlobalNumbering *gvn)
 {
-  const auto EdgeLoop = [&m](const auto &lambda, apf::MeshTag *edgeTag) {
+  typedef std::function<void(apf::MeshEntity*)> LambdaMeshEntity_t;
+  typedef std::vector<apf::CGNSInfo> VecCGNSInfo_t;
+
+  const auto EdgeLoop = [&m](const LambdaMeshEntity_t &lambda, apf::MeshTag *edgeTag) {
     apf::MeshIterator *edgeIter = m->begin(1);
     apf::MeshEntity *edge = nullptr;
     int vals[1];
@@ -591,7 +602,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     m->end(edgeIter);
   };
 
-  const auto FaceLoop = [&m](const auto &lambda, apf::MeshTag *faceTag) {
+  const auto FaceLoop = [&m](const LambdaMeshEntity_t &lambda, apf::MeshTag *faceTag) {
     apf::MeshIterator *faceIter = m->begin(2);
     apf::MeshEntity *face = nullptr;
     int vals[1];
@@ -608,7 +619,8 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     m->end(faceIter);
   };
 
-  const auto BCEntityAdder = [&apf2cgns, &m, &cgns, &gvn](const auto &Looper, const auto &bcGroup, int &startingLocation) {
+  
+  const auto BCEntityAdder = [&apf2cgns, &m, &cgns, &gvn](const std::function<void(LambdaMeshEntity_t, apf::MeshTag*)> &Looper, const apf::CGNSInfo &bcGroup, int &startingLocation) {
     std::map<apf::Mesh::Type, std::vector<apf::MeshEntity *>> bcEntTypes;
     for (const auto &r : apf2cgns)
       bcEntTypes.insert(std::make_pair(r.first, std::vector<apf::MeshEntity *>()));
@@ -715,7 +727,9 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
                    PCU_Get_Comm());
   };
 
-  const auto doVertexBC = [&](const auto &iter) {
+  typedef std::map<std::basic_string<char>, std::vector<apf::CGNSInfo>>::const_iterator  MapCGNSInfo_t;
+
+  const auto doVertexBC = [&](const MapCGNSInfo_t &iter) {
     for (const auto &p : iter->second)
     {
       std::vector<cgsize_t> bcList;
@@ -751,7 +765,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     }
   };
 
-  const auto doEdgeBC = [&](const auto &iter, int &startingLocation) {
+  const auto doEdgeBC = [&](const MapCGNSInfo_t &iter, int &startingLocation) {
     for (const auto &p : iter->second)
     {
       const auto se = BCEntityAdder(EdgeLoop, p, startingLocation);
@@ -774,7 +788,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     }
   };
 
-  const auto doFaceBC = [&](const auto &iter, int &startingLocation) {
+  const auto doFaceBC = [&](const MapCGNSInfo_t &iter, int &startingLocation) {
     for (const auto &p : iter->second)
     {
       const auto se = BCEntityAdder(FaceLoop, p, startingLocation);
@@ -797,7 +811,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     }
   };
 
-  const auto doCellBC = [&](const auto &iter, const int &) {
+  const auto doCellBC = [&](const MapCGNSInfo_t &iter, const int &) {
     for (const auto &p : iter->second)
     {
       std::vector<cgsize_t> bcList;
@@ -1009,7 +1023,9 @@ void Write2DEdges(CGNS cgns, apf::Mesh *m, const Count &edgeCount, const Count &
 // Todo split this out into a list of calls to local functions to show process/work flow
 void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap)
 {
-  static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
+
+  PCU_ALWAYS_ASSERT_VERBOSE(sizeof(cgsize_t) == sizeof(int), "cgsize_t is not size of int");
+
 
   const auto myRank = PCU_Comm_Self();
   const Count vertexCount = count(m, 0);
@@ -1051,11 +1067,11 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   auto communicator = PCU_Get_Comm();
   cgp_mpi_comm(communicator);
   //
-  cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
+  cgp_pio_mode(CGP_INDEPENDENT);
 
   CGNS cgns;
   cgns.fname = std::string(prefix);
-  if (cgp_open(prefix, CGNS_ENUMV(CG_MODE_WRITE), &cgns.index))
+  if (cgp_open(prefix, CG_MODE_WRITE, &cgns.index))
     cgp_error_exit();
 
   {

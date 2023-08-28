@@ -6,6 +6,7 @@ set(SOURCES
   phOutput.cc
   phLinks.cc
   phGeomBC.cc
+  phCGNSgbc.cc
   phBlock.cc
   phAdapt.cc
   phRestart.cc
