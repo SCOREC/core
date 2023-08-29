@@ -297,7 +297,7 @@ mpi_test(matchedNodeElementReader_p1 1
   "${MDIR}/1part/geom3D.fathr"
   "NULL"
   "${MDIR}/1part/geom3DHead.cnn"
-  "geom.dmg" "geom.smb")
+  "geom.smb")
 
 mpi_test(matchedNodeElementReader_p4 4
   ./matchedNodeElmReader
@@ -309,7 +309,7 @@ mpi_test(matchedNodeElementReader_p4 4
   "${MDIR}/4part/geom3D.fathr"
   "NULL"
   "${MDIR}/4part/geom3DHead.cnn"
-  "geom.dmg" "geom.smb")
+  "geom.smb")
 
 set(MDIR ${MESHES}/gmsh)
 mpi_test(gmshv2TwoQuads 1
