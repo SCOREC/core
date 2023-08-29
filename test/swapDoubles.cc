@@ -25,5 +25,6 @@ int main(int argc, char** argv) {
   }
   delete [] d_orig;
   delete [] d;
+  MPI_Finalize();
   return 0;
 }
