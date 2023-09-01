@@ -131,14 +131,7 @@ if(ENABLE_OMEGA_H)
 endif()
 
 if(ENABLE_CGNS)
-  set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
-  bob_public_dep(CGNS)
-  #CGNS does not provide cmake targets :(
-  include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
-  set(SCOREC_USE_HDF5_DEFAULT ${ENABLE_CGNS})
-  bob_public_dep(HDF5)
-  add_definitions(-DHAVE_CGNS)
-else()
+  option(ENABLE_CGNS_MULTI_BASE "Enable the CGNS Multi Base tests" OFF)
   set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
   bob_public_dep(CGNS)
   #CGNS does not provide cmake targets :(
