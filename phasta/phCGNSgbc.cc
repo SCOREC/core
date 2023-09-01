@@ -597,23 +597,21 @@ if(0==1){
 }
 void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int* endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int *nStackedOnRank, int nblkb)
 {
-    int E,Fsb,Fsb2;
+    int E,Fsb,Fsb2, nvC,nvert,nvAll,invC;
     const int num_parts = PCU_Comm_Peers();
     const cgsize_t num_parts_cg=num_parts;
     const int part = PCU_Comm_Self() ;
     const cgsize_t part_cg=part;
-    cgsize_t e_owned, e_start,e_end;
-    cgsize_t e_startg,e_endg;
+    cgsize_t e_owned, e_start,e_end, e_startg,e_endg;
     cgsize_t eVolElm=*e_written;
     cgsize_t e_belWritten=0;
     int nvMap[2] = {3,4};
     int iblkC[2];
     int estart[2];
-    int nvC,nvert,nvAll,invC;
     for (int i = 0; i < 2; ++i) { // check all topologies
       nvAll=0;
-      nvC=nvMap[i];
       invC=0;
+      nvC=nvMap[i];
       int icountB=0;
       for (int j = 0; j < nblkb; ++j) { // check all blocks
         BlockKey& k = o.blocks.boundary.keys[j];
@@ -662,8 +660,7 @@ if(0==1)        printf("boundary cnn %d, %ld, %ld \n", part, e_start, e_end);
 if(0==1){
     for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
 }
-        int idx;
-        idx =((*nStackedOnRank) - 1);
+        int idx =((*nStackedOnRank) - 1);
         if(invC!=0) {
           free(e);
 //moved above          getNaturalBCCodesCGNS(o, iblkC[, &srfID[e_belWritten]);
@@ -1154,34 +1151,35 @@ if(0==1)  printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
   if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nCoordVec))
        cgp_error_exit();
   cgsize_t e_written=0; 
-  cgsize_t totBel;
-  writeBlocksCGNSinteror(F,B,Z,o,&e_written);
+  if(o.writeCGNSFiles > 2) 
+    writeBlocksCGNSinteror(F,B,Z,o,&e_written);
   if(o.writeCGNSFiles > 2) {
-  int nblkb = o.blocks.boundary.getSize(); 
-  double** srfIDCen1 = new double*[nblkb]; // might not all be used
-  double** srfIDCen2 = new double*[nblkb];
-  int totOnRankBel=0;
-  for (int i = 0; i < nblkb; ++i) 
-    totOnRankBel += o.blocks.boundary.nElements[i];
-  int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
-  int* srfID1OnBlk = (int *)malloc( nblkb * sizeof(int));
-  int* srfID2OnBlk = (int *)malloc( nblkb * sizeof(int));
-  int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
-  int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
-  int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
-  int nStackedOnRank=0;
-  writeBlocksCGNSboundary(F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, &totBel, &nStackedOnRank, nblkb);
-  writeCGNSboundary      (F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, totOnRankBel, &totBel,  nStackedOnRank);
-  free(srfID); free(srfIDidx);
-  free(srfID1OnBlk); free(srfID2OnBlk);
-  free(startBelBlk); free(endBelBlk);
-  for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen1[i];
-  for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen2[i];
-  delete [] srfIDCen1; delete [] srfIDCen2;
-  if(cgp_close(F)) cgp_error_exit();
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
-    lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
+    cgsize_t totBel;
+    int nblkb = o.blocks.boundary.getSize(); 
+    double** srfIDCen1 = new double*[nblkb]; // might not all be used
+    double** srfIDCen2 = new double*[nblkb];
+    int totOnRankBel=0;
+    for (int i = 0; i < nblkb; ++i) 
+      totOnRankBel += o.blocks.boundary.nElements[i];
+    int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
+    int* srfID1OnBlk = (int *)malloc( nblkb * sizeof(int));
+    int* srfID2OnBlk = (int *)malloc( nblkb * sizeof(int));
+    int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
+    int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
+    int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
+    int nStackedOnRank=0;
+    writeBlocksCGNSboundary(F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, &totBel, &nStackedOnRank, nblkb);
+    writeCGNSboundary      (F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, totOnRankBel, &totBel,  nStackedOnRank);
+    free(srfID); free(srfIDidx);
+    free(srfID1OnBlk); free(srfID2OnBlk);
+    free(startBelBlk); free(endBelBlk);
+    for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen1[i];
+    for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen2[i];
+    delete [] srfIDCen1; delete [] srfIDCen2;
+    if(cgp_close(F)) cgp_error_exit();
+    double t1 = PCU_Time();
+    if (!PCU_Comm_Self())
+      lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
   }
 }
 } // namespace
