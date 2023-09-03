@@ -997,6 +997,7 @@ Output::~Output()
   //nOwnedNodes will still be zero.
   if(!nOwnedNodes) return;
 
+  delete [] arrays.ncorp;
   delete [] arrays.coordinates;
   delete [] arrays.ilwork;
   delete [] arrays.ilworkf;

@@ -220,7 +220,7 @@ void gen_ncorp(Output& o )
   int i;
   lcorp_t nilwork = o.nlwork;
   int num_nodes=m->count(0);
-  o.arrays.ncorp = (cgsize_t *)malloc(num_nodes * sizeof(cgsize_t)); //FIXME where to deallocate 
+  o.arrays.ncorp = new cgsize_t[num_nodes]; 
   lcorp_t owned;
   lcorp_t local;
   lcorp_t* owner_counts;
@@ -297,6 +297,7 @@ if(0==1) {
     PCU_Barrier();
   }
 }
+free(owner_counts);
 }
 
 static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes)
@@ -516,8 +517,8 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
   const int part = PCU_Comm_Self() ;
   const cgsize_t part_cg=part;
   // create a centered solution 
-  if (cg_sol_write(F, B, Z, "RankOfWriter", CGNS_ENUMV(CellCenter), &S) ||
-      cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "RankOfWriter", &Fs))
+  if (cg_sol_write(F, B, Z, "CellRank", CGNS_ENUMV(CellCenter), &S) ||
+      cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "CellRank", &Fs))
       cgp_error_exit();
   int nblki= o.blocks.interior.getSize();
   int nvMap[4] = {4,5,6,8};
@@ -661,6 +662,68 @@ if(0==1){
     for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
 }
         int idx =((*nStackedOnRank) - 1);
+
+        int S, Fs;
+
+//        if (cg_sol_write(F, B, Z, "BoundaryCellRank", CGNS_ENUMV(FaceCenter), &S) ||
+//            cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryCellRank", &Fs))
+//            cgp_error_exit();
+/*        int ec0=cg_sol_write(F, B, Z, "BoundaryCellRank2", CGNS_ENUMV(CellCenter), &S);
+        int ec1=cg_sol_write(F, B, Z, "BoundaryCellRank", CGNS_ENUMV(FaceCenter), &S);
+        int ec2= cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryCellRank", &Fs);
+      //     create the field data for this process 
+        int* d = NULL;
+        if(invC!=0){  //nvC present on my rank
+          d = (int *)malloc(e_owned * sizeof(int));
+          for (int n = 0; n < e_owned; n++) 
+            d[n] = part;
+        }
+        if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
+          cgp_error_exit();
+        if(invC!=0) free(d);
+*/
+// more tricky to put something into PV to visualize the above (approximately) through vertex field
+        int* dv = (int *)malloc(o.iownnodes * sizeof(int));
+        cgsize_t start=o.local_start_id;
+        cgsize_t end=start+o.iownnodes-1;
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &S) ||
+            cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryVertexRank", &Fs))
+            cgp_error_exit();
+      //     create the field data for this process 
+        for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
+        int idxl, en;
+        if(invC!=0) { 
+           for (int ibel = 0; ibel < e_owned; ++ibel){ 
+             for (int ilv=0; ilv < nvC; ilv++) {
+               en=e[ibel*nvC+ilv]; 
+               if(en>=start && en<=end) {
+                 dv[en-start]= part; 
+               }
+             }
+           }
+         }
+         if (cgp_field_write_data(F, B, Z, S, Fs, &start, &end, dv))
+            cgp_error_exit();
+// more tricky to put srfID on nodes to see in PV (approximately) through vertex field
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &S) ||
+            cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryVertexSrfID", &Fs))
+            cgp_error_exit();
+      //     create the field data for this process 
+        for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
+        if(invC!=0) { 
+           for (int ibel = 0; ibel < e_owned; ++ibel){ 
+             for (int ilv=0; ilv < nvC; ilv++) {
+               en=e[ibel*nvC+ilv]; 
+               if(en>=start && en<=end) {
+                 dv[en-start]= srfID[ibel]; 
+//                 printf("%d %d %d %d %d %d %d\n ", part,ibel, ilv, en, en-start, dv[en-start], srfID[ibel]);
+               }
+             }
+           }
+         }
+         if (cgp_field_write_data(F, B, Z, S, Fs, &start, &end, dv))
+            cgp_error_exit();
+        free(dv);
         if(invC!=0) {
           free(e);
 //moved above          getNaturalBCCodesCGNS(o, iblkC[, &srfID[e_belWritten]);
@@ -861,7 +924,7 @@ void GatherCentroid(double** srfIDCen,int* srfIDOnBlk, double** srfIDGCen, int *
 if(0==1){ printf("displs1 ");for(int ip=0; ip< num_parts; ++ip) printf("% ld ", displs[ip]); printf("\n"); }
     auto type_d = getMpiType( double() );
     MPI_Gatherv(srfIDCenAllBlocks,ncon,type_d,*srfIDGCen,rcounts,displs,type_d,0, MPI_COMM_WORLD);
-    free(srfIDCenAllBlocks); 
+    free(srfIDCenAllBlocks); free(rcounts); free(displs);
 }
 void Allgather2IntAndSort(int* srfID, int* srfIDidx,Output& o,int* srfIDG, int* srfIDGidx, int totOnRankBel)
 {
@@ -907,7 +970,7 @@ void writeCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, 
     int nmatchFace1,nmatchFace;
     GatherCentroid(srfIDCen1,srfID1OnBlk,&srfID1GCen,&nmatchFace1, nStackedOnRank);
     GatherCentroid(srfIDCen2,srfID2OnBlk,&srfID2GCen,&nmatchFace, nStackedOnRank);
-    if(part==0)  printf("matchface %d, %d", nmatchFace1, nmatchFace);
+if(0==1)    if(part==0)  printf("matchface %d, %d\n", nmatchFace1, nmatchFace);
     if(part==0) assert(nmatchFace1==nmatchFace);
 //   compute the translation while we still have ordered centroids data  Assuming Translation = donor minus periodic but documents unclear
     double  TranslationD[3];
@@ -981,7 +1044,7 @@ if(0==1) {
 
     if (cg_conn_periodic_write(F, B, Z, cgconn, RotationCenter, RotationAngle,  Translation)) cgp_error_exit();
     free(imapD1); free(imapD2);
-    free(eBC); free(srfIDG); free(srfIDGidx);
+    free(eBC); free(srfIDG); free(srfIDGidx); free(donor2); free(periodic1);
 } 
 void CGNS_NodalSolution(int F,int B,int Z, Output& o)
 {
@@ -1073,6 +1136,16 @@ if(0==1) {
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
   free (x);
+  int S2,Fs2;
+  const int part = PCU_Comm_Self() ;
+  if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &S2) ||
+      cgp_field_write(F, B, Z, S2, CGNS_ENUMV(Integer), "VertexRank", &Fs2))
+      cgp_error_exit();
+  int* d = (int *)malloc(o.iownnodes * sizeof(int));
+  for (int inode = 0; inode < o.iownnodes; ++inode) d[inode]= part;
+  if (cgp_field_write_data(F, B, Z, S2, Fs2, &start, &end, d))
+          cgp_error_exit();
+  free(d);
 }
 void writeCGNS(Output& o, std::string path)
 {
