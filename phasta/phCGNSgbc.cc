@@ -157,7 +157,6 @@ void commuInt(Output& o, cgsize_t* global)
   }
          
   int itag, iacc, iother, isgbeg;
-  MPI_Datatype sevsegtype[numtask];
 //first do what ctypes does for setup
   int* isbegin;
   int* lenseg;
@@ -165,12 +164,15 @@ void commuInt(Output& o, cgsize_t* global)
   isbegin = (int*) malloc(sizeof(int) * maxseg);
   lenseg  = (int*) malloc(sizeof(int) * maxseg);
   ioffset = (int*) malloc(sizeof(int) * maxseg);
-// no VLA        MPI_Request  req[numtask];
+// no VLA  but could not figure out how to malloc so maxtask FIXME/HELP       MPI_Request  req[numtask];
 // no VLA        MPI_Status stat[numtask];
+// no VLA  MPI_Datatype sevsegtype[numtask];
   int maxtask=1000;
   assert(maxtask>=numtask);
   MPI_Request  req[maxtask];
   MPI_Status stat[maxtask];
+  MPI_Datatype sevsegtype[maxtask];
+// FIXME/HELP
   int maxfront=0;
   int lfront;
   itkbeg=0;
@@ -256,7 +258,7 @@ void gen_ncorp(Output& o )
   printf("\n");
 #endif
   local_start_id=0;
-  for(i=0;i<part;i++) //TODO: MPI_Exscan()?
+  for(i=0;i<part;i++) 
     local_start_id += owner_counts[i];
   local_start_id++; //Fortran numbering
   o.local_start_id = local_start_id;
@@ -297,7 +299,7 @@ if(0==1) {
     PCU_Barrier();
   }
 }
-free(owner_counts);
+  free(owner_counts);
 }
 
 static lcorp_t count_local(int* ilwork, int nlwork,cgsize_t* ncorp_tmp, int num_nodes)
@@ -595,6 +597,46 @@ if(0==1){
   } // end of loop over ALL topologies
   PCU_Barrier();
 }
+void writeBoundaryVertexToSol(int F,int B,int Z, int SBVR, int SBVS, Output& o, int* srfID, int part,int invC, cgsize_t e_owned, int nvC, cgsize_t* e)
+{
+  int FsR, FsS;
+  // more tricky to put something into PV to visualize the above (approximately) through vertex field
+  int* dv = (int *)malloc(o.iownnodes * sizeof(int));
+  cgsize_t start=o.local_start_id;
+  cgsize_t end=start+o.iownnodes-1;
+  if ( cgp_field_write(F, B, Z, SBVR, CGNS_ENUMV(Integer), "BoundaryVertexRank", &FsR))
+       cgp_error_exit();
+  //     create the field data for this process 
+  for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
+  int idxl, en;
+  if(invC!=0) { 
+    for (int ibel = 0; ibel < e_owned; ++ibel){ 
+      for (int ilv=0; ilv < nvC; ilv++) {
+        en=e[ibel*nvC+ilv]; 
+        if(en>=start && en<=end) 
+          dv[en-start]= part; 
+      }
+    }
+  }
+  if (cgp_field_write_data(F, B, Z, SBVR, FsR, &start, &end, dv))
+      cgp_error_exit();
+  // more tricky to put srfID on nodes to see in PV (approximately) through vertex field
+  if ( cgp_field_write(F, B, Z, SBVS, CGNS_ENUMV(Integer), "BoundaryVertexSrfID", &FsS))
+       cgp_error_exit();
+  //     create the field data for this process 
+  for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
+  if(invC!=0) { 
+    for (int ibel = 0; ibel < e_owned; ++ibel){ 
+      for (int ilv=0; ilv < nvC; ilv++) {
+        en=e[ibel*nvC+ilv]; 
+        if(en>=start && en<=end) 
+          dv[en-start]= srfID[ibel]; 
+      }
+    }
+  }
+  if (cgp_field_write_data(F, B, Z, SBVS, FsS, &start, &end, dv))
+      cgp_error_exit();
+}
 void writeBlocksCGNSboundary(int F,int B,int Z, int SBVR, int SBVS, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int* endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int *nStackedOnRank, int nblkb)
 {
     int E,Fsb,Fsb2, nvC,nvert,nvAll,invC;
@@ -661,69 +703,9 @@ if(0==1){
     for (int ne=0; ne<std::min(nDbgCG,e_owned); ++ne) { printf("%d, %d ", part,(ne+1)); for(int nv=0; nv< nvert; ++nv) printf("%ld ", e[ne*nvert+nv]); printf("\n"); }
 }
         int idx =((*nStackedOnRank) - 1);
-
-        int FsR, FsS;
-
-//        if (cg_sol_write(F, B, Z, "BoundaryCellRank", CGNS_ENUMV(FaceCenter), &S) ||
-//            cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryCellRank", &Fs))
-//            cgp_error_exit();
-/*        int ec0=cg_sol_write(F, B, Z, "BoundaryCellRank2", CGNS_ENUMV(CellCenter), &S);
-        int ec1=cg_sol_write(F, B, Z, "BoundaryCellRank", CGNS_ENUMV(FaceCenter), &S);
-        int ec2= cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryCellRank", &Fs);
-      //     create the field data for this process 
-        int* d = NULL;
-        if(invC!=0){  //nvC present on my rank
-          d = (int *)malloc(e_owned * sizeof(int));
-          for (int n = 0; n < e_owned; n++) 
-            d[n] = part;
-        }
-        if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
-          cgp_error_exit();
-        if(invC!=0) free(d);
-*/
-// more tricky to put something into PV to visualize the above (approximately) through vertex field
-        int* dv = (int *)malloc(o.iownnodes * sizeof(int));
-        cgsize_t start=o.local_start_id;
-        cgsize_t end=start+o.iownnodes-1;
-        if ( cgp_field_write(F, B, Z, SBVR, CGNS_ENUMV(Integer), "BoundaryVertexRank", &FsR))
-            cgp_error_exit();
-      //     create the field data for this process 
-        for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
-        int idxl, en;
-        if(invC!=0) { 
-           for (int ibel = 0; ibel < e_owned; ++ibel){ 
-             for (int ilv=0; ilv < nvC; ilv++) {
-               en=e[ibel*nvC+ilv]; 
-               if(en>=start && en<=end) {
-                 dv[en-start]= part; 
-               }
-             }
-           }
-         }
-         if (cgp_field_write_data(F, B, Z, SBVR, FsR, &start, &end, dv))
-            cgp_error_exit();
-// more tricky to put srfID on nodes to see in PV (approximately) through vertex field
-        if ( cgp_field_write(F, B, Z, SBVS, CGNS_ENUMV(Integer), "BoundaryVertexSrfID", &FsS))
-            cgp_error_exit();
-      //     create the field data for this process 
-        for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
-        if(invC!=0) { 
-           for (int ibel = 0; ibel < e_owned; ++ibel){ 
-             for (int ilv=0; ilv < nvC; ilv++) {
-               en=e[ibel*nvC+ilv]; 
-               if(en>=start && en<=end) {
-                 dv[en-start]= srfID[ibel]; 
-//                 printf("%d %d %d %d %d %d %d\n ", part,ibel, ilv, en, en-start, dv[en-start], srfID[ibel]);
-               }
-             }
-           }
-         }
-         if (cgp_field_write_data(F, B, Z, SBVS, FsS, &start, &end, dv))
-            cgp_error_exit();
-        free(dv);
+        writeBoundaryVertexToSol(F,B,Z, SBVR, SBVS, o, srfID, part,invC, e_owned, nvC, e);
         if(invC!=0) {
           free(e);
-//moved above          getNaturalBCCodesCGNS(o, iblkC[, &srfID[e_belWritten]);
           int icnt1=0; int icnt2=0;
           for (int ne=0; ne<e_owned; ++ne){ //count srfID =1 and 2 on this part,block
              if(srfID[e_belWritten+ne]==1) icnt1++; 
@@ -1136,7 +1118,7 @@ if(0==1) {
 }
 void CGNS_VertexRank(int F,int B,int Z, int SVR, Output& o)
 {
-  int S2,Fs2;
+  int Fs2;
   const int part = PCU_Comm_Self() ;
   cgsize_t start=o.local_start_id;
   cgsize_t end=start+o.iownnodes-1;
@@ -1147,6 +1129,42 @@ void CGNS_VertexRank(int F,int B,int Z, int SVR, Output& o)
   if (cgp_field_write_data(F, B, Z, SVR, Fs2, &start, &end, d))
           cgp_error_exit();
   free(d);
+}
+void  CirculateSolWriteOrder(int F,int B,int Z,int *SVR,int *SBVS,int *SBVR, Output&o)
+{
+  if(o.writeCGNSFiles == 2) { // Solution
+        CGNS_NodalSolution(F,B,Z,o);
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), SVR) )  
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), SBVS) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), SBVR) )
+            cgp_error_exit();
+  }else if(o.writeCGNSFiles == 3) { // Vertex Rank
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), SVR) )  
+            cgp_error_exit();
+        CGNS_NodalSolution(F,B,Z,o);
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), SBVS) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), SBVR) )
+            cgp_error_exit();
+  }else if(o.writeCGNSFiles == 4) { // Boundary Vertex Rank
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), SBVR) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), SVR) )  
+            cgp_error_exit();
+        CGNS_NodalSolution(F,B,Z,o);
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), SBVS) )
+            cgp_error_exit();
+  }else if(o.writeCGNSFiles == 5) { // Boundary Vertex SrfID
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), SBVS) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), SBVR) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), SVR) )  
+            cgp_error_exit();
+        CGNS_NodalSolution(F,B,Z,o);
+  }
 }
 void writeCGNS(Output& o, std::string path)
 {
@@ -1211,52 +1229,11 @@ if(0==1){
     // create data nodes for coordinates 
   cg_set_file_type(CG_FILE_HDF5);
   CGNS_Coordinates(F,B,Z, o);
-// Paraview will only viz the first sol node created so control that with writeCGNSFiles flag
-
-// notes on FaceCenter Fails
-//        int ec0=cg_sol_write(F, B, Z, "BoundaryCellRank2", CGNS_ENUMV(CellCenter), &S);
-// ec0 returns 0  GOOD and ec2 below is also 0 so CellCenter works
-//        int ec1=cg_sol_write(F, B, Z, "BoundaryCellRank", CGNS_ENUMV(FaceCenter), &S);
-//  ec1 returns 1 ERROR causing ec2 to also fail since S is junk 
-//        int ec2= cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryCellRank", &Fs);
-
   if (cg_sol_write(F, B, Z, "CellRank", CGNS_ENUMV(CellCenter), &SCR)) 
        cgp_error_exit();
-  if(o.writeCGNSFiles == 2) { // Solution
-        CGNS_NodalSolution(F,B,Z,o);
-        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
-            cgp_error_exit();
-        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
-            cgp_error_exit();
-        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
-            cgp_error_exit();
-  }else if(o.writeCGNSFiles == 3) { // Vertex Rank
-        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
-            cgp_error_exit();
-        CGNS_NodalSolution(F,B,Z,o);
-        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
-            cgp_error_exit();
-        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
-            cgp_error_exit();
-  }else if(o.writeCGNSFiles == 4) { // Boundary Vertex Rank
-        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
-            cgp_error_exit();
-        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
-            cgp_error_exit();
-        CGNS_NodalSolution(F,B,Z,o);
-        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
-            cgp_error_exit();
-  }else if(o.writeCGNSFiles == 5) { // Boundary Vertex SrfID
-        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
-            cgp_error_exit();
-        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
-            cgp_error_exit();
-        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
-            cgp_error_exit();
-        CGNS_NodalSolution(F,B,Z,o);
-  }
+// Paraview will only viz the first sol node created so control that with writeCGNSFiles flag
+  CirculateSolWriteOrder(F,B,Z,&SVR,&SBVS,&SBVR,o);
   CGNS_VertexRank(F,B,Z,SVR, o);
-//  CGNS_NodalSolution(F,B,Z,o);
   // create Helper array for number of elements on rank 
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
        cg_user_data_write("User Data") ||
