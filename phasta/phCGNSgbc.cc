@@ -507,9 +507,9 @@ if(0==1)  printf("%d %d %d %s %ld %ld %d\n",F,B,Z,Ename,e_startg,e_endg,Ep);
 }
 
 // renamed and calling the renamed functions above with output writes now to CGNS
-void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
+void writeBlocksCGNSinterior(int F,int B,int Z, int SCR, Output& o, cgsize_t *e_written)
 {
-  int E,S,Fs,Fs2,Fsb,Fsb2;
+  int E,Fs,Fs2,Fsb,Fsb2;
   cgsize_t e_owned, e_start,e_end;
   cgsize_t e_startg,e_endg;
   const int num_parts = PCU_Comm_Peers();
@@ -517,8 +517,7 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
   const int part = PCU_Comm_Self() ;
   const cgsize_t part_cg=part;
   // create a centered solution 
-  if (cg_sol_write(F, B, Z, "CellRank", CGNS_ENUMV(CellCenter), &S) ||
-      cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "CellRank", &Fs))
+  if ( cgp_field_write(F, B, Z, SCR, CGNS_ENUMV(Integer), "CellRank", &Fs))
       cgp_error_exit();
   int nblki= o.blocks.interior.getSize();
   int nvMap[4] = {4,5,6,8};
@@ -566,7 +565,7 @@ void writeBlocksCGNSinteror(int F,int B,int Z, Output& o, cgsize_t *e_written)
           d[n] = part;
         //     write the solution field data in parallel 
       }
-      if (cgp_field_write_data(F, B, Z, S, Fs, &e_start, &e_end, d))
+      if (cgp_field_write_data(F, B, Z, SCR, Fs, &e_start, &e_end, d))
           cgp_error_exit();
       if(invC!=0) free(d);
       char UserDataName[11];
@@ -596,7 +595,7 @@ if(0==1){
   } // end of loop over ALL topologies
   PCU_Barrier();
 }
-void writeBlocksCGNSboundary(int F,int B,int Z, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int* endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int *nStackedOnRank, int nblkb)
+void writeBlocksCGNSboundary(int F,int B,int Z, int SBVR, int SBVS, Output& o, int* srfID, int* srfIDidx, double** srfIDCen1, double** srfIDCen2, int* srfID1OnBlk, int* srfID2OnBlk, int* startBelBlk, int* endBelBlk, cgsize_t *e_written, cgsize_t *totBel, int *nStackedOnRank, int nblkb)
 {
     int E,Fsb,Fsb2, nvC,nvert,nvAll,invC;
     const int num_parts = PCU_Comm_Peers();
@@ -663,7 +662,7 @@ if(0==1){
 }
         int idx =((*nStackedOnRank) - 1);
 
-        int S, Fs;
+        int FsR, FsS;
 
 //        if (cg_sol_write(F, B, Z, "BoundaryCellRank", CGNS_ENUMV(FaceCenter), &S) ||
 //            cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryCellRank", &Fs))
@@ -686,8 +685,7 @@ if(0==1){
         int* dv = (int *)malloc(o.iownnodes * sizeof(int));
         cgsize_t start=o.local_start_id;
         cgsize_t end=start+o.iownnodes-1;
-        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &S) ||
-            cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryVertexRank", &Fs))
+        if ( cgp_field_write(F, B, Z, SBVR, CGNS_ENUMV(Integer), "BoundaryVertexRank", &FsR))
             cgp_error_exit();
       //     create the field data for this process 
         for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
@@ -702,11 +700,10 @@ if(0==1){
              }
            }
          }
-         if (cgp_field_write_data(F, B, Z, S, Fs, &start, &end, dv))
+         if (cgp_field_write_data(F, B, Z, SBVR, FsR, &start, &end, dv))
             cgp_error_exit();
 // more tricky to put srfID on nodes to see in PV (approximately) through vertex field
-        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &S) ||
-            cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryVertexSrfID", &Fs))
+        if ( cgp_field_write(F, B, Z, SBVS, CGNS_ENUMV(Integer), "BoundaryVertexSrfID", &FsS))
             cgp_error_exit();
       //     create the field data for this process 
         for (int inode = 0; inode < o.iownnodes; ++inode) dv[inode]= -1;
@@ -721,7 +718,7 @@ if(0==1){
              }
            }
          }
-         if (cgp_field_write_data(F, B, Z, S, Fs, &start, &end, dv))
+         if (cgp_field_write_data(F, B, Z, SBVS, FsS, &start, &end, dv))
             cgp_error_exit();
         free(dv);
         if(invC!=0) {
@@ -1103,7 +1100,7 @@ if(0==1)  printf("solution=%s",fieldName);
       cgp_error_exit();
   free(p); free(u); free(v); free(w); free(T); free(data);
 }
-void CGNS_Coordinates(int F,int B,int Z,Output& o)
+void CGNS_Coordinates(int F,int B,int Z, Output& o)
 {
    int Cx,Cy,Cz;
   if (cgp_coord_write(F, B, Z, CGNS_ENUMV(RealDouble), "CoordinateX", &Cx) ||
@@ -1136,14 +1133,18 @@ if(0==1) {
     if(j==2) if(cgp_coord_write_data(F, B, Z, Cz, &start, &end, x)) cgp_error_exit();
   }
   free (x);
+}
+void CGNS_VertexRank(int F,int B,int Z, int SVR, Output& o)
+{
   int S2,Fs2;
   const int part = PCU_Comm_Self() ;
-  if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &S2) ||
-      cgp_field_write(F, B, Z, S2, CGNS_ENUMV(Integer), "VertexRank", &Fs2))
+  cgsize_t start=o.local_start_id;
+  cgsize_t end=start+o.iownnodes-1;
+  if ( cgp_field_write(F, B, Z, SVR, CGNS_ENUMV(Integer), "VertexRank", &Fs2))
       cgp_error_exit();
   int* d = (int *)malloc(o.iownnodes * sizeof(int));
   for (int inode = 0; inode < o.iownnodes; ++inode) d[inode]= part;
-  if (cgp_field_write_data(F, B, Z, S2, Fs2, &start, &end, d))
+  if (cgp_field_write_data(F, B, Z, SVR, Fs2, &start, &end, d))
           cgp_error_exit();
   free(d);
 }
@@ -1156,7 +1157,7 @@ void writeCGNS(Output& o, std::string path)
   const cgsize_t  num_parts_cg=num_parts;
   std::string timestep_or_dat;
   static char outfile[] = "chefOut.cgns";
-  int  F, B, Z, E, S, Fs, Fs2, A, Cx, Cy, Cz;
+  int  F, B, Z, E, S, SCR, SVR, SBVR, SBVS, Fs, Fs2, A, Cx, Cy, Cz;
   cgsize_t sizes[3],*e, start, end;
   int num_nodes=m->count(0);
 if(0==1){  // ilwork debugging
@@ -1209,8 +1210,53 @@ if(0==1){
        cgp_error_exit();
     // create data nodes for coordinates 
   cg_set_file_type(CG_FILE_HDF5);
-  CGNS_Coordinates(F,B,Z,o);
-  CGNS_NodalSolution(F,B,Z,o);
+  CGNS_Coordinates(F,B,Z, o);
+// Paraview will only viz the first sol node created so control that with writeCGNSFiles flag
+
+// notes on FaceCenter Fails
+//        int ec0=cg_sol_write(F, B, Z, "BoundaryCellRank2", CGNS_ENUMV(CellCenter), &S);
+// ec0 returns 0  GOOD and ec2 below is also 0 so CellCenter works
+//        int ec1=cg_sol_write(F, B, Z, "BoundaryCellRank", CGNS_ENUMV(FaceCenter), &S);
+//  ec1 returns 1 ERROR causing ec2 to also fail since S is junk 
+//        int ec2= cgp_field_write(F, B, Z, S, CGNS_ENUMV(Integer), "BoundaryCellRank", &Fs);
+
+  if (cg_sol_write(F, B, Z, "CellRank", CGNS_ENUMV(CellCenter), &SCR)) 
+       cgp_error_exit();
+  if(o.writeCGNSFiles == 2) { // Solution
+        CGNS_NodalSolution(F,B,Z,o);
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
+            cgp_error_exit();
+  }else if(o.writeCGNSFiles == 3) { // Vertex Rank
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
+            cgp_error_exit();
+        CGNS_NodalSolution(F,B,Z,o);
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
+            cgp_error_exit();
+  }else if(o.writeCGNSFiles == 4) { // Boundary Vertex Rank
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
+            cgp_error_exit();
+        CGNS_NodalSolution(F,B,Z,o);
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
+            cgp_error_exit();
+  }else if(o.writeCGNSFiles == 5) { // Boundary Vertex SrfID
+        if (cg_sol_write(F, B, Z, "BoundaryVertexSrfID", CGNS_ENUMV(Vertex), &SBVS) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "BoundaryVertexRank", CGNS_ENUMV(Vertex), &SBVR) )
+            cgp_error_exit();
+        if (cg_sol_write(F, B, Z, "VertexRank", CGNS_ENUMV(Vertex), &SVR) )  
+            cgp_error_exit();
+        CGNS_NodalSolution(F,B,Z,o);
+  }
+  CGNS_VertexRank(F,B,Z,SVR, o);
+//  CGNS_NodalSolution(F,B,Z,o);
   // create Helper array for number of elements on rank 
   if ( cg_goto(F, B, "Zone_t", 1, NULL) ||
        cg_user_data_write("User Data") ||
@@ -1224,35 +1270,32 @@ if(0==1)  printf("Coor %d, %d, %d, \n", nCoordVec,part,Fs2);
   if ( cgp_array_write_data(Fs2, &partP1, &partP1, &nCoordVec))
        cgp_error_exit();
   cgsize_t e_written=0; 
-  if(o.writeCGNSFiles > 2) 
-    writeBlocksCGNSinteror(F,B,Z,o,&e_written);
-  if(o.writeCGNSFiles > 2) {
-    cgsize_t totBel;
-    int nblkb = o.blocks.boundary.getSize(); 
-    double** srfIDCen1 = new double*[nblkb]; // might not all be used
-    double** srfIDCen2 = new double*[nblkb];
-    int totOnRankBel=0;
-    for (int i = 0; i < nblkb; ++i) 
-      totOnRankBel += o.blocks.boundary.nElements[i];
-    int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
-    int* srfID1OnBlk = (int *)malloc( nblkb * sizeof(int));
-    int* srfID2OnBlk = (int *)malloc( nblkb * sizeof(int));
-    int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
-    int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
-    int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
-    int nStackedOnRank=0;
-    writeBlocksCGNSboundary(F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, &totBel, &nStackedOnRank, nblkb);
-    writeCGNSboundary      (F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, totOnRankBel, &totBel,  nStackedOnRank);
-    free(srfID); free(srfIDidx);
-    free(srfID1OnBlk); free(srfID2OnBlk);
-    free(startBelBlk); free(endBelBlk);
-    for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen1[i];
-    for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen2[i];
-    delete [] srfIDCen1; delete [] srfIDCen2;
-    if(cgp_close(F)) cgp_error_exit();
-    double t1 = PCU_Time();
-    if (!PCU_Comm_Self())
-      lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
-  }
+  writeBlocksCGNSinterior(F,B,Z,SCR,o,&e_written);
+  cgsize_t totBel;
+  int nblkb = o.blocks.boundary.getSize(); 
+  double** srfIDCen1 = new double*[nblkb]; // might not all be used
+  double** srfIDCen2 = new double*[nblkb];
+  int totOnRankBel=0;
+  for (int i = 0; i < nblkb; ++i) 
+    totOnRankBel += o.blocks.boundary.nElements[i];
+  int* srfID = (int *)malloc( totOnRankBel * sizeof(int));
+  int* srfID1OnBlk = (int *)malloc( nblkb * sizeof(int));
+  int* srfID2OnBlk = (int *)malloc( nblkb * sizeof(int));
+  int* startBelBlk = (int *)malloc( nblkb * sizeof(int));
+  int* endBelBlk = (int *)malloc( nblkb * sizeof(int));
+  int* srfIDidx = (int *)malloc( totOnRankBel * sizeof(int));
+  int nStackedOnRank=0;
+  writeBlocksCGNSboundary(F,B,Z, SBVR, SBVS, o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, &totBel, &nStackedOnRank, nblkb);
+  writeCGNSboundary      (F,B,Z,o, srfID, srfIDidx, srfIDCen1, srfIDCen2, srfID1OnBlk, srfID2OnBlk, startBelBlk, endBelBlk, &e_written, totOnRankBel, &totBel,  nStackedOnRank);
+  free(srfID); free(srfIDidx);
+  free(srfID1OnBlk); free(srfID2OnBlk);
+  free(startBelBlk); free(endBelBlk);
+  for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen1[i];
+  for (int i = 0; i < nStackedOnRank; ++i) delete [] srfIDCen2[i];
+  delete [] srfIDCen1; delete [] srfIDCen2;
+  if(cgp_close(F)) cgp_error_exit();
+  double t1 = PCU_Time();
+  if (!PCU_Comm_Self())
+    lion_oprint(1,"CGNS file written in %f seconds\n", t1 - t0);
 }
 } // namespace
