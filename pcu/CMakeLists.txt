@@ -34,6 +34,10 @@ set(HEADERS
 
 # Add the pcu library
 add_library(pcu ${SOURCES})
+# this compiler definition is needed to silence warnings caused by the openmpi CXX
+# bindings that are depreciated. This is needed on gcc 8 forward.
+# see: https://github.com/open-mpi/ompi/issues/5157
+target_compile_definitions(pcu PUBLIC OMPI_SKIP_MPICXX)
 
 # Include directories
 target_include_directories(pcu
