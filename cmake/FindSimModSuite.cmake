@@ -171,10 +171,23 @@ if (UNIX AND NOT APPLE)
   set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+if (SIM_ARCHOS STREQUAL x64_rhel8_gcc83)
+  find_library(XDR_LIB tirpc)
+  if(XDR_LIB)
+    message(STATUS "Found XDR_LIB ${XDR_LIB}")
+    set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${XDR_LIB})
+  else()
+    message(FATAL_ERROR "The libtirpc library was not found.  It defines xdr symbols "
+    "(e.g., xdrmem_create) that are need by SimModSuite on systems using "
+    "glibc newer than 2.32.  Note, glibc starting with 2.26 could optionally "
+    "have been built without the xdr symbols.")
+  endif()
+endif()
+
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set SIMMODSUITE_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(SIMMODSUITE  DEFAULT_MSG
+find_package_handle_standard_args(SimModSuite  DEFAULT_MSG
   SIMMODSUITE_LIBS SIMMODSUITE_INCLUDE_DIR
   SIMMODSUITE_MAJOR_VERSION SIMMODSUITE_MINOR_VERSION)
 
