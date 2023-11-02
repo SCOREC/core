@@ -171,7 +171,7 @@ int main(int argc, char** argv)
   }
   apfCapMesh->end(it);
 
-  in = ma::configure(apfCapMesh, scaleField, frameField);
+  in = ma::makeAdvanced(ma::configure(apfCapMesh, scaleField, frameField));
   in->shouldSnap = true;
   in->shouldTransferParametric = true;
   in->shouldFixShape = true;

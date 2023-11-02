@@ -312,7 +312,7 @@ int main(int argc, char** argv)
 
   // adapt setup
   ma::Input* in;
-  in = ma::configure(apfCapMesh, adaptSize);
+  in = ma::makeAdvanced(ma::configure(apfCapMesh, adaptSize));
   in->shouldSnap = true;
   in->shouldTransferParametric = true;
   in->shouldFixShape = true;

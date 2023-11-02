@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 
   // adapt setup
   ma::Input* in;
-  in = ma::configure(apfCapMesh, scaleField);
+  in = ma::makeAdvanced(ma::configure(apfCapMesh, scaleField));
   /* in = ma::configure(apfCapMesh, scaleField, frameField); */
   in->shouldSnap = true;
   in->shouldTransferParametric = true;

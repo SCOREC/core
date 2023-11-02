@@ -1017,7 +1017,7 @@ int main(int argc, char** argv)
   ma::Input* in;
   apf::Field* adaptSize  = apf::createFieldOn(mesh, "adapt_size", apf::SCALAR);
   apf::copyData(adaptSize, finalSizeField);
-  in = ma::configure(mesh, adaptSize);
+  in = ma::makeAdvanced(ma::configure(mesh, adaptSize));
   ma::validateInput(in);
   in->shouldRunPreZoltan = true;
   in->shouldRunMidZoltan = true;

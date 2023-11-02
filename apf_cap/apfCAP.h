@@ -153,6 +153,7 @@ class MeshCAP : public Mesh2
     void migrate(Migration* plan);
     void setRemotes(MeshEntity*, Copies&) {}
     void addRemote(MeshEntity*, int, MeshEntity*) {}
+    void clearRemotes(MeshEntity*) {}
 
 
     /* --------------------------------------------------------------------- */
