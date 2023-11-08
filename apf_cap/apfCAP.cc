@@ -36,21 +36,6 @@ static int const T21[] = {0,1
                          ,1,2
                          ,2,3};
 
-/* static int const H01 = {}; */
-/* static int const H10 = {}; */
-/* static int const H12 = {}; */
-/* static int const H21 = {}; */
-
-/* static int const W01 = {}; */
-/* static int const W10 = {}; */
-/* static int const W12 = {}; */
-/* static int const W21 = {}; */
-
-/* static int const P01 = {}; */
-/* static int const P10 = {}; */
-/* static int const P12 = {}; */
-/* static int const P21 = {}; */
-
 static int const* convs[Mesh::TYPES][4][4] =
 {{{0,0  ,0,0},{0  ,0,0  ,0},{0,0  ,0,0},{0,0,0,0}}
 ,{{0,0  ,0,0},{0  ,0,0  ,0},{0,0  ,0,0},{0,0,0,0}}
@@ -60,9 +45,6 @@ static int const* convs[Mesh::TYPES][4][4] =
 ,{{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}}
 ,{{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}}
 ,{{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}}
-/* ,{{0,H01,0,0},{H10,0,H12,0},{0,H21,0,0},{0,0,0,0}} */
-/* ,{{0,W01,0,0},{W10,0,W12,0},{0,W21,0,0},{0,0,0,0}} */
-/* ,{{0,P01,0,0},{P10,0,P12,0},{0,P21,0,0},{0,0,0,0}} */
 };
 
 // entity type-dimension count table
@@ -95,39 +77,6 @@ M_MTopo fromEntity(MeshEntity* e)
   return topo;
 }
 
-/* static void setupAdjacencies(MeshDatabaseInterface* mdb) */
-/* { */
-/*   // downward adjacencies */
-/*   MStatus st; */
-/*   if( !mdb->adjacency_exists(TOPO_EDGE, TOPO_VERTEX)) { */
-/*     st = mdb->compute_adjacency(TOPO_EDGE, TOPO_VERTEX); */
-/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
-/*   } */
-
-/*   if( !mdb->adjacency_exists(TOPO_FACE, TOPO_VERTEX)) { */
-/*     st = mdb->compute_adjacency(TOPO_FACE, TOPO_VERTEX); */
-/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
-/*   } */
-/*   if( !mdb->adjacency_exists(TOPO_FACE, TOPO_EDGE)) { */
-/*     st = mdb->compute_adjacency(TOPO_FACE, TOPO_EDGE); */
-/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
-/*   } */
-
-/*   if( !mdb->adjacency_exists(TOPO_REGION, TOPO_VERTEX)) { */
-/*     st = mdb->compute_adjacency(TOPO_REGION, TOPO_VERTEX); */
-/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
-/*   } */
-/*   if( !mdb->adjacency_exists(TOPO_REGION, TOPO_EDGE)) { */
-/*     st = mdb->compute_adjacency(TOPO_REGION, TOPO_EDGE); */
-/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
-/*   } */
-/*   if( !mdb->adjacency_exists(TOPO_REGION, TOPO_FACE)) { */
-/*     st = mdb->compute_adjacency(TOPO_REGION, TOPO_FACE); */
-/*     PCU_ALWAYS_ASSERT(st == STATUS_OK); */
-/*   } */
-/*   // upward adjacencies */
-/* } */
-
 MeshCAP::MeshCAP(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb):
   meshInterface(mdb), geomInterface(gdb)
 {
@@ -138,10 +87,6 @@ MeshCAP::MeshCAP(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb):
   d = numRegions ? 3 : 2;
   iterDim = -1;
   model = gmi_import_cap(geomInterface);
-  /* setupAdjacencies(meshInterface); */
-  /* MStatus stat = meshInterface->compute_adjacency(); */
-  /* /1* MStatus stat = meshInterface->compute_adjacency(TOPO_FACE, TOPO_EDGE); *1/ */
-  /* PCU_ALWAYS_ASSERT(stat == STATUS_OK); */
 }
 
 MeshCAP::~MeshCAP()
@@ -232,8 +177,6 @@ void MeshCAP::setPoint_(MeshEntity * me, int node, Vector3 const & p)
 void MeshCAP::getParam(MeshEntity* e, Vector3& point)
 {
   M_MTopo topo = fromEntity(e);
-  /* int d = getModelType(toModel(e)); */
-  /* PCU_ALWAYS_ASSERT(d==1 || d==2); */
   double u, v;
   GeometryTopoType gtype;
   meshInterface->get_vertex_uv_parameters(topo, u, v, gtype);
@@ -243,8 +186,6 @@ void MeshCAP::getParam(MeshEntity* e, Vector3& point)
 void MeshCAP::setParam(MeshEntity* e, Vector3 const& point)
 {
   M_MTopo topo = fromEntity(e);
-  /* int d = getModelType(toModel(e)); */
-  /* PCU_ALWAYS_ASSERT(d==1 || d==2); */
   meshInterface->set_vertex_uv_parameters(topo, point[0], point[1]);
 }
 
@@ -399,7 +340,6 @@ int MeshCAP::getDownward(MeshEntity* e,
   for (std::size_t i = 0; i < adjTopos.size(); i++)
     down[i] = toEntity(adjTopos[i]);
 
-  /* std::cout << adjTopos.size() << "," << Mesh::adjacentCount[getType(e)][dimension] << std::endl; */
   PCU_ALWAYS_ASSERT(adjTopos.size() == (std::size_t)Mesh::adjacentCount[getType(e)][dimension]);
   return adjTopos.size();
 }

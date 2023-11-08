@@ -7,10 +7,6 @@ if(NOT ENABLE_CAPSTONE)
   return()
 endif()
 
-# this file brings .. from CMake to C++
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gmi_cap_config.h.in"
-               "${CMAKE_CURRENT_BINARY_DIR}/gmi_cap_config.h")
-
 #Sources & Headers
 set(SOURCES gmi_cap.cc)
 set(HEADERS gmi_cap.h)

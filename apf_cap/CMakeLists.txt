@@ -17,9 +17,6 @@ target_include_directories(apf_cap PUBLIC
     $<INSTALL_INTERFACE:include>
     )
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/apf_capConfig.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/apf_capConfig.h")
 #directory containing apf_simConfig.h
 target_include_directories(apf_cap PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
