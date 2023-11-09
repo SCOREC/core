@@ -133,7 +133,8 @@ if(ENABLE_SIMMETRIX)
 endif()
 
 if(ENABLE_CAPSTONE)
-  find_package(CreateMG REQUIRED)
+  set(SCOREC_USE_CreateMG_DEFAULT ${ENABLE_CAPSTONE})
+  bob_public_dep(CreateMG)
 endif()
 
 if(ENABLE_OMEGA_H)
