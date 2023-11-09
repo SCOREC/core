@@ -16,7 +16,7 @@ namespace apf {
  * of verts in a tet given the downward faces,
  * for example.
  */
-static int const t01[] =     {0,1,1,2,2,0};
+static int const t01[] = {0,1,1,2,2,0};
 static int const t10[] = {2,0,0,1,1,2};
 
 static int const q01[] = {};

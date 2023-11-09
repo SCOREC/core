@@ -504,7 +504,7 @@ void setSizeFieldAlt(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* siz
 
 }
 
-void setSizeFieldAlt2(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeField,apf::Field* currentSize,double lambda_max,double lambda_cutoff,double h_global,double factor)
+void setSizeFieldAlt2(apf::Mesh* mesh, apf::Field* lambdaMaxField,apf::Field* sizeField,apf::Field* currentSize,double lambda_cutoff,double h_global,double factor)
 {
   apf::MeshIterator* it=mesh->begin(0);
   apf::MeshEntity* vert;
@@ -536,9 +536,9 @@ static std::vector<bool> decodeBitFields(const char* bitFields)
 {
   std::vector<bool> res;
   res.resize(strlen(bitFields));
-  printf("bitfields length is %d\n", strlen(bitFields));
+  printf("bitfields length is %zd\n", strlen(bitFields));
   PCU_ALWAYS_ASSERT_VERBOSE(strlen(bitFields) == 4, "bitfields length needs to be 4");
-  for (int i = 0; i < strlen(bitFields); i++) {
+  for (unsigned i = 0; i < strlen(bitFields); i++) {
     if (bitFields[i] == '0')
       res[i] = false;
     else if (bitFields[i] == '1')
@@ -870,7 +870,7 @@ int main(int argc, char** argv)
   } else if (bitFields[3] == '1') {
     // TODO: Change from hard-coding
     double factor_fsl = 4.0;
-    setSizeFieldAlt2(mesh,speedBased.lambdaStrandMax,speedBased.sizeField,currentSize,speedBased.lambda_max,speedBased.lambda_cutoff(),h_global,factor_fsl);
+    setSizeFieldAlt2(mesh,speedBased.lambdaStrandMax,speedBased.sizeField,currentSize,speedBased.lambda_cutoff(),h_global,factor_fsl);
   }
 
   apf::Field* surfaceSpeedField = apf::createLagrangeField(mesh,"surface_speed",apf::SCALAR,1);

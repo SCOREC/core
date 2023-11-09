@@ -1,6 +1,6 @@
 function(util_exe_func exename srcname)
   add_executable(${exename} ${srcname})
-  target_link_libraries(${exename} core)
+  target_link_libraries(${exename} core apf_cap)
   bob_export_target(${exename})
   bob_end_subdir()
 endfunction(util_exe_func)
