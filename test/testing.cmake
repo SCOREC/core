@@ -871,3 +871,9 @@ if (PCU_COMPRESS)
   mpi_test(chef10 4 ${CMAKE_CURRENT_BINARY_DIR}/chef adapt.reducePartCount.inp
     WORKING_DIRECTORY ${MDIR}/run)
 endif()
+
+if(ENABLE_CAPSTONE)
+  mpi_test(capCyl 1 ./capCyl ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(capWing 1 ./capWing ${MESHES}/cap/wing_surf_only.cre)
+  mpi_test(capCube 1 ./capCube ${MESHES}/cap/cube_surf_only.cre)
+endif()
