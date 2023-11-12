@@ -40,7 +40,7 @@ set(PARMETIS_INCLUDE_DIRS ${PARMETIS_INCLUDE_DIR} ${METIS_INCLUDE_DIR})
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set PARMETIS_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(PARMETIS  DEFAULT_MSG
+find_package_handle_standard_args(Parmetis  DEFAULT_MSG
     PARMETIS_LIBRARY METIS_LIBRARY PARMETIS_INCLUDE_DIR)
 
 mark_as_advanced(PARMETIS_INCLUDE_DIR PARMETIS_LIBRARY METIS_LIBRARY)
