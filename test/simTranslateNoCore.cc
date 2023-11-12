@@ -124,7 +124,13 @@ int main(int argc, char* argv[])
   //Setup
   try {
     MS_init();
-    //gmi_sim_start(); TODO - replace with sim parasolid and/or sim acis start calls
+#ifdef SIM_PARASOLID
+    SimParasolid_start(1);
+#endif
+#ifdef SIM_ACIS
+    SimAcis_start(1);
+#endif
+
     SimModel_start();
     Sim_readLicenseFile(0);
 
@@ -195,7 +201,12 @@ int main(int argc, char* argv[])
     GM_release(simmodel);
     Progress_delete(progress);
 
-    //gmi_sim_stop(); //TODO replace with sim parasolid and/or sim acis stop calls
+#ifdef SIM_PARASOLID
+    SimParasolid_stop(1);
+#endif
+#ifdef SIM_ACIS
+    SimAcis_stop(1);
+#endif
     Sim_unregisterAllKeys();
     SimModel_stop();
     MS_exit();
