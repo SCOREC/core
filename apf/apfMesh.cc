@@ -196,6 +196,7 @@ void Mesh::getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
   ModelEntity* from_g = toModel(e);
   if (g == from_g)
     return getParam(e, p);
+  
   gmi_ent* from = (gmi_ent*)from_g;
   gmi_ent* to = (gmi_ent*)g;
   Vector3 from_p;

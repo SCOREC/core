@@ -5,6 +5,9 @@
 #include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
+#ifdef PUMI_HAS_EGADS
+#include "gmi_egads.h"
+#endif
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -78,6 +81,10 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
+#ifdef PUMI_HAS_EGADS
+  gmi_register_egads();
+  gmi_egads_start();
+#endif
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
@@ -102,6 +109,9 @@ int main(int argc, char** argv)
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);
+#ifdef PUMI_HAS_EGADS
+  gmi_egads_stop();
+#endif
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();

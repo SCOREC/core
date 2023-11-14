@@ -50,6 +50,11 @@ message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
+# Use <PackageName>_ROOT cmake or environment variables when finding packages
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
 # Gets C99 support
 find_package(C99 REQUIRED)
 set(CMAKE_C_FLAGS "${C99_C_FLAGS} ${CMAKE_C_FLAGS}")
@@ -104,6 +109,7 @@ set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
 option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
@@ -125,6 +131,17 @@ endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
+endif()
+
+option(ENABLE_EGADS "Build with EGADS support" OFF)
+message(STATUS "ENABLE_EGADS: ${ENABLE_EGADS}")
+
+if(ENABLE_EGADS)
+  option(PUMI_USE_EGADSLITE "Build with EGADSlite" ON)
+  set(ESP_USE_EGADSLITE ${PUMI_USE_EGADSLITE})
+  message(STATUS "PUMI_USE_EGADSLITE: ${PUMI_USE_EGADSLITE}")
+
+  find_package(ESP REQUIRED COMPONENTS egads)
 endif()
 
 if(ENABLE_OMEGA_H)
@@ -149,6 +166,7 @@ add_subdirectory(lion)
 add_subdirectory(pcu)
 add_subdirectory(gmi)
 add_subdirectory(gmi_sim)
+add_subdirectory(gmi_egads)
 add_subdirectory(can)
 add_subdirectory(mth)
 add_subdirectory(apf)
