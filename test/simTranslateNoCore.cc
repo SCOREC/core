@@ -11,6 +11,7 @@
 #include "SimAdvModel.h"
 #include "SimUtil.h"
 #include "SimMessages.h"
+#include "SimLicense.h"
 #include "MeshSim.h"
 #include "SimAttribute.h"
 #include "AttributeTypes.h"
