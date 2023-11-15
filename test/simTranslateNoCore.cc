@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 #ifdef SIM_ACIS
     SimAcis_stop(1);
 #endif
-    Sim_unregisterAllKeys();
+    SimLicense_stop();
     SimModel_stop();
     MS_exit();
   } catch(pSimError err) {
