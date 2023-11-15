@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
 #endif
 
     SimModel_start();
-    Sim_readLicenseFile(0);
+    SimLicense_start("geomsim_core,geomsim_parasolid", NULL);
 
     Sim_setMessageHandler(messageHandler);
     progress = Progress_new();
