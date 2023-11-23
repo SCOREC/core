@@ -91,6 +91,7 @@ MeshCAP::MeshCAP(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb):
 
 MeshCAP::~MeshCAP()
 {
+  if (model) destroyNative();
 }
 
 int MeshCAP::getDimension()
@@ -151,7 +152,8 @@ void MeshCAP::writeNative(const char* fileName)
 
 void MeshCAP::destroyNative()
 {
-  apf::fail("MeshCAP::destroyNative called!\n");
+  if (model) gmi_destroy(model);
+  model = nullptr;
 }
 
 void MeshCAP::getPoint_(MeshEntity* e, int node, Vector3& point)
