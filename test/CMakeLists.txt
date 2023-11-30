@@ -209,6 +209,18 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(highOrderSizeFields highOrderSizeFields.cc)
 endif()
 
+if(ENABLE_CAPSTONE)
+  test_exe_func(capCyl capCyl.cc)
+  target_link_libraries(capCyl apf_cap)
+  target_include_directories(capCyl PUBLIC "${PROJECT_SOURCE_DIR}/capstone_clis")
+  test_exe_func(capWing capWing.cc)
+  target_link_libraries(capWing apf_cap)
+  target_include_directories(capWing PUBLIC "${PROJECT_SOURCE_DIR}/capstone_clis")
+  test_exe_func(capCube capCube.cc)
+  target_link_libraries(capCube apf_cap)
+  target_include_directories(capCube PUBLIC "${PROJECT_SOURCE_DIR}/capstone_clis")
+endif()
+
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
 # in scorec-config.cmake
