@@ -3,6 +3,10 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
+if(NOT ENABLE_CAPSTONE)
+  return()
+endif()
+
 #Sources & Headers
 set(SOURCES apfCAP.cc)
 set(HEADERS apfCAP.h)
