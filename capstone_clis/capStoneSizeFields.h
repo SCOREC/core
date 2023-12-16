@@ -1,4 +1,5 @@
-
+#include <lionPrint.h>
+#include <ma.h>
 
 // analytic size field classes //
 class UniformAniso : public ma::AnisotropicFunction
@@ -102,6 +103,81 @@ class Shock : public ma::AnisotropicFunction
     }
   private:
     ma::Mesh* mesh;
+};
+
+// Shock along a cylinder like the one in
+// https://www.scorec.rpi.edu/~cwsmith/SCOREC//SimModSuite_2023.1-230428dev/MeshSimAdapt/group__MSAEx__GenAnisoMesh.html
+class CylBoundaryLayer : public ma::AnisotropicFunction {
+  ma::Mesh* m;
+  enum Axis : int {X = 0, Y = 1, Z = 2} axis;
+  double radius, length;
+
+public:
+  CylBoundaryLayer(ma::Mesh* mesh): m(mesh) {
+    ma::Vector bmin(HUGE_VAL, HUGE_VAL, HUGE_VAL),
+               bmax(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
+    ma::Iterator *it = m->begin(0);
+    ma::Entity *e;
+    while ((e = m->iterate(it))) {
+      ma::Vector p = ma::getPosition(m, e);
+
+      if (p.x() < bmin.x()) bmin.x() = p.x();
+      if (p.x() > bmax.x()) bmax.x() = p.x();
+      if (p.y() < bmin.y()) bmin.y() = p.y();
+      if (p.y() > bmax.y()) bmax.y() = p.y();
+      if (p.z() < bmin.z()) bmin.z() = p.z();
+      if (p.z() > bmax.z()) bmax.z() = p.z();
+    }
+    m->end(it);
+
+    ma::Vector len = bmax - bmin;
+    if (len.x() > len.y() && len.x() > len.z()) {
+      lion_oprint(1, "Shock2 along X axis.\n");
+      length = len.x();
+      axis = Axis::X;
+      // Radial lengths should be the same, but we find average diameter and
+      // then halve that.
+      radius = (len.y() / 2 + len.z() / 2) / 2;
+    } else if (len.y() > len.x() && len.y() > len.z()) {
+      lion_oprint(1, "Shock2 along Y axis.\n");
+      length = len.y();
+      axis = Axis::Y;
+      radius = (len.x() / 2 + len.z() / 2) / 2;
+    } else {
+      lion_oprint(1, "Shock2 along Z axis.\n");
+      length = len.z();
+      axis = Axis::Z;
+      radius = (len.x() / 2 + len.y() / 2) / 2;
+    }
+  }
+
+  void getValue(ma::Entity *v, ma::Matrix &R, ma::Vector &H) {
+    const double M = 2.5, aspect_ratio = 16;
+    ma::Vector p = ma::getPosition(m, v);
+    H = ma::Vector(1, 1, 1) * radius / M;
+    R[axis] = ma::Vector(0, 0, 0);
+    R[axis][axis] = 1;
+
+    int cosDirs[] = {1, 2, 0}, sinDirs[] = {2, 0, 1}; // Rotated sin/cos axes
+    int cosDir = cosDirs[axis], sinDir = sinDirs[axis];
+
+    double distFromAxis = std::sqrt(p[cosDir] * p[cosDir] + p[sinDir] * p[sinDir]);
+
+    if (std::fabs(radius * radius - p[cosDir] * p[cosDir] -
+                  p[sinDir] * p[sinDir]) < radius*radius / 4) {
+      H[cosDir] /= aspect_ratio;
+    }
+
+    double cosT = p[cosDir] / distFromAxis;
+    double sinT = p[sinDir] / distFromAxis;
+    R[cosDir][cosDir] = cosT; R[cosDir][sinDir] = -sinT; R[cosDir][axis] = 0;
+    R[sinDir][cosDir] = sinT; R[sinDir][sinDir] = cosT; R[sinDir][axis] = 0;
+
+    // Normalize R rows. Skip axis which is already normal.
+    for (int i = 0; i < 3; ++i) {
+      if (i != axis) R[i] = R[i].normalize();
+    }
+  }
 };
 
 class Uniform : public ma::IsotropicFunction
