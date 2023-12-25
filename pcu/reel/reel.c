@@ -59,6 +59,6 @@ void reel_protect(void)
 #else
 void reel_protect(void)
 {
-  reel_fail(stderr, "reel_protect only supported on Linux and OS X");
+  reel_fail("reel_protect only supported on Linux and OS X");
 }
 #endif
