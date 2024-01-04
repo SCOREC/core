@@ -39,6 +39,12 @@ add_library(pcu ${SOURCES})
 # see: https://github.com/open-mpi/ompi/issues/5157
 target_compile_definitions(pcu PUBLIC OMPI_SKIP_MPICXX)
 
+execute_process(COMMAND uname OUTPUT_VARIABLE UNAME_STR)
+string(STRIP "${UNAME_STR}" UNAME_STR)
+if(UNAME_STR STREQUAL "FreeBSD" OR UNAME_STR STREQUAL "NetBSD" OR UNAME_STR STREQUAL "OpenBSD" OR UNAME_STR STREQUAL "DragonFly")
+target_link_libraries(pcu PRIVATE execinfo)
+endif()
+
 # Include directories
 target_include_directories(pcu
     PUBLIC
