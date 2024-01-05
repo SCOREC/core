@@ -95,13 +95,9 @@ int main(int argc, char** argv) {
   bool volume_flag = false, write_flag = false, analytic_flag = false,
        verbose_flag = false;
   for (int i = 1; i < argc - 2; ++i) {
-    bool flagDone = false;
     if (*argv[i] == '-') {
       for (int j = 1; argv[i][j] != '\0'; ++j) {
         switch(argv[i][j]) {
-        case '-':
-          flagDone = true;
-          break;
         case 'a':
           analytic_flag = true;
           break;
