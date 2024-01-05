@@ -44,6 +44,21 @@ OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR CMAKE_SYSTEM_NAME STREQUAL "DragonFly
 target_link_libraries(pcu PRIVATE execinfo)
 endif()
 
+# Check for mallinfo, mallctl for PCU_GetMem().
+include(CheckCXXSymbolExists)
+check_cxx_symbol_exists(mallinfo "malloc.h" PUMI_HAS_MALLINFO)
+check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
+check_cxx_symbol_exists(mallctl "malloc_np.h" PUMI_HAS_MALLCTL)
+if(PUMI_HAS_MALLINFO)
+  target_compile_definitions(pcu PRIVATE -DPUMI_HAS_MALLINFO)
+endif()
+if(PUMI_HAS_MALLINFO2)
+  target_compile_definitions(pcu PRIVATE -DPUMI_HAS_MALLINFO2)
+endif()
+if(PUMI_HAS_MALLCTL)
+  target_compile_definitions(pcu PRIVATE -DPUMI_HAS_MALLCTL)
+endif()
+
 # Include directories
 target_include_directories(pcu
     PUBLIC
