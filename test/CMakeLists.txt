@@ -209,6 +209,11 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(highOrderSizeFields highOrderSizeFields.cc)
 endif()
 
+if(ENABLE_CAPSTONE)
+  util_exe_func(capVol capVol.cc)
+  target_include_directories(capVol PRIVATE "${PROJECT_SOURCE_DIR}/capstone_clis")
+endif()
+
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
 # in scorec-config.cmake

@@ -4,7 +4,7 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # This is the top level CMake file for the SCOREC build
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8)
 
 project(SCOREC VERSION 2.3.0 LANGUAGES CXX C)
 
@@ -104,12 +104,17 @@ set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+option(ENABLE_CAPSTONE "Build with Capstone support" OFF)
+message(STATUS "ENABLE_CAPSTONE: ${ENABLE_CAPSTONE}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
 option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
 
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
+endif()
+if(ENABLE_CAPSTONE)
+  add_definitions(-DHAVE_CAPSTONE)
 endif()
 
 option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
@@ -125,6 +130,11 @@ endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
+endif()
+
+if(ENABLE_CAPSTONE)
+  set(SCOREC_USE_CreateMG_DEFAULT ${ENABLE_CAPSTONE})
+  bob_public_dep(CreateMG)
 endif()
 
 if(ENABLE_OMEGA_H)
@@ -166,6 +176,8 @@ add_subdirectory(phasta)
 add_subdirectory(stk)
 add_subdirectory(dsp)
 add_subdirectory(omega_h)
+add_subdirectory(gmi_cap)
+add_subdirectory(apf_cap)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
@@ -190,6 +202,7 @@ endif()
 
 if(BUILD_EXES)
   add_subdirectory(test)
+  add_subdirectory(capstone_clis)
 endif()
 
 if(PUMI_PYTHON_INTERFACE)

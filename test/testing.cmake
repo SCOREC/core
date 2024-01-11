@@ -867,4 +867,18 @@ if (PCU_COMPRESS)
       ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
       WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
   endif()
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
+  mpi_test(chef10 4 ${CMAKE_CURRENT_BINARY_DIR}/chef adapt.reducePartCount.inp
+    WORKING_DIRECTORY ${MDIR}/run)
+endif()
+
+if(ENABLE_CAPSTONE)
+  mpi_test(capCyl 1 ./capVol -v 1 ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(capWing 1 ./capVol -v 2 ${MESHES}/cap/wing_surf_only.cre)
+  mpi_test(capCube 1 ./capVol -v 3 ${MESHES}/cap/cube_surf_only.cre)
+  mpi_test(capCyl2 1 ./capVol -v 4 ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(capVolCyl 1 ./capVol -vg 1 ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(capVolWing 1 ./capVol -vg 2 ${MESHES}/cap/wing_surf_only.cre)
+  mpi_test(capVolCube 1 ./capVol -vg 3 ${MESHES}/cap/cube_surf_only.cre)
+  mpi_test(capVolCyl2 1 ./capVol -vg 4 ${MESHES}/cap/cyl_surf_only.cre)
 endif()
