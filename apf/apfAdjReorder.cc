@@ -259,8 +259,8 @@ namespace apf {
     MeshTag* numbering = mesh->createIntTag(name,1);
     while (node_label >= 0)
       reorderConnected(mesh,numbering,node_label,element_label);
-    PCU_ALWAYS_ASSERT(node_label==-1);
-    PCU_ALWAYS_ASSERT(element_label==-1);
+    mesh->getPCU()->PCU_ALWAYS_ASSERT(node_label==-1);
+    mesh->getPCU()->PCU_ALWAYS_ASSERT(element_label==-1);
     return numbering;
   }
 
