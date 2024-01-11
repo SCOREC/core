@@ -166,6 +166,7 @@ void Mesh::init(FieldShape* s)
   baseP->init("coordinates",this,s,data);
   data->init(baseP);
   hasFrozenFields = false;
+  pcu_ = global_pcu
 }
 
 Mesh::~Mesh()

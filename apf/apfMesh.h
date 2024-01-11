@@ -402,6 +402,7 @@ class Mesh
     std::vector<Field*> fields;
     std::vector<Numbering*> numberings;
     std::vector<GlobalNumbering*> globalNumberings;
+    pcu::PCU* pcu_;
 };
 
 /** \brief run consistency checks on an apf::Mesh structure
