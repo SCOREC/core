@@ -33,7 +33,7 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
       continue;
     MeshEntity* e;
     MeshIterator* it = m->begin(d);
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     while ((e = m->iterate(it)))
     {
       if (( ! data->hasEntity(e))||
@@ -58,8 +58,8 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
       }
     }
     m->end(it);
-    PCU_Comm_Send();
-    while (PCU_Comm_Receive())
+    m->getPCU()->Send();
+    while (m->getPCU()->Receive())
     {
       MeshEntity* e;
       PCU_COMM_UNPACK(e);
@@ -94,7 +94,7 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
 
     MeshEntity* e;
     MeshIterator* it = m->begin(d);
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     while ((e = m->iterate(it)))
     {
       /* send to all parts that can see this entity */
@@ -140,9 +140,9 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
     }
     m->end(it);
 
-    PCU_Comm_Send();
-    while (PCU_Comm_Listen())
-      while ( ! PCU_Comm_Unpacked())
+    m->getPCU()->Send();
+    while (m->getPCU()->Listen())
+      while ( ! m->getPCU()->Unpacked())
       { /* receive and add. we only care about correctness
            on the owners */
         MeshEntity* e;

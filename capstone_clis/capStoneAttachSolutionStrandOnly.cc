@@ -247,11 +247,11 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
   int needsParallel=1;
   while(needsParallel)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     needsParallel = serialGradation(m,size_iso,markedEdges,gradingFactor);
 
     PCU_Add_Ints(&needsParallel,1);
-    PCU_Comm_Send(); 
+    m->getPCU()->Send(); 
 
     apf::MeshEntity* ent;
     double receivedSize;
@@ -263,7 +263,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
 
     apf::Copies remotes;
     //owning copies are receiving
-    while(PCU_Comm_Receive())
+    while(m->getPCU()->Receive())
     {
       PCU_COMM_UNPACK(ent);
       PCU_COMM_UNPACK(receivedSize);
@@ -293,7 +293,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
       updateRemoteVertices.push(ent);
     }
 
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
 
     while(!updateRemoteVertices.empty())
     { 
@@ -308,9 +308,9 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
       updateRemoteVertices.pop();
     }
 
-    PCU_Comm_Send();
+    m->getPCU()->Send();
     //while remote copies are receiving
-    while(PCU_Comm_Receive())
+    while(m->getPCU()->Receive())
     {
       //unpack
       PCU_COMM_UNPACK(ent);

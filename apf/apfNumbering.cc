@@ -401,7 +401,7 @@ static void synchronizeEntitySet(
     Mesh* m,
     EntitySet& set)
 {
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_ITERATE(EntitySet,set,it)
     if (m->isShared(*it))
     {
@@ -410,8 +410,8 @@ static void synchronizeEntitySet(
       APF_ITERATE(Copies,remotes,rit)
         PCU_COMM_PACK(rit->first,rit->second);
     }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive())
   {
     MeshEntity* e;
     PCU_COMM_UNPACK(e);

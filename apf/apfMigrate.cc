@@ -28,7 +28,7 @@ static void getAffected(
     EntityVector affected[4])
 {
   int maxDimension = m->getDimension();
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   affected[maxDimension].reserve(plan->count());
   for (int i=0; i < plan->count(); ++i)
   {
@@ -43,7 +43,7 @@ static void getAffected(
   for (int dimension=maxDimension-1; dimension >= 0; --dimension)
   {
     int upDimension = dimension + 1;
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     APF_ITERATE(EntityVector,affected[upDimension],it)
     {
       MeshEntity* up = *it;
@@ -69,8 +69,8 @@ static void getAffected(
         }
       }//downward adjacent loop
     }//upward affected loop
-    PCU_Comm_Send();
-    while (PCU_Comm_Receive())
+    m->getPCU()->Send();
+    while (m->getPCU()->Receive())
     {
       MeshEntity* entity;
       PCU_COMM_UNPACK(entity);
@@ -117,7 +117,7 @@ void reduceMatchingToSenders(
     EntityVector senders[4])
 {
   if ( ! m->hasMatching()) return;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (int d=0; d < 4; ++d)
   {
     for (size_t i=0; i < senders[d].size(); ++i)
@@ -135,11 +135,11 @@ void reduceMatchingToSenders(
       m->clearMatches(e);
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen())
+  m->getPCU()->Send();
+  while (m->getPCU()->Listen())
   {
-    int sender = PCU_Comm_Sender();
-    while ( ! PCU_Comm_Unpacked())
+    int sender = m->getPCU()->Sender();
+    while ( ! m->getPCU()->Unpacked())
     {
       MeshEntity* e;
       PCU_COMM_UNPACK(e);
@@ -203,7 +203,7 @@ static void updateResidences(
   }
   for (int dimension = maxDimension-1; dimension >= 0; --dimension)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     APF_ITERATE(EntityVector,affected[dimension],it)
     {
       MeshEntity* entity = *it;
@@ -226,8 +226,8 @@ static void updateResidences(
         packParts(rit->first,newResidence);
       }
     }
-    PCU_Comm_Send();
-    while(PCU_Comm_Receive())
+    m->getPCU()->Send();
+    while(m->getPCU()->Receive())
     {
       MeshEntity* entity;
       PCU_COMM_UNPACK(entity);
@@ -493,7 +493,7 @@ static MeshEntity* unpackEntity(
     Mesh2* m,
     DynamicArray<MeshTag*>& tags)
 {
-  int from = PCU_Comm_Sender();
+  int from = m->getPCU()->Sender();
   int type;
   PCU_COMM_UNPACK(type);
   MeshEntity* sender;
@@ -539,7 +539,7 @@ static void receiveEntities(
     EntityVector& received)
 {
   received.reserve(1024);
-  while (PCU_Comm_Receive())
+  while (m->getPCU()->Receive())
     received.push_back(unpackEntity(m,tags));
 }
 
@@ -564,10 +564,10 @@ static void echoRemotes(
 
 static void receiveRemotes(Mesh2* m)
 {
-  while (PCU_Comm_Listen())
+  while (m->getPCU()->Listen())
   {
-    int from = PCU_Comm_Sender();
-    while ( ! PCU_Comm_Unpacked())
+    int from = m->getPCU()->Sender();
+    while ( ! m->getPCU()->Unpacked())
     {
       MeshEntity* sender;
       PCU_COMM_UNPACK(sender);
@@ -596,7 +596,7 @@ static void getNewCopies(
   APF_ITERATE(Copies,allRemotes,it)
     if (residence.count(it->first))
       newCopies.insert(*it);
-  int rank = PCU_Comm_Self();
+  int rank = m->getPCU()->Self();
   if (residence.count(rank))
     newCopies[rank]=e;
 }
@@ -634,8 +634,8 @@ static void bcastRemotes(
     Mesh2* m,
     EntityVector& senders)
 {
-  PCU_Comm_Begin();
-  int rank = PCU_Comm_Self();
+  m->getPCU()->Begin();
+  int rank = m->getPCU()->Self();
   APF_ITERATE(EntityVector,senders,it)
   {
     MeshEntity* e = *it;
@@ -651,8 +651,8 @@ static void bcastRemotes(
     newCopies.erase(rank);
     m->setRemotes(e,newCopies);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive())
   {
     MeshEntity* e;
     PCU_COMM_UNPACK(e);
@@ -668,9 +668,9 @@ static void setupRemotes(
     EntityVector& received,
     EntityVector& senders)
 {
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   echoRemotes(m,received);
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   receiveRemotes(m);
   bcastRemotes(m,senders);
 }
@@ -684,9 +684,9 @@ void moveEntities(
   int maxDimension = m->getDimension();
   for (int dimension = 0; dimension <= maxDimension; ++dimension)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     sendEntities(m,senders[dimension],tags);
-    PCU_Comm_Send();
+    m->getPCU()->Send();
     EntityVector received;
     receiveEntities(m,tags,received);
     setupRemotes(m,received,senders[dimension]);
@@ -704,8 +704,8 @@ static void updateSenderMatching(
     EntityVector affected[4],
     EntityVector senders[4])
 {
-  PCU_Comm_Begin();
-  int self = PCU_Comm_Self();
+  m->getPCU()->Begin();
+  int self = m->getPCU()->Self();
   for (int d=0; d < 4; ++d)
   {
     for (size_t i=0; i < senders[d].size(); ++i)
@@ -736,8 +736,8 @@ static void updateSenderMatching(
     for (size_t i=0; i < affected[d].size(); ++i)
       m->clearMatches(affected[d][i]);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive())
   {
     MeshEntity* e;
     PCU_COMM_UNPACK(e);
@@ -753,8 +753,8 @@ static void bcastMatching(
     Mesh2* m,
     EntityVector senders[4])
 {
-  PCU_Comm_Begin();
-  int self = PCU_Comm_Self();
+  m->getPCU()->Begin();
+  int self = m->getPCU()->Self();
   for (int d=0; d < 4; ++d)
   {
     for (size_t i=0; i < senders[d].size(); ++i)
@@ -788,8 +788,8 @@ static void bcastMatching(
       }
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive())
   {
     MeshEntity* e;
     PCU_COMM_UNPACK(e);
@@ -826,7 +826,7 @@ void deleteOldEntities(
     Mesh2* m,
     EntityVector affected[4])
 {
-  int rank = PCU_Comm_Self();
+  int rank = m->getPCU()->Self();
   int maxDimension = m->getDimension();
   for (int d=maxDimension; d >= 0; --d)
     APF_ITERATE(EntityVector,affected[d],it)
@@ -883,7 +883,7 @@ static void migrate2(Mesh2* m, Migration* plan)
   }
   delete plan;
   size_t sent = 0;
-  while (PCU_Or(sent < tmp.size()))
+  while (m->getPCU()->Or(sent < tmp.size()))
   {
     plan = new Migration(m);
     size_t send = std::min(tmp.size() - sent, migrationLimit);
@@ -896,7 +896,7 @@ static void migrate2(Mesh2* m, Migration* plan)
 
 void migrateSilent(Mesh2* m, Migration* plan)
 {
-  if (PCU_Or(static_cast<size_t>(plan->count()) > migrationLimit))
+  if (m->getPCU()->Or(static_cast<size_t>(plan->count()) > migrationLimit))
     migrate2(m, plan);
   else
     migrate1(m, plan);

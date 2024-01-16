@@ -929,18 +929,18 @@ void writeVtkFilesRunner(const char* prefix,
 {
   if (cellDim == -1) cellDim = m->getDimension();
   double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
   {
     safe_mkdir(prefix);
-    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
+    makeVtuSubdirectories(prefix, m->getPCU()->Peers());
     writePvtuFile(prefix, m, writeFields, isWritingBinary, cellDim);
   }
-  PCU_Barrier();
+  m->getPCU()->Barrier();
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n, writeFields, isWritingBinary, cellDim);
   double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"vtk files %s written in %f seconds\n", prefix, t1 - t0);
   }

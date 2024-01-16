@@ -74,11 +74,11 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
 {
   apf::Gid max = getMax(globalToVert);
   apf::Gid total = max + 1;
-  int peers = PCU_Comm_Peers();
+  int peers = m->getPCU()->Peers();
   int quotient = total / peers;
   int remainder = total % peers;
   int mySize = quotient;
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   if (self == (peers - 1))
     mySize += remainder;
   apf::Gid myOffset = (long)self * quotient;
@@ -89,7 +89,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
 
   apf::Gid start = PCU_Exscan_Long(nverts);
 
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   apf::Gid tmpL=start / quotient;
   int tmpI=tmpL;
   int to = std::min(peers - 1, tmpI);
@@ -107,8 +107,8 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
     to = std::min(peers - 1, to + 1);
     n = std::min(quotient, nverts);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     PCU_COMM_UNPACK(start);
     PCU_COMM_UNPACK(n);
     PCU_Comm_Unpack(&c[(start - myOffset) * entries], n*entries*sizeof(T));
@@ -117,7 +117,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
   /* Tell all the owners of the data what we need */
   typedef std::vector< std::vector<int> > TmpParts;
   TmpParts tmpParts(mySize);
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
     apf::Gid gid = it->first;
     tmpL=gid / quotient;
@@ -126,16 +126,16 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
 // replaced     int to = std::min(peers - 1, gid / quotient);
     PCU_COMM_PACK(to, gid);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     apf::Gid gid;
     PCU_COMM_UNPACK(gid);
-    int from = PCU_Comm_Sender();
+    int from = m->getPCU()->Sender();
     tmpParts.at(gid - myOffset).push_back(from);
   }
 
   /* Send the data to everybody who want them */
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (int i = 0; i < mySize; ++i) {
     std::vector<int>& parts = tmpParts[i];
     for (size_t j = 0; j < parts.size(); ++j) {
@@ -145,10 +145,10 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
       PCU_Comm_Pack(to, &c[i*entries], entries*sizeof(T));
     }
   }
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   apf::MeshTag* t = createTag<T>(m,tagName,entries);
   T* v = new T[entries];
-  while (PCU_Comm_Receive()) {
+  while (m->getPCU()->Receive()) {
     apf::Gid gid;
     PCU_COMM_UNPACK(gid);
     PCU_Comm_Unpack(v, entries*sizeof(T));

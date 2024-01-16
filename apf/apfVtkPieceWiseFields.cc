@@ -101,8 +101,8 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
     apf::Vector3(0., 0., 1.)
   };
 
-  std::string fileName = getPieceFileName(PCU_Comm_Self());
-  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, PCU_Comm_Self());
+  std::string fileName = getPieceFileName(m->getPCU()->Self());
+  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, m->getPCU()->Self());
   std::stringstream buf;
   buf <<
     "# vtk DataFile Version 3.0\n"
@@ -163,7 +163,7 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
   buf << "LOOKUP_TABLE default\n";
   it = m->begin(m->getDimension());
   while( (e = m->iterate(it)) ) {
-    buf << PCU_Comm_Self() << '\n';
+    buf << m->getPCU()->Self() << '\n';
   }
   m->end(it);
 
@@ -191,7 +191,7 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
     m->end(it);
   }
   double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"writeVtuFile into buffers: %f seconds\n", t1 - t0);
   }
@@ -201,7 +201,7 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
     file << buf.rdbuf();
   }
   double t2 = PCU_Time();
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"writeNedelecVtkFile buffers to disk: %f seconds\n", t2 - t1);
   }

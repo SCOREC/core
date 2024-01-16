@@ -972,7 +972,7 @@ bool MatchedSharing::isLess(Copy const& a, Copy const& b)
 
 Copy MatchedSharing::getOwnerCopy(MeshEntity* e)
 {
-  Copy owner(PCU_Comm_Self(), e);
+  Copy owner(mesh->getPCU()->Self(), e);
   CopyArray copies;
   this->getCopies(e, copies);
   APF_ITERATE(CopyArray, copies, cit)
@@ -990,7 +990,7 @@ int MatchedSharing::getOwner(MeshEntity* e)
 bool MatchedSharing::isOwned(MeshEntity* e)
 {
   Copy owner = this->getOwnerCopy(e);
-  return owner.peer == PCU_Comm_Self() && owner.entity == e;
+  return owner.peer == mesh->getPCU()->Self() && owner.entity == e;
 }
 
 void MatchedSharing::getCopies(MeshEntity* e,
@@ -1012,23 +1012,23 @@ void MatchedSharing::getNeighbors(Parts& neighbors)
       neighbors.insert(cit->peer);
   }
   mesh->end(it);
-  neighbors.erase(PCU_Comm_Self());
+  neighbors.erase(mesh->getPCU()->Self());
 }
 
 void MatchedSharing::formCountMap()
 {
   size_t count = mesh->count(mesh->getDimension());
-  countMap[PCU_Comm_Self()] = count;
-  PCU_Comm_Begin();
+  countMap[mesh->getPCU()->Self()] = count;
+  mesh->getPCU()->Begin();
   Parts neighbors;
   getNeighbors(neighbors);
   APF_ITERATE(Parts, neighbors, nit)
     PCU_COMM_PACK(*nit, count);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  mesh->getPCU()->Send();
+  while (mesh->getPCU()->Receive()) {
     size_t oc;
     PCU_COMM_UNPACK(oc);
-    countMap[PCU_Comm_Sender()] = oc;
+    countMap[mesh->getPCU()->Sender()] = oc;
   }
 }
 
@@ -1036,7 +1036,7 @@ bool MatchedSharing::isShared(MeshEntity* e) {
   CopyArray copies;
   this->getCopies(e, copies);
   APF_ITERATE(CopyArray, copies, it)
-    if (it->peer != PCU_Comm_Self())
+    if (it->peer != mesh->getPCU()->Self())
       return true;
   return false;
 }
