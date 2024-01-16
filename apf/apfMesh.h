@@ -14,6 +14,8 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <PCU.h>
+#include <PCUObj.h>
 #include "apfVector.h"
 #include "apfDynamicArray.h"
 
@@ -396,7 +398,7 @@ class Mesh
 
     GlobalNumbering* getGlobalNumbering(int i);
     /** \brief get the global pcu */
-    PCU* getPCU() const {return pcu_;}
+    pcu::PCU* getPCU() const {return pcu_;}
     /** \brief true if any associated fields use array storage */
     bool hasFrozenFields;
   protected:

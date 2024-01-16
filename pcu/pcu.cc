@@ -563,4 +563,9 @@ double PCU_Time(void) { return pcu::Time(); }
 void PCU_Protect(void) { return pcu::Protect(); }
 
 double PCU_GetMem(void) { return pcu::GetMem(); }
+
+
+/** \brief Return the global PCU
+ */
+pcu::PCU* PCU_GetGlobal(void) { return global_pcu; }
 }

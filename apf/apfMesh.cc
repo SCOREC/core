@@ -6,6 +6,8 @@
  */
 
 #include <PCU.h>
+#include <pcu.cc>
+#include <PCUObj.h>
 #include "apfCoordData.h"
 #include "apfVectorField.h"
 #include "apfShape.h"
@@ -166,7 +168,7 @@ void Mesh::init(FieldShape* s)
   baseP->init("coordinates",this,s,data);
   data->init(baseP);
   hasFrozenFields = false;
-  pcu_ = global_pcu
+  pcu_ = PCU_GetGlobal();
 }
 
 Mesh::~Mesh()

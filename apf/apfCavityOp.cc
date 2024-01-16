@@ -134,10 +134,10 @@ bool CavityOp::requestLocality(MeshEntity** entities, int count)
 
 bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
 {
-  int done = mesh->getPCU()->PCU_Min_Int(requests.empty());
+  int done = PCU_Min_Int(requests.empty());
   if (done) return false;
   /* throw in the local pull requests */
-  int self = mesh->getPCU()->PCU_Comm_Self();
+  int self = mesh->getPCU()->Self();
   received.reserve(requests.size());
   APF_ITERATE(Requests,requests,it)
   {
@@ -147,7 +147,7 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
     received.push_back(request);
   }
   /* now communicate the rest */
-  mesh->getPCU()->PCU_Comm_Begin();
+  mesh->getPCU()->Begin();
   APF_ITERATE(Requests,requests,it)
   {
     CopyArray remotes;
@@ -156,18 +156,17 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
     {
       int remotePart = rit->peer;
       MeshEntity* remoteEntity = rit->entity;
-      mesh->getPCU()->PCU_COMM_PACK(remotePart,remoteEntity);
-    }
+      PCU_COMM_PACK(remotePart,remoteEntity);    }
   }
   requests.clear();
-  mesh->getPCU()->PCU_Comm_Send();
-  while (mesh->getPCU()->PCU_Comm_Listen())
+  mesh->getPCU()->Send();
+  while (mesh->getPCU()->Listen())
   {
     PullRequest request;
-    request.to = mesh->getPCU()->PCU_Comm_Sender();
-    while ( ! mesh->getPCU()->PCU_Comm_Unpacked())
+    request.to = mesh->getPCU()->Sender();
+    while ( ! mesh->getPCU()->Unpacked())
     {
-      mesh->getPCU()->PCU_COMM_UNPACK(request.e);
+      PCU_COMM_UNPACK(request.e);
       received.push_back(request);
     }
   }

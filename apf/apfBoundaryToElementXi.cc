@@ -57,7 +57,7 @@ Vector3 boundaryToElementXi(
   Vector3 exi(0,0,0);
   for (int i = 0; i < nbv; ++i) {
     int evi = findIn(ev, nev, bv[i]);
-    m->getPCU()->PCU_ALWAYS_ASSERT(evi >= 0);
+    PCU_ALWAYS_ASSERT(evi >= 0);
     exi += elem_vert_xi[et][evi] * shape_vals[i];
   }
   return exi;
