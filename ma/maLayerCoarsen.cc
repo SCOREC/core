@@ -161,8 +161,8 @@ static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
         (m->getModelType(m->toModel(e)) == d)) {
       Entity* v[2];
       m->getDownward(e, 0, v);
-      cl.handle(v[0], PCU_Comm_Self());
-      cl.handle(v[1], PCU_Comm_Self());
+      cl.handle(v[0], m->getPCU()->Self());
+      cl.handle(v[1], m->getPCU()->Self());
     }
   m->end(it);
   crawlLayers(&cl);
@@ -172,13 +172,13 @@ static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
 static bool wouldEmptyParts(apf::Migration* plan)
 {
   apf::Mesh* m = plan->getMesh();
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   size_t sendingAway = 0;
   for (int i = 0; i < plan->count(); ++i)
     if (plan->sending(plan->get(i)) != self)
       ++sendingAway;
   bool wouldEmptyThisPart = (sendingAway == m->count(m->getDimension()));
-  return PCU_Or(wouldEmptyThisPart);
+  return m->getPCU()->Or(wouldEmptyThisPart);
 }
 
 static void migrateForLayerCollapse(Adapt* a, int d, int round)
@@ -258,7 +258,7 @@ static long collapseAllStacks(Adapt* a, int d)
     collapseLocalStacks(a, skipCount, successCount, failureCount, d);
     allSuccesses += successCount;
     ++round;
-  } while (PCU_Or(skipCount));
+  } while (a->mesh->getPCU()->Or(skipCount));
   return PCU_Add_Long(allSuccesses);
 }
 

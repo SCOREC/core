@@ -36,7 +36,7 @@ void matchNewElements(Refine* r)
   long face_count = 0;
   for (int d=1; d < m->getDimension(); ++d)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     for (size_t i=0; i < r->toSplit[d].getSize(); ++i)
     {
       Entity* e = r->toSplit[d][i];
@@ -53,11 +53,11 @@ void matchNewElements(Refine* r)
         packSplits(to,splits);
       }
     }
-    PCU_Comm_Send();
-    while (PCU_Comm_Listen())
+    m->getPCU()->Send();
+    while (m->getPCU()->Listen())
     {
-      int from = PCU_Comm_Sender();
-      while ( ! PCU_Comm_Unpacked())
+      int from = m->getPCU()->Sender();
+      while ( ! m->getPCU()->Unpacked())
       {
         Entity* e;
         PCU_COMM_UNPACK(e);

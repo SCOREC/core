@@ -9,7 +9,7 @@ namespace ma {
 void syncLayer(Crawler* c, Crawler::Layer& layer)
 {
   Mesh* m = c->mesh;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (size_t i = 0; i < layer.size(); ++i) {
     Entity* e = layer[i];
     if (m->isShared(e)) {
@@ -21,10 +21,10 @@ void syncLayer(Crawler* c, Crawler::Layer& layer)
       }
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen()) {
-    int from = PCU_Comm_Sender();
-    while ( ! PCU_Comm_Unpacked()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Listen()) {
+    int from = m->getPCU()->Sender();
+    while ( ! m->getPCU()->Unpacked()) {
       Entity* e;
       PCU_COMM_UNPACK(e);
       if (c->recv(e, from))

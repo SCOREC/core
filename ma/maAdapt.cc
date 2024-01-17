@@ -111,7 +111,7 @@ void setFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      PCU_ALWAYS_ASSERT(it->peer == mesh->getPCU()->Self());
+      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
       setFlag(a, it->entity, flag);
     }
   }
@@ -131,7 +131,7 @@ void clearFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      PCU_ALWAYS_ASSERT(it->peer == mesh->getPCU()->Self());
+      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
       clearFlag(a, it->entity, flag);
     }
   }
@@ -228,7 +228,7 @@ bool checkFlagConsistency(Adapt* a, int dimension, int flag)
 {
   Mesh* m = a->mesh;
   apf::Sharing* sh = apf::getSharing(m);
-  mesh->getPCU()->Begin();
+  m->getPCU()->Begin();
   Entity* e;
   Iterator* it = m->begin(dimension);
   while ((e = m->iterate(it))) {
@@ -243,9 +243,9 @@ bool checkFlagConsistency(Adapt* a, int dimension, int flag)
     }
   }
   m->end(it);
-  mesh->getPCU()->Send();
+  m->getPCU()->Send();
   bool ok = true;
-  while (mesh->getPCU()->Receive()) {
+  while (m->getPCU()->Receive()) {
     PCU_COMM_UNPACK(e);
     bool value;
     PCU_COMM_UNPACK(value);
@@ -473,7 +473,7 @@ void clearBuildCallback(Adapt* a)
 
 void print(const char* format, ...)
 {
-  if (mesh->getPCU()->Self())
+  if (PCU_Comm_Self())
     return;
   lion_oprint(1,"\nMeshAdapt: ");
   va_list ap;
@@ -500,7 +500,7 @@ void syncFlag(Adapt* a, int dimension, int flag)
 {
   Mesh* m = a->mesh;
   apf::Sharing* sh = apf::getSharing(m);
-  mesh->getPCU()->Begin();
+  m->getPCU()->Begin();
   Entity* e;
   Iterator* it = m->begin(dimension);
   while ((e = m->iterate(it))) {
@@ -512,8 +512,8 @@ void syncFlag(Adapt* a, int dimension, int flag)
       PCU_COMM_PACK(rit->peer, rit->entity);
   }
   m->end(it);
-  mesh->getPCU()->Send();
-  while (mesh->getPCU()->Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     PCU_COMM_UNPACK(e);
     setFlag(a,e,flag);
   }

@@ -79,13 +79,13 @@ void Rebuilds::match(apf::Sharing* sh)
     apf::CopyArray orig_matches;
     sh->getCopies(orig, orig_matches);
     for (unsigned j = 0; j < orig_matches.getSize(); ++j) {
-      PCU_ALWAYS_ASSERT(orig_matches[j].peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(orig_matches[j].peer == mesh->getPCU()->Self());
       Entity* gen_match_j = 0;
       for (unsigned k = 0; k < v.size(); ++k)
         if (v[k].original == orig_matches[j].entity)
           gen_match_j = v[k].e;
       PCU_ALWAYS_ASSERT(gen_match_j);
-      mesh->addMatch(gen, PCU_Comm_Self(), gen_match_j);
+      mesh->addMatch(gen, mesh->getPCU()->Self(), gen_match_j);
     }
   }
 }
@@ -124,7 +124,7 @@ void MatchedCollapse::setEdges()
   apf::CopyArray copies;
   sharing->getCopies(e, copies);
   APF_ITERATE(apf::CopyArray, copies, it) {
-    PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
+    PCU_ALWAYS_ASSERT(it->peer == mesh->getPCU()->Self());
     PCU_ALWAYS_ASSERT(it->entity != e);
   }
   collapses.setSize(copies.getSize() + 1);
@@ -154,7 +154,7 @@ bool MatchedCollapse::checkTopo2()
     unsigned j;
     bool ok = false;
     for (j = 0; j < copies.getSize(); ++j) {
-      PCU_ALWAYS_ASSERT(copies[j].peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(copies[j].peer == mesh->getPCU()->Self());
       if (copies[j].entity == collapses[i].vertToCollapse) {
         ok = true;
         break;

@@ -781,7 +781,7 @@ bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
   SnapAll op(a, t, isSimple);
   applyOperator(a, &op);
   successCount += PCU_Add_Long(op.successCount);
-  return PCU_Or(op.didAnything);
+  return a->mesh->getPCU()->Or(op.didAnything);
 }
 
 class SnapMatched : public Operator
@@ -832,7 +832,7 @@ bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
   SnapMatched op(a, t, isSimple);
   applyOperator(a, &op);
   successCount += PCU_Add_Long(op.successCount);
-  return PCU_Or(op.didAnything);
+  return a->mesh->getPCU()->Or(op.didAnything);
 }
 
 long tagVertsToSnap(Adapt* a, Tag*& t)

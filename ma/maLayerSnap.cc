@@ -134,7 +134,7 @@ struct BaseTopLinker : public Crawler
   void begin(Layer& first)
   {
     getDimensionBase(a, 0, first);
-    int peer = PCU_Comm_Self();
+    int peer = m->getPCU()->Self();
     for (size_t i = 0; i < first.size(); ++i) {
       if (!m->isOwned(first[i]))
         continue;
@@ -387,7 +387,7 @@ static void crawlLayers_doubleSync(Crawler* c)
 {
   Crawler::Layer layer;
   c->begin(layer);
-  while (PCU_Or( ! layer.empty())) {
+  while (c->mesh->getPCU()->Or( ! layer.empty())) {
     crawlLayer(c, layer);
     syncLayer(c, layer);
     syncLayer(c, layer);
@@ -400,7 +400,7 @@ static bool checkForUnsnap(Adapt* a, Tag* snapTag)
   double t0 = PCU_Time();
   UnsnapChecker op(a, snapTag);
   crawlLayers_doubleSync(&op);
-  bool notOk = PCU_Or(op.foundAnything);
+  bool notOk = a->mesh->getPCU()->Or(op.foundAnything);
   double t1 = PCU_Time();
   if (notOk)
     print("checked snapped curves in %f seconds, found some to unsnap", t1 - t0);
@@ -417,7 +417,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
   Mesh* m = l.m;
   long n = 0;
   Entity* v;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   Iterator* it = m->begin(0);
   while ((v = m->iterate(it)))
     if (getFlag(a, v, LAYER_TOP) &&
@@ -429,8 +429,8 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
       ++n;
     }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     int link;
     PCU_COMM_UNPACK(link);
     Entity* v = l.lookup(link);

@@ -293,7 +293,7 @@ class DebugBuildCallback : public apf::BuildCallback {
 
 void stitchVerts(Mesh* m, Crawler::Layer const& prev_verts,
     Crawler::Layer const& next_verts, Tag* indices) {
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   PCU_ALWAYS_ASSERT(prev_verts.size() == next_verts.size());
   for (size_t i = 0; i < prev_verts.size(); ++i) {
     Entity* prev_vert = prev_verts[i];
@@ -307,9 +307,9 @@ void stitchVerts(Mesh* m, Crawler::Layer const& prev_verts,
       PCU_COMM_PACK(remote_part, next_vert);
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    int remote_part = PCU_Comm_Sender();
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
+    int remote_part = m->getPCU()->Sender();
     Entity* prev_vert;
     Entity* remote_next_vert;
     PCU_COMM_UNPACK(prev_vert);

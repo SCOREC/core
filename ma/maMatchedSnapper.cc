@@ -58,7 +58,7 @@ void MatchedSnapper::setVerts()
   apf::CopyArray copies;
   sharing->getCopies(v, copies);
   APF_ITERATE(apf::CopyArray, copies, it) {
-    PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
+    PCU_ALWAYS_ASSERT(it->peer == adapter->mesh->getPCU()->Self());
     PCU_ALWAYS_ASSERT(it->entity != v);
   }
 
