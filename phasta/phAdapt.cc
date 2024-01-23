@@ -96,19 +96,19 @@ struct AdaptCallback : public Parma_GroupCode
 static double getAveragePartDensity(apf::Mesh* m) {
   double nElements = m->count(m->getDimension());
   nElements = PCU_Add_Double(nElements);
-  return nElements / PCU_Comm_Peers();
+  return nElements / m->getPCU()->Peers();
 }
 
 static int getShrinkFactor(apf::Mesh* m, double minPartDensity) {
   double partDensity = getAveragePartDensity(m);
   int factor = 1;
   while (partDensity < minPartDensity) {
-    if (factor >= PCU_Comm_Peers())
+    if (factor >= m->getPCU()->Peers())
       break;
     factor *= 2;
     partDensity *= 2;
   }
-  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % factor == 0);
+  PCU_ALWAYS_ASSERT(m->getPCU()->Peers() % factor == 0);
   return factor;
 }
 
@@ -123,7 +123,7 @@ static void warnAboutShrinking(int factor) {
 void adaptShrunken(apf::Mesh2* m, double minPartDensity,
                    Parma_GroupCode& callback) {
   int factor = getShrinkFactor(m, minPartDensity);
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     lion_eprint(1,"adaptShrunken limit set to %f factor computed as %d\n", minPartDensity, factor);
   if (factor == 1) {
     callback.run(0);

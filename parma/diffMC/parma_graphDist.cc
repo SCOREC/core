@@ -291,7 +291,7 @@ namespace parma_ordering {
       if(start == TO_INT(m->count(0))) {
         if( i != 0 ) //if not the last component to order
           parmaCommons::status("%d all vertices visited comp %u of %u\n",
-              PCU_Comm_Self(), i, c.size());
+              m->getPCU()->Self(), i, c.size());
         break;
       }
     }
@@ -346,7 +346,7 @@ namespace parma_ordering {
     long tot=PCU_Add_Long(TO_LONG(la));
     int max=PCU_Max_Int(la);
     int min=PCU_Min_Int(la);
-    double avg = TO_DOUBLE(tot)/PCU_Comm_Peers();
+    double avg = TO_DOUBLE(tot)/m->getPCU()->Peers();
     if( !PCU_Comm_Self() )
       parmaCommons::status("la min %d max %d avg %.3f\n", min, max, avg);
     PCU_ALWAYS_ASSERT(check == m->getTagChecksum(order,apf::Mesh::VERTEX));
@@ -368,11 +368,11 @@ namespace parma {
       PCU_Debug_Print("computeDistance\n");
       dcComponents c = dcComponents(m);
       t = computeDistance(m,c);
-      if( PCU_Comm_Peers() > 1 && !c.numIso() )
+      if( m->getPCU()->Peers() > 1 && !c.numIso() )
         if( !hasDistance(m,t) ) {
           parmaCommons::error("rank %d comp %u iso %u ... "
               "some vertices don't have distance computed\n",
-              PCU_Comm_Self(), c.size(), c.numIso());
+              m->getPCU()->Self(), c.size(), c.numIso());
           PCU_ALWAYS_ASSERT(false);
         }
       unsigned* rmax = getMaxDist(m,c,t);
@@ -390,11 +390,11 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   const unsigned checkIds = c.getIdChecksum();
   apf::MeshTag* dist = computeDistance(m,c);
   const unsigned check = m->getTagChecksum(dist,apf::Mesh::VERTEX);
-  if( PCU_Comm_Peers() > 1 && !c.numIso() )
+  if( m->getPCU()->Peers() > 1 && !c.numIso() )
     if( !hasDistance(m,dist) ) {
       parmaCommons::error("rank %d comp %u iso %u ... "
           "some vertices don't have distance computed\n",
-          PCU_Comm_Self(), c.size(), c.numIso());
+          m->getPCU()->Self(), c.size(), c.numIso());
       PCU_ALWAYS_ASSERT(false);
     }
   parma_ordering::la(m);

@@ -154,14 +154,14 @@ static void fixCoords(apf::Mesh2* m)
       }
     }
   m->end(it);
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   double max_x_diff = 0;
   double max_p_diff = 0;
   apf::Vector3 max_x_diff_point;
   apf::Vector3 max_p_diff_point;
   int x_diffs = 0;
   int p_diffs = 0;
-  while (PCU_Comm_Receive()) {
+  while (m->getPCU()->Receive()) {
     apf::Vector3 ox, op;
     PCU_COMM_UNPACK(e);
     PCU_COMM_UNPACK(ox);
@@ -257,7 +257,7 @@ int main(int argc, char** argv)
 
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   double t3 = PCU_Time();
-  if(!PCU_Comm_Self())
+  if(!mesh->getPCU()->Self())
     lion_eprint(1, "created the apf_mds mesh in %f seconds\n", t3-t2);
 
   apf::printStats(mesh);

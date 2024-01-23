@@ -111,7 +111,7 @@ apf::MeshTag* tagAngles(apf::Mesh* m, BCs& bcs, apf::MatchedSharing* ms)
 {
   apf::MeshTag* tag = m->createDoubleTag("ph_angle", 1);
   gmi_model* gm = m->getModel();
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {
@@ -132,8 +132,8 @@ apf::MeshTag* tagAngles(apf::Mesh* m, BCs& bcs, apf::MatchedSharing* ms)
     }
   }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     PCU_COMM_UNPACK(v);
     int mdim, mtag;
     PCU_COMM_UNPACK(mdim);

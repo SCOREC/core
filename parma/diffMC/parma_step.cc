@@ -30,7 +30,7 @@ namespace parma {
   bool Stepper::step(double maxImb, int verbosity) {
     double imb, avg;
     getImbalance(weights, imb, avg);
-    if ( !PCU_Comm_Self() && verbosity )
+    if ( !m->getPCU()->Self() && verbosity )
       status("%s imbalance %.3f avg %.3f\n", name, imb, avg);
     if ( stop->stop(imb,maxImb) )
       return false;
@@ -38,7 +38,7 @@ namespace parma {
     int planSz = PCU_Add_Int(plan->count());
     const double t0 = PCU_Time();
     m->migrate(plan);
-    if ( !PCU_Comm_Self() && verbosity )
+    if ( !m->getPCU()->Self() && verbosity )
       status("%d elements migrated in %f seconds\n", planSz, PCU_Time()-t0);
     if( verbosity > 1 ) 
       Parma_PrintPtnStats(m, "endStep", (verbosity>2));

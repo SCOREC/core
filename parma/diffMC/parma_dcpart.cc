@@ -109,7 +109,7 @@ unsigned dcPart::numDisconnectedComps() {
    while( count != numElms ) {
       unsigned sz = walkPart(numDc);
       unsigned nbor = maxContactNeighbor(numDc);
-      if( nbor != self || PCU_Comm_Peers() == 1 ) {
+      if( nbor != self || m->getPCU()->Peers() == 1 ) {
         dcCompSz.push_back(sz);
         dcCompNbor.push_back(nbor);
         numDc++;

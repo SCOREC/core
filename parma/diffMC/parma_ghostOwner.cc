@@ -11,6 +11,6 @@ namespace parma {
   }
 
   bool isOwned(apf::Mesh* m, apf::MeshEntity* v) {
-    return PCU_Comm_Self() == getOwner(m,v);
+    return m->getPCU()->Self() == getOwner(m,v);
   }
 }

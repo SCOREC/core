@@ -965,7 +965,7 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
     vert_nums = mds_number_verts_bfs(m->mesh);
   }
   m->mesh = mds_reorder(m->mesh, 0, vert_nums);
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     lion_oprint(1,"mesh reordered in %f seconds\n", PCU_Time()-t0);
 }
 

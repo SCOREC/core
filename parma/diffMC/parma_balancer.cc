@@ -33,7 +33,7 @@ namespace parma {
     }
   }
   void Balancer::balance(apf::MeshTag* wtag, double tolerance) {
-    if( 1 == PCU_Comm_Peers() ) return;
+    if( 1 == mesh->getPCU()->Peers() ) return;
     int step = 0;
     double t0 = PCU_Time();
     while (runStep(wtag,tolerance) && step++ < maxStep);

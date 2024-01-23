@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
   in.openfile_read = openfile_read;
   code.mesh = apf::loadMdsMesh(in.modelFileName.c_str(), in.meshFileName.c_str());
   chef::readAndAttachFields(in,code.mesh);
-  apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+  apf::Unmodulo outMap(code.mesh->getPCU()->Self(), code.mesh->getPCU()->Peers());
   code.ctrl = in;
   Parma_ShrinkPartition(code.mesh, atoi(argv[2]), code);
 #ifdef HAVE_SIMMETRIX

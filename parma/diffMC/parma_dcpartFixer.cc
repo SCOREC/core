@@ -87,7 +87,7 @@ class dcPartFixer::PartFixer : public dcPart {
         reset();
         double t3 = PCU_Time();
         m->migrate(plan);
-        if( ! PCU_Comm_Self() && vb)
+        if( ! m->getPCU()->Self() && vb)
           parmaCommons::status(
               "loop %d components %d seconds <fix migrate> %.3f %.3f\n",
               loop, ndc, t3-t2, PCU_Time()-t3);

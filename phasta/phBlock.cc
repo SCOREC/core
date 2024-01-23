@@ -202,7 +202,7 @@ void getInterfaceBlocks(apf::Mesh* m, BCs& bcs, BlocksInterface& b)
     if (dgCopies.getSize() != 1)
       continue;
     apf::MeshEntity* e0 = m->getUpward(face, 0);
-    PCU_ALWAYS_ASSERT(dgCopies[0].peer == PCU_Comm_Self());
+    PCU_ALWAYS_ASSERT(dgCopies[0].peer == m->getPCU()->Self());
     apf::MeshEntity* e1 = m->getUpward(dgCopies[0].entity, 0);
     /* in order to avoid repetition of elements */
     if (e0 > e1)

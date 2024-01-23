@@ -120,7 +120,7 @@ namespace {
     for(int d=0; d<=dim; d++)
       ss << entNames[d] << ' ';
     ss << "dc nb owned_bdry shared_bdry model_bdry shSidesToElm > "
-       << PCU_Comm_Self()+1  << ' ';
+       << m->getPCU()->Self()+1  << ' ';
     for(int d=0; d<=dim; d++)
       ss << m->count(d) << ' ';
     ss << m->count(m->getDimension())  << ' '
@@ -130,7 +130,7 @@ namespace {
        << surf/TO_DOUBLE(vol);
     std::string s = ss.str();
     lion_eprint(1, "%s\n", s.c_str());
-    PCU_Barrier();
+    m->getPCU()->Barrier();
   }
 
   void writeWeightedEntStats(apf::Mesh* m, apf::MeshTag* w, std::string key) {
@@ -140,7 +140,7 @@ namespace {
     double totEnt[4] = {0,0,0,0}, avgEnt[4] = {0,0,0,0};
     getWeightedStats(m->getDimension(), &weight, &totEnt, &minEnt, &maxEnt, &avgEnt);
     const char* orders[4] = {"vtx","edge","face","rgn"};
-    if(!PCU_Comm_Self()) {
+    if(!m->getPCU()->Self()) {
       for( int d=0; d<=m->getDimension(); d++)
         status("%s weighted %s <tot max min avg> "
             "%.1f %.1f %.1f %.3f\n",
@@ -171,7 +171,7 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
   PCU_Add_Doubles(tot, dims);
   PCU_Max_Doubles(*entImb, dims);
   for(size_t i=0; i < dims; i++)
-    (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
+    (*entImb)[i] /= (tot[i]/mesh->getPCU()->Peers());
   for(size_t i=dims; i < 4; i++)
     (*entImb)[i] = 1.0;
 }
@@ -186,7 +186,7 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
   PCU_Add_Doubles(tot, TO_SIZET(dims));
   PCU_Max_Doubles(*entImb, TO_SIZET(dims));
   for(size_t i=0; i < dims; i++)
-    (*entImb)[i] /= (tot[i]/PCU_Comm_Peers());
+    (*entImb)[i] /= (tot[i]/mesh->getPCU()->Peers());
   for(size_t i=dims; i < 4; i++)
     (*entImb)[i] = 1.0;
 }
@@ -202,7 +202,7 @@ double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,
     m->end(it);
    double tot = PCU_Add_Double(sum);
    double max = PCU_Max_Double(sum);
-   return max/(tot/PCU_Comm_Peers());
+   return max/(tot/m->getPCU()->Peers());
 }
 
 void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& numMaxParts,
@@ -211,7 +211,7 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& numMaxParts,
   getNeighborCounts(m,nborToShared);
   loc = TO_INT(nborToShared.size())-1;
   max = PCU_Max_Int(loc);
-  avg = TO_DOUBLE(PCU_Add_Int(loc)) / PCU_Comm_Peers();
+  avg = TO_DOUBLE(PCU_Add_Int(loc)) / m->getPCU()->Peers();
   numMaxParts = PCU_Add_Int( (loc==max) );
 }
 
@@ -225,7 +225,7 @@ void Parma_WriteSmallNeighbors(apf::Mesh* m, int small, const char* prefix) {
       if( nbor->second == i+1 )
         smallCnt[i]++;
   PCU_Add_Ints(smallCnt,small);
-  if( !PCU_Comm_Self() ) {
+  if( !m->getPCU()->Self() ) {
     std::stringstream ss;
     for(int i=0; i<small; i++)
       ss << i+1 << ":" << smallCnt[i] << " ";
@@ -272,7 +272,7 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
   loc = TO_INT(dc.getNumDcComps());
   max = PCU_Max_Int(loc);
-  avg = TO_DOUBLE( PCU_Add_Int(loc) ) / PCU_Comm_Peers();
+  avg = TO_DOUBLE( PCU_Add_Int(loc) ) / m->getPCU()->Peers();
 }
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
@@ -331,7 +331,7 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   double surfToVol = surf/vol;
   double minSurfToVol = PCU_Min_Double(surfToVol);
   double maxSurfToVol = PCU_Max_Double(surfToVol);
-  double avgSurfToVol = PCU_Add_Double(surfToVol) / PCU_Comm_Peers();
+  double avgSurfToVol = PCU_Add_Double(surfToVol) / m->getPCU()->Peers();
   PCU_Debug_Print("%s sharedSidesToElements %.3f\n", key.c_str(), surfToVol);
 
   int empty = (m->count(m->getDimension()) == 0 ) ? 1 : 0;
@@ -350,7 +350,7 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
     PCU_Debug_Print("%d ", *p);
   PCU_Debug_Print("\n");
 
-  if( 0 == PCU_Comm_Self() ) {
+  if( 0 == m->getPCU()->Self() ) {
     status("%s disconnected <max avg> %d %.3f\n",
         key.c_str(), maxDc, avgDc);
     status("%s neighbors <max avg> %d %.3f\n",
@@ -365,7 +365,7 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   const int smallestSide = 10;
   Parma_WriteSmallNeighbors(m, smallestSide, key.c_str());
   writeWeightedEntStats(m,w,key);
-  if( 0 == PCU_Comm_Self() ) {
+  if( 0 == m->getPCU()->Self() ) {
     status("%s owned bdry vtx <tot max min avg> "
         "%ld %d %d %.3f\n",
         key.c_str(), totV[0], maxV[0], minV[0], avgV[0]);
@@ -412,7 +412,7 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
   int misNumber=-1;
   int iter=0;
   int misSize=0;
-  while( misSize != PCU_Comm_Peers() ) {
+  while( misSize != m->getPCU()->Peers() ) {
     if( mis(part, false, true) || 1 == part.net.size() ) {
       misNumber = iter;
       part.net.clear();

@@ -149,13 +149,13 @@ namespace ph {
   void checkBalance(apf::Mesh2* m, ph::Input& in) {
     /* check if balancing was requested */
       Parma_PrintPtnStats(m, "postSplit", false);
-      if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
+      if (in.prePhastaBalanceMethod != "none" && m->getPCU()->Peers() > 1)
         ph::balance(in,m);
   }
 
   void checkReorder(apf::Mesh2* m, ph::Input& in, int numMasters) {
     /* check if the mesh changed at all */
-    if ( (PCU_Comm_Peers()!=numMasters) ||
+    if ( (m->getPCU()->Peers()!=numMasters) ||
         in.splitFactor > 1 ||
         in.adaptFlag ||
         in.prePhastaBalanceMethod != "none" ||
@@ -166,7 +166,7 @@ namespace ph {
 
       print_stats("malloc used before Bfs", PCU_GetMem());
 
-      if (in.isReorder && PCU_Comm_Peers() > 1)
+      if (in.isReorder && m->getPCU()->Peers() > 1)
         order = Parma_BfsReorder(m);
 
       print_stats("malloc used before reorder", PCU_GetMem());
@@ -185,10 +185,10 @@ namespace ph {
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
     phastaio_initStats();
-    if(PCU_Comm_Peers() > 1)
+    if(m->getPCU()->Peers() > 1)
       ph::migrateInterfaceItr(m, bcs);
     if (in.simmetrixMesh == 0)
-      ph::checkReorder(m,in,PCU_Comm_Peers());
+      ph::checkReorder(m,in,m->getPCU()->Peers());
     if (in.adaptFlag)
       ph::goToStepDir(in.timeStepNumber,in.ramdisk);
     std::string path = ph::setupOutputDir(in.ramdisk);
@@ -199,7 +199,7 @@ namespace ph {
     ph::exitFilteredMatching(m);
     // a path is not needed for inmem
     if ( in.writeRestartFiles ) {
-      if(!PCU_Comm_Self()) lion_oprint(1,"write file-based restart file\n");
+      if(!m->getPCU()->Self()) lion_oprint(1,"write file-based restart file\n");
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
@@ -214,7 +214,7 @@ namespace ph {
     if ( ! in.outMeshFileName.empty() )
       m->writeNative(in.outMeshFileName.c_str());
     if ( in.writeGeomBCFiles ) {
-      if(!PCU_Comm_Self()) lion_oprint(1,"write additional geomBC file for visualization\n");
+      if(!m->getPCU()->Self()) lion_oprint(1,"write additional geomBC file for visualization\n");
       // store the value of the function pointer
       FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
@@ -224,7 +224,7 @@ namespace ph {
       out.openfile_write = fn;
     }
     ph::writeGeomBC(out, subDirPath); //write geombc
-    if(!PCU_Comm_Self())
+    if(!m->getPCU()->Self())
       ph::writeAuxiliaryFiles(path, in.timeStepNumber);
     m->verify();
 #ifdef HAVE_SIMMETRIX
@@ -272,11 +272,11 @@ namespace chef {
        shrinkFactor=-1*in.splitFactor; 
        in.splitFactor=1; // this is used in to set readers so if shrinking need to read all
     }
-    PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % in.splitFactor == 0);
+    PCU_ALWAYS_ASSERT(m->getPCU()->Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
     loadCommon(in, bcs, g);
-    const int worldRank = PCU_Comm_Self();
+    const int worldRank = m->getPCU()->Self();
     MPI_Comm comm = PCU_Get_Comm();
     switchToMasters(in.splitFactor);
     if ((worldRank % in.splitFactor) == 0)
@@ -286,7 +286,7 @@ namespace chef {
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
     if (in.simmetrixMesh == 0 && shrinkFactor > 1){
       GroupCode code;
-      apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+      apf::Unmodulo outMap(m->getPCU()->Self(), m->getPCU()->Peers());
       code.mesh=m;
       code.input=&in;
       code.boundary=&bcs;
@@ -365,7 +365,7 @@ namespace chef {
   }
 
   void balanceAndReorder(ph::Input& ctrl, apf::Mesh2* m) {
-    ph::balanceAndReorder(m,ctrl,PCU_Comm_Peers());
+    ph::balanceAndReorder(m,ctrl,m->getPCU()->Peers());
   }
 
   void balance(ph::Input& ctrl, apf::Mesh2* m) {

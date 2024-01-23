@@ -11,7 +11,7 @@ namespace parma {
 
   double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
     double locW = getWeight(m,w,entDim);
-    return PCU_Add_Double(locW) / PCU_Comm_Peers();
+    return PCU_Add_Double(locW) / m->getPCU()->Peers();
   }
 
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
@@ -63,18 +63,18 @@ namespace parma {
     return entW;
   }
 
-  void EntWeights::init(apf::Mesh*, apf::MeshTag*, Sides* s) {
-    PCU_Comm_Begin();
+  void EntWeights::init(apf::Mesh* m, apf::MeshTag*, Sides* s) {
+    m->getPCU()->Begin();
     const Sides::Item* side;
     s->begin();
     while( (side = s->iterate()) ) 
       PCU_COMM_PACK(side->first, weight);
     s->end();
-    PCU_Comm_Send();
-    while (PCU_Comm_Listen()) {
+    m->getPCU()->Send();
+    while (m->getPCU()->Listen()) {
       double otherWeight;
       PCU_COMM_UNPACK(otherWeight);
-      set(PCU_Comm_Sender(), otherWeight);
+      set(m->getPCU()->Sender(), otherWeight);
     }
   }
   Weights* makeEntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int dim) {

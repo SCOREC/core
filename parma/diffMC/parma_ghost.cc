@@ -23,13 +23,13 @@ namespace {
         parma::Sides* s = parma::makeVtxSides(mesh);
         sideTol = TO_INT(parma::avgSharedSides(s));
         delete s;
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
         double avgSides = parma::avgSharedSides(s);
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
@@ -40,7 +40,7 @@ namespace {
 
         double vtxImb, vtxAvg;
         parma::getImbalance(vtxW, vtxImb, vtxAvg);
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("vtx imbalance %.3f avg %.3f\n", vtxImb, vtxAvg);
         delete vtxW;
 
@@ -73,13 +73,13 @@ namespace {
         parma::Sides* s = parma::makeVtxSides(mesh);
         sideTol = TO_INT(parma::avgSharedSides(s));
         delete s;
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
         double avgSides = parma::avgSharedSides(s);
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
@@ -93,7 +93,7 @@ namespace {
         parma::getImbalance(elmW,elmImb,elmAvg);
         double edgeImb, edgeAvg;
         parma::getImbalance(edgeW, edgeImb, edgeAvg);
-        if( !PCU_Comm_Self() && verbose ) {
+        if( !mesh->getPCU()->Self() && verbose ) {
           status("elm imbalance %.3f avg %.3f\n", elmImb, elmAvg);
           status("edge imbalance %.3f avg %.3f\n", edgeImb, edgeAvg);
         }

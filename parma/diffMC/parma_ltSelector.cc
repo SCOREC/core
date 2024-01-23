@@ -109,16 +109,16 @@ namespace {
 
         typedef std::set<Migr,CompareMigr> MigrComm;
 
-        PCU_Comm_Begin();
+        mesh->getPCU()->Begin();
         APF_ITERATE(parma::Mid, sendingEnts, s)
           PCU_COMM_PACK(s->first, s->second);
-        PCU_Comm_Send();
+        mesh->getPCU()->Send();
 
         MigrComm incoming; //map<sender,weight sending>
         double w;
-        while (PCU_Comm_Listen()) {
+        while (mesh->getPCU()->Listen()) {
           PCU_COMM_UNPACK(w);
-          incoming.insert(Migr(PCU_Comm_Sender(),w));
+          incoming.insert(Migr(mesh->getPCU()->Sender(),w));
         }
 
         double selfW = parma::getWeight(mesh,wtag,primaryDim);
@@ -136,15 +136,15 @@ namespace {
           totW += accept[in->first];
         }
 
-        PCU_Comm_Begin();
+        mesh->getPCU()->Begin();
         APF_ITERATE(parma::Mid, accept, a)
           PCU_COMM_PACK(a->first, a->second);
-        PCU_Comm_Send();
+        mesh->getPCU()->Send();
         parma::Mid* capacity = new parma::Mid;
         double outw;
-        while (PCU_Comm_Listen()) {
+        while (mesh->getPCU()->Listen()) {
           PCU_COMM_UNPACK(outw);
-          (*capacity)[PCU_Comm_Sender()] = outw;
+          (*capacity)[mesh->getPCU()->Sender()] = outw;
         }
         return capacity;
       }

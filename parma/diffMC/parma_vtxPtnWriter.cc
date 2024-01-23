@@ -22,10 +22,10 @@ namespace {
     public:
     Ptn(apf::Mesh* m) {
       const long totv = PCU_Add_Long(countOwned(m));
-      c = pp = totv / PCU_Comm_Peers();
-      f = pp * PCU_Comm_Self();
-      const int remainder = totv % PCU_Comm_Peers();
-      if( PCU_Comm_Self() == PCU_Comm_Peers()-1 )
+      c = pp = totv / m->getPCU()->Peers();
+      f = pp * m->getPCU()->Self();
+      const int remainder = totv % m->getPCU()->Peers();
+      if( m->getPCU()->Self() == m->getPCU()->Peers()-1 )
         c += remainder;
     }
     int getWriter(int id) {
@@ -48,7 +48,7 @@ namespace {
     apf::MeshEntity* vtx;
     apf::MeshIterator* itr = m->begin(0);
     int id = 0;
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     while( (vtx = m->iterate(itr)) ) {
       if( parma::isOwned(m, vtx) ) {
         m->getIntTag(vtx, t, &id);
@@ -56,13 +56,13 @@ namespace {
       }
     }
     m->end(itr);
-    PCU_Comm_Send();
-    while( PCU_Comm_Receive() ) {
+    m->getPCU()->Send();
+    while( m->getPCU()->Receive() ) {
       int id = 0;
       PCU_COMM_UNPACK(id);
       const int idx = id - p.first();
       PCU_ALWAYS_ASSERT(idx >= 0 && idx < p.count());
-      ptn[idx] = PCU_Comm_Sender();
+      ptn[idx] = m->getPCU()->Sender();
     }
   }
 
