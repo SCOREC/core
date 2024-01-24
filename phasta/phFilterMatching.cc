@@ -225,7 +225,7 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
 {
   gmi_model* gm;
   gm = m->getModel();
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* e;
   int gd, gt;
@@ -246,8 +246,8 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
     m->clearMatches(e);
   }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     PCU_COMM_UNPACK(e);
     apf::MeshEntity* oe;
     PCU_COMM_UNPACK(oe);
@@ -259,7 +259,7 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
     ModelSet& ms = mm[ge];
     gmi_ent* oge = gmi_find(gm, gd, gt);
     if (oge == ge || ms.count(oge))
-      m->addMatch(e, PCU_Comm_Sender(), oe);
+      m->addMatch(e, m->getPCU()->Sender(), oe);
   }
   checkFilteredMatching(m, mm, dim);
 }

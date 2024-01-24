@@ -29,12 +29,25 @@ public:
   /*recommended message passing API*/
   void Begin() noexcept;
   int Pack(int to_rank, const void *data, size_t size) noexcept;
+  template<typename T> int Pack(int to_rank, T& data) noexcept {
+    return Pack(to_rank, &(data), sizeof(data));
+  }
+  template<typename T> int Pack(int to_rank, T* data) noexcept {
+    return Pack(to_rank, &(data), sizeof(data));
+  }
+
   int Send() noexcept;
   bool Receive() noexcept;
   bool Listen() noexcept;
   int Sender() noexcept;
   bool Unpacked() noexcept;
   int Unpack(void *data, size_t size) noexcept;
+  template<typename T> int Unpack(T& data) noexcept {
+    return Unpack(&(data), sizeof(data));
+  }
+  template<typename T> int Unpack(T* data) noexcept {
+    return Unpack(&(data), sizeof(data));
+  }
   /*IPComMan replacement API*/
   int Write(int to_rank, const void *data, size_t size) noexcept;
   bool Read(int *from_rank, void **data, size_t *size) noexcept;

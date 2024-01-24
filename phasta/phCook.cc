@@ -164,16 +164,16 @@ namespace ph {
     {
       apf::MeshTag* order = NULL;
 
-      print_stats("malloc used before Bfs", PCU_GetMem());
+      print_stats("malloc used before Bfs", pcu::GetMem());
 
       if (in.isReorder && m->getPCU()->Peers() > 1)
         order = Parma_BfsReorder(m);
 
-      print_stats("malloc used before reorder", PCU_GetMem());
+      print_stats("malloc used before reorder", pcu::GetMem());
 
       apf::reorderMdsMesh(m,order);
 
-      print_stats("malloc used after reorder", PCU_GetMem());
+      print_stats("malloc used after reorder", pcu::GetMem());
 
     }
   }

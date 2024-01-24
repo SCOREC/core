@@ -236,12 +236,12 @@ void getGrowthCurves(Output& o)
       o.arrays.igclv[i] = me;
     }
 
-    lion_oprint(1,"%s: rank %d, ngc, nv: %d, %d\n", __func__, PCU_Comm_Self(), ngc, nv);
+    lion_oprint(1,"%s: rank %d, ngc, nv: %d, %d\n", __func__, o.mesh->getPCU()->Self(), ngc, nv);
 
-    PCU_Add_Ints(&ngc,sizeof(ngc));
-    PCU_Add_Ints(&nv,sizeof(nv));
+    o.mesh->getPCU()->Add(&ngc,sizeof(ngc));
+    o.mesh->getPCU()->Add(&nv,sizeof(nv));
 
-    if(PCU_Comm_Self() == 0)
+    if(o.mesh->getPCU()->Self() == 0)
       lion_oprint(1,"%s: total ngc, nv: %d, %d\n", __func__, ngc, nv);
 
     PList_delete(gEdges);
@@ -261,7 +261,7 @@ void getGrowthCurves(Output& o)
       Sim_logOff();
   }
   else {
-    if(PCU_Comm_Self() == 0)
+    if(o.mesh->getPCU()->Self() == 0)
       lion_oprint(1,"%s: warning! not implemented for MDS mesh\n",__func__);
   }
   return;

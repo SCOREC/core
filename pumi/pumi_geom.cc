@@ -54,7 +54,7 @@ pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_l
 pGeom pumi_geom_load(gmi_model* gm, const char* model_type, 
       const char* filename, void (*geom_load_fp)(const char*))
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   if (!strcmp(model_type,"null"))
     pumi::instance()->model = new gModel(gm);
   else if (!strcmp(model_type,"mesh"))
@@ -78,7 +78,7 @@ pGeom pumi_geom_load(gmi_model* gm, const char* model_type,
   }
 
   if (!PCU_Comm_Self() && filename)
-    lion_oprint(1,"model %s loaded in %f seconds\n", filename, PCU_Time() - t0);
+    lion_oprint(1,"model %s loaded in %f seconds\n", filename, pcu::Time() - t0);
 
   return pumi::instance()->model;
 }

@@ -389,7 +389,7 @@ static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pOwnership shr)
       double *s_data = (double*)((char*)msg_send+sizeof(pMeshEnt)+sizeof(int));
       for (int pos=0; pos<n; ++pos)
         s_data[pos]=values[pos];
-      PCU_Comm_Write(to, (void*)msg_send, msg_size);
+      m->getPCU()->Write(to, (void*)msg_send, msg_size);
       free(msg_send);
     }
 
@@ -408,7 +408,7 @@ static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pOwnership shr)
       double *s_data = (double*)((char*)msg_send+sizeof(pMeshEnt)+sizeof(int));
       for (int pos=0; pos<n; ++pos)
         s_data[pos]=values[pos];
-      PCU_Comm_Write(to, (void*)msg_send, msg_size);
+      m->getPCU()->Write(to, (void*)msg_send, msg_size);
       free(msg_send);
       }
     } //if (m->isGhosted(e))
@@ -484,26 +484,26 @@ void pumi_field_verify(pMesh m, pField f, pOwnership shr)
       if (!static_cast<apf::FieldBase*>(fields[nf])->getShape()->hasNodesIn(d))
         continue;
 
-      PCU_Comm_Begin();
+      m->getPCU()->Begin();
       pMeshIter it = m->begin(d);
       pMeshEnt e;
       while ((e = m->iterate(it)))
         sendFieldData(m, e, fields[nf], nf, shr);
       m->end(it);
-      PCU_Comm_Send();
+      m->getPCU()->Send();
       receiveFieldData(fields,mismatch_fields); 
     }
   }
-  int global_size = PCU_Max_Int((int)mismatch_fields.size());
+  int global_size = m->getPCU()->Max((int)mismatch_fields.size());
   if (global_size)
   {
-    if (!PCU_Comm_Self())
+    if (!m->getPCU()->Self())
     for (std::set<pField>::iterator it=mismatch_fields.begin(); it!=mismatch_fields.end(); ++it)
       lion_oprint(1,"%s: \"%s\" DOF mismatch over remote/ghost copies\n", __func__, getName(*it));
   }
   else
   {
-    if (!PCU_Comm_Self())
+    if (!m->getPCU()->Self())
       lion_oprint(1,"%s: no DOF mismatch\n", __func__);
   }
 }

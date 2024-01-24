@@ -294,7 +294,7 @@ static void writeSpanwiseAvgArrays(Output& o, FILE* f)
 
 void writeGeomBC(Output& o, std::string path, int timestep)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   apf::Mesh* m = o.mesh;
   std::stringstream tss; 
   std::string timestep_or_dat;
@@ -354,7 +354,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
       params[0] * params[1], 2, params);
-  writeInt(f, "number of processors", PCU_Comm_Peers());
+  writeInt(f, "number of processors", m->getPCU()->Peers());
   writeInt(f, "size of ilwork array", o.nlwork);
   if (o.nlwork)
     writeInts(f, "ilwork ", o.arrays.ilwork, o.nlwork);
@@ -373,8 +373,8 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeGrowthCurves(o, f);
   writeSpanwiseAvgArrays(o, f);
   PHASTAIO_CLOSETIME(fclose(f);)
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
     lion_oprint(1,"geombc file written in %f seconds\n", t1 - t0);
 }
 

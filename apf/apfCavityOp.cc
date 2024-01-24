@@ -156,7 +156,7 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
     {
       int remotePart = rit->peer;
       MeshEntity* remoteEntity = rit->entity;
-      PCU_COMM_PACK(remotePart,remoteEntity);    }
+      mesh->getPCU()->Pack(remotePart,remoteEntity);    }
   }
   requests.clear();
   mesh->getPCU()->Send();
