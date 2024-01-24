@@ -24,7 +24,7 @@ void reel_fail(const char* format, ...)
   abort();
 }
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <execinfo.h> /* backtrace for pcu_trace */
 #include <signal.h> /* signal for pcu_protect */
 
@@ -59,6 +59,6 @@ void reel_protect(void)
 #else
 void reel_protect(void)
 {
-  reel_fail("reel_protect only supported on Linux and OS X");
+  reel_fail("reel_protect only supported on Linux, BSD, and OS X");
 }
 #endif
