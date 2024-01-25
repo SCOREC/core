@@ -377,7 +377,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       faces=PList_new();
       err = Extrusion_3DRegionsAndLayerFaces(region, regions, faces, 1);
       PList_delete(regions); // not used so delete
-      if(err!=1 && !PCU_Comm_Self())
+      if(err!=1 && !simApfMesh->getPCU()->Self())
         fprintf(stderr, "Extrusion_3DRegionsAndLayerFaces returned %d for err \n", err);
 
       // for each face in the returned list of faces
@@ -478,9 +478,9 @@ int main(int argc, char** argv)
   assert(false);
 */
 
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   if(!PCU_Comm_Self())
     fprintf(stderr, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
 
@@ -488,14 +488,14 @@ int main(int argc, char** argv)
 
   addFathersTag(simModel, sim_mesh, simApfMesh, extruRootPath);
 
-  double t2 = PCU_Time();
+  double t2 = pcu::Time();
   if(!PCU_Comm_Self())
     fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);
   if (should_attach_order) attachOrder(simApfMesh);
 
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
-  double t3 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t3 = pcu::Time();
+  if(!mesh->getPCU()->Self())
     fprintf(stderr, "created the apf_mds mesh in %f seconds\n", t3-t2);
 
   apf::printStats(mesh);

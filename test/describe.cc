@@ -85,7 +85,7 @@ static double get_chunks()
 
 static void list_tags(apf::Mesh* m)
 {
-  if (PCU_Comm_Self())
+  if (m->getPCU()->Self())
     return;
   apf::DynamicArray<apf::MeshTag*> tags;
   m->getTags(tags);

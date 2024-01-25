@@ -68,7 +68,7 @@ static void backToTags(apf::Mesh2* m)
 static void connectPlanes(apf::Mesh2* m)
 {
   /* dont use any of this function in production. */
-  int peer = 1 - PCU_Comm_Self();
+  int peer = 1 - m->getPCU()->Self();
   for (int i = 0; i < 3; ++i) {
     apf::MeshEntity* v = apf::getMdsEntity(m, 0, i);
     m->addRemote(v, peer, v); //pointers aren't usually equal
@@ -108,7 +108,7 @@ struct GroupCode : public Parma_GroupCode
 static void copyPlane(apf::Mesh2* m)
 {
   /* this mimics the copy entity construction */
-  if (PCU_Comm_Self() == 1)
+  if (m->getPCU()->Self() == 1)
     addOneTri(m);
   /* this connects the two one-triangle planes together */
   connectPlanes(m);

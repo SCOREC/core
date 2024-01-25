@@ -311,11 +311,11 @@ static void estimateError(Estimation* e)
 
 apf::Field* getSPRSizeField(apf::Field* eps, double adaptRatio)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   Estimation e;
   setupEstimation(&e, eps, adaptRatio);
   estimateError(&e);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   if (!PCU_Comm_Self())
     lion_eprint(1,"SPR: error estimated in %f seconds\n",t1-t0);
   return e.size;

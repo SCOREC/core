@@ -55,7 +55,7 @@ int main(int argc, char** argv)
   m->verify();
   Linear sf(m);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     printf("Matched mesh: disabling"
            " snapping, and shape correction,\n");
   in->shouldSnap = false;

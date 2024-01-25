@@ -77,8 +77,8 @@ static void testElementSize(apf::Mesh* m)
     m->end(it);
   }
 
-  PCU_Add_Doubles(&(sizes[0]),3);
-  if(!PCU_Comm_Self())
+  m->getPCU()->Add(&(sizes[0]),3);
+  if(!m->getPCU()->Self())
     printf("Total sizes for order %d %f %f %f\n",
       m->getShape()->getOrder(),
       sizes[0],sizes[1],sizes[2]);

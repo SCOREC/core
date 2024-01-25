@@ -48,7 +48,7 @@ int main(int argc, char** argv)
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
   double imbalance[4];
   Parma_GetEntImbalance(m,&imbalance);
-  if(!PCU_Comm_Self())
+  if(!m->getPCU()->Self())
     fprintf(stdout, "imbalance <v e f r> %.3f %.3f %.3f %.3f\n",
         imbalance[0], imbalance[1], imbalance[2], imbalance[3]);
   apf::MeshTag* weights = setWeights(m);

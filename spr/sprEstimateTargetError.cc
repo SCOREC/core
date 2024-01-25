@@ -246,13 +246,13 @@ apf::Field* getTargetSPRSizeField(
     double alpha,
     double beta)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   PCU_ALWAYS_ASSERT(target > 0);
   PCU_ALWAYS_ASSERT(alpha < beta);
   target::Estimation e;
   target::setupEstimation(&e, eps, target, alpha, beta);
   target::estimateError(&e);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   if (!PCU_Comm_Self())
     lion_eprint(1, "SPR (target): error estimated in %f seconds\n",t1-t0);
   return e.vtx_size;

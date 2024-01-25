@@ -28,12 +28,12 @@ void bCurver(const char* modelFile, const char* meshFile,
 {
   apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
   m->verify();
-  if (PCU_Comm_Self() == 0)
+  if (m->getPCU()->Self() == 0)
     printf("attempting to curve the mesh to %d order Bezier\n", order);
   crv::BezierCurver bc(m, order, blendOrder);
   bc.run();
   m->verify();
-  if (PCU_Comm_Self() == 0)
+  if (m->getPCU()->Self() == 0)
     printf("succeeded!\n");
 
   crv::writeCurvedVtuFiles(m, apf::Mesh::TRIANGLE, order + 2, outputPrefix);

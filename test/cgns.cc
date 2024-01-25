@@ -24,7 +24,7 @@ apf::MeshTag *create_int_tag(const std::string &name, apf::Mesh2 *m, int dim)
   apf::MeshEntity *elem = nullptr;
   apf::MeshIterator *it = m->begin(dim);
   int vals[1];
-  vals[0] = PCU_Comm_Self();
+  vals[0] = m->getPCU()->Self();
   while ((elem = m->iterate(it)))
     m->setIntTag(elem, tag, vals);
   m->end(it);
@@ -68,7 +68,7 @@ void balance(const std::string &prefix, const apf::ZoltanMethod &method, apf::Me
   Parma_PrintPtnStats(m, "");
   m->destroyTag(weights);
 
-  const std::string name = prefix + "_balance_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  const std::string name = prefix + "_balance_" + std::to_string(m->getPCU()->Peers()) + "procs";
   apf::writeVtkFiles(name.c_str(), m);
 }
 
@@ -103,7 +103,7 @@ void simpleReorder(const std::string &prefix, apf::Mesh2 *m)
     apf::makeGlobal(apf::numberElements(m, "elem Idx_pstOrder"));
   }
 
-  const std::string name = prefix + "_reorder_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  const std::string name = prefix + "_reorder_" + std::to_string(m->getPCU()->Peers()) + "procs";
   apf::writeVtkFiles(name.c_str(), m);
 }
 
@@ -154,7 +154,7 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   }
   pm->end(it);
 
-  const std::string name = prefix + "_toPUMI_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  const std::string name = prefix + "_toPUMI_" + std::to_string(mesh->getPCU()->Peers()) + "procs";
   // only the owned elements will have a elmField value of 1
   pumi_mesh_write(pm, (name + "_beforeSync").c_str(), "vtk");
 
@@ -200,45 +200,45 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
   if (dim == 3)
   {
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_cellMesh");
       apf::writeVtkFiles(name.c_str(), m, 3);
     }
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_faceMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_faceMesh");
       apf::writeVtkFiles(name.c_str(), m, 2);
     }
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_edgeMesh");
       apf::writeVtkFiles(name.c_str(), m, 1);
     }
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_vertexMesh");
       apf::writeVtkFiles(name.c_str(), m, 0);
     }
   }
   else if (dim == 2)
   {
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_cellMesh");
       apf::writeVtkFiles(name.c_str(), m, 2);
     }
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_edgeMesh");
       apf::writeVtkFiles(name.c_str(), m, 1);
     }
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_vertexMesh");
       apf::writeVtkFiles(name.c_str(), m, 0);
     }
   }
   else if (dim == 1)
   {
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_cellMesh");
       apf::writeVtkFiles(name.c_str(), m, 1);
     }
     {
-      const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh");
+      const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_vertexMesh");
       apf::writeVtkFiles(name.c_str(), m, 0);
     }
   }
@@ -246,7 +246,7 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
   std::string cgnsOutputName;
   if (writeCGNS)
   {
-    cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_outputFile.cgns";
+    cgnsOutputName = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + "_outputFile.cgns";
     apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
   }
 
@@ -386,45 +386,45 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
     if (dim == 3)
     {
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 3);
       }
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_faceMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_faceMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 2);
       }
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_edgeMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 1);
       }
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 0);
       }
     }
     else if (dim == 2)
     {
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 2);
       }
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_edgeMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_edgeMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 1);
       }
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 0);
       }
     }
     else if (dim == 1)
     {
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_cellMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 1);
       }
       {
-        const auto name = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
+        const auto name = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + std::string("_toVTK_vertexMesh_additional");
         apf::writeVtkFiles(name.c_str(), m, 0);
       }
     }
@@ -432,7 +432,7 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
     if (writeCGNS)
     {
       // what this one to be re-read if doing re-reading so that the dummy variables (vector/matrix/scalar) are there
-      cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_additional_outputFile.cgns";
+      cgnsOutputName = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + "_additional_outputFile.cgns";
       apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
     }
     //
@@ -454,7 +454,7 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
       apf::displaceMesh(m, field);
       if (writeCGNS)
       {
-        std::string cgnsOutputName = prefix + "_" + std::to_string(PCU_Comm_Peers()) + "procs" + "_additional_moved_outputFile.cgns";
+        std::string cgnsOutputName = prefix + "_" + std::to_string(m->getPCU()->Peers()) + "procs" + "_additional_moved_outputFile.cgns";
         apf::writeCGNS(cgnsOutputName.c_str(), m, cgnsBCMap);
       }
     }

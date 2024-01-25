@@ -769,7 +769,7 @@ long getStkId(GlobalNumbering* numbers, Node node)
 
 StkModels* create_sets(Mesh* m, const char* filename) {
   StkModels* sets = new StkModels;
-  if (! PCU_Comm_Self())
+  if (! m->getPCU()->Self())
     lion_oprint(1,"reading association file: %s\n", filename);
   static std::string const setNames[3] = {
     "node set", "side set", "elem set"};

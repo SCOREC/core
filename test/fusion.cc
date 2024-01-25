@@ -161,7 +161,7 @@ int main( int argc, char* argv[])
   GroupCode code;
   code.model = makeModel();
   code.meshFile = argv[1];
-  apf::Unmodulo outMap(PCU_Comm_Self(), 2);
+  apf::Unmodulo outMap(code.mesh->getPCU()->Self(), 2);
   Parma_SplitPartition(NULL, 2, code);
   apf::remapPartition(code.mesh, outMap);
   code.mesh->verify();
