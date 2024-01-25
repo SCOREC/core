@@ -190,16 +190,6 @@ else()
 endif()
 scorec_export_library(core)
 
-#check for mallinfo2
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  include(CheckCXXSymbolExists)
-  check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
-  if(PUMI_HAS_MALLINFO2)
-    target_compile_definitions(core INTERFACE -DPUMI_HAS_MALLINFO2)
-    target_compile_definitions(pcu PRIVATE -DPUMI_HAS_MALLINFO2)
-  endif()
-endif()
-
 if(BUILD_EXES)
   add_subdirectory(test)
   add_subdirectory(capstone_clis)
