@@ -64,7 +64,7 @@ double pumi_getTime()
 
 double pumi_getMem()
 {
-  return PCU_GetMem();
+  return pcu::GetMem();
 }
 
 void pumi_printTimeMem(const char* msg, double time, double memory)
