@@ -36,7 +36,7 @@ int main(int argc, char** argv)
         m->findModelEntity(0, 1)));
   size_t nlayers;
   ma::intrude(m, extrusions, &nlayers);
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     std::cout << "counted " << nlayers << " layers\n";
   m->writeNative(argv[3]);
   m->destroyNative();

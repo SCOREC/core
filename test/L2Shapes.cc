@@ -96,12 +96,12 @@ void testL2(
 
   for (int d = 0; d <= dim; d++) {
     if (!l2Field->getShape()->countNodesOn(apf::Mesh::simplexTypes[d])) {
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "no nodes in dimension %d\n", d);
       continue;
     }
     else
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
     while( (ent = m->iterate(it)) ) {
@@ -147,7 +147,7 @@ void testL2(
   m->end(it);
 
   // check for field interpolation
-  if(0==PCU_Comm_Self())
+  if(0==m->getPCU()->Self())
     lion_oprint(1, "L2ErrorE is %e\n", L2ErrorE);
   PCU_ALWAYS_ASSERT_VERBOSE(L2ErrorE < 1.e-16,
       "Fields were not interpolated correctly!");
@@ -169,12 +169,12 @@ void testL2writeNative(
 
   for (int d = 0; d <= dim; d++) {
     if (!l2Field->getShape()->countNodesOn(apf::Mesh::simplexTypes[d])) {
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "no nodes in dimension %d\n", d);
       continue;
     }
     else
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
     while( (ent = m->iterate(it)) ) {
@@ -207,7 +207,7 @@ void testL2writeNative(
   apf::Mesh2* m2 = apf::loadMdsMesh(".null", "./L2Shape_test_mesh.smb");
   int fCount = 0;
   for (int i = 0; i < m2->countFields(); i++) {
-    if(0==PCU_Comm_Self())
+    if(0==m->getPCU()->Self())
       lion_oprint(1, "field %d's name and shape are %s and %s\n", i,
 	  m2->getField(i)->getName(), m2->getField(i)->getShape()->getName());
     fCount++;

@@ -318,7 +318,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc, &argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  PCU_Protect();
+  pcu::Protect();
   getConfig(argc,argv);
 
   if (should_attach_order && should_fix_pyramids) {

@@ -424,7 +424,7 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
 }
 
 
-
+ 
 void getLocalRange(apf::Gid total, int& local,
     apf::Gid& first, apf::Gid& last) {
   const int self = PCU_Comm_Self();
@@ -769,7 +769,7 @@ int main(int argc, char** argv)
 
   if( argc == 11 ) noVerify=atoi(argv[10]);
 
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   MeshInfo m;
   readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m);
 
@@ -807,7 +807,7 @@ int main(int argc, char** argv)
   if( strcmp(argv[6], "NULL") ) {
     setMappedTag(mesh, "fathers2D", m.fathers2D, 1, m.localNumVerts, outMap);
     delete [] m.fathers2D;
-  } else if(!PCU_Comm_Self())
+  } else if(!mesh->getPCU()->Self())
     fprintf(stderr, "fathers2D not requested \n");
 
   if(0==1) {
@@ -816,8 +816,8 @@ int main(int argc, char** argv)
   (void) ts;
   }
 
-  if(!PCU_Comm_Self())
-    fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
+  if(!mesh->getPCU()->Self())
+    fprintf(stderr, "seconds to create mesh %.3f\n", pcu::Time()-t0);
   if(noVerify != 1) mesh->verify();
 
   outMap.clear();

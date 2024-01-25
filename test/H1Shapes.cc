@@ -140,12 +140,12 @@ void testH1(
 
   for (int d = 0; d <= dim; d++) {
     if (!h1Field->getShape()->countNodesOn(apf::Mesh::simplexTypes[d])) {
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "no nodes in dimension %d\n", d);
       continue;
     }
     else
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
     while( (ent = m->iterate(it)) ) {
@@ -210,7 +210,7 @@ void testH1(
     m->end(it);
 
     // check for field interpolation
-    if(0==PCU_Comm_Self()) {
+    if(0==m->getPCU()->Self()) {
       lion_oprint(1, "L2Error for entities of dimension %d is %e\n", d, L2Error);
     }
     PCU_ALWAYS_ASSERT_VERBOSE(L2Error < 1.e-12,
