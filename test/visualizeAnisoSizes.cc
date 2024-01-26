@@ -120,7 +120,7 @@ double getLargetsSize(
       maxSize = scales[2];
   }
   m->end(it);
-  PCU_Max_Doubles(&maxSize, 1);
+  m->getPCU()->Max(&maxSize, 1);
   return maxSize;
 }
 

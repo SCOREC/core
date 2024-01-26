@@ -19,7 +19,7 @@ int main(int argc, char** argv)
   }
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
-  if (PCU_Comm_Self() == atoi(argv[3]))
+  if (m->getPCU()->Self() == atoi(argv[3]))
     apf::writeMdsPart(m, argv[4]);
   m->destroyNative();
   apf::destroyMesh(m);

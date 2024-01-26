@@ -170,10 +170,10 @@ int main(int argc, char** argv)
     pMeshIter it = m->begin(dim);
     while ((e = m->iterate(it)))
     {
-      pid=pumi_ment_getID(e)%PCU_Comm_Peers();
+      pid=pumi_ment_getID(e)%m->getPCU()->Peers();
       plan->send(e, pid);
       if (pid-1>=0) plan->send(e, pid-1);
-      if (pid+1<PCU_Comm_Peers()) plan->send(e, pid+1);
+      if (pid+1<m->getPCU()->Peers()) plan->send(e, pid+1);
       if (count==5) break;
       ++count;
     }
@@ -789,7 +789,7 @@ void TEST_GHOSTING(pMesh m)
   pumi_ghost_create(m, ghosting_plan);
 
   int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-  MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm()); 
+  MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm()); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] element-wise pumi_ghost_create: #ghost increase="<<total_mcount_diff<<"\n";
 
   int num_ghost_vtx=0;
@@ -820,7 +820,7 @@ void TEST_GHOSTING(pMesh m)
         before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-        MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+        MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
         if (!pumi_rank()) std::cout<<"\n[test_pumi] layer-wise pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
         pumi_mesh_verify(m);
         TEST_FIELD(m);
@@ -837,7 +837,7 @@ void TEST_GHOSTING(pMesh m)
         int before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-        MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+        MPI_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
         if (!pumi_rank()) 
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";

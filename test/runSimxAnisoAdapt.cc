@@ -436,21 +436,21 @@ pMSAdapt addSizesToSimxMesh(
 
 double runSimxAdapt(pMSAdapt adapter)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   MSA_adapt(adapter, 0);
   MSA_delete(adapter);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
 double runSimxMeshImprover(pMesh mesh, double minQuality)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pVolumeMeshImprover vmi = VolumeMeshImprover_new(mesh);
   VolumeMeshImprover_setShapeMetric(vmi, ShapeMetricType_VolLenRatio, minQuality);
   VolumeMeshImprover_execute(vmi, 0);
   VolumeMeshImprover_delete(vmi);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 

@@ -25,7 +25,7 @@ namespace {
 
   apf::MeshTag* setWeights(apf::Mesh* m, double edgeWeight) {
     double weights[4] = {1.,edgeWeight,1.,1.};
-    weights[1] = (!PCU_Comm_Self()) ? edgeWeight : 1.0;
+    weights[1] = (!m->getPCU()->Self()) ? edgeWeight : 1.0;
     const int d = m->getDimension();
     apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
     setWeight(m, tag, 0, weights[0]);
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
   Parma_PrintWeightedPtnStats(m, weights, "initial");
   const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
-  if( !PCU_Comm_Self() )
+  if( !m->getPCU()->Self() )
     fprintf(stderr, "STATUS target imbalance %.2f\n", targetImb);
   balancer->balance(weights, targetImb);
   delete balancer;

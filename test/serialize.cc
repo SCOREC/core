@@ -48,7 +48,7 @@ int main( int argc, char* argv[])
   GroupCode code;
   code.mesh = apf::loadMdsMesh(argv[1], argv[2]);
   code.meshFile = argv[3];
-  apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+  apf::Unmodulo outMap(code.mesh->getPCU()->Self(), code.mesh->getPCU()->Peers());
   Parma_ShrinkPartition(code.mesh, atoi(argv[4]), code);
   code.mesh->destroyNative();
   apf::destroyMesh(code.mesh);

@@ -273,7 +273,7 @@ ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
   if (zb->isLocal)
     comm = MPI_COMM_SELF;
   else
-    comm = PCU_Get_Comm();
+    comm = zb->mesh->getPCU()->GetMPIComm();
   ztn =Zoltan_Create(comm);
   import_gids = NULL;
   import_lids = NULL;
@@ -325,7 +325,7 @@ void ZoltanData::setup()
 
   //Debug
   sprintf(paramStr, "%d", dbgLvl);
-  if ( zb->isLocal && 0 != PCU_Comm_Self() )
+  if ( zb->isLocal && 0 != zb->mesh->getPCU()->Self() )
     sprintf(paramStr, "%d", 0);  //if local silence all but rank 0
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
@@ -372,7 +372,7 @@ void ZoltanData::ptn()
       &import_to_part, &num_exported, &export_gids,
       &export_lids, &export_procs, &export_to_part);
   if( ZOLTAN_OK != ret ) {
-    if( 0 == PCU_Comm_Self() )
+    if( 0 == zb->mesh->getPCU()->Self() )
       lion_eprint(1, "ERROR Zoltan partitioning failed\n");
     exit(EXIT_FAILURE);
   }

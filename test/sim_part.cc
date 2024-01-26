@@ -68,7 +68,7 @@ int main(int argc, char **argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  PCU_Protect();
+  pcu::Protect();
   // Initialize PartitionedMesh - this should be the first Simmetrix call
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
   NM_release(nmodel);
 #endif
 
-  if (PCU_Comm_Self()==0) {
+  if (pmesh->getPCU()->Self()==0) {
     cout<<"**********************************"<<endl;
     cout<<"Partitioned mesh output to: "<<outmeshFilename<<endl;
     cout<<endl;

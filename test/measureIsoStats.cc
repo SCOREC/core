@@ -173,7 +173,7 @@ void getStats(
   m->verify();
 
 
-  if (PCU_Comm_Self() == 0)
+  if (m->getPCU()->Self() == 0)
     printf("\n evaluating the statistics! \n");
   // get the stats
   ma::SizeField* sf = ma::makeSizeField(m, sizes);
@@ -226,8 +226,8 @@ void getStats(
   const char* pathName = tmp.c_str();
   safe_mkdir(pathName);
 
-  ssq << pathName << "/linearQTable_" << PCU_Comm_Self() << ".dat";
-  sse << pathName << "/linearETable_" << PCU_Comm_Self() << ".dat";
+  ssq << pathName << "/linearQTable_" << m->getPCU()->Self() << ".dat";
+  sse << pathName << "/linearETable_" << m->getPCU()->Self() << ".dat";
   ssm << pathName << "/mesh_quality_vis";
   ssl << pathName << "/mesh_edge_length_vis";
 
@@ -291,7 +291,7 @@ void getStats(
     }
 
     std::stringstream sstq;
-    sstq << pathName << "/linearBLTriQTable_" << PCU_Comm_Self() << ".dat";
+    sstq << pathName << "/linearBLTriQTable_" << m->getPCU()->Self() << ".dat";
     writeTable(sstq.str().c_str(), tri_qtable);
   }
 #endif

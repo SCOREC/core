@@ -128,7 +128,7 @@ int main(int argc, char** argv)
   if(!PCU_Comm_Self())
     fprintf(stderr, "Removed surface extrusion constraints\n");
   M_write(sim_mesh, smsNew_path, 0, progress);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
 
   if(!PCU_Comm_Self())
     fprintf(stderr, "read the mesh, removed the face extrusion attributes, and wrote the mesh %f seconds\n", t1-t0);

@@ -88,7 +88,7 @@ int main(int argc, char** argv)
   ma::adapt(ma_in);
   m->verify();
   apf::writeVtkFiles("after",m);
-  if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
+  if (in.prePhastaBalanceMethod != "none" && m->getPCU()->Peers() > 1)
     ph::balance(in,m);
   /* output restart and geombc */
   chef::preprocess(m,in);
