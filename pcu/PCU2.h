@@ -97,12 +97,6 @@ int PCU_Comm_Rank2(PCUHandle h, int* rank);
 int PCU_Comm_Size2(PCUHandle h, int* size);
 
 /*deprecated method enum*/
-#ifdef __cplusplus
-enum PCU_Method { PCU_GLOBAL_METHOD, PCU_LOCAL_METHOD };
-#else
-typedef enum { PCU_GLOBAL_METHOD, PCU_LOCAL_METHOD } PCU_Method;
-#endif
-int PCU_Comm_Start2(PCUHandle h, PCU_Method method);
 
 /*special MPI_Comm replacement API*/
 void PCU_Switch_Comm2(PCUHandle h, MPI_Comm new_comm);

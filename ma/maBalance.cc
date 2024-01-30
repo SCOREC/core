@@ -135,7 +135,7 @@ double estimateWeightedImbalance(Adapt* a)
 
 void preBalance(Adapt* a)
 {
-  if (PCU_Comm_Peers()==1)
+  if (a->mesh->getPCU()->Peers()==1)
     return;
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
@@ -164,7 +164,7 @@ void preBalance(Adapt* a)
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
-    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+    if (a->mesh->getPCU()->Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       return;
     }
@@ -181,7 +181,7 @@ void preBalance(Adapt* a)
 
 void midBalance(Adapt* a)
 {
-  if (PCU_Comm_Peers()==1)
+  if (a->mesh->getPCU()->Peers()==1)
     return;
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
@@ -204,7 +204,7 @@ void midBalance(Adapt* a)
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
-    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+    if (a->mesh->getPCU()->Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       return;
     }
@@ -221,7 +221,7 @@ void midBalance(Adapt* a)
 
 void postBalance(Adapt* a)
 {
-  if (PCU_Comm_Peers()==1)
+  if (a->mesh->getPCU()->Peers()==1)
     return;
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
@@ -252,7 +252,7 @@ void postBalance(Adapt* a)
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
-    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+    if (a->mesh->getPCU()->Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       printEntityImbalance(a->mesh);
       return;

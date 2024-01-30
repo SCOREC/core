@@ -49,7 +49,7 @@ void matchNewElements(Refine* r)
       {
         int to = matches[i].peer;
         Entity* match = matches[i].entity;
-        PCU_COMM_PACK(to,match);
+        m->getPCU()->Pack(to,match);
         packSplits(to,splits);
       }
     }
@@ -60,7 +60,7 @@ void matchNewElements(Refine* r)
       while ( ! m->getPCU()->Unpacked())
       {
         Entity* e;
-        PCU_COMM_UNPACK(e);
+        m->getPCU()->Unpack(e);
         int number;
         m->getIntTag(e,r->numberTag,&number);
         EntityArray& splits = r->newEntities[d][number];
@@ -72,7 +72,7 @@ void matchNewElements(Refine* r)
       }
     }
   }
-  face_count = PCU_Add_Long(face_count);
+  face_count = m->getPCU()->Add(face_count);
   print("updated matching for %li faces",face_count);
 }
 

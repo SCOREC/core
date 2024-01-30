@@ -303,8 +303,8 @@ void stitchVerts(Mesh* m, Crawler::Layer const& prev_verts,
     APF_ITERATE(Remotes, remotes, rit) {
       int remote_part = rit->first;
       Entity* remote_prev_vert = rit->second;
-      PCU_COMM_PACK(remote_part, remote_prev_vert);
-      PCU_COMM_PACK(remote_part, next_vert);
+      m->getPCU()->Pack(remote_part, remote_prev_vert);
+      m->getPCU()->Pack(remote_part, next_vert);
     }
   }
   m->getPCU()->Send();
@@ -312,8 +312,8 @@ void stitchVerts(Mesh* m, Crawler::Layer const& prev_verts,
     int remote_part = m->getPCU()->Sender();
     Entity* prev_vert;
     Entity* remote_next_vert;
-    PCU_COMM_UNPACK(prev_vert);
-    PCU_COMM_UNPACK(remote_next_vert);
+    m->getPCU()->Unpack(prev_vert);
+    m->getPCU()->Unpack(remote_next_vert);
     int prev_idx;
     m->getIntTag(prev_vert, indices, &prev_idx);
     Entity* next_vert = next_verts.at(prev_idx);

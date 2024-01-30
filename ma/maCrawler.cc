@@ -16,7 +16,7 @@ void syncLayer(Crawler* c, Crawler::Layer& layer)
       apf::Copies remotes;
       m->getRemotes(e,remotes);
       APF_ITERATE(apf::Copies,remotes,it) {
-        PCU_COMM_PACK(it->first,it->second);
+        m->getPCU()->Pack(it->first,it->second);
         c->send(e, it->first);
       }
     }
@@ -49,7 +49,7 @@ void crawlLayers(Crawler* c)
 {
   Crawler::Layer layer;
   c->begin(layer);
-  while (PCU_Or( ! layer.empty())) {
+  while (c->mesh->getPCU()->Or( ! layer.empty())) {
     crawlLayer(c, layer);
     syncLayer(c, layer);
   }
@@ -157,7 +157,7 @@ struct LayerNumberer : public Crawler
   void send(Entity* v, int to)
   {
     int n = t.getNumber(v);
-    PCU_COMM_PACK(to, n);
+    m->getPCU()->Pack(to, n);
   }
   bool recv(Entity* v, int)
   {

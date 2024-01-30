@@ -131,7 +131,7 @@ void clearFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(it->peer == a->mesh->getPCU()->Self());
       clearFlag(a, it->entity, flag);
     }
   }
@@ -238,8 +238,8 @@ bool checkFlagConsistency(Adapt* a, int dimension, int flag)
       continue;
     bool value = getFlag(a, e, flag);
     APF_ITERATE(apf::CopyArray, others, rit) {
-      PCU_COMM_PACK(rit->peer, rit->entity);
-      PCU_COMM_PACK(rit->peer, value);
+      m->getPCU()->Pack(rit->peer, rit->entity);
+      m->getPCU()->Pack(rit->peer, value);
     }
   }
   m->end(it);
@@ -321,7 +321,7 @@ long markEntities(
       setFlag(a,e,setFalseFlag);
   }
   m->end(it);
-  return PCU_Add_Long(count);
+  return m->getPCU()->Add(count);
 }
 
 void NewEntities::reset()
@@ -509,7 +509,7 @@ void syncFlag(Adapt* a, int dimension, int flag)
     apf::CopyArray others;
     sh->getCopies(e, others);
     APF_ITERATE(apf::CopyArray, others, rit)
-      PCU_COMM_PACK(rit->peer, rit->entity);
+      m->getPCU()->Pack(rit->peer, rit->entity);
   }
   m->end(it);
   m->getPCU()->Send();

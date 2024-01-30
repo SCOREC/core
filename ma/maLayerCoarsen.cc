@@ -41,7 +41,7 @@ static long markBaseEdgesToCollapse(Adapt* a)
       }
     }
   m->end(it);
-  return PCU_Add_Long(n);
+  return m->getPCU()->Add(n);
 }
 
 struct CurveLocalizer : public Crawler
@@ -134,12 +134,12 @@ struct CurveLocalizer : public Crawler
   void send(Entity* v, int to)
   {
     int dest = getVertDest(v);
-    PCU_COMM_PACK(to, dest);
+    m->getPCU()->Pack(to, dest);
   }
   bool recv(Entity* v, int)
   {
     int dest;
-    PCU_COMM_UNPACK(dest);
+    m->getPCU()->Unpack(dest);
     return handle(v, dest);
   }
   Adapt* a;
@@ -259,7 +259,7 @@ static long collapseAllStacks(Adapt* a, int d)
     allSuccesses += successCount;
     ++round;
   } while (a->mesh->getPCU()->Or(skipCount));
-  return PCU_Add_Long(allSuccesses);
+  return a->mesh->getPCU()->Add(allSuccesses);
 }
 
 bool coarsenLayer(Adapt* a)
@@ -268,7 +268,7 @@ bool coarsenLayer(Adapt* a)
     return false;
   if ( ! a->input->shouldCoarsenLayer)
     return false;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   allowLayerToCollapse(a);
   findLayerBase(a);
   long count = markBaseEdgesToCollapse(a);
@@ -283,7 +283,7 @@ bool coarsenLayer(Adapt* a)
     findIndependentSet(a);
     successCount += collapseAllStacks(a, d);
   }
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   print("coarsened %li layer edges in %f seconds",successCount,t1-t0);
   resetLayer(a);
   return true;

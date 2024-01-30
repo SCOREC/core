@@ -230,7 +230,7 @@ bool coarsen(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
     return false;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   --(a->coarsensLeft);
   long count = markEdgesToCollapse(a);
   if ( ! count)
@@ -248,8 +248,8 @@ bool coarsen(Adapt* a)
     else
       successCount += collapseAllEdges(a, modelDimension);
   }
-  successCount = PCU_Add_Long(successCount);
-  double t1 = PCU_Time();
+  successCount = m->getPCU()->Add(successCount);
+  double t1 = pcu::Time();
   print("coarsened %li edges in %f seconds",successCount,t1-t0);
   return true;
 }

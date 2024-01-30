@@ -38,7 +38,7 @@ static long markLayerElements(Adapt* a)
       }
     }
   }
-  n = PCU_Add_Long(n);
+  n = m->getPCU()->Add(n);
   a->hasLayer = (n != 0);
   if ( ! a->hasLayer)
     return 0;
@@ -94,12 +94,12 @@ void unfreezeLayer(Adapt* a)
 
 void resetLayer(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   long n = markLayerElements(a);
   if (!n)
     return;
   freezeLayer(a);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   print("marked %ld layer elements in %f seconds", n, t1 - t0);
 }
 
@@ -166,7 +166,7 @@ void collectForLayerRefine(Refine* r)
 
 void checkLayerShape(Mesh* m, const char* key)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   Iterator* it = m->begin(m->getDimension());
   Entity* e;
   long n = 0;
@@ -187,8 +187,8 @@ void checkLayerShape(Mesh* m, const char* key)
         ++n;
       }
   m->end(it);
-  n = PCU_Add_Long(n);
-  double t1 = PCU_Time();
+  n = m->getPCU()->Add(n);
+  double t1 = pcu::Time();
   print("%s: checked layer quality in %f seconds: %ld unsafe elements", key, t1 - t0, n);
 }
 

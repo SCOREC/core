@@ -368,13 +368,7 @@ int PCU_Comm_Size2(PCUHandle h, int *size) {
 /** \brief Returns true iff PCU has been initialized */
 bool PCU_Comm_Initialized2(PCUHandle h) { return h.ptr != nullptr; }
 
-/** \brief Deprecated, see PCU_Comm_Begin.
- */
-int PCU_Comm_Start2(PCUHandle h, PCU_Method method) {
-  (void)method; // warning silencer
-  static_cast<pcu::PCU*>(h.ptr)->Begin();
-  return PCU_SUCCESS;
-}
+
 
 /** \brief Returns in * \a size the number of bytes being sent to \a to_rank.
   \details Returns the size of the buffer being sent to \a to_rank.
