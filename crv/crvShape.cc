@@ -635,7 +635,7 @@ static int markEdgesOppLargeAnglesTri(Adapt* a)
     }
     m->end(it);
   } while(count > prev_count);
-  return PCU_Add_Long(count);
+  return m->getPCU()->Add(count);
 }
 
 static int markEdgesOppLargeAnglesTet(Adapt* a)
@@ -663,7 +663,7 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
     }
     m->end(it);
   } while(count > prev_count);
-  return PCU_Add_Long(count);
+  return m->getPCU()->Add(count);
 }
 
 /* The whole idea is to do the quality check once,
@@ -701,12 +701,12 @@ static int markEdgesToFix(Adapt* a, int flag)
   }
   m->end(it);
 
-  return PCU_Add_Long(count);
+  return m->getPCU()->Add(count);
 }
 
 int fixLargeBoundaryAngles(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   int count = markEdgesOppLargeAnglesTet(a);
   count += markEdgesOppLargeAnglesTri(a);
 
@@ -714,7 +714,7 @@ int fixLargeBoundaryAngles(Adapt* a)
     return 0;
   }
   splitEdges(a);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   ma::print("split %d boundary edges with "
       "large angles in %f seconds",count,t1-t0);
   return 0;
@@ -722,7 +722,7 @@ int fixLargeBoundaryAngles(Adapt* a)
 
 static void collapseInvalidEdges(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   ma::Mesh* m = a->mesh;
   int maxDimension = m->getDimension();
   PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,ma::COLLAPSE));
@@ -733,28 +733,28 @@ static void collapseInvalidEdges(Adapt* a)
     findIndependentSet(a);
     successCount += ma::collapseAllEdges(a, modelDimension);
   }
-  successCount = PCU_Add_Long(successCount);
-  double t1 = PCU_Time();
+  successCount = m->getPCU()->Add(successCount);
+  double t1 = pcu::Time();
   ma::print("Collapsed %d bad edges "
       "in %f seconds",successCount, t1-t0);
 }
 
 static void swapInvalidEdges(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   EdgeSwapper es(a);
   ma::applyOperator(a,&es);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   ma::print("Swapped %d bad edges "
       "in %f seconds",es.ns, t1-t0);
 }
 
 static void repositionInvalidEdges(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   EdgeReshaper es(a);
   ma::applyOperator(a,&es);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   ma::print("Repositioned %d bad edges "
       "in %f seconds",es.nr, t1-t0);
 }
@@ -827,7 +827,7 @@ void fixCrvElementShapes(Adapt* a)
   if ( ! a->input->shouldFixShape)
     return;
   a->input->shouldForceAdaptation = true;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   int count = markCrvBadQuality(a);
   int originalCount = count;
   int prev_count;
@@ -850,7 +850,7 @@ void fixCrvElementShapes(Adapt* a)
     count = markCrvBadQuality(a);
     ++i;
   } while(count < prev_count && i < 6); // the second conditions is to make sure this does not take long
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   ma::print("bad shapes down from %d to %d in %f seconds",
         originalCount,count,t1-t0);
   a->input->shouldForceAdaptation = false;

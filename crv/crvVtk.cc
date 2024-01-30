@@ -1001,7 +1001,7 @@ void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
 
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   if (!m->getPCU()->Self()) {
     makeDirectories(prefix, type, n);
     writePvtuFile(getPvtuDirectoryStr(prefix, type, n).c_str(),"",m,type);
@@ -1056,7 +1056,7 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
   }
 
   m->getPCU()->Barrier();
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   if (!m->getPCU()->Self())
     lion_oprint(1,"%s vtk files %s written in %f seconds\n",
         apf::Mesh::typeName[type],getPvtuDirectoryStr(prefix, type, n).c_str(),t1 - t0);

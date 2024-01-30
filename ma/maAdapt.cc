@@ -111,7 +111,7 @@ void setFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(it->peer == a->mesh->getPCU()->Self());
       setFlag(a, it->entity, flag);
     }
   }

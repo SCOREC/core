@@ -73,14 +73,14 @@ void splitEdges(ma::Adapt* a)
 
 static void refine(ma::Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   --(a->refinesLeft);
   long count = ma::markEdgesToSplit(a);
   if ( ! count) {
     return;
   }
   splitEdges(a);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   ma::print("split %li edges in %f seconds",count,t1-t0);
 }
 
@@ -132,7 +132,7 @@ int markInvalidEntities(Adapt* a)
   }
   m->end(it);
   delete qual;
-  return PCU_Add_Int(count);
+  return m->getPCU()->Add(count);
 }
 
 int getTag(Adapt* a, ma::Entity* e)
@@ -200,7 +200,7 @@ void adapt(ma::Input* in)
 
   in->shapeHandler = crv::getShapeHandler;
   ma::print("Curved Adaptation Version 2.0 !");
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   ma::validateInput(in);
   Adapt* a = new Adapt(in);
   ma::preBalance(a);
@@ -228,7 +228,7 @@ void adapt(ma::Input* in)
   cleanupLayer(a);
   ma::printQuality(a);
   ma::postBalance(a);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   ma::print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(a->mesh);
   crv::clearTags(a);

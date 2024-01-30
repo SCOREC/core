@@ -67,7 +67,7 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
       apf::Copies remotes;
       m->getRemotes(sv, remotes);
       APF_ITERATE(apf::Copies, remotes, rit)
-        PCU_COMM_PACK(rit->first, rit->second);
+        m->getPCU()->Pack(rit->first, rit->second);
     }
     m->getPCU()->Send();
     while (m->getPCU()->Receive()) {

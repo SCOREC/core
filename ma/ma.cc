@@ -24,7 +24,7 @@ namespace ma {
 void adapt(Input* in)
 {
   print("version 2.0 !");
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
@@ -51,7 +51,7 @@ void adapt(Input* in)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(m);
 }
@@ -64,7 +64,7 @@ void adapt(const Input* in)
 void adaptVerbose(Input* in, bool verbose)
 {
   print("version 2.0 - dev !");
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
@@ -125,7 +125,7 @@ void adaptVerbose(Input* in, bool verbose)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   print("mesh adapted in %f seconds",t1-t0);
   apf::printStats(m);
 }
