@@ -46,15 +46,15 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
       shr->getCopies(e, copies);
       for (size_t i = 0; i < copies.getSize(); ++i)
       {
-        PCU_COMM_PACK(copies[i].peer, copies[i].entity);
-        PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(T));
+        m->getPCU()->Pack(copies[i].peer, copies[i].entity);
+        m->getPCU()->Pack(copies[i].peer, &(values[0]), n*sizeof(T));
       }
       apf::Copies ghosts;  
       if (m->getGhosts(e, ghosts))
       APF_ITERATE(Copies, ghosts, it)
       {
-        PCU_COMM_PACK(it->first, it->second);
-        PCU_Comm_Pack(it->first, &(values[0]), n*sizeof(T));
+        m->getPCU()->Pack(it->first, it->second);
+        m->getPCU()->Pack(it->first, &(values[0]), n*sizeof(T));
       }
     }
     m->end(it);
@@ -65,7 +65,7 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
       PCU_COMM_UNPACK(e);
       int n = f->countValuesOn(e);
       NewArray<T> values(n);
-      PCU_Comm_Unpack(&(values[0]),n*sizeof(T));
+      m->getPCU()->Unpack(&(values[0]),n*sizeof(T));
       data->set(e,&(values[0]));
     }
   }
@@ -122,8 +122,8 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
 
       for (size_t i = 0; i < copies.getSize(); ++i)
       {
-        PCU_COMM_PACK(copies[i].peer, copies[i].entity);
-        PCU_Comm_Pack(copies[i].peer, &(values[0]), n*sizeof(double));
+        m->getPCU()->Pack(copies[i].peer, copies[i].entity);
+        m->getPCU()->Pack(copies[i].peer, &(values[0]), n*sizeof(double));
       }
 
       // ghosts - only do them if this entity is on a partition boundary
@@ -133,8 +133,8 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
         if (m->getGhosts(e, ghosts))
         APF_ITERATE(Copies, ghosts, it2)
         {
-          PCU_COMM_PACK(it2->first, it2->second);
-          PCU_Comm_Pack(it2->first, &(values[0]), n*sizeof(double));
+          m->getPCU()->Pack(it2->first, it2->second);
+          m->getPCU()->Pack(it2->first, &(values[0]), n*sizeof(double));
         }
       }
     }
@@ -150,7 +150,7 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
         int n = f->countValuesOn(e);
         NewArray<double> values(n);
         NewArray<double> inValues(n);
-        PCU_Comm_Unpack(&(inValues[0]),n*sizeof(double));
+        m->getPCU()->Unpack(&(inValues[0]),n*sizeof(double));
         data->get(e,&(values[0]));
         for (int i = 0; i < n; ++i)
           values[i] = reduce_op.apply(values[i], inValues[i]);

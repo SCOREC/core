@@ -264,7 +264,7 @@ static void sendAllCopies(Mesh* m, MeshEntity* e)
   PCU_ALWAYS_ASSERT(!r.count(m->getPCU()->Self()));
   APF_ITERATE(Copies, r, it)
   {
-    PCU_COMM_PACK(it->first, it->second);
+    m->getPCU()->Pack(it->first, it->second);
     packCopies(it->first, a);
   }
 }
@@ -304,8 +304,8 @@ static void sendGhostCopies(Mesh* m, MeshEntity* e)
   PCU_ALWAYS_ASSERT(g.size());
   APF_ITERATE(Copies, g, it)
   {
-    PCU_COMM_PACK(it->first, it->second);
-    PCU_COMM_PACK(it->first, e);
+    m->getPCU()->Pack(it->first, it->second);
+    m->getPCU()->Pack(it->first, e);
   }
 }
 
@@ -419,9 +419,9 @@ static void sendCoords(Mesh* m, MeshEntity* e)
   m->getRemotes(e, r);
   APF_ITERATE(Copies, r, it)
   {
-    PCU_COMM_PACK(it->first, it->second);
-    PCU_COMM_PACK(it->first, x);
-    PCU_COMM_PACK(it->first, p);
+    m->getPCU()->Pack(it->first, it->second);
+    m->getPCU()->Pack(it->first, x);
+    m->getPCU()->Pack(it->first, p);
   }
 }
 
@@ -455,7 +455,7 @@ static long verifyCoords(Mesh* m)
   while (m->getPCU()->Receive())
     if (!receiveCoords(m))
       ++n;
-  return PCU_Add_Long(n);
+  return m->getPCU()->Add(n);
 }
 
 long verifyVolumes(Mesh* m, bool printVolumes)
@@ -481,12 +481,12 @@ long verifyVolumes(Mesh* m, bool printVolumes)
     }
   }
   m->end(it);
-  return PCU_Add_Long(n);
+  return m->getPCU()->Add(n);
 }
 
 static void packAlignment(Mesh* m, MeshEntity* e, MeshEntity* r, int to)
 {
-  PCU_COMM_PACK(to,r);
+  m->getPCU()->Pack(to,r);
   int d = getDimension(m, e);
   Downward down;
   int nd = m->getDownward(e, d - 1, down);
@@ -494,7 +494,7 @@ static void packAlignment(Mesh* m, MeshEntity* e, MeshEntity* r, int to)
     Copies remotes;
     m->getRemotes(down[i], remotes);
     MeshEntity* dr = remotes[to];
-    PCU_COMM_PACK(to,dr);
+    m->getPCU()->Pack(to,dr);
   }
 }
 
@@ -565,7 +565,7 @@ static void verifyFields(Mesh* m)
 
   m->getPCU()->Begin();
   if (self) {
-    PCU_COMM_PACK(self - 1, n);
+    m->getPCU()->Pack(self - 1, n);
     for (int i = 0; i < n; ++i)
       packFieldInfo(fields[i], self - 1);
   }
@@ -721,7 +721,7 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
     } // switch
   } // while
 
-  int global_size = PCU_Max_Int((int)mismatch_tags.size());
+  int global_size = m->getPCU()->Max((int)mismatch_tags.size());
   if (global_size&&!m->getPCU()->Self())
     for (std::set<MeshTag*>::iterator it=mismatch_tags.begin(); it!=mismatch_tags.end(); ++it)
       lion_oprint(1,"  - tag \"%s\" data mismatch over remote/ghost copies\n", m->getTagName(*it));
@@ -737,7 +737,7 @@ static void verifyTags(Mesh* m)
 
   m->getPCU()->Begin();
   if (self) {
-    PCU_COMM_PACK(self - 1, n);
+    m->getPCU()->Pack(self - 1, n);
     for (int i = 0; i < n; ++i)
       packTagInfo(m, tags[i], self - 1);
   }
@@ -799,7 +799,7 @@ static void verifyTags(Mesh* m)
 
 void verify(Mesh* m, bool abort_on_error)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   verifyTags(m);
   verifyFields(m);
 
@@ -833,7 +833,7 @@ void verify(Mesh* m, bool abort_on_error)
   n = verifyVolumes(m);
   if (n && (!m->getPCU()->Self()))
     lion_eprint(1,"apf::verify warning: %ld negative simplex elements\n", n);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   if (!m->getPCU()->Self())
     lion_oprint(1,"mesh verified in %f seconds\n", t1 - t0);
 }

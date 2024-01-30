@@ -149,17 +149,17 @@ static void getCandidateParts(Mesh* m, MeshEntity* e, Parts& parts)
 static void packProposal(Mesh* m, MeshEntity* e, int to)
 {
   int t = m->getType(e);
-  PCU_COMM_PACK(to,t);
-  PCU_COMM_PACK(to,e);
+  m->getPCU()->Pack(to,t);
+  m->getPCU()->Pack(to,e);
   int d = getDimension(m, e);
   Downward down;
   int nd = m->getDownward(e, d - 1, down);
-  PCU_COMM_PACK(to,nd);
+  m->getPCU()->Pack(to,nd);
   for (int i = 0; i < nd; ++i) {
     Copies remotes;
     m->getRemotes(down[i], remotes);
     MeshEntity* dr = remotes[to];
-    PCU_COMM_PACK(to,dr);
+    m->getPCU()->Pack(to,dr);
   }
 }
 
@@ -179,7 +179,7 @@ void stitchMesh(Mesh2* m)
   int d_max = m->getDimension();
   MeshEntity* e;
   for (int d=1; d < d_max; ++d) {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     MeshIterator* it = m->begin(d);
     while ((e = m->iterate(it))) {
       Parts candidateParts;
@@ -189,10 +189,10 @@ void stitchMesh(Mesh2* m)
         packProposal(m, e,*pit);
     }
     m->end(it);
-    PCU_Comm_Send();
-    while (PCU_Comm_Listen()) {
-      int from = PCU_Comm_Sender();
-      while (!PCU_Comm_Unpacked()) {
+    m->getPCU()->Send();
+    while (m->getPCU()->Listen()) {
+      int from = m->getPCU()->Sender();
+      while (!m->getPCU()->Unpacked()) {
         int t;
         Downward da;
         unpackProposal(t, e, da);
@@ -212,10 +212,10 @@ static void packTagClone(Mesh2* m, MeshTag* t, int to)
   packString(name, to);
   int type;
   type = m->getTagType(t);
-  PCU_COMM_PACK(to, type);
+  m->getPCU()->Pack(to, type);
   int size;
   size = m->getTagSize(t);
-  PCU_COMM_PACK(to, size);
+  m->getPCU()->Pack(to, size);
 }
 
 static MeshTag* unpackTagClone(Mesh2* m)
@@ -239,7 +239,7 @@ static void packTagClones(Mesh2* m, int to)
   DynamicArray<MeshTag*> tags;
   m->getTags(tags);
   int n = tags.getSize();
-  PCU_COMM_PACK(to, n);
+  m->getPCU()->Pack(to, n);
   /* warning! this loop goes backward to cater to MDS
      implementation-specific behavior.
      please forgive me. */
@@ -260,9 +260,9 @@ static void packFieldClone(Field* f, int to)
   std::string name = f->getName();
   packString(name, to);
   int valueType = f->getValueType();
-  PCU_COMM_PACK(to, valueType);
+  f->getMesh()->getPCU()->Pack(to, valueType);
   int components = f->countComponents();
-  PCU_COMM_PACK(to, components);
+  f->getMesh()->getPCU()->Pack(to, components);
   std::string shapeName = f->getShape()->getName();
   packString(shapeName, to);
   /* warning! this only supports tag-stored fields */
@@ -285,7 +285,7 @@ static Field* unpackFieldClone(Mesh2* m)
 static void packFieldClones(Mesh2* m, int to)
 {
   int n = m->countFields();
-  PCU_COMM_PACK(to, n);
+  m->getPCU()->Pack(to, n);
   for (int i = 0; i < n; ++i)
     packFieldClone(m->getField(i), to);
 }

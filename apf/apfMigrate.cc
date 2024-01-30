@@ -59,13 +59,13 @@ static void getAffected(
         Copies remotes;
         m->getRemotes(adjacent[i],remotes);
         APF_ITERATE(Copies,remotes,rit)
-          PCU_COMM_PACK(rit->first,rit->second);
+          m->getPCU()->Pack(rit->first,rit->second);
         if (m->hasMatching())
         {
           Matches matches;
           m->getMatches(adjacent[i],matches);
           for (size_t j=0; j < matches.getSize(); ++j)
-            PCU_COMM_PACK(matches[j].peer,matches[j].entity);
+            m->getPCU()->Pack(matches[j].peer,matches[j].entity);
         }
       }//downward adjacent loop
     }//upward affected loop
@@ -128,8 +128,8 @@ void reduceMatchingToSenders(
       for (size_t j=0; j < matches.getSize(); ++j)
       { /* advertise to the match that this is a sender */
         int to = matches[j].peer;
-        PCU_COMM_PACK(to,matches[j].entity);
-        PCU_COMM_PACK(to,e);
+        m->getPCU()->Pack(to,matches[j].entity);
+        m->getPCU()->Pack(to,e);
       }
       /* now forget all other matchings */
       m->clearMatches(e);
@@ -222,7 +222,7 @@ static void updateResidences(
       m->getRemotes(entity,remotes);
       APF_ITERATE(Copies,remotes,rit)
       {
-        PCU_COMM_PACK(rit->first,rit->second);
+        m->getPCU()->Pack(rit->first,rit->second);
         packParts(rit->first,newResidence);
       }
     }
@@ -262,12 +262,12 @@ static void packCommon(
     int to,
     MeshEntity* e)
 {
-  PCU_COMM_PACK(to,e);
+  m->getPCU()->Pack(to,e);
   ModelEntity* me = m->toModel(e);
   int modelType = m->getModelType(me);
-  PCU_COMM_PACK(to,modelType);
+  m->getPCU()->Pack(to,modelType);
   int modelTag = m->getModelTag(me);
-  PCU_COMM_PACK(to,modelTag);
+  m->getPCU()->Pack(to,modelTag);
   Parts residence;
   m->getResidence(e,residence);
   packParts(to,residence);
@@ -294,9 +294,9 @@ static void packVertex(
 {
   Vector3 p;
   m->getPoint(e,0,p);
-  PCU_COMM_PACK(to,p);
+  m->getPCU()->Pack(to,p);
   m->getParam(e,p);
-  PCU_COMM_PACK(to,p);
+  m->getPCU()->Pack(to,p);
 }
 
 MeshEntity* unpackVertex(
@@ -321,7 +321,7 @@ static void packReference(
   if (found!=remotes.end())
   {
     MeshEntity* remote = found->second;
-    PCU_COMM_PACK(to,remote);
+    m->getPCU()->Pack(to,remote);
   }
   else
   {
@@ -330,7 +330,7 @@ static void packReference(
     found = ghosts.find(to);
     PCU_ALWAYS_ASSERT(found!=ghosts.end());
     MeshEntity* ghost = found->second;
-    PCU_COMM_PACK(to,ghost);
+    m->getPCU()->Pack(to,ghost);
   }
 }
 
@@ -339,7 +339,7 @@ static void packDownward(Mesh2* m, int to, MeshEntity* e)
   Downward down;
   int d = getDimension(m, e);
   int n = m->getDownward(e,d-1,down);
-  PCU_COMM_PACK(to,n);
+  m->getPCU()->Pack(to,n);
   for (int i=0; i < n; ++i)
     packReference(m,to,down[i]);
 }
@@ -381,26 +381,26 @@ static void packTags(
   for (size_t i=0; i < total; ++i)
     if (m->hasTag(e,tags[i]))
       ++n;
-  PCU_COMM_PACK(to,n);
+  m->getPCU()->Pack(to,n);
   for (size_t i=0; i < total; ++i)
   {
     MeshTag* tag = tags[i];
     if (m->hasTag(e,tag))
     {
-      PCU_COMM_PACK(to,i);
+      m->getPCU()->Pack(to,i);
       int type = m->getTagType(tag);
       int size = m->getTagSize(tag);
       if (type == Mesh2::DOUBLE)
       {
         DynamicArray<double> d(size);
         m->getDoubleTag(e,tag,&(d[0]));
-        PCU_Comm_Pack(to,&(d[0]),size*sizeof(double));
+        m->getPCU()->Pack(to,&(d[0]),size*sizeof(double));
       }
       if (type == Mesh2::INT)
       {
         DynamicArray<int> d(size);
         m->getIntTag(e,tag,&(d[0]));
-        PCU_Comm_Pack(to,&(d[0]),size*sizeof(int));
+        m->getPCU()->Pack(to,&(d[0]),size*sizeof(int));
       }
     }
   }
@@ -415,13 +415,13 @@ void packRemotes(
   Copies remotes;
   m->getRemotes(e,remotes);
   size_t n = remotes.size();
-  PCU_COMM_PACK(to,n);
+  m->getPCU()->Pack(to,n);
   APF_ITERATE(Copies,remotes,rit)
   {
     int p=rit->first;
     MeshEntity* remote = rit->second;
-    PCU_COMM_PACK(to,p);
-    PCU_COMM_PACK(to,remote);
+    m->getPCU()->Pack(to,p);
+    m->getPCU()->Pack(to,remote);
   }
 }
 
@@ -458,13 +458,13 @@ void unpackTags(
     if (type == Mesh2::DOUBLE)
     {
       DynamicArray<double> d(size);
-      PCU_Comm_Unpack(&(d[0]),size*sizeof(double));
+      m->getPCU()->Unpack(&(d[0]),size*sizeof(double));
       m->setDoubleTag(e,tag,&(d[0]));
     }
     if (type == Mesh2::INT)
     {
       DynamicArray<int> d(size);
-      PCU_Comm_Unpack(&(d[0]),size*sizeof(int));
+      m->getPCU()->Unpack(&(d[0]),size*sizeof(int));
       m->setIntTag(e,tag,&(d[0]));
     }
   }
@@ -478,7 +478,7 @@ void packEntity(
     bool ghosting)
 {
   int type = m->getType(e);
-  PCU_COMM_PACK(to,type);
+  m->getPCU()->Pack(to,type);
   packCommon(m,to,e);
   if (type == Mesh::VERTEX)
     packVertex(m,to,e);
@@ -557,8 +557,8 @@ static void echoRemotes(
     m->getRemotes(entity,temp);
     int from = temp.begin()->first;
     MeshEntity* sender = temp.begin()->second;
-    PCU_COMM_PACK(from,sender);
-    PCU_COMM_PACK(from,entity);
+    m->getPCU()->Pack(from,sender);
+    m->getPCU()->Pack(from,entity);
   }
 }
 
@@ -645,7 +645,7 @@ static void bcastRemotes(
     getNewCopies(m,e,allRemotes,newCopies);
     APF_ITERATE(Copies,allRemotes,rit)
     {
-      PCU_COMM_PACK(rit->first,rit->second);
+      m->getPCU()->Pack(rit->first,rit->second);
       packCopies(rit->first,newCopies);
     }
     newCopies.erase(rank);
@@ -720,13 +720,13 @@ static void updateSenderMatching(
       m->getResidence(e,residence);
       /* pack the remote copies to itself, then
          add itself to the copies if it remains */
-      PCU_COMM_PACK(self,e);
+      m->getPCU()->Pack(self,e);
       packCopies(self,copies);
       if (residence.count(self))
         copies[self]=e;
       for (size_t j=0; j < matches.getSize(); ++j)
       { /* pack all copies to matched senders */
-        PCU_COMM_PACK(matches[j].peer,matches[j].entity);
+        m->getPCU()->Pack(matches[j].peer,matches[j].entity);
         packCopies(matches[j].peer,copies);
       }
     }
@@ -777,13 +777,13 @@ static void bcastMatching(
       APF_ITERATE(Copies,remotes,rit)
       {
         int to = rit->first;
-        PCU_COMM_PACK(to,rit->second);
+        m->getPCU()->Pack(to,rit->second);
         size_t n = matches.getSize();
-        PCU_COMM_PACK(to,n);
+        m->getPCU()->Pack(to,n);
         for (size_t j=0; j < n; ++j)
         {
-          PCU_COMM_PACK(to,matches[j].peer);
-          PCU_COMM_PACK(to,matches[j].entity);
+          m->getPCU()->Pack(to,matches[j].peer);
+          m->getPCU()->Pack(to,matches[j].entity);
         }
       }
     }

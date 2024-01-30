@@ -13,8 +13,12 @@ extern "C" {
 #include <stdbool.h>
 #endif
 
-int PCU_Comm_Init2(PCUHandle& h);
-int PCU_Comm_Free2(PCUHandle& h);
+struct PCUHandle {
+    void* ptr;
+};
+
+int PCU_Comm_Init2(PCUHandle* h);
+int PCU_Comm_Free2(PCUHandle* h);
 
 /*rank/size functions*/
 int PCU_Comm_Self2(PCUHandle h);
@@ -23,16 +27,16 @@ int PCU_Comm_Peers2(PCUHandle h);
 /*recommended message passing API*/
 void PCU_Comm_Begin2(PCUHandle h);
 int PCU_Comm_Pack2(PCUHandle h, int to_rank, const void* data, size_t size);
-#define PCU_COMM_PACK2(to_rank,object)\
-PCU_Comm_Pack2(to_rank,&(object),sizeof(object))
+#define PCU_COMM_PACK2(handle, to_rank,object)\
+PCU_Comm_Pack2(handle, to_rank,&(object),sizeof(object))
 int PCU_Comm_Send2(PCUHandle h);
 bool PCU_Comm_Receive2(PCUHandle h);
 bool PCU_Comm_Listen2(PCUHandle h);
 int PCU_Comm_Sender2(PCUHandle h);
 bool PCU_Comm_Unpacked2(PCUHandle h);
 int PCU_Comm_Unpack2(PCUHandle h, void* data, size_t size);
-#define PCU_COMM_UNPACK(object)\
-PCU_Comm_Unpack2(&(object),sizeof(object))
+#define PCU_COMM_UNPACK2(handle, object)\
+PCU_Comm_Unpack2(handle, &(object),sizeof(object))
 
 /*turns deterministic ordering for the
   above API on/off*/
@@ -75,14 +79,14 @@ int PCU_Proc_Peers2(PCUHandle h);
 
 /*IPComMan replacement API*/
 int PCU_Comm_Write2(PCUHandle h, int to_rank, const void* data, size_t size);
-#define PCU_COMM_WRITE(to,data) \
-PCU_Comm_Write2(to,&(data),sizeof(data))
+#define PCU_COMM_WRITE2(handle,to,data) \
+PCU_Comm_Write2(handle, to,&(data),sizeof(data))
 bool PCU_Comm_Read2(PCUHandle h, int* from_rank, void** data, size_t* size);
 
 /*Debug file I/O API*/
-void PCU_Debug_Open(PCUHandle h);
+void PCU_Debug_Open2(PCUHandle h);
 
-void PCU_Debug_Print2(PCUHandle h, const char* format, ...) PCU_FORMAT_ATTRIBUTE(1,2);
+void PCU_Debug_Print2(PCUHandle h, const char* format, ...) PCU_FORMAT_ATTRIBUTE(2,3);
 /*lesser-used APIs*/
 bool PCU_Comm_Initialized2(PCUHandle h);
 int PCU_Comm_Packed2(PCUHandle h ,int to_rank, size_t* size);

@@ -408,7 +408,7 @@ static void synchronizeEntitySet(
       Copies remotes;
       m->getRemotes(*it,remotes);
       APF_ITERATE(Copies,remotes,rit)
-        PCU_COMM_PACK(rit->first,rit->second);
+        m->getPCU()->Pack(rit->first,rit->second);
     }
   m->getPCU()->Send();
   while (m->getPCU()->Receive())

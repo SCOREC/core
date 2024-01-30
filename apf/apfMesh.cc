@@ -868,8 +868,8 @@ void printTypes(Mesh* m)
   while ((e = m->iterate(it)))
     typeCnt[m->getType(e)]++;
   m->end(it);
-  PCU_Add_Longs(typeCnt,Mesh::TYPES);
-  if (!PCU_Comm_Self()) {
+  m->getPCU()->Add(typeCnt,Mesh::TYPES);
+  if (!m->getPCU()->Self()) {
     lion_oprint(1,"number of");
     for (int i=0; i<Mesh::TYPES; i++)
       if (dim == Mesh::typeDimension[i])
@@ -883,7 +883,7 @@ void printStats(Mesh* m)
   long n[4];
   for (int i = 0; i < 4; ++i)
     n[i] = countOwned(m, i);
-  PCU_Add_Longs(n, 4);
+  m->getPCU()->Add(n, 4);
   printTypes(m);
   if (!PCU_Comm_Self())
     lion_oprint(1,"mesh entity counts: v %ld e %ld f %ld r %ld\n",
@@ -895,8 +895,8 @@ void warnAboutEmptyParts(Mesh* m)
   int emptyParts = 0;
   if (!m->count(m->getDimension()))
     ++emptyParts;
-  emptyParts = PCU_Add_Int(emptyParts);
-  if (emptyParts && (!PCU_Comm_Self()))
+  emptyParts = m->getPCU()->Add(emptyParts);
+  if (emptyParts && (!m->getPCU()->Self()))
     lion_eprint(1,"APF warning: %d empty parts\n",emptyParts);
 }
 
@@ -1023,7 +1023,7 @@ void MatchedSharing::formCountMap()
   Parts neighbors;
   getNeighbors(neighbors);
   APF_ITERATE(Parts, neighbors, nit)
-    PCU_COMM_PACK(*nit, count);
+    mesh->getPCU()->Pack(*nit, count);
   mesh->getPCU()->Send();
   while (mesh->getPCU()->Receive()) {
     size_t oc;
@@ -1194,10 +1194,10 @@ void packTagInfo(Mesh* m, MeshTag* t, int to)
   packString(name, to);
   int type;
   type = m->getTagType(t);
-  PCU_COMM_PACK(to, type);
+  m->getPCU()->Pack(to, type);
   int size;
   size = m->getTagSize(t);
-  PCU_COMM_PACK(to, size);
+  m->getPCU()->Pack(to, size);
 }
 
 void unpackTagInfo(std::string& name, int& type, int& size)

@@ -548,7 +548,7 @@ CellElementReturn WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbe
 
       std::vector<int> allNumbersForThisType(m->getPCU()->Peers(), 0);
       MPI_Allgather(&numbersByElementType[o], 1, MPI_INT, allNumbersForThisType.data(), 1,
-                    MPI_INT, PCU_Get_Comm());
+                    MPI_INT, m->getPCU()->GetMPIComm());
 
       cgsize_t num = 0;
       for (int i = 0; i < m->getPCU()->Self(); i++)
@@ -1031,7 +1031,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   //   PCU_Barrier();
   // }
 
-  PCU_Barrier();
+  m->getPCU()->Barrier();
   if (myRank == 0)
   {
     std::cout << "*******Global Mesh Stats*****************\n";
