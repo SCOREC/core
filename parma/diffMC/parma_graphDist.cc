@@ -63,7 +63,7 @@ namespace {
       rsum[i] = rsum[i-1] + rmax[i-1] + 1 + maxDistanceIncrease;
 
     for(unsigned i=1; i<c.size(); i++)
-      PCU_Debug_Print("offset %u is %u\n", i, rsum[i]);
+      m->getPCU()->DebugPrint("offset %u is %u\n", i, rsum[i]);
 
     // Go backwards so that the largest bdry vtx changes are made first
     //  and won't be augmented in subsequent bdry traversals.
@@ -215,7 +215,7 @@ namespace {
   };
 
   apf::MeshTag* updateDistance(apf::Mesh* m) {
-    PCU_Debug_Print("updateDistance\n");
+    m->getPCU()->DebugPrint("updateDistance\n");
     apf::MeshTag* dist = parma::getDistTag(m);
     parma::DistanceQueue<parma::Less> pq(m);
     getBdryVtx(m,dist,pq);
@@ -267,7 +267,7 @@ namespace parma_ordering {
       if( ! c->has(e) ) continue;
       cnt++;
       int d; m->getIntTag(e,dt,&d);
-      PCU_Debug_Print("cnt %d d %d hasTag %d\n", cnt, d, m->hasTag(e,order));
+      m->getPCU()->DebugPrint("cnt %d d %d hasTag %d\n", cnt, d, m->hasTag(e,order));
       if( !m->hasTag(e,order) && d > rmax ) {
         rmax = d;
         emax = e;
@@ -284,7 +284,7 @@ namespace parma_ordering {
     for(int i=TO_INT(c.size())-1; i>=0; i--) {
       CompContains* contains = new CompContains(c,i);
       apf::MeshEntity* src = getMaxDistSeed(m,contains,dist,order);
-      PCU_Debug_Print("comp %d starting vertex found? %d\n", i, (src != NULL));
+      m->getPCU()->DebugPrint("comp %d starting vertex found? %d\n", i, (src != NULL));
       start = bfs(m, contains, src, order, start);
       PCU_ALWAYS_ASSERT(check == c.getIdChecksum());
       delete contains;
@@ -342,12 +342,12 @@ namespace parma_ordering {
       la += abs(vid-uid);
     }
     m->end(it);
-    PCU_Debug_Print("la %d\n", la);
-    long tot=PCU_Add_Long(TO_LONG(la));
-    int max=PCU_Max_Int(la);
-    int min=PCU_Min_Int(la);
+    m->getPCU()->DebugPrint("la %d\n", la);
+    long tot=m->getPCU()->Add(TO_LONG(la));
+    int max=m->getPCU()->Max(la);
+    int min=m->getPCU()->Min(la);
     double avg = TO_DOUBLE(tot)/m->getPCU()->Peers();
-    if( !PCU_Comm_Self() )
+    if( !m->getPCU()->Self() )
       parmaCommons::status("la min %d max %d avg %.3f\n", min, max, avg);
     PCU_ALWAYS_ASSERT(check == m->getTagChecksum(order,apf::Mesh::VERTEX));
     if( setOrder )
@@ -365,7 +365,7 @@ namespace parma {
     if( hasDistance(m) ) {
       t = updateDistance(m);
     } else {
-      PCU_Debug_Print("computeDistance\n");
+      m->getPCU()->DebugPrint("computeDistance\n");
       dcComponents c = dcComponents(m);
       t = computeDistance(m,c);
       if( m->getPCU()->Peers() > 1 && !c.numIso() )
@@ -384,7 +384,7 @@ namespace parma {
 }
 
 apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   PCU_ALWAYS_ASSERT( !hasDistance(m) );
   parma::dcComponents c = parma::dcComponents(m);
   const unsigned checkIds = c.getIdChecksum();
@@ -403,6 +403,6 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   PCU_ALWAYS_ASSERT(checkIds == c.getIdChecksum());
   PCU_ALWAYS_ASSERT(check == m->getTagChecksum(dist,apf::Mesh::VERTEX));
   m->destroyTag(dist);
-  parmaCommons::printElapsedTime(__func__,PCU_Time()-t0);
+  parmaCommons::printElapsedTime(__func__,pcu::Time()-t0);
   return order;
 }

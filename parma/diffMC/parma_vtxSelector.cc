@@ -158,7 +158,7 @@ namespace parma {
       }
       destroy(peers);
     }
-    PCU_Debug_Print("sent %u disconnected cavities\n", dcCnt);
+    mesh->getPCU()->DebugPrint("sent %u disconnected cavities\n", dcCnt);
     delete bdryVerts;
     return planW;
   }

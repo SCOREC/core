@@ -168,8 +168,8 @@ void Parma_GetEntImbalance(apf::Mesh* mesh, double (*entImb)[4]) {
   dims = TO_SIZET(mesh->getDimension()) + 1;
   for(size_t i=0; i < dims; i++)
     tot[i] = (*entImb)[i] = mesh->count(TO_INT(i));
-  PCU_Add_Doubles(tot, dims);
-  PCU_Max_Doubles(*entImb, dims);
+  mesh->getPCU()->Add(tot, dims);
+  mesh->getPCU()->Max(*entImb, dims);
   for(size_t i=0; i < dims; i++)
     (*entImb)[i] /= (tot[i]/mesh->getPCU()->Peers());
   for(size_t i=dims; i < 4; i++)
@@ -183,8 +183,8 @@ void Parma_GetWeightedEntImbalance(apf::Mesh* mesh, apf::MeshTag* w,
   double tot[4] = {0,0,0,0};
   for(size_t i=0; i < dims; i++)
     tot[i] = (*entImb)[i];
-  PCU_Add_Doubles(tot, TO_SIZET(dims));
-  PCU_Max_Doubles(*entImb, TO_SIZET(dims));
+  mesh->getPCU()->Add(tot, TO_SIZET(dims));
+  mesh->getPCU()->Max(*entImb, TO_SIZET(dims));
   for(size_t i=0; i < dims; i++)
     (*entImb)[i] /= (tot[i]/mesh->getPCU()->Peers());
   for(size_t i=dims; i < 4; i++)
@@ -200,8 +200,8 @@ double Parma_GetWeightedEntImbalance(apf::Mesh* m, apf::MeshTag* w,
     while ((e = m->iterate(it)))
       sum += getEntWeight(m, e, w);
     m->end(it);
-   double tot = PCU_Add_Double(sum);
-   double max = PCU_Max_Double(sum);
+   double tot = m->getPCU()->Add(sum);
+   double max = m->getPCU()->Max(sum);
    return max/(tot/m->getPCU()->Peers());
 }
 
@@ -210,9 +210,9 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& numMaxParts,
   mii nborToShared;
   getNeighborCounts(m,nborToShared);
   loc = TO_INT(nborToShared.size())-1;
-  max = PCU_Max_Int(loc);
-  avg = TO_DOUBLE(PCU_Add_Int(loc)) / m->getPCU()->Peers();
-  numMaxParts = PCU_Add_Int( (loc==max) );
+  max = m->getPCU()->Max(loc);
+  avg = TO_DOUBLE(m->getPCU()->Add(loc)) / m->getPCU()->Peers();
+  numMaxParts = m->getPCU()->Add( (int)(loc==max) );
 }
 
 void Parma_WriteSmallNeighbors(apf::Mesh* m, int small, const char* prefix) {
@@ -224,7 +224,7 @@ void Parma_WriteSmallNeighbors(apf::Mesh* m, int small, const char* prefix) {
     for(int i=0; i<small; i++)
       if( nbor->second == i+1 )
         smallCnt[i]++;
-  PCU_Add_Ints(smallCnt,small);
+  m->getPCU()->Add(smallCnt,small);
   if( !m->getPCU()->Self() ) {
     std::stringstream ss;
     for(int i=0; i<small; i++)
@@ -239,14 +239,14 @@ int Parma_GetSmallestSideMaxNeighborParts(apf::Mesh* m) {
   mii nborToShared;
   getNeighborCounts(m,nborToShared);
   int loc = TO_INT(nborToShared.size())-1;
-  int max = PCU_Max_Int(loc);
+  int max = m->getPCU()->Max(loc);
   int smallest = INT_MAX;
   if( loc == max ) {
     APF_ITERATE(mii, nborToShared, nbor)
       if( nbor->second < smallest )
         smallest = nbor->second;
   }
-  return PCU_Min_Int(smallest);
+  return m->getPCU()->Min(smallest);
 }
 
 void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
@@ -271,8 +271,8 @@ void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
   loc = TO_INT(dc.getNumDcComps());
-  max = PCU_Max_Int(loc);
-  avg = TO_DOUBLE( PCU_Add_Int(loc) ) / m->getPCU()->Peers();
+  max = m->getPCU()->Max(loc);
+  avg = TO_DOUBLE( m->getPCU()->Add(loc) ) / m->getPCU()->Peers();
 }
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {
@@ -297,24 +297,24 @@ void Parma_PrintPtnStats(apf::Mesh* m, std::string key, bool fine) {
 }
 
 void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key, bool fine) {
-  PCU_Debug_Print("%s vtx %lu\n", key.c_str(), m->count(0));
-  PCU_Debug_Print("%s edge %lu\n", key.c_str(), m->count(1));
-  PCU_Debug_Print("%s face %lu\n", key.c_str(), m->count(2));
+  m->getPCU()->DebugPrint("%s vtx %lu\n", key.c_str(), m->count(0));
+  m->getPCU()->DebugPrint("%s edge %lu\n", key.c_str(), m->count(1));
+  m->getPCU()->DebugPrint("%s face %lu\n", key.c_str(), m->count(2));
   if( m->getDimension() == 3 )
-    PCU_Debug_Print("%s rgn %lu\n", key.c_str(), m->count(3));
+    m->getPCU()->DebugPrint("%s rgn %lu\n", key.c_str(), m->count(3));
 
   int maxDc = 0;
   double avgDc = 0;
   int locDc = 0;
   Parma_GetDisconnectedStats(m, maxDc, avgDc, locDc);
-  PCU_Debug_Print("%s dc %d\n", key.c_str(), locDc);
+  m->getPCU()->DebugPrint("%s dc %d\n", key.c_str(), locDc);
 
   int maxNb = 0, maxNbParts = 0;
   double avgNb = 0;
   int locNb = 0;
   Parma_GetNeighborStats(m, maxNb, maxNbParts, avgNb, locNb);
   int smallSideMaxNbPart = Parma_GetSmallestSideMaxNeighborParts(m);
-  PCU_Debug_Print("%s neighbors %d\n", key.c_str(), locNb);
+  m->getPCU()->DebugPrint("%s neighbors %d\n", key.c_str(), locNb);
 
   int locV[3], minV[3], maxV[3];
   long totV[3];
@@ -322,20 +322,20 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   Parma_GetOwnedBdryVtxStats(m, locV[0], totV[0], minV[0], maxV[0], avgV[0]);
   Parma_GetSharedBdryVtxStats(m, locV[1], totV[1], minV[1], maxV[1], avgV[1]);
   Parma_GetMdlBdryVtxStats(m, locV[2], totV[2], minV[2], maxV[2], avgV[2]);
-  PCU_Debug_Print("%s ownedBdryVtx %d\n", key.c_str(), locV[0]);
-  PCU_Debug_Print("%s sharedBdryVtx %d\n", key.c_str(), locV[1]);
-  PCU_Debug_Print("%s mdlBdryVtx %d\n", key.c_str(), locV[2]);
+  m->getPCU()->DebugPrint("%s ownedBdryVtx %d\n", key.c_str(), locV[0]);
+  m->getPCU()->DebugPrint("%s sharedBdryVtx %d\n", key.c_str(), locV[1]);
+  m->getPCU()->DebugPrint("%s mdlBdryVtx %d\n", key.c_str(), locV[2]);
 
   int surf = numSharedSides(m);
   double vol = TO_DOUBLE( m->count(m->getDimension()) );
   double surfToVol = surf/vol;
-  double minSurfToVol = PCU_Min_Double(surfToVol);
-  double maxSurfToVol = PCU_Max_Double(surfToVol);
-  double avgSurfToVol = PCU_Add_Double(surfToVol) / m->getPCU()->Peers();
-  PCU_Debug_Print("%s sharedSidesToElements %.3f\n", key.c_str(), surfToVol);
+  double minSurfToVol = m->getPCU()->Min(surfToVol);
+  double maxSurfToVol = m->getPCU()->Max(surfToVol);
+  double avgSurfToVol = m->getPCU()->Add(surfToVol) / m->getPCU()->Peers();
+  m->getPCU()->DebugPrint("%s sharedSidesToElements %.3f\n", key.c_str(), surfToVol);
 
   int empty = (m->count(m->getDimension()) == 0 ) ? 1 : 0;
-  empty = PCU_Add_Int(empty);
+  empty = m->getPCU()->Add(empty);
 
   double imb[4] = {0, 0, 0, 0};
   Parma_GetWeightedEntImbalance(m,w,&imb);
@@ -343,12 +343,12 @@ void Parma_PrintWeightedPtnStats(apf::Mesh* m, apf::MeshTag* w, std::string key,
   if (fine)
     writeFineStats(m, key, locDc, locNb, locV, surf, vol);
 
-  PCU_Debug_Print("%s vtxAdjacentNeighbors ", key.c_str());
+  m->getPCU()->DebugPrint("%s vtxAdjacentNeighbors ", key.c_str());
   apf::Parts peers;
   apf::getPeers(m,0,peers);
   APF_ITERATE(apf::Parts,peers,p)
-    PCU_Debug_Print("%d ", *p);
-  PCU_Debug_Print("\n");
+    m->getPCU()->DebugPrint("%d ", *p);
+  m->getPCU()->DebugPrint("\n");
 
   if( 0 == m->getPCU()->Self() ) {
     status("%s disconnected <max avg> %d %.3f\n",
@@ -420,7 +420,7 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
     }
     iter++;
     misSize = (misNumber != -1);
-    misSize = PCU_Add_Int(misSize);
+    misSize = m->getPCU()->Add(misSize);
   }
   return misNumber;
 }

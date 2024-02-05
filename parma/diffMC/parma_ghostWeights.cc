@@ -80,7 +80,7 @@ namespace {
       current=next;
       next.clear();
     }
-    PCU_Debug_Print("ghostW peer %d vtx %f edge %f elm %f\n",
+    m->getPCU()->DebugPrint("ghostW peer %d vtx %f edge %f elm %f\n",
         peer, weight[0], weight[1], weight[elmDim]);
     return weight;
   }
@@ -227,7 +227,7 @@ namespace parma {
         findGhosts(finder, s);
         exchangeGhostsFrom();
         exchange();
-        PCU_Debug_Print("totW vtx %f edge %f elm %f\n",
+        m->getPCU()->DebugPrint("totW vtx %f edge %f elm %f\n",
             weight[0], weight[1], weight[dim]);
       }
       ~GhostWeights() {

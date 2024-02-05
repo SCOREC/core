@@ -21,7 +21,7 @@ namespace {
     }
     public:
     Ptn(apf::Mesh* m) {
-      const long totv = PCU_Add_Long(countOwned(m));
+      const long totv = m->getPCU()->Add(countOwned(m));
       c = pp = totv / m->getPCU()->Peers();
       f = pp * m->getPCU()->Self();
       const int remainder = totv % m->getPCU()->Peers();
@@ -52,14 +52,14 @@ namespace {
     while( (vtx = m->iterate(itr)) ) {
       if( parma::isOwned(m, vtx) ) {
         m->getIntTag(vtx, t, &id);
-        PCU_COMM_PACK(p.getWriter(id), id);
+        m->getPCU()->Pack(p.getWriter(id), id);
       }
     }
     m->end(itr);
     m->getPCU()->Send();
     while( m->getPCU()->Receive() ) {
       int id = 0;
-      PCU_COMM_UNPACK(id);
+      m->getPCU()->Unpack(id);
       const int idx = id - p.first();
       PCU_ALWAYS_ASSERT(idx >= 0 && idx < p.count());
       ptn[idx] = m->getPCU()->Sender();

@@ -100,7 +100,7 @@ void dcPart::reset() {
 }
 
 unsigned dcPart::numDisconnectedComps() {
-   double t1 = PCU_Time();
+   double t1 = pcu::Time();
    reset();
    unsigned numDc = 0;
    size_t count = 0;
@@ -120,7 +120,7 @@ unsigned dcPart::numDisconnectedComps() {
       count += sz;
    }
    if( verbose )
-     parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
+     parmaCommons::printElapsedTime(__func__, pcu::Time() - t1);
    PCU_ALWAYS_ASSERT(numDc+numIso >= 1);
    return (numDc+numIso)-1;
 }

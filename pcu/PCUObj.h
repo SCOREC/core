@@ -32,7 +32,7 @@ public:
   template<typename T> int Pack(int to_rank, T& data) noexcept {
     return Pack(to_rank, &(data), sizeof(data));
   }
-  template<typename T> int Pack(int to_rank, T* data) noexcept {
+  template<typename T> int Pack(int to_rank, T*& data) noexcept {
     return Pack(to_rank, &(data), sizeof(data));
   }
 
@@ -45,7 +45,7 @@ public:
   template<typename T> int Unpack(T& data) noexcept {
     return Unpack(&(data), sizeof(data));
   }
-  template<typename T> int Unpack(T* data) noexcept {
+  template<typename T> int Unpack(T*& data) noexcept {
     return Unpack(&(data), sizeof(data));
   }
   /*IPComMan replacement API*/

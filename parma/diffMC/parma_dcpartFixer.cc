@@ -41,7 +41,7 @@ class dcPartFixer::PartFixer : public dcPart {
 
     int totNumDc() {
       int ndc = TO_INT(numDisconnectedComps());
-      return PCU_Add_Int(ndc);
+      return m->getPCU()->Add(ndc);
     }
 
     void setupPlan(muu& dcCompTgts, apf::Migration* plan) {
@@ -64,11 +64,11 @@ class dcPartFixer::PartFixer : public dcPart {
      *         are tagged
      */
     void fix() {
-      double t1 = PCU_Time();
+      double t1 = pcu::Time();
       int loop = 0;
       int ndc = 0;
       while( (ndc = totNumDc()) && loop++ < 50 ) {
-        double t2 = PCU_Time();
+        double t2 = pcu::Time();
         muu dcCompTgts;
 
         unsigned maxSz = 0;
@@ -85,14 +85,14 @@ class dcPartFixer::PartFixer : public dcPart {
           setupPlan(dcCompTgts, plan);
 
         reset();
-        double t3 = PCU_Time();
+        double t3 = pcu::Time();
         m->migrate(plan);
         if( ! m->getPCU()->Self() && vb)
           parmaCommons::status(
               "loop %d components %d seconds <fix migrate> %.3f %.3f\n",
-              loop, ndc, t3-t2, PCU_Time()-t3);
+              loop, ndc, t3-t2, pcu::Time()-t3);
       }
-      parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
+      parmaCommons::printElapsedTime(__func__, pcu::Time() - t1);
     }
 };
 

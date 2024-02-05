@@ -166,7 +166,8 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
     request.to = mesh->getPCU()->Sender();
     while ( ! mesh->getPCU()->Unpacked())
     {
-      PCU_COMM_UNPACK(request.e);
+      mesh->getPCU()->Unpack(request.e);
+      //mesh->getPCU()->Unpack(&(request.e), sizeof(request.e));
       received.push_back(request);
     }
   }

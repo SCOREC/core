@@ -148,7 +148,7 @@ namespace parma {
     for(unsigned i=0; i<size(); i++) {
       walkInward(i);
       if( !core[i].size() ) {
-        PCU_Debug_Print("core %u is empty... assigning core to bdry\n", i);
+        m->getPCU()->DebugPrint("core %u is empty... assigning core to bdry\n", i);
         core[i] = bdry[i];
       }
     }

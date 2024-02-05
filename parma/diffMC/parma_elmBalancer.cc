@@ -46,7 +46,7 @@ namespace {
 
 apf::Balancer* Parma_MakeElmBalancer(apf::Mesh* m,
     double stepFactor, int verbosity) {
-  if( !PCU_Comm_Self() && verbosity )
+  if( !m->getPCU()->Self() && verbosity )
     status("stepFactor %.3f\n", stepFactor);
   return new ElmBalancer(m, stepFactor, verbosity);
 }

@@ -267,7 +267,7 @@ static void linkNewVerts(Refine* r)
       {
         int to = rp->first;
         message.parent = rp->second;
-        PCU_COMM_PACK(to,message);
+        m->getPCU()->Pack(to,message);
       }
     }
   m->getPCU()->Send();
@@ -276,7 +276,7 @@ static void linkNewVerts(Refine* r)
     int from = m->getPCU()->Sender();
     while ( ! m->getPCU()->Unpacked())
     {
-      PCU_COMM_UNPACK(message);
+      m->getPCU()->Unpack(message);
       Entity* v = findSplitVert(r,message.parent);
       m->addRemote(v,from,message.vert);
     }
@@ -419,7 +419,7 @@ void cleanupAfter(Refine* r)
 
 bool refine(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   --(a->refinesLeft);
   setupLayerForSplit(a);
   long count = markEdgesToSplit(a);
@@ -438,7 +438,7 @@ bool refine(Adapt* a)
   processNewElements(r);
   destroySplitElements(r);
   forgetNewEntities(r);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   print("refined %li edges in %f seconds",count,t1-t0);
   resetLayer(a);
   if (a->hasLayer)

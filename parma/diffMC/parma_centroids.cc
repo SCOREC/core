@@ -48,12 +48,12 @@ namespace parma {
     const Sides::Item* side;
     s->begin();
     while( (side = s->iterate()) ) 
-      PCU_COMM_PACK(side->first, centroid);
+      m->getPCU()->Pack(side->first, centroid);
     s->end();
     m->getPCU()->Send();
     while (m->getPCU()->Listen()) {
       apf::Vector3 otherCentroid;
-      PCU_COMM_UNPACK(otherCentroid);
+      m->getPCU()->Unpack(otherCentroid);
       set(m->getPCU()->Sender(), otherCentroid);
     }
   }

@@ -141,16 +141,16 @@ namespace {
         APF_ITERATE(PeerEntSet, peerVerts, pv) {
           const int dest = pv->first;
           double vw = weight(peerVerts[dest]);
-          PCU_COMM_PACK(dest, vw);
+          mesh->getPCU()->Pack(dest, vw);
           double ew = weight(peerEdges[dest]);
-          PCU_COMM_PACK(dest, ew);
+          mesh->getPCU()->Pack(dest, ew);
         }
         mesh->getPCU()->Send();
         MigrComm incoming;
         double vw, ew;
         while (mesh->getPCU()->Listen()) {
-          PCU_COMM_UNPACK(vw);
-          PCU_COMM_UNPACK(ew);
+          mesh->getPCU()->Unpack(vw);
+          mesh->getPCU()->Unpack(ew);
           incoming.insert(Migr(mesh->getPCU()->Sender(),vw,ew)); //Migr ctor does not exist
         }
 
@@ -184,15 +184,15 @@ namespace {
 
         mesh->getPCU()->Begin();
         APF_ITERATE(Midd, accept, acc) {
-          PCU_COMM_PACK(acc->first, acc->second.a);
-          PCU_COMM_PACK(acc->first, acc->second.b);
+          mesh->getPCU()->Pack(acc->first, acc->second.a);
+          mesh->getPCU()->Pack(acc->first, acc->second.b);
         }
         mesh->getPCU()->Send();
         Midd* capacity = new Midd;
         dtwo outw;
         while (mesh->getPCU()->Listen()) {
-          PCU_COMM_UNPACK(outw.a);
-          PCU_COMM_UNPACK(outw.b);
+          mesh->getPCU()->Unpack(outw.a);
+          mesh->getPCU()->Unpack(outw.b);
           (*capacity)[mesh->getPCU()->Sender()] = outw;
         }
         return capacity;

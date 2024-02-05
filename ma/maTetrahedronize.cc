@@ -153,12 +153,12 @@ struct QuadFlagger : public Crawler
   void send(Entity* e, int to)
   {
     int diagonal = getDiagonalFromFlag(adapter, e);
-    PCU_COMM_PACK(to, diagonal);
+    mesh->getPCU()->Pack(to, diagonal);
   }
   bool recv(Entity* e, int)
   {
     int diagonal;
-    PCU_COMM_UNPACK(diagonal);
+    mesh->getPCU()->Unpack(diagonal);
     if (getFlag(adapter, e, DIAGONAL_1 | DIAGONAL_2))
       return false;
     setFlag(adapter, e, getFlagFromDiagonal(diagonal));
@@ -498,12 +498,12 @@ void tetrahedronize(Adapt* a)
   if ( ! a->input->shouldTurnLayerToTets)
     return;
   PCU_ALWAYS_ASSERT(a->hasLayer);
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   prepareLayerToTets(a);
   Refine* r = a->refine;
   addAllLayerElements(r);
   tetrahedronizeCommon(r);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   print("boundary layer converted to tets in %f seconds",t1-t0);
 }
 
@@ -620,7 +620,7 @@ static long markIslandPyramids(Adapt* a)
       }
     }
   m->end(it);
-  return PCU_Add_Long(n);
+  return m->getPCU()->Add(n);
 }
 
 static int countEntitiesWithFlag(Adapt* a, int flag, int dim)
@@ -673,7 +673,7 @@ void cleanupLayer(Adapt* a)
     return;
   if (!a->input->shouldCleanupLayer)
     return;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   long n = prepareIslandCleanup(a);
   if (!n) {
     print("no island pyramids found");
@@ -682,7 +682,7 @@ void cleanupLayer(Adapt* a)
   Refine* r = a->refine;
   addIslandPyramids(r);
   tetrahedronizeCommon(r);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   print("tetrahedronized %ld island pyramids in %f seconds", n, t1-t0);
 }
 

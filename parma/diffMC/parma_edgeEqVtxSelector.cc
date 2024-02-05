@@ -140,13 +140,13 @@ namespace {
 
         mesh->getPCU()->Begin();
         APF_ITERATE(parma::Mid, sendingVtx, s)
-          PCU_COMM_PACK(s->first, s->second);
+          mesh->getPCU()->Pack(s->first, s->second);
         mesh->getPCU()->Send();
 
         MigrComm incoming; //map<sender,weight sending>
         double w;
         while (mesh->getPCU()->Listen()) {
-          PCU_COMM_UNPACK(w);
+          mesh->getPCU()->Unpack(w);
           incoming.insert(Migr(mesh->getPCU()->Sender(),w));
         }
 
@@ -167,12 +167,12 @@ namespace {
 
         mesh->getPCU()->Begin();
         APF_ITERATE(parma::Mid, accept, a)
-          PCU_COMM_PACK(a->first, a->second);
+          mesh->getPCU()->Pack(a->first, a->second);
         mesh->getPCU()->Send();
         parma::Mid* capacity = new parma::Mid;
         double outw;
         while (mesh->getPCU()->Listen()) {
-          PCU_COMM_UNPACK(outw);
+          mesh->getPCU()->Unpack(outw);
           (*capacity)[mesh->getPCU()->Sender()] = outw;
         }
         return capacity;

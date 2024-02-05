@@ -35,9 +35,9 @@ namespace parma {
   void Balancer::balance(apf::MeshTag* wtag, double tolerance) {
     if( 1 == mesh->getPCU()->Peers() ) return;
     int step = 0;
-    double t0 = PCU_Time();
+    double t0 = pcu::Time();
     while (runStep(wtag,tolerance) && step++ < maxStep);
-    printTiming(name, step, tolerance, PCU_Time()-t0);
+    printTiming(name, step, tolerance, pcu::Time()-t0);
   }
   void Balancer::monitorUpdate(double v, Slope* s, Average* a) {
     s->push(v);
