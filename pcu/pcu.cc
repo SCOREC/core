@@ -569,4 +569,10 @@ double PCU_GetMem(void) { return pcu::GetMem(); }
  */
 pcu::PCU* PCU_GetGlobal(void) { return global_pcu; }
 
+PCUHandle PCU_Get_Global_Handle(void) { 
+  PCUHandle h;
+  h.ptr = static_cast<void*>(PCU_GetGlobal());
+  return h;
+}
+
 }

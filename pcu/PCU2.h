@@ -13,9 +13,7 @@ extern "C" {
 #include <stdbool.h>
 #endif
 
-struct PCUHandle {
-    void* ptr;
-};
+typedef struct PCUHandle PCUHandle;
 
 int PCU_Comm_Init2(PCUHandle* h);
 int PCU_Comm_Free2(PCUHandle* h);
@@ -112,7 +110,7 @@ double PCU_Time2(void);
 double PCU_GetMem2(void);
 
 /*Access global variable*/
-
+PCUHandle PCU_Get_Global_Handle(void);
 
 
 

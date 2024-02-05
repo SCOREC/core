@@ -10,4 +10,16 @@
 #define PCU_FORMAT_ATTRIBUTE(format, ...)
 #endif
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+struct PCUHandle {
+    void* ptr;
+};
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // SCOREC_PCU_PCU_DEFINES_H

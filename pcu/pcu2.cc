@@ -503,7 +503,7 @@ double PCU_GetMem2(void) { return pcu::GetMem(); }
 
 /** \brief Return the global PCU
  */
-pcu::PCU* PCU_GetGlobal2(PCUHandle h) { return static_cast<pcu::PCU*>(h.ptr); }
+
 
 
 

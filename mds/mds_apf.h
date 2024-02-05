@@ -26,6 +26,8 @@ struct pcu_file;
 struct gmi_model;
 struct gmi_ent;
 
+typedef struct PCUHandle PCUHandle;
+
 struct mds_apf {
   struct mds mds;
   struct mds_tags tags;
@@ -64,15 +66,22 @@ int mds_model_id(struct mds_apf* m, struct gmi_ent* model);
 
 struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
     int ignore_peers, void* apf_mesh);
+struct mds_apf* mds_read_smb2(PCUHandle h, struct gmi_model* model, const char* pathname,
+    int ignore_peers, void* apf_mesh);
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
+    int ignore_peers, void* apf_mesh);
+struct mds_apf* mds_write_smb2(PCUHandle h, struct mds_apf* m, const char* pathname,
     int ignore_peers, void* apf_mesh);
 
 void mds_verify(struct mds_apf* m);
 void mds_verify_residence(struct mds_apf* m, mds_id e);
 
 int mds_align_matches(struct mds_apf* m);
+int mds_align_matches2(PCUHandle h, struct mds_apf* m);
 int mds_align_ghosts(struct mds_apf* m);
+int mds_align_ghosts2(PCUHandle h, struct mds_apf* m);
 int mds_align_remotes(struct mds_apf* m);
+int mds_align_remotes2(PCUHandle h, struct mds_apf* m);
 
 void mds_derive_model(struct mds_apf* m);
   void mds_update_model_for_entity(struct mds_apf* m, mds_id e,

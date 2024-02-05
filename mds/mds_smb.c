@@ -14,7 +14,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <pcu_util.h>
-#include <PCU.h>
+#include <PCU2.h>
 #include <pcu_io.h>
 #include <lionPrint.h>
 #include <reel.h>
@@ -50,6 +50,8 @@ enum {
 #define MAX_ENTITIES (100*1000*1000)
 #define MAX_PEERS (10*1000)
 #define MAX_TAGS (100)
+
+typedef struct PCUHandle PCUHandle;
 
 static int smb2mds(int smb_type)
 {
@@ -116,7 +118,7 @@ static void write_links(struct pcu_file* f, struct mds_links* l)
     pcu_write_unsigneds(f, l->l[i], l->n[i]);
 }
 
-static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim,
+static void read_header(PCUHandle h, struct pcu_file* f, unsigned* version, unsigned* dim,
     int ignore_peers)
 {
   unsigned magic, np;
@@ -126,12 +128,12 @@ static void read_header(struct pcu_file* f, unsigned* version, unsigned* dim,
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1 && (!ignore_peers))
-  if (np != (unsigned)PCU_Comm_Peers())
+  if (np != (unsigned)PCU_Comm_Peers2(h))
     reel_fail("To whom it may concern\n"
         "the # of mesh partitions != the # of MPI ranks");
 }
 
-static void write_header(struct pcu_file* f, unsigned dim,
+static void write_header(PCUHandle h, struct pcu_file* f, unsigned dim,
     int ignore_peers)
 {
   unsigned magic = 0;
@@ -143,7 +145,7 @@ static void write_header(struct pcu_file* f, unsigned dim,
   if (ignore_peers)
     np = 1;
   else
-    np = (unsigned)PCU_Comm_Peers();
+    np = (unsigned)PCU_Comm_Peers2(h);
   PCU_WRITE_UNSIGNED(f, np);
 }
 
@@ -557,7 +559,7 @@ static void write_matches(struct pcu_file* f, struct mds_apf* m,
     write_type_matches(f, m, smb2mds(t), ignore_peers);
 }
 
-static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
+static struct mds_apf* read_smb(PCUHandle h, struct gmi_model* model, const char* filename,
     int zip, int ignore_peers, void* apf_mesh)
 {
   struct mds_apf* m;
@@ -569,9 +571,9 @@ static struct mds_apf* read_smb(struct gmi_model* model, const char* filename,
   int i;
   unsigned tmp;
   unsigned pi, pj;
-  f = pcu_fopen(filename, 0, zip);
+  f = pcu_fopen2(h, filename, 0, zip);
   PCU_ALWAYS_ASSERT(f);
-  read_header(f, &version, &dim, ignore_peers);
+  read_header(h, f, &version, &dim, ignore_peers);
   pcu_read_unsigneds(f, n, SMB_TYPES);
   for (i = 0; i < MDS_TYPES; ++i) {
     tmp = n[mds2smb(i)];
@@ -612,15 +614,15 @@ static void write_coords(struct pcu_file* f, struct mds_apf* m)
   pcu_write_doubles(f, &m->param[0][0], count);
 }
 
-static void write_smb(struct mds_apf* m, const char* filename,
+static void write_smb(PCUHandle h, struct mds_apf* m, const char* filename,
     int zip, int ignore_peers, void* apf_mesh)
 {
   struct pcu_file* f;
   unsigned n[SMB_TYPES] = {0};
   int i;
-  f = pcu_fopen(filename, 1, zip);
+  f = pcu_fopen2(h, filename, 1, zip);
   PCU_ALWAYS_ASSERT(f);
-  write_header(f, m->mds.d, ignore_peers);
+  write_header(h, f, m->mds.d, ignore_peers);
   for (i = 0; i < MDS_TYPES; ++i)
     n[mds2smb(i)] = m->mds.end[i];
   pcu_write_unsigneds(f, n, SMB_TYPES);
@@ -686,7 +688,7 @@ static void safe_mkdir(const char* path, mode_t mode)
     reel_fail("MDS: could not create directory \"%s\"\n", path);
 }
 
-static char* handle_path(const char* in, int is_write, int* zip,
+static char* handle_path(PCUHandle h, const char* in, int is_write, int* zip,
     int ignore_peers)
 {
   static const char* zippre = "bz2:";
@@ -694,7 +696,7 @@ static char* handle_path(const char* in, int is_write, int* zip,
   size_t bufsize;
   char* path;
   mode_t const dir_perm = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
-  int self = PCU_Comm_Self();
+  int self = PCU_Comm_Self2(h);
   bufsize = strlen(in) + 256;
   path = malloc(bufsize);
   strcpy(path, in);
@@ -710,14 +712,14 @@ static char* handle_path(const char* in, int is_write, int* zip,
     if (is_write) {
       if (!self)
         safe_mkdir(path, dir_perm);
-      PCU_Barrier();
+      PCU_Barrier2(h);
     }
-    if (PCU_Comm_Peers() > SMB_FANOUT) {
+    if (PCU_Comm_Peers2(h) > SMB_FANOUT) {
       append(path, bufsize, "%d/", self / SMB_FANOUT);
       if (is_write) {
         if (self % SMB_FANOUT == 0)
           safe_mkdir(path, dir_perm);
-        PCU_Barrier();
+        PCU_Barrier2(h);
       }
     }
   } else if (ends_with(path, smbext)) {
@@ -732,11 +734,18 @@ static char* handle_path(const char* in, int is_write, int* zip,
 struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
     int ignore_peers, void* apf_mesh)
 {
+  PCUHandle h = PCU_Get_Global_Handle();
+  return mds_read_smb2(h, model, pathname, ignore_peers, apf_mesh);
+}
+
+struct mds_apf* mds_read_smb2(PCUHandle h, struct gmi_model* model, const char* pathname,
+    int ignore_peers, void* apf_mesh)
+{
   char* filename;
   int zip;
   struct mds_apf* m;
-  filename = handle_path(pathname, 0, &zip, ignore_peers);
-  m = read_smb(model, filename, zip, ignore_peers, apf_mesh);
+  filename = handle_path(h, pathname, 0, &zip, ignore_peers);
+  m = read_smb(h, model, filename, zip, ignore_peers, apf_mesh);
   free(filename);
   return m;
 }
@@ -753,19 +762,26 @@ static int is_compact(struct mds_apf* m)
 struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
     int ignore_peers, void* apf_mesh)
 {
+  PCUHandle h = PCU_Get_Global_Handle();
+  return mds_write_smb2(h, m, pathname, ignore_peers, apf_mesh);
+}
+
+struct mds_apf* mds_write_smb2(PCUHandle h, struct mds_apf* m, const char* pathname,
+    int ignore_peers, void* apf_mesh)
+{
   const char* reorderWarning ="MDS: reordering before writing smb files\n";
   char* filename;
   int zip;
   if (ignore_peers && (!is_compact(m))) {
-    if(!PCU_Comm_Self()) lion_eprint(1, "%s", reorderWarning);
+    if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
     m = mds_reorder(m, 1, mds_number_verts_bfs(m));
   }
-  if ((!ignore_peers) && PCU_Or(!is_compact(m))) {
-    if(!PCU_Comm_Self()) lion_eprint(1, "%s", reorderWarning);
+  if ((!ignore_peers) && PCU_Or2(h, !is_compact(m))) {
+    if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
     m = mds_reorder(m, 0, mds_number_verts_bfs(m));
   }
-  filename = handle_path(pathname, 1, &zip, ignore_peers);
-  write_smb(m, filename, zip, ignore_peers, apf_mesh);
+  filename = handle_path(h, pathname, 1, &zip, ignore_peers);
+  write_smb(h, m, filename, zip, ignore_peers, apf_mesh);
   free(filename);
   return m;
 }
