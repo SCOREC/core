@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vector>
+#include "PCU2.h"
 
 struct RStream;
 
@@ -158,7 +159,7 @@ class Input
     double meshqCrtn;
     double elementImbalance;
     double vertexImbalance;
-    FILE* (*openfile_read)(Input& in, const char* path);
+    FILE* (*openfile_read)(PCUHandle h, Input& in, const char* path);
     RStream* rs;
     /** \brief the flag for switch between simmetrix mesh and pumi-based mesh.
        avoid run incompatible APIs with simmetrix mesh */

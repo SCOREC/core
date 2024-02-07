@@ -12,6 +12,8 @@ class MeshEntity;
 
 struct GRStream;
 
+typedef struct PCUHandle PCUHandle;
+
 namespace ph {
 
 struct EnsaArrays
@@ -160,7 +162,7 @@ struct Output
   int nLayeredMeshVertices; /* number of layered mesh vertices */
   bool hasDGInterface;
   int numRigidBody;
-  FILE* (*openfile_write)(Output& out, const char* path);
+  FILE* (*openfile_write)(PCUHandle h, Output& out, const char* path);
   GRStream* grs;
   AllBlocks blocks;
   EnsaArrays arrays;
