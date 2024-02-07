@@ -84,7 +84,7 @@ string(REGEX REPLACE
   "${SIM_VERSION}")
 
 set(MIN_VALID_SIM_VERSION 15.0.191017)
-set(MAX_VALID_SIM_VERSION 18.0.220930)
+set(MAX_VALID_SIM_VERSION 2023.1.230907)
 if( ${SKIP_SIMMETRIX_VERSION_CHECK} )
   message(STATUS "Skipping Simmetrix SimModSuite version check."
     " This may result in undefined behavior")
@@ -169,6 +169,19 @@ simLibCheck("${SIM_CORE_LIB_NAMES}" TRUE)
 if (UNIX AND NOT APPLE)
   find_package(Threads REQUIRED)
   set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+if (SIM_ARCHOS STREQUAL x64_rhel8_gcc83)
+  find_library(XDR_LIB tirpc)
+  if(XDR_LIB)
+    message(STATUS "Found XDR_LIB ${XDR_LIB}")
+    set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${XDR_LIB})
+  else()
+    message(FATAL_ERROR "The libtirpc library was not found.  It defines xdr symbols "
+    "(e.g., xdrmem_create) that are need by SimModSuite on systems using "
+    "glibc newer than 2.32.  Note, glibc starting with 2.26 could optionally "
+    "have been built without the xdr symbols.")
+  endif()
 endif()
 
 include(FindPackageHandleStandardArgs)
