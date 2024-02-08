@@ -306,7 +306,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   }
   path += buildGeomBCFileName(timestep_or_dat);
   phastaio_setfile(GEOMBC_WRITE);
-  FILE* f = o.openfile_write(m->getPCU()->GetCHandle(), o, path.c_str());
+  FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
     lion_eprint(1,"failed to open \"%s\"!\n", path.c_str());
     abort();

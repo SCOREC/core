@@ -111,25 +111,25 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }//end namespace
 
 namespace chef {
-  static FILE* openfile_read(PCUHandle h, ph::Input&, const char* path) {
+  static FILE* openfile_read(ph::Input&, const char* path) {
     FILE* f = NULL;
-    PHASTAIO_OPENTIME(f = pcu_group_open2(h, path, false);)
+    PHASTAIO_OPENTIME(f = pcu_group_open(path, false);)
     return f;
   }
 
-  static FILE* openfile_write(PCUHandle h, ph::Output&, const char* path) {
+  static FILE* openfile_write(ph::Output&, const char* path) {
     FILE* f = NULL;
-    PHASTAIO_OPENTIME(f = pcu_group_open2(h, path, true);)
+    PHASTAIO_OPENTIME(f = pcu_group_open(path, true);)
     return f;
   }
 
-  static FILE* openstream_write(PCUHandle h, ph::Output& out, const char* path) {
+  static FILE* openstream_write(ph::Output& out, const char* path) {
     FILE* f = NULL;
     PHASTAIO_OPENTIME(f = openGRStreamWrite(out.grs, path);)
     return f;
   }
 
-  static FILE* openstream_read(PCUHandle h, ph::Input& in, const char* path) {
+  static FILE* openstream_read(ph::Input& in, const char* path) {
     std::string fname(path);
     std::string restartStr("restart");
     FILE* f = NULL;
@@ -201,7 +201,7 @@ namespace ph {
     if ( in.writeRestartFiles ) {
       if(!m->getPCU()->Self()) lion_oprint(1,"write file-based restart file\n");
       // store the value of the function pointer
-      FILE* (*fn)(PCUHandle h, Output& out, const char* path) = out.openfile_write;
+      FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
       out.openfile_write = chef::openfile_write;
       ph::detachAndWriteSolution(in,out,m,subDirPath); //write restart
@@ -216,7 +216,7 @@ namespace ph {
     if ( in.writeGeomBCFiles ) {
       if(!m->getPCU()->Self()) lion_oprint(1,"write additional geomBC file for visualization\n");
       // store the value of the function pointer
-      FILE* (*fn)(PCUHandle h, Output& out, const char* path) = out.openfile_write;
+      FILE* (*fn)(Output& out, const char* path) = out.openfile_write;
       // set function pointer for file writing
       out.openfile_write = chef::openfile_write;
       ph::writeGeomBC(out, path, in.timeStepNumber); //write geombc for viz only
@@ -385,4 +385,3 @@ namespace chef {
     ph::preprocess(m,in,out);
   }
 }
-
