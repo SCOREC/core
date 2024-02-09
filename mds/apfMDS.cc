@@ -8,7 +8,7 @@
 
 *******************************************************************************/
 
-#include <PCU.h>
+#include <PCU2.h>
 #include <lionPrint.h>
 #include "apfMDS.h"
 #include "mds_apf.h"
@@ -1028,13 +1028,13 @@ bool alignMdsMatches(Mesh2* in)
   if (!in->hasMatching())
     return false;
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  return mds_align_matches(m->mesh);
+  return mds_align_matches2(in->getPCU()->GetCHandle(), m->mesh);
 }
 
 bool alignMdsRemotes(Mesh2* in)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  return mds_align_remotes(m->mesh);
+  return mds_align_remotes2(in->getPCU()->GetCHandle(), m->mesh);
 }
 
 void deriveMdsModel(Mesh2* in)

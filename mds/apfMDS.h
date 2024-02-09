@@ -35,7 +35,7 @@
 // AJP: including apf.h for single define: CGNSBCMap
 // AJP: alternative is to allow common cgns base header
 //      but trying to avoid that since it's not core functionality
-#include <apf.h> 
+#include <apf.h>
 //
 struct gmi_model;
 
@@ -50,6 +50,8 @@ class Field;
 
 /** \brief a map from global ids to vertex objects */
 typedef std::map<long, MeshEntity*> GlobalToVert;
+typedef struct PCUHandle PCUHandle;
+
 
 /** \brief create an empty MDS part
   \param model the geometric model interface
@@ -199,9 +201,12 @@ int getMdsIndex(Mesh2* in, MeshEntity* e);
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
 Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
+Mesh2* loadMdsFromCGNS2(PCUHandle h, gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
 
 // names of mesh data to read from file: (VERTEX, VelocityX; CellCentre, Pressure)
 Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap, const std::vector<std::pair<std::string, std::string>>& meshData);
+Mesh2* loadMdsFromCGNS2(PCUHandle h, gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap, const std::vector<std::pair<std::string, std::string>>& meshData);
+
 
 int gmshMajorVersion(const char* filename);
 

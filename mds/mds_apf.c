@@ -11,7 +11,6 @@
 #include "mds_apf.h"
 #include <stdlib.h>
 #include <pcu_util.h>
-//#include <PCU.h>
 #include <PCU2.h>
 
 struct mds_apf* mds_apf_create(struct gmi_model* model, int d,

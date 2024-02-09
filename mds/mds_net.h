@@ -13,6 +13,8 @@
 
 #include "mds.h"
 
+typedef struct PCUHandle PCUHandle;
+
 struct mds_copy {
   mds_id e;
   int p;
@@ -52,7 +54,11 @@ void mds_add_copy(struct mds_net* net, struct mds* m, mds_id e,
 
 void mds_get_type_links(struct mds_net* net, struct mds* m,
     int t, struct mds_links* ln);
+void mds_get_type_links2(PCUHandle h, struct mds_net* net, struct mds* m,
+    int t, struct mds_links* ln);
 void mds_set_type_links(struct mds_net* net, struct mds* m,
+    int t, struct mds_links* ln);
+void mds_set_type_links2(PCUHandle h, struct mds_net* net, struct mds* m,
     int t, struct mds_links* ln);
 void mds_free_links(struct mds_links* ln);
 
@@ -60,8 +66,13 @@ int mds_net_empty(struct mds_net* net);
 
 void mds_get_local_matches(struct mds_net* net, struct mds* m,
                          int t, struct mds_links* ln);
+void mds_get_local_matches2(PCUHandle h, struct mds_net* net, struct mds* m,
+                         int t, struct mds_links* ln);
 void mds_set_local_matches(struct mds_net* net, struct mds* m,
                          int t, struct mds_links* ln);
+void mds_set_local_matches2(PCUHandle h, struct mds_net* net, struct mds* m,
+                         int t, struct mds_links* ln);
 void mds_free_local_links(struct mds_links* ln);
+void mds_free_local_links2(PCUHandle h, struct mds_links* ln);
 
 #endif
