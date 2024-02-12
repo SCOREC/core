@@ -35,6 +35,10 @@
 #include <cstdarg>
 
 static pcu::PCU *global_pcu = nullptr;
+namespace pcu {
+  pcu::PCU* PCU_GetGlobal() { return global_pcu; }
+}
+
 extern "C" {
 /** \brief Initializes the PCU library.
   \details This function must be called by all MPI processes before
@@ -567,11 +571,10 @@ double PCU_GetMem(void) { return pcu::GetMem(); }
 
 /** \brief Return the global PCU
  */
-pcu::PCU* PCU_GetGlobal(void) { return global_pcu; }
 
 PCUHandle PCU_Get_Global_Handle(void) { 
   PCUHandle h;
-  h.ptr = static_cast<void*>(PCU_GetGlobal());
+  h.ptr = static_cast<void*>(pcu::PCU_GetGlobal());
   return h;
 }
 

@@ -105,6 +105,8 @@ void Protect() noexcept;
 /*MPI_Wtime() equivalent*/
 [[nodiscard]] double Time() noexcept;
 
+PCU* PCU_GetGlobal();
+
 /* explicit instantiations of template functions */
 #define PCU_EXPL_INST_DECL(T)                                                  \
   extern template void PCU::Add<T>(T * p, size_t n) noexcept;                  \
@@ -122,5 +124,8 @@ PCU_EXPL_INST_DECL(double)
 #undef PCU_EXPL_INST_DECL
 
 } // namespace pcu
+
 #undef PCU_FORMAT_ATTRIBUTE
 #endif // SCOREC_PCU_PCUOBJ_H
+
+

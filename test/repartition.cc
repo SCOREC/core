@@ -105,7 +105,7 @@ int main(int argc, char** argv)
   if (isOriginal)
     m = apf::loadMdsMesh(g, meshFile);
   switchToAll();
-  m = apf::expandMdsMesh(m, g, inputPartCount);
+  m = apf::MdsMesh(m, g, inputPartCount);
   balance(m);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
