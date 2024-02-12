@@ -973,7 +973,6 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
 {
   double t0 = pcu::Time();
-  //PCU_ALWAYS_ASSERT(PCU_GetGlobal() != m->getPCU());
   int self = PCU_Comm_Self();
   int outputPartCount = PCU_Comm_Peers();
   apf::Expand expand(inputPartCount, outputPartCount);
