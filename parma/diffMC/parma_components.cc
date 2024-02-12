@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <pcu_util.h>
 #include <apf.h>
-#include <PCU.h>
 #include "parma_components.h"
 #include "parma_meshaux.h"
 #include "parma_convert.h"

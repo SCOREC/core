@@ -1,6 +1,5 @@
 #include <set>
 #include <apf.h>
-#include <PCU.h>
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
