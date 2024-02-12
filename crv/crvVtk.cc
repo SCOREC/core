@@ -6,7 +6,6 @@
  */
 
 #include "crv.h"
-#include "PCU.h"
 #include "apfDynamicVector.h"
 #include "apfFieldData.h"
 #include "apfMDS.h"

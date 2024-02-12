@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include <lionPrint.h>
 #include "crv.h"
 #include "crvAdapt.h"

@@ -15,7 +15,6 @@
 #include <maSnap.h>
 #include <maStats.h>
 #include <maLayer.h>
-#include <PCU.h>
 #include <pcu_util.h>
 
 namespace crv {
