@@ -1,5 +1,4 @@
 #include "apfCAP.h"
-#include <PCU.h>
 #include <apf.h>
 #include <apfShape.h>
 #include <gmi.h>
