@@ -1,5 +1,4 @@
 #include "dspGraphDistance.h"
-#include <PCU.h>
 #include <pcu_util.h>
 
 namespace dsp {
@@ -71,7 +70,7 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
     }
     m->getPCU()->Send();
     while (m->getPCU()->Receive()) {
-      PCU_COMM_UNPACK(sv);
+      m->getPCU()->Unpack(sv);
       if (!apf::isNumbered(dst, sv, 0, 0)) {
         apf::number(dst, sv, 0, 0, layer + 1);
         push(vs, sv);
