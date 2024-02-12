@@ -10,7 +10,6 @@
 #error "configuration bug"
 #endif
 #include "apfSTK.h"
-#include "PCU.h"
 #include <stk_mesh/base/MetaData.hpp>
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_io/IossBridge.hpp>

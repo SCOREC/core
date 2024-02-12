@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf_stkConfig.h>
 #include "apfAlbany.h"
