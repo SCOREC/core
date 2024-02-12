@@ -246,9 +246,9 @@ bool checkFlagConsistency(Adapt* a, int dimension, int flag)
   m->getPCU()->Send();
   bool ok = true;
   while (m->getPCU()->Receive()) {
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     bool value;
-    PCU_COMM_UNPACK(value);
+    m->getPCU()->Unpack(value);
     if(value != getFlag(a,e,flag))
       ok = false;
   }
@@ -514,7 +514,7 @@ void syncFlag(Adapt* a, int dimension, int flag)
   m->end(it);
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     setFlag(a,e,flag);
   }
   delete sh;

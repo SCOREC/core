@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maCoarsen.h"
 #include "maAdapt.h"
 #include "maCollapse.h"

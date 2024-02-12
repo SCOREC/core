@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "maCrawler.h"
 #include "maAdapt.h"
 #include "maLayer.h"
@@ -26,7 +25,7 @@ void syncLayer(Crawler* c, Crawler::Layer& layer)
     int from = m->getPCU()->Sender();
     while ( ! m->getPCU()->Unpacked()) {
       Entity* e;
-      PCU_COMM_UNPACK(e);
+      m->getPCU()->Unpack(e);
       if (c->recv(e, from))
         layer.push_back(e);
     }
@@ -162,7 +161,7 @@ struct LayerNumberer : public Crawler
   bool recv(Entity* v, int)
   {
     int n;
-    PCU_COMM_UNPACK(n);
+    m->getPCU()->Unpack(n);
     if (t.hasNumber(v))
       return false;
     t.setNumber(v, n);
