@@ -10,7 +10,6 @@
 #include "apfShape.h"
 #include "gmi.h" /* this is for gmi_getline... */
 #include <lionPrint.h>
-//#include <PCU.h>
 #include <PCU2.h>
 #include <apf.h>
 #include <apfConvert.h>
