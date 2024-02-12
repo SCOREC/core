@@ -14,7 +14,6 @@
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
 #include <assert.h>
-#include <PCU.h>
 #include <iostream>
 
 //************************************
@@ -138,7 +137,7 @@ pNumbering pumi_numbering_createProcGrp (
   int* out_arr = new int[m->getPCU()->Peers()]; // out[i] has local_numOwnedPartBdryEnt of process i on all processes
   *in = owned_node_cnt;
 
-  MPI_Allgather(in, 1, MPI_INT, out_arr, 1, MPI_INT, PCU_Get_Comm());
+  MPI_Allgather(in, 1, MPI_INT, out_arr, 1, MPI_INT, m->getPCU()->GetMPIComm());
 
   it = m->begin(dim);
   int nbr = 0;
