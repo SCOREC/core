@@ -212,22 +212,22 @@ static void write_conn(struct pcu_file* f, struct mds_apf* m)
   }
 }
 
-static void read_remotes(struct pcu_file* f, struct mds_apf* m,
+static void read_remotes(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
   read_links(f, &ln);
   if (!ignore_peers)
-    mds_set_type_links(&m->remotes, &m->mds, MDS_VERTEX, &ln);
+    mds_set_type_links2(h, &m->remotes, &m->mds, MDS_VERTEX, &ln);
   mds_free_links(&ln);
 }
 
-static void write_remotes(struct pcu_file* f, struct mds_apf* m,
+static void write_remotes(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
   if (!ignore_peers)
-    mds_get_type_links(&m->remotes, &m->mds, MDS_VERTEX, &ln);
+    mds_get_type_links2(h, &m->remotes, &m->mds, MDS_VERTEX, &ln);
   write_links(f, &ln);
   mds_free_links(&ln);
 }
@@ -510,53 +510,53 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
   free(sizes);
 }
 
-static void read_type_matches(struct pcu_file* f, struct mds_apf* m, int t,
+static void read_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m, int t,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
   read_links(f, &ln);
   if (!ignore_peers)
-    mds_set_local_matches(&m->matches, &m->mds, t, &ln);
-  mds_free_local_links(&ln);
+    mds_set_local_matches2(h, &m->matches, &m->mds, t, &ln);
+  mds_free_local_links2(h, &ln);
   if (!ignore_peers)
-    mds_set_type_links(&m->matches, &m->mds, t, &ln);
+    mds_set_type_links2(h, &m->matches, &m->mds, t, &ln);
   mds_free_links(&ln);
 }
 
-static void write_type_matches(struct pcu_file* f, struct mds_apf* m, int t,
+static void write_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m, int t,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
   if (!ignore_peers) {
-    mds_get_type_links(&m->matches, &m->mds, t, &ln);
-    mds_get_local_matches(&m->matches, &m->mds, t, &ln);
+    mds_get_type_links2(h, &m->matches, &m->mds, t, &ln);
+    mds_get_local_matches2(h, &m->matches, &m->mds, t, &ln);
   }
   write_links(f, &ln);
   mds_free_links(&ln);
 }
 
-static void read_matches_old(struct pcu_file* f, struct mds_apf* m,
+static void read_matches_old(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   int t;
   for (t = 0; t < MDS_HEXAHEDRON; ++t)
-    read_type_matches(f, m, t, ignore_peers);
+    read_type_matches(h, f, m, t, ignore_peers);
 }
 
-static void read_matches_new(struct pcu_file* f, struct mds_apf* m,
+static void read_matches_new(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   int t;
   for (t = 0; t < SMB_TYPES; ++t)
-    read_type_matches(f, m, smb2mds(t), ignore_peers);
+    read_type_matches(h, f, m, smb2mds(t), ignore_peers);
 }
 
-static void write_matches(struct pcu_file* f, struct mds_apf* m,
+static void write_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   int t;
   for (t = 0; t < SMB_TYPES; ++t)
-    write_type_matches(f, m, smb2mds(t), ignore_peers);
+    write_type_matches(h, f, m, smb2mds(t), ignore_peers);
 }
 
 static struct mds_apf* read_smb(PCUHandle h, struct gmi_model* model, const char* filename,
@@ -592,13 +592,13 @@ static struct mds_apf* read_smb(PCUHandle h, struct gmi_model* model, const char
       for (pj = 0; pj < 2; ++pj) m->param[pi][pj] = 0.0;
     }
   }
-  read_remotes(f, m, ignore_peers);
+  read_remotes(h, f, m, ignore_peers);
   read_class(f, m);
   read_tags(f, m);
   if (version >= 4)
-    read_matches_new(f, m, ignore_peers);
+    read_matches_new(h, f, m, ignore_peers);
   else if (version >= 3)
-    read_matches_old(f, m, ignore_peers);
+    read_matches_old(h, f, m, ignore_peers);
   if (version >= 5)
     mds_read_smb_meta(f, m, apf_mesh);
   pcu_fclose(f);
@@ -628,10 +628,10 @@ static void write_smb(PCUHandle h, struct mds_apf* m, const char* filename,
   pcu_write_unsigneds(f, n, SMB_TYPES);
   write_conn(f, m);
   write_coords(f, m);
-  write_remotes(f, m, ignore_peers);
+  write_remotes(h, f, m, ignore_peers);
   write_class(f, m);
   write_tags(f, m);
-  write_matches(f, m, ignore_peers);
+  write_matches(h, f, m, ignore_peers);
   mds_write_smb_meta(f, apf_mesh);
   pcu_fclose(f);
 }
@@ -774,11 +774,11 @@ struct mds_apf* mds_write_smb2(PCUHandle h, struct mds_apf* m, const char* pathn
   int zip;
   if (ignore_peers && (!is_compact(m))) {
     if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
-    m = mds_reorder(m, 1, mds_number_verts_bfs(m));
+    m = mds_reorder2(h, m, 1, mds_number_verts_bfs(m));
   }
   if ((!ignore_peers) && PCU_Or2(h, !is_compact(m))) {
     if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
-    m = mds_reorder(m, 0, mds_number_verts_bfs(m));
+    m = mds_reorder2(h, m, 0, mds_number_verts_bfs(m));
   }
   filename = handle_path(h, pathname, 1, &zip, ignore_peers);
   write_smb(h, m, filename, zip, ignore_peers, apf_mesh);

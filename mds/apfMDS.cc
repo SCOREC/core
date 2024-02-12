@@ -8,6 +8,7 @@
 
 *******************************************************************************/
 
+#include <PCU.h>
 #include <PCU2.h>
 #include <lionPrint.h>
 #include "apfMDS.h"
@@ -198,7 +199,7 @@ class MeshMDS : public Mesh2
     MeshMDS(gmi_model* m, const char* pathname)
     {
       init(apf::getLagrange(1));
-      mesh = mds_read_smb(m, pathname, 0, this);
+      mesh = mds_read_smb2(this->getPCU()->GetCHandle(), m, pathname, 0, this);
       isMatched = this->getPCU()->Or(!mds_net_empty(&mesh->matches));
       ownsModel = true;
     }
@@ -584,7 +585,7 @@ class MeshMDS : public Mesh2
     void writeNative(const char* fileName)
     {
       double t0 = pcu::Time();
-      mesh = mds_write_smb(mesh, fileName, 0, this);
+      mesh = mds_write_smb2(this->getPCU()->GetCHandle(), mesh, fileName, 0, this);
       double t1 = pcu::Time();
       if (!this->getPCU()->Self())
         lion_oprint(1,"mesh %s written in %f seconds\n", fileName, t1 - t0);
@@ -964,8 +965,8 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
   } else {
     vert_nums = mds_number_verts_bfs(m->mesh);
   }
-  m->mesh = mds_reorder(m->mesh, 0, vert_nums);
-  if (!m->getPCU()->Self())
+  m->mesh = mds_reorder2(mesh->getPCU()->GetCHandle(), m->mesh, 0, vert_nums);
+  if (!mesh->getPCU()->Self())
     lion_oprint(1,"mesh reordered in %f seconds\n", pcu::Time()-t0);
 }
 
@@ -1304,7 +1305,7 @@ Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
 {
   MeshMDS* m = new MeshMDS();
   m->init(apf::getLagrange(1));
-  m->mesh = mds_read_smb(model, meshfile, 1, m);
+  m->mesh = mds_read_smb2(m->getPCU()->GetCHandle(), model, meshfile, 1, m);
   m->isMatched = false;
   m->ownsModel = true;
   initResidence(m, m->getDimension());
@@ -1314,7 +1315,7 @@ Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
 void writeMdsPart(Mesh2* in, const char* meshfile)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  m->mesh = mds_write_smb(m->mesh, meshfile, 1, m);
+  m->mesh = mds_write_smb2(m->getPCU()->GetCHandle(), m->mesh, meshfile, 1, m);
 }
 
 
