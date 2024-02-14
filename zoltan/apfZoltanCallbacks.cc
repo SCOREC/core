@@ -9,7 +9,6 @@
 #include "apfZoltanMesh.h"
 #include "apfZoltan.h"
 #include "apfShape.h"
-#include <PCU.h>
 #include <metis.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -345,7 +344,7 @@ void ZoltanData::setup()
   if ( zb->isLocal ) {
     sprintf(paramStr, "%d", zb->multiple);
   } else {
-    sprintf(paramStr, "%d", zb->multiple*PCU_Proc_Peers());
+    sprintf(paramStr, "%d", zb->multiple*zb->mesh->getPCU()->Peers());
   }
   Zoltan_Set_Param(ztn, "NUM_GLOBAL_PARTS", paramStr);
   sprintf(paramStr, "%d", zb->multiple);

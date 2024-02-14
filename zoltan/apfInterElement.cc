@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "apfZoltan.h"
 #include <apfMesh.h>
 #include <pcu_util.h>
@@ -67,7 +66,7 @@ MeshTag* tagOpposites(GlobalNumbering* gn, const char* name)
       packOtherGid(gn, e);
   m->end(it);
   m->getPCU()->Send();
-  while (PCU_Comm_Receive())
+  while (m->getPCU()->Receive())
     unpackOtherGid(m, t);
   return t;
 }

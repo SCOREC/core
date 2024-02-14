@@ -7,7 +7,6 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <apf.h>
 #include <lionPrint.h>
 
