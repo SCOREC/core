@@ -1,0 +1,70 @@
+name: simmetrx_enabled_pr_comment_trigger_self_hosted
+
+# Controls when the workflow will run
+on:
+  issue_comment:                                     
+    types: [created]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build_and_test:
+    permissions:
+      issues: write
+      contents: read
+      pull-requests: write
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+
+    if: ${{ github.event.issue.pull_request }}
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: build
+        id: build
+        if: contains(github.event.comment.body, '/runtests') && (github.event.comment.user.login == 'cwsmith')
+        shell: bash
+        run: |
+          set +e #avoid exiting when lua modules return non-zero on 'warning' messages
+          module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
+          module load gcc/12.3.0-iil3lno 
+          module load mpich/4.1.1-xpoyz4t
+          module load simmetrix-simmodsuite/2024.0-240119dev-7abimo4
+          module load zoltan/3.83-hap4ggo
+          module load cmake/3.26.3-2duxfcd
+          set -e
+          cmake -S ${{github.workspace}} \
+            -B ${{github.workspace}}/build \
+            -DCMAKE_CXX_COMPILER=mpicxx \
+            -DCMAKE_C_COMPILER=mpicc \
+            -DCMAKE_VERBOSE_MAKEFILE=ON \
+            -DENABLE_ZOLTAN=ON \
+            -DENABLE_SIMMETRIX=ON \
+            -DSIM_MPI=mpich4.1.1 \
+            -DSIM_PARASOLID=ON \
+            -DSIM_ACIS=ON \
+            -DSKIP_SIMMETRIX_VERSION_CHECK=ON \
+            -DMESHES=${{github.workspace}}/pumi-meshes \
+            -DIS_TESTING=ON \
+            -DSCOREC_CXX_WARNINGS=ON \
+            -DCMAKE_BUILD_TYPE=Release 
+          cmake --build ${{github.workspace}}/build -j
+          ctest --test-dir ${{github.workspace}}/build --output-on-failure
+
+      # from https://stackoverflow.com/a/64126737
+      - name: Post PR comment
+        if: contains(github.event.comment.body, '/runtests') && (github.event.comment.user.login == 'cwsmith')
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Test Result: ${{ steps.build.outcome }} [(details)](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})'
+            })
