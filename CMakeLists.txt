@@ -97,6 +97,15 @@ add_custom_target(doc
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generating API documentation with Doxygen" VERBATIM
 )
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile_internal.in
+  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal @ONLY
+)
+add_custom_target(docInternal
+  ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating Internal API documentation with Doxygen" VERBATIM
+)
 endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
