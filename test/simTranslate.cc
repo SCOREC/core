@@ -18,8 +18,7 @@
 #include <stdlib.h>
 #include <string>
 
-/* hack to get SIMMODSUITE_MAJOR_VERSION and SIMMODSUITE_MINOR_VERSION */
-#include "../apf_sim/apf_simConfig.h"
+#include <apf_simConfig.h>
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>

@@ -6,7 +6,7 @@
 #include <SimModel.h>
 #include <cstdlib>
 #include <iostream>
-
+#include "apf_simConfig.h"
 
 typedef ph::BC* (*BCFactory)(pAttribute a, pGEntity ge);
 typedef std::map<std::string, BCFactory> BCFactories;

@@ -10,6 +10,7 @@
 #include <SimUtil.h>
 #include <apfSIM.h>
 #include <apfMDS.h>
+#include <apf_simConfig.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
 #include <apf.h>
