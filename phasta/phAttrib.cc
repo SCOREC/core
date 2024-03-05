@@ -3,13 +3,10 @@
 #include <lionPrint.h>
 #include <SimAttribute.h>
 #include <SimUtil.h>
+#include <SimModel.h>
 #include <cstdlib>
 #include <iostream>
 
-/* Simmetrix, for the love of all that is good,
-   please put this in your header files.
-   We can't work with files from Simmodeler without it. */
-pAManager SModel_attManager(pModel model);
 
 typedef ph::BC* (*BCFactory)(pAttribute a, pGEntity ge);
 typedef std::map<std::string, BCFactory> BCFactories;
@@ -224,7 +221,11 @@ static void addAttributes(BCFactories& fs, pPList as, pGEntity ge,
 namespace {
   void getSimModelAndCase(gmi_model* m, pGModel& smdl, pACase& pd) {
     smdl = gmi_export_sim(m);
-    pAManager mngr = SModel_attManager(smdl);
+#if SIMMODSUITE_MAJOR_VERSION < 2024 && SIMMODSUITE_MINOR_VERSION < 240219
+    pAManager mngr = GM_attManager(smdl);
+#else
+    pAManager mngr = GM_attManager(smdl,true);
+#endif
     if (!mngr) {
       lion_eprint(1,"Simmetrix model did not come with an Attribute Manager\n");
       abort();
