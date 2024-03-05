@@ -110,6 +110,17 @@ math(EXPR len "${archEnd}-${archStart}")
 string(SUBSTRING "${SIMMODSUITE_LIBS}" "${archStart}" "${len}" SIM_ARCHOS)
 message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 
+set(SIM_OPT_LIB_NAMES
+  SimAdvMeshing
+  SimField)
+
+simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
+
+option(SIM_DISCRETE "Use Simmetrix discrete modeling" ON)
+if (SIM_DISCRETE)
+  set(SIM_CAD_LIB_NAMES SimDiscrete ${SIM_CAD_LIB_NAMES})
+endif()
+
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
   set(MIN_SIM_PARASOLID_VERSION 290)
@@ -130,6 +141,7 @@ if (SIM_PARASOLID)
       "not found - check the version installed with SimModSuite")
   endif()
   set(SIM_CAD_LIB_NAMES
+    ${SIM_CAD_LIB_NAMES}
     ${simParaLib}
     pskernel)
 endif()
@@ -139,30 +151,19 @@ if (SIM_ACIS)
   getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
     SimAcis simAcisLib TRUE)
   set(SIM_CAD_LIB_NAMES
-      ${simAcisLib}
       ${SIM_CAD_LIB_NAMES}
+      ${simAcisLib}
       SpaACIS)
-endif()
-
-option(SIM_DISCRETE "Use Simmetrix discrete modeling" ON)
-if (SIM_DISCRETE)
-  set(SIM_CAD_LIB_NAMES SimDiscrete ${SIM_CAD_LIB_NAMES})
 endif()
 
 simLibCheck("${SIM_CAD_LIB_NAMES}" TRUE)
 
-set(SIM_OPT_LIB_NAMES
-  SimField
-  SimAdvMeshing)
-
-simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
-
 set(SIM_CORE_LIB_NAMES
   SimPartitionedMesh-mpi
+  SimPartitionWrapper-${SIM_MPI}
   SimMeshing
   SimMeshTools
-  SimModel
-  SimPartitionWrapper-${SIM_MPI})
+  SimModel)
 
 simLibCheck("${SIM_CORE_LIB_NAMES}" TRUE)
 
