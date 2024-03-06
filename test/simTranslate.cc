@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
   if (argc == 4) {
     try {
       pGModel oldmodel = GM_load(argv[2], NULL, NULL);
-#if SIMMODSUITE_MAJOR_VERSION < 2024 && SIMMODSUITE_MINOR_VERSION < 240219
+#if SIMMODSUITE_MAJOR_VERSION <= 2024 && SIMMODSUITE_MINOR_VERSION < 240219
       attmngr = GM_attManager(oldmodel);
 #else
       attmngr = GM_attManager(oldmodel,true);

@@ -221,7 +221,7 @@ static void addAttributes(BCFactories& fs, pPList as, pGEntity ge,
 namespace {
   void getSimModelAndCase(gmi_model* m, pGModel& smdl, pACase& pd) {
     smdl = gmi_export_sim(m);
-#if SIMMODSUITE_MAJOR_VERSION < 2024 && SIMMODSUITE_MINOR_VERSION < 240219
+#if SIMMODSUITE_MAJOR_VERSION <= 2024 && SIMMODSUITE_MINOR_VERSION < 240219
     pAManager mngr = GM_attManager(smdl);
 #else
     pAManager mngr = GM_attManager(smdl,true);

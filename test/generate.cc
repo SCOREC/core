@@ -75,7 +75,7 @@ void messageHandler(int type, const char* msg)
 }
 
 pParMesh generate(pGModel mdl, std::string meshCaseName) {
-#if SIMMODSUITE_MAJOR_VERSION < 2024 && SIMMODSUITE_MINOR_VERSION < 240219
+#if SIMMODSUITE_MAJOR_VERSION <= 2024 && SIMMODSUITE_MINOR_VERSION < 240219
   pAManager attmngr = GM_attManager(mdl);
 #else
   pAManager attmngr = GM_attManager(mdl,true);
