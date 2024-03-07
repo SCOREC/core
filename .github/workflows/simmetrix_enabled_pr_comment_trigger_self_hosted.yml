@@ -11,9 +11,7 @@ on:
 jobs:
   build_and_test:
     permissions:
-      issues: write
       contents: read
-      pull-requests: write
     # The type of runner that the job will run on
     runs-on: self-hosted
 
@@ -56,16 +54,17 @@ jobs:
           cmake --build ${{github.workspace}}/build -j 4
           ctest --test-dir ${{github.workspace}}/build --output-on-failure
 
-      # from https://stackoverflow.com/a/64126737
-      - name: Post PR comment
-        if: contains(github.event.comment.body, '/runtests') && (github.event.comment.user.login == 'cwsmith')
-        uses: actions/github-script@v7.0.1
+      - name: Save Result Link
+        if: ${{ !cancelled() }} #prepare report unless the job was cancelled
+        run: |
+          mkdir -p ./pr
+          echo "${{ github.event.issue.number }}"  > ./pr/issueNumber
+          echo -n "Test Result: ${{ steps.build.outcome }} "  > ./pr/message
+          echo "[(details)](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})" >> ./pr/message
+
+      - name: Upload result
+        if: ${{ !cancelled() }} #upload unless the job was cancelled
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'Test Result: ${{ steps.build.outcome }} [(details)](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})'
-            })
+          name: pr
+          path: pr/
