@@ -12,7 +12,7 @@
 #include <parma.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
+#include <PCUObj.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
 #include <iostream>
@@ -178,20 +178,20 @@ apf::Migration* getPlan(apf::Mesh* m, int num_target_part)
   return plan;
 }
 
-void split_comm(int num_out_comm)
+void split_comm(int num_out_comm, pcu::PCU &PCUObj)
 {
-  int self = PCU_Comm_Self();
+  int self = PCUObj.Self();
   int group_id = self % num_out_comm;
   int in_group_rank = self / num_out_comm;
   MPI_Comm groupComm;
-  MPI_Comm_split(PCU_Get_Comm(), group_id, in_group_rank, &groupComm);
-  PCU_Switch_Comm(groupComm);
+  MPI_Comm_split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
+  PCUObj.SwitchMPIComm(groupComm);
 }
 
-void merge_comm(MPI_Comm oldComm)
+void merge_comm(MPI_Comm oldComm, pcu::PCU &PCUObj)
 {
-  MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(oldComm);
+  MPI_Comm prevComm = PCUObj.GetMPIComm();
+  PCUObj.SwitchMPIComm(oldComm);
   MPI_Comm_free(&prevComm);
 }
 
@@ -202,6 +202,7 @@ pGeom pumi_mesh_getGeom(pMesh)
 }
 
 // load a serial mesh on master process then distribute as per the distribution object
+/*
 pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
 {
   if (strcmp(mesh_type,"mds"))
@@ -217,7 +218,28 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
   if (isMaster) 
     m = apf::loadMdsMesh(g->getGmi(), filename);
   merge_comm(prevComm);
-  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1);
+  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1, m->getPCU());
+  return pumi::instance()->mesh;
+}
+*/
+
+
+pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, pcu::PCU *PCUObj, const char* mesh_type)
+{
+  if (strcmp(mesh_type,"mds"))
+  {
+    if (!PCUObj->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
+    return NULL;
+  }
+  MPI_Comm prevComm = PCUObj->GetMPIComm();
+  int num_target_part = PCUObj->Peers();
+  bool isMaster = ((PCUObj->Self() % num_target_part) == 0);
+  pMesh m = 0;
+  split_comm(num_target_part, *PCUObj);
+  if (isMaster) 
+    m = apf::loadMdsMesh(g->getGmi(), filename, PCUObj);
+  merge_comm(prevComm, *PCUObj);
+  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1, m->getPCU());
   return pumi::instance()->mesh;
 }
 
@@ -229,6 +251,11 @@ pMesh pumi_mesh_load(pMesh m)
 }
 
 
+
+
+
+
+/*
 pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char* mesh_type)
 {
   if (strcmp(mesh_type,"mds"))
@@ -256,6 +283,36 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   pumi_mesh_print(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
+*/
+
+pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, pcu::PCU *PCUObj, const char* mesh_type)
+{
+  if (strcmp(mesh_type,"mds"))
+  {
+    if (!PCUObj->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
+    return NULL;
+  }
+  if (num_in_part==1 && pumi_size(PCUObj)>1) // do static partitioning
+  {
+    MPI_Comm prevComm = PCUObj->GetMPIComm();
+    int num_target_part = PCUObj->Peers()/num_in_part;
+    bool isMaster = ((PCUObj->Self() % num_target_part) == 0);
+    pMesh m = 0;
+    apf::Migration* plan = 0;   
+    split_comm(num_target_part, *PCUObj);
+    if (isMaster) {
+      m = apf::loadMdsMesh(g->getGmi(), filename, PCUObj);
+      plan = getPlan(m, num_target_part);
+    }
+    merge_comm(prevComm, *PCUObj);
+    pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part, PCUObj);
+  }
+  else
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename, PCUObj);
+  pumi_mesh_print(pumi::instance()->mesh);
+  return pumi::instance()->mesh;
+}
+
 
 
 
@@ -279,6 +336,7 @@ void send_entities(pMesh mesh, int dim)
 
 #include "apfMDS.h"
 #include "apfPM.h"
+/*
 pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
 {
   if (pumi_size()==1) 
@@ -297,6 +355,33 @@ pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
   }
 
   if (pumi_size()>1 && stitch_link) 
+  {
+    stitchMesh(pumi::instance()->mesh);
+    pumi::instance()->mesh->acceptChanges();
+  }
+
+  return pumi::instance()->mesh;
+}
+*/
+
+pMesh pumi_mesh_loadAll(pGeom g, const char* filename, pcu::PCU *PCUObj, bool stitch_link)
+{
+  if (pumi_size(PCUObj)==1) 
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename, PCUObj);
+  else
+  {
+    double t0 = pcu::Time();
+    MPI_Comm prevComm = PCUObj->GetMPIComm();
+    int num_target_part = PCUObj->Peers();
+    split_comm(num_target_part, *PCUObj);
+    // no pmodel & remote links setup
+    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename); 
+    merge_comm(prevComm, *PCUObj);
+    if (!PCUObj->Self())
+      lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, pcu::Time() - t0);
+  }
+
+  if (pumi_size(PCUObj)>1 && stitch_link) 
   {
     stitchMesh(pumi::instance()->mesh);
     pumi::instance()->mesh->acceptChanges();
@@ -345,9 +430,9 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
       pumi::instance()->num_own_ent[dim] = n;
     }
   }
-  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, PCU_Get_Comm());
+  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 #ifdef DEBUG
-  if (!pumi_rank()) std::cout<<"[PUMI INFO] "<<__func__<<" end\n";
+  if (!pumi_rank(m->getPCU())) std::cout<<"[PUMI INFO] "<<__func__<<" end\n";
 #endif
 }
 
@@ -416,7 +501,7 @@ void pumi_mesh_print (pMesh m, bool print_ent)
     local_entity_count[i]=own_entity_count[i]=0;
 
   pMeshEnt e;
-  int self = pumi_rank();
+  int self = pumi_rank(m->getPCU());
 
   for (int d=0; d<4;++d)
   {
@@ -425,7 +510,7 @@ void pumi_mesh_print (pMesh m, bool print_ent)
     while ((e = m->iterate(it)))
     {
       if (m->getOwner(e)==self)
-        ++own_entity_count[4*pumi_rank()+d];
+        ++own_entity_count[4*pumi_rank(m->getPCU())+d];
     }
     m->end(it);
   }
@@ -434,10 +519,10 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   int* global_own_entity_count = new int[4*m->getPCU()->Peers()]; 
 
   MPI_Allreduce(local_entity_count, global_local_entity_count, 4*m->getPCU()->Peers(), 
-                MPI_INT, MPI_SUM, PCU_Get_Comm());
+                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 
   MPI_Allreduce(own_entity_count, global_own_entity_count, 4*m->getPCU()->Peers(), 
-                MPI_INT, MPI_SUM, PCU_Get_Comm());
+                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 
  
   if (!m->getPCU()->Self())
@@ -650,7 +735,7 @@ void pumi_ownership_verify(pMesh m, pOwnership o)
           own_copy = pumi_ment_getOwnEnt(e,o);
           if (!own_copy)
           {
-            std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getOwnEnt(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<") not found\n";
+            std::cout<<"[ERROR] ("<<pumi_rank(m->getPCU())<<") "<<__func__<<": pumi_ment_getOwnEnt(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<") not found\n";
             print_copies(m,e);
           }
           assert(own_copy);
@@ -659,7 +744,7 @@ void pumi_ownership_verify(pMesh m, pOwnership o)
             ++num_own_ent;
             if (own_copy!=e)
             {
-              std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getOwnEnt(dim "<<d<<", id "<<pumi_ment_getID(e)<<") is not self copy\n";
+              std::cout<<"[ERROR] ("<<pumi_rank(m->getPCU())<<") "<<__func__<<": pumi_ment_getOwnEnt(dim "<<d<<", id "<<pumi_ment_getID(e)<<") is not self copy\n";
               print_copies(m,e);
             }
             assert(own_copy==e);
@@ -669,12 +754,12 @@ void pumi_ownership_verify(pMesh m, pOwnership o)
             remote_copy = pumi_ment_getRmt(e, own_partid); 
             if (!remote_copy)
             {
-              std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getRmt(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<") not found\n";
+              std::cout<<"[ERROR] ("<<pumi_rank(m->getPCU())<<") "<<__func__<<": pumi_ment_getRmt(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<") not found\n";
               print_copies(m,e);
             }
             if (own_copy!=remote_copy)
             {
-              std::cout<<"[ERROR] ("<<pumi_rank()<<") "<<__func__<<": pumi_ment_getRmt and pumi_ment_getOwnEnt mismatch for e(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<")\n";
+              std::cout<<"[ERROR] ("<<pumi_rank(m->getPCU())<<") "<<__func__<<": pumi_ment_getRmt and pumi_ment_getOwnEnt mismatch for e(dim "<<d<<", id "<<pumi_ment_getID(e)<<", pid "<<own_partid<<")\n";
               print_copies(m,e);
             }
             assert(own_copy==remote_copy);
@@ -686,7 +771,7 @@ void pumi_ownership_verify(pMesh m, pOwnership o)
       assert (pumi_mesh_getNumOwnEnt(m, d) == num_own_ent);
     } // for
 
-  if (!pumi_rank()) std::cout<<__func__<<": ownership is valid\n";
+  if (!pumi_rank(m->getPCU())) std::cout<<__func__<<": ownership is valid\n";
 }
 
 Distribution::Distribution(pMesh mesh)
@@ -810,7 +895,7 @@ static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affecte
     while (m->getPCU()->Receive())
     {
       pMeshEnt entity;
-      PCU_COMM_UNPACK(entity);
+      m->getPCU()->Unpack(entity);
       if ( !m->hasTag(entity,tag))
       {
         m->setIntTag(entity,tag,&dummy);
@@ -881,7 +966,7 @@ static void distr_updateResidences(pMesh m,
     while(m->getPCU()->Receive())
     {
       pMeshEnt entity;
-      PCU_COMM_UNPACK(entity);
+      m->getPCU()->Unpack(entity);
       Parts current;
       m->getResidence(entity,current);
       Parts incoming;

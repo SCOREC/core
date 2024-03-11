@@ -12,7 +12,7 @@
 #include "gmi_null.h"
 #include "gmi_analytic.h"
 #include "pumi_iter.h"
-#include "PCU.h"
+#include <PCUObj.h>
 #include <iostream>
 #include <cstring>
 #include <pcu_util.h>
@@ -31,27 +31,27 @@ gEntity* gModel::getGeomEnt(int d, gmi_ent* ge)
   return allEntities.getGeomEnt(d, ge);
 }
 
-pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
+pGeom pumi_geom_load(const char* filename, pcu::PCU *PCUObj, const char* model_type, void (*geom_load_fp)(const char*))
 {
   if (!strcmp(model_type,"null"))
   {
     gmi_register_null();
-    return pumi_geom_load(gmi_load(".null"), model_type);
+    return pumi_geom_load(gmi_load(".null"), PCUObj, model_type);
   }
   else if (!strcmp(model_type,"mesh"))
   {
     gmi_register_mesh();
-    return pumi_geom_load(gmi_load(filename));
+    return pumi_geom_load(gmi_load(filename), PCUObj);
   }
   else if (!strcmp(model_type,"analytic")) 
-    return pumi_geom_load(gmi_make_analytic(), model_type, filename, geom_load_fp);
+    return pumi_geom_load(gmi_make_analytic(), PCUObj, model_type, filename, geom_load_fp);
   else
-    if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
+    if (!pumi_rank(PCUObj)) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
   
   return NULL;
 }
 
-pGeom pumi_geom_load(gmi_model* gm, const char* model_type, 
+pGeom pumi_geom_load(gmi_model* gm, pcu::PCU *PCUObj, const char* model_type, 
       const char* filename, void (*geom_load_fp)(const char*))
 {
   double t0 = pcu::Time();
@@ -73,11 +73,11 @@ pGeom pumi_geom_load(gmi_model* gm, const char* model_type,
   }
   else
   {
-    if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
+    if (!pumi_rank(PCUObj)) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
     return NULL;
   }
 
-  if (!PCU_Comm_Self() && filename)
+  if (!PCUObj->Self() && filename)
     lion_oprint(1,"model %s loaded in %f seconds\n", filename, pcu::Time() - t0);
 
   return pumi::instance()->model;
@@ -191,9 +191,9 @@ void pumi_giter_reset(gIter iter)
   iter->reset();
 }
 
-void pumi_geom_print (pGeom g, bool print_ent)
+void pumi_geom_print (pGeom g, pcu::PCU *PCUObj, bool print_ent)
 {
-  if (PCU_Comm_Self()) return;
+  if (PCUObj->Self()) return;
   std::cout<<"\n=== model entity and tag info === \n";
   std::cout<<"# global geom ent: v "<<g->size(0)<<", e "
            <<g->size(1)<<", f "<<g->size(2)<<", r "<<g->size(3)<<"\n";
