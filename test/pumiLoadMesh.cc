@@ -4,12 +4,12 @@
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  pumi_start();
-  pGeom g = pumi_geom_load(argv[1], "mesh");
-  pMesh m = pumi_mesh_load(g, argv[2], 1);
+  pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  pGeom g = pumi_geom_load(argv[1], PCUObj, "mesh");
+  pMesh m = pumi_mesh_load(g, argv[2], 1, PCUObj);
   pumi_mesh_delete(m);
   pumi_geom_delete(g);
-  pumi_finalize();
+  pumi_finalize(PCUObj);
   MPI_Finalize();
 }
 
