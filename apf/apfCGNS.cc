@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include "apfMesh.h"
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
@@ -13,7 +12,6 @@
 #include "apfFieldData.h"
 #include <pcu_util.h>
 #include <lionPrint.h>
-//
 #include <sstream>
 #include <fstream>
 #include <iostream>

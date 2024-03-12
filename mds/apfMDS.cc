@@ -10,6 +10,7 @@
 
 #include <PCU.h>
 #include <PCU2.h>
+#include <PCUObj.h>
 #include <lionPrint.h>
 #include "apfMDS.h"
 #include "mds_apf.h"
@@ -168,9 +169,13 @@ class MeshMDS : public Mesh2
       isMatched = false;
       ownsModel = false;
     }
-    MeshMDS(gmi_model* m, int d, bool isMatched_)
+    MeshMDS(gmi_model* m, int d, bool isMatched_, pcu::PCU *PCUObj = nullptr)
     {
-      init(apf::getLagrange(1));
+      if(PCUObj != nullptr){
+        init(apf::getLagrange(1), PCUObj);
+      } else {
+        init(apf::getLagrange(1));
+      }
       mds_id cap[MDS_TYPES] = {};
       mesh = mds_apf_create(m, d, cap);
       isMatched = isMatched_;
@@ -196,9 +201,13 @@ class MeshMDS : public Mesh2
       apf::convert(from, this, nodes, elems, copy_data);
     }
 
-    MeshMDS(gmi_model* m, const char* pathname)
+    MeshMDS(gmi_model* m, const char* pathname, pcu::PCU *PCUObj = nullptr)
     {
-      init(apf::getLagrange(1));
+      if(PCUObj != nullptr){
+        init(apf::getLagrange(1), PCUObj);
+      } else {
+        init(apf::getLagrange(1));
+      }
       mesh = mds_read_smb2(this->getPCU()->GetCHandle(), m, pathname, 0, this);
       isMatched = this->getPCU()->Or(!mds_net_empty(&mesh->matches));
       ownsModel = true;
@@ -778,9 +787,14 @@ class MeshMDS : public Mesh2
     bool ownsModel;
 };
 
-Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched)
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj)
 {
-  Mesh2* m = new MeshMDS(model, dim, isMatched);
+  Mesh2* m;
+  if(PCUObj != nullptr){
+    m = new MeshMDS(model, dim, isMatched, PCUObj);
+  } else {
+    m = new MeshMDS(model, dim, isMatched);
+  }
   initResidence(m, dim);
   return m;
 }
@@ -928,6 +942,22 @@ Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile)
   return m;
 }
 
+Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj)
+{
+  double t0 = pcu::Time();
+  Mesh2* m = new MeshMDS(model, meshfile, PCUObj);
+  initResidence(m, m->getDimension());
+  stitchMesh(m);
+  m->acceptChanges();
+
+  if (!m->getPCU()->Self())
+    lion_oprint(1,"mesh %s loaded in %f seconds\n", meshfile, pcu::Time() - t0);
+  printStats(m);
+  warnAboutEmptyParts(m);
+  return m;
+}
+
+
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
 {
   double t0 = pcu::Time();
@@ -943,6 +973,18 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
   return m;
 }
 
+
+Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+{
+  double t0 = pcu::Time();
+  static gmi_model* model;
+  model = gmi_load(modelfile);
+  if (!PCUObj->Self())
+    lion_oprint(1,"model %s loaded in %f seconds\n", modelfile, pcu::Time() - t0);
+
+  return loadMdsMesh(model, meshfile, PCUObj);
+}
+
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 {
   double t0 = pcu::Time();
@@ -953,6 +995,8 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
 
   return loadMdsMesh(model, meshfile);
 }
+
+
 
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
 {
@@ -969,6 +1013,46 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
   if (!mesh->getPCU()->Self())
     lion_oprint(1,"mesh reordered in %f seconds\n", pcu::Time()-t0);
 }
+
+
+Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expandedPCU)
+{
+  double t0 = pcu::Time();
+  int self = expandedPCU->Self();
+  //PCU_ALWAYS_ASSERT_VERBOSE(self == expandedPCU->Self(), "pcu_comm_self doesn't equal pcuobj->self\n");
+  int outputPartCount = expandedPCU->Peers();
+  apf::Expand expand(inputPartCount, outputPartCount);
+  apf::Contract contract(inputPartCount, outputPartCount);
+  bool isOriginal = contract.isValid(self);
+  int dim;
+  bool isMatched;
+  expandedPCU->Begin();
+  if (isOriginal) {
+    PCU_ALWAYS_ASSERT(m != 0);
+    dim = m->getDimension();
+    isMatched = m->hasMatching();
+    for (int i = self + 1; i < outputPartCount && !contract.isValid(i); ++i) {
+      expandedPCU->Pack(i, dim);
+      expandedPCU->Pack(i, isMatched);
+      packDataClone(m, i);
+    }
+  }
+  expandedPCU->Send();
+  while (expandedPCU->Receive()) {
+    expandedPCU->Unpack(dim);
+    expandedPCU->Unpack(isMatched);
+    m = makeEmptyMdsMesh(g, dim, isMatched, expandedPCU);
+    unpackDataClone(m);
+  }
+  PCU_ALWAYS_ASSERT(m != 0);
+  apf::remapPartition(m, expand);
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
+    lion_oprint(1,"mesh expanded from %d to %d parts in %f seconds\n",
+        inputPartCount, outputPartCount, t1 - t0);
+  return m;
+}
+
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
 {
@@ -1020,6 +1104,24 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
     lion_oprint(1,"mesh migrated from %d to %d in %f seconds\n",
         PCU_Comm_Peers() / factor,
         PCU_Comm_Peers(),
+        t1 - t0);
+  return m;
+}
+
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
+    int factor, pcu::PCU *PCUObj)
+{
+  //PCU_ALWAYS_ASSERT_VERBOSE(PCU_Comm_Self() == PCUObj->Self(), "repeartMdsMesh assert failed\n");
+  m = expandMdsMesh(m, g, PCUObj->Peers() / factor, PCUObj);
+  double t0 = pcu::Time();
+  if (PCUObj->Self() % factor != 0)
+    plan = new apf::Migration(m, m->findTag("apf_migrate"));
+  m->migrate(plan);
+  double t1 = pcu::Time();
+  if (!PCUObj->Self())
+    lion_oprint(1,"mesh migrated from %d to %d in %f seconds\n",
+        PCUObj->Peers() / factor,
+        PCUObj->Peers(),
         t1 - t0);
   return m;
 }

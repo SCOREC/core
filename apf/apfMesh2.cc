@@ -163,14 +163,14 @@ static void packProposal(Mesh* m, MeshEntity* e, int to)
   }
 }
 
-static void unpackProposal(int& t, MeshEntity*& e, Downward& da)
+static void unpackProposal(int& t, MeshEntity*& e, Downward& da, pcu::PCU *PCUObj)
 {
-  PCU_COMM_UNPACK(t);
-  PCU_COMM_UNPACK(e);
+  PCUObj->Unpack(t);
+  PCUObj->Unpack(e);
   int nd;
-  PCU_COMM_UNPACK(nd);
+  PCUObj->Unpack(nd);
   for (int i=0; i < nd; ++i)
-    PCU_COMM_UNPACK(da[i]);
+    PCUObj->Unpack(da[i]);
 }
 
 void stitchMesh(Mesh2* m)
@@ -195,7 +195,7 @@ void stitchMesh(Mesh2* m)
       while (!m->getPCU()->Unpacked()) {
         int t;
         Downward da;
-        unpackProposal(t, e, da);
+        unpackProposal(t, e, da, m->getPCU());
         MeshEntity* found = findUpward(m, t, da);
         if (found)
           m->addRemote(found, from, e);
@@ -209,7 +209,7 @@ static void packTagClone(Mesh2* m, MeshTag* t, int to)
 {
   std::string name;
   name = m->getTagName(t);
-  packString(name, to);
+  packString(name, to, m->getPCU());
   int type;
   type = m->getTagType(t);
   m->getPCU()->Pack(to, type);
@@ -220,11 +220,11 @@ static void packTagClone(Mesh2* m, MeshTag* t, int to)
 
 static MeshTag* unpackTagClone(Mesh2* m)
 {
-  std::string name = unpackString();
+  std::string name = unpackString(m->getPCU());
   int type;
-  PCU_COMM_UNPACK(type);
+  m->getPCU()->Unpack(type);
   int size;
-  PCU_COMM_UNPACK(size);
+  m->getPCU()->Unpack(size);
   if (type == apf::Mesh::DOUBLE)
     return m->createDoubleTag(name.c_str(), size);
   if (type == apf::Mesh::INT)
@@ -250,7 +250,7 @@ static void packTagClones(Mesh2* m, int to)
 static void unpackTagClones(Mesh2* m)
 {
   int n;
-  PCU_COMM_UNPACK(n);
+  m->getPCU()->Unpack(n);
   for (int i = 0; i < n; ++i)
     unpackTagClone(m);
 }
@@ -258,24 +258,24 @@ static void unpackTagClones(Mesh2* m)
 static void packFieldClone(Field* f, int to)
 {
   std::string name = f->getName();
-  packString(name, to);
+  packString(name, to, f->getMesh()->getPCU());
   int valueType = f->getValueType();
   f->getMesh()->getPCU()->Pack(to, valueType);
   int components = f->countComponents();
   f->getMesh()->getPCU()->Pack(to, components);
   std::string shapeName = f->getShape()->getName();
-  packString(shapeName, to);
+  packString(shapeName, to, f->getMesh()->getPCU());
   /* warning! this only supports tag-stored fields */
 }
 
 static Field* unpackFieldClone(Mesh2* m)
 {
-  std::string name = unpackString();
+  std::string name = unpackString(m->getPCU());
   int valueType;
-  PCU_COMM_UNPACK(valueType);
+  m->getPCU()->Unpack(valueType);
   int components;
-  PCU_COMM_UNPACK(components);
-  std::string shapeName = unpackString();
+  m->getPCU()->Unpack(components);
+  std::string shapeName = unpackString(m->getPCU());
   FieldShape* shape = getShapeByName(shapeName.c_str());
   PCU_ALWAYS_ASSERT(shape);
   /* warning! this only supports tag-stored fields */
@@ -293,7 +293,7 @@ static void packFieldClones(Mesh2* m, int to)
 static void unpackFieldClones(Mesh2* m)
 {
   int n;
-  PCU_COMM_UNPACK(n);
+  m->getPCU()->Unpack(n);
   for (int i = 0; i < n; ++i)
     unpackFieldClone(m);
 }
@@ -301,12 +301,12 @@ static void unpackFieldClones(Mesh2* m)
 static void packMeshShape(Mesh2* m, int to)
 {
   std::string shapeName = m->getShape()->getName();
-  packString(shapeName, to);
+  packString(shapeName, to, m->getPCU());
 }
 
 static void unpackMeshShape(Mesh2* m)
 {
-  std::string shapeName = unpackString();
+  std::string shapeName = unpackString(m->getPCU());
   FieldShape* shape = getShapeByName(shapeName.c_str());
   PCU_ALWAYS_ASSERT(shape);
   if (shape != m->getShape()) {

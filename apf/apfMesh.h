@@ -109,7 +109,7 @@ class Mesh
       \param s the field distribution of the coordinate field,
                apf::getLagrange(1) is a good default
       */
-    void init(FieldShape* s);
+    void init(FieldShape* s, pcu::PCU *PCUObj = nullptr);
     /** \brief destroy the base class structures.
         \details this does not destroy the underlying data
                  structure, use apf::Mesh::destroyNative for that.
@@ -620,10 +620,10 @@ int getFirstType(Mesh* m, int dim);
 void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
     int& which, bool& flip, int& rotate);
 
-void packString(std::string s, int to);
-std::string unpackString();
+void packString(std::string s, int to, pcu::PCU *PCUObj);
+std::string unpackString(pcu::PCU *PCUObj);
 void packTagInfo(Mesh* m, MeshTag* t, int to);
-void unpackTagInfo(std::string& name, int& type, int& size);
+void unpackTagInfo(std::string& name, int& type, int& size, pcu::PCU *PCUObj);
 
 extern char const* const dimName[4];
 

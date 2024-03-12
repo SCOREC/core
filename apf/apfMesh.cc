@@ -160,7 +160,7 @@ Mesh::Type const Mesh::simplexTypes[4] =
 ,Mesh::TET
 };
 
-void Mesh::init(FieldShape* s)
+void Mesh::init(FieldShape* s, pcu::PCU *PCUObj)
 {
   coordinateField = new VectorField();
   FieldBase* baseP = coordinateField;
@@ -168,7 +168,13 @@ void Mesh::init(FieldShape* s)
   baseP->init("coordinates",this,s,data);
   data->init(baseP);
   hasFrozenFields = false;
-  pcu_ = pcu::PCU_GetGlobal();
+  if(PCUObj != nullptr){
+    pcu_ = PCUObj;
+  } else {
+    pcu_ = pcu::PCU_GetGlobal();
+    PCU_ALWAYS_ASSERT_VERBOSE(pcu_ != nullptr, "PCU must be initialized\n");
+  }
+  
 }
 
 Mesh::~Mesh()
@@ -885,7 +891,7 @@ void printStats(Mesh* m)
     n[i] = countOwned(m, i);
   m->getPCU()->Add(n, 4);
   printTypes(m);
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     lion_oprint(1,"mesh entity counts: v %ld e %ld f %ld r %ld\n",
         n[0], n[1], n[2], n[3]);
 }
@@ -1027,7 +1033,7 @@ void MatchedSharing::formCountMap()
   mesh->getPCU()->Send();
   while (mesh->getPCU()->Receive()) {
     size_t oc;
-    PCU_COMM_UNPACK(oc);
+    mesh->getPCU()->Unpack(oc);
     countMap[mesh->getPCU()->Sender()] = oc;
   }
 }
@@ -1170,20 +1176,20 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   rotate = findIn(bv, nbv, ebv[0]);
 }
 
-void packString(std::string s, int to)
+void packString(std::string s, int to, pcu::PCU *PCUObj)
 {
   size_t len = s.length();
-  PCU_COMM_PACK(to, len);
-  PCU_Comm_Pack(to, s.c_str(), len);
+  PCUObj->Pack(to, len);
+  PCUObj->Pack(to, s.c_str(), len);
 }
 
-std::string unpackString()
+std::string unpackString(pcu::PCU *PCUObj)
 {
   std::string s;
   size_t len;
-  PCU_COMM_UNPACK(len);
+  PCUObj->Unpack(len);
   s.resize(len);
-  PCU_Comm_Unpack((void*)s.c_str(), len);
+  PCUObj->Unpack((void*)s.c_str(), len);
   return s;
 }
 
@@ -1191,7 +1197,7 @@ void packTagInfo(Mesh* m, MeshTag* t, int to)
 {
   std::string name;
   name = m->getTagName(t);
-  packString(name, to);
+  packString(name, to, m->getPCU());
   int type;
   type = m->getTagType(t);
   m->getPCU()->Pack(to, type);
@@ -1200,11 +1206,11 @@ void packTagInfo(Mesh* m, MeshTag* t, int to)
   m->getPCU()->Pack(to, size);
 }
 
-void unpackTagInfo(std::string& name, int& type, int& size)
+void unpackTagInfo(std::string& name, int& type, int& size, pcu::PCU *PCUObj)
 {
-  name = unpackString();
-  PCU_COMM_UNPACK(type);
-  PCU_COMM_UNPACK(size);
+  name = unpackString(PCUObj);
+  PCUObj->Unpack(type);
+  PCUObj->Unpack(size);
 }
 
 char const* const dimName[4] = {

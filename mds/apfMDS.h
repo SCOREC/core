@@ -37,6 +37,10 @@
 //      but trying to avoid that since it's not core functionality
 #include <apf.h>
 //
+namespace pcu{
+  class PCU;
+  PCU* PCU_GetGlobal();
+}
 struct gmi_model;
 
 namespace apf {
@@ -58,7 +62,7 @@ typedef struct PCUHandle PCUHandle;
   \param dim the eventual mesh dimension. MDS needs to allocate
              arrays based on this before users add entities.
   \param isMatched whether or not there will be matched entities */
-Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj = nullptr);
 
 /** \brief load an MDS mesh and model from file
   \param modelfile will be passed to gmi_load to get the model
@@ -67,6 +71,7 @@ Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
         may also be called to enable loading of GeomSim, 
         Parasolid, and ACIS models
   */
+Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj);
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 
 /** \brief load an MDS mesh from files
@@ -82,6 +87,7 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
                   using PCU file IO functions.
                   Calling apf::Mesh::writeNative on the
                   resulting object will do the same in reverse. */
+Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
 // make a serial mesh on all processes - no pmodel & remote link setup
@@ -111,8 +117,10 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder=false, bool copy
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t = 0);
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
-Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor, pcu::PCU *PCUObj);
 
+Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
+Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expandedPCU);
 /** \brief align the downward adjacencies of matched entities */
 bool alignMdsMatches(Mesh2* in);
 /** \brief align the downward adjacencies of remote copies */
