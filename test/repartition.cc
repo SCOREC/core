@@ -9,6 +9,7 @@
 #include <apfPartition.h>
 #include <pcu_util.h>
 #include <cstdlib>
+#include <memory>
 
 namespace {
 
@@ -18,8 +19,8 @@ const char* outFile = 0;
 int inputPartCount = 1;
 
 struct CreateGroupCommResult{
-    bool isOriginal;
-    pcu::PCU *group_pcu_obj;
+  bool isOriginal;
+  pcu::PCU *group_pcu_obj;
 };
 
 void freeMesh(apf::Mesh* m)
@@ -97,18 +98,19 @@ void balance(apf::Mesh2* m)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  pcu::PCU *expanded_pcu_obj = new pcu::PCU(MPI_COMM_WORLD);
+  //pcu::PCU *expanded_pcu_obj = new pcu::PCU(MPI_COMM_WORLD);
+  auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv,expanded_pcu_obj);
+  getConfig(argc,argv,expanded_pcu_obj.get());
   gmi_model* g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
-  CreateGroupCommResult result = createGroupComm(expanded_pcu_obj);
+  CreateGroupCommResult result = createGroupComm(expanded_pcu_obj.get());
 
   if (result.isOriginal)
     m = apf::loadMdsMesh(g, meshFile, result.group_pcu_obj);
   
-  m = apf::expandMdsMesh(m, g, inputPartCount, expanded_pcu_obj);
+  m = apf::expandMdsMesh(m, g, inputPartCount, expanded_pcu_obj.get());
   balance(m);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);

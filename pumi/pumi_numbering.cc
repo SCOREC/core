@@ -61,7 +61,7 @@ pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s, pOwn
 
   if (!s) s= m->getShape();
   n = numberOwnedNodes(m, name, s, o);
-  apf::globalize(n);
+  apf::globalize(n, m->getPCU());
   apf::synchronizeFieldData<int>(n->getData(), o, false); //synchronize(n, o); 
   return n;
 }

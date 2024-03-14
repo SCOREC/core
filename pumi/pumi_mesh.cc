@@ -959,7 +959,7 @@ static void distr_updateResidences(pMesh m,
       APF_ITERATE(Copies,remotes,rit)
       {
         m->getPCU()->Pack(rit->first,rit->second);
-        apf::packParts(rit->first,newResidence);
+        apf::packParts(rit->first,newResidence, m->getPCU());
       }
     }
     m->getPCU()->Send();
@@ -970,7 +970,7 @@ static void distr_updateResidences(pMesh m,
       Parts current;
       m->getResidence(entity,current);
       Parts incoming;
-      apf::unpackParts(incoming);
+      apf::unpackParts(incoming, m->getPCU());
       apf::unite(current,incoming);
       m->setResidence(entity,current);
     }

@@ -99,7 +99,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     ph::attachZeroSolution(in, m);
   if (in.buildMapping)
     ph::buildMapping(m);
-  apf::setMigrationLimit(SIZET(in.elementsPerMigration));
+  apf::setMigrationLimit(SIZET(in.elementsPerMigration), m->getPCU());
   if (in.adaptFlag)
     ph::adapt(in, m);
   if (in.tetrahedronize)

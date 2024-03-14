@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include "apfMesh2.h"
 #include "apfCavityOp.h"
 #include "apf.h"
@@ -73,7 +72,7 @@ static void getAffected(
     while (m->getPCU()->Receive())
     {
       MeshEntity* entity;
-      PCU_COMM_UNPACK(entity);
+      m->getPCU()->Unpack(entity);
       if ( ! m->hasTag(entity,tag))
       {
         m->setIntTag(entity,tag,&dummy);
@@ -142,9 +141,9 @@ void reduceMatchingToSenders(
     while ( ! m->getPCU()->Unpacked())
     {
       MeshEntity* e;
-      PCU_COMM_UNPACK(e);
+      m->getPCU()->Unpack(e);
       MeshEntity* match;
-      PCU_COMM_UNPACK(match);
+      m->getPCU()->Unpack(match);
 /* all matches of the sender receive this.
    We only care that the senders themselves receive
    messages from only other senders matched to them,
@@ -162,25 +161,25 @@ static Parts makeResidence(int part)
   return r;
 }
 
-void packParts(int to, Parts& parts)
+void packParts(int to, Parts& parts, pcu::PCU *PCUObj)
 {
   size_t n = parts.size();
-  PCU_COMM_PACK(to,n);
+  PCUObj->Pack(to,n);
   APF_ITERATE(Parts,parts,it)
   {
     int p = *it;
-    PCU_COMM_PACK(to,p);
+    PCUObj->Pack(to,p);
   }
 }
 
-void unpackParts(Parts& parts)
+void unpackParts(Parts& parts, pcu::PCU *PCUObj)
 {
   size_t n;
-  PCU_COMM_UNPACK(n);
+  PCUObj->Unpack(n);
   for (size_t i=0;i<n;++i)
   {
     int p;
-    PCU_COMM_UNPACK(p);
+    PCUObj->Unpack(p);
     parts.insert(p);
   }
 }
@@ -223,18 +222,18 @@ static void updateResidences(
       APF_ITERATE(Copies,remotes,rit)
       {
         m->getPCU()->Pack(rit->first,rit->second);
-        packParts(rit->first,newResidence);
+        packParts(rit->first,newResidence, m->getPCU());
       }
     }
     m->getPCU()->Send();
     while(m->getPCU()->Receive())
     {
       MeshEntity* entity;
-      PCU_COMM_UNPACK(entity);
+      m->getPCU()->Unpack(entity);
       Parts current;
       m->getResidence(entity,current);
       Parts incoming;
-      unpackParts(incoming);
+      unpackParts(incoming, m->getPCU());
       unite(current,incoming);
       m->setResidence(entity,current);
     }
@@ -250,10 +249,11 @@ static void updateResidences(
 void split(
     Copies& remotes,
     Parts& parts,
-    Parts& newParts)
+    Parts& newParts,
+    pcu::PCU *PCUObj)
 {
   APF_ITERATE(Parts,parts,it)
-    if (( ! remotes.count(*it))&&(*it != PCU_Comm_Self()))
+    if (( ! remotes.count(*it))&&(*it != PCUObj->Self()))
       newParts.insert(*it);
 }
 
@@ -270,7 +270,7 @@ static void packCommon(
   m->getPCU()->Pack(to,modelTag);
   Parts residence;
   m->getResidence(e,residence);
-  packParts(to,residence);
+  packParts(to,residence, m->getPCU());
 }
 
 void unpackCommon(
@@ -279,12 +279,12 @@ void unpackCommon(
     ModelEntity*& c,
     Parts& residence)
 {
-  PCU_COMM_UNPACK(sender);
+  m->getPCU()->Unpack(sender);
   int modelType,modelTag;
-  PCU_COMM_UNPACK(modelType);
-  PCU_COMM_UNPACK(modelTag);
+  m->getPCU()->Unpack(modelType);
+  m->getPCU()->Unpack(modelTag);
   c = m->findModelEntity(modelType,modelTag);
-  unpackParts(residence);
+  unpackParts(residence, m->getPCU());
 }
 
 static void packVertex(
@@ -304,9 +304,9 @@ MeshEntity* unpackVertex(
     ModelEntity* c)
 {
   Vector3 point;
-  PCU_COMM_UNPACK(point);
+  m->getPCU()->Unpack(point);
   Vector3 param;
-  PCU_COMM_UNPACK(param);
+  m->getPCU()->Unpack(param);
   return m->createVertex(c,point,param);
 }
 
@@ -345,12 +345,13 @@ static void packDownward(Mesh2* m, int to, MeshEntity* e)
 }
 
 static void unpackDownward(
-    Downward& entities)
+    Downward& entities,
+    pcu::PCU *PCUObj)
 {
   int n;
-  PCU_COMM_UNPACK(n);
+  PCUObj->Unpack(n);
   for (int i=0; i < n; ++i)
-    PCU_COMM_UNPACK(entities[i]);
+    PCUObj->Unpack(entities[i]);
 }
 
 static void packNonVertex(
@@ -366,7 +367,7 @@ MeshEntity* unpackNonVertex(
     int type, ModelEntity* c)
 {
   Downward down;
-  unpackDownward(down);
+  unpackDownward(down, m->getPCU());
   return m->createEntity(type,c,down);
 }
 
@@ -428,13 +429,13 @@ void packRemotes(
 void unpackRemotes(Mesh2* m, MeshEntity* e)
 {
   size_t n;
-  PCU_COMM_UNPACK(n);
+  m->getPCU()->Unpack(n);
   for (size_t i=0; i < n; ++i)
   {
     int p;
-    PCU_COMM_UNPACK(p);
+    m->getPCU()->Unpack(p);
     MeshEntity* r;
-    PCU_COMM_UNPACK(r);
+    m->getPCU()->Unpack(r);
     m->addRemote(e, p, r);
   }
 }
@@ -445,13 +446,13 @@ void unpackTags(
     DynamicArray<MeshTag*>& tags)
 {
   size_t n;
-  PCU_COMM_UNPACK(n);
+  m->getPCU()->Unpack(n);
   PCU_ALWAYS_ASSERT_VERBOSE(n<=tags.size(),
       "A tag was created that does not exist on all processes.");
   for (size_t t=0; t < n; ++t)
   {
     size_t i;
-    PCU_COMM_UNPACK(i);
+    m->getPCU()->Unpack(i);
     MeshTag* tag = tags[i];
     int type = m->getTagType(tag);
     int size = m->getTagSize(tag);
@@ -495,7 +496,7 @@ static MeshEntity* unpackEntity(
 {
   int from = m->getPCU()->Sender();
   int type;
-  PCU_COMM_UNPACK(type);
+  m->getPCU()->Unpack(type);
   MeshEntity* sender;
   ModelEntity* c;
   Parts residence;
@@ -527,7 +528,7 @@ static void sendEntities(
     Parts residence;
     m->getResidence(entity,residence);
     Parts sendTo;
-    split(remotes,residence,sendTo);
+    split(remotes,residence,sendTo,m->getPCU());
     APF_ITERATE(Parts,sendTo,sit)
       packEntity(m,*sit,entity,tags);
   }
@@ -570,9 +571,9 @@ static void receiveRemotes(Mesh2* m)
     while ( ! m->getPCU()->Unpacked())
     {
       MeshEntity* sender;
-      PCU_COMM_UNPACK(sender);
+      m->getPCU()->Unpack(sender);
       MeshEntity* entity;
-      PCU_COMM_UNPACK(entity);
+      m->getPCU()->Unpack(entity);
       PCU_ALWAYS_ASSERT(entity);
       m->addRemote(sender, from, entity);
     }
@@ -603,28 +604,30 @@ static void getNewCopies(
 
 static void packCopies(
     int to,
-    Copies& copies)
+    Copies& copies,
+    pcu::PCU *PCUObj)
 {
   int n = copies.size();
-  PCU_COMM_PACK(to,n);
+  PCUObj->Pack(to,n);
   APF_ITERATE(Copies,copies,it)
   {
-    PCU_COMM_PACK(to,it->first);
-    PCU_COMM_PACK(to,it->second);
+    PCUObj->Pack(to,it->first);
+    PCUObj->Pack(to,it->second);
   }
 }
 
 static void unpackCopies(
-    Copies& copies)
+    Copies& copies,
+    pcu::PCU *PCUObj)
 {
   int n;
-  PCU_COMM_UNPACK(n);
+  PCUObj->Unpack(n);
   for (int i=0; i < n; ++i)
   {
     int part;
-    PCU_COMM_UNPACK(part);
+    PCUObj->Unpack(part);
     MeshEntity* remote;
-    PCU_COMM_UNPACK(remote);
+    PCUObj->Unpack(remote);
     PCU_ALWAYS_ASSERT(remote);
     copies[part]=remote;
   }
@@ -646,7 +649,7 @@ static void bcastRemotes(
     APF_ITERATE(Copies,allRemotes,rit)
     {
       m->getPCU()->Pack(rit->first,rit->second);
-      packCopies(rit->first,newCopies);
+      packCopies(rit->first,newCopies, m->getPCU());
     }
     newCopies.erase(rank);
     m->setRemotes(e,newCopies);
@@ -655,9 +658,9 @@ static void bcastRemotes(
   while (m->getPCU()->Receive())
   {
     MeshEntity* e;
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     Copies copies;
-    unpackCopies(copies);
+    unpackCopies(copies, m->getPCU());
     copies.erase(rank);
     m->setRemotes(e,copies);
   }
@@ -721,13 +724,13 @@ static void updateSenderMatching(
       /* pack the remote copies to itself, then
          add itself to the copies if it remains */
       m->getPCU()->Pack(self,e);
-      packCopies(self,copies);
+      packCopies(self,copies, m->getPCU());
       if (residence.count(self))
         copies[self]=e;
       for (size_t j=0; j < matches.getSize(); ++j)
       { /* pack all copies to matched senders */
         m->getPCU()->Pack(matches[j].peer,matches[j].entity);
-        packCopies(matches[j].peer,copies);
+        packCopies(matches[j].peer,copies, m->getPCU());
       }
     }
 /* destroy all matching in the entire affected set.
@@ -740,9 +743,9 @@ static void updateSenderMatching(
   while (m->getPCU()->Receive())
   {
     MeshEntity* e;
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     Copies copies;
-    unpackCopies(copies);
+    unpackCopies(copies, m->getPCU());
     APF_ITERATE(Copies,copies,cit)
       m->addMatch(e,cit->first,cit->second);
   }
@@ -792,14 +795,14 @@ static void bcastMatching(
   while (m->getPCU()->Receive())
   {
     MeshEntity* e;
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     Match match;
     size_t n;
-    PCU_COMM_UNPACK(n);
+    m->getPCU()->Unpack(n);
     for (size_t i=0; i < n; ++i)
     {
-      PCU_COMM_UNPACK(match.peer);
-      PCU_COMM_UNPACK(match.entity);
+      m->getPCU()->Unpack(match.peer);
+      m->getPCU()->Unpack(match.entity);
       if ( ! ((match.peer == self)&&
               (match.entity == e)))
         m->addMatch(e,match.peer,match.entity);
@@ -858,10 +861,10 @@ static void migrate1(Mesh2* m, Migration* plan)
 const size_t maxMigrationLimit = 10*1000*1000;
 static size_t migrationLimit = maxMigrationLimit;
 
-void setMigrationLimit(size_t maxElements)
+void setMigrationLimit(size_t maxElements, pcu::PCU *PCUObj)
 {
   if( maxElements >= maxMigrationLimit ) {
-    if(!PCU_Comm_Self())
+    if(!PCUObj->Self())
       lion_eprint(1, "ERROR requested migration limit exceeds"
                       " %lu... exiting\n", maxMigrationLimit);
     abort();

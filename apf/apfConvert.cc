@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "apf.h"
 #include "apfConvert.h"
 #include "apfMesh.h"
@@ -187,9 +186,9 @@ class Converter
         while ( ! inMesh->getPCU()->Unpacked())
         {  
           MeshEntity* oldRight;
-          PCU_COMM_UNPACK(oldRight);
+          inMesh->getPCU()->Unpack(oldRight);
           MeshEntity* newLeft;
-          PCU_COMM_UNPACK(newLeft);
+          inMesh->getPCU()->Unpack(newLeft);
           MeshEntity *newRight = newFromOld[oldRight];
           outMesh->addRemote(newRight, leftPart, newLeft);
           map_ent[newRight].push_back(leftPart);
@@ -439,9 +438,9 @@ class Converter
         while ( ! inMesh->getPCU()->Unpacked())
         {  
           MeshEntity* oldRight;
-          PCU_COMM_UNPACK(oldRight);
+          inMesh->getPCU()->Unpack(oldRight);
           MeshEntity* newLeft;
-          PCU_COMM_UNPACK(newLeft);
+          inMesh->getPCU()->Unpack(newLeft);
           MeshEntity *newRight = newFromOld[oldRight];
           outMesh->addMatch(newRight, leftPart, newLeft);
         }

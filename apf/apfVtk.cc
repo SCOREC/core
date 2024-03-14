@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include <lionBase64.h>
 #include <lionCompress.h>
 #include "apfMesh.h"
@@ -46,7 +45,7 @@ static bool shouldPrint(
 bool isPrintable(FieldBase* f)
 {
   HasAll op;
-  return PCU_And(op.run(f));
+  return f->getMesh()->getPCU()->And(op.run(f));
 }
 
 static bool isNodal(FieldBase* f)
@@ -254,9 +253,9 @@ static std::string getRelativePathPSource(int id)
   return ss.str();
 }
 
-static void writePSources(std::ostream& file)
+static void writePSources(std::ostream& file, pcu::PCU *PCUObj)
 {
-  for (int i=0; i < PCU_Comm_Peers(); ++i)
+  for (int i=0; i < PCUObj->Peers(); ++i)
   {
     std::string fileName = stripPath(getPieceFileName(i));
     std::string fileNameAndPath = getRelativePathPSource(i) + fileName;
@@ -282,7 +281,7 @@ static void writePvtuFile(const char* prefix,
   writePPoints(file,m->getCoordinateField(),isWritingBinary);
   writePPointData(file,m,writeFields,isWritingBinary);
   writePCellData(file, m, writeFields, isWritingBinary, cellDim);
-  writePSources(file);
+  writePSources(file, m->getPCU());
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";
 }

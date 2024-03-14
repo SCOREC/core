@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "pcu_util.h"
 #include "apfConvert.h"
 #include "apfMesh2.h"
@@ -43,12 +42,12 @@ static NewElements constructElements(
   return newElements;
 }
 
-static Gid getMax(const GlobalToVert& globalToVert)
+static Gid getMax(const GlobalToVert& globalToVert, Mesh2* m)
 {
   Gid max = -1;
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it)
     max = std::max(max, it->first);
-  return PCU_Max_Long(max); // this is type-dependent
+  return m->getPCU()->Max(max); // this is type-dependent
 }
 
 
@@ -67,7 +66,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     }
     ifirst++;
   }
-  Gid max = getMax(globalToVert);  // seems like we read this and know it already on every rank so why compute with global comm?
+  Gid max = getMax(globalToVert, m);  // seems like we read this and know it already on every rank so why compute with global comm?
   ifirst=0;
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
@@ -111,7 +110,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
      for each global id */
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     int from = m->getPCU()->Sender();
     Gid tmpL=gid - myOffset; // forcing 64 bit difference until we know it is safe
     int tmpI=tmpL;
@@ -138,13 +137,13 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
      model entity for that set of parts */
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     int nparts;
-    PCU_COMM_UNPACK(nparts);
+    m->getPCU()->Unpack(nparts);
     Parts residence;
     for (int i = 0; i < nparts; ++i) {
       int part;
-      PCU_COMM_UNPACK(part);
+      m->getPCU()->Unpack(part);
       residence.insert(part);
     }
     MeshEntity* vert = globalToVert[gid];
@@ -175,9 +174,9 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     MeshEntity* remote;
-    PCU_COMM_UNPACK(remote);
+    m->getPCU()->Unpack(remote);
     int from = m->getPCU()->Sender();
     MeshEntity* vert = globalToVert[gid];
     m->addRemote(vert, from, remote);
@@ -213,7 +212,7 @@ NewElements construct(Mesh2* m, const Gid* conn, int nelem, int etype,
 void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert)
 {
-  Gid max = getMax(globalToVert);
+  Gid max = getMax(globalToVert, m);
   Gid total = max + 1;
   int peers = m->getPCU()->Peers();
   int quotient = total / peers;
@@ -251,8 +250,8 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   }
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
-    PCU_COMM_UNPACK(start);
-    PCU_COMM_UNPACK(n); // |||||| more in-place 64 bit math
+    m->getPCU()->Unpack(start);
+    m->getPCU()->Unpack(n); // |||||| more in-place 64 bit math
     m->getPCU()->Unpack(&c[(start - myOffset) * 3], n*3*sizeof(double));
   }
 
@@ -270,7 +269,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     Gid from = m->getPCU()->Sender();
     Gid tmpL=gid - myOffset;
     int tmpInt=tmpL;
@@ -291,7 +290,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     double v[3];
     m->getPCU()->Unpack(v, sizeof(v));
     Vector3 vv(v);
@@ -304,7 +303,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
 void setMatches(Mesh2* m, const Gid* matches, int nverts,
     GlobalToVert& globalToVert)
 {
-  Gid max = getMax(globalToVert);
+  Gid max = getMax(globalToVert, m);
   Gid total = max + 1;
   int peers = m->getPCU()->Peers();
   int quotient = total / peers;
@@ -341,8 +340,8 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   }
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
-    PCU_COMM_UNPACK(start);
-    PCU_COMM_UNPACK(n); /// in-place 64
+    m->getPCU()->Unpack(start);
+    m->getPCU()->Unpack(n); /// in-place 64
     m->getPCU()->Unpack(&c[(start - myOffset)], n*sizeof(Gid));
   }
 
@@ -360,7 +359,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     int from = m->getPCU()->Sender();
     tmpParts.at(gid - myOffset).push_back(from);
   }
@@ -381,9 +380,9 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     Gid match;
-    PCU_COMM_UNPACK(match);
+    m->getPCU()->Unpack(match);
     PCU_ALWAYS_ASSERT(gid != match);
     PCU_ALWAYS_ASSERT(globalToVert.count(gid));
     m->setLongTag(globalToVert[gid], matchGidTag, &match);
@@ -409,9 +408,9 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   GidPtrs gidPtrs;
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     MeshEntity* vert;
-    PCU_COMM_UNPACK(vert);
+    m->getPCU()->Unpack(vert);
     int owner = m->getPCU()->Sender();
     gidPtrs[gid-myOffset].push_back(EntOwnerPtrs(owner,vert));
   }
@@ -435,9 +434,9 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid); // request from entity gid
+    m->getPCU()->Unpack(gid); // request from entity gid
     Gid matchGid;
-    PCU_COMM_UNPACK(matchGid); // requesting matched entity gid 
+    m->getPCU()->Unpack(matchGid); // requesting matched entity gid 
     MatchingPair mp(gid,matchGid);
     int from = m->getPCU()->Sender();
     matchParts[mp].push_back(from); // store a list of the proceses that need the pair (entity gid, match gid)
@@ -469,16 +468,16 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     Gid matchGid;
-    PCU_COMM_UNPACK(matchGid);
+    m->getPCU()->Unpack(matchGid);
     size_t numMatches;
-    PCU_COMM_UNPACK(numMatches);
+    m->getPCU()->Unpack(numMatches);
     for(size_t i=0; i<numMatches; i++) {
       int owner;
-      PCU_COMM_UNPACK(owner);
+      m->getPCU()->Unpack(owner);
       MeshEntity* match;
-      PCU_COMM_UNPACK(match);
+      m->getPCU()->Unpack(match);
       PCU_ALWAYS_ASSERT(globalToVert.count(gid));
       MeshEntity* partner = globalToVert[gid];
       PCU_ALWAYS_ASSERT(! (match == partner && owner == self) );

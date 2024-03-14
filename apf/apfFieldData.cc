@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "apfFieldData.h"
 #include "apfShape.h"
 #include <pcu_util.h>
@@ -62,7 +61,7 @@ void synchronizeFieldData(FieldDataOf<T>* data, Sharing* shr, bool delete_shr)
     while (m->getPCU()->Receive())
     {
       MeshEntity* e;
-      PCU_COMM_UNPACK(e);
+      m->getPCU()->Unpack(e);
       int n = f->countValuesOn(e);
       NewArray<T> values(n);
       m->getPCU()->Unpack(&(values[0]),n*sizeof(T));
@@ -146,7 +145,7 @@ void reduceFieldData(FieldDataOf<double>* data, Sharing* shr, bool delete_shr, c
       { /* receive and add. we only care about correctness
            on the owners */
         MeshEntity* e;
-        PCU_COMM_UNPACK(e);
+        m->getPCU()->Unpack(e);
         int n = f->countValuesOn(e);
         NewArray<double> values(n);
         NewArray<double> inValues(n);

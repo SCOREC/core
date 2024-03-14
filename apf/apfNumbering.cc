@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
 #include "apfField.h"
@@ -414,7 +413,7 @@ static void synchronizeEntitySet(
   while (m->getPCU()->Receive())
   {
     MeshEntity* e;
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     set.insert(e);
   }
 }
@@ -532,9 +531,9 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
   return n->getData()->getElementData(e,numbers);
 }
 
-static long exscan(long x)
+static long exscan(long x, pcu::PCU *PCUObj)
 {
-  return PCU_Exscan_Long(x);
+  return PCUObj->Exscan(x);
 }
 
 template <class T>
@@ -557,26 +556,26 @@ class Globalizer : public FieldOp
       }
       return false;
     }
-    void run(NumberingOf<T>* n)
+    void run(NumberingOf<T>* n, pcu::PCU *PCUObj)
     {
       numbering = n;
       data = n->getData();
       start = countFieldNodes(n);
-      start = exscan(start);
+      start = exscan(start, PCUObj);
       apply(n);
     }
 };
 
-static void globalize(GlobalNumbering* n)
+static void globalize(GlobalNumbering* n, pcu::PCU *PCUObj)
 {
   Globalizer<long> g;
-  g.run(n);
+  g.run(n, PCUObj);
 }
 
-void globalize(Numbering* n)
+void globalize(Numbering* n, pcu::PCU *PCUObj)
 {
   Globalizer<int> g;
-  g.run(n);
+  g.run(n, PCUObj);
 }
 
 GlobalNumbering* makeGlobal(Numbering* n, bool destroy)
@@ -606,7 +605,7 @@ GlobalNumbering* makeGlobal(Numbering* n, bool destroy)
   }
   if (destroy)
     apf::destroyNumbering(n);
-  globalize(gn);
+  globalize(gn, m->getPCU());
   return gn;
 }
 
