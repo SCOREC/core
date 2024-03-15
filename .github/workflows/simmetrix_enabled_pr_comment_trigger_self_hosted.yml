@@ -15,17 +15,20 @@ jobs:
     # The type of runner that the job will run on
     runs-on: self-hosted
 
-    if: ${{ github.event.issue.pull_request }}
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/runtests') &&
+      (github.event.comment.user.login == 'cwsmith')
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
           submodules: recursive
+          path: 'core_${{ github.event.issue.number }}'
           
       - name: build
-        id: build
-        if: contains(github.event.comment.body, '/runtests') && (github.event.comment.user.login == 'cwsmith')
+        id: build        
         shell: bash
         run: |
           set +e #avoid exiting when lua modules return non-zero on 'warning' messages
@@ -36,8 +39,9 @@ jobs:
           module load zoltan/3.83-hap4ggo
           module load cmake/3.26.3-2duxfcd
           set -e
-          cmake -S ${{github.workspace}} \
-            -B ${{github.workspace}}/build \
+          
+          cmake -S core_${{ github.event.issue.number }} \
+            -B ${RUNNER_TEMP}/build \
             -DCMAKE_CXX_COMPILER=mpicxx \
             -DCMAKE_C_COMPILER=mpicc \
             -DCMAKE_VERBOSE_MAKEFILE=ON \
@@ -47,12 +51,12 @@ jobs:
             -DSIM_PARASOLID=ON \
             -DSIM_ACIS=ON \
             -DSKIP_SIMMETRIX_VERSION_CHECK=ON \
-            -DMESHES=${{github.workspace}}/pumi-meshes \
+            -DMESHES=${{github.workspace}}/core_${{ github.event.issue.number }}/pumi-meshes \
             -DIS_TESTING=ON \
             -DSCOREC_CXX_WARNINGS=ON \
             -DCMAKE_BUILD_TYPE=Release 
-          cmake --build ${{github.workspace}}/build -j 4
-          ctest --test-dir ${{github.workspace}}/build --output-on-failure
+          cmake --build ${RUNNER_TEMP}/build -j 4
+          ctest --test-dir ${RUNNER_TEMP}/build --output-on-failure
 
       - name: Save Result Link
         if: ${{ !cancelled() }} #prepare report unless the job was cancelled
