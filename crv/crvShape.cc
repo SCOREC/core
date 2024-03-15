@@ -715,7 +715,7 @@ int fixLargeBoundaryAngles(Adapt* a)
   splitEdges(a);
   double t1 = pcu::Time();
   ma::print("split %d boundary edges with "
-      "large angles in %f seconds",count,t1-t0);
+      "large angles in %f seconds", a->mesh->getPCU(), count, t1-t0);
   return 0;
 }
 
@@ -735,7 +735,7 @@ static void collapseInvalidEdges(Adapt* a)
   successCount = m->getPCU()->Add(successCount);
   double t1 = pcu::Time();
   ma::print("Collapsed %d bad edges "
-      "in %f seconds",successCount, t1-t0);
+      "in %f seconds", m->getPCU(), successCount, t1-t0);
 }
 
 static void swapInvalidEdges(Adapt* a)
@@ -745,7 +745,7 @@ static void swapInvalidEdges(Adapt* a)
   ma::applyOperator(a,&es);
   double t1 = pcu::Time();
   ma::print("Swapped %d bad edges "
-      "in %f seconds",es.ns, t1-t0);
+      "in %f seconds", a->mesh->getPCU(), es.ns, t1-t0);
 }
 
 static void repositionInvalidEdges(Adapt* a)
@@ -755,7 +755,7 @@ static void repositionInvalidEdges(Adapt* a)
   ma::applyOperator(a,&es);
   double t1 = pcu::Time();
   ma::print("Repositioned %d bad edges "
-      "in %f seconds",es.nr, t1-t0);
+      "in %f seconds", a->mesh->getPCU(), es.nr, t1-t0);
 }
 
 int fixInvalidEdges(Adapt* a)
@@ -850,7 +850,7 @@ void fixCrvElementShapes(Adapt* a)
     ++i;
   } while(count < prev_count && i < 6); // the second conditions is to make sure this does not take long
   double t1 = pcu::Time();
-  ma::print("bad shapes down from %d to %d in %f seconds",
+  ma::print("bad shapes down from %d to %d in %f seconds", a->mesh->getPCU(),
         originalCount,count,t1-t0);
   a->input->shouldForceAdaptation = false;
 }

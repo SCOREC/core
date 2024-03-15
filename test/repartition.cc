@@ -98,7 +98,6 @@ void balance(apf::Mesh2* m)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  //pcu::PCU *expanded_pcu_obj = new pcu::PCU(MPI_COMM_WORLD);
   auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();

@@ -438,7 +438,7 @@ bool refine(Adapt* a)
   destroySplitElements(r);
   forgetNewEntities(r);
   double t1 = pcu::Time();
-  print("refined %li edges in %f seconds",count,t1-t0);
+  print("refined %li edges in %f seconds",a->mesh->getPCU(),count,t1-t0);
   resetLayer(a);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after refinement");

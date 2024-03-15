@@ -503,7 +503,7 @@ void tetrahedronize(Adapt* a)
   addAllLayerElements(r);
   tetrahedronizeCommon(r);
   double t1 = pcu::Time();
-  print("boundary layer converted to tets in %f seconds",t1-t0);
+  print("boundary layer converted to tets in %f seconds", a->mesh->getPCU(), t1-t0);
 }
 
 /* start of the island pyramid cleanup system,
@@ -675,14 +675,14 @@ void cleanupLayer(Adapt* a)
   double t0 = pcu::Time();
   long n = prepareIslandCleanup(a);
   if (!n) {
-    print("no island pyramids found");
+    print("no island pyramids found", a->mesh->getPCU());
     return;
   }
   Refine* r = a->refine;
   addIslandPyramids(r);
   tetrahedronizeCommon(r);
   double t1 = pcu::Time();
-  print("tetrahedronized %ld island pyramids in %f seconds", n, t1-t0);
+  print("tetrahedronized %ld island pyramids in %f seconds", a->mesh->getPCU(), n, t1-t0);
 }
 
 }

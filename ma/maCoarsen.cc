@@ -249,7 +249,7 @@ bool coarsen(Adapt* a)
   }
   successCount = m->getPCU()->Add(successCount);
   double t1 = pcu::Time();
-  print("coarsened %li edges in %f seconds",successCount,t1-t0);
+  print("coarsened %li edges in %f seconds", m->getPCU(), successCount,t1-t0);
   return true;
 }
 

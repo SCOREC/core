@@ -99,7 +99,7 @@ void resetLayer(Adapt* a)
     return;
   freezeLayer(a);
   double t1 = pcu::Time();
-  print("marked %ld layer elements in %f seconds", n, t1 - t0);
+  print("marked %ld layer elements in %f seconds", a->mesh->getPCU(), n, t1 - t0);
 }
 
 void findLayerBase(Adapt* a)
@@ -148,7 +148,7 @@ void allowSplitInLayer(Adapt* a)
     if (getFlag(a,e,LAYER))
       clearFlag(a,e,DONT_SPLIT);
   m->end(it);
-  print("allowing layer refinement");
+  print("allowing layer refinement", m->getPCU());
 }
 
 void collectForLayerRefine(Refine* r)
@@ -188,7 +188,7 @@ void checkLayerShape(Mesh* m, const char* key)
   m->end(it);
   n = m->getPCU()->Add(n);
   double t1 = pcu::Time();
-  print("%s: checked layer quality in %f seconds: %ld unsafe elements", key, t1 - t0, n);
+  print("%s: checked layer quality in %f seconds: %ld unsafe elements", m->getPCU(), key, t1 - t0, n);
 }
 
 }

@@ -80,7 +80,7 @@ static void refine(ma::Adapt* a)
   }
   splitEdges(a);
   double t1 = pcu::Time();
-  ma::print("split %li edges in %f seconds",count,t1-t0);
+  ma::print("split %li edges in %f seconds", a->mesh->getPCU(), count, t1-t0);
 }
 
 int getValidityTag(ma::Mesh* m, ma::Entity* e,
@@ -198,7 +198,7 @@ void adapt(ma::Input* in)
     fail("mesh must be bezier to adapt\n");
 
   in->shapeHandler = crv::getShapeHandler;
-  ma::print("Curved Adaptation Version 2.0 !");
+  ma::print("Curved Adaptation Version 2.0 !", in->mesh->getPCU());
   double t0 = pcu::Time();
   ma::validateInput(in);
   Adapt* a = new Adapt(in);
@@ -208,7 +208,7 @@ void adapt(ma::Input* in)
 
   for (int i=0; i < in->maximumIterations; ++i)
   {
-    ma::print("iteration %d",i);
+    ma::print("iteration %d", a->mesh->getPCU(), i);
     ma::coarsen(a);
     ma::midBalance(a);
     crv::refine(a);
@@ -228,7 +228,7 @@ void adapt(ma::Input* in)
   ma::printQuality(a);
   ma::postBalance(a);
   double t1 = pcu::Time();
-  ma::print("mesh adapted in %f seconds",t1-t0);
+  ma::print("mesh adapted in %f seconds", a->mesh->getPCU(), t1-t0);
   apf::printStats(a->mesh);
   crv::clearTags(a);
   delete a;

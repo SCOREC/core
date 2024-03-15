@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maMatch.h"
 #include "maMesh.h"
 #include "maAdapt.h"
@@ -15,16 +14,16 @@
 
 namespace ma {
 
-static void packSplits(int to, EntityArray& splits)
+static void packSplits(int to, EntityArray& splits, pcu::PCU *PCUObj)
 {
-  PCU_Comm_Pack(to,
+  PCUObj->Pack(to,
       static_cast<void*>(&(splits[0])),
       splits.getSize()*sizeof(Entity*));
 }
 
-static void unpackSplits(EntityArray& splits)
+static void unpackSplits(EntityArray& splits, pcu::PCU *PCUObj)
 {
-  PCU_Comm_Unpack(
+  PCUObj->Unpack(
       static_cast<void*>(&(splits[0])),
       splits.getSize()*sizeof(Entity*));
 }
@@ -50,7 +49,7 @@ void matchNewElements(Refine* r)
         int to = matches[i].peer;
         Entity* match = matches[i].entity;
         m->getPCU()->Pack(to,match);
-        packSplits(to,splits);
+        packSplits(to,splits,m->getPCU());
       }
     }
     m->getPCU()->Send();
@@ -65,7 +64,7 @@ void matchNewElements(Refine* r)
         m->getIntTag(e,r->numberTag,&number);
         EntityArray& splits = r->newEntities[d][number];
         EntityArray remoteSplits(splits.getSize());
-        unpackSplits(remoteSplits);
+        unpackSplits(remoteSplits,m->getPCU());
         for (size_t i=0; i < splits.getSize(); ++i)
           m->addMatch(splits[i],from,remoteSplits[i]);
         if (d==2) ++face_count;
@@ -73,7 +72,7 @@ void matchNewElements(Refine* r)
     }
   }
   face_count = m->getPCU()->Add(face_count);
-  print("updated matching for %li faces",face_count);
+  print("updated matching for %li faces", m->getPCU(), face_count);
 }
 
 void preventMatchedCavityMods(Adapt* a)

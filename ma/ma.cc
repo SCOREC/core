@@ -22,14 +22,14 @@ namespace ma {
 
 void adapt(Input* in)
 {
-  print("version 2.0 !");
   double t0 = pcu::Time();
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
+  print("version 2.0 !", a->mesh->getPCU());
   for (int i = 0; i < in->maximumIterations; ++i)
   {
-    print("iteration %d",i);
+    print("iteration %d", a->mesh->getPCU(), i);
     coarsen(a);
     coarsenLayer(a);
     midBalance(a);
@@ -51,7 +51,7 @@ void adapt(Input* in)
     delete in->solutionTransfer;
   delete in;
   double t1 = pcu::Time();
-  print("mesh adapted in %f seconds",t1-t0);
+  print("mesh adapted in %f seconds", m->getPCU(), t1-t0);
   apf::printStats(m);
 }
 
@@ -62,14 +62,14 @@ void adapt(const Input* in)
 
 void adaptVerbose(Input* in, bool verbose)
 {
-  print("version 2.0 - dev !");
   double t0 = pcu::Time();
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
+  print("version 2.0 - dev !", a->mesh->getPCU());
   for (int i = 0; i < in->maximumIterations; ++i)
   {
-    print("iteration %d",i);
+    print("iteration %d",a->mesh->getPCU(), i);
     coarsen(a);
     if (verbose && in->shouldCoarsen)
       ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
@@ -99,14 +99,14 @@ void adaptVerbose(Input* in, bool verbose)
    */
   int count = 0;
   double lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
-  print("Maximum (metric) edge length in the mesh is %f", lMax);
+  print("Maximum (metric) edge length in the mesh is %f", a->mesh->getPCU(), lMax);
   while (lMax > 1.5) {
-    print("%dth additional refine-snap call", count);
+    print("%dth additional refine-snap call", a->mesh->getPCU(), count);
     refine(a);
     snap(a);
     lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
     count++;
-    print("Maximum (metric) edge length in the mesh is %f", lMax);
+    print("Maximum (metric) edge length in the mesh is %f", a->mesh->getPCU(), lMax);
     if (count > 5) break;
   }
   if (verbose)
@@ -125,7 +125,7 @@ void adaptVerbose(Input* in, bool verbose)
     delete in->solutionTransfer;
   delete in;
   double t1 = pcu::Time();
-  print("mesh adapted in %f seconds",t1-t0);
+  print("mesh adapted in %f seconds", m->getPCU(), t1-t0);
   apf::printStats(m);
 }
 

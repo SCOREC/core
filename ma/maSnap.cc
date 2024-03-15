@@ -914,7 +914,7 @@ void snap(Adapt* a)
   a->mesh->destroyTag(tag);
   double t1 = pcu::Time();
   print("snapped in %f seconds: %ld targets, %ld non-layer snaps",
-    t1 - t0, targets, success);
+    a->mesh->getPCU(), t1 - t0, targets, success);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after snapping");
 }

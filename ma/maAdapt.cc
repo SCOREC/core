@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include <lionPrint.h>
 #include "maAdapt.h"
 #include "maInput.h"
@@ -471,9 +470,9 @@ void clearBuildCallback(Adapt* a)
   a->buildCallback = 0;
 }
 
-void print(const char* format, ...)
+void print(const char* format, pcu::PCU *PCUObj, ...)
 {
-  if (PCU_Comm_Self())
+  if (PCUObj->Self())
     return;
   lion_oprint(1,"\nMeshAdapt: ");
   va_list ap;
