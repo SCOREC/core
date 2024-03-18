@@ -119,7 +119,7 @@ void printEntityImbalance(Mesh* m)
   double imbalance[4];
   Parma_GetEntImbalance(m,&imbalance);
   double p = (imbalance[m->getDimension()]-1)*100;
-  print("element imbalance %.0f%% of average", m->getPCU(), p);
+  print(m->getPCU(), "element imbalance %.0f%% of average", p);
 }
 
 double estimateWeightedImbalance(Adapt* a)

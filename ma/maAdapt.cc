@@ -470,7 +470,7 @@ void clearBuildCallback(Adapt* a)
   a->buildCallback = 0;
 }
 
-void print(const char* format, pcu::PCU *PCUObj, ...)
+void print(pcu::PCU *PCUObj, const char* format, ...)
 {
   if (PCUObj->Self())
     return;

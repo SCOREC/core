@@ -72,7 +72,7 @@ void matchNewElements(Refine* r)
     }
   }
   face_count = m->getPCU()->Add(face_count);
-  print("updated matching for %li faces", m->getPCU(), face_count);
+  print(m->getPCU(), "updated matching for %li faces", face_count);
 }
 
 void preventMatchedCavityMods(Adapt* a)

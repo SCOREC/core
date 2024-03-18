@@ -32,7 +32,7 @@ void freeMesh(apf::Mesh* m)
 CreateGroupCommResult createGroupComm(pcu::PCU *PCUObj)
 {
   apf::Contract contract(inputPartCount, PCUObj->Peers());
-  int self = PCU_Comm_Self();
+  int self = PCUObj->Self();
   PCU_ALWAYS_ASSERT(self == PCUObj->Self());
   int group;
   int groupRank;

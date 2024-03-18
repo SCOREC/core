@@ -154,14 +154,14 @@ static void updateMaxIterBasedOnSize(Mesh* m, Input* in)
   double maxMetricLength = getMaximumEdgeLength(m, in->sizeField);
   int iter = std::ceil(std::log2(maxMetricLength));
   if (iter >= 10) {
-    print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
+    print(m->getPCU(), "ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
     	"           which is equal to or larger than the maximum of 10 allowed.\n"
-    	"           Setting the number of iteration to 10!", m->getPCU(), iter);
+    	"           Setting the number of iteration to 10!", iter);
     in->maximumIterations = 10;
   }
   else {
-    print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
-    	"           Setting the number of iteration to %d!", m->getPCU(), iter, iter+1);
+    print(m->getPCU(), "ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
+    	"           Setting the number of iteration to %d!", iter, iter+1);
     in->maximumIterations = iter+1;
   }
 }

@@ -50,6 +50,7 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
+  {
   auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
@@ -59,5 +60,6 @@ int main(int argc, char** argv)
   write_output(m, argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
+  }
   MPI_Finalize();
 }

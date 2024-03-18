@@ -283,7 +283,7 @@ bool coarsenLayer(Adapt* a)
     successCount += collapseAllStacks(a, d);
   }
   double t1 = pcu::Time();
-  print("coarsened %li layer edges in %f seconds", m->getPCU(), successCount,t1-t0);
+  print(m->getPCU(), "coarsened %li layer edges in %f seconds", successCount,t1-t0);
   resetLayer(a);
   return true;
 }

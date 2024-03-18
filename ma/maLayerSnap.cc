@@ -274,7 +274,7 @@ static long snapAllCurves(Adapt* a, Tag* snapTag)
   LayerSnapper op(a, snapTag);
   crawlLayers(&op);
   double t1 = pcu::Time();
-  print("snapped %ld curves in %f seconds", a->mesh->getPCU(), op.ncurves, t1 - t0);
+  print(a->mesh->getPCU(), "snapped %ld curves in %f seconds", op.ncurves, t1 - t0);
   return op.ncurves;
 }
 
@@ -402,9 +402,9 @@ static bool checkForUnsnap(Adapt* a, Tag* snapTag)
   bool notOk = a->mesh->getPCU()->Or(op.foundAnything);
   double t1 = pcu::Time();
   if (notOk)
-    print("checked snapped curves in %f seconds, found some to unsnap", a->mesh->getPCU(), t1 - t0);
+    print(a->mesh->getPCU(), "checked snapped curves in %f seconds, found some to unsnap", t1 - t0);
   else
-    print("checked snapped curves in %f seconds, all ok", a->mesh->getPCU(), t1 - t0);
+    print(a->mesh->getPCU(), "checked snapped curves in %f seconds, all ok", t1 - t0);
   return notOk;
 }
 
@@ -437,7 +437,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
     PCU_ALWAYS_ASSERT(m->hasTag(v, snapTag));
   }
   n = m->getPCU()->Add(n);
-  print("fed back unsnap flag from %ld tops", m->getPCU(), n);
+  print(m->getPCU(), "fed back unsnap flag from %ld tops", n);
 }
 
 /* for each layer curve whose base vertex
@@ -528,7 +528,7 @@ static long unsnapMarkedCurves(Adapt* a, Tag* snapTag)
   Unsnapper op(a, snapTag);
   crawlLayers(&op);
   double t1 = pcu::Time();
-  print("unsnapped %ld curves in %f seconds", a->mesh->getPCU(), op.ncurves, t1 - t0); 
+  print(a->mesh->getPCU(), "unsnapped %ld curves in %f seconds", op.ncurves, t1 - t0); 
   return op.ncurves;
 }
 
@@ -550,7 +550,7 @@ void snapLayer(Adapt* a, Tag* snapTag)
   }
   delete l;
   double t1 = pcu::Time();
-  print("finished snapping %ld of %ld layer curves in %f seconds", a->mesh->getPCU(),
+  print(a->mesh->getPCU(), "finished snapping %ld of %ld layer curves in %f seconds", 
       nsnapped - nunsnapped, nsnapped, t1 - t0);
 }
 
