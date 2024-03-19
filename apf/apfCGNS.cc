@@ -1051,11 +1051,11 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   auto communicator = PCU_Get_Comm();
   cgp_mpi_comm(communicator);
   //
-  cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
+  cgp_pio_mode(CGP_INDEPENDENT);
 
   CGNS cgns;
   cgns.fname = std::string(prefix);
-  if (cgp_open(prefix, CGNS_ENUMV(CG_MODE_WRITE), &cgns.index))
+  if (cgp_open(prefix, CG_MODE_WRITE, &cgns.index))
     cgp_error_exit();
 
   {
