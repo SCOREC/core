@@ -13,14 +13,20 @@
 #include <stdbool.h>
 #include "pcu_msg.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef struct pcu_order_struct* pcu_order;
 
 pcu_order pcu_order_new(void);
 void pcu_order_free(pcu_order o);
-bool pcu_order_receive(pcu_order o, pcu_msg* m);
+bool pcu_order_receive(pcu_mpi_t*, pcu_order o, pcu_msg* m);
 void* pcu_order_unpack(pcu_order o, size_t size);
 bool pcu_order_unpacked(pcu_order o);
 int pcu_order_received_from(pcu_order o);
 size_t pcu_order_received_size(pcu_order o);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

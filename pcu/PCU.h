@@ -9,10 +9,7 @@
 *******************************************************************************/
 #ifndef PCU_H
 #define PCU_H
-
-#define PCU_SUCCESS 0
-#define PCU_FAILURE -1
-
+#include "pcu_defines.h"
 #include <mpi.h>
 
 #ifdef __cplusplus
@@ -94,13 +91,8 @@ bool PCU_Comm_Read(int* from_rank, void** data, size_t* size);
 
 /*Debug file I/O API*/
 void PCU_Debug_Open(void);
-#ifdef __GNUC__
-void PCU_Debug_Print(const char* format, ...)
-  __attribute__((format(printf,1,2)));
-#else
-void PCU_Debug_Print(const char* format, ...);
-#endif
 
+void PCU_Debug_Print(const char* format, ...) PCU_FORMAT_ATTRIBUTE(1,2);
 /*lesser-used APIs*/
 bool PCU_Comm_Initialized(void);
 int PCU_Comm_Packed(int to_rank, size_t* size);

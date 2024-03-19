@@ -8,16 +8,16 @@
 
 *******************************************************************************/
 #include "pcu_io.h"
-#include "noto_malloc.h"
-#include "reel.h"
-#include "pcu_mpi.h"
 #include "PCU.h"
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
+#include "noto_malloc.h"
+#include "pcu_buffer.h"
 #include "pcu_util.h"
-#include <sys/types.h>
+#include "reel.h"
 #include <limits.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 
 #ifdef PCU_BZIP
 #include <bzlib.h>
@@ -361,7 +361,8 @@ FILE* pcu_open_parallel(const char* prefix, const char* ext)
   static const size_t max_rank_chars = 10;
   size_t path_size = strlen(prefix) + max_rank_chars + strlen(ext) + 1;
   char* path = noto_malloc(path_size);
-  int rank = pcu_mpi_rank();
+  int rank;
+  PCU_Comm_Rank(&rank);
   snprintf(path,path_size,"%s%d.%s",prefix,rank,ext);
   FILE* file = fopen(path, "w");
   noto_free(path);
