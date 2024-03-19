@@ -177,19 +177,19 @@ struct MeshDataGroup
     if (components.size() == 1)
     {
       std::cout << "Scalar Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto &m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else if (components.size() == 3)
     {
       std::cout << "Vector Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto &m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else if (components.size() == 9)
     {
       std::cout << "Matrix Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto &m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else
@@ -265,7 +265,7 @@ void Kill(const int fid)
   }
 }
 
-auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
+std::map<int, std::array<double, 3>> ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
 {
   // Read min required as defined by consecutive range
   // make one based as ReadElements makes zero based
@@ -389,7 +389,7 @@ void SimpleElementPartition(std::vector<cgsize_t> &numberToReadPerProc, std::vec
 using Pair = std::pair<cgsize_t, cgsize_t>;
 using LocalElementRanges = std::vector<Pair>; // one based
 
-auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
+std::tuple<std::vector<cgsize_t>, cgsize_t> ReadElements(int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
 {
   std::vector<cgsize_t> numberToReadPerProc;
   std::vector<cgsize_t> startingIndex;
@@ -1056,8 +1056,8 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   int cgid = -1;
   auto comm = PCU_Get_Comm();
   cgp_mpi_comm(comm);
-  cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
-  cgp_open(fname.c_str(), CGNS_ENUMV(CG_MODE_READ), &cgid);
+  cgp_pio_mode(CGP_INDEPENDENT);
+  cgp_open(fname.c_str(), CG_MODE_READ, &cgid);
 
   int nbases = -1;
   cg_nbases(cgid, &nbases);
