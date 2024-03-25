@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include "phRestart.h"
 #include <apf.h>
@@ -458,21 +457,23 @@ static double* buildMappingVtxId(apf::Mesh* m)
   return data;
 }
 
-static std::string buildRestartFileName(std::string prefix, int step)
+static std::string buildRestartFileName(std::string prefix, int step, pcu::PCU *PCUObj)
 {
   std::stringstream ss;
-  int rank = PCU_Comm_Self() + 1;
+  int rank = PCUObj->Self() + 1;
   ss << prefix << '.' << step << '.' << rank;
   return ss.str();
 }
 
 void readAndAttachFields(Input& in, apf::Mesh* m) {
-  phastaio_initStats();
+  PCUHandle h;
+  h.ptr = static_cast<void*>(m->getPCU());
+  phastaio_initStats(h);
   double t0 = pcu::Time();
-  setupInputSubdir(in.restartFileName);
-  std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
+  setupInputSubdir(in.restartFileName, m->getPCU());
+  std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber, m->getPCU());
   phastaio_setfile(RESTART_READ);
-  FILE* f = in.openfile_read(in, filename.c_str());
+  FILE* f = in.openfile_read(in, filename.c_str(), m->getPCU());
   if (!f) {
     lion_eprint(1,"failed to open \"%s\"!\n", filename.c_str());
     abort();
@@ -484,7 +485,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
   double t1 = pcu::Time();
   if (!m->getPCU()->Self())
     lion_oprint(1,"fields read and attached in %f seconds\n", t1 - t0);
-  if(in.printIOtime) phastaio_printStats();
+  if(in.printIOtime) phastaio_printStats(h);
 }
 
 static void destroyIfExists(apf::Mesh* m, const char* name)
@@ -518,7 +519,7 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
 void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string path)
 {
   double t0 = pcu::Time();
-  path += buildRestartFileName("restart", in.timeStepNumber);
+  path += buildRestartFileName("restart", in.timeStepNumber, m->getPCU());
   phastaio_setfile(RESTART_WRITE);
   FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {

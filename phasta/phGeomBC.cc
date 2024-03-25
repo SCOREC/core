@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "phOutput.h"
 #include "phIO.h"
 #include "phiotimer.h"
@@ -9,10 +8,10 @@
 
 namespace ph {
 
-static std::string buildGeomBCFileName(std::string timestep_or_dat)
+static std::string buildGeomBCFileName(std::string timestep_or_dat, pcu::PCU *pcu_obj)
 {
   std::stringstream ss;
-  int rank = PCU_Comm_Self() + 1;
+  int rank = pcu_obj->Self() + 1;
   ss << "geombc." << timestep_or_dat << "." << rank;
   return ss.str();
 }
@@ -304,7 +303,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     tss << timestep;   
     timestep_or_dat = tss.str();
   }
-  path += buildGeomBCFileName(timestep_or_dat);
+  path += buildGeomBCFileName(timestep_or_dat, m->getPCU());
   phastaio_setfile(GEOMBC_WRITE);
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {

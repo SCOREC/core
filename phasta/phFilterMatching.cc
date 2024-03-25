@@ -5,7 +5,6 @@
 #include <map>
 #include <set>
 #include <apf.h>
-#include <PCU.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <cstdlib>
@@ -238,21 +237,21 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
     gd = gmi_dim(gm, ge);
     gt = gmi_tag(gm, ge);
     APF_ITERATE(apf::Matches, matches, mit) {
-      PCU_COMM_PACK(mit->peer, mit->entity);
-      PCU_COMM_PACK(mit->peer, e);
-      PCU_COMM_PACK(mit->peer, gd);
-      PCU_COMM_PACK(mit->peer, gt);
+      m->getPCU()->Pack(mit->peer, mit->entity);
+      m->getPCU()->Pack(mit->peer, e);
+      m->getPCU()->Pack(mit->peer, gd);
+      m->getPCU()->Pack(mit->peer, gt);
     }
     m->clearMatches(e);
   }
   m->end(it);
   m->getPCU()->Send();
   while (m->getPCU()->Receive()) {
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     apf::MeshEntity* oe;
-    PCU_COMM_UNPACK(oe);
-    PCU_COMM_UNPACK(gd);
-    PCU_COMM_UNPACK(gt);
+    m->getPCU()->Unpack(oe);
+    m->getPCU()->Unpack(gd);
+    m->getPCU()->Unpack(gt);
     gmi_ent* ge = (gmi_ent*) m->toModel(e);
     if (!mm.count(ge))
       continue;

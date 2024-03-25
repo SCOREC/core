@@ -1,6 +1,5 @@
 #include "phInterfaceCutter.h"
 #include <apfMDS.h>
-#include <PCU.h>
 #include <apf.h>
 #include <ph.h>
 #include <pcu_util.h>

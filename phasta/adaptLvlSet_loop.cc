@@ -10,8 +10,6 @@
             generates PHASTA files containing the mesh and field
             information.
 */
-
-#include <PCU.h>
 #include <chef.h>
 #include <phstream.h>
 #include <gmi_mesh.h>
@@ -21,6 +19,7 @@
 #endif
 #include <stdio.h>
 #include <unistd.h>
+#include <memory>
 
 namespace {
   void freeMesh(apf::Mesh* m) {
@@ -39,8 +38,9 @@ namespace {
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
-  PCU_Protect();
+  {
+  auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::Protect();
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
@@ -49,28 +49,28 @@ int main(int argc, char** argv) {
   gmi_register_mesh();
   gmi_model* g = NULL;
   apf::Mesh2* m = NULL;
-  GRStream* grs = makeGRStream();
+  GRStream* grs = makeGRStream(expanded_pcu_obj.get());
   ph::Input ctrl;
-  ctrl.load("adaptLvlSet.inp");
+  ctrl.load("adaptLvlSet.inp", expanded_pcu_obj.get());
   //preprocess (define bubbles)
-  chef::cook(g,m,ctrl,grs);
-  RStream* rs = makeRStream();
-  attachRStream(grs,rs);
+  chef::cook(g,m,ctrl,grs,expanded_pcu_obj.get());
+  RStream* rs = makeRStream(expanded_pcu_obj.get());
+  attachRStream(grs,rs,expanded_pcu_obj.get());
   reconfigureChef(ctrl);
   // attach the solution field from stream, adapt to the level set,
   //   and then preprocess (redefines bubbles)
-  chef::cook(g,m,ctrl,rs,grs);
-  attachRStream(grs,rs);
+  chef::cook(g,m,ctrl,rs,grs,expanded_pcu_obj.get());
+  attachRStream(grs,rs,expanded_pcu_obj.get());
   // attach a solution field from stream, adapt to the level set,
   //   and then preprocess (redefines bubbles)
-  chef::cook(g,m,ctrl,rs);
-  destroyGRStream(grs);
-  destroyRStream(rs);
+  chef::cook(g,m,ctrl,rs,expanded_pcu_obj.get());
+  destroyGRStream(grs,expanded_pcu_obj.get());
+  destroyRStream(rs,expanded_pcu_obj.get());
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

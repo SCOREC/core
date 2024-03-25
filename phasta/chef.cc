@@ -1,9 +1,9 @@
 #include <apf.h>
 #include <apfMesh.h>
 #include <gmi_mesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pumi_version.h>
+#include <memory>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -31,10 +31,11 @@ namespace {
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
-  PCU_Protect();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::Protect();
   lion_set_verbosity(1);
-  if( !PCU_Comm_Self() ) {
+  if( !PCUObj.get()->Self() ) {
     lion_oprint(1,"PUMI Git hash %s\n", pumi_version());
     lion_oprint(1,"PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
   }
@@ -55,8 +56,8 @@ int main(int argc, char** argv)
   std::string inputPath = "adapt.inp";
   if(argc==2) inputPath = argv[1];
   ph::Input in;
-  in.load(inputPath.c_str());
-  chef::cook(g,m,in);
+  in.load(inputPath.c_str(), PCUObj.get());
+  chef::cook(g,m,in,PCUObj.get());
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
@@ -68,7 +69,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

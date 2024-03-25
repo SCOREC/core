@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include "phGrowthCurves.h"
 #include "phOutput.h"

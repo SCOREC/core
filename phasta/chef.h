@@ -13,18 +13,18 @@ struct RStream;
 struct GRStream;
 namespace chef {
   /** @brief read and write to and from files */
-  void cook(gmi_model*& g, apf::Mesh2*& m);
+  void cook(gmi_model*& g, apf::Mesh2*& m, pcu::PCU *PCUObj);
   /** @brief read and write to and from files and load control info*/
-  void cook(gmi_model*& g, apf::Mesh2*& m, ph::Input& ctrl);
+  void cook(gmi_model*& g, apf::Mesh2*& m, ph::Input& ctrl, pcu::PCU *PCUObj);
   /** @brief read from stream and write to files */
   void cook(gmi_model*& g, apf::Mesh2*& m,
-      ph::Input& ctrl, RStream* in);
+      ph::Input& ctrl, RStream* in, pcu::PCU *PCUObj);
   /** @brief read from files and write to stream */
   void cook(gmi_model*& g, apf::Mesh2*& m,
-      ph::Input& ctrl, GRStream* out);
+      ph::Input& ctrl, GRStream* out, pcu::PCU *PCUObj);
   /** @brief read and write to and from streams */
   void cook(gmi_model*& g, apf::Mesh2*& m,
-      ph::Input& ctrl, RStream* in, GRStream* out);
+      ph::Input& ctrl, RStream* in, GRStream* out, pcu::PCU *PCUObj);
   /** @brief extract a field from a packed field */
   apf::Field* extractField(apf::Mesh* m,
     const char* packedFieldname,

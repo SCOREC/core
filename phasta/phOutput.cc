@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include "phOutput.h"
 #include "phGrowthCurves.h"
@@ -627,12 +626,12 @@ static void getMaxElementNodes(Output& o)
 /* returns the global periodic master iff it is on this
    part, otherwise returns e */
 static apf::MeshEntity* getLocalPeriodicMaster(apf::MatchedSharing* sh,
-    apf::MeshEntity* e)
+    apf::MeshEntity* e, pcu::PCU *PCUObj)
 {
   if ( ! sh)
     return e;
   apf::Copy globalMaster = sh->getOwnerCopy(e);
-  if (globalMaster.peer == PCU_Comm_Self())
+  if (globalMaster.peer == PCUObj->Self())
     return globalMaster.entity;
   else
     return e;
@@ -649,7 +648,7 @@ static void getLocalPeriodicMasters(Output& o, apf::Numbering* n, BCs& bcs)
   while ((e = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(e);
     bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
-    apf::MeshEntity* master = getLocalPeriodicMaster(sh, e);
+    apf::MeshEntity* master = getLocalPeriodicMaster(sh, e, m->getPCU());
     if (master == e || isDG)
       iper[i] = 0;
     else

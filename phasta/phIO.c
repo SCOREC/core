@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <pcu_io.h>
 #include <phIO.h>
-#include <PCU.h>
+#include <PCU2.h>
 #include <lionPrint.h>
 #include <phiotimer.h>
 #include <assert.h>
@@ -70,7 +70,7 @@ static void parse_header(char* header, char** name, long* bytes,
   }
 }
 
-static int find_header(FILE* f, const char* name, char* found, char header[PH_LINE])
+static int find_header(PCUHandle h, FILE* f, const char* name, char* found, char header[PH_LINE])
 {
   char* hname;
   long bytes;
@@ -88,7 +88,7 @@ static int find_header(FILE* f, const char* name, char* found, char header[PH_LI
     }
     fseek(f, bytes, SEEK_CUR);
   }
-  if (!PCU_Comm_Self() && strlen(name) > 0)
+  if (!PCU_Comm_Self2(h) && strlen(name) > 0)
     lion_eprint(1,"warning: phIO could not find \"%s\"\n",name);
   return 0;
 }
@@ -102,11 +102,11 @@ static void write_magic_number(FILE* f)
   fprintf(f,"\n");
 }
 
-static int seek_after_header(FILE* f, const char* name)
+static int seek_after_header(PCUHandle h, FILE* f, const char* name)
 {
   char dummy[PH_LINE];
   char found[PH_LINE];
-  return find_header(f, name, found, dummy);
+  return find_header(h, f, name, found, dummy);
 }
 
 static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
@@ -115,11 +115,11 @@ static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
   PCU_ALWAYS_ASSERT(r == nmemb);
 }
 
-static int read_magic_number(FILE* f)
+static int read_magic_number(PCUHandle h, FILE* f)
 {
   int magic;
-  if (!seek_after_header(f, magic_name)) {
-    if (!PCU_Comm_Self())
+  if (!seek_after_header(h, f, magic_name)) {
+    if (!PCU_Comm_Self2(h))
       lion_eprint(1,"warning: not swapping bytes\n");
     rewind(f);
     return 0;
@@ -163,7 +163,8 @@ static void parse_params(char* header, long* bytes,
 }
 
 int ph_should_swap(FILE* f) {
-  return read_magic_number(f);
+  PCUHandle h = PCU_Get_Global_Handle();
+  return read_magic_number(h, f);
 }
 
 int ph_read_field(FILE* f, const char* field, int swap,
@@ -172,7 +173,8 @@ int ph_read_field(FILE* f, const char* field, int swap,
   long bytes, n;
   char header[PH_LINE];
   int ok;
-  ok = find_header(f, field, hname, header);
+  PCUHandle h = PCU_Get_Global_Handle();
+  ok = find_header(h, f, field, hname, header);
   if(!ok) /* not found */
     return 0;
   parse_params(header, &bytes, nodes, vars, step);

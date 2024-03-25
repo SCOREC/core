@@ -1,10 +1,10 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <phRestart.h>
 #include <gmi_mesh.h>
+#include <memory>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -20,7 +20,8 @@ static double process_element(apf::Vector3 x[4], double sol[4][9])
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
@@ -29,7 +30,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   lion_set_verbosity(1);
   ph::Input in;
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], expanded_pcu_obj.get());
   m->verify();
   in.restartFileName = argv[3];
   in.timeStepNumber = 0;
@@ -58,6 +59,6 @@ int main(int argc, char** argv)
   gmi_sim_stop();
   Sim_unregisterAllKeys();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
