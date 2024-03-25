@@ -9,12 +9,14 @@
 #include <pcu_util.h>
 #include <pumi.h>
 #include <algorithm>
+#include <memory>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
-  pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  {
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
   gmi_register_null();
@@ -24,7 +26,7 @@ int main(int argc, char** argv)
   int etype;
   int nverts;
 
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2], PCUObj);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2], pcu_obj.get());
   int dim = m->getDimension();
   extractCoords(m, coords, nverts);
   destruct(m, conn, nelem, etype);
@@ -32,7 +34,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
 
   gmi_model* model = gmi_load(".null");
-  m = apf::makeEmptyMdsMesh(model, dim, false, PCUObj);
+  m = apf::makeEmptyMdsMesh(model, dim, false, pcu_obj.get());
   apf::GlobalToVert outMap;
   apf::construct(m, conn, nelem, etype, outMap);
   delete [] conn;
@@ -43,10 +45,10 @@ int main(int argc, char** argv)
   outMap.clear();
   m->verify();
 
-  if (!pumi_rank(PCUObj)) printf("model/mesh converted to pumi instance\n");
+  if (!pumi_rank(pcu_obj.get())) printf("model/mesh converted to pumi instance\n");
 
   //create the pumi instance to use pumi api's
-  pGeom g = pumi_geom_load(model, PCUObj);
+  pGeom g = pumi_geom_load(model, pcu_obj.get());
   pMesh pm = pumi_mesh_load(m);
   pumi_mesh_verify(pm);
 
@@ -91,6 +93,6 @@ int main(int argc, char** argv)
 
   pumi_geom_delete(g);
   pumi_mesh_delete(pm);
-  delete PCUObj;
+  }
   MPI_Finalize();
 }

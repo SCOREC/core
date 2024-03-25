@@ -184,7 +184,11 @@ class MeshMDS : public Mesh2
     MeshMDS(gmi_model* m, Mesh* from, 
             apf::MeshEntity** nodes, apf::MeshEntity** elems, bool copy_data=true)
     {
-      init(apf::getLagrange(1));
+      if(from->getPCU() != nullptr){
+        init(apf::getLagrange(1), from->getPCU());
+      } else {
+        init(apf::getLagrange(1));
+      }
       mds_id cap[MDS_TYPES];
       cap[MDS_VERTEX] = from->count(0);
       cap[MDS_EDGE] = from->count(1);
