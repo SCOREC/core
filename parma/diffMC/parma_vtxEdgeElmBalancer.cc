@@ -25,7 +25,7 @@ namespace {
             status("maxVtx %.3f\n", maxVtx);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = TO_INT(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s, mesh->getPCU()));
           delete s;
           if( !m->getPCU()->Self() && verbose )
             status("sideTol %d\n", sideTol);
@@ -38,7 +38,7 @@ namespace {
         const double maxEdgeImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, 1);
         parma::Sides* s = parma::makeVtxSides(mesh);
-        double avgSides = parma::avgSharedSides(s);
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
         parma::Weights* w[2] =
           {parma::makeEntWeights(mesh, wtag, s, 0),
             parma::makeEntWeights(mesh, wtag, s, 1)};

@@ -119,7 +119,7 @@ unsigned dcPart::numDisconnectedComps() {
       count += sz;
    }
    if( verbose )
-     parmaCommons::printElapsedTime(__func__, pcu::Time() - t1);
+     parmaCommons::printElapsedTime(__func__, pcu::Time() - t1, m->getPCU());
    PCU_ALWAYS_ASSERT(numDc+numIso >= 1);
    return (numDc+numIso)-1;
 }

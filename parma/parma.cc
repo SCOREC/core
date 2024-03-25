@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <pcu_util.h>
 #include "parma.h"
 #include "diffMC/maximalIndependentSet/mis.h"
@@ -89,24 +88,24 @@ namespace {
   }
 
   void getWeightedStats(
-      int dim, double (*loc)[4], double (*tot)[4],
+      pcu::PCU *PCUObj, int dim, double (*loc)[4], double (*tot)[4],
       double (*min)[4], double (*max)[4], double (*avg)[4]) {
     for(int d=0; d<=dim; d++)
       (*min)[d] = (*max)[d] = (*tot)[d] = (*loc)[d];
-    PCU_Min_Doubles(*min, dim+1);
-    PCU_Max_Doubles(*max, dim+1);
-    PCU_Add_Doubles(*tot, dim+1);
+    PCUObj->Min(*min, dim+1);
+    PCUObj->Max(*max, dim+1);
+    PCUObj->Add(*tot, dim+1);
     for(int d=0; d<=dim; d++) {
       (*avg)[d] = (*tot)[d];
-      (*avg)[d] /= TO_DOUBLE(PCU_Comm_Peers());
+      (*avg)[d] /= TO_DOUBLE(PCUObj->Peers());
     }
   }
 
-  void getStats(int& loc, long& tot, int& min, int& max, double& avg) {
-    min = PCU_Min_Int(loc);
-    max = PCU_Max_Int(loc);
-    tot = PCU_Add_Long(TO_LONG(loc));
-    avg = TO_DOUBLE(tot) / PCU_Comm_Peers();
+  void getStats(pcu::PCU *PCUObj, int& loc, long& tot, int& min, int& max, double& avg) {
+    min = PCUObj->Min(loc);
+    max = PCUObj->Max(loc);
+    tot = PCUObj->Add(TO_LONG(loc));
+    avg = TO_DOUBLE(tot) / PCUObj->Peers();
   }
 
   using parmaCommons::status;
@@ -138,7 +137,7 @@ namespace {
     getPartWeights(m, w, &weight);
     double minEnt[4] = {0,0,0,0}, maxEnt[4] = {0,0,0,0};
     double totEnt[4] = {0,0,0,0}, avgEnt[4] = {0,0,0,0};
-    getWeightedStats(m->getDimension(), &weight, &totEnt, &minEnt, &maxEnt, &avgEnt);
+    getWeightedStats(m->getPCU(), m->getDimension(), &weight, &totEnt, &minEnt, &maxEnt, &avgEnt);
     const char* orders[4] = {"vtx","edge","face","rgn"};
     if(!m->getPCU()->Self()) {
       for( int d=0; d<=m->getDimension(); d++)
@@ -252,20 +251,20 @@ int Parma_GetSmallestSideMaxNeighborParts(apf::Mesh* m) {
 void Parma_GetOwnedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   loc = numBdryVtx(m);
-  getStats(loc, tot, min, max, avg);
+  getStats(m->getPCU(), loc, tot, min, max, avg);
 }
 
 void Parma_GetSharedBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   bool onlyShared = true;
   loc = numBdryVtx(m,onlyShared);
-  getStats(loc, tot, min, max, avg);
+  getStats(m->getPCU(), loc, tot, min, max, avg);
 }
 
 void Parma_GetMdlBdryVtxStats(apf::Mesh* m, int& loc, long& tot, int& min,
     int& max, double& avg) {
   loc = numMdlBdryVtx(m);
-  getStats(loc, tot, min, max, avg);
+  getStats(m->getPCU(), loc, tot, min, max, avg);
 }
 
 void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {

@@ -1,4 +1,3 @@
-#include "PCU.h"
 #include "parma_dcpart.h"
 #include "parma_commons.h"
 #include "parma_convert.h"
@@ -8,11 +7,11 @@
 typedef std::map<unsigned, unsigned> muu;
 
 namespace {
-  bool isInMis(muu& mt) {
-    unsigned seed = TO_UINT(PCU_Comm_Self()+1);
+  bool isInMis(muu& mt, pcu::PCU *PCUObj) {
+    unsigned seed = TO_UINT(PCUObj->Self()+1);
     mis_init(seed);
     misLuby::partInfo part;
-    part.id = PCU_Comm_Self();
+    part.id = PCUObj->Self();
     std::set<int> targets;
     APF_ITERATE(muu, mt, mtItr) {
       int peer = TO_INT(mtItr->second);
@@ -81,7 +80,7 @@ class dcPartFixer::PartFixer : public dcPart {
             dcCompTgts[i] = getCompPeer(i);
         PCU_ALWAYS_ASSERT( dcCompTgts.size() == getNumComps()-1 );
         apf::Migration* plan = new apf::Migration(m);
-        if ( isInMis(dcCompTgts) )
+        if ( isInMis(dcCompTgts, m->getPCU()) )
           setupPlan(dcCompTgts, plan);
 
         reset();
@@ -92,7 +91,7 @@ class dcPartFixer::PartFixer : public dcPart {
               "loop %d components %d seconds <fix migrate> %.3f %.3f\n",
               loop, ndc, t3-t2, pcu::Time()-t3);
       }
-      parmaCommons::printElapsedTime(__func__, pcu::Time() - t1);
+      parmaCommons::printElapsedTime(__func__, pcu::Time() - t1, m->getPCU());
     }
 };
 

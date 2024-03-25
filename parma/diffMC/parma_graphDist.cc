@@ -402,6 +402,6 @@ apf::MeshTag* Parma_BfsReorder(apf::Mesh* m, int) {
   PCU_ALWAYS_ASSERT(checkIds == c.getIdChecksum());
   PCU_ALWAYS_ASSERT(check == m->getTagChecksum(dist,apf::Mesh::VERTEX));
   m->destroyTag(dist);
-  parmaCommons::printElapsedTime(__func__,pcu::Time()-t0);
+  parmaCommons::printElapsedTime(__func__,pcu::Time()-t0,m->getPCU());
   return order;
 }

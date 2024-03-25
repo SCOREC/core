@@ -1,5 +1,4 @@
 #include <pcu_util.h>
-#include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
 #include <apfNumbering.h>
@@ -225,8 +224,8 @@ namespace parma {
         for(int d=dim+1; d<=3; d++)
           weight[d] = 0;
         findGhosts(finder, s);
-        exchangeGhostsFrom();
-        exchange();
+        exchangeGhostsFrom(m->getPCU());
+        exchange(m->getPCU());
         m->getPCU()->DebugPrint("totW vtx %f edge %f elm %f\n",
             weight[0], weight[1], weight[dim]);
       }
@@ -251,33 +250,33 @@ namespace parma {
           set(side->first, finder->weight(side->first));
         sides->end();
       }
-      void exchangeGhostsFrom() {
-        PCU_Comm_Begin();
+      void exchangeGhostsFrom(pcu::PCU *PCUObj) {
+        PCUObj->Begin();
         const GhostWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
-          PCU_Comm_Pack(ghost->first, ghost->second, 4*sizeof(double));
+          PCUObj->Pack(ghost->first, ghost->second, 4*sizeof(double));
         end();
-        PCU_Comm_Send();
+        PCUObj->Send();
         double ghostsFromPeer[4];
-        while (PCU_Comm_Listen()) {
-          PCU_Comm_Unpack(ghostsFromPeer, 4*sizeof(double));
+        while (PCUObj->Listen()) {
+          PCUObj->Unpack(ghostsFromPeer, 4*sizeof(double));
           for(int i=0; i<4; i++)
             weight[i] += ghostsFromPeer[i];
         }
       }
-      void exchange() {
-        PCU_Comm_Begin();
+      void exchange(pcu::PCU *PCUObj) {
+        PCUObj->Begin();
         const GhostWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
-          PCU_Comm_Pack(ghost->first, weight, 4*sizeof(double));
+          PCUObj->Pack(ghost->first, weight, 4*sizeof(double));
         end();
-        PCU_Comm_Send();
-        while (PCU_Comm_Listen()) {
-          int peer = PCU_Comm_Sender();
+        PCUObj->Send();
+        while (PCUObj->Listen()) {
+          int peer = PCUObj->Sender();
           double* peerWeight = get(peer);
-          PCU_Comm_Unpack(peerWeight, 4*sizeof(double));
+          PCUObj->Unpack(peerWeight, 4*sizeof(double));
         }
       }
   };

@@ -1,5 +1,4 @@
 #include <pcu_util.h>
-#include <PCU.h>
 #include "parma_entWeights.h"
 #include "parma_sides.h"
 
@@ -25,17 +24,17 @@ namespace parma {
     return sum;
   }
 
-  void getImbalance(Weights* w, double& imb, double& avg) {
+  void getImbalance(Weights* w, double& imb, double& avg, pcu::PCU *PCUObj) {
     double sum, max;
     sum = max = w->self();
-    sum = PCU_Add_Double(sum);
-    max = PCU_Max_Double(max);
-    avg = sum/PCU_Comm_Peers();
+    sum = PCUObj->Add(sum);
+    max = PCUObj->Max(max);
+    avg = sum/PCUObj->Peers();
     imb = max/avg;
   }
 
-  double getMaxWeight(Weights* w) {
-    return PCU_Max_Double(w->self());
+  double getMaxWeight(Weights* w, pcu::PCU *PCUObj) {
+    return PCUObj->Max(w->self());
   }
 
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {

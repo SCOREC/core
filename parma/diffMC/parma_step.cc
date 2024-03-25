@@ -28,10 +28,10 @@ namespace parma {
 
   bool Stepper::step(double maxImb, int verbosity) {
     double imb, avg;
-    getImbalance(weights, imb, avg);
+    getImbalance(weights, imb, avg, m->getPCU());
     if ( !m->getPCU()->Self() && verbosity )
       status("%s imbalance %.3f avg %.3f\n", name, imb, avg);
-    if ( stop->stop(imb,maxImb) )
+    if ( stop->stop(imb,maxImb,m->getPCU()) )
       return false;
     apf::Migration* plan = selects->run(targets);
     int planSz = m->getPCU()->Add(plan->count());

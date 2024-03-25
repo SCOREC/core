@@ -21,7 +21,7 @@ namespace {
       VtxBalancer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "vertices") {
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = TO_INT(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s, mesh->getPCU()));
           delete s;
           if( !m->getPCU()->Self() && verbose )
             status("sideTol %d\n", sideTol);
@@ -35,7 +35,7 @@ namespace {
         parma::Targets* t =
           parma::makeWeightSideTargets(s, w, sideTol, factor);
         parma::Selector* sel = parma::makeVtxSelector(mesh, wtag);
-        double avgSides = parma::avgSharedSides(s);
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
         monitorUpdate(maxVtxImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !mesh->getPCU()->Self() && verbose )

@@ -17,14 +17,14 @@ namespace {
       ElmBalancer(apf::Mesh* m, double f, int v)
         : Balancer(m, f, v, "elements") {
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = parma::avgSharedSides(s);
+          sideTol = parma::avgSharedSides(s, mesh->getPCU());
           delete s;
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         const double maxElmImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
         parma::Sides* s = parma::makeVtxSides(mesh);
-        double avgSides = parma::avgSharedSides(s);
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t = parma::makeTargets(s, w, factor);

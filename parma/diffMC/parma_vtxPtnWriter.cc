@@ -28,9 +28,9 @@ namespace {
       if( m->getPCU()->Self() == m->getPCU()->Peers()-1 )
         c += remainder;
     }
-    int getWriter(int id) {
+    int getWriter(int id, pcu::PCU *PCUObj) {
       int writer = id / pp;
-      if ( writer == PCU_Comm_Peers() )
+      if ( writer == PCUObj->Peers() )
         writer--;
       return writer;
     }
@@ -52,7 +52,7 @@ namespace {
     while( (vtx = m->iterate(itr)) ) {
       if( parma::isOwned(m, vtx) ) {
         m->getIntTag(vtx, t, &id);
-        m->getPCU()->Pack(p.getWriter(id), id);
+        m->getPCU()->Pack(p.getWriter(id, m->getPCU()), id);
       }
     }
     m->end(itr);
@@ -71,9 +71,9 @@ namespace {
       f << a[i] << '\n';
   }
 
-  void open(const char* name, std::fstream& f) {
+  void open(const char* name, std::fstream& f, pcu::PCU *PCUObj) {
     std::stringstream ss;
-    ss << name << PCU_Comm_Self() << ".ptn";
+    ss << name << PCUObj->Self() << ".ptn";
     std::string s = ss.str();
     f.open(s.c_str(), std::fstream::out);
   }
@@ -81,7 +81,7 @@ namespace {
   void writeVtxPtn(apf::Mesh* m, const char* name) {
     PCU_ALWAYS_ASSERT(name);
     std::fstream f;
-    open(name,f);
+    open(name,f,m->getPCU());
     Ptn p(m);
     int* ptn = new int[p.count()];
     getPtnArray(m, p, ptn);

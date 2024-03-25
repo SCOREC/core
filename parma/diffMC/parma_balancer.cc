@@ -1,12 +1,11 @@
-#include <PCU.h>
 #include "parma_balancer.h"
 #include "parma_monitor.h"
 #include "parma_graphDist.h"
 #include "parma_commons.h"
 
 namespace {
-  void printTiming(const char* type, int steps, double tol, double time) {
-    if (!PCU_Comm_Self())
+  void printTiming(const char* type, int steps, double tol, double time, pcu::PCU *PCUObj) {
+    if (!PCUObj->Self())
       parmaCommons::status("%s balanced in %d steps to %f in %f seconds\n",
           type, steps, tol, time);
   }
@@ -37,7 +36,7 @@ namespace parma {
     int step = 0;
     double t0 = pcu::Time();
     while (runStep(wtag,tolerance) && step++ < maxStep);
-    printTiming(name, step, tolerance, pcu::Time()-t0);
+    printTiming(name, step, tolerance, pcu::Time()-t0, mesh->getPCU());
   }
   void Balancer::monitorUpdate(double v, Slope* s, Average* a) {
     s->push(v);

@@ -2,17 +2,18 @@
 #define PARMA_STOP_H
 
 #include "parma_monitor.h"
+#include "PCUObj.h"
 
 namespace parma {
   class Stop {
     public:
       virtual ~Stop() {}
-      virtual bool stop(double imb, double maxImb)=0;
+      virtual bool stop(double imb, double maxImb, pcu::PCU *PCUObj)=0;
   };
   class Less : public Stop { 
     public:
       ~Less() {}
-      bool stop(double imb, double maxImb) {
+      bool stop(double imb, double maxImb, pcu::PCU *PCUObj) {
         return imb < maxImb;
       }
   };
@@ -20,7 +21,7 @@ namespace parma {
     public:
       BalOrStall(Average* imb, Average* sides, double sidesTol, int verbose=0);
       ~BalOrStall() {}
-      bool stop(double imb, double maxImb);
+      bool stop(double imb, double maxImb, pcu::PCU *PCUObj);
     private:
       Average* i;
       Average* s;

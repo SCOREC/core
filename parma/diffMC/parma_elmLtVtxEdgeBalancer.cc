@@ -29,7 +29,7 @@ namespace {
             status("maxEdge %.3f\n", maxEdge);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = TO_INT(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s, mesh->getPCU()));
           delete s;
           if( !mesh->getPCU()->Self() && verbose )
             status("sideTol %d\n", sideTol);
@@ -48,8 +48,7 @@ namespace {
         delete w[1];
         parma::Selector* sel =
           parma::makeElmLtVtxEdgeSelector(mesh, wtag, maxVtx, maxEdge);
-
-        double avgSides = parma::avgSharedSides(s);
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
         if( !mesh->getPCU()->Self() && verbose )

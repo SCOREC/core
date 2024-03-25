@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <parma.h>
 #include "parma_sides.h"
 #include "parma_weights.h"
@@ -14,9 +13,9 @@ namespace parma {
 
   class ShapeTargets : public Targets {
     public:
-      ShapeTargets(Sides* s) {
+      ShapeTargets(Sides* s, pcu::PCU *PCUObj) {
         smallLimit = 10;
-        init(s);
+        init(s, PCUObj);
         totW = 0;
       }
       double total() {
@@ -26,12 +25,12 @@ namespace parma {
       ShapeTargets();
       int smallLimit;
       double totW;
-      void init(Sides* s) {
-        const unsigned maxNb = TO_UINT(PCU_Max_Int(s->size()));
+      void init(Sides* s, pcu::PCU *PCUObj) {
+        const unsigned maxNb = TO_UINT(PCUObj->Max(s->size()));
         if( s->size() != maxNb ) return;
-        PCU_Debug_Print("maxNb %d\n", maxNb);
+        PCUObj->DebugPrint("maxNb %d\n", maxNb);
         std::string sstr = s->print("sides");
-        PCU_Debug_Print("%s\n", sstr.c_str());
+        PCUObj->DebugPrint("%s\n", sstr.c_str());
         int small = INT_MAX;
         s->begin();
         const Sides::Item* side;
@@ -39,7 +38,7 @@ namespace parma {
           if( side->second < small )
             small = side->second;
         s->end();
-        PCU_Debug_Print("small %d\n", small);
+        PCUObj->DebugPrint("small %d\n", small);
         if( small > smallLimit ) return;
         s->begin();
         while( (side = s->iterate()) )
@@ -47,10 +46,10 @@ namespace parma {
             set(side->first, small);
         s->end();
         std::string tgtstr = print("targets");
-        PCU_Debug_Print("%s\n", tgtstr.c_str());
+        PCUObj->DebugPrint("%s\n", tgtstr.c_str());
       }
   };
-  Targets* makeShapeTargets(Sides* s) {
-    return new ShapeTargets(s);
+  Targets* makeShapeTargets(Sides* s, pcu::PCU *PCUObj) {
+    return new ShapeTargets(s, PCUObj);
   }
 } //end namespace
