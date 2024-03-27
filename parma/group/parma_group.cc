@@ -1,11 +1,12 @@
-#include <PCU.h>
+//#include <PCU.h>
 #include <parma.h>
+#include <memory>
 
 using apf::Remap;
 
 static void retreat(apf::Mesh2* m, Remap& remap)
 {
-  int to = remap(PCU_Comm_Self());
+  int to = remap(m->getPCU()->Self());
   apf::Migration* plan = new apf::Migration(m);
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;
@@ -32,17 +33,20 @@ static void runInGroups(
     Remap& outMap,
     GroupCode& code)
 {
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   int groupRank = inMap(self);
   int group = groupMap(self);
-  MPI_Comm oldComm = PCU_Get_Comm();
+  auto* expandedPCU = m->getPCU();
+  //pcu::PCU *expandedPCU = m->getPCU();
   MPI_Comm groupComm;
-  MPI_Comm_split(oldComm, group, groupRank, &groupComm);
-  PCU_Switch_Comm(groupComm);
+  MPI_Comm_split(expandedPCU->GetMPIComm(), group, groupRank, &groupComm);
+  auto groupedPCU = std::unique_ptr<pcu::PCU>(new pcu::PCU(groupComm));
+  m->switchPCU(groupedPCU.get());
+  //PCU_Switch_Comm(groupComm);
   if (m)
     apf::remapPartition(m, inMap);
   code.run(group);
-  PCU_Switch_Comm(oldComm);
+  m->switchPCU(expandedPCU);
   MPI_Comm_free(&groupComm);
   if (m)
     apf::remapPartition(m, outMap);
@@ -100,7 +104,7 @@ void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun)
 {
   apf::Modulo inMap(factor);
   apf::Divide groupMap(factor);
-  apf::Unmodulo outMap(PCU_Comm_Self(), factor);
+  apf::Unmodulo outMap(m->getPCU()->Self(), factor);
   runInGroups(m, inMap, groupMap, outMap, toRun);
 }
 

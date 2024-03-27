@@ -399,6 +399,7 @@ class Mesh
     GlobalNumbering* getGlobalNumbering(int i);
     /** \brief get the global pcu */
     pcu::PCU* getPCU() const {return pcu_;}
+    void switchPCU(pcu::PCU *newPCU);
     /** \brief true if any associated fields use array storage */
     bool hasFrozenFields;
   protected:

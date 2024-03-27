@@ -415,6 +415,12 @@ GlobalNumbering* Mesh::getGlobalNumbering(int i)
   return globalNumberings[i];
 }
 
+void Mesh::switchPCU(pcu::PCU *newPCU)
+{
+  PCU_ALWAYS_ASSERT(newPCU != nullptr);
+  pcu_ = newPCU;
+}
+
 
 void unite(Parts& into, Parts const& from)
 {
