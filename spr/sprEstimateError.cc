@@ -25,9 +25,9 @@ class SInt : public apf::Integrator
     SInt(int order):
       apf::Integrator(order),r(0)
     {}
-    void parallelReduce()
+    void parallelReduce(pcu::PCU *PCUObj)
     {
-      PCU_Add_Doubles(&r,1);
+      PCUObj->Add(&r,1);
     }
     void reset() {r=0;}
     double r;
