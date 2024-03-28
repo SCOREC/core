@@ -1,4 +1,3 @@
-//#include <PCU.h>
 #include <parma.h>
 #include <memory>
 
@@ -37,12 +36,10 @@ static void runInGroups(
   int groupRank = inMap(self);
   int group = groupMap(self);
   auto* expandedPCU = m->getPCU();
-  //pcu::PCU *expandedPCU = m->getPCU();
   MPI_Comm groupComm;
   MPI_Comm_split(expandedPCU->GetMPIComm(), group, groupRank, &groupComm);
   auto groupedPCU = std::unique_ptr<pcu::PCU>(new pcu::PCU(groupComm));
   m->switchPCU(groupedPCU.get());
-  //PCU_Switch_Comm(groupComm);
   if (m)
     apf::remapPartition(m, inMap);
   code.run(group);
