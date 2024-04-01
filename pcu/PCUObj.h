@@ -1,5 +1,6 @@
 #ifndef SCOREC_PCU_PCUOBJ_H
 #define SCOREC_PCU_PCUOBJ_H
+
 #include <cstdlib>
 #include <mpi.h>
 #include "pcu_defines.h"
@@ -125,7 +126,6 @@ PCU_EXPL_INST_DECL(double)
 
 } // namespace pcu
 
-#undef PCU_FORMAT_ATTRIBUTE
-#endif // SCOREC_PCU_PCUOBJ_H
+#endif // PCUOBJ_H
 
 
