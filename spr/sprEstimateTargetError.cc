@@ -11,8 +11,6 @@
    and engineering 195.48 (2006): 6626-6645. */
 
 #include "spr.h"
-
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apfMesh.h>
 #include <apfShape.h>
@@ -243,6 +241,7 @@ static void estimateError(Estimation* e)
 apf::Field* getTargetSPRSizeField(
     apf::Field* eps,
     size_t target,
+    pcu::PCU *PCUObj,
     double alpha,
     double beta)
 {
@@ -253,7 +252,7 @@ apf::Field* getTargetSPRSizeField(
   target::setupEstimation(&e, eps, target, alpha, beta);
   target::estimateError(&e);
   double t1 = pcu::Time();
-  if (!PCU_Comm_Self())
+  if (!PCUObj->Self())
     lion_eprint(1, "SPR (target): error estimated in %f seconds\n",t1-t0);
   return e.vtx_size;
 }
