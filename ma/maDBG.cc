@@ -223,7 +223,7 @@ void createCavityMesh(ma::Adapt* a,
   ma::Mesh* m = a->mesh;
 
   gmi_register_null();
-  ma::Mesh* cavityMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 3, false);
+  ma::Mesh* cavityMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 3, false, m->getPCU());
 
   size_t n = tets.getSize();
   for (size_t i = 0; i < n; ++i) {
@@ -364,7 +364,7 @@ void visualizeSizeField(
     const char* outputPrefix)
 {
   // create the size-field visualization mesh
-  apf::Mesh2* msf = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
+  apf::Mesh2* msf = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false, m->getPCU());
 
   apf::FieldShape* fs = apf::getShape(sizes);
   int dim = m->getDimension();
