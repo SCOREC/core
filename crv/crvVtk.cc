@@ -948,7 +948,7 @@ static void makeDirectories(const char* prefix, int type, int n)
 
 void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
 {
-  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(NULL, 1, false);
+  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(NULL, 1, false, m->getPCU());
   apf::Field* f = m->getCoordinateField();
   apf::MeshEntity* ent;
   apf::MeshIterator* it;
