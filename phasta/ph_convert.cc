@@ -255,7 +255,7 @@ int main(int argc, char** argv)
   if (should_attach_order) attachOrder(simApfMesh);
   ph::buildMapping(simApfMesh);
 
-  apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh, pcu_obj.get());
+  apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
   double t3 = pcu::Time();
   if(!mesh->getPCU()->Self())
     lion_eprint(1, "created the apf_mds mesh in %f seconds\n", t3-t2);
