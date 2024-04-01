@@ -238,7 +238,7 @@ void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile
   currently, ANSYS element types SOLID72 and SOLID92 are
   supported, which become linear and quadratic tetrahedra,
   respectively. */
-Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
+Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile, pcu::PCU *PCUObj = nullptr);
 
 void disownMdsModel(Mesh2* in);
 
