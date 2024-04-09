@@ -1076,7 +1076,7 @@ apf::Mesh2 *DoIt(PCUHandle h, gmi_model *g, const std::string &fname, apf::CGNSB
   const int readDim = cellDim;
 
   // Salome cgns is a bit on the odd side: cellDim, physDim, ncoords are not always consistent
-  apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false);
+  apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false, static_cast<pcu::PCU*>(h.ptr));
   apf::GlobalToVert globalToVert;
 
   LocalElementRanges localElementRanges;
