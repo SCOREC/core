@@ -5,7 +5,7 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
+#include <PCU2.h>
 #include <lionPrint.h>
 #include <cstdlib>
 //
@@ -16,6 +16,7 @@
 #include <apfShape.h>
 #include <pumi.h>
 #include <apfZoltan.h>
+#include <memory>
 
 // https://gist.github.com/bgranzow/98087114166956646da684ed98acab02
 apf::MeshTag *create_int_tag(const std::string &name, apf::Mesh2 *m, int dim)
@@ -114,7 +115,7 @@ pMesh toPumi(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   pMesh pm = pumi_mesh_load(mesh);
   std::cout << pm << std::endl;
   pumi_mesh_verify(pm);
-  const std::string name = prefix + "_toPUMI_" + std::to_string(PCU_Comm_Peers()) + "procs";
+  const std::string name = prefix + "_toPUMI_" + std::to_string(pm->getPCU()->Peers()) + "procs";
   pumi_mesh_write(pm, name.c_str(), "vtk");
   return pm;
 }
@@ -172,12 +173,14 @@ auto additional(const std::string &prefix, gmi_model *g, apf::Mesh2 *mesh)
   return clean;
 }
 
-std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std::string &argv2, const std::string &post, const bool &additionalTests, const bool &writeCGNS, const std::vector<std::pair<std::string, std::string>> &meshData)
+std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std::string &argv2, const std::string &post, const bool &additionalTests, const bool &writeCGNS, const std::vector<std::pair<std::string, std::string>> &meshData, pcu::PCU *PCUObj)
 {
   gmi_register_null();
   gmi_register_mesh();
   gmi_model *g = gmi_load(".null");
-  apf::Mesh2 *m = apf::loadMdsFromCGNS(g, argv1.c_str(), cgnsBCMap, meshData);
+  PCUHandle h;
+  h.ptr = static_cast<void*>(PCUObj);
+  apf::Mesh2 *m = apf::loadMdsFromCGNS2(h, g, argv1.c_str(), cgnsBCMap, meshData);
   m->verify();
   //
   m->writeNative(argv2.c_str());
@@ -477,12 +480,13 @@ int main(int argc, char **argv)
 {
 #ifdef HAVE_CGNS
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   bool additionalTests = false;
   if (argc < 3)
   {
-    if (!PCU_Comm_Self())
+    if (!PCUObj.get()->Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -494,7 +498,7 @@ int main(int argc, char **argv)
       additionalTests = true;
     else
     {
-      if (!PCU_Comm_Self())
+      if (!PCUObj.get()->Self())
         printf("Usage: %s <in .cgns> <out .smb> additional\n", argv[0]);
       MPI_Finalize();
       exit(EXIT_FAILURE);
@@ -503,7 +507,7 @@ int main(int argc, char **argv)
   }
   else if (argc > 4)
   {
-    if (!PCU_Comm_Self())
+    if (!PCUObj.get()->Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -515,7 +519,7 @@ int main(int argc, char **argv)
   {
     apf::CGNSBCMap cgnsBCMap;
     std::vector<std::pair<std::string, std::string>> meshData;
-    cgnsOutputName = doit(cgnsBCMap, argv[1], argv[2], "", additionalTests, additionalTests, meshData);
+    cgnsOutputName = doit(cgnsBCMap, argv[1], argv[2], "", additionalTests, additionalTests, meshData, PCUObj.get());
   }
   // Phase 2
   if (additionalTests)
@@ -538,10 +542,10 @@ int main(int argc, char **argv)
     meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_1"));
     apf::CGNSBCMap cgnsBCMap;
     std::cout << "RE-READING " << std::endl;
-    doit(cgnsBCMap, cgnsOutputName.c_str(), "tempy.smb", "_reread", false, true, meshData);
+    doit(cgnsBCMap, cgnsOutputName.c_str(), "tempy.smb", "_reread", false, true, meshData, PCUObj.get());
   }
   //
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 #else

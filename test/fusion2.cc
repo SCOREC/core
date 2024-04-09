@@ -2,17 +2,17 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
+#include <memory>
 
-static apf::Mesh2* makeEmptyMesh()
+static apf::Mesh2* makeEmptyMesh(pcu::PCU *PCUObj)
 {
   /* dont use null model in production */
   gmi_model* g = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(g, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(g, 2, false, PCUObj);
   /* both planes create the field at the beginning */
   apf::createPackedField(m, "fusion", 6);
   return m;
@@ -90,9 +90,9 @@ static void checkValues(apf::Mesh2* m)
 struct GroupCode : public Parma_GroupCode
 {
   apf::Mesh2* mesh;
-  void run(int group)
+  void run(int group, pcu::PCU *PCUObj)
   {
-    mesh = ::makeEmptyMesh();
+    mesh = ::makeEmptyMesh(PCUObj);
     if (group == 0) {
       addOneTri(mesh);
       setValues(mesh);
@@ -140,17 +140,18 @@ static void globalCode(apf::Mesh2* m)
 int main( int argc, char* argv[])
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 2);
+  PCU_ALWAYS_ASSERT(PCUObj.get()->Peers() == 2);
   gmi_register_null();
   GroupCode code;
   int const groupSize = 1;
-  apf::Unmodulo outMap(PCU_Comm_Self(), groupSize);
-  Parma_SplitPartition(NULL, groupSize, code);
+  apf::Unmodulo outMap(PCUObj.get()->Self(), groupSize);
+  //Parma_SplitPartition(nullptr, groupSize, code, PCUObj.get());
   /* update mesh for leaving groups */
   apf::remapPartition(code.mesh, outMap);
   globalCode(code.mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

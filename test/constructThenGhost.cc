@@ -4,7 +4,6 @@
 #include <apfMesh2.h>
 #include <apfConvert.h>
 #include <apf.h>
-#include <PCUObj.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <pumi.h>

@@ -58,7 +58,7 @@ class Poisson {
     }
 
     void run(pcu::PCU *PCUObj) {
-      setup_grid(pcu::PCU *PCUObj);
+      setup_grid(PCUObj);
       setup_lin_alg();
       fill_volumetric();
       fill_boundary();

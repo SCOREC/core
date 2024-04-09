@@ -3,11 +3,11 @@
 #include <gmi_analytic.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
+#include <memory>
 
 double const a_param = 0.2;
 double const b_param = 1.0;
@@ -139,15 +139,15 @@ struct GroupCode : public Parma_GroupCode
   apf::Mesh2* mesh;
   gmi_model* model;
   const char* meshFile;
-  void run(int group)
+  void run(int group, pcu::PCU *PCUObj)
   {
     if (group == 0) {
-      mesh = apf::loadMdsMesh(model, meshFile);
+      mesh = apf::loadMdsMesh(model, meshFile, PCUObj);
       mesh->verify();
       testIndexing(mesh);
       fusionAdapt(mesh);
     } else {
-      mesh = apf::makeEmptyMdsMesh(model, 2, false);
+      mesh = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
     }
   }
 };
@@ -156,17 +156,18 @@ int main( int argc, char* argv[])
 {
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   GroupCode code;
   code.model = makeModel();
   code.meshFile = argv[1];
-  apf::Unmodulo outMap(code.mesh->getPCU()->Self(), 2);
-  Parma_SplitPartition(NULL, 2, code);
+  apf::Unmodulo outMap(pcu_obj.get()->Self(), 2);
+  Parma_SplitPartition(NULL, 2, code, pcu_obj.get());
   apf::remapPartition(code.mesh, outMap);
   code.mesh->verify();
   code.mesh->destroyNative();
   apf::destroyMesh(code.mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

@@ -2,8 +2,7 @@
 #include <apfMesh.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
-//#include <PCU.h>
-#include <PCUObj.h>
+//#include <PCUObj.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -23,7 +22,7 @@ namespace {
 
   struct GroupCode : public Parma_GroupCode {
     apf::Mesh2* mesh;
-    void run(int) {
+    void run(int, pcu::PCU*) {
       mesh->writeNative(outFile);
     }
   };

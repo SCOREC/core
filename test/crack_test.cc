@@ -13,20 +13,20 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <pcu_util.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <vector>
 #include <cassert>
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
+#include <memory>
 
 
 void bCurver(const char* modelFile, const char* meshFile,
-    int order, const char* outputPrefix,
+    pcu::PCU *PCUObj, int order, const char* outputPrefix,
     int blendOrder = 0)
 {
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj);
   m->verify();
   if (m->getPCU()->Self() == 0)
     printf("attempting to curve the mesh to %d order Bezier\n", order);
@@ -45,17 +45,19 @@ void bCurver(const char* modelFile, const char* meshFile,
 
 int main(int argc, char** argv)
 {
+  MPI_Init(&argc, &argv);
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+
   if (argc < 2) {
-    if (PCU_Comm_Self() == 0) {
+    if (PCUObj.get()->Self() == 0) {
       printf("USAGE: %s <model.x_t>\n", argv[0]);
     }
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-
   const char* modelFile   = argv[1];
-  MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -68,7 +70,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_model* g = gmi_load(modelFile);
 
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(g, 2, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(g, 2, false, PCUObj.get());
 
   std::vector<apf::MeshEntity*> verts;
   // vertex coordinates
@@ -348,7 +350,7 @@ int main(int argc, char** argv)
   for (int i = 2; i < 7; i++) {
     char output[256];
     sprintf(output,"crack_curved_to_order_%d", i);
-    bCurver(modelFile, "crack_linear.smb", i, output);
+    bCurver(modelFile, "crack_linear.smb", PCUObj.get(), i, output);
   }
 
 #ifdef HAVE_SIMMETRIX
@@ -357,6 +359,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

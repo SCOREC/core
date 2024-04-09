@@ -98,6 +98,7 @@ void balance(apf::Mesh2* m)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
+  {
   auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
@@ -114,7 +115,7 @@ int main(int argc, char** argv)
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);
-  
+  }
   MPI_Finalize();
 }
 
