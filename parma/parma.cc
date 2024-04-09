@@ -412,7 +412,7 @@ int Parma_MisNumbering(apf::Mesh* m, int d) {
   int iter=0;
   int misSize=0;
   while( misSize != m->getPCU()->Peers() ) {
-    if( mis(part, false, true) || 1 == part.net.size() ) {
+    if( mis(part, m->getPCU(), false, true) || 1 == part.net.size() ) {
       misNumber = iter;
       part.net.clear();
       part.adjPartIds.clear();

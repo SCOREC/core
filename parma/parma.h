@@ -299,7 +299,7 @@ struct Parma_GroupCode
    *          the group.
    * @param group the group id number, starting from zero
    */
-  virtual void run(int group) = 0;
+  virtual void run(int group, pcu::PCU *PCUObj) = 0;
 };
 
 /**
@@ -327,7 +327,7 @@ void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
  *          apf::remapPartition is used to maintain the mesh structure
  *          during these transitions.
  */
-void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
+void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu::PCU *PCUObj);
 
 /**
  * @brief Compute maximal independent set numbering

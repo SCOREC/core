@@ -22,7 +22,7 @@ namespace {
       }
     }
     part.net.push_back(part.id);
-    return mis(part,false,true);
+    return mis(part,PCUObj,false,true);
   }
 }
 
