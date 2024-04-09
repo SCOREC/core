@@ -21,7 +21,7 @@ namespace {
   struct GroupCode : public Parma_GroupCode {
     apf::Mesh2* mesh;
     ph::Input ctrl;
-    void run(int) {
+    void run(int, pcu::PCU*) {
       apf::reorderMdsMesh(mesh,NULL);
       chef::preprocess(mesh,ctrl);
     }

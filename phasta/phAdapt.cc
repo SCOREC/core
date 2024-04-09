@@ -55,7 +55,7 @@ struct AdaptCallback : public Parma_GroupCode
     : mesh(m), field(szfld), in(NULL) { }
   AdaptCallback(apf::Mesh2* m, apf::Field* szfld, ph::Input* inp)
     : mesh(m), field(szfld), in(inp) { }
-  void run(int) {
+  void run(int, pcu::PCU*) {
     ma::Input* ma_in = ma::makeAdvanced(ma::configure(mesh, field));
     if( in ) {
       //chef defaults
@@ -125,7 +125,7 @@ void adaptShrunken(apf::Mesh2* m, double minPartDensity,
   if (!m->getPCU()->Self())
     lion_eprint(1,"adaptShrunken limit set to %f factor computed as %d\n", minPartDensity, factor);
   if (factor == 1) {
-    callback.run(0);
+    callback.run(0, m->getPCU());
   } else {
     warnAboutShrinking(factor, m->getPCU());
     Parma_ShrinkPartition(m, factor, callback);
