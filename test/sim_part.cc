@@ -22,7 +22,6 @@
 //
 
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
-#include <PCU.h>
 #include <lionPrint.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
@@ -45,6 +44,7 @@
 #include <iostream>
 #include <cstring>
 #include <sstream>
+#include <memory>
 
 using namespace std;
 
@@ -66,7 +66,8 @@ void messageHandler(int type, const char *msg);
 int main(int argc, char **argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   pcu::Protect();
   // Initialize PartitionedMesh - this should be the first Simmetrix call
@@ -106,7 +107,7 @@ int main(int argc, char **argv)
   outmeshFilename = tmp.c_str();
 
   /* print message */
-  if (PCU_Comm_Self()==0) {
+  if (PCUObj.get()->Self()==0) {
     cout<<endl;
     cout<<"Using model and mesh: "<<modelFilename<<" "<<meshFilename<<endl;
     cout<<"Partitioning into "<< desiredTotNumParts <<" parts."<<endl;
@@ -153,7 +154,7 @@ int main(int argc, char **argv)
   NM_release(nmodel);
 #endif
 
-  if (pmesh->getPCU()->Self()==0) {
+  if (PCUObj.get()->Self()==0) {
     cout<<"**********************************"<<endl;
     cout<<"Partitioned mesh output to: "<<outmeshFilename<<endl;
     cout<<endl;
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
 #endif
   SimDiscrete_stop(0);
   SimPartitionedMesh_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 }

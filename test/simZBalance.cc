@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <ma.h>
 #include <MeshSim.h>
@@ -11,26 +10,8 @@
 #include <apfSIM.h>
 #include <apfZoltan.h>
 #include <parma.h>
+#include <memory>
 
-static void initialize(int argc, char** argv) {
-  MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
-  lion_set_verbosity(1);
-  Sim_readLicenseFile(NULL);
-  gmi_sim_start();
-  gmi_register_sim();
-  SimPartitionedMesh_start(&argc, &argv);
-  MS_init();
-}
-
-static void finalize() {
-  MS_exit();
-  SimPartitionedMesh_stop();
-  gmi_sim_stop();
-  Sim_unregisterAllKeys();
-  PCU_Comm_Free();
-  MPI_Finalize();
-}
 
 static void load_balance(apf::Mesh2* m) {
   Parma_PrintPtnStats(m, "initial");
@@ -44,18 +25,33 @@ static void load_balance(apf::Mesh2* m) {
 }
 
 int main(int argc, char** argv) {
-  initialize(argc, argv);
+  MPI_Init(&argc, &argv);
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  lion_set_verbosity(1);
+  Sim_readLicenseFile(NULL);
+  gmi_sim_start();
+  gmi_register_sim();
+  SimPartitionedMesh_start(&argc, &argv);
+  MS_init();
+
   const char* smd_file = argv[1];
   const char* sms_file = argv[2];
   gmi_model* apf_model = gmi_sim_load(0, smd_file);
   pGModel sim_model = gmi_export_sim(apf_model);
   pParMesh sim_mesh = PM_load(sms_file, sim_model, NULL);
-  apf::Mesh2* apf_mesh = apf::createMesh(sim_mesh);
+  apf::Mesh2* apf_mesh = apf::createMesh(sim_mesh, PCUObj.get());
   //apf_mesh->verify(); <- this calls Simmetrix's verify function
   apf::verify(apf_mesh);
   load_balance(apf_mesh);
   apf_mesh->destroyNative();
   apf::destroyMesh(apf_mesh);
   gmi_destroy(apf_model);
-  finalize();
+  
+  MS_exit();
+  SimPartitionedMesh_stop();
+  gmi_sim_stop();
+  Sim_unregisterAllKeys();
+  }
+  MPI_Finalize();
 }

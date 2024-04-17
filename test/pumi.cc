@@ -12,6 +12,7 @@
 #include <iostream>
 #include <algorithm>
 #include <mpi.h>
+#include <memory>
 
 const char* modelFile = 0;
 const char* meshFile = 0;
@@ -87,30 +88,30 @@ int main(int argc, char** argv)
 //*********************************************************
 {
   MPI_Init(&argc,&argv);
-  //pumi_start();
-  pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  pumi_printSys(PCUObj);
+  pumi_printSys(PCUObj.get());
 
 #if 0
   int i, processid = getpid();
-  if (!PCUObj->Self())
+  if (!PCUObj.get()->Self())
   {
-    std::cout<<"Proc "<<PCUObj->Self()<<">> pid "<<processid<<" Enter any digit...\n";
+    std::cout<<"Proc "<<PCUObj.get()->Self()<<">> pid "<<processid<<" Enter any digit...\n";
     std::cin>>i;
   }
   else
-    std::cout<<"Proc "<<PCUObj->Self()<<">> pid "<<processid<<" Waiting...\n";
+    std::cout<<"Proc "<<PCUObj.get()->Self()<<">> pid "<<processid<<" Waiting...\n";
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
   // read input args - in-model-file in-mesh-file out-mesh-file num-in-part
-  getConfig(argc,argv,PCUObj);
+  getConfig(argc,argv,PCUObj.get());
 
   // load model
-  pGeom g = pumi_geom_load(modelFile, PCUObj);
+  pGeom g = pumi_geom_load(modelFile, PCUObj.get());
 
-  if (!pumi_rank(PCUObj)) std::cout<<"[test_pumi] testing geometric model/entity api's\n\n";
+  if (!pumi_rank(PCUObj.get())) std::cout<<"[test_pumi] testing geometric model/entity api's\n\n";
   {
     // test geom_find and gent_adj
     for (pGeomIter gent_it = g->begin(2); gent_it!=g->end(2);++gent_it)
@@ -137,16 +138,16 @@ int main(int argc, char** argv)
   }
  
   // load mesh per process group
-  PCU_ALWAYS_ASSERT(pumi_size(PCUObj)%num_in_part==0);
+  PCU_ALWAYS_ASSERT(pumi_size(PCUObj.get())%num_in_part==0);
 
   double begin_mem = pumi_getMem(), begin_time=pumi_getTime();
 
   pMesh m=NULL;
   if (do_distr)
-    m = pumi_mesh_loadSerial(g, meshFile, PCUObj);
+    m = pumi_mesh_loadSerial(g, meshFile, PCUObj.get());
   else
   {
-    m = pumi_mesh_load(g, meshFile, num_in_part, PCUObj); // static partitioning if num_in_part=1
+    m = pumi_mesh_load(g, meshFile, num_in_part, PCUObj.get()); // static partitioning if num_in_part=1
     if (num_in_part==1) 
       pumi_mesh_write(m,"mesh.smb");
   }
@@ -181,7 +182,7 @@ int main(int argc, char** argv)
     m->end(it);
 
     pumi_mesh_distribute(m, plan);
-    if (!pumi_rank(PCUObj)) std::cout<<"\n[test_pumi] writing mesh in vtk\n";
+    if (!pumi_rank(PCUObj.get())) std::cout<<"\n[test_pumi] writing mesh in vtk\n";
 
     // write mesh in .smb
     pumi_mesh_write(m,outFile);  
@@ -195,18 +196,18 @@ int main(int argc, char** argv)
   pumi_geom_delete(g);
   pumi_mesh_delete(m);
 
-  g = pumi_geom_load(modelFile, PCUObj);
-  if (num_in_part==1 && pumi_size(PCUObj)>1)
-    m =  pumi_mesh_load(g, "mesh.smb", pumi_size(PCUObj), PCUObj); 
+  g = pumi_geom_load(modelFile, PCUObj.get());
+  if (num_in_part==1 && pumi_size(PCUObj.get())>1)
+    m =  pumi_mesh_load(g, "mesh.smb", pumi_size(PCUObj.get()), PCUObj.get()); 
   else
-    m = pumi_mesh_load(g, meshFile, num_in_part, PCUObj); 
-  if (!pumi_rank(PCUObj)) std::cout<<"\n[test_pumi] delete and reload mesh\n";
+    m = pumi_mesh_load(g, meshFile, num_in_part, PCUObj.get()); 
+  if (!pumi_rank(PCUObj.get())) std::cout<<"\n[test_pumi] delete and reload mesh\n";
 
   pOwnership o=new testOwnership(m);
   pumi_ownership_verify(m, o);
   delete o;
 
-  if (!pumi_rank(PCUObj)) std::cout<<"\n[test_pumi] clean loaded tags from the mesh file\n";
+  if (!pumi_rank(PCUObj.get())) std::cout<<"\n[test_pumi] clean loaded tags from the mesh file\n";
   std::vector<pMeshTag> tag_vec;
   for (size_t n = 0; n<tag_vec.size(); ++n)
     pumi_mesh_deleteTag(m, tag_vec[n], true /* force_delete*/);    
@@ -227,7 +228,7 @@ int main(int argc, char** argv)
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
     pumi_field_freeze(*fit);
 
-  if (!pumi_rank(PCUObj)) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated, synchronized, and frozen\n\n";
+  if (!pumi_rank(PCUObj.get())) std::cout<<"\n[test_pumi] "<<fields.size()<<" field(s) generated, synchronized, and frozen\n\n";
 
   TEST_GHOSTING(m);
 
@@ -238,7 +239,7 @@ int main(int argc, char** argv)
   // FIXME: FieldShape doesn't get removed along the field
   for (std::vector<pField>::iterator fit=fields.begin(); fit!=fields.end(); ++fit)
     pumi_field_delete(*fit);
-  if (!pumi_rank(PCUObj)) std::cout<<"\n[test_pumi] field and numbering deleted\n";
+  if (!pumi_rank(PCUObj.get())) std::cout<<"\n[test_pumi] field and numbering deleted\n";
   pumi_mesh_verify(m);
 
   TEST_MESH_TAG(m);
@@ -248,9 +249,9 @@ int main(int argc, char** argv)
   pumi_mesh_delete(m);
 
   // print elapsed time and increased heap memory
-  pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem, PCUObj);
+  pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem, PCUObj.get());
 
-  pumi_finalize(PCUObj);
+  }
   MPI_Finalize();
 }
 

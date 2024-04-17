@@ -139,15 +139,15 @@ struct GroupCode : public Parma_GroupCode
   apf::Mesh2* mesh;
   gmi_model* model;
   const char* meshFile;
-  void run(int group, pcu::PCU *PCUObj)
+  void run(int group)
   {
     if (group == 0) {
-      mesh = apf::loadMdsMesh(model, meshFile, PCUObj);
+      mesh = apf::loadMdsMesh(model, meshFile, PCUObj.get());
       mesh->verify();
       testIndexing(mesh);
       fusionAdapt(mesh);
     } else {
-      mesh = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
+      mesh = apf::makeEmptyMdsMesh(model, 2, false, PCUObj.get());
     }
   }
 };
@@ -163,7 +163,8 @@ int main( int argc, char* argv[])
   code.model = makeModel();
   code.meshFile = argv[1];
   apf::Unmodulo outMap(pcu_obj.get()->Self(), 2);
-  Parma_SplitPartition(NULL, 2, code, pcu_obj.get());
+  Parma_SplitPartition(nullptr, 2, code, pcu_obj.get());
+  code.mesh->switchPCU(pcu_obj.get());
   apf::remapPartition(code.mesh, outMap);
   code.mesh->verify();
   code.mesh->destroyNative();

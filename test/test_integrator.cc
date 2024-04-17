@@ -2,11 +2,11 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <pcu_util.h>
-#include <PCU.h>
 #include <mpi.h>
 #include <iostream>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
+#include <memory>
 
 class CountIntegrator : public apf::Integrator {
   protected:
@@ -24,13 +24,14 @@ class CountIntegrator : public apf::Integrator {
 };
 int main(int argc, char ** argv) {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   // argument should be model, mesh
   PCU_ALWAYS_ASSERT(argc == 3);
 
   gmi_register_mesh();
   gmi_register_null();
-  apf::Mesh2* mesh = apf::loadMdsMesh(argv[1], argv[2]);
+  apf::Mesh2* mesh = apf::loadMdsMesh(argv[1], argv[2], PCUObj.get());
   CountIntegrator * countInt = new CountIntegrator();
   // test integration over implicitly defined mesh dimension
   countInt->process(mesh);
@@ -47,7 +48,7 @@ int main(int argc, char ** argv) {
   delete countInt;
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 }

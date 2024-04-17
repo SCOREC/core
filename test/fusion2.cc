@@ -90,9 +90,9 @@ static void checkValues(apf::Mesh2* m)
 struct GroupCode : public Parma_GroupCode
 {
   apf::Mesh2* mesh;
-  void run(int group, pcu::PCU *PCUObj)
+  void run(int group)
   {
-    mesh = ::makeEmptyMesh(PCUObj);
+    //mesh = ::makeEmptyMesh(PCUObj);
     if (group == 0) {
       addOneTri(mesh);
       setValues(mesh);
@@ -146,11 +146,12 @@ int main( int argc, char* argv[])
   PCU_ALWAYS_ASSERT(PCUObj.get()->Peers() == 2);
   gmi_register_null();
   GroupCode code;
+  code.mesh = makeEmptyMesh(PCUObj.get());
   int const groupSize = 1;
   apf::Unmodulo outMap(PCUObj.get()->Self(), groupSize);
-  //Parma_SplitPartition(nullptr, groupSize, code, PCUObj.get());
+  Parma_SplitPartition(code.mesh, groupSize, code, PCUObj.get());
   /* update mesh for leaving groups */
-  apf::remapPartition(code.mesh, outMap);
+  //apf::remapPartition(code.mesh, outMap);
   globalCode(code.mesh);
   }
   MPI_Finalize();

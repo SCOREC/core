@@ -9,11 +9,11 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 
 #include <math.h>
 #include <pcu_util.h>
+#include <memory>
 
 const double pi = 3.14159265359;
 
@@ -65,10 +65,10 @@ gmi_model* makeSphere()
   return model;
 }
 
-apf::Mesh2* createSphereMesh()
+apf::Mesh2* createSphereMesh(pcu::PCU *PCUObj)
 {
   gmi_model* model = makeSphere();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
   apf::MeshEntity* allVs[5];
   apf::Vector3 p0( cos(0.), sin(0.),  0.);
   apf::Vector3 p1( cos(2.*pi/3.), sin(2.*pi/3.),  0.);
@@ -171,10 +171,11 @@ apf::Mesh2* createSphereMesh()
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
 
-  apf::Mesh2* m = createSphereMesh();
+  apf::Mesh2* m = createSphereMesh(PCUObj.get());
   m->verify();
 
   apf::writeVtkFiles("initial_mesh_on_analytic_model", m);
@@ -186,7 +187,6 @@ int main(int argc, char** argv)
 
   m->destroyNative();
   apf::destroyMesh(m);
-
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apf.h>
@@ -14,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <memory>
 
 
 // User defined vector functions E(x,y,z) of order up to 6
@@ -29,12 +29,13 @@ void testH1(
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
   lion_set_verbosity(1);
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr << "usage: " << argv[0]
         << " <model.dmg or .null> <mesh.smb>\n";
     return EXIT_FAILURE;
@@ -44,12 +45,12 @@ int main(int argc, char** argv)
   gmi_register_null();
 
   gmi_model* g = gmi_load(argv[1]);
-  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2],PCUObj.get());
   m->verify();
 
   // test fields interpolating a user-defined vector field
   for (int i = 1; i <= 6; i++) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       lion_oprint(1, "----TESTING VECTOR FIELD OF ORDER %d----\n", i);
     testH1(
         m, /* mesh */
@@ -61,7 +62,7 @@ int main(int argc, char** argv)
 
   // test fields interpolating a user-defined matrix field
   for (int i = 1; i <= 6; i++) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       lion_oprint(1, "----TESTING MATRIX FIELD OF ORDER %d----\n", i);
     testH1(
         m, /* mesh */
@@ -72,7 +73,7 @@ int main(int argc, char** argv)
   }
 
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

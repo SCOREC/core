@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apf.h>
@@ -14,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <memory>
 
 using namespace std;
 
@@ -32,12 +32,13 @@ void testL2writeNative(
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
   lion_set_verbosity(1);
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr << "usage: " << argv[0]
         << " <model.dmg or .null> <mesh.smb>\n";
     return EXIT_FAILURE;
@@ -47,7 +48,7 @@ int main(int argc, char** argv)
   gmi_register_null();
 
   gmi_model* g = gmi_load(argv[1]);
-  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2],PCUObj.get());
   m->verify();
 
   for (int i = 0; i <= 6; i++) {
@@ -61,7 +62,7 @@ int main(int argc, char** argv)
   testL2writeNative(m, 3, 3);
 
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
@@ -204,10 +205,10 @@ void testL2writeNative(
   // 2- read the mesh back in and make sure fields are on the mesh
   // 3- clean up the newly loaded mesh
   m->writeNative("L2Shape_test_mesh.smb");
-  apf::Mesh2* m2 = apf::loadMdsMesh(".null", "./L2Shape_test_mesh.smb");
+  apf::Mesh2* m2 = apf::loadMdsMesh(".null", "./L2Shape_test_mesh.smb", m->getPCU());
   int fCount = 0;
   for (int i = 0; i < m2->countFields(); i++) {
-    if(0==m->getPCU()->Self())
+    if(0==m2->getPCU()->Self())
       lion_oprint(1, "field %d's name and shape are %s and %s\n", i,
 	  m2->getField(i)->getName(), m2->getField(i)->getShape()->getName());
     fCount++;

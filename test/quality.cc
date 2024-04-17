@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfMDS.h>
@@ -8,6 +7,7 @@
 #include <maShape.h>
 #include <pcu_util.h>
 #include <cstdlib>
+#include <memory>
 
 namespace {
 
@@ -19,18 +19,18 @@ double avgQuality = 0.0;
 double avgQualityBelowTol = 0.0;
 long numElemsBelowTol = 0;
 
-static void fail(char** argv)
+static void fail(char** argv, pcu::PCU *PCUObj)
 {
-  if (!PCU_Comm_Self())
+  if (!PCUObj->Self())
     printf("Usage: %s <model> <mesh> <quality tolerance>\n", argv[0]);
   MPI_Finalize();
   exit(EXIT_FAILURE);
 }
 
-static void getConfig(int argc, char** argv)
+static void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if (argc != 4)
-    fail(argv);
+    fail(argv, PCUObj);
   modelFile = argv[1];
   meshFile = argv[2];
   qualityTol = atof(argv[3]);
@@ -71,9 +71,9 @@ static void processMesh(apf::Mesh2* m)
   m->end(elems);
 }
 
-void printDiagnostics()
+void printDiagnostics(pcu::PCU *PCUObj)
 {
-  if (!PCU_Comm_Self())
+  if (!PCUObj->Self())
   {
     printf("average element quality: %f\n", avgQuality);
     printf("quality tolerance: %f\n", qualityTol);
@@ -91,15 +91,16 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  getConfig(argc,argv,PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
   processMesh(m);
-  printDiagnostics();
+  printDiagnostics(PCUObj.get());
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

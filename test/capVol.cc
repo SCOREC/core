@@ -1,11 +1,11 @@
 #include <cstring>
 #include <cstdlib>
-#include <memory>
 
 // Output
 #include <lionPrint.h>
 
 // Parallelism
+#include <PCU.h>
 #include <pcu_util.h>
 
 // Mesh interfaces
@@ -30,6 +30,7 @@ namespace {
 
 void myExit(int exit_code = EXIT_SUCCESS) {
   gmi_cap_stop();
+  PCU_Comm_Free();
   MPI_Finalize();
   exit(exit_code);
 }
@@ -76,8 +77,7 @@ void printUsage(char *argv0) {
 int main(int argc, char** argv) {
   // Initialize parallelism.
   MPI_Init(&argc, &argv);
-  {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  PCU_Comm_Init();
 
   // Initialize logging.
   lion_set_stdout(stdout);
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
   // Check arguments or print usage.
   if (argc < 3) {
-    if (pcu_obj.get()->Self() == 0) {
+    if (PCU_Comm_Self() == 0) {
       printUsage(argv[0]);
     }
     myExit(EXIT_FAILURE);
@@ -271,7 +271,6 @@ int main(int argc, char** argv) {
 
   // Exit calls.
   gmi_cap_stop();
-  }
+  PCU_Comm_Free();
   MPI_Finalize();
 }
-
