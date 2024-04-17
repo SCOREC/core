@@ -1407,10 +1407,14 @@ void hackMdsAdjacency(Mesh2* in, MeshEntity* up, int i, MeshEntity* down)
   mds_hack_adjacent(&m->mesh->mds, fromEnt(up), i, fromEnt(down));
 }
 
-Mesh2* loadMdsPart(gmi_model* model, const char* meshfile)
+Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj)
 {
   MeshMDS* m = new MeshMDS();
-  m->init(apf::getLagrange(1));
+  if(PCUObj != nullptr){
+    m->init(apf::getLagrange(1), PCUObj);
+  } else {
+    m->init(apf::getLagrange(1));
+  }
   m->mesh = mds_read_smb2(m->getPCU()->GetCHandle(), model, meshfile, 1, m);
   m->isMatched = false;
   m->ownsModel = true;

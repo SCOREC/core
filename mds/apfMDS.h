@@ -218,9 +218,9 @@ Mesh2* loadMdsFromCGNS2(PCUHandle h, gmi_model* g, const char* filename, CGNSBCM
 
 int gmshMajorVersion(const char* filename);
 
-Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
+Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, pcu::PCU *PCUObj = nullptr);
 
-Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename);
+Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename, pcu::PCU *PCUObj = nullptr);
 
 Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
 
@@ -244,7 +244,7 @@ void disownMdsModel(Mesh2* in);
 
 void setMdsMatching(Mesh2* in, bool has);
 
-Mesh2* loadMdsPart(gmi_model* model, const char* meshfile);
+Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj = nullptr);
 void writeMdsPart(Mesh2* m, const char* meshfile);
 
 }
