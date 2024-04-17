@@ -13,6 +13,7 @@
 
 #include "apf.h"
 #include "apfPartition.h"
+#include <memory>
 
 /**
  * @brief get entity imbalance
@@ -288,6 +289,7 @@ apf::MeshTag* Parma_WeighByMemory(apf::Mesh* m);
  */
 struct Parma_GroupCode
 {
+    std::unique_ptr<pcu::PCU> PCUObj;
   /**
    * @brief Called withing sub-groups.
    * @details Within a group, all PCU functions behave
@@ -299,7 +301,7 @@ struct Parma_GroupCode
    *          the group.
    * @param group the group id number, starting from zero
    */
-  virtual void run(int group, pcu::PCU *PCUObj) = 0;
+  virtual void run(int group) = 0;
 };
 
 /**
@@ -314,7 +316,7 @@ struct Parma_GroupCode
  *          parts are combined into one and then that one is split back
  *          out into (factor) contiguous part ids again.
  */
-void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
+void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu::PCU *PCUObj = nullptr);
 
 /**
  * @brief Split the processes into groups of (factor).
@@ -327,7 +329,7 @@ void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun);
  *          apf::remapPartition is used to maintain the mesh structure
  *          during these transitions.
  */
-void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu::PCU *PCUObj);
+void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu::PCU *PCUObj = nullptr);
 
 /**
  * @brief Compute maximal independent set numbering
