@@ -248,7 +248,7 @@ namespace {
     ph::Input* input;
     ph::BCs* boundary;
     apf::Mesh2* mesh;
-    void run(int, pcu::PCU*) {
+    void run(int) {
       ph::Output groupOut;
       //streaming not supported from group code!
       groupOut.openfile_write = chef::openfile_write;
