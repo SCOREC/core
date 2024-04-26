@@ -3,9 +3,9 @@
 #include <apfMesh.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
+#include <memory>
 #include "../viz/viz.h"
 
 namespace {
@@ -37,11 +37,12 @@ int main(int argc, char** argv)
   int provided;
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   PCU_ALWAYS_ASSERT(provided==MPI_THREAD_MULTIPLE);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
  
   
   Visualization v;
@@ -105,6 +106,6 @@ int main(int argc, char** argv)
   v.breakpoint("Part Boundaries");
 
   freeMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

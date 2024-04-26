@@ -293,7 +293,7 @@ static apf::Mesh2*  makePoint(
     apf::MeshEntity* e)
 {
   PCU_ALWAYS_ASSERT(m->getType(e) == apf::Mesh::VERTEX);
-  apf::Mesh2* sphMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false);
+  apf::Mesh2* sphMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, m->getPCU());
   double xrange[2] = {1.e16, -1.e16};
   double yrange[2] = {1.e16, -1.e16};
   double zrange[2] = {1.e16, -1.e16};

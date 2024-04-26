@@ -6,6 +6,7 @@
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include "apfMDS.h"
 #include "apfShape.h"
 
@@ -55,22 +56,23 @@ Migration* get_xgc_plan(pGeom g, pMesh m)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
-  getConfig(argc,argv,PCUObj);
+  getConfig(argc,argv,PCUObj.get());
 
-  pGeom g = pumi_geom_load(modelFile, PCUObj);
+  pGeom g = pumi_geom_load(modelFile, PCUObj.get());
   pMesh m;
   if (serial) 
   {
-    m = pumi_mesh_loadSerial(g, meshFile, PCUObj);
+    m = pumi_mesh_loadSerial(g, meshFile, PCUObj.get());
     // split a serial mesh based on model ID
     Migration* plan = get_xgc_plan(g, m);
     pumi_mesh_migrate(m, plan);
     pumi_mesh_write(m, outFile);
   }
   else 
-    m = pumi_mesh_load(g, meshFile, pumi_size(PCUObj), PCUObj);
+    m = pumi_mesh_load(g, meshFile, pumi_size(PCUObj.get()), PCUObj.get());
 
   // write to vtk
   char without_extension[256];
@@ -93,7 +95,7 @@ int main(int argc, char** argv)
 
   pumi_mesh_delete(m);
 
-  pumi_finalize(PCUObj);
+  }
   MPI_Finalize();
 }
 
