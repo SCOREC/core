@@ -188,12 +188,14 @@ void split_comm(int num_out_comm, pcu::PCU &PCUObj)
   PCUObj.SwitchMPIComm(groupComm);
 }
 
+
 void merge_comm(MPI_Comm oldComm, pcu::PCU &PCUObj)
 {
   MPI_Comm prevComm = PCUObj.GetMPIComm();
   PCUObj.SwitchMPIComm(oldComm);
   MPI_Comm_free(&prevComm);
 }
+
 
 
 pGeom pumi_mesh_getGeom(pMesh)
@@ -375,7 +377,7 @@ pMesh pumi_mesh_loadAll(pGeom g, const char* filename, pcu::PCU *PCUObj, bool st
     int num_target_part = PCUObj->Peers();
     split_comm(num_target_part, *PCUObj);
     // no pmodel & remote links setup
-    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename); 
+    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename, PCUObj); 
     merge_comm(prevComm, *PCUObj);
     if (!PCUObj->Self())
       lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, pcu::Time() - t0);

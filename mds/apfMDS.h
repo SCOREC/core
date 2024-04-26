@@ -91,7 +91,7 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
 // make a serial mesh on all processes - no pmodel & remote link setup
-Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile);
+Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj = nullptr);
 
 /** \brief create an MDS mesh from an existing mesh
   \param from the mesh to copy
@@ -117,7 +117,7 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder=false, bool copy
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t = 0);
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
-Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor, pcu::PCU *PCUObj);
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor, pcu::PCU *PCUObj, pcu::PCU *oldPCU = nullptr);
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expandedPCU);
@@ -222,10 +222,10 @@ Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, pcu::PCU *PCUObj = nu
 
 Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename, pcu::PCU *PCUObj = nullptr);
 
-Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
+Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename, pcu::PCU *PCUObj = nullptr);
 
 void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile,
-    const double elmWeights[]);
+    const double elmWeights[], pcu::PCU *PCUObj = nullptr);
 
 /** \brief load an MDS mesh from ANSYS .node and .elem files
   \details this call takes two filenames, one

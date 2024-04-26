@@ -940,9 +940,14 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder, bool copy_data)
   return new MeshMDS(model, from, &(node_arr[0]), &(elem_arr[0]), copy_data);
 }
 
-Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile)
+Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj)
 {
-  Mesh2* m = new MeshMDS(model, meshfile);
+  Mesh2* m;
+  if(PCUObj != nullptr){
+    m = new MeshMDS(model, meshfile, PCUObj);
+  } else {
+    m = new MeshMDS(model, meshfile);
+  }
   return m;
 }
 
@@ -1023,7 +1028,6 @@ Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expan
 {
   double t0 = pcu::Time();
   int self = expandedPCU->Self();
-  //PCU_ALWAYS_ASSERT_VERBOSE(self == expandedPCU->Self(), "pcu_comm_self doesn't equal pcuobj->self\n");
   int outputPartCount = expandedPCU->Peers();
   apf::Expand expand(inputPartCount, outputPartCount);
   apf::Contract contract(inputPartCount, outputPartCount);
@@ -1038,7 +1042,7 @@ Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expan
     for (int i = self + 1; i < outputPartCount && !contract.isValid(i); ++i) {
       expandedPCU->Pack(i, dim);
       expandedPCU->Pack(i, isMatched);
-      packDataClone(m, i);
+      packDataClone(m, i, expandedPCU);
     }
   }
   expandedPCU->Send();
@@ -1113,9 +1117,8 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
 }
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
-    int factor, pcu::PCU *PCUObj)
+    int factor, pcu::PCU *PCUObj, pcu::PCU *oldPCU)
 {
-  //PCU_ALWAYS_ASSERT_VERBOSE(PCU_Comm_Self() == PCUObj->Self(), "repeartMdsMesh assert failed\n");
   m = expandMdsMesh(m, g, PCUObj->Peers() / factor, PCUObj);
   double t0 = pcu::Time();
   if (PCUObj->Self() % factor != 0)

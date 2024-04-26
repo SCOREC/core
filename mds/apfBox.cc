@@ -78,7 +78,7 @@ BoxBuilder::BoxBuilder(int nx, int ny, int nz,
   is_simplex = is;
   formModelTable();
   gmi_model* gm = buildModel();
-  m = makeEmptyMdsMesh(gm, dim, false);
+  m = makeEmptyMdsMesh(gm, dim, false, PCUObj);
   v.resize(grid.total());
   buildMeshAndModel();
 }

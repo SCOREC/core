@@ -203,17 +203,29 @@ void stitchMesh(Mesh2* m)
   }
 }
 
-static void packTagClone(Mesh2* m, MeshTag* t, int to)
+static void packTagClone(Mesh2* m, MeshTag* t, int to, pcu::PCU *PCUObj)
 {
   std::string name;
   name = m->getTagName(t);
-  packString(name, to, m->getPCU());
+  if(PCUObj != nullptr){
+    packString(name, to, PCUObj);
+  } else {
+    packString(name, to, m->getPCU());
+  }
   int type;
   type = m->getTagType(t);
-  m->getPCU()->Pack(to, type);
+  if(PCUObj != nullptr){
+    PCUObj->Pack(to, type);
+  } else {
+    m->getPCU()->Pack(to, type);
+  }
   int size;
   size = m->getTagSize(t);
-  m->getPCU()->Pack(to, size);
+  if(PCUObj != nullptr){
+    PCUObj->Pack(to, size);
+  } else {
+    m->getPCU()->Pack(to, size);
+  }
 }
 
 static MeshTag* unpackTagClone(Mesh2* m)
@@ -232,17 +244,22 @@ static MeshTag* unpackTagClone(Mesh2* m)
   return 0;
 }
 
-static void packTagClones(Mesh2* m, int to)
+static void packTagClones(Mesh2* m, int to, pcu::PCU *PCUObj)
 {
   DynamicArray<MeshTag*> tags;
   m->getTags(tags);
   int n = tags.getSize();
-  m->getPCU()->Pack(to, n);
+  if(PCUObj != nullptr){
+    PCUObj->Pack(to, n);
+  } else {
+    m->getPCU()->Pack(to, n);
+  }
+  
   /* warning! this loop goes backward to cater to MDS
      implementation-specific behavior.
      please forgive me. */
   for (int i = n - 1; i >= 0; --i)
-    packTagClone(m, tags[i], to);
+    packTagClone(m, tags[i], to, PCUObj);
 }
 
 static void unpackTagClones(Mesh2* m)
@@ -253,16 +270,36 @@ static void unpackTagClones(Mesh2* m)
     unpackTagClone(m);
 }
 
-static void packFieldClone(Field* f, int to)
+static void packFieldClone(Field* f, int to, pcu::PCU *PCUObj)
 {
   std::string name = f->getName();
-  packString(name, to, f->getMesh()->getPCU());
+  if(PCUObj != nullptr){
+    packString(name, to, PCUObj);
+  } else {
+    packString(name, to, f->getMesh()->getPCU());
+  }
+  
   int valueType = f->getValueType();
-  f->getMesh()->getPCU()->Pack(to, valueType);
+  if(PCUObj != nullptr){
+    PCUObj->Pack(to, valueType);
+  } else {
+    f->getMesh()->getPCU()->Pack(to, valueType);
+  }
+  
   int components = f->countComponents();
-  f->getMesh()->getPCU()->Pack(to, components);
+  if(PCUObj != nullptr){
+    PCUObj->Pack(to, components);
+  } else {
+    f->getMesh()->getPCU()->Pack(to, components);
+  }
+  
   std::string shapeName = f->getShape()->getName();
-  packString(shapeName, to, f->getMesh()->getPCU());
+  if(PCUObj != nullptr){
+    packString(shapeName, to, PCUObj);
+  } else {
+    packString(shapeName, to, f->getMesh()->getPCU());
+  }
+
   /* warning! this only supports tag-stored fields */
 }
 
@@ -280,12 +317,17 @@ static Field* unpackFieldClone(Mesh2* m)
   return makeField(m, name.c_str(), valueType, components, shape, new TagDataOf<double>);
 }
 
-static void packFieldClones(Mesh2* m, int to)
+static void packFieldClones(Mesh2* m, int to, pcu::PCU *PCUObj)
 {
   int n = m->countFields();
-  m->getPCU()->Pack(to, n);
+  if(PCUObj != nullptr){
+    PCUObj->Pack(to, n);
+  } else {
+    m->getPCU()->Pack(to, n);
+  }
+  
   for (int i = 0; i < n; ++i)
-    packFieldClone(m->getField(i), to);
+    packFieldClone(m->getField(i), to, PCUObj);
 }
 
 static void unpackFieldClones(Mesh2* m)
@@ -296,10 +338,14 @@ static void unpackFieldClones(Mesh2* m)
     unpackFieldClone(m);
 }
 
-static void packMeshShape(Mesh2* m, int to)
+static void packMeshShape(Mesh2* m, int to, pcu::PCU *PCUObj)
 {
   std::string shapeName = m->getShape()->getName();
-  packString(shapeName, to, m->getPCU());
+  if(PCUObj != nullptr){
+    packString(shapeName, to, PCUObj);
+  } else {
+    packString(shapeName, to, m->getPCU());
+  }
 }
 
 static void unpackMeshShape(Mesh2* m)
@@ -312,11 +358,11 @@ static void unpackMeshShape(Mesh2* m)
   }
 }
 
-void packDataClone(Mesh2* m, int to)
+void packDataClone(Mesh2* m, int to, pcu::PCU *PCUObj)
 {
-  packTagClones(m, to);
-  packMeshShape(m, to);
-  packFieldClones(m, to);
+  packTagClones(m, to, PCUObj);
+  packMeshShape(m, to, PCUObj);
+  packFieldClones(m, to, PCUObj);
 }
 
 void unpackDataClone(Mesh2* m)
