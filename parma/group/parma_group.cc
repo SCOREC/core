@@ -37,13 +37,14 @@ static void runInGroups(
   int group = groupMap(self);
   MPI_Comm oldComm = PCU_Get_Comm();
   MPI_Comm groupComm;
-  MPI_Comm_split(oldComm, group, groupRank, &groupComm);
+
+  PCU_Comm_Split(oldComm, group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
   if (m)
     apf::remapPartition(m, inMap);
   code.run(group);
   PCU_Switch_Comm(oldComm);
-  MPI_Comm_free(&groupComm);
+  PCU_Comm_Free_One(&groupComm);
   if (m)
     apf::remapPartition(m, outMap);
 }

@@ -13,7 +13,17 @@
 #define PCU_SUCCESS 0
 #define PCU_FAILURE -1
 
+#if defined(SCOREC_NO_MPI)
+  typedef int MPI_Comm;
+  typedef int MPI_Datatype;
+  typedef int MPI_Op;
+  #define MPI_SUM 1
+  #define MPI_INT 2
+  #define MPI_COMM_WORLD 0
+  double MPI_Wtime(void);
+#else
 #include <mpi.h>
+#endif
 
 #ifdef __cplusplus
 #include <cstddef>
@@ -28,6 +38,12 @@ extern "C" {
 /*library init/finalize*/
 int PCU_Comm_Init(void);
 int PCU_Comm_Free(void);
+int PCU_Comm_Free_One(MPI_Comm* com);
+int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom);
+int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
+int PCU_Comm_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);
+int PCU_Comm_Barrier(MPI_Comm comm);
+double PCU_Wtime();
 
 /*rank/size functions*/
 int PCU_Comm_Self(void);

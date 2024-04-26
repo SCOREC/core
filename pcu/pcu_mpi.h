@@ -11,7 +11,19 @@
 #define PCU_MPI_H
 
 #include "pcu_buffer.h"
+
+#if defined(SCOREC_NO_MPI)
+typedef int MPI_Comm;
+typedef int MPI_Request;
+typedef int MPI_Datatype;
+typedef int MPI_Op;
+#define MPI_COMM_WORLD 0
+#define MPI_ANY_SOURCE -1
+#define MPI_INT 0
+#define MPI_SUM 1
+#else
 #include <mpi.h>
+#endif
 
 typedef struct
 {
@@ -39,5 +51,7 @@ int pcu_mpi_rank(void);
 void pcu_mpi_send(pcu_message* m, MPI_Comm comm);
 bool pcu_mpi_done(pcu_message* m);
 bool pcu_mpi_receive(pcu_message* m, MPI_Comm comm);
+int  pcu_mpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm);
+int  pcu_mpi_free(MPI_Comm comm);
 
 #endif

@@ -138,7 +138,7 @@ pNumbering pumi_numbering_createProcGrp (
   int* out_arr = new int[PCU_Comm_Peers()]; // out[i] has local_numOwnedPartBdryEnt of process i on all processes
   *in = owned_node_cnt;
 
-  MPI_Allgather(in, 1, MPI_INT, out_arr, 1, MPI_INT, PCU_Get_Comm());
+  PCU_Comm_Allgather(in, 1, MPI_INT, out_arr, 1, MPI_INT, PCU_Get_Comm());
 
   it = m->begin(dim);
   int nbr = 0;
@@ -215,6 +215,6 @@ void pumi_numbering_print(pNumbering n, int pid)
         } // if shp
       } // for dd
     }  // if (pid==PCU_Comm_Self())
-    MPI_Barrier(MPI_COMM_WORLD);
+    PCU_Comm_Barrier(MPI_COMM_WORLD);
   } // for
 }

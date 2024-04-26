@@ -53,7 +53,7 @@ void switchToMasters(int splitFactor)
   int groupRank = self / splitFactor;
   int group = self % splitFactor;
   MPI_Comm groupComm;
-  MPI_Comm_split(PCU_Get_Comm(), group, groupRank, &groupComm);
+  PCU_Comm_Split(PCU_Get_Comm(), group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
 }
 
@@ -61,7 +61,7 @@ void switchToAll(MPI_Comm orig)
 {
   MPI_Comm prevComm = PCU_Get_Comm();
   PCU_Switch_Comm(orig);
-  MPI_Comm_free(&prevComm);
+  PCU_Comm_Free_One(&prevComm);
   PCU_Barrier();
 }
 

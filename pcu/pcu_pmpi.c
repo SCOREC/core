@@ -42,6 +42,16 @@ void pcu_pmpi_finalize(void)
   MPI_Comm_free(&pcu_coll_comm);
 }
 
+int pcu_pmpi_free(MPI_Comm* comm)
+{
+  MPI_Comm_free(comm);
+}
+
+int pcu_pmpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm)
+{
+  MPI_Comm_split(comm,color,key,newcomm);
+}
+
 int pcu_pmpi_size(void)
 {
   return global_size;
@@ -118,3 +128,17 @@ MPI_Comm pcu_pmpi_comm(void)
   return original_comm;
 }
 
+int  pcu_pmpi_allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+{
+   return MPI_Allreduce(sendbuf,recvbuf,count, datatype, op, comm);
+}
+
+int  pcu_pmpi_allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+{
+  return MPI_Allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
+}
+
+int pcu_pmpi_barrier(MPI_Comm comm)
+{
+  return MPI_Barrier(comm);
+}

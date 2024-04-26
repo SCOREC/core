@@ -8,7 +8,6 @@
  
 *******************************************************************************/
 #include "pumi.h"
-#include <mpi.h>
 #include <parma.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
@@ -184,7 +183,7 @@ void split_comm(int num_out_comm)
   int group_id = self % num_out_comm;
   int in_group_rank = self / num_out_comm;
   MPI_Comm groupComm;
-  MPI_Comm_split(PCU_Get_Comm(), group_id, in_group_rank, &groupComm);
+  PCU_Comm_Split(PCU_Get_Comm(), group_id, in_group_rank, &groupComm);
   PCU_Switch_Comm(groupComm);
 }
 
@@ -192,7 +191,7 @@ void merge_comm(MPI_Comm oldComm)
 {
   MPI_Comm prevComm = PCU_Get_Comm();
   PCU_Switch_Comm(oldComm);
-  MPI_Comm_free(&prevComm);
+  PCU_Comm_Free_One(&prevComm);
 }
 
 
@@ -345,7 +344,7 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
       pumi::instance()->num_own_ent[dim] = n;
     }
   }
-  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, PCU_Get_Comm());
+  PCU_Comm_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, PCU_Get_Comm());
 #ifdef DEBUG
   if (!pumi_rank()) std::cout<<"[PUMI INFO] "<<__func__<<" end\n";
 #endif
@@ -433,10 +432,10 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   int* global_local_entity_count = new int[4*PCU_Comm_Peers()]; 
   int* global_own_entity_count = new int[4*PCU_Comm_Peers()]; 
 
-  MPI_Allreduce(local_entity_count, global_local_entity_count, 4*PCU_Comm_Peers(), 
+  PCU_Comm_Allreduce(local_entity_count, global_local_entity_count, 4*PCU_Comm_Peers(),
                 MPI_INT, MPI_SUM, PCU_Get_Comm());
 
-  MPI_Allreduce(own_entity_count, global_own_entity_count, 4*PCU_Comm_Peers(), 
+  PCU_Comm_Allreduce(own_entity_count, global_own_entity_count, 4*PCU_Comm_Peers(),
                 MPI_INT, MPI_SUM, PCU_Get_Comm());
 
  
