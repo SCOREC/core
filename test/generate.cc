@@ -1,5 +1,6 @@
 #include <lionPrint.h>
 #include <MeshSim.h>
+#include <SimModel.h>
 #include <SimDiscrete.h>
 #include <SimAdvMeshing.h>
 #include <SimPartitionedMesh.h>
@@ -8,6 +9,7 @@
 #include <SimUtil.h>
 #include <apfSIM.h>
 #include <apfMDS.h>
+#include <apf_simConfig.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
 #include <apf.h>
@@ -39,7 +41,6 @@
 #include "SimAttribute.h"
 #include "ModelTypes.h"
 
-pAManager SModel_attManager(pModel model);
 
 namespace {
 
@@ -75,6 +76,10 @@ void messageHandler(int type, const char* msg)
 
 pParMesh generate(pGModel mdl, std::string meshCaseName, pcu::PCU *PCUObj) {
   pAManager attmngr = SModel_attManager(mdl);
+#if SIMMODSUITE_MAJOR_VERSION <= 2024 && SIMMODSUITE_MINOR_VERSION < 240219
+  pAManager attmngr = GM_attManager(mdl);
+#else
+  pAManager attmngr = GM_attManager(mdl,true);
   if(0==PCUObj->Self())
     fprintf(stdout, "Loading mesh case %s...\n", meshCaseName.c_str());
   pACase mcaseFile = AMAN_findCase(attmngr, meshCaseName.c_str());

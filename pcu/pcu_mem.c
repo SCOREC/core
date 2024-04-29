@@ -38,6 +38,10 @@ extern "C" {
 #pragma GCC diagnostic pop
 #endif
 
+#elif defined(PUMI_HAVE_MALLCTL)
+
+#include <malloc_np.h>
+
 #else
 
 #include <malloc.h> //warning - this is GNU-specific
@@ -57,10 +61,14 @@ double pcu_get_mem() {
   size_t heap;
   Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
   return (double)heap/M;
+#elif defined(PUMI_HAS_MALLCTL)
+  size_t size = 0, sizelen = sizeof(size_t);
+  mallctl("stats.allocated", &size, &sizelen, NULL, 0);
+  return (double)size/M;
 #elif defined(__GNUC__) && defined(PUMI_HAS_MALLINFO2)
   struct mallinfo2 meminfo_now = mallinfo2();
   return ((double)meminfo_now.arena)/M;
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && defined(PUMI_HAS_MALLINFO)
   struct mallinfo meminfo_now = mallinfo();
   return ((double)meminfo_now.arena)/M;
 #endif

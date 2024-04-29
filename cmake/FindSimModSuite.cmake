@@ -84,7 +84,7 @@ string(REGEX REPLACE
   "${SIM_VERSION}")
 
 set(MIN_VALID_SIM_VERSION 15.0.191017)
-set(MAX_VALID_SIM_VERSION 18.0.220930)
+set(MAX_VALID_SIM_VERSION 2024.0.240219)
 if( ${SKIP_SIMMETRIX_VERSION_CHECK} )
   message(STATUS "Skipping Simmetrix SimModSuite version check."
     " This may result in undefined behavior")
@@ -110,6 +110,17 @@ math(EXPR len "${archEnd}-${archStart}")
 string(SUBSTRING "${SIMMODSUITE_LIBS}" "${archStart}" "${len}" SIM_ARCHOS)
 message(STATUS "SIM_ARCHOS ${SIM_ARCHOS}")
 
+set(SIM_OPT_LIB_NAMES
+  SimAdvMeshing
+  SimField)
+
+simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
+
+option(SIM_DISCRETE "Use Simmetrix discrete modeling" ON)
+if (SIM_DISCRETE)
+  set(SIM_CAD_LIB_NAMES SimDiscrete ${SIM_CAD_LIB_NAMES})
+endif()
+
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
   set(MIN_SIM_PARASOLID_VERSION 290)
@@ -130,6 +141,7 @@ if (SIM_PARASOLID)
       "not found - check the version installed with SimModSuite")
   endif()
   set(SIM_CAD_LIB_NAMES
+    ${SIM_CAD_LIB_NAMES}
     ${simParaLib}
     pskernel)
 endif()
@@ -139,36 +151,38 @@ if (SIM_ACIS)
   getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
     SimAcis simAcisLib TRUE)
   set(SIM_CAD_LIB_NAMES
-      ${simAcisLib}
       ${SIM_CAD_LIB_NAMES}
+      ${simAcisLib}
       SpaACIS)
-endif()
-
-option(SIM_DISCRETE "Use Simmetrix discrete modeling" ON)
-if (SIM_DISCRETE)
-  set(SIM_CAD_LIB_NAMES SimDiscrete ${SIM_CAD_LIB_NAMES})
 endif()
 
 simLibCheck("${SIM_CAD_LIB_NAMES}" TRUE)
 
-set(SIM_OPT_LIB_NAMES
-  SimField
-  SimAdvMeshing)
-
-simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
-
 set(SIM_CORE_LIB_NAMES
   SimPartitionedMesh-mpi
+  SimPartitionWrapper-${SIM_MPI}
   SimMeshing
   SimMeshTools
-  SimModel
-  SimPartitionWrapper-${SIM_MPI})
+  SimModel)
 
 simLibCheck("${SIM_CORE_LIB_NAMES}" TRUE)
 
 if (UNIX AND NOT APPLE)
   find_package(Threads REQUIRED)
   set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+if (SIM_ARCHOS STREQUAL x64_rhel8_gcc83)
+  find_library(XDR_LIB tirpc)
+  if(XDR_LIB)
+    message(STATUS "Found XDR_LIB ${XDR_LIB}")
+    set(SIMMODSUITE_LIBS ${SIMMODSUITE_LIBS} ${XDR_LIB})
+  else()
+    message(FATAL_ERROR "The libtirpc library was not found.  It defines xdr symbols "
+    "(e.g., xdrmem_create) that are need by SimModSuite on systems using "
+    "glibc newer than 2.32.  Note, glibc starting with 2.26 could optionally "
+    "have been built without the xdr symbols.")
+  endif()
 endif()
 
 include(FindPackageHandleStandardArgs)

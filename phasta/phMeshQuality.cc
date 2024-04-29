@@ -8,7 +8,6 @@
 #include <apfMatrix.h>
 #include <maSize.h>
 #include <maShape.h>
-//#include "apf_simConfig.h"
 
 #ifdef HAVE_SIMMETRIX
 #include <SimUtil.h>

@@ -51,6 +51,7 @@ static double get_peak(pcu::PCU *PCUObj)
 #endif
 
 static void print_stats(const char* name, double value, pcu::PCU *PCUObj)
+
 {
   double min, max, avg;
   min = PCUObj->Min(value);

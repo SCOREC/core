@@ -97,6 +97,15 @@ add_custom_target(doc
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generating API documentation with Doxygen" VERBATIM
 )
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile_internal.in
+  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal @ONLY
+)
+add_custom_target(docInternal
+  ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating Internal API documentation with Doxygen" VERBATIM
+)
 endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
@@ -189,16 +198,6 @@ else()
   target_compile_features(core INTERFACE cxx_std_11)
 endif()
 scorec_export_library(core)
-
-#check for mallinfo2
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  include(CheckCXXSymbolExists)
-  check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
-  if(PUMI_HAS_MALLINFO2)
-    target_compile_definitions(core INTERFACE -DPUMI_HAS_MALLINFO2)
-    target_compile_definitions(pcu PRIVATE -DPUMI_HAS_MALLINFO2)
-  endif()
-endif()
 
 if(BUILD_EXES)
   add_subdirectory(test)

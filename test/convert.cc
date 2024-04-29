@@ -358,6 +358,11 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       for(i=0; i< nvert ; i++) {
         int* fatherIdPtr;
         const int exists = EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&fatherIdPtr);
+        if(!exists) {
+          if(!PCU_Comm_Self())
+            fprintf(stderr, "Error: father id data pointer does not exist... exiting\n");
+          exit(EXIT_FAILURE);
+        }
         assert(exists);
         fatherIds[i] = fatherIdPtr[0];
         V_coord(vrts[i],coordFather[i]);

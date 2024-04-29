@@ -55,7 +55,6 @@ class FieldDataOf : public FieldData
     void setNodeComponents(MeshEntity* e, int node, T const* components);
     void getNodeComponents(MeshEntity* e, int node, T* components);
     int getElementData(MeshEntity* entity, NewArray<T>& data);
-    virtual FieldData* clone()=0;
 };
 
 } //namespace apf
