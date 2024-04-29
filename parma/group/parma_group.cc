@@ -137,7 +137,5 @@ void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu
     apf::Unmodulo outMap(PCUObj->Self(), factor);
     runInGroups(m, PCUObj, inMap, groupMap, outMap, toRun);
   }
-  
-  //runInGroups(m, PCUObj, inMap, groupMap, outMap, toRun);
 }
 
