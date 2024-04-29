@@ -8,12 +8,12 @@ namespace parma {
   class Stop {
     public:
       virtual ~Stop() {}
-      virtual bool stop(double imb, double maxImb, pcu::PCU *PCUObj)=0;
+      virtual bool stop(double imb, double maxImb, pcu::PCU*)=0;
   };
   class Less : public Stop { 
     public:
       ~Less() {}
-      bool stop(double imb, double maxImb, pcu::PCU *PCUObj) {
+      bool stop(double imb, double maxImb, pcu::PCU*) {
         return imb < maxImb;
       }
   };

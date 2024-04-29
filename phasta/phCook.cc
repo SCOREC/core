@@ -103,7 +103,7 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }//end namespace
 
 namespace chef {
-  static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU *PCUObj) {
+  static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU*) {
     FILE* f = NULL;
     PHASTAIO_OPENTIME(f = pcu_group_open(path, false);)
     return f;
