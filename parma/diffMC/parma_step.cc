@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <parma.h>
 #include "parma_step.h"
 #include "parma_sides.h"
@@ -29,17 +28,17 @@ namespace parma {
 
   bool Stepper::step(double maxImb, int verbosity) {
     double imb, avg;
-    getImbalance(weights, imb, avg);
-    if ( !PCU_Comm_Self() && verbosity )
+    getImbalance(weights, imb, avg, m->getPCU());
+    if ( !m->getPCU()->Self() && verbosity )
       status("%s imbalance %.3f avg %.3f\n", name, imb, avg);
-    if ( stop->stop(imb,maxImb) )
+    if ( stop->stop(imb,maxImb,m->getPCU()) )
       return false;
     apf::Migration* plan = selects->run(targets);
-    int planSz = PCU_Add_Int(plan->count());
-    const double t0 = PCU_Time();
+    int planSz = m->getPCU()->Add(plan->count());
+    const double t0 = pcu::Time();
     m->migrate(plan);
-    if ( !PCU_Comm_Self() && verbosity )
-      status("%d elements migrated in %f seconds\n", planSz, PCU_Time()-t0);
+    if ( !m->getPCU()->Self() && verbosity )
+      status("%d elements migrated in %f seconds\n", planSz, pcu::Time()-t0);
     if( verbosity > 1 ) 
       Parma_PrintPtnStats(m, "endStep", (verbosity>2));
     return true;

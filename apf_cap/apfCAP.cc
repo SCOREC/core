@@ -1,5 +1,4 @@
 #include "apfCAP.h"
-#include <PCU.h>
 #include <apf.h>
 #include <apfShape.h>
 #include <gmi.h>
@@ -855,7 +854,7 @@ const char* MeshCAP::getTagName(MeshTag* tag)
 bool MeshCAP::isShared(MeshEntity* e)
 {
   (void)e;
-  if (PCU_Comm_Peers() != 1)
+  if (getPCU()->Peers() != 1)
     apf::fail("MeshCAP::isShared called in a parallel run!\n");
   return false;
 }
@@ -863,7 +862,7 @@ bool MeshCAP::isShared(MeshEntity* e)
 bool MeshCAP::isOwned(MeshEntity* e)
 {
   (void)e;
-  if (PCU_Comm_Peers() != 1)
+  if (getPCU()->Peers() != 1)
     apf::fail("MeshCAP::isOwned called in a parallel run!\n");
   return true;
 }
@@ -871,7 +870,7 @@ bool MeshCAP::isOwned(MeshEntity* e)
 int MeshCAP::getOwner(MeshEntity* e)
 {
   (void)e;
-  if (PCU_Comm_Peers() != 1)
+  if (getPCU()->Peers() != 1)
     apf::fail("MeshCAP::getOwner called in a parallel run!\n");
   return 0;
 }
@@ -880,23 +879,23 @@ void MeshCAP::getRemotes(MeshEntity* e, Copies& remotes)
 {
   (void)e;
   (void)remotes;
-  if (PCU_Comm_Peers() != 1)
+  if (getPCU()->Peers() != 1)
     apf::fail("MeshCAP::getRemotes called in a parallel run!\n");
 }
 
 void MeshCAP::getResidence(MeshEntity* e, Parts& residence)
 {
   (void)e;
-  if (PCU_Comm_Peers() != 1)
+  if (getPCU()->Peers() != 1)
     apf::fail("MeshCAP::getResidence called in a parallel run!\n");
   residence.insert(0);
 }
 
 int MeshCAP::getId()
 {
-  if (PCU_Comm_Peers() != 1)
+  if (getPCU()->Peers() != 1)
     apf::fail("MeshCAP::getId called in a parallel run!\n");
-  return PCU_Comm_Self();
+  return getPCU()->Self();
 }
 
 void MeshCAP::migrate(Migration* plan)
@@ -909,7 +908,7 @@ void MeshCAP::getMatches(MeshEntity* e, Matches& m)
 {
   (void)e;
   (void)m;
-  if (PCU_Comm_Peers() != 1)
+  if (getPCU()->Peers() != 1)
     apf::fail("MeshCAP::getMatches called in a parallel run!\n");
 }
 

@@ -35,8 +35,12 @@
 // AJP: including apf.h for single define: CGNSBCMap
 // AJP: alternative is to allow common cgns base header
 //      but trying to avoid that since it's not core functionality
-#include <apf.h> 
+#include <apf.h>
 //
+namespace pcu{
+  class PCU;
+  PCU* PCU_GetGlobal();
+}
 struct gmi_model;
 
 namespace apf {
@@ -50,13 +54,15 @@ class Field;
 
 /** \brief a map from global ids to vertex objects */
 typedef std::map<long, MeshEntity*> GlobalToVert;
+typedef struct PCUHandle PCUHandle;
+
 
 /** \brief create an empty MDS part
   \param model the geometric model interface
   \param dim the eventual mesh dimension. MDS needs to allocate
              arrays based on this before users add entities.
   \param isMatched whether or not there will be matched entities */
-Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj = nullptr);
 
 /** \brief load an MDS mesh and model from file
   \param modelfile will be passed to gmi_load to get the model
@@ -65,6 +71,7 @@ Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
         may also be called to enable loading of GeomSim, 
         Parasolid, and ACIS models
   */
+Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj);
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 
 /** \brief load an MDS mesh from files
@@ -80,10 +87,11 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
                   using PCU file IO functions.
                   Calling apf::Mesh::writeNative on the
                   resulting object will do the same in reverse. */
+Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
 // make a serial mesh on all processes - no pmodel & remote link setup
-Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile);
+Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj = nullptr);
 
 /** \brief create an MDS mesh from an existing mesh
   \param from the mesh to copy
@@ -109,8 +117,10 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder=false, bool copy
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t = 0);
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
-Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor, pcu::PCU *PCUObj, pcu::PCU *oldPCU = nullptr);
 
+Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
+Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expandedPCU);
 /** \brief align the downward adjacencies of matched entities */
 bool alignMdsMatches(Mesh2* in);
 /** \brief align the downward adjacencies of remote copies */
@@ -199,20 +209,23 @@ int getMdsIndex(Mesh2* in, MeshEntity* e);
 MeshEntity* getMdsEntity(Mesh2* in, int dimension, int index);
 
 Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
+Mesh2* loadMdsFromCGNS2(PCUHandle h, gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap);
 
 // names of mesh data to read from file: (VERTEX, VelocityX; CellCentre, Pressure)
 Mesh2* loadMdsFromCGNS(gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap, const std::vector<std::pair<std::string, std::string>>& meshData);
+Mesh2* loadMdsFromCGNS2(PCUHandle h, gmi_model* g, const char* filename, CGNSBCMap& cgnsBCMap, const std::vector<std::pair<std::string, std::string>>& meshData);
+
 
 int gmshMajorVersion(const char* filename);
 
-Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename);
+Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, pcu::PCU *PCUObj = nullptr);
 
-Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename);
+Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename, pcu::PCU *PCUObj = nullptr);
 
-Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename);
+Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename, pcu::PCU *PCUObj = nullptr);
 
 void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile,
-    const double elmWeights[]);
+    const double elmWeights[], pcu::PCU *PCUObj = nullptr);
 
 /** \brief load an MDS mesh from ANSYS .node and .elem files
   \details this call takes two filenames, one
@@ -225,13 +238,13 @@ void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile
   currently, ANSYS element types SOLID72 and SOLID92 are
   supported, which become linear and quadratic tetrahedra,
   respectively. */
-Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile);
+Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile, pcu::PCU *PCUObj = nullptr);
 
 void disownMdsModel(Mesh2* in);
 
 void setMdsMatching(Mesh2* in, bool has);
 
-Mesh2* loadMdsPart(gmi_model* model, const char* meshfile);
+Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj = nullptr);
 void writeMdsPart(Mesh2* m, const char* meshfile);
 
 }

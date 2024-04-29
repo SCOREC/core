@@ -1,6 +1,5 @@
 #include "phAxisymmetry.h"
 #include <apf.h>
-#include <PCU.h>
 #include <pcu_util.h>
 #include <iostream>
 
@@ -111,7 +110,7 @@ apf::MeshTag* tagAngles(apf::Mesh* m, BCs& bcs, apf::MatchedSharing* ms)
 {
   apf::MeshTag* tag = m->createDoubleTag("ph_angle", 1);
   gmi_model* gm = m->getModel();
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {
@@ -126,18 +125,18 @@ apf::MeshTag* tagAngles(apf::Mesh* m, BCs& bcs, apf::MatchedSharing* ms)
     mdim = m->getModelType(me);
     mtag = m->getModelTag(me);
     APF_ITERATE(apf::Matches, matches, mit) {
-      PCU_COMM_PACK(mit->peer, mit->entity);
-      PCU_COMM_PACK(mit->peer, mdim);
-      PCU_COMM_PACK(mit->peer, mtag);
+      m->getPCU()->Pack(mit->peer, mit->entity);
+      m->getPCU()->Pack(mit->peer, mdim);
+      m->getPCU()->Pack(mit->peer, mtag);
     }
   }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(v);
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
+    m->getPCU()->Unpack(v);
     int mdim, mtag;
-    PCU_COMM_UNPACK(mdim);
-    PCU_COMM_UNPACK(mtag);
+    m->getPCU()->Unpack(mdim);
+    m->getPCU()->Unpack(mtag);
     gmi_ent* oge = gmi_find(gm, mdim, mtag);
     gmi_ent* ge = (gmi_ent*) m->toModel(v);
     double angle;

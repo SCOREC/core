@@ -4,7 +4,6 @@
 #include <maStats.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -22,6 +21,7 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
+#include <memory>
 
 // === includes for safe_mkdir ===
 #include <reel.h>
@@ -37,16 +37,17 @@ void writeTable(const char* outfile,
 void getStats(
     const char* modelFile, const char* meshFile,
     const char* sizeName, const char* frameName,
-    const char* outputPrefix);
+    const char* outputPrefix, pcu::PCU *PCUObj);
 
 int main(int argc, char** argv)
 {
 
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   if (argc < 5) {
-    if (PCU_Comm_Self() == 0) {
+    if (PCUObj.get()->Self() == 0) {
       printf("USAGE1: %s <mesh.smb> <output_prefix> <scale field name>"
           "<frames field name>\n", argv[0]);
       printf("USAGE2: %s <mesh.sms> <output_prefix> <scale field name>"
@@ -77,7 +78,7 @@ int main(int argc, char** argv)
 
   safe_mkdir(inPrefix);
 
-  getStats(".null", meshFile, sizeName, frameName, inPrefix);
+  getStats(".null", meshFile, sizeName, frameName, inPrefix, PCUObj.get());
 
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
@@ -88,8 +89,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   Sim_unregisterAllKeys();
 #endif
-
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
@@ -125,7 +125,7 @@ void writeTable(const char* outFile,
 void getStats(
     const char* modelFile, const char* meshFile,
     const char* sizeName, const char* frameName,
-    const char* outputPrefix)
+    const char* outputPrefix, pcu::PCU *PCUObj)
 {
 
   apf::Mesh2* m;
@@ -133,12 +133,12 @@ void getStats(
   /* if it is a simmetrix mesh */
   if (ph::mesh_has_ext(meshFile, "sms")) {
     pParMesh sim_mesh = PM_load(meshFile, NULL, NULL);
-    m = apf::createMesh(sim_mesh);
+    m = apf::createMesh(sim_mesh, PCUObj);
   } else
 #endif
   {
     // load the mesh change to desired order and write as before vtks
-    m = apf::loadMdsMesh(modelFile,meshFile);
+    m = apf::loadMdsMesh(modelFile,meshFile, PCUObj);
   }
   m->verify();
 
@@ -182,7 +182,7 @@ void getStats(
   m->verify();
 
 
-  if (PCU_Comm_Self() == 0)
+  if (m->getPCU()->Self() == 0)
     printf("\n evaluating the statistics! \n");
   // get the stats
   ma::SizeField* sf = ma::makeSizeField(m, sizes, frames, true);
@@ -235,8 +235,8 @@ void getStats(
   const char* pathName = tmp.c_str();
   safe_mkdir(pathName);
 
-  ssq << pathName << "/linearQTable_" << PCU_Comm_Self() << ".dat";
-  sse << pathName << "/linearETable_" << PCU_Comm_Self() << ".dat";
+  ssq << pathName << "/linearQTable_" << m->getPCU()->Self() << ".dat";
+  sse << pathName << "/linearETable_" << m->getPCU()->Self() << ".dat";
   ssm << pathName << "/mesh_quality_vis";
   ssl << pathName << "/mesh_edge_length_vis";
 
@@ -300,7 +300,7 @@ void getStats(
     }
 
     std::stringstream sstq;
-    sstq << pathName << "/linearBLTriQTable_" << PCU_Comm_Self() << ".dat";
+    sstq << pathName << "/linearBLTriQTable_" << m->getPCU()->Self() << ".dat";
     writeTable(sstq.str().c_str(), tri_qtable);
   }
 #endif

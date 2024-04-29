@@ -3,10 +3,10 @@
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <stdlib.h>
+#include <memory>
 
 #define LEFT_EDGE 0
 #define TOP_EDGE 1
@@ -45,9 +45,9 @@ void createVtx(apf::Mesh2* m, int mdlDim, int mdlId, apf::Vector3 pt, EntVec& ve
   verts.push_back(vert);
 }
 
-apf::Mesh2* createTriMesh() {
+apf::Mesh2* createTriMesh(pcu::PCU *PCUObj) {
   gmi_model* g = gmi_load(".null");
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(g, 2, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(g, 2, false, PCUObj);
 
   apf::Vector3 p0( 0.0, 1.0, 0.0);
   apf::Vector3 p1( 0.5, 1.0, 0.0);
@@ -127,11 +127,12 @@ void printClassCounts(apf::Mesh* m) {
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
 
   gmi_register_null();
-  ma::Mesh* m = createTriMesh();
+  ma::Mesh* m = createTriMesh(pcu_obj.get());
   m->verify(); // make sure the mesh is valid!
   gmi_model* g = m->getModel();
   gmi_write_dmg(g,"model.dmg");
@@ -148,6 +149,6 @@ int main(int argc, char** argv)
 
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "maCrawler.h"
 #include "maLayer.h"
 #include "maSnap.h"
@@ -58,20 +57,20 @@ struct SnapTagger : public Crawler
   void send(Entity* v, int to)
   {
     bool has = m->hasTag(v, snapTag);
-    PCU_COMM_PACK(to, has);
+    m->getPCU()->Pack(to, has);
     if (has) {
       Vector s;
       m->getDoubleTag(v, snapTag, &s[0]);
-      PCU_COMM_PACK(to, s);
+      m->getPCU()->Pack(to, s);
     }
   }
   bool recv(Entity* v, int)
   {
     bool has;
-    PCU_COMM_UNPACK(has);
+    m->getPCU()->Unpack(has);
     Vector s;
     if (has)
-      PCU_COMM_UNPACK(s);
+      m->getPCU()->Unpack(s);
     if (getFlag(a, v, CHECKED))
       return false;
     setFlag(a, v, CHECKED);
@@ -134,7 +133,7 @@ struct BaseTopLinker : public Crawler
   void begin(Layer& first)
   {
     getDimensionBase(a, 0, first);
-    int peer = PCU_Comm_Self();
+    int peer = m->getPCU()->Self();
     for (size_t i = 0; i < first.size(); ++i) {
       if (!m->isOwned(first[i]))
         continue;
@@ -160,12 +159,12 @@ struct BaseTopLinker : public Crawler
   {
     int link[2];
     m->getIntTag(v, linkTag, link);
-    PCU_COMM_PACK(to, link);
+    m->getPCU()->Pack(to, link);
   }
   bool recv(Entity* v, int)
   {
     int link[2];
-    PCU_COMM_UNPACK(link);
+    m->getPCU()->Unpack(link);
     if (hasLink(v))
       return false;
     m->setIntTag(v, linkTag, link);
@@ -234,7 +233,7 @@ struct LayerSnapper : public Crawler
       }
     }
     syncLayer(this, owned);
-    PCU_Add_Longs(&ncurves, 1);
+    m->getPCU()->Add(&ncurves, 1);
   }
   void end()
   {
@@ -252,12 +251,12 @@ struct LayerSnapper : public Crawler
   void send(Entity* v, int to)
   {
     bool has = m->hasTag(v, snapTag);
-    PCU_COMM_PACK(to, has);
+    m->getPCU()->Pack(to, has);
   }
   bool recv(Entity* v, int)
   {
     bool has;
-    PCU_COMM_UNPACK(has);
+    m->getPCU()->Unpack(has);
     if (getFlag(a, v, CHECKED))
       return false;
     handle(v, has);
@@ -271,11 +270,11 @@ struct LayerSnapper : public Crawler
 
 static long snapAllCurves(Adapt* a, Tag* snapTag)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   LayerSnapper op(a, snapTag);
   crawlLayers(&op);
-  double t1 = PCU_Time();
-  print("snapped %ld curves in %f seconds", op.ncurves, t1 - t0);
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "snapped %ld curves in %f seconds", op.ncurves, t1 - t0);
   return op.ncurves;
 }
 
@@ -352,12 +351,12 @@ struct UnsnapChecker : public Crawler
   void send(Entity* v, int to)
   {
     bool has = getFlag(a, v, LAYER_UNSNAP);
-    PCU_COMM_PACK(to, has);
+    m->getPCU()->Pack(to, has);
   }
   bool recv(Entity* v, int)
   {
     bool has;
-    PCU_COMM_UNPACK(has);
+    m->getPCU()->Unpack(has);
     bool wasChecked = getFlag(a, v, CHECKED);
     if (wasChecked) {
       if (has)
@@ -387,7 +386,7 @@ static void crawlLayers_doubleSync(Crawler* c)
 {
   Crawler::Layer layer;
   c->begin(layer);
-  while (PCU_Or( ! layer.empty())) {
+  while (c->mesh->getPCU()->Or( ! layer.empty())) {
     crawlLayer(c, layer);
     syncLayer(c, layer);
     syncLayer(c, layer);
@@ -397,15 +396,15 @@ static void crawlLayers_doubleSync(Crawler* c)
 
 static bool checkForUnsnap(Adapt* a, Tag* snapTag)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   UnsnapChecker op(a, snapTag);
   crawlLayers_doubleSync(&op);
-  bool notOk = PCU_Or(op.foundAnything);
-  double t1 = PCU_Time();
+  bool notOk = a->mesh->getPCU()->Or(op.foundAnything);
+  double t1 = pcu::Time();
   if (notOk)
-    print("checked snapped curves in %f seconds, found some to unsnap", t1 - t0);
+    print(a->mesh->getPCU(), "checked snapped curves in %f seconds, found some to unsnap", t1 - t0);
   else
-    print("checked snapped curves in %f seconds, all ok", t1 - t0);
+    print(a->mesh->getPCU(), "checked snapped curves in %f seconds, all ok", t1 - t0);
   return notOk;
 }
 
@@ -417,7 +416,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
   Mesh* m = l.m;
   long n = 0;
   Entity* v;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   Iterator* it = m->begin(0);
   while ((v = m->iterate(it)))
     if (getFlag(a, v, LAYER_TOP) &&
@@ -425,20 +424,20 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
         m->isOwned(v)) {
       int peer, link;
       l.getLink(v, peer, link);
-      PCU_COMM_PACK(peer, link);
+      m->getPCU()->Pack(peer, link);
       ++n;
     }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     int link;
-    PCU_COMM_UNPACK(link);
+    m->getPCU()->Unpack(link);
     Entity* v = l.lookup(link);
     setFlag(a, v, LAYER_UNSNAP);
     PCU_ALWAYS_ASSERT(m->hasTag(v, snapTag));
   }
-  n = PCU_Add_Long(n);
-  print("fed back unsnap flag from %ld tops", n);
+  n = m->getPCU()->Add(n);
+  print(m->getPCU(), "fed back unsnap flag from %ld tops", n);
 }
 
 /* for each layer curve whose base vertex
@@ -486,7 +485,7 @@ struct Unsnapper : public Crawler
           ++ncurves;
       }
     }
-    PCU_Add_Longs(&ncurves, 1);
+    m->getPCU()->Add(&ncurves, 1);
     syncLayer(this, owned);
   }
   void end()
@@ -506,12 +505,12 @@ struct Unsnapper : public Crawler
   void send(Entity* v, int to)
   {
     bool has = getFlag(a, v, LAYER_UNSNAP);
-    PCU_COMM_PACK(to, has);
+    m->getPCU()->Pack(to, has);
   }
   bool recv(Entity* v, int)
   {
     bool has;
-    PCU_COMM_UNPACK(has);
+    m->getPCU()->Unpack(has);
     if (getFlag(a, v, CHECKED))
       return false;
     handle(v, has);
@@ -525,11 +524,11 @@ struct Unsnapper : public Crawler
 
 static long unsnapMarkedCurves(Adapt* a, Tag* snapTag)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   Unsnapper op(a, snapTag);
   crawlLayers(&op);
-  double t1 = PCU_Time();
-  print("unsnapped %ld curves in %f seconds", op.ncurves, t1 - t0); 
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "unsnapped %ld curves in %f seconds", op.ncurves, t1 - t0); 
   return op.ncurves;
 }
 
@@ -537,7 +536,7 @@ void snapLayer(Adapt* a, Tag* snapTag)
 {
   if ( ! a->hasLayer)
     return;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   findLayerBase(a);
   tagLayerForSnap(a, snapTag);
   flagLayerTop(a);
@@ -550,8 +549,8 @@ void snapLayer(Adapt* a, Tag* snapTag)
     nunsnapped += unsnapMarkedCurves(a, snapTag);
   }
   delete l;
-  double t1 = PCU_Time();
-  print("finished snapping %ld of %ld layer curves in %f seconds",
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "finished snapping %ld of %ld layer curves in %f seconds", 
       nsnapped - nunsnapped, nsnapped, t1 - t0);
 }
 

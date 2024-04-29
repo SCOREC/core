@@ -8,7 +8,6 @@
 #include "apfZoltan.h"
 #include "apfZoltanMesh.h"
 #include <apfPartition.h>
-#include <PCU.h>
 #include <lionPrint.h>
 
 namespace apf {
@@ -25,18 +24,18 @@ class ZoltanSplitter : public Splitter
     virtual ~ZoltanSplitter() {}
     virtual Migration* split(MeshTag* weights, double tolerance, int multiple)
     {
-      double t0 = PCU_Time();
+      double t0 = pcu::Time();
       Migration* plan = bridge.run(weights, tolerance, multiple);
       if (isSynchronous) {
         for (int i = 0; i < plan->count(); ++i) {
           MeshEntity* e = plan->get(i);
           int p = plan->sending(e);
-          p += PCU_Proc_Self() * multiple;
+          p += bridge->mesh->getPCU()->Self() * multiple;
           plan->send(e, p);
         }
       }
-      double t1 = PCU_Time();
-      if (!PCU_Comm_Self())
+      double t1 = pcu::Time();
+      if (!bridge->mesh->getPCU()->Self())
         lion_oprint(1, "planned Zoltan split factor %d to target"
             " imbalance %f in %f seconds\n", multiple, tolerance, t1 - t0);
       return plan;
@@ -55,15 +54,15 @@ class ZoltanBalancer : public Balancer
     virtual ~ZoltanBalancer() {}
     virtual void balance(MeshTag* weights, double tolerance)
     {
-      double t0 = PCU_Time();
+      double t0 = pcu::Time();
       Migration* plan = bridge.run(weights, tolerance, 1);
-      if (!PCU_Comm_Self())
+      if (!bridge.mesh->getPCU()->Self())
         lion_oprint(1, "planned Zoltan balance to target "
             "imbalance %f in %f seconds\n",
-            tolerance, PCU_Time() - t0);
+            tolerance, pcu::Time() - t0);
       bridge.mesh->migrate(plan);
-      double t1 = PCU_Time();
-      if (!PCU_Comm_Self())
+      double t1 = pcu::Time();
+      if (!bridge.mesh->getPCU()->Self())
         lion_oprint(1,"Zoltan balanced to %f in %f seconds\n",
             tolerance, t1-t0);
     }

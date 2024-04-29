@@ -1,4 +1,4 @@
-#include <PCU.h>
+//#include <PCUObj.h>
 #include <lionPrint.h>
 #include "phBC.h"
 #ifdef HAVE_SIMMETRIX
@@ -123,9 +123,9 @@ void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs)
     attachAllAngleBCs(m, bcs);
 }
 
-void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
+void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs, pcu::PCU *PCUObj)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   const char* modelfile = in.modelFileName.c_str();
   const char* attribfile = in.attributeFileName.c_str();
   /* loading the model */
@@ -148,8 +148,8 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs)
 #endif
   /* load attributes */
   readBCs(m, attribfile, in.axisymmetry, bcs);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!PCUObj->Self())
     lion_oprint(1,"\"%s\" and \"%s\" loaded in %f seconds\n", modelfile, attribfile, t1 - t0);
 }
 

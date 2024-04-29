@@ -6,7 +6,6 @@
 #include <apfNumbering.h>
 #include <apfShape.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -19,6 +18,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 
 
 using namespace std;
@@ -72,18 +72,19 @@ void addFields(apf::Mesh2* m,
     const vector<apf::Matrix3x3> &adaptedFrames);
 apf::Mesh2* convertToPumi(
     pMesh simxMesh, int dim,
-    const char* sizeName, const char* frameName);
+    const char* sizeName, const char* frameName, pcu::PCU *PCUObj);
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   MS_init(); // Call before calling Sim_readLicenseFile
   Sim_readLicenseFile(0);
   SimDiscrete_start(0);  // initialize GeomSim Discrete library
 
   if (argc < 7) {
-    if (PCU_Comm_Self() == 0) {
+    if (PCUObj.get()->Self() == 0) {
       printf("USAGE: %s <model.dmg> <mesh.smb> <prefix>"
       	  "<scale field name> <frame field name> <min_quality>\n", argv[0]);
     }
@@ -94,7 +95,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  PCU_ALWAYS_ASSERT_VERBOSE(PCU_Comm_Peers() == 1,
+  PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.get()->Peers() == 1,
       "This utility only works for serial meshes!");
 
   const char* inputPumiModel = argv[1];
@@ -118,7 +119,7 @@ int main(int argc, char** argv)
   sprintf(outImprovedSimxMesh, "%s_adapted_improved.sms", prefix);
   sprintf(outImprovedPumiMesh, "%s_adapted_improved.smb", prefix);
 
-  apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh);
+  apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh, PCUObj.get());
 
   char message[512];
   // first find the sizes field
@@ -193,7 +194,7 @@ int main(int argc, char** argv)
   printf("%s\n", outAdaptedSimxMesh);
   printf("%s\n", outAdaptedPumiMesh);
   M_write(simxMesh,outAdaptedSimxMesh, 0,0);  // write out the initial mesh data
-  apf::Mesh2* m2 = convertToPumi(simxMesh, dim, sizeName, frameName);
+  apf::Mesh2* m2 = convertToPumi(simxMesh, dim, sizeName, frameName, PCUObj.get());
 
   m2->writeNative(outAdaptedPumiMesh);
   printf("===DONE===\n");
@@ -207,7 +208,7 @@ int main(int argc, char** argv)
   printf("%s\n", outImprovedSimxMesh);
   printf("%s\n", outImprovedPumiMesh);
   M_write(simxMesh,outImprovedSimxMesh, 0,0);  // write out the initial mesh data
-  apf::Mesh2* m3 = convertToPumi(simxMesh, dim, sizeName, frameName);
+  apf::Mesh2* m3 = convertToPumi(simxMesh, dim, sizeName, frameName, PCUObj.get());
 
   m3->writeNative(outImprovedPumiMesh);
   printf("===DONE===\n");
@@ -228,7 +229,7 @@ int main(int argc, char** argv)
   SimDiscrete_stop(0);
   Sim_unregisterAllKeys();
   MS_exit();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
@@ -436,21 +437,21 @@ pMSAdapt addSizesToSimxMesh(
 
 double runSimxAdapt(pMSAdapt adapter)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   MSA_adapt(adapter, 0);
   MSA_delete(adapter);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
 double runSimxMeshImprover(pMesh mesh, double minQuality)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pVolumeMeshImprover vmi = VolumeMeshImprover_new(mesh);
   VolumeMeshImprover_setShapeMetric(vmi, ShapeMetricType_VolLenRatio, minQuality);
   VolumeMeshImprover_execute(vmi, 0);
   VolumeMeshImprover_delete(vmi);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
@@ -585,7 +586,8 @@ void addFields(apf::Mesh2* m,
 apf::Mesh2* convertToPumi(
     pMesh simxMesh, int dim,
     const char* sizeName,
-    const char* frameName)
+    const char* frameName,
+    pcu::PCU *PCUObj)
 {
   double* adaptedCoords;
   apf::Gid* adaptedConns;
@@ -596,7 +598,7 @@ apf::Mesh2* convertToPumi(
       adaptedNumVerts, adaptedNumElems, adaptedSizes, adaptedFrames);
 
   gmi_model* nullModel = gmi_load(".null");
-  apf::Mesh2* m2 = apf::makeEmptyMdsMesh(nullModel, dim, false);
+  apf::Mesh2* m2 = apf::makeEmptyMdsMesh(nullModel, dim, false, PCUObj);
   apf::GlobalToVert outMap;
   apf::construct(m2, adaptedConns, adaptedNumElems, apf::Mesh::TET, outMap);;
   apf::alignMdsRemotes(m2);

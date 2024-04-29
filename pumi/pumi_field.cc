@@ -13,7 +13,7 @@
 #include "apfFieldData.h"
 #include "apfNumbering.h"
 #include <pcu_util.h>
-#include <PCU.h>
+#include <PCUObj.h>
 #include <lionPrint.h>
 #include <cstdlib> // for malloc and free
 
@@ -205,7 +205,7 @@ void pumi_field_multiply(pField f1, double d, pField f2)
 void pumi_field_print(pField f)
 //*******************************************************
 {
-  pumi_sync();
+  pumi_sync(getMesh(f)->getPCU());
   apf::Mesh*  m = getMesh(f);
   if (!m->findTag("global_id")) pumi_mesh_createGlobalID((pMesh)m);
 
@@ -228,20 +228,20 @@ void pumi_field_print(pField f)
       switch (n)
       {
         case 1: {
-          std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+          std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<"]\n";
         break;}
       case 2: {     
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<", "<<dof_data[1]
 		     <<"]\n";
         break;}
       case 3: {
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<", "<<dof_data[1]
@@ -249,7 +249,7 @@ void pumi_field_print(pField f)
 		     <<"]\n";
         break;}
     case 4: {
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<", "<<dof_data[1]
@@ -259,7 +259,7 @@ void pumi_field_print(pField f)
  
         break; }
       case 6: {
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<", "<<dof_data[1]
@@ -270,7 +270,7 @@ void pumi_field_print(pField f)
 		     <<"]\n";
         break; }
       case 8: {
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<", "<<dof_data[1]
 		     <<", "<<dof_data[2]
@@ -282,7 +282,7 @@ void pumi_field_print(pField f)
 		     <<"]\n";
         break; }
       case 12: {
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<", "<<dof_data[1]
@@ -299,7 +299,7 @@ void pumi_field_print(pField f)
 		     <<"]\n";
         break; }
       case 18: {
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<", "<<dof_data[1]
@@ -322,7 +322,7 @@ void pumi_field_print(pField f)
 		     <<"]\n";
         break; }
       case 24: {
-	std::cout<<"[p"<<pumi_rank()<<"] field "<<getName(f)
+	std::cout<<"[p"<<pumi_rank(m->getPCU())<<"] field "<<getName(f)
 		     <<"/ent "<<e<<" id "<<pumi_ment_getGlobalID(e)
 		     <<": ["<<dof_data[0]
 		     <<", "<<dof_data[1]
@@ -350,7 +350,7 @@ void pumi_field_print(pField f)
 		     <<", "<<dof_data[23]
 		     <<"]\n";
         break; }
-      default: if (!pumi_rank()) std::cout<<__func__<<" failed for field "
+      default: if (!pumi_rank(m->getPCU())) std::cout<<__func__<<" failed for field "
                <<getName(f)<<": does support "<<n<<" dofs\n";
                break;
       } // switch
@@ -389,7 +389,7 @@ static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pOwnership shr)
       double *s_data = (double*)((char*)msg_send+sizeof(pMeshEnt)+sizeof(int));
       for (int pos=0; pos<n; ++pos)
         s_data[pos]=values[pos];
-      PCU_Comm_Write(to, (void*)msg_send, msg_size);
+      m->getPCU()->Write(to, (void*)msg_send, msg_size);
       free(msg_send);
     }
 
@@ -408,13 +408,13 @@ static void sendFieldData(pMesh m, pMeshEnt e, pField f, int nf, pOwnership shr)
       double *s_data = (double*)((char*)msg_send+sizeof(pMeshEnt)+sizeof(int));
       for (int pos=0; pos<n; ++pos)
         s_data[pos]=values[pos];
-      PCU_Comm_Write(to, (void*)msg_send, msg_size);
+      m->getPCU()->Write(to, (void*)msg_send, msg_size);
       free(msg_send);
       }
     } //if (m->isGhosted(e))
 }
 
-static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mismatch_fields)
+static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mismatch_fields, pcu::PCU *PCUObj)
 {
   pField f;
   void *msg_recv;
@@ -422,7 +422,7 @@ static void receiveFieldData(std::vector<pField>& fields, std::set<pField>& mism
   size_t msg_size;
   pMeshEnt e;
 
-  while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
+  while(PCUObj->Read(&pid_from, &msg_recv, &msg_size))
   {
     e = *((pMeshEnt*)msg_recv); 
     int *nf = (int*)((char*)msg_recv+sizeof(pMeshEnt)); 
@@ -465,7 +465,7 @@ void pumi_field_verify(pMesh m, pField f, pOwnership shr)
 
   if (!shr) shr = getSharing(m);
 
-  if (!pumi_rank()) // master
+  if (!pumi_rank(m->getPCU())) // master
   {
     lion_oprint(1,"  - verifying fields: ");
     for (size_t nf = 0; nf < fields.size(); ++nf)
@@ -484,26 +484,26 @@ void pumi_field_verify(pMesh m, pField f, pOwnership shr)
       if (!static_cast<apf::FieldBase*>(fields[nf])->getShape()->hasNodesIn(d))
         continue;
 
-      PCU_Comm_Begin();
+      m->getPCU()->Begin();
       pMeshIter it = m->begin(d);
       pMeshEnt e;
       while ((e = m->iterate(it)))
         sendFieldData(m, e, fields[nf], nf, shr);
       m->end(it);
-      PCU_Comm_Send();
-      receiveFieldData(fields,mismatch_fields); 
+      m->getPCU()->Send();
+      receiveFieldData(fields,mismatch_fields,m->getPCU()); 
     }
   }
-  int global_size = PCU_Max_Int((int)mismatch_fields.size());
+  int global_size = m->getPCU()->Max((int)mismatch_fields.size());
   if (global_size)
   {
-    if (!PCU_Comm_Self())
+    if (!m->getPCU()->Self())
     for (std::set<pField>::iterator it=mismatch_fields.begin(); it!=mismatch_fields.end(); ++it)
       lion_oprint(1,"%s: \"%s\" DOF mismatch over remote/ghost copies\n", __func__, getName(*it));
   }
   else
   {
-    if (!PCU_Comm_Self())
+    if (!m->getPCU()->Self())
       lion_oprint(1,"%s: no DOF mismatch\n", __func__);
   }
 }

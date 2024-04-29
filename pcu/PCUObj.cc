@@ -27,6 +27,7 @@ int PCU::Pack(int to_rank, const void *data, size_t size) noexcept {
   memcpy(pcu_msg_pack(msg_, to_rank, size), data, size);
   return PCU_SUCCESS;
 }
+
 int PCU::Send() noexcept {
   pcu_msg_send(mpi_, msg_);
   return PCU_SUCCESS;
@@ -59,6 +60,7 @@ int PCU::Unpack(void *data, size_t size) noexcept {
     memcpy(data, pcu_msg_unpack(msg_, size), size);
   return PCU_SUCCESS;
 }
+
 int PCU::Write(int to_rank, const void *data, size_t size) noexcept {
   if ((to_rank < 0) || (to_rank >= Peers()))
     reel_fail("Invalid rank in Comm_Write");
@@ -145,9 +147,11 @@ void PCU::DebugOpen() noexcept {
 
   append(path, bufsize, "%s", "debug");
   if (!msg_->file)
-    msg_->file = pcu_open_parallel(path, "txt");
+    msg_->file = pcu_open_parallel2(GetCHandle(), path, "txt");
   noto_free(path);
 }
+
+
 
 double GetMem() noexcept { return pcu_get_mem(); }
 void Protect() noexcept { reel_protect(); }

@@ -58,16 +58,16 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
     }                                                       \
     PCU_IGNORE_DIAGNOSTIC_END                               \
   } while (0)                                               
-#define PCU_ALWAYS_ASSERT_VERBOSE(cond, msg)      \
-  do {                                            \
-    PCU_IGNORE_DIAGNOSTIC_START(-Wdeprecated-declarations)\
-    if (! (cond)) {                               \
-      char omsg[2048];                            \
-      sprintf(omsg, "%s failed at %s + %d \n %s", \
-        #cond, __FILE__, __LINE__, msg);          \
-      PCU_Assert_Fail(omsg);                      \
-    }                                             \
-  PCU_IGNORE_DIAGNOSTIC_END                       \
+#define PCU_ALWAYS_ASSERT_VERBOSE(cond, msg)                \
+  do {                                                      \
+    PCU_IGNORE_DIAGNOSTIC_START(-Wdeprecated-declarations)  \
+    if (! (cond)) {                                         \
+      char omsg[2048];                                      \
+      sprintf(omsg, "%s failed at %s + %d \n %s",           \
+        #cond, __FILE__, __LINE__, msg);                    \
+      PCU_Assert_Fail(omsg);                                \
+    }                                                       \
+  PCU_IGNORE_DIAGNOSTIC_END                                 \
   } while(0)                                      
 
 #ifdef NDEBUG

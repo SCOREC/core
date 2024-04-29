@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include "apfCavityOp.h"
 #include "apf.h"
 #include "apfMesh2.h"
@@ -134,10 +133,10 @@ bool CavityOp::requestLocality(MeshEntity** entities, int count)
 
 bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
 {
-  int done = PCU_Min_Int(requests.empty());
+  int done = mesh->getPCU()->Min((int)requests.empty());
   if (done) return false;
   /* throw in the local pull requests */
-  int self = PCU_Comm_Self();
+  int self = mesh->getPCU()->Self();
   received.reserve(requests.size());
   APF_ITERATE(Requests,requests,it)
   {
@@ -147,7 +146,7 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
     received.push_back(request);
   }
   /* now communicate the rest */
-  PCU_Comm_Begin();
+  mesh->getPCU()->Begin();
   APF_ITERATE(Requests,requests,it)
   {
     CopyArray remotes;
@@ -156,18 +155,18 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
     {
       int remotePart = rit->peer;
       MeshEntity* remoteEntity = rit->entity;
-      PCU_COMM_PACK(remotePart,remoteEntity);
-    }
+      mesh->getPCU()->Pack(remotePart,remoteEntity);    }
   }
   requests.clear();
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen())
+  mesh->getPCU()->Send();
+  while (mesh->getPCU()->Listen())
   {
     PullRequest request;
-    request.to = PCU_Comm_Sender();
-    while ( ! PCU_Comm_Unpacked())
+    request.to = mesh->getPCU()->Sender();
+    while ( ! mesh->getPCU()->Unpacked())
     {
-      PCU_COMM_UNPACK(request.e);
+      mesh->getPCU()->Unpack(request.e);
+      //mesh->getPCU()->Unpack(&(request.e), sizeof(request.e));
       received.push_back(request);
     }
   }

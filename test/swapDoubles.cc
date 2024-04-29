@@ -1,12 +1,15 @@
-#include <PCU.h>
+//#include <mpi.h>
+#include <PCUObj.h>
 #include <pcu_io.h> //pcu_swap_doubles
 #include <pcu_util.h> //PCU_ALWAYS_ASSERT
 #include <numeric> //iota
 #include <iostream> //cerr
+#include <memory>
 
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   const size_t n = 2;
   double *d_orig = new double[n];
   std::iota(d_orig,d_orig+n,0);
@@ -25,7 +28,7 @@ int main(int argc, char** argv) {
   }
   delete [] d_orig;
   delete [] d;
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 }

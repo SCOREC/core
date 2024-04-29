@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include <lionPrint.h>
 #include "maAdapt.h"
 #include "maInput.h"
@@ -111,7 +110,7 @@ void setFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(it->peer == a->mesh->getPCU()->Self());
       setFlag(a, it->entity, flag);
     }
   }
@@ -131,7 +130,7 @@ void clearFlagMatched(Adapt* a, Entity* e, int flag)
     apf::Matches matches;
     a->mesh->getMatches(e, matches);
     APF_ITERATE(apf::Matches, matches, it) {
-      PCU_ALWAYS_ASSERT(it->peer == PCU_Comm_Self());
+      PCU_ALWAYS_ASSERT(it->peer == a->mesh->getPCU()->Self());
       clearFlag(a, it->entity, flag);
     }
   }
@@ -228,7 +227,7 @@ bool checkFlagConsistency(Adapt* a, int dimension, int flag)
 {
   Mesh* m = a->mesh;
   apf::Sharing* sh = apf::getSharing(m);
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   Entity* e;
   Iterator* it = m->begin(dimension);
   while ((e = m->iterate(it))) {
@@ -238,17 +237,17 @@ bool checkFlagConsistency(Adapt* a, int dimension, int flag)
       continue;
     bool value = getFlag(a, e, flag);
     APF_ITERATE(apf::CopyArray, others, rit) {
-      PCU_COMM_PACK(rit->peer, rit->entity);
-      PCU_COMM_PACK(rit->peer, value);
+      m->getPCU()->Pack(rit->peer, rit->entity);
+      m->getPCU()->Pack(rit->peer, value);
     }
   }
   m->end(it);
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   bool ok = true;
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(e);
+  while (m->getPCU()->Receive()) {
+    m->getPCU()->Unpack(e);
     bool value;
-    PCU_COMM_UNPACK(value);
+    m->getPCU()->Unpack(value);
     if(value != getFlag(a,e,flag))
       ok = false;
   }
@@ -321,7 +320,7 @@ long markEntities(
       setFlag(a,e,setFalseFlag);
   }
   m->end(it);
-  return PCU_Add_Long(count);
+  return m->getPCU()->Add(count);
 }
 
 void NewEntities::reset()
@@ -471,9 +470,9 @@ void clearBuildCallback(Adapt* a)
   a->buildCallback = 0;
 }
 
-void print(const char* format, ...)
+void print(pcu::PCU *PCUObj, const char* format, ...)
 {
-  if (PCU_Comm_Self())
+  if (PCUObj->Self())
     return;
   lion_oprint(1,"\nMeshAdapt: ");
   va_list ap;
@@ -500,7 +499,7 @@ void syncFlag(Adapt* a, int dimension, int flag)
 {
   Mesh* m = a->mesh;
   apf::Sharing* sh = apf::getSharing(m);
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   Entity* e;
   Iterator* it = m->begin(dimension);
   while ((e = m->iterate(it))) {
@@ -509,12 +508,12 @@ void syncFlag(Adapt* a, int dimension, int flag)
     apf::CopyArray others;
     sh->getCopies(e, others);
     APF_ITERATE(apf::CopyArray, others, rit)
-      PCU_COMM_PACK(rit->peer, rit->entity);
+      m->getPCU()->Pack(rit->peer, rit->entity);
   }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(e);
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
+    m->getPCU()->Unpack(e);
     setFlag(a,e,flag);
   }
   delete sh;

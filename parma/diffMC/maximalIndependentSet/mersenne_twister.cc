@@ -34,8 +34,8 @@ static unsigned long mt[N]; /* the array for the state vector */
 static int mti = N + 1; /* mti == N + 1 means mt is not initialized */
 
 namespace {
-  void fail(const char* msg) {
-    if( ! PCU_Comm_Self() )
+  void fail(const char* msg, pcu::PCU *PCUObj) {
+    if( ! PCUObj->Self() )
       lion_eprint(1, "%s", msg);
     exit(EXIT_FAILURE);
   }
@@ -53,14 +53,14 @@ void mersenne_twister_seed(unsigned seed)
     mt[mti] = (6909 * mt[mti - 1]) & 0xFFFFFFFF;
 }
 
-unsigned mersenne_twister(void)
+unsigned mersenne_twister(pcu::PCU *PCUObj)
 {
   static unsigned long const mag01[2] = {0x0, MATRIX_A};
   /* mag01[x] = x * MATRIX_A fox x = {0,1} */
   unsigned long y;
   int kk;
   if (mti == N + 1)
-    fail("mersenne twister was not seeded before use\n");
+    fail("mersenne twister was not seeded before use\n", PCUObj);
   if (mti == N) { /* generate N words at one time */
     for (kk = 0; kk < N - M; ++kk) {
       y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);

@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "phOutput.h"
 #include "phIO.h"
 #include "phiotimer.h"
@@ -9,10 +8,10 @@
 
 namespace ph {
 
-static std::string buildGeomBCFileName(std::string timestep_or_dat)
+static std::string buildGeomBCFileName(std::string timestep_or_dat, pcu::PCU *pcu_obj)
 {
   std::stringstream ss;
-  int rank = PCU_Comm_Self() + 1;
+  int rank = pcu_obj->Self() + 1;
   ss << "geombc." << timestep_or_dat << "." << rank;
   return ss.str();
 }
@@ -294,7 +293,7 @@ static void writeSpanwiseAvgArrays(Output& o, FILE* f)
 
 void writeGeomBC(Output& o, std::string path, int timestep)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   apf::Mesh* m = o.mesh;
   std::stringstream tss; 
   std::string timestep_or_dat;
@@ -304,7 +303,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     tss << timestep;   
     timestep_or_dat = tss.str();
   }
-  path += buildGeomBCFileName(timestep_or_dat);
+  path += buildGeomBCFileName(timestep_or_dat, m->getPCU());
   phastaio_setfile(GEOMBC_WRITE);
   FILE* f = o.openfile_write(o, path.c_str());
   if (!f) {
@@ -354,7 +353,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
       params[0] * params[1], 2, params);
-  writeInt(f, "number of processors", PCU_Comm_Peers());
+  writeInt(f, "number of processors", m->getPCU()->Peers());
   writeInt(f, "size of ilwork array", o.nlwork);
   if (o.nlwork)
     writeInts(f, "ilwork ", o.arrays.ilwork, o.nlwork);
@@ -373,8 +372,8 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeGrowthCurves(o, f);
   writeSpanwiseAvgArrays(o, f);
   PHASTAIO_CLOSETIME(fclose(f);)
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
     lion_oprint(1,"geombc file written in %f seconds\n", t1 - t0);
 }
 

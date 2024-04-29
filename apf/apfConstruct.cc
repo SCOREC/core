@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "pcu_util.h"
 #include "apfConvert.h"
 #include "apfMesh2.h"
@@ -15,7 +14,7 @@ static void constructVerts(
 {
   ModelEntity* interior = m->findModelEntity(m->getDimension(), 0);
   int end = nelem * apf::Mesh::adjacentCount[etype][0];
-  int self2 = PCU_Comm_Self();
+  int self2 = m->getPCU()->Self();
   for (int i = 0; i < end; ++i)
     if ( ! result.count(conn[i])) {
       result[conn[i]] = m->createVert_(interior);
@@ -43,12 +42,12 @@ static NewElements constructElements(
   return newElements;
 }
 
-static Gid getMax(const GlobalToVert& globalToVert)
+static Gid getMax(const GlobalToVert& globalToVert, Mesh2* m)
 {
   Gid max = -1;
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it)
     max = std::max(max, it->first);
-  return PCU_Max_Long(max); // this is type-dependent
+  return m->getPCU()->Max(max); // this is type-dependent
 }
 
 
@@ -59,7 +58,7 @@ static Gid getMax(const GlobalToVert& globalToVert)
 static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
 {
   Gid ifirst=0;
-  int self2 = PCU_Comm_Self();
+  int self2 = m->getPCU()->Self();
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
     if(ifirst==0 || ifirst==13437400 ) {
@@ -67,7 +66,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     }
     ifirst++;
   }
-  Gid max = getMax(globalToVert);  // seems like we read this and know it already on every rank so why compute with global comm?
+  Gid max = getMax(globalToVert, m);  // seems like we read this and know it already on every rank so why compute with global comm?
   ifirst=0;
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
@@ -80,13 +79,13 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     ifirst++;
   }
   Gid total = max + 1;
-  int peers = PCU_Comm_Peers();
+  int peers = m->getPCU()->Peers();
   Gid quotientL = total / peers; 
   int quotient = quotientL;
   Gid remainderL = total % peers; 
   int remainder = remainderL;
   int mySize = quotient;
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   if (self == (peers - 1))
     mySize += remainder;
   if (self == (peers - 1)) lion_eprint(1, "CR1 mysize=%d \n",mySize);
@@ -94,7 +93,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
   TmpParts tmpParts(mySize);
   /* if we have a vertex, send its global id to the
      broker for that global id */
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
     if(gid < 0 || gid > max ){ 
@@ -102,49 +101,49 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     } 
     Gid tmpL=gid / quotient;
     int tmpI=tmpL;    int to = std::min(peers - 1,tmpI); 
-    PCU_COMM_PACK(to, gid);
+    m->getPCU()->Pack(to, gid);
   }
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   Gid myOffset = (long)self * quotient;
   if (self == (peers - 1)) lion_eprint(1, "CR5: self=%d,myOffset=%ld,quotient=%d \n",self,myOffset,quotient);
   /* brokers store all the part ids that sent messages
      for each global id */
-  while (PCU_Comm_Receive()) {
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
-    int from = PCU_Comm_Sender();
+    m->getPCU()->Unpack(gid);
+    int from = m->getPCU()->Sender();
     Gid tmpL=gid - myOffset; // forcing 64 bit difference until we know it is safe
     int tmpI=tmpL;
     tmpParts.at(tmpI).push_back(from);
   }
   /* for each global id, send all associated part ids
      to all associated parts */
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (int i = 0; i < mySize; ++i) {
     std::vector<int>& parts = tmpParts[i];
     for (size_t j = 0; j < parts.size(); ++j) {
       int to = parts[j];
       Gid gid = i + myOffset;
       int nparts = parts.size();
-      PCU_COMM_PACK(to, gid);
-      PCU_COMM_PACK(to, nparts);
+      m->getPCU()->Pack(to, gid);
+      m->getPCU()->Pack(to, nparts);
       for (size_t k = 0; k < parts.size(); ++k)
-        PCU_COMM_PACK(to, parts[k]);
+        m->getPCU()->Pack(to, parts[k]);
     }
   }
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   /* receiving a global id and associated parts,
      lookup the vertex and classify it on the partition
      model entity for that set of parts */
-  while (PCU_Comm_Receive()) {
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     int nparts;
-    PCU_COMM_UNPACK(nparts);
+    m->getPCU()->Unpack(nparts);
     Parts residence;
     for (int i = 0; i < nparts; ++i) {
       int part;
-      PCU_COMM_UNPACK(part);
+      m->getPCU()->Unpack(part);
       residence.insert(part);
     }
     MeshEntity* vert = globalToVert[gid];
@@ -157,8 +156,8 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
    pairs with parts in the residence of the vertex */
 static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
 {
-  int self = PCU_Comm_Self();
-  PCU_Comm_Begin();
+  int self = m->getPCU()->Self();
+  m->getPCU()->Begin();
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;
     if(gid < 0 )      
@@ -168,22 +167,22 @@ static void constructRemotes(Mesh2* m, GlobalToVert& globalToVert)
     m->getResidence(vert, residence);
     APF_ITERATE(Parts, residence, rit)
       if (*rit != self) {
-        PCU_COMM_PACK(*rit, gid);
-        PCU_COMM_PACK(*rit, vert);
+        m->getPCU()->Pack(*rit, gid);
+        m->getPCU()->Pack(*rit, vert);
       }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     MeshEntity* remote;
-    PCU_COMM_UNPACK(remote);
-    int from = PCU_Comm_Sender();
+    m->getPCU()->Unpack(remote);
+    int from = m->getPCU()->Sender();
     MeshEntity* vert = globalToVert[gid];
     m->addRemote(vert, from, remote);
   }
   // who is not stuck?
-  lion_eprint(1, "%d done inside remotes \n",PCU_Comm_Self());
+  lion_eprint(1, "%d done inside remotes \n",m->getPCU()->Self());
 }
 
 NewElements assemble(Mesh2* m, const Gid* conn, int nelem, int etype,
@@ -196,7 +195,7 @@ NewElements assemble(Mesh2* m, const Gid* conn, int nelem, int etype,
 void finalise(Mesh2* m, GlobalToVert& globalToVert)
 {
   constructResidence(m, globalToVert);
-  lion_eprint(1, "%d after residence \n",PCU_Comm_Self());
+  lion_eprint(1, "%d after residence \n",m->getPCU()->Self());
   constructRemotes(m, globalToVert);
   stitchMesh(m);
   m->acceptChanges();
@@ -213,13 +212,13 @@ NewElements construct(Mesh2* m, const Gid* conn, int nelem, int etype,
 void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert)
 {
-  Gid max = getMax(globalToVert);
+  Gid max = getMax(globalToVert, m);
   Gid total = max + 1;
-  int peers = PCU_Comm_Peers();
+  int peers = m->getPCU()->Peers();
   int quotient = total / peers;
   int remainder = total % peers;
   int mySize = quotient;
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   if (self == (peers - 1))
     mySize += remainder;
   Gid myOffset = (long)self * quotient;
@@ -228,9 +227,9 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
      This means we might need to send and recv some coords */
   double* c = new double[mySize*3];
 
-  Gid start = PCU_Exscan_Long(nverts);
+  Gid start = m->getPCU()->Exscan(nverts);
 
-  PCU_Comm_Begin();  // the forced 64 bit math below may not be necessary 
+  m->getPCU()->Begin();  // the forced 64 bit math below may not be necessary 
   Gid tmpL=start / quotient; 
   int tmpInt=tmpL;
   int to = std::min(peers - 1, tmpInt);
@@ -239,9 +238,9 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
   int n = std::min(tmpInt, nverts);
 
   while (nverts > 0) {
-    PCU_COMM_PACK(to, start);
-    PCU_COMM_PACK(to, n);
-    PCU_Comm_Pack(to, coords, n*3*sizeof(double));
+    m->getPCU()->Pack(to, start);
+    m->getPCU()->Pack(to, n);
+    m->getPCU()->Pack(to, coords, n*3*sizeof(double));
 
     nverts -= n;
     start += n;
@@ -249,51 +248,51 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
     to = std::min(peers - 1, to + 1);
     n = std::min(quotient, nverts);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(start);
-    PCU_COMM_UNPACK(n); // |||||| more in-place 64 bit math
-    PCU_Comm_Unpack(&c[(start - myOffset) * 3], n*3*sizeof(double));
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
+    m->getPCU()->Unpack(start);
+    m->getPCU()->Unpack(n); // |||||| more in-place 64 bit math
+    m->getPCU()->Unpack(&c[(start - myOffset) * 3], n*3*sizeof(double));
   }
 
   /* Tell all the owners of the coords what we need */
   typedef std::vector< std::vector<int> > TmpParts;
   TmpParts tmpParts(mySize);
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;
     Gid tmpL=gid / quotient;
     int tmpInt=tmpL;
     int to = std::min(peers - 1, tmpInt);
-    PCU_COMM_PACK(to, gid);
+    m->getPCU()->Pack(to, gid);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
-    Gid from = PCU_Comm_Sender();
+    m->getPCU()->Unpack(gid);
+    Gid from = m->getPCU()->Sender();
     Gid tmpL=gid - myOffset;
     int tmpInt=tmpL;
     tmpParts.at(tmpInt).push_back(from);
   }
 
   /* Send the coords to everybody who want them */
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (int i = 0; i < mySize; ++i) {
     std::vector<int>& parts = tmpParts[i];
     for (size_t j = 0; j < parts.size(); ++j) {
       int to = parts[j];
       Gid gid = i + myOffset;
-      PCU_COMM_PACK(to, gid);
-      PCU_Comm_Pack(to, &c[i*3], 3*sizeof(double));
+      m->getPCU()->Pack(to, gid);
+      m->getPCU()->Pack(to, &c[i*3], 3*sizeof(double));
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     double v[3];
-    PCU_Comm_Unpack(v, sizeof(v));
+    m->getPCU()->Unpack(v, sizeof(v));
     Vector3 vv(v);
     m->setPoint(globalToVert[gid], 0, vv);
   }
@@ -304,13 +303,13 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
 void setMatches(Mesh2* m, const Gid* matches, int nverts,
     GlobalToVert& globalToVert)
 {
-  Gid max = getMax(globalToVert);
+  Gid max = getMax(globalToVert, m);
   Gid total = max + 1;
-  int peers = PCU_Comm_Peers();
+  int peers = m->getPCU()->Peers();
   int quotient = total / peers;
   int remainder = total % peers;
   int mySize = quotient;
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   if (self == (peers - 1))
     mySize += remainder;
   Gid myOffset = (long)self * quotient;
@@ -318,9 +317,9 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some matches */
   Gid* c = new Gid[mySize];
-  Gid start = PCU_Exscan_Long(nverts);
+  Gid start = m->getPCU()->Exscan(nverts);
 
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
 
   Gid tmpL=start / quotient; 
   int tmpInt=tmpL;
@@ -329,9 +328,9 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   tmpInt=tmpL;
   int n = std::min(tmpInt, nverts);
   while (nverts > 0) {
-    PCU_COMM_PACK(to, start);
-    PCU_COMM_PACK(to, n);
-    PCU_Comm_Pack(to, matches, n*sizeof(Gid));
+    m->getPCU()->Pack(to, start);
+    m->getPCU()->Pack(to, n);
+    m->getPCU()->Pack(to, matches, n*sizeof(Gid));
 
     nverts -= n;
     start += n;
@@ -339,51 +338,51 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
     to = std::min(peers - 1, to + 1);
     n = std::min(quotient, nverts);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(start);
-    PCU_COMM_UNPACK(n); /// in-place 64
-    PCU_Comm_Unpack(&c[(start - myOffset)], n*sizeof(Gid));
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
+    m->getPCU()->Unpack(start);
+    m->getPCU()->Unpack(n); /// in-place 64
+    m->getPCU()->Unpack(&c[(start - myOffset)], n*sizeof(Gid));
   }
 
 
   /* Tell all the owners of the matches what we need */
   typedef std::vector< std::vector<int> > TmpParts;
   TmpParts tmpParts(mySize);
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
     int tmpI=gid / quotient;
     int to = std::min(peers - 1,tmpI); 
-    PCU_COMM_PACK(to, gid);
+    m->getPCU()->Pack(to, gid);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
-    int from = PCU_Comm_Sender();
+    m->getPCU()->Unpack(gid);
+    int from = m->getPCU()->Sender();
     tmpParts.at(gid - myOffset).push_back(from);
   }
  
   MeshTag* matchGidTag = m->createLongTag("matchGids", 1);
   /* Send the matches to everybody who wants them */
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (int i = 0; i < mySize; ++i) {
     std::vector<int>& parts = tmpParts[i];
     for (size_t j = 0; j < parts.size(); ++j) {
       int to = parts[j];
       Gid gid = i + myOffset;
       Gid matchGid = c[i];
-      PCU_COMM_PACK(to, gid);
-      PCU_COMM_PACK(to, matchGid);
+      m->getPCU()->Pack(to, gid);
+      m->getPCU()->Pack(to, matchGid);
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     Gid match;
-    PCU_COMM_UNPACK(match);
+    m->getPCU()->Unpack(match);
     PCU_ALWAYS_ASSERT(gid != match);
     PCU_ALWAYS_ASSERT(globalToVert.count(gid));
     m->setLongTag(globalToVert[gid], matchGidTag, &match);
@@ -394,25 +393,25 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
    * the entity pointers and owners for mesh vertex gid [0..quotient),
    * process 1 holds gids [quotient..2*quotient), ...
    */
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) {
     MeshEntity* e = it->second;  // KEJ does not follow this
     Gid gid = it->first;
     int tmpI=gid / quotient;
     int to = std::min(peers - 1,tmpI); 
-    PCU_COMM_PACK(to, gid);
-    PCU_COMM_PACK(to, e);
+    m->getPCU()->Pack(to, gid);
+    m->getPCU()->Pack(to, e);
   }
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   typedef std::pair< int, apf::MeshEntity* > EntOwnerPtrs;
   typedef std::map< Gid, std::vector< EntOwnerPtrs > > GidPtrs;
   GidPtrs gidPtrs;
-  while (PCU_Comm_Receive()) {
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     MeshEntity* vert;
-    PCU_COMM_UNPACK(vert);
-    int owner = PCU_Comm_Sender();
+    m->getPCU()->Unpack(vert);
+    int owner = m->getPCU()->Sender();
     gidPtrs[gid-myOffset].push_back(EntOwnerPtrs(owner,vert));
   }
 
@@ -420,7 +419,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   typedef std::pair<Gid,Gid> MatchingPair;
   typedef std::map< MatchingPair, std::vector<Gid> > MatchMap;
   MatchMap matchParts;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it) { //loop over local verts
     Gid gid = it->first;
     Gid matchGid;
@@ -428,24 +427,24 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
     if( matchGid != -1 ) {  // marker for an unmatched vertex
       int tmpI=matchGid / quotient;
       int to = std::min(peers - 1,tmpI);  //broker
-      PCU_COMM_PACK(to, gid); // send the local vert gid
-      PCU_COMM_PACK(to, matchGid); // and the match gid needed
+      m->getPCU()->Pack(to, gid); // send the local vert gid
+      m->getPCU()->Pack(to, matchGid); // and the match gid needed
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid); // request from entity gid
+    m->getPCU()->Unpack(gid); // request from entity gid
     Gid matchGid;
-    PCU_COMM_UNPACK(matchGid); // requesting matched entity gid 
+    m->getPCU()->Unpack(matchGid); // requesting matched entity gid 
     MatchingPair mp(gid,matchGid);
-    int from = PCU_Comm_Sender();
+    int from = m->getPCU()->Sender();
     matchParts[mp].push_back(from); // store a list of the proceses that need the pair (entity gid, match gid)
   }
 
   /* Send the match pointer and owner process to everybody
    * who wants them */
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_ITERATE(MatchMap,matchParts,it) {
     MatchingPair mp = it->first;
     Gid gid = mp.first;
@@ -453,32 +452,32 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
     std::vector<Gid> parts = it->second;
     for(size_t i=0; i<parts.size(); i++) {
       const int to = parts[i];
-      PCU_COMM_PACK(to, gid);
-      PCU_COMM_PACK(to, matchGid);
+      m->getPCU()->Pack(to, gid);
+      m->getPCU()->Pack(to, matchGid);
       size_t numMatches = gidPtrs[matchGid-myOffset].size();
-      PCU_COMM_PACK(to, numMatches);
+      m->getPCU()->Pack(to, numMatches);
       for( size_t i=0; i<gidPtrs[matchGid-myOffset].size(); i++) {
         EntOwnerPtrs eop = gidPtrs[matchGid-myOffset][i];
         int owner = eop.first;
-        PCU_COMM_PACK(to, owner);
+        m->getPCU()->Pack(to, owner);
         apf::MeshEntity* ent = eop.second;
-        PCU_COMM_PACK(to, ent);
+        m->getPCU()->Pack(to, ent);
       }
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     Gid gid;
-    PCU_COMM_UNPACK(gid);
+    m->getPCU()->Unpack(gid);
     Gid matchGid;
-    PCU_COMM_UNPACK(matchGid);
+    m->getPCU()->Unpack(matchGid);
     size_t numMatches;
-    PCU_COMM_UNPACK(numMatches);
+    m->getPCU()->Unpack(numMatches);
     for(size_t i=0; i<numMatches; i++) {
       int owner;
-      PCU_COMM_UNPACK(owner);
+      m->getPCU()->Unpack(owner);
       MeshEntity* match;
-      PCU_COMM_UNPACK(match);
+      m->getPCU()->Unpack(match);
       PCU_ALWAYS_ASSERT(globalToVert.count(gid));
       MeshEntity* partner = globalToVert[gid];
       PCU_ALWAYS_ASSERT(! (match == partner && owner == self) );

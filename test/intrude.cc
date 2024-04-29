@@ -2,25 +2,26 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <maExtrude.h>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   if ( argc != 4 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.get()->Self() )
       printf("Usage: %s <model> <mesh> <out mesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
   ma::ModelExtrusions extrusions;
   extrusions.push_back(ma::ModelExtrusion(
         m->findModelEntity(1, 2),
@@ -36,11 +37,11 @@ int main(int argc, char** argv)
         m->findModelEntity(0, 1)));
   size_t nlayers;
   ma::intrude(m, extrusions, &nlayers);
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     std::cout << "counted " << nlayers << " layers\n";
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

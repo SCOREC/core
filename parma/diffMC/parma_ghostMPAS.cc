@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include "parma.h"
 #include "parma_balancer.h"
@@ -18,9 +17,9 @@ namespace {
         : Balancer(m, f, v, "ghosts"), layers(l), bridge(b) 
       {
         parma::Sides* s = parma::makeElmBdrySides(mesh);
-        sideTol = static_cast<int>(parma::avgSharedSides(s));
+        sideTol = static_cast<int>(parma::avgSharedSides(s, mesh->getPCU()));
         delete s;
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           lion_oprint(1, "sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
@@ -28,10 +27,10 @@ namespace {
 
         const double maxElmImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
-        double avgSides = parma::avgSharedSides(s);
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           lion_oprint(1, "avgSides %f\n", avgSides);
 
         parma::Weights* w =

@@ -2,10 +2,10 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <pcu_util.h>
+#include <memory>
 
 namespace {
   const char* modelFile = 0;
@@ -53,14 +53,15 @@ namespace {
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
   runParma(m);
   m->writeNative(argv[3]);
   freeMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

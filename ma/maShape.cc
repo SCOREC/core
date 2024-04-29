@@ -8,7 +8,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
 
 *******************************************************************************/
-#include <PCU.h>
 #include "maShape.h"
 #include "maSize.h"
 #include "maAdapt.h"
@@ -166,7 +165,7 @@ double getMinQuality(Adapt* a)
       minqual = qual;
   }
   m->end(it);
-  return PCU_Min_Double(minqual);
+  return m->getPCU()->Min(minqual);
 }
 
 class ShortEdgeFixer : public Operator
@@ -740,10 +739,10 @@ class QualityImprover2D : public Operator
 
 static double fixShortEdgeElements(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   ShortEdgeFixer fixer(a);
   applyOperator(a,&fixer);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
@@ -779,12 +778,12 @@ static void improveQualities2D(Adapt* a)
 
 static double fixLargeAngles(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   if (a->mesh->getDimension()==3)
     fixLargeAngleTets(a);
   else
     fixLargeAngleTris(a);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
@@ -798,12 +797,12 @@ static void alignLargeAngles(Adapt* a)
 
 double improveQualities(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   if (a->mesh->getDimension() == 3)
     return 0; // TODO: implement this for 3D
   else
     improveQualities2D(a);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
@@ -811,7 +810,7 @@ void fixElementShapes(Adapt* a)
 {
   if ( ! a->input->shouldFixShape)
     return;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   int count = markBadQuality(a);
   int originalCount = count;
   int prev_count;
@@ -821,7 +820,7 @@ void fixElementShapes(Adapt* a)
     if ( ! count)
       break;
     prev_count = count;
-    print("--iter %d of shape correction loop: #bad elements %d", iter, count);
+    print(a->mesh->getPCU(), "--iter %d of shape correction loop: #bad elements %d", iter, count);
     time = fixLargeAngles(a);
     /* We need to snap the new verts as soon as they are
      * created (to avoid future problems). At the moment
@@ -831,20 +830,20 @@ void fixElementShapes(Adapt* a)
     if (a->mesh->getDimension() == 3)
       snap(a);
     count = markBadQuality(a);
-    print("--fixLargeAngles       in %f seconds: #bad elements %d",time,count);
+    print(a->mesh->getPCU(), "--fixLargeAngles       in %f seconds: #bad elements %d", time,count);
     time = fixShortEdgeElements(a);
     count = markBadQuality(a);
-    print("--fixShortEdgeElements in %f seconds: #bad elements %d",time,count);
+    print(a->mesh->getPCU(), "--fixShortEdgeElements in %f seconds: #bad elements %d", time,count);
     if (count >= prev_count)
       unMarkBadQuality(a); // to make sure markEntities does not complain!
     // balance the mesh to avoid empty parts
     midBalance(a);
-    print("--percent change in number of bad elements %f",
+    print(a->mesh->getPCU(), "--percent change in number of bad elements %f",
 	((double) prev_count - (double) count) / (double) prev_count);
     iter++;
   } while(count < prev_count);
-  double t1 = PCU_Time();
-  print("bad shapes down from %d to %d in %f seconds",
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds", 
         originalCount,count,t1-t0);
 }
 
@@ -853,7 +852,7 @@ void alignElements(Adapt* a)
   int max_iter = 5;
   if ( ! a->input->shouldFixShape)
     return;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   int count = markBadQuality(a);
   int originalCount = count;
   int prev_count;
@@ -869,8 +868,8 @@ void alignElements(Adapt* a)
       unMarkBadQuality(a);
   } while(count < prev_count && i < max_iter);
 
-  double t1 = PCU_Time();
-  print("non-aligned elements down from %d to %d in %f seconds",
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "non-aligned elements down from %d to %d in %f seconds", 
         originalCount,count,t1-t0);
 }
 
@@ -879,7 +878,7 @@ void printQuality(Adapt* a)
   if ( ! a->input->shouldPrintQuality)
     return;
   double minqual = getMinQuality(a);
-  print("worst element quality is %e", minqual);
+  print(a->mesh->getPCU(), "worst element quality is %e",  minqual);
 }
 
 }

@@ -12,7 +12,6 @@
 #include <lionPrint.h>
 #include <apfShape.h>
 #include <cstdio>
-#include <PCU.h>
 #include <pcu_util.h>
 #include <cstdlib>
 
@@ -66,9 +65,9 @@ void setDefaultValues(Input* in)
   in->debugFolder = nullptr;
 }
 
-void rejectInput(const char* str)
+void rejectInput(const char* str, pcu::PCU *PCUObj)
 {
-  if (PCU_Comm_Self() != 0)
+  if (PCUObj->Self() != 0)
     return;
   lion_eprint(1,"MeshAdapt input error:\n");
   lion_eprint(1,"%s\n",str);
@@ -90,62 +89,62 @@ static bool moreThanOneOptionIsTrue(bool op1, bool op2, bool op3)
 void validateInput(Input* in)
 {
   if ( ! in->sizeField)
-    rejectInput("no size field");
+    rejectInput("no size field", in->mesh->getPCU());
   if ( ! in->solutionTransfer)
-    rejectInput("no solution transfer object");
+    rejectInput("no solution transfer object", in->mesh->getPCU());
   if (in->maximumIterations < 0)
-    rejectInput("negative maximum iteration count");
+    rejectInput("negative maximum iteration count", in->mesh->getPCU());
   if (in->maximumIterations > 10)
-    rejectInput("unusually high maximum iteration count");
+    rejectInput("unusually high maximum iteration count", in->mesh->getPCU());
   if (in->shouldSnap
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested snapping "
-                "but the geometric model does not support it");
+                "but the geometric model does not support it", in->mesh->getPCU());
   if (in->shouldTransferParametric
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested parametric coordinate transfer "
-                "but the geometric model does not support it");
+                "but the geometric model does not support it", in->mesh->getPCU());
   if (in->shouldTransferToClosestPoint
     &&( ! in->mesh->canSnap()))
     rejectInput("user requested transfer to closest point on model"
-                "but the geometric model does not support it");
+                "but the geometric model does not support it", in->mesh->getPCU());
   if (in->shouldSnap && ( ! (in->shouldTransferParametric ||
 			     in->shouldTransferToClosestPoint)))
-    rejectInput("snapping requires parametric coordinate transfer or transfer to closest point");
+    rejectInput("snapping requires parametric coordinate transfer or transfer to closest point", in->mesh->getPCU());
   if ((in->mesh->hasMatching())
     &&( ! in->shouldHandleMatching))
-    rejectInput("the mesh has matching entities but matched support is off");
+    rejectInput("the mesh has matching entities but matched support is off", in->mesh->getPCU());
   if (in->shouldHandleMatching
     && in->shouldFixShape)
     rejectInput("user requested matched mesh handling and shape correction "
-        "but shape correction does not support matching yet");
+        "but shape correction does not support matching yet", in->mesh->getPCU());
   if (in->goodQuality < 0.0)
-    rejectInput("negative desired element quality");
+    rejectInput("negative desired element quality", in->mesh->getPCU());
   if (in->goodQuality > 1.0)
-    rejectInput("desired element quality greater than one");
+    rejectInput("desired element quality greater than one", in->mesh->getPCU());
   if (in->validQuality < 0.0)
-    rejectInput("negative minimum element quality");
+    rejectInput("negative minimum element quality", in->mesh->getPCU());
   if (in->maximumImbalance < 1.0)
-    rejectInput("maximum imbalance less than 1.0");
+    rejectInput("maximum imbalance less than 1.0", in->mesh->getPCU());
   if (in->maximumEdgeRatio < 1.0)
-    rejectInput("maximum tet edge ratio less than one");
+    rejectInput("maximum tet edge ratio less than one", in->mesh->getPCU());
   if (moreThanOneOptionIsTrue(
   	in->shouldRunPreZoltan,
   	in->shouldRunPreZoltanRib,
   	in->shouldRunPreParma))
-    rejectInput("only one of Zoltan, ZoltanRib, and Parma PreBalance options can be set to true!");
+    rejectInput("only one of Zoltan, ZoltanRib, and Parma PreBalance options can be set to true!", in->mesh->getPCU());
   if (moreThanOneOptionIsTrue(
   	in->shouldRunPostZoltan,
   	in->shouldRunPostZoltanRib,
   	in->shouldRunPostParma))
-    rejectInput("only one of Zoltan, ZoltanRib, and Parma PostBalance options can be set to true!");
+    rejectInput("only one of Zoltan, ZoltanRib, and Parma PostBalance options can be set to true!", in->mesh->getPCU());
   if (in->shouldRunMidZoltan && in->shouldRunMidParma)
-    rejectInput("only one of Zoltan and Parma MidBalance options can be set to true!");
+    rejectInput("only one of Zoltan and Parma MidBalance options can be set to true!", in->mesh->getPCU());
 #ifndef PUMI_HAS_ZOLTAN
   if (in->shouldRunPreZoltan ||
       in->shouldRunPreZoltanRib ||
       in->shouldRunMidZoltan)
-    rejectInput("core is not compiled with Zoltan. Use a different balancer or compile core with ENABLE_ZOLTAN=ON!");
+    rejectInput("core is not compiled with Zoltan. Use a different balancer or compile core with ENABLE_ZOLTAN=ON!", in->mesh->getPCU());
 #endif
 }
 
@@ -155,13 +154,13 @@ static void updateMaxIterBasedOnSize(Mesh* m, Input* in)
   double maxMetricLength = getMaximumEdgeLength(m, in->sizeField);
   int iter = std::ceil(std::log2(maxMetricLength));
   if (iter >= 10) {
-    print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
+    print(m->getPCU(), "ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations,\n"
     	"           which is equal to or larger than the maximum of 10 allowed.\n"
     	"           Setting the number of iteration to 10!", iter);
     in->maximumIterations = 10;
   }
   else {
-    print("ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
+    print(m->getPCU(), "ma::configure:  Based on requested sizefield, MeshAdapt requires at least %d iterations.\n"
     	"           Setting the number of iteration to %d!", iter, iter+1);
     in->maximumIterations = iter+1;
   }

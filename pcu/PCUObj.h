@@ -1,5 +1,6 @@
 #ifndef SCOREC_PCU_PCUOBJ_H
 #define SCOREC_PCU_PCUOBJ_H
+
 #include <cstdlib>
 #include <mpi.h>
 #include "pcu_defines.h"
@@ -26,15 +27,29 @@ public:
   [[nodiscard]] int Peers() const noexcept;
   [[nodiscard]] MPI_Comm GetMPIComm() const noexcept;
 
+  [[nodiscard]] PCUHandle GetCHandle() {PCUHandle h; h.ptr=this; return h;}
   /*recommended message passing API*/
   void Begin() noexcept;
   int Pack(int to_rank, const void *data, size_t size) noexcept;
+  template<typename T> int Pack(int to_rank, T& data) noexcept {
+    return Pack(to_rank, &(data), sizeof(data));
+  }
+  template<typename T> int Pack(int to_rank, T*& data) noexcept {
+    return Pack(to_rank, &(data), sizeof(data));
+  }
+
   int Send() noexcept;
   bool Receive() noexcept;
   bool Listen() noexcept;
   int Sender() noexcept;
   bool Unpacked() noexcept;
   int Unpack(void *data, size_t size) noexcept;
+  template<typename T> int Unpack(T& data) noexcept {
+    return Unpack(&(data), sizeof(data));
+  }
+  template<typename T> int Unpack(T*& data) noexcept {
+    return Unpack(&(data), sizeof(data));
+  }
   /*IPComMan replacement API*/
   int Write(int to_rank, const void *data, size_t size) noexcept;
   bool Read(int *from_rank, void **data, size_t *size) noexcept;
@@ -91,6 +106,8 @@ void Protect() noexcept;
 /*MPI_Wtime() equivalent*/
 [[nodiscard]] double Time() noexcept;
 
+PCU* PCU_GetGlobal();
+
 /* explicit instantiations of template functions */
 #define PCU_EXPL_INST_DECL(T)                                                  \
   extern template void PCU::Add<T>(T * p, size_t n) noexcept;                  \
@@ -108,5 +125,7 @@ PCU_EXPL_INST_DECL(double)
 #undef PCU_EXPL_INST_DECL
 
 } // namespace pcu
-#undef PCU_FORMAT_ATTRIBUTE
-#endif // SCOREC_PCU_PCUOBJ_H
+
+#endif // PCUOBJ_H
+
+

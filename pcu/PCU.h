@@ -123,6 +123,9 @@ double PCU_Time(void);
 /*Memory usage*/
 double PCU_GetMem(void);
 
+/*Access global variable*/
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

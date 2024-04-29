@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <apfPartition.h>
 #include <parma.h>
 #include "parma_balancer.h"
@@ -22,14 +21,14 @@ namespace {
       ElmLtVtx(apf::Mesh* m, double f, double maxV, int v)
         : Balancer(m, f, v, "elements") {
           maxVtx = maxV;
-          if( !PCU_Comm_Self() && verbose ) {
+          if( !m->getPCU()->Self() && verbose ) {
             status("stepFactor %.3f\n", f);
             status("maxVtx %.3f\n", maxVtx);
           }
           parma::Sides* s = parma::makeVtxSides(mesh);
-          sideTol = TO_INT(parma::avgSharedSides(s));
+          sideTol = TO_INT(parma::avgSharedSides(s, mesh->getPCU()));
           delete s;
-          if( !PCU_Comm_Self() && verbose )
+          if( !m->getPCU()->Self() && verbose )
             status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
@@ -37,7 +36,7 @@ namespace {
           Parma_GetWeightedEntImbalance(mesh, wtag, 0);
         const double maxElmImb =
           Parma_GetWeightedEntImbalance(mesh, wtag, mesh->getDimension());
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("vtx imbalance %.3f\n", maxVtxImb);
         parma::Sides* s = parma::makeVtxSides(mesh);
         parma::Weights* vtxW = parma::makeEntWeights(mesh, wtag, s, 0);
@@ -49,10 +48,10 @@ namespace {
         parma::Selector* sel =
           parma::makeElmLtVtxSelector(mesh, wtag, maxVtx);
 
-        double avgSides = parma::avgSharedSides(s);
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
         monitorUpdate(maxElmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("elmImb %f avgSides %f\n", maxElmImb, avgSides);
         parma::BalOrStall* stopper =
           new parma::BalOrStall(iA, sA, sideTol*.001, verbose);

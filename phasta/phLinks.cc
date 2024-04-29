@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "phLinks.h"
 #include "phAdjacent.h"
 #include <apf.h>
@@ -54,7 +53,7 @@ struct PhastaSharing : public apf::Sharing {
     if ( ! mesh->hasMatching())
       return;
     /* filter out matches which are on the same part as the global master */
-    int self = PCU_Comm_Self();
+    int self = mesh->getPCU()->Self();
     size_t i = 0;
     for (size_t j = 0; j < copies.getSize(); ++j)
       if (copies[j].peer != self)
@@ -99,7 +98,7 @@ struct PhastaSharing : public apf::Sharing {
 void getLinks(apf::Mesh* m, int dim, Links& links, BCs& bcs)
 {
   PhastaSharing shr(m);
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {
@@ -118,16 +117,16 @@ void getLinks(apf::Mesh* m, int dim, Links& links, BCs& bcs)
          of the same master in the outgoing links array
          to a part that contains multiple copies of it. */
       links[LinkKey(1, remotes[i].peer)].push_back(v);
-      PCU_COMM_PACK(remotes[i].peer, remotes[i].entity);
+      m->getPCU()->Pack(remotes[i].peer, remotes[i].entity);
     }
   }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen()) {
-    int peer = PCU_Comm_Sender();
-    while (!PCU_Comm_Unpacked()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Listen()) {
+    int peer = m->getPCU()->Sender();
+    while (!m->getPCU()->Unpacked()) {
       apf::MeshEntity* v;
-      PCU_COMM_UNPACK(v);
+      m->getPCU()->Unpack(v);
       links[LinkKey(0, peer)].push_back(v);
     }
   }
@@ -217,7 +216,7 @@ static apf::MeshEntity* getOtherElem(apf::Mesh* m, apf::MeshEntity* elem,
     return 0;
   apf::Matches matches;
   m->getMatches(face, matches);
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   for (size_t i = 0; i < matches.getSize(); ++i)
     if (matches[i].peer == self)
       return m->getUpward(matches[i].entity, 0);

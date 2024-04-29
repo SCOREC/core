@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
@@ -23,6 +22,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdio.h>
+#include <memory>
 
 using namespace std;
 
@@ -82,7 +82,7 @@ const char* extruRootPath = NULL;
 int ExtruRootId =0;
 bool found_bad_arg = false;
 
-void getConfig(int argc, char** argv) {
+void getConfig(int argc, char** argv, pcu::PCU *pcu_obj) {
 
   opterr = 0;
 
@@ -120,18 +120,18 @@ void getConfig(int argc, char** argv) {
         gmi_native_path = optarg;
         break;
       case '?':
-        if (!PCU_Comm_Self())
+        if (!pcu_obj.get()->Self())
           printf ("warning: skipping unrecognized option \'%s\'\n", argv[optind-1]);
         break;
       default:
-        if (!PCU_Comm_Self())
+        if (!pcu_obj.get()->Self())
           printf("Usage %s %s", argv[0], usage);
         exit(EXIT_FAILURE);
     }
   }
 
   if(argc-optind != 3) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj.get()->Self())
       printf("Usage %s %s", argv[0], usage);
     exit(EXIT_FAILURE);
   }
@@ -139,7 +139,7 @@ void getConfig(int argc, char** argv) {
   gmi_path = argv[i++];
   sms_path = argv[i++];
   smb_path = argv[i++];
-  if (!PCU_Comm_Self()) {
+  if (!pcu_obj.get()->Self()) {
     printf ("fix_pyramids %d attach_order %d enable_log %d extruRootPath %s\n",
             should_fix_pyramids, should_attach_order, should_log, extruRootPath);
     printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
@@ -377,7 +377,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       faces=PList_new();
       err = Extrusion_3DRegionsAndLayerFaces(region, regions, faces, 1);
       PList_delete(regions); // not used so delete
-      if(err!=1 && !PCU_Comm_Self())
+      if(err!=1 && !simApfMesh->getPCU()->Self())
         fprintf(stderr, "Extrusion_3DRegionsAndLayerFaces returned %d for err \n", err);
 
       // for each face in the returned list of faces
@@ -427,7 +427,8 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   MS_init();
   SimAdvMeshing_start(); //for fancy BL/extrusion queries
@@ -435,12 +436,12 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
 
-  getConfig(argc, argv);
+  getConfig(argc, argv, pcu_obj.get());
   if( should_log )
     Sim_logOn("convert.sim.log");
 
   if (should_attach_order && should_fix_pyramids) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj.get()->Self())
       std::cout << "disabling pyramid fix because --attach-order was given\n";
     should_fix_pyramids = false;
   }
@@ -452,7 +453,7 @@ int main(int argc, char** argv)
 
   gmi_model* mdl;
   if( gmi_native_path ) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj.get()->Self())
       fprintf(stderr, "loading native model %s\n", gmi_native_path);
     mdl = gmi_sim_load(gmi_native_path,gmi_path);
   } else {
@@ -478,24 +479,24 @@ int main(int argc, char** argv)
   assert(false);
 */
 
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
-  double t1 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if(!pcu_obj.get()->Self())
     fprintf(stderr, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
 
-  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, pcu_obj.get());
 
   addFathersTag(simModel, sim_mesh, simApfMesh, extruRootPath);
 
-  double t2 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t2 = pcu::Time();
+  if(!simApfMesh->getPCU()->Self())
     fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);
   if (should_attach_order) attachOrder(simApfMesh);
 
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
-  double t3 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t3 = pcu::Time();
+  if(!mesh->getPCU()->Self())
     fprintf(stderr, "created the apf_mds mesh in %f seconds\n", t3-t2);
 
   apf::printStats(mesh);
@@ -517,6 +518,6 @@ int main(int argc, char** argv)
   MS_exit();
   if( should_log )
     Sim_logOff();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
