@@ -127,8 +127,10 @@ void mymain(bool ismaster, pcu::PCU *PCUObj)
     Parma_PrintPtnStats(m, "initial");
     plan = getPlan(m);
   }
-  delete groupedPCUObj;
+  //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
+  //on the globalPCU
   if(m != nullptr) m->switchPCU(PCUObj);
+  delete groupedPCUObj;
   m = apf::repeatMdsMesh(m, g, plan, partitionFactor, PCUObj);
   runParma(m);
   m->writeNative(outFile);

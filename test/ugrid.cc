@@ -55,6 +55,8 @@ int main(int argc, char** argv)
     m->verify();
     plan = getPlan(m, partitionFactor);
   }
+  //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
+  //on the globalPCU
   if(m != nullptr) m->switchPCU(PCUObj.get());
   delete groupedPCUObj;
   m = repeatMdsMesh(m, g, plan, partitionFactor, PCUObj.get());

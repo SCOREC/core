@@ -164,6 +164,8 @@ int main( int argc, char* argv[])
   code.meshFile = argv[1];
   apf::Unmodulo outMap(pcu_obj.get()->Self(), 2);
   Parma_SplitPartition(nullptr, 2, code, pcu_obj.get());
+  //Have to call switchPCU here because the mesh needed to be made inside GroupCode run()
+  //and inside parma_group.cc runInGroups() we set code.PCUObj to groupedPCU 
   code.mesh->switchPCU(pcu_obj.get());
   apf::remapPartition(code.mesh, outMap);
   code.mesh->verify();

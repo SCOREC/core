@@ -92,6 +92,8 @@ int main(int argc, char** argv)
     m = apf::loadMdsMesh(g, meshFile, groupedPCUObj);
     plan = getPlan(m);
   }
+  //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
+  //on the globalPCU
   if(m != nullptr) m->switchPCU(PCUObj.get());
   delete groupedPCUObj;
   m = apf::repeatMdsMesh(m, g, plan, partitionFactor, PCUObj.get());
