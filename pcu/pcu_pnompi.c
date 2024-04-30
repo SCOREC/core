@@ -113,16 +113,6 @@ double MPI_Wtime(void)
   return 0.0;
 }
 
-int MPI_Init(int* argc, char*** argv) {
-  (void) argc;
-  (void) argv;
-  return 0;
-}
-
-int MPI_Finalize(void) {
-  return 0;
-}
-
 pcu_mpi pcu_pmpi =
 { .size = pcu_pmpi_size,
   .rank = pcu_pmpi_rank,
@@ -137,7 +127,7 @@ void pcu_pmpi_init(MPI_Comm comm)
     pcu_coll_comm = comm+2;
 
     global_size = 1;
-    global_rank = 1;
+    global_rank = 0;
     
 //  MPI_Comm_dup(comm,&pcu_user_comm);
 //  MPI_Comm_dup(comm,&pcu_coll_comm);
