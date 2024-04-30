@@ -23,6 +23,7 @@ namespace {
   inline void printTime(const char* key, double t, pcu::PCU *pcu_obj) {
     (void) key;
     (void) t;
+    (void) pcu_obj;
 #if PHSTREAM_TIMERS_ON==1
     if( isRankZero(pcu_obj) )
       lion_eprint(1, "%s %f seconds\n", key, t);

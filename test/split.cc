@@ -94,7 +94,7 @@ int main(int argc, char** argv)
   //on the globalPCU
   if(m != nullptr) m->switchPCU(PCUObj.get());
   delete groupedPCUObj;
-  m = repeatMdsMesh(m, g, plan, partitionFactor, PCUObj.get(), groupedPCUObj);
+  m = repeatMdsMesh(m, g, plan, partitionFactor, PCUObj.get());
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);

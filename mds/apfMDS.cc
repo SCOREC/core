@@ -1117,7 +1117,7 @@ Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
 }
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
-    int factor, pcu::PCU *PCUObj, pcu::PCU *oldPCU)
+    int factor, pcu::PCU *PCUObj)
 {
   m = expandMdsMesh(m, g, PCUObj->Peers() / factor, PCUObj);
   double t0 = pcu::Time();

@@ -117,7 +117,7 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder=false, bool copy
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t = 0);
 
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
-Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor, pcu::PCU *PCUObj, pcu::PCU *oldPCU = nullptr);
+Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor, pcu::PCU *PCUObj);
 
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expandedPCU);
