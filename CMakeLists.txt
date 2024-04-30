@@ -35,6 +35,7 @@ message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
 # option related to MPI
 #
 option(SCOREC_NO_MPI "Use a stub MPI implementation" OFF)
+message(STATUS "SCOREC_NO_MPI: ${SCOREC_NO_MPI}")
 if (SCOREC_NO_MPI)
    add_definitions(-DSCOREC_NO_MPI)
 endif()

@@ -13,14 +13,7 @@
 #include "pcu_buffer.h"
 
 #if defined(SCOREC_NO_MPI)
-typedef int MPI_Comm;
-typedef int MPI_Request;
-typedef int MPI_Datatype;
-typedef int MPI_Op;
-#define MPI_COMM_WORLD 0
-#define MPI_ANY_SOURCE -1
-#define MPI_INT 0
-#define MPI_SUM 1
+#include "pcu_pnompi_types.h"
 #else
 #include <mpi.h>
 #endif

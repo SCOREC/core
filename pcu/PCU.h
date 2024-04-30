@@ -14,13 +14,10 @@
 #define PCU_FAILURE -1
 
 #if defined(SCOREC_NO_MPI)
-  typedef int MPI_Comm;
-  typedef int MPI_Datatype;
-  typedef int MPI_Op;
-  #define MPI_SUM 1
-  #define MPI_INT 2
-  #define MPI_COMM_WORLD 0
+#include "pcu_pnompi_types.h"
   double MPI_Wtime(void);
+  void MPI_Init(int* argc, char*** argv);
+  void MPI_Finalize(void);
 #else
 #include <mpi.h>
 #endif
