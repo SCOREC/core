@@ -2,10 +2,14 @@ set(MESHES ""
     CACHE STRING
     "Extracted http://scorec.rpi.edu/pumi/pumi_test_meshes.tar.gz")
 function(mpi_test TESTNAME PROCS EXE)
+  if(SCOREC_NO_MPI)
+  add_test(NAME ${TESTNAME} COMMAND ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN})
+  else()
   add_test(
     NAME ${TESTNAME}
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
   )
+  endif()
 endfunction(mpi_test)
 
 mpi_test(shapefun 1 ./shapefun)
