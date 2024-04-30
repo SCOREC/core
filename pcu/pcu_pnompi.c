@@ -113,12 +113,15 @@ double MPI_Wtime(void)
   return 0.0;
 }
 
-void MPI_Init(int* argc, char*** argv) {
+int MPI_Init(int* argc, char*** argv) {
   (void) argc;
   (void) argv;
+  return 0;
 }
 
-void MPI_Finalize(void) {}
+int MPI_Finalize(void) {
+  return 0;
+}
 
 pcu_mpi pcu_pmpi =
 { .size = pcu_pmpi_size,

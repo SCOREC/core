@@ -15,9 +15,17 @@
 
 #if defined(SCOREC_NO_MPI)
 #include "pcu_pnompi_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
   double MPI_Wtime(void);
-  void MPI_Init(int* argc, char*** argv);
-  void MPI_Finalize(void);
+  int MPI_Init(int* argc, char*** argv);
+  int MPI_Finalize(void);
+#ifdef __cplusplus
+}
+#endif
+
 #else
 #include <mpi.h>
 #endif
