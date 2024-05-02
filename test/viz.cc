@@ -48,7 +48,7 @@ int main(int argc, char** argv)
   Visualization v;
   
   char output[128];
-  sprintf(output,"%d",PCU_Comm_Self());
+  sprintf(output,"%d",PCUObj.get()->Self());
   std::string part_num(output);
 
   apf::MeshIterator* itr;
