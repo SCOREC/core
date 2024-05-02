@@ -54,7 +54,7 @@ void add_nompi_msg(void* msg, int size, int tag, int sender, int receiver)
     nmsg->size     = size;
     nmsg->tag      = tag;
     nmsg->sender   = sender;
-    nmsg->receiver = sender;
+    nmsg->receiver = receiver;
     nmsg->next     = 0;
     nmsg->prev     = 0;
     
@@ -145,11 +145,16 @@ void pcu_pmpi_finalize(void)
 
 int pcu_pmpi_free(MPI_Comm* comm)
 {
+  (void) comm;
   return 0;
 }
 
 int pcu_pmpi_split(MPI_Comm c, int color, int key, MPI_Comm* nc)
 {
+  (void) c;
+  (void) color;
+  (void) key;
+  (void) nc;
   return 1;
 }
 
@@ -170,6 +175,7 @@ void pcu_pmpi_send(pcu_message* m, MPI_Comm comm)
 
 void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm)
 {
+    (void) comm;
     if( m->buffer.size > (size_t)INT_MAX ) {
         fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
         abort();
@@ -185,6 +191,7 @@ void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm)
 
 bool pcu_pmpi_done(pcu_message* m)
 {
+    (void) m;
     return true;
 //  int flag;
 //  MPI_Test(&(m->request),&flag,MPI_STATUS_IGNORE);
@@ -198,6 +205,7 @@ bool pcu_pmpi_receive(pcu_message* m, MPI_Comm comm)
 
 bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm)
 {
+    (void) comm;
     NoMpiMsg* msg = get_nompi_msg(tag,global_rank);
     if (msg==0)
     {
@@ -222,6 +230,7 @@ bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm)
 
 void pcu_pmpi_switch(MPI_Comm new_comm)
 {
+    (void) new_comm;
     return ;
 //  pcu_pmpi_finalize();
 //  pcu_pmpi_init(new_comm);
@@ -234,15 +243,29 @@ MPI_Comm pcu_pmpi_comm(void)
 
 int pcu_pmpi_allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
+  (void) sendbuf;
+  (void) recvbuf;
+  (void) count;
+  (void) datatype;
+  (void) op;
+  (void) comm;
   return 0;
 }
 
 int  pcu_pmpi_allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
 {
+  (void) sendbuf;
+  (void) sendcount;
+  (void) sendtype;
+  (void) recvbuf;
+  (void) recvcount;
+  (void) recvtype;
+  (void) comm;
   return 0;
 }
 
 int  pcu_pmpi_barrier(MPI_Comm comm)
 {
+  (void) comm;
   return 0;
 }

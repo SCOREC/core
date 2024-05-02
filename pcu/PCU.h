@@ -18,7 +18,10 @@
   double MPI_Wtime(void);
 
 // Remove MPI calls.
-#define MPI_Init(argc, argv) 
+#define MPI_Init(argc, argv) do { \
+(void) argc; \
+(void) argv; \
+} while (0)
 #define MPI_Finalize(void) 
 #else
 #include <mpi.h>
