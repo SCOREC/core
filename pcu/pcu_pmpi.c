@@ -44,12 +44,12 @@ void pcu_pmpi_finalize(void)
 
 int pcu_pmpi_free(MPI_Comm* comm)
 {
-  MPI_Comm_free(comm);
+  return MPI_Comm_free(comm);
 }
 
 int pcu_pmpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm)
 {
-  MPI_Comm_split(comm,color,key,newcomm);
+  return MPI_Comm_split(comm,color,key,newcomm);
 }
 
 int pcu_pmpi_size(void)
