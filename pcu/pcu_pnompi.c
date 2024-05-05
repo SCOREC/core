@@ -88,7 +88,7 @@ NoMpiMsg* get_nompi_msg(int tag, int receiver)
                     _header = 0;
                 return item;
             }
-            
+            item = item->next;
         } while(item!=_header);
     }
     return 0;
@@ -209,7 +209,6 @@ bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm)
     NoMpiMsg* msg = get_nompi_msg(tag,global_rank);
     if (msg==0)
     {
-        printf("Did not receive a proper message\n");
         return false;
     }
     
