@@ -211,6 +211,8 @@ bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm)
     {
         return false;
     }
+
+    m->peer = msg->sender;
     
     int msize = msg->size;
     
