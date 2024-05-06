@@ -136,7 +136,7 @@ void migrateSilent(Mesh2* m, Migration* plan);
   This function globally sets the limit on migration, which
   causes any migration requests greater than the limit to
   be performed as several consecutive migrations. */
-void setMigrationLimit(size_t maxElements);
+void setMigrationLimit(size_t maxElements, pcu::PCU *PCUObj);
 
 class Field;
 
@@ -199,13 +199,13 @@ void stitchMesh(Mesh2* m);
 /** \brief removes all entities and fields. */
 void clear(Mesh2* m);
 
-void packDataClone(Mesh2* m, int to);
+void packDataClone(Mesh2* m, int to, pcu::PCU *PCUObj = nullptr);
 void unpackDataClone(Mesh2* m);
 
 // common functions for migration/ghosting/distribution
 typedef std::vector<MeshEntity*> EntityVector;
-void packParts(int to, Parts& parts);
-void unpackParts(Parts& parts);
+void packParts(int to, Parts& parts, pcu::PCU *PCUObj);
+void unpackParts(Parts& parts, pcu::PCU *PCUObj);
 void moveEntities(
     Mesh2* m,
     EntityVector senders[4]);
@@ -220,7 +220,7 @@ void reduceMatchingToSenders(
     Mesh2* m,
     EntityVector senders[4]);
 void getSenders(Mesh2* m,EntityVector affected[4],EntityVector senders[4]);
-void split(Copies& remotes, Parts& parts, Parts& newParts);
+void split(Copies& remotes, Parts& parts, Parts& newParts, pcu::PCU *PCUObj);
 
 // seol
 void packEntity(Mesh2* m, int to, MeshEntity* e, DynamicArray<MeshTag*>& tags, bool ghosting=false);

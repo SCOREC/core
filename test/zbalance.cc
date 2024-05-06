@@ -5,10 +5,10 @@
 #include <gmi_null.h>
 #include <gmi_mesh.h>
 #include <parma.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib> // exit and EXIT_FAILURE
+#include <memory>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -20,10 +20,11 @@
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   if ( argc != 4 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.get()->Self() )
       printf("Usage: %s <model> <mesh> <output mesh prefix>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -38,7 +39,7 @@ int main(int argc, char** argv)
   gmi_register_null();
   gmi_register_mesh();
   //load model and mesh
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
   apf::MeshTag* weights = Parma_WeighByMemory(m);
   apf::Balancer* balancer = makeZoltanBalancer(m, apf::GRAPH, apf::REPARTITION);
   balancer->balance(weights, 1.10);
@@ -56,6 +57,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

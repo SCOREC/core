@@ -35,12 +35,12 @@ using std::set;
 using namespace misLuby;
 
 namespace {
-  int generateRandomNumber() {
-    return (int) mersenne_twister();
+  int generateRandomNumber(pcu::PCU *PCUObj) {
+    return (int) mersenne_twister(PCUObj);
   }
 
-  void setRandomNum(partInfo& part) {
-    part.randNum = generateRandomNumber();
+  void setRandomNum(partInfo& part, pcu::PCU *PCUObj) {
+    part.randNum = generateRandomNumber(PCUObj);
     // don't select self nets until all other nets are selected
     if ( 1 == part.net.size() )
       part.randNum = std::numeric_limits<unsigned>::max();
@@ -52,31 +52,31 @@ namespace {
         p.netAdjParts.erase(*nodeItr);
   }
 
-  int sendAdjNetsToNeighbors(partInfo& part, vector<adjPart>& nbNet) {
-    PCU_Comm_Begin();
+  int sendAdjNetsToNeighbors(partInfo& part, vector<adjPart>& nbNet, pcu::PCU *PCUObj) {
+    PCUObj->Begin();
 
     MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
       const int destRank = *adjPartIdItr;
       MIS_ITERATE(vector<adjPart>, nbNet, nbItr) {
         if (nbItr->partId != *adjPartIdItr) {
           //pack destination part Id
-          PCU_COMM_PACK(destRank, *adjPartIdItr);
+          PCUObj->Pack(destRank, *adjPartIdItr);
 
           //adjacent part Id
-          PCU_COMM_PACK(destRank, nbItr->partId);
+          PCUObj->Pack(destRank, nbItr->partId);
 
           //adjacent part's random number
-          PCU_COMM_PACK(destRank, nbItr->randNum);
+          PCUObj->Pack(destRank, nbItr->randNum);
 
           //net size
           size_t n = nbItr->net.size();
-          PCU_COMM_PACK(destRank, n);
+          PCUObj->Pack(destRank, n);
 
           //net
           for (vector<int>::iterator pItr = nbItr->net.begin();
               pItr != nbItr->net.end();
               pItr++) {
-            PCU_COMM_PACK( destRank, *pItr);
+            PCUObj->Pack( destRank, *pItr);
           }
         }
       }
@@ -84,124 +84,124 @@ namespace {
     return 0;
   }
 
-  void sendIntsToNeighbors(partInfo& part, vector<int>& msg, int tag) {
-    PCU_Comm_Begin();
+  void sendIntsToNeighbors(partInfo& part, vector<int>& msg, int tag, pcu::PCU *PCUObj) {
+    PCUObj->Begin();
     MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
       const int destRank = *adjPartIdItr;
 
       //pack msg tag
-      PCU_COMM_PACK(destRank, tag);
+      PCUObj->Pack(destRank, tag);
 
       //pack destination part Id
-      PCU_COMM_PACK(destRank, *adjPartIdItr);
+      PCUObj->Pack(destRank, *adjPartIdItr);
 
       //pack array length
       size_t n = msg.size();
-      PCU_COMM_PACK(destRank, n);
+      PCUObj->Pack(destRank, n);
 
       //pack int array
       for ( vector<int>::iterator pItr = msg.begin();
           pItr != msg.end();
           pItr++ ) {
-        PCU_COMM_PACK(destRank, *pItr);
+        PCUObj->Pack(destRank, *pItr);
       }
     }
   }
 
-  void unpackInts(vector<int>& msg, int tag) {
-    const int rank = PCU_Comm_Self();
+  void unpackInts(vector<int>& msg, int tag, pcu::PCU *PCUObj) {
+    const int rank = PCUObj->Self();
 
     //unpack msg tag
     int inTag;
-    PCU_COMM_UNPACK(inTag);
+    PCUObj->Unpack(inTag);
     MIS_FAIL_IF(tag != inTag, "tags do not match");
 
     //unpack destination part Id
     int destPartId;
-    PCU_COMM_UNPACK(destPartId);
+    PCUObj->Unpack(destPartId);
     PCU_ALWAYS_ASSERT(rank == destPartId);
 
     //unpack array length
     size_t n;
-    PCU_COMM_UNPACK(n);
+    PCUObj->Unpack(n);
 
     //unpack int array
     int buff;
     for(size_t i=0; i < n; i++) {
-      PCU_COMM_UNPACK(buff);
+      PCUObj->Unpack(buff);
       msg.push_back(buff);
     }
   }
 
-  void recvIntsFromNeighbors(vector<int>& msg, int tag) {
-    while(PCU_Comm_Listen())
-      unpackInts(msg, tag);
+  void recvIntsFromNeighbors(vector<int>& msg, int tag, pcu::PCU *PCUObj) {
+    while(PCUObj->Listen())
+      unpackInts(msg, tag, PCUObj);
   }
 
-  int sendNetToNeighbors(partInfo& part) {
-    PCU_Comm_Begin();
+  int sendNetToNeighbors(partInfo& part, pcu::PCU *PCUObj) {
+    PCUObj->Begin();
     MIS_ITERATE(vector<int>, part.adjPartIds, adjPartIdItr) {
       const int destRank = *adjPartIdItr;
-      PCU_COMM_PACK(destRank, part.id); //FIXME redundant
-      PCU_COMM_PACK(destRank, *adjPartIdItr); //FIXME redundant
-      PCU_COMM_PACK(destRank, part.randNum);
+      PCUObj->Pack(destRank, part.id); //FIXME redundant
+      PCUObj->Pack(destRank, *adjPartIdItr); //FIXME redundant
+      PCUObj->Pack(destRank, part.randNum);
       size_t netSz = part.net.size();
-      PCU_COMM_PACK(destRank, netSz);
+      PCUObj->Pack(destRank, netSz);
       MIS_ITERATE(vector<int>, part.net, pItr)
-        PCU_COMM_PACK(destRank, *pItr);
+        PCUObj->Pack(destRank, *pItr);
     }
     return 0;
   }
 
-  void unpackNet(vector<adjPart>& msg) {
+  void unpackNet(vector<adjPart>& msg, pcu::PCU *PCUObj) {
     int srcPartId;
-    PCU_COMM_UNPACK(srcPartId);
-    PCU_ALWAYS_ASSERT(PCU_Comm_Sender() == srcPartId);
+    PCUObj->Unpack(srcPartId);
+    PCU_ALWAYS_ASSERT(PCUObj->Sender() == srcPartId);
 
     int destPartId;
-    PCU_COMM_UNPACK(destPartId);
-    PCU_ALWAYS_ASSERT(PCU_Comm_Self() == destPartId);
+    PCUObj->Unpack(destPartId);
+    PCU_ALWAYS_ASSERT(PCUObj->Self() == destPartId);
 
     unsigned randNum;
-    PCU_COMM_UNPACK(randNum);
+    PCUObj->Unpack(randNum);
 
     adjPart ap;
     ap.partId = srcPartId;
     ap.randNum = randNum;
 
     size_t arrayLen;
-    PCU_COMM_UNPACK(arrayLen);
+    PCUObj->Unpack(arrayLen);
     PCU_ALWAYS_ASSERT(arrayLen > 0);
 
     int buff;
     for(size_t i=0; i < arrayLen; i++) {
-      PCU_COMM_UNPACK(buff);
+      PCUObj->Unpack(buff);
       ap.net.push_back(buff);
     }
 
     msg.push_back(ap);
   }
 
-  void recvNetsFromNeighbors(vector<adjPart>& msg) {
-    while( PCU_Comm_Listen() )
-      unpackNet(msg);
+  void recvNetsFromNeighbors(vector<adjPart>& msg, pcu::PCU *PCUObj) {
+    while( PCUObj->Listen() )
+      unpackNet(msg, PCUObj);
   }
 
-  void unpackAdjPart(vector<adjPart>& msg) {
-    const int rank = PCU_Comm_Self();
+  void unpackAdjPart(vector<adjPart>& msg, pcu::PCU *PCUObj) {
+    const int rank = PCUObj->Self();
 
     //unpack destination part Id
     int destPartId;
-    PCU_COMM_UNPACK(destPartId);
+    PCUObj->Unpack(destPartId);
     PCU_ALWAYS_ASSERT(rank == destPartId);
 
     //unpack adjacent part Id
     int adjPartId;
-    PCU_COMM_UNPACK(adjPartId);
+    PCUObj->Unpack(adjPartId);
 
     //unpack random number
     unsigned randNum;
-    PCU_COMM_UNPACK(randNum);
+    PCUObj->Unpack(randNum);
 
     adjPart ap;
     ap.partId = adjPartId;
@@ -209,21 +209,21 @@ namespace {
 
     //unpack net size
     size_t n;
-    PCU_COMM_UNPACK(n);
+    PCUObj->Unpack(n);
 
     //unpack net
     int pid;
     for(size_t i=0; i < n; i++) {
-      PCU_COMM_UNPACK(pid);
+      PCUObj->Unpack(pid);
       ap.net.push_back(pid);
     }
 
     msg.push_back(ap);
   }
 
-  void recvAdjNetsFromNeighbors(vector<adjPart>& msg) {
-    while( PCU_Comm_Receive() )
-      unpackAdjPart(msg);
+  void recvAdjNetsFromNeighbors(vector<adjPart>& msg, pcu::PCU *PCUObj) {
+    while( PCUObj->Receive() )
+      unpackAdjPart(msg, PCUObj);
   }
 
   int minRandNum(mapiuItr first, mapiuItr last) {
@@ -302,25 +302,25 @@ namespace {
    * @param part (InOut) local part
    * @return 0 on success, non-zero otherwise
    */
-  int constructNetGraph(partInfo& part) {
+  int constructNetGraph(partInfo& part, pcu::PCU *PCUObj) {
     stable_sort(part.adjPartIds.begin(), part.adjPartIds.end());
     setNodeStateInGraph(part);
 
     // send net to each neighbor
-    int ierr = sendNetToNeighbors(part);
+    int ierr = sendNetToNeighbors(part, PCUObj);
     if (ierr != 0) return ierr;
-    PCU_Comm_Send();
+    PCUObj->Send();
     vector<adjPart> nbNet;
-    recvNetsFromNeighbors(nbNet);
+    recvNetsFromNeighbors(nbNet, PCUObj);
 
     // get the random num associated with adjacent nets
     part.addNetNeighbors(nbNet);
 
-    ierr = sendAdjNetsToNeighbors(part, nbNet);
+    ierr = sendAdjNetsToNeighbors(part, nbNet, PCUObj);
     if (ierr != 0) return ierr;
-    PCU_Comm_Send();
+    PCUObj->Send();
     vector<adjPart> nbAdjNets;
-    recvAdjNetsFromNeighbors(nbAdjNets);
+    recvAdjNetsFromNeighbors(nbAdjNets, PCUObj);
 
     // get the random num associated with adjacent nets
     part.addNetNeighbors(nbAdjNets);
@@ -388,13 +388,13 @@ void misFinalize() {}
  * Setting isNeighbors true supports computing on the partition model graph
  * as opposed to the netgraph.
  */
-int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
-  PCU_ALWAYS_ASSERT(PCU_Comm_Initialized());
+int mis(partInfo& part, pcu::PCU *PCUObj, bool randNumsPredefined, bool isNeighbors) {
+  PCU_ALWAYS_ASSERT(PCUObj != nullptr);
 
   if (false == randNumsPredefined)
-    setRandomNum(part);
+    setRandomNum(part, PCUObj);
 
-  int ierr = constructNetGraph(part);
+  int ierr = constructNetGraph(part, PCUObj);
   if (ierr != 0) return ierr;
 
   vector<int> nodesRemoved;
@@ -429,9 +429,9 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
 
     //--------------ROUND
     tag++;
-    sendIntsToNeighbors(part, nodesToRemove, tag);
-    PCU_Comm_Send();
-    recvIntsFromNeighbors(rmtNodesToRemove, tag);
+    sendIntsToNeighbors(part, nodesToRemove, tag, PCUObj);
+    PCUObj->Send();
+    recvIntsFromNeighbors(rmtNodesToRemove, tag, PCUObj);
 
 
     if (true == part.isInNetGraph &&
@@ -451,15 +451,15 @@ int mis(partInfo& part, bool randNumsPredefined,bool isNeighbors) {
     //--------------ROUND
 
     tag++;
-    sendIntsToNeighbors(part, nodesRemoved, tag);
-    PCU_Comm_Send();
-    recvIntsFromNeighbors(rmtNodesToRemove, tag);
+    sendIntsToNeighbors(part, nodesRemoved, tag, PCUObj);
+    PCUObj->Send();
+    recvIntsFromNeighbors(rmtNodesToRemove, tag, PCUObj);
 
     removeNodes(part, rmtNodesToRemove);
     nodesRemoved.clear();
     rmtNodesToRemove.clear();
 
-    numNodesAdded = PCU_Add_Int(numNodesAdded);
+    numNodesAdded = PCUObj->Add(numNodesAdded);
   } while (numNodesAdded > 0);
 
   return isInMis;

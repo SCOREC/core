@@ -67,7 +67,7 @@ int Grid::in(Indices is)
 
 BoxBuilder::BoxBuilder(int nx, int ny, int nz,
       double wx, double wy, double wz,
-      bool is):
+      bool is, pcu::PCU *PCUObj):
   grid(nx + 1, ny + 1, nz + 1),
   mgrid(nx ? 3 : 1, ny ? 3 : 1, nz ? 3 : 1)
 {
@@ -78,7 +78,7 @@ BoxBuilder::BoxBuilder(int nx, int ny, int nz,
   is_simplex = is;
   formModelTable();
   gmi_model* gm = buildModel();
-  m = makeEmptyMdsMesh(gm, dim, false);
+  m = makeEmptyMdsMesh(gm, dim, false, PCUObj);
   v.resize(grid.total());
   buildMeshAndModel();
 }
@@ -329,17 +329,17 @@ void BoxBuilder::buildMeshAndModel()
 
 Mesh2* makeMdsBox(
     int nex, int ney, int nez,
-    double wx, double wy, double wz, bool is)
+    double wx, double wy, double wz, bool is, pcu::PCU *PCUObj)
 {
-  BoxBuilder bb(nex, ney, nez, wx, wy, wz, is);
+  BoxBuilder bb(nex, ney, nez, wx, wy, wz, is, PCUObj);
   return bb.m;
 }
 
 gmi_model* makeMdsBoxModel(
     int nex, int ney, int nez,
-    double wx, double wy, double wz, bool is)
+    double wx, double wy, double wz, bool is, pcu::PCU *PCUObj)
 {
-  BoxBuilder bb(nex, ney, nez, wx, wy, wz, is);
+  BoxBuilder bb(nex, ney, nez, wx, wy, wz, is, PCUObj);
   return bb.buildModel();
 }
 

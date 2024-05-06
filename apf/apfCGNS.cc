@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include "apfMesh.h"
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
@@ -13,7 +12,6 @@
 #include "apfFieldData.h"
 #include <pcu_util.h>
 #include <lionPrint.h>
-//
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -47,7 +45,7 @@ static Count count(apf::Mesh *m, int dim)
 {
   const int local = apf::countOwned(m, dim);
   int total = local;
-  PCU_Add_Ints(&total, 1); // size of total array
+  m->getPCU()->Add(&total, 1); // size of total array
   return std::make_pair(total, local);
 }
 
@@ -290,7 +288,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     }
 
     int size = data.size();
-    PCU_Add_Ints(&size, 1); // size of total array
+    m->getPCU()->Add(&size, 1); // size of total array
 
     // oddness of the api
     rmin[1] = rmin[0];
@@ -505,7 +503,7 @@ CellElementReturn WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbe
     m->end(cellIter);
     numbersByElementType[o] = counter;
     int total = counter;
-    PCU_Add_Ints(&total, 1); // size of total array
+    m->getPCU()->Add(&total, 1); // size of total array
     globalNumbersByElementType[o] = total;
   }
   cgsize_t allTotal = std::accumulate(globalNumbersByElementType.begin(), globalNumbersByElementType.end(), 0);
@@ -546,12 +544,12 @@ CellElementReturn WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbe
       if (cgp_section_write(cgns.index, cgns.base, cgns.zone, name.c_str(), cgnsElementOrder[o], globalStart, globalEnd, 0, &sectionNumber)) // global start, end within the file for that element type
         cgp_error_exit();
 
-      std::vector<int> allNumbersForThisType(PCU_Comm_Peers(), 0);
+      std::vector<int> allNumbersForThisType(m->getPCU()->Peers(), 0);
       MPI_Allgather(&numbersByElementType[o], 1, MPI_INT, allNumbersForThisType.data(), 1,
-                    MPI_INT, PCU_Get_Comm());
+                    MPI_INT, m->getPCU()->GetMPIComm());
 
       cgsize_t num = 0;
-      for (int i = 0; i < PCU_Comm_Self(); i++)
+      for (int i = 0; i < m->getPCU()->Self(); i++)
         num += allNumbersForThisType[i];
 
       cgsize_t elStart = globalStart + num;
@@ -635,7 +633,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       int startOfBCBlock = startingLocation + 1;
       const int number = bc.second.size();
       int total = number;
-      PCU_Add_Ints(&total, 1); // size of total array
+      m->getPCU()->Add(&total, 1); // size of total array
       if (total > 0)
       {
         const auto allEnd = startOfBCBlock + total - 1; //one-based
@@ -657,12 +655,12 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
           }
         }
 
-        std::vector<int> allNumbersForThisType(PCU_Comm_Peers(), 0);
+        std::vector<int> allNumbersForThisType(m->getPCU()->Peers(), 0);
         MPI_Allgather(&number, 1, MPI_INT, allNumbersForThisType.data(), 1,
-                      MPI_INT, PCU_Get_Comm());
+                      MPI_INT, m->getPCU()->GetMPIComm());
 
         cgsize_t num = 0;
-        for (int i = 0; i < PCU_Comm_Self(); i++)
+        for (int i = 0; i < m->getPCU()->Self(); i++)
           num += allNumbersForThisType[i];
 
         cgsize_t elStart = startOfBCBlock + num;
@@ -685,26 +683,26 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
         cacheEnd = allEnd;
       }
     }
-    std::vector<int> cacheStarts(PCU_Comm_Peers(), 0);
+    std::vector<int> cacheStarts(m->getPCU()->Peers(), 0);
     MPI_Allgather(&cacheStart, 1, MPI_INT, cacheStarts.data(), 1,
-                  MPI_INT, PCU_Get_Comm());
-    std::vector<int> cacheEnds(PCU_Comm_Peers(), 0);
+                  MPI_INT, m->getPCU()->GetMPIComm());
+    std::vector<int> cacheEnds(m->getPCU()->Peers(), 0);
     MPI_Allgather(&cacheEnd, 1, MPI_INT, cacheEnds.data(), 1,
-                  MPI_INT, PCU_Get_Comm());
+                  MPI_INT, m->getPCU()->GetMPIComm());
     return std::make_pair(cacheStarts, cacheEnds);
   };
 
   const auto globalElementList = [](const std::vector<cgsize_t> &bcList, std::vector<cgsize_t> &allElements) {
-    std::vector<int> sizes(PCU_Comm_Peers(), 0); // important initialiser
+    std::vector<int> sizes(m->getPCU()->Peers(), 0); // important initialiser
     const int l = bcList.size();
     MPI_Allgather(&l, 1, MPI_INT, sizes.data(), 1,
-                  MPI_INT, PCU_Get_Comm());
+                  MPI_INT, m->getPCU()->GetMPIComm());
 
     int totalLength = 0;
     for (const auto &i : sizes)
       totalLength += i;
 
-    std::vector<int> displacement(PCU_Comm_Peers(), -1);
+    std::vector<int> displacement(m->getPCU()->Peers(), -1);
     displacement[0] = 0;
     for (std::size_t i = 1; i < displacement.size(); i++)
       displacement[i] = displacement[i - 1] + sizes[i - 1];
@@ -712,7 +710,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     allElements.resize(totalLength);
     MPI_Allgatherv(bcList.data(), bcList.size(), MPI_INT, allElements.data(),
                    sizes.data(), displacement.data(), MPI_INT,
-                   PCU_Get_Comm());
+                   m->getPCU()->GetMPIComm());
   };
 
   const auto doVertexBC = [&](const auto &iter) {
@@ -755,7 +753,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     for (const auto &p : iter->second)
     {
       const auto se = BCEntityAdder(EdgeLoop, p, startingLocation);
-      for (int i = 0; i < PCU_Comm_Peers(); i++)
+      for (int i = 0; i < m->getPCU()->Peers(); i++)
       {
         PCU_ALWAYS_ASSERT_VERBOSE(se.first[i] == se.first[0], "Must all be the same ");
         PCU_ALWAYS_ASSERT_VERBOSE(se.second[i] == se.second[0], "Must all be the same ");
@@ -779,7 +777,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     {
       const auto se = BCEntityAdder(FaceLoop, p, startingLocation);
 
-      for (int i = 0; i < PCU_Comm_Peers(); i++)
+      for (int i = 0; i < m->getPCU()->Peers(); i++)
       {
         PCU_ALWAYS_ASSERT_VERBOSE(se.first[i] == se.first[0], "Must all be the same ");
         PCU_ALWAYS_ASSERT_VERBOSE(se.second[i] == se.second[0], "Must all be the same ");
@@ -1011,7 +1009,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
 {
   static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
 
-  const auto myRank = PCU_Comm_Self();
+  const auto myRank = m->getPCU()->Self();
   const Count vertexCount = count(m, 0);
   const Count edgeCount = count(m, 1);
   const Count faceCount = count(m, 2);
@@ -1031,7 +1029,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   //   PCU_Barrier();
   // }
 
-  PCU_Barrier();
+  m->getPCU()->Barrier();
   if (myRank == 0)
   {
     std::cout << "*******Global Mesh Stats*****************\n";
@@ -1048,7 +1046,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   sizes[2] = 0;                 // nodes are unsorted, as defined by api
 
   // Copy communicator
-  auto communicator = PCU_Get_Comm();
+  auto communicator = m->getPCU()->GetMPIComm();
   cgp_mpi_comm(communicator);
   //
   cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));

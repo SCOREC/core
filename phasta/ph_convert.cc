@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
 #include <SimUtil.h>
@@ -20,7 +19,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-
+#include <memory>
 #include <getopt.h>
 
 
@@ -29,7 +28,7 @@ static void attachOrder(apf::Mesh* m)
   apf::numberOverlapDimension(m, "sim_order", m->getDimension());
 }
 namespace {
-  static FILE* openFileRead(ph::Input&, const char* path) {
+  static FILE* openFileRead(ph::Input&, const char* path, pcu::PCU*) {
     return fopen(path, "r");
   }
 
@@ -68,7 +67,7 @@ int should_fix_pyramids = 1;
 int should_attach_order = 0;
 bool found_bad_arg = false;
 
-void getConfig(int argc, char** argv) {
+void getConfig(int argc, char** argv, pcu::PCU *pcu_obj) {
 
   opterr = 0;
 
@@ -105,18 +104,18 @@ void getConfig(int argc, char** argv) {
         gmi_native_path = optarg;
         break;
       case '?':
-        if (!PCU_Comm_Self())
+        if (!pcu_obj->Self())
           lion_oprint(1,"warning: skipping unrecognized option\n");
         break;
       default:
-        if (!PCU_Comm_Self())
+        if (!pcu_obj->Self())
           lion_oprint(1,"Usage %s %s", argv[0], usage);
         exit(EXIT_FAILURE);
     }
   }
 
   if(argc-optind != 3) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj->Self())
       lion_oprint(1,"Usage %s %s", argv[0], usage);
     exit(EXIT_FAILURE);
   }
@@ -125,7 +124,7 @@ void getConfig(int argc, char** argv) {
   sms_path = argv[i++];
   smb_path = argv[i++];
 
-  if (!PCU_Comm_Self()) {
+  if (!pcu_obj->Self()) {
     lion_oprint(1,"fix_pyramids %d attach_order %d enable_log %d\n",
             should_fix_pyramids, should_attach_order, should_log);
     lion_oprint(1,"native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
@@ -136,7 +135,7 @@ void getConfig(int argc, char** argv) {
 
 static void fixCoords(apf::Mesh2* m)
 {
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* e;
   apf::Vector3 x;
@@ -148,24 +147,24 @@ static void fixCoords(apf::Mesh2* m)
       m->getPoint(e, 0, x);
       m->getParam(e, p);
       APF_ITERATE(apf::Copies, remotes, rit) {
-        PCU_COMM_PACK(rit->first, rit->second);
-        PCU_COMM_PACK(rit->first, x);
-        PCU_COMM_PACK(rit->first, p);
+        m->getPCU()->Pack(rit->first, rit->second);
+        m->getPCU()->Pack(rit->first, x);
+        m->getPCU()->Pack(rit->first, p);
       }
     }
   m->end(it);
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   double max_x_diff = 0;
   double max_p_diff = 0;
   apf::Vector3 max_x_diff_point;
   apf::Vector3 max_p_diff_point;
   int x_diffs = 0;
   int p_diffs = 0;
-  while (PCU_Comm_Receive()) {
+  while (m->getPCU()->Receive()) {
     apf::Vector3 ox, op;
-    PCU_COMM_UNPACK(e);
-    PCU_COMM_UNPACK(ox);
-    PCU_COMM_UNPACK(op);
+    m->getPCU()->Unpack(e);
+    m->getPCU()->Unpack(ox);
+    m->getPCU()->Unpack(op);
     m->getPoint(e, 0, x);
     m->getParam(e, p);
     if (!(apf::areClose(p, op, 0.0))) {
@@ -190,11 +189,11 @@ static void fixCoords(apf::Mesh2* m)
   double global_max[2];
   global_max[0] = max_x_diff;
   global_max[1] = max_p_diff;
-  PCU_Max_Doubles(global_max, 2);
+  m->getPCU()->Max(global_max, 2);
   long global_diffs[2];
   global_diffs[0] = x_diffs;
   global_diffs[1] = p_diffs;
-  PCU_Add_Longs(global_diffs, 2);
+  m->getPCU()->Add(global_diffs, 2);
   /* admittedly not the best way of checking
      which processor had the max */
   if (global_diffs[0] && (global_max[0] == max_x_diff))
@@ -216,18 +215,19 @@ static void postConvert(apf::Mesh2* m)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
 
-  getConfig(argc, argv);
+  getConfig(argc, argv, pcu_obj.get());
   if( should_log )
     Sim_logOn("convert.sim.log");
 
   if (should_attach_order && should_fix_pyramids) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj.get()->Self())
       std::cout << "disabling pyramid fix because --attach-order was given\n";
     should_fix_pyramids = false;
   }
@@ -243,21 +243,21 @@ int main(int argc, char** argv)
   else
     mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
-  double t1 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if(!pcu_obj.get()->Self())
     lion_eprint(1, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
-  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
-  double t2 = PCU_Time();
-  if(!PCU_Comm_Self())
+  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, pcu_obj.get());
+  double t2 = pcu::Time();
+  if(!simApfMesh->getPCU()->Self())
     lion_eprint(1, "created the apf_sim mesh in %f seconds\n", t2-t1);
   if (should_attach_order) attachOrder(simApfMesh);
   ph::buildMapping(simApfMesh);
 
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
-  double t3 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t3 = pcu::Time();
+  if(!mesh->getPCU()->Self())
     lion_eprint(1, "created the apf_mds mesh in %f seconds\n", t3-t2);
 
   apf::printStats(mesh);
@@ -290,6 +290,6 @@ int main(int argc, char** argv)
   MS_exit();
   if( should_log )
     Sim_logOff();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

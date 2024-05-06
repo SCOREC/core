@@ -16,7 +16,7 @@ namespace apf {
  *
  * \details This object should be destroyed by apf::destroyMesh.
  */
-Mesh2* createMesh(pParMesh mesh);
+Mesh2* createMesh(pParMesh mesh, pcu::PCU *PCUObj);
 
 /**
   * \brief Casts a Simmetrix entity to an apf::MeshEntity.

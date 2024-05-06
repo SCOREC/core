@@ -10,7 +10,7 @@
 #include "apfShape.h"
 #include "gmi.h" /* this is for gmi_getline... */
 #include <lionPrint.h>
-#include <PCU.h>
+#include <PCU2.h>
 #include <apf.h>
 #include <apfConvert.h>
 #include "apfFieldData.h"
@@ -200,14 +200,14 @@ struct MeshDataGroup
 };
 
 template <typename Arg, typename... Args>
-void DebugParallelPrinter(std::ostream &out, Arg &&arg, Args &&... args)
+void DebugParallelPrinter(PCUHandle h, std::ostream &out, Arg &&arg, Args &&... args)
 {
   //  if constexpr (debugOutput) // probably will not get away with c++17
   if (debugOutput)
   {
-    for (int i = 0; i < PCU_Comm_Peers(); i++)
+    for (int i = 0; i < PCU_Comm_Peers2(h); i++)
     {
-      if (i == PCU_Comm_Self())
+      if (i == PCU_Comm_Self2(h))
       {
         out << "Rank [" << i << "] " << std::forward<Arg>(arg);
         //((out << ", " << std::forward<Args>(args)), ...); // probably will not get away with c++17
@@ -223,15 +223,15 @@ void DebugParallelPrinter(std::ostream &out, Arg &&arg, Args &&... args)
 }
 
 template <typename... Args>
-void Kill(const int fid, Args &&... args)
+void Kill(PCUHandle h, const int fid, Args &&... args)
 {
-  DebugParallelPrinter(std::cout, "***** CGNS ERROR", args...);
+  DebugParallelPrinter(h, std::cout, "***** CGNS ERROR", args...);
 
-  if (PCU_Comm_Initialized())
+  if (PCU_Comm_Initialized2(h))
   {
     cgp_close(fid);
     // Finalize the MPI environment.
-    PCU_Comm_Free();
+    PCU_Comm_Free2(h);
     MPI_Finalize();
     cgp_error_exit();
     exit(EXIT_FAILURE);
@@ -244,15 +244,15 @@ void Kill(const int fid, Args &&... args)
   }
 }
 
-void Kill(const int fid)
+void Kill(PCUHandle h, const int fid)
 {
-  DebugParallelPrinter(std::cout, "***** CGNS ERROR");
+  DebugParallelPrinter(h, std::cout, "***** CGNS ERROR");
 
-  if (PCU_Comm_Initialized())
+  if (PCU_Comm_Initialized2(h))
   {
     cgp_close(fid);
     // Finalize the MPI environment.
-    PCU_Comm_Free();
+    PCU_Comm_Free2(h);
     MPI_Finalize();
     cgp_error_exit();
     exit(EXIT_FAILURE);
@@ -265,13 +265,13 @@ void Kill(const int fid)
   }
 }
 
-auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
+auto ReadCGNSCoords(PCUHandle h, int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
 {
   // Read min required as defined by consecutive range
   // make one based as ReadElements makes zero based
   const cgsize_t lowest = globalToVert.begin()->first + 1;
   const cgsize_t highest = globalToVert.rbegin()->first + 1;
-  DebugParallelPrinter(std::cout, "From globalToVert ", lowest, highest, nverts);
+  DebugParallelPrinter(h, std::cout, "From globalToVert ", lowest, highest, nverts);
 
   cgsize_t range_min[3];
   range_min[0] = lowest;
@@ -301,7 +301,7 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
     if (cg_coord_info(cgid, base, zone, d + 1, &datatype, &coord_names[d][0]))
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill(cgid);
+      Kill(h, cgid);
     }
     const auto coord_name = std::string(coord_names[d].c_str());
     //boost::algorithm::trim(coord_name); // can't be bothered including boost
@@ -311,7 +311,7 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
                             ordinate.data()))
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill(cgid);
+      Kill(h, cgid);
     }
   }
   // to be clear, indices passed back are global, zero based
@@ -332,14 +332,14 @@ auto ReadCGNSCoords(int cgid, int base, int zone, int ncoords, int nverts, const
   return points;
 }
 
-void SimpleElementPartition(std::vector<cgsize_t> &numberToReadPerProc, std::vector<cgsize_t> &startingIndex, int el_start /* one based */, int el_end, int numElements)
+void SimpleElementPartition(PCUHandle h, std::vector<cgsize_t> &numberToReadPerProc, std::vector<cgsize_t> &startingIndex, int el_start /* one based */, int el_end, int numElements)
 {
-  numberToReadPerProc.resize(PCU_Comm_Peers(), 0);
+  numberToReadPerProc.resize(PCU_Comm_Peers2(h), 0);
   const cgsize_t blockSize = static_cast<cgsize_t>(
       std::floor(static_cast<double>(numElements) /
-                 static_cast<double>(PCU_Comm_Peers())));
+                 static_cast<double>(PCU_Comm_Peers2(h))));
 
-  DebugParallelPrinter(std::cout, "BlockSize", blockSize, "numElements", numElements, "comms Size", PCU_Comm_Peers());
+  DebugParallelPrinter(h, std::cout, "BlockSize", blockSize, "numElements", numElements, "comms Size", PCU_Comm_Peers2(h));
 
   cgsize_t counter = 0;
   if (blockSize == 0 && numElements > 0)
@@ -349,7 +349,7 @@ void SimpleElementPartition(std::vector<cgsize_t> &numberToReadPerProc, std::vec
     bool keepGoing = true;
     while (keepGoing)
     {
-      for (int p = 0; p < PCU_Comm_Peers() && keepGoing; p++)
+      for (int p = 0; p < PCU_Comm_Peers2(h) && keepGoing; p++)
       {
         if (counter + blockSize <= numElements)
         {
@@ -366,11 +366,11 @@ void SimpleElementPartition(std::vector<cgsize_t> &numberToReadPerProc, std::vec
       }
     }
   }
-  DebugParallelPrinter(std::cout, "Sanity check: Counter", counter, "numElements", numElements);
+  DebugParallelPrinter(h, std::cout, "Sanity check: Counter", counter, "numElements", numElements);
 
-  DebugParallelPrinter(std::cout, "numberToReadPerProc for rank", PCU_Comm_Self(), "is:", numberToReadPerProc[PCU_Comm_Self()]);
+  DebugParallelPrinter(h, std::cout, "numberToReadPerProc for rank", PCU_Comm_Self2(h), "is:", numberToReadPerProc[PCU_Comm_Self2(h)]);
 
-  startingIndex.resize(PCU_Comm_Peers(), 0);
+  startingIndex.resize(PCU_Comm_Peers2(h), 0);
   startingIndex[0] = el_start;
   for (std::size_t i = 1; i < numberToReadPerProc.size(); i++)
   {
@@ -378,36 +378,36 @@ void SimpleElementPartition(std::vector<cgsize_t> &numberToReadPerProc, std::vec
       startingIndex[i] = startingIndex[i - 1] + numberToReadPerProc[i - 1];
   }
 
-  DebugParallelPrinter(std::cout, "Element start, end, numElements ", el_start,
+  DebugParallelPrinter(h, std::cout, "Element start, end, numElements ", el_start,
                        el_end, numElements);
 
-  DebugParallelPrinter(std::cout, "startingIndex for rank", PCU_Comm_Self(), "is:", startingIndex[PCU_Comm_Self()]);
+  DebugParallelPrinter(h, std::cout, "startingIndex for rank", PCU_Comm_Self2(h), "is:", startingIndex[PCU_Comm_Self2(h)]);
 
-  DebugParallelPrinter(std::cout, "Returning from SimpleElementPartition \n");
+  DebugParallelPrinter(h, std::cout, "Returning from SimpleElementPartition \n");
 }
 
 using Pair = std::pair<cgsize_t, cgsize_t>;
 using LocalElementRanges = std::vector<Pair>; // one based
 
-auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
+auto ReadElements(PCUHandle h, int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
 {
   std::vector<cgsize_t> numberToReadPerProc;
   std::vector<cgsize_t> startingIndex;
-  SimpleElementPartition(numberToReadPerProc, startingIndex, el_start, el_end, numElements);
+  SimpleElementPartition(h, numberToReadPerProc, startingIndex, el_start, el_end, numElements);
 
   std::vector<cgsize_t> vertexIDs;
-  if (numberToReadPerProc[PCU_Comm_Self()] > 0)
-    vertexIDs.resize(numberToReadPerProc[PCU_Comm_Self()] * verticesPerElement,
+  if (numberToReadPerProc[PCU_Comm_Self2(h)] > 0)
+    vertexIDs.resize(numberToReadPerProc[PCU_Comm_Self2(h)] * verticesPerElement,
                      -1234567);
 
-  const auto start = startingIndex[PCU_Comm_Self()];
-  const auto end = startingIndex[PCU_Comm_Self()] + numberToReadPerProc[PCU_Comm_Self()] - 1;
-  DebugParallelPrinter(std::cout, "Range", start, "to", end, numberToReadPerProc[PCU_Comm_Self()]);
+  const auto start = startingIndex[PCU_Comm_Self2(h)];
+  const auto end = startingIndex[PCU_Comm_Self2h(h)] + numberToReadPerProc[PCU_Comm_Self2(h)] - 1;
+  DebugParallelPrinter(h, std::cout, "Range", start, "to", end, numberToReadPerProc[PCU_Comm_Self2(h)]);
   //
   cgp_elements_read_data(cgid, base, zone, section, start,
                          end, vertexIDs.data());
 
-  if (numberToReadPerProc[PCU_Comm_Self()] > 0)
+  if (numberToReadPerProc[PCU_Comm_Self2(h)] > 0)
   {
     localElementRanges.push_back(std::make_pair(start, end));
   }
@@ -419,7 +419,7 @@ auto ReadElements(int cgid, int base, int zone, int section, int el_start /* one
     i = i - 1;
   }
 
-  return std::make_tuple(vertexIDs, numberToReadPerProc[PCU_Comm_Self()]);
+  return std::make_tuple(vertexIDs, numberToReadPerProc[PCU_Comm_Self2(h)]);
 }
 
 struct CGNSBCMeta
@@ -497,7 +497,7 @@ struct BCInfo
       }
       else
       {
-        Kill(cgid, "GlobalToVert lookup problem", v);
+        Kill(m->getPCU()->GetCHandle(), cgid, "GlobalToVert lookup problem", v);
       }
     }
 
@@ -805,7 +805,7 @@ struct BCInfo
         Add("CellCenter", bcName, bcTag);
       }
       else
-        Kill(cgid, "Unknown BC Type", cgnsLocation);
+        Kill(m->getPCU()->GetCHandle(), cgid, "Unknown BC Type", cgnsLocation);
     }
     else if (m->getDimension() == 2) // working with a 2D mesh
     {
@@ -856,7 +856,7 @@ struct BCInfo
   }
 }; // namespace
 
-void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections, std::vector<BCInfo> &bcInfos, const apf::GlobalToVert &globalToVert)
+void ReadBCInfo(PCUHandle h, const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections, std::vector<BCInfo> &bcInfos, const apf::GlobalToVert &globalToVert)
 {
   // Read the BCS.
   std::vector<CGNSBCMeta> bcMetas(nBocos);
@@ -874,7 +874,7 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
     if (cg_boco_info(cgid, base, zone, boco, &bcMeta.bocoName[0], &bcMeta.bocoType,
                      &bcMeta.ptsetType, &bcMeta.npnts, bcMeta.normalindices.data(), &bcMeta.normalListSize,
                      &bcMeta.normalDataType, &bcMeta.ndataset))
-      Kill(cgid, "Failed cg_boco_info");
+      Kill(h, cgid, "Failed cg_boco_info");
 
     if (bcMeta.ptsetType == CGNS_ENUMV(PointList) || (bcMeta.ptsetType == CGNS_ENUMV(PointRange)))
     {
@@ -882,7 +882,7 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
       //boost::algorithm::trim(bcMeta.bocoName); // can't be bothered including boost
 
       if (cg_boco_gridlocation_read(cgid, base, zone, boco, &bcMeta.location))
-        Kill(cgid, "Failed cg_boco_gridlocation_read");
+        Kill(h, cgid, "Failed cg_boco_gridlocation_read");
 
       bcMeta.locationName = cg_GridLocationName(bcMeta.location);
 
@@ -891,7 +891,7 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
     }
     else
     {
-      Kill(cgid,
+      Kill(h, cgid,
            "TODO: Can only work with "
            "PointList and PointRange BC "
            "types at the moment");
@@ -907,25 +907,25 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
       if (bcMeta.locationName == "Vertex") // && cellDim == 1)
       {
         if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
-          Kill(cgid, "Failed cg_boco_read");
+          Kill(h, cgid, "Failed cg_boco_read");
       }
       else if (bcMeta.locationName == "EdgeCenter") // && cellDim == 2)
       {
         if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
-          Kill(cgid, "Failed cg_boco_read");
+          Kill(h, cgid, "Failed cg_boco_read");
       }
       else if (bcMeta.locationName == "FaceCenter") // && cellDim == 3)
       {
         if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
-          Kill(cgid, "Failed cg_boco_read");
+          Kill(h, cgid, "Failed cg_boco_read");
       }
       else if (bcMeta.locationName == "CellCenter") // && cellDim == 3)
       {
         if (cg_boco_read(cgid, base, zone, boco, bcMeta.bcElementIds.data(), NULL))
-          Kill(cgid, "Failed cg_boco_read");
+          Kill(h, cgid, "Failed cg_boco_read");
       }
       else
-        Kill(cgid, "Failed Location test for BC Type", bcMeta.locationName,
+        Kill(h, cgid, "Failed Location test for BC Type", bcMeta.locationName,
              cellDim);
 
       if (pointRange)
@@ -1049,12 +1049,12 @@ void ReadBCInfo(const int cgid, const int base, const int zone, const int nBocos
   }
 }
 
-apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &readMeshData)
+apf::Mesh2 *DoIt(PCUHandle h, gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &readMeshData)
 {
   static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
 
   int cgid = -1;
-  auto comm = PCU_Get_Comm();
+  auto comm = PCU_Get_Comm2(h);
   cgp_mpi_comm(comm);
   cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
   cgp_open(fname.c_str(), CGNS_ENUMV(CG_MODE_READ), &cgid);
@@ -1076,7 +1076,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   const int readDim = cellDim;
 
   // Salome cgns is a bit on the odd side: cellDim, physDim, ncoords are not always consistent
-  apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false);
+  apf::Mesh2 *mesh = apf::makeEmptyMdsMesh(g, cellDim, false, static_cast<pcu::PCU*>(h.ptr));
   apf::GlobalToVert globalToVert;
 
   LocalElementRanges localElementRanges;
@@ -1111,7 +1111,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
     if (ngrids > 1)
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill(cgid);
+      Kill(h, cgid);
     }
     int ncoords = -1;
     cg_ncoords(cgid, base, zone, &ncoords);
@@ -1128,7 +1128,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
     else
     {
       std::cout << __LINE__ << " CGNS is dead " << std::endl;
-      Kill(cgid);
+      Kill(h, cgid);
     }
 
     int nBocos = -1;
@@ -1157,14 +1157,14 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
       cg_npe(elementType, &verticesPerElement);
 
       const auto readElementsAndVerts = [&](const apf::Mesh2::Type &type) {
-        const auto &ret = ReadElements(cgid, base, zone, section, el_start, el_end, numElements, verticesPerElement, localElementRanges);
+        const auto &ret = ReadElements(h, cgid, base, zone, section, el_start, el_end, numElements, verticesPerElement, localElementRanges);
         if (std::get<1>(ret) > 0)
         {
           const std::vector<cgsize_t> vertexIDs = std::get<0>(ret);
           std::vector<long> vertexIDs_l(vertexIDs.begin(), vertexIDs.end());
           localElements.emplace_back(apf::assemble(mesh, vertexIDs_l.data(), std::get<1>(ret), type, globalToVert)); // corresponding finalize below
           const auto nverts = sizes[0];
-          const auto ordinates = ReadCGNSCoords(cgid, base, zone, ncoords, nverts, vertexIDs, globalToVert);
+          const auto ordinates = ReadCGNSCoords(h, cgid, base, zone, ncoords, nverts, vertexIDs, globalToVert);
 
           for (const auto &p : globalToVert)
           {
@@ -1220,7 +1220,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
       {
         std::cout << __LINE__ << " CGNS is dead "
                   << " " << SupportedCGNSElementTypeToString(elementType) << std::endl;
-        Kill(cgid);
+        Kill(h, cgid);
       }
     }
 
@@ -1229,13 +1229,13 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
       std::cout << std::endl;
       std::cout << "Attempting to read BCS info "
                 << " " << nBocos << std::endl;
-      ReadBCInfo(cgid, base, zone, nBocos, physDim, cellDim, nsections, bcInfos, globalToVert);
+      ReadBCInfo(h, cgid, base, zone, nBocos, physDim, cellDim, nsections, bcInfos, globalToVert);
       std::cout << std::endl;
     }
 
     int nsols = -1;
     if (cg_nsols(cgid, base, zone, &nsols))
-      Kill(cgid, "1, ", nsols);
+      Kill(h, cgid, "1, ", nsols);
 
     std::vector<MeshData> meshData;
     if (nsols > 0)
@@ -1247,11 +1247,11 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
         char sname[33];
         if (cg_sol_info(cgid, base, zone, ns,
                         sname, &location))
-          Kill(cgid, "2");
+          Kill(h, cgid, "2");
 
         int nflds = -1;
         if (cg_nfields(cgid, base, zone, ns, &nflds))
-          Kill(cgid, "3");
+          Kill(h, cgid, "3");
 
         if (nflds > 0)
         {
@@ -1262,7 +1262,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
             char name[33];
             if (cg_field_info(cgid, base, zone, ns, f,
                               &datatype, name))
-              Kill(cgid, "4");
+              Kill(h, cgid, "4");
 
             //std::cout << sname << " " << name << " " << f << " " << ns << " " << cg_DataTypeName(datatype) << " " << cg_GridLocationName(location) << std::endl;
             meshData.push_back(MeshData(ns, f, datatype, location, name));
@@ -1318,7 +1318,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                         if (otherIndex != -1)
                           group.insert(otherIndex, other);
                         else
-                          Kill(cgid, "Bad fail");
+                          Kill(h, cgid, "Bad fail");
                         group.insert(i, md);
                       }
                     }
@@ -1439,7 +1439,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
             else if (md.size() == 9)
               field = apf::createFieldOn(mesh, md.name().c_str(), apf::MATRIX);
             else
-              Kill(cgid, "Tensor size not accounted for");
+              Kill(h, cgid, "Tensor size not accounted for");
 
             double scalar(-123456.0);
             apf::Vector3 vector3(-123456.0, -123456.0, -123456.0);
@@ -1456,7 +1456,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
               else if (md.size() == 9)
                 apf::setMatrix(field, elem, 0, matrix3x3);
               else
-                Kill(cgid, "Tensor size not accounted for");
+                Kill(h, cgid, "Tensor size not accounted for");
             }
             mesh->end(it);
 
@@ -1466,7 +1466,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
             {
               if (cgp_field_read_data(cgid, base, zone, md.sIndex(i), md.fIndex(i),
                                       &range_min[0], &range_max[0], meshVals.data()))
-                Kill(cgid, "Failed cgp_field_read_data");
+                Kill(h, cgid, "Failed cgp_field_read_data");
 
               cgsize_t counter = lowest;
               for (cgsize_t it = 0; it < numToRead; it++)
@@ -1498,7 +1498,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                     apf::setMatrix(field, elem, 0, matrix3x3);
                   }
                   else
-                    Kill(cgid, "Tensor size not accounted for");
+                    Kill(h, cgid, "Tensor size not accounted for");
                 }
                 counter++;
               }
@@ -1509,7 +1509,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
           }
           else
           {
-            Kill(cgid, "Don't know how to process this at the moment");
+            Kill(h, cgid, "Don't know how to process this at the moment");
           }
         }
         else if (md.location() == CGNS_ENUMV(CellCenter))
@@ -1535,7 +1535,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
             else if (md.size() == 9)
               field = apf::createField(mesh, md.name().c_str(), apf::MATRIX, apf::getConstant(dim));
             else
-              Kill(cgid, "Tensor size not accounted for");
+              Kill(h, cgid, "Tensor size not accounted for");
 
             double scalar(-123456.0);
             apf::Vector3 vector3(-123456.0, -123456.0, -123456.0);
@@ -1552,7 +1552,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
               else if (md.size() == 9)
                 apf::setMatrix(field, elem, 0, matrix3x3);
               else
-                Kill(cgid, "Tensor size not accounted for");
+                Kill(h, cgid, "Tensor size not accounted for");
             }
             mesh->end(it);
 
@@ -1580,7 +1580,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
               {
                 if (cgp_field_read_data(cgid, base, zone, md.sIndex(i), md.fIndex(i),
                                         &range_min[0], &range_max[0], meshVals.data()))
-                  Kill(cgid, "Failed cgp_field_read_data");
+                  Kill(h, cgid, "Failed cgp_field_read_data");
 
                 for (std::size_t it = 0; it < numToRead; it++)
                 {
@@ -1609,7 +1609,7 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
                   }
                   else
                   {
-                    Kill(cgid, "Tensor size not accounted for");
+                    Kill(h, cgid, "Tensor size not accounted for");
                   }
                 }
               }
@@ -1620,19 +1620,19 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
           }
           else
           {
-            Kill(cgid, "Don't know how to process this at the moment");
+            Kill(h, cgid, "Don't know how to process this at the moment");
           }
         }
         else
         {
-          Kill(cgid, "Don't know how to process this at the moment");
+          Kill(h, cgid, "Don't know how to process this at the moment");
         }
       }
     }
   }
 
   // free up memory
-  if (PCU_Comm_Initialized())
+  if (PCU_Comm_Initialized2(h))
     cgp_close(cgid);
   else
     cg_close(cgid);
@@ -1711,10 +1711,10 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   return mesh;
 } // namespace
 
-apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
+apf::Mesh2 *DoIt(PCUHandle h, gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
 {
   std::vector<std::pair<std::string, std::string>> meshData;
-  return DoIt(g, fname, cgnsBCMap, meshData);
+  return DoIt(h, g, fname, cgnsBCMap, meshData);
 }
 
 } // namespace
@@ -1725,8 +1725,14 @@ namespace apf
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
 Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
+  PCUHandle h = PCU_Get_Global_Handle();
+  return loadMdsFromCGNS2(h, g, fname, cgnsBCMap, meshData);
+}
+
+Mesh2 *loadMdsFromCGNS2(PCUHandle h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
+{
 #ifdef HAVE_CGNS
-  Mesh2 *m = DoIt(g, fname, cgnsBCMap, meshData);
+  Mesh2 *m = DoIt(h, g, fname, cgnsBCMap, meshData);
   return m;
 #else
   Mesh2 *m = nullptr;
@@ -1740,8 +1746,14 @@ Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMa
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
 Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
 {
+  PCUHandle h = PCU_Get_Global_Handle();
+  return loadMdsFromCGNS2(h, g, fname, cgnsBCMap);
+}
+
+Mesh2 *loadMdsFromCGNS2(PCUHandle h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
+{
 #ifdef HAVE_CGNS
-  Mesh2 *m = DoIt(g, fname, cgnsBCMap);
+  Mesh2 *m = DoIt(h, g, fname, cgnsBCMap);
   return m;
 #else
   Mesh2 *m = nullptr;

@@ -1,5 +1,4 @@
 #include <pcu_util.h>
-#include <PCU.h>
 #include "parma_centroids.h"
 #include "parma_sides.h"
 
@@ -43,18 +42,18 @@ namespace parma {
     return x / weight;
   }
 
-  void Centroids::init(apf::Mesh*, Sides* s) {
-    PCU_Comm_Begin();
+  void Centroids::init(apf::Mesh* m, Sides* s) {
+    m->getPCU()->Begin();
     const Sides::Item* side;
     s->begin();
     while( (side = s->iterate()) ) 
-      PCU_COMM_PACK(side->first, centroid);
+      m->getPCU()->Pack(side->first, centroid);
     s->end();
-    PCU_Comm_Send();
-    while (PCU_Comm_Listen()) {
+    m->getPCU()->Send();
+    while (m->getPCU()->Listen()) {
       apf::Vector3 otherCentroid;
-      PCU_COMM_UNPACK(otherCentroid);
-      set(PCU_Comm_Sender(), otherCentroid);
+      m->getPCU()->Unpack(otherCentroid);
+      set(m->getPCU()->Sender(), otherCentroid);
     }
   }
 } //end namespace

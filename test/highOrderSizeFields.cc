@@ -5,7 +5,6 @@
 #include <gmi_mesh.h>
 #include <ma.h>
 #include <maShape.h>
-#include <PCU.h>
 #include <crv.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
@@ -20,6 +19,7 @@
 #include <sstream>
 #include <string>
 #include <math.h>
+#include <memory>
 
 
 void computeSizesFrames(
@@ -31,12 +31,14 @@ void computeSizesFrames(
 void testAdapt(
     const char* model,
     const char* mesh,
-    int order);
+    int order,
+    pcu::PCU *PCUObj);
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
 
 #ifdef HAVE_SIMMETRIX
@@ -49,19 +51,19 @@ int main(int argc, char** argv)
   gmi_register_mesh();
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr <<"usage: " << argv[0]
       	<< " <model.smd> <mesh.smb> <sizefield>\n";
     return EXIT_FAILURE;
   }
 
   for (int order = 3; order < 5; order++) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       lion_oprint(1, "Testing aniso adapt w/ sizefield order %d\n", order);
-    testAdapt(argv[1], argv[2], order);
+    testAdapt(argv[1], argv[2], order, PCUObj.get());
   }
 
-  PCU_Comm_Free();
+  }
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
@@ -113,10 +115,11 @@ void computeSizesFrames(
 void testAdapt(
     const char* model,
     const char* mesh,
-    int order)
+    int order,
+    pcu::PCU *PCUObj)
 {
   gmi_model* g = gmi_load(model);
-  apf::Mesh2* m = apf::loadMdsMesh(g,mesh);
+  apf::Mesh2* m = apf::loadMdsMesh(g,mesh,PCUObj);
   m->verify();
 
   const ma::Input* in = ma::configureUniformRefine(m, 1, 0);

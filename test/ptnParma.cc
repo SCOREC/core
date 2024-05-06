@@ -2,7 +2,6 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apfZoltan.h>
 #include <parma.h>
@@ -15,6 +14,7 @@
 #include <SimModel.h>
 #endif
 #include <cstdlib>
+#include <memory>
 
 namespace {
 
@@ -85,22 +85,14 @@ apf::Migration* getPlan(apf::Mesh* m)
   return plan;
 }
 
-void switchToMasters()
+pcu::PCU* getGroupedPCU(pcu::PCU *PCUObj)
 {
-  int self = PCU_Comm_Self();
+  int self = PCUObj->Self();
   int groupRank = self / partitionFactor;
   int group = self % partitionFactor;
   MPI_Comm groupComm;
   MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
-  PCU_Switch_Comm(groupComm);
-}
-
-void switchToAll()
-{
-  MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(MPI_COMM_WORLD);
-  MPI_Comm_free(&prevComm);
-  PCU_Barrier();
+  return new pcu::PCU(groupComm);
 }
 
 void runParma(apf::Mesh2* m) {
@@ -124,28 +116,31 @@ void runParma(apf::Mesh2* m) {
   Parma_PrintPtnStats(m, "final");
 }
 
-void mymain(bool ismaster)
+void mymain(bool ismaster, pcu::PCU *PCUObj)
 {
   gmi_model* g = gmi_load(modelFile);
   apf::Mesh2* m = NULL;
   apf::Migration* plan = NULL;
-  switchToMasters();
+  pcu::PCU *groupedPCUObj = getGroupedPCU(PCUObj)
   if (ismaster) {
-    m = apf::loadMdsMesh(modelFile,meshFile);
+    m = apf::loadMdsMesh(modelFile,meshFile,groupedPCUObj);
     Parma_PrintPtnStats(m, "initial");
     plan = getPlan(m);
   }
-  switchToAll();
-  m = apf::repeatMdsMesh(m, g, plan, partitionFactor);
+  //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
+  //on the globalPCU
+  if(m != nullptr) m->switchPCU(PCUObj);
+  delete groupedPCUObj;
+  m = apf::repeatMdsMesh(m, g, plan, partitionFactor, PCUObj);
   runParma(m);
   m->writeNative(outFile);
   freeMesh(m);
 }
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc != 8 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh> "
              "<factor> <method> <approach> <0:global|1:local>\n", argv[0]);
     MPI_Finalize();
@@ -158,7 +153,7 @@ void getConfig(int argc, char** argv)
   method = argv[5];
   approach = argv[6];
   isLocal = atoi(argv[7]);
-  if(!PCU_Comm_Self())
+  if(!PCUObj->Self())
     lion_eprint(1, "INPUTS model %s mesh %s out %s factor %d "
        "method %s approach %s isLocal %d\n", modelFile, meshFile, outFile,
        partitionFactor, method, approach, isLocal);
@@ -169,9 +164,10 @@ void getConfig(int argc, char** argv)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  if( !PCU_Comm_Self() )
+  if( !PCUObj.get()->Self() )
     lion_oprint(1, "PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -182,17 +178,17 @@ int main(int argc, char** argv)
 #endif
   gmi_register_mesh();
   lion_set_verbosity(1);
-  getConfig(argc,argv);
-  if (PCU_Comm_Self() % partitionFactor)
-    mymain(false);
+  getConfig(argc,argv,PCUObj.get());
+  if (PCUObj.get()->Self() % partitionFactor)
+    mymain(false, PCUObj.get());
   else
-    mymain(true);
+    mymain(true, PCUObj.get());
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

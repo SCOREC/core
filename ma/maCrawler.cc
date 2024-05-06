@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "maCrawler.h"
 #include "maAdapt.h"
 #include "maLayer.h"
@@ -9,24 +8,24 @@ namespace ma {
 void syncLayer(Crawler* c, Crawler::Layer& layer)
 {
   Mesh* m = c->mesh;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (size_t i = 0; i < layer.size(); ++i) {
     Entity* e = layer[i];
     if (m->isShared(e)) {
       apf::Copies remotes;
       m->getRemotes(e,remotes);
       APF_ITERATE(apf::Copies,remotes,it) {
-        PCU_COMM_PACK(it->first,it->second);
+        m->getPCU()->Pack(it->first,it->second);
         c->send(e, it->first);
       }
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen()) {
-    int from = PCU_Comm_Sender();
-    while ( ! PCU_Comm_Unpacked()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Listen()) {
+    int from = m->getPCU()->Sender();
+    while ( ! m->getPCU()->Unpacked()) {
       Entity* e;
-      PCU_COMM_UNPACK(e);
+      m->getPCU()->Unpack(e);
       if (c->recv(e, from))
         layer.push_back(e);
     }
@@ -49,7 +48,7 @@ void crawlLayers(Crawler* c)
 {
   Crawler::Layer layer;
   c->begin(layer);
-  while (PCU_Or( ! layer.empty())) {
+  while (c->mesh->getPCU()->Or( ! layer.empty())) {
     crawlLayer(c, layer);
     syncLayer(c, layer);
   }
@@ -157,12 +156,12 @@ struct LayerNumberer : public Crawler
   void send(Entity* v, int to)
   {
     int n = t.getNumber(v);
-    PCU_COMM_PACK(to, n);
+    m->getPCU()->Pack(to, n);
   }
   bool recv(Entity* v, int)
   {
     int n;
-    PCU_COMM_UNPACK(n);
+    m->getPCU()->Unpack(n);
     if (t.hasNumber(v))
       return false;
     t.setNumber(v, n);

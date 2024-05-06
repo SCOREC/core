@@ -6,8 +6,8 @@
 #include "math.h"
 #include <unistd.h>
 #include <string>
-#include "PCU.h"
 #include "parma_commons.h"
+#include <memory>
 
 using std::set;
 using std::vector;
@@ -273,9 +273,9 @@ are removed:
 |MIS| = 2
 
 */
-int test_2dStencil(const int rank, const int totNumParts,
+int test_2dStencil(const int rank, const int totNumParts, pcu::PCU *PCUObj
     bool randNumsPredefined = false, bool isNeighbors = false) {
-  if( !PCU_Comm_Self() )
+  if( !PCUObj->Self() )
     status("test_2dStencil - totNumParts: %d\n", totNumParts);
 
   const int sqrtTotNumParts = floor(sqrt(totNumParts));
@@ -299,16 +299,16 @@ int test_2dStencil(const int rank, const int totNumParts,
 
   //sanity check
   checkAdjPartsandNets(part, totNumParts);
-  const double t1 = PCU_Time();
-  int isInMis = mis(part, randNumsPredefined,isNeighbors);
-  double elapsedTime = PCU_Time() - t1;
-  PCU_Max_Doubles(&elapsedTime, 1);
+  const double t1 = pcu::Time();
+  int isInMis = mis(part, PCUObj, randNumsPredefined,isNeighbors);
+  double elapsedTime = pcu::Time() - t1;
+  PCUObj->Max(&elapsedTime, 1);
 
-  if( !PCU_Comm_Self() )
+  if( !PCUObj->Self() )
     status("elapsed time (seconds) = %f \n", elapsedTime);
 
   int* globalIsInMIS = NULL;
-  if (!PCU_Comm_Self()) 
+  if (!PCUObj->Self()) 
     globalIsInMIS = new int[totNumParts];
   MPI_Gather(&isInMis, 1, MPI_INT, globalIsInMIS, 
                        1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -363,10 +363,10 @@ int test_2dStencil(const int rank, const int totNumParts,
  * @param randNumsPredefined (In) T:rand nums predefined, F:rand nums not predefined
  * @return 0 on success, non-zero otherwise
  */
-int test_StarA(const int rank, const int totNumParts, 
+int test_StarA(const int rank, const int totNumParts, pcu::PCU *PCUObj, 
     bool randNumsPredefined = false) {
     char dbgMsg[256];
-    if( !PCU_Comm_Self() )
+    if( !PCUObj->Self() )
       status("test_StarA - totNumParts: %d\n", totNumParts);
 
     partInfo part;   
@@ -414,7 +414,7 @@ int test_StarA(const int rank, const int totNumParts,
     Print <int, vector<int>::iterator > (cout, dbgMsg, 
         part.net.begin(), part.net.end(), std::string(", "));
 
-    int isInMIS = mis(part, randNumsPredefined);
+    int isInMIS = mis(part, PCUObj, randNumsPredefined);
 
     int* globalIsInMIS = NULL;
     if (rank == 0) {
@@ -466,13 +466,13 @@ randNums  5  1  13 6
     
  */
 int test_4partsA(const int rank, const int totNumParts, 
-    bool predefinedRandNums) {
+    bool predefinedRandNums, pcu::PCU *PCUObj) {
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
-    if( !PCU_Comm_Self() )
+    if( !PCUObj->Self() )
       status("test_4partsA - totNumParts: %d\n", totNumParts);
 
     partInfo part;
@@ -511,7 +511,7 @@ int test_4partsA(const int rank, const int totNumParts,
 
     vector<partInfo> parts;
     parts.push_back(part);
-    int isInMis = mis(parts[0], predefinedRandNums);
+    int isInMis = mis(parts[0], PCUObj, predefinedRandNums);
 
     int* globalIsInMIS = NULL;
     if (!rank)
@@ -542,13 +542,13 @@ int test_4partsA(const int rank, const int totNumParts,
 }
 
 int test_4partsB(const int rank, const int totNumParts, 
-    bool predefinedRandNums) {
+    bool predefinedRandNums, pcu::PCU *PCUObj) {
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
-    if( !PCU_Comm_Self() )
+    if( !PCUObj->Self() )
       status("test_4partsAndNums - totNumParts: %d\n", totNumParts);
 
     partInfo part;
@@ -583,7 +583,7 @@ int test_4partsB(const int rank, const int totNumParts,
 
     vector<partInfo> parts;
     parts.push_back(part);
-    int isInMis = mis(parts[0], predefinedRandNums);
+    int isInMis = mis(parts[0], PCUObj, predefinedRandNums);
 
     int* globalIsInMIS = NULL;
     if (rank == 0) {
@@ -615,13 +615,13 @@ int test_4partsB(const int rank, const int totNumParts,
 }
 
 int test_4partsC(const int rank, const int totNumParts,
-    bool predefinedRandNums) {
+    bool predefinedRandNums, pcu::PCU *PCUObj) {
     if (4 != totNumParts) {
         MIS_FAIL("totNumParts must be 4\n");
         return 1;
     }
 
-    if( !PCU_Comm_Self() )
+    if( !PCUObj->Self() )
       status("test_4partsA - totNumParts: %d\n", totNumParts);
 
     partInfo part;
@@ -651,7 +651,7 @@ int test_4partsC(const int rank, const int totNumParts,
 
     vector<partInfo> parts;
     parts.push_back(part);
-    int isInMis = mis(parts[0], predefinedRandNums);
+    int isInMis = mis(parts[0], PCUObj, predefinedRandNums);
 
     int* globalIsInMIS = NULL;
     if (rank == 0) {
@@ -711,12 +711,13 @@ bool getBool(int& isDebug) {
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
-    PCU_Comm_Init();
-    PCU_Protect();
-    int rank;
-    PCU_Comm_Rank(&rank);
-    int commSize;
-    PCU_Comm_Size(&commSize);
+    {
+    auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+    pcu::Protect();
+    int rank = PCUObj.get()->Self();
+    //PCU_Comm_Rank(&rank);
+    int commSize = PCUObj.get()->Peers();
+    //PCU_Comm_Size(&commSize);
 
     int opt;
     int debugMode = 0;
@@ -748,7 +749,7 @@ int main(int argc, char** argv) {
 
 
     testNum = broadcastInt(testNum);
-    randNumSeed = broadcastInt(randNumSeed) + PCU_Comm_Self();
+    randNumSeed = broadcastInt(randNumSeed) + PCUObj.get()->Self();
     bool predefinedRandNums = getBool(iPredefinedRandNums);
 
     mis_init(randNumSeed, getBool(debugMode));
@@ -765,22 +766,22 @@ int main(int argc, char** argv) {
         return 0;
         break;
       case 0:
-        ierr = test_4partsA(rank, commSize,  predefinedRandNums);
+        ierr = test_4partsA(rank, commSize,  predefinedRandNums, PCUObj.get());
         break;
       case 1:
-        ierr = test_4partsB(rank, commSize,  predefinedRandNums);
+        ierr = test_4partsB(rank, commSize,  predefinedRandNums, PCUObj.get());
         break;
       case 2:
-        ierr = test_4partsC(rank, commSize,  predefinedRandNums);
+        ierr = test_4partsC(rank, commSize,  predefinedRandNums, PCUObj.get());
         break;
       case 3:
-        ierr = test_StarA(rank, commSize);
+        ierr = test_StarA(rank, commSize, PCUObj.get());
         break;
       case 4:
-        ierr = test_2dStencil(rank, commSize);
+        ierr = test_2dStencil(rank, commSize, PCUObj.get());
         break;
       case 5:
-        ierr = test_2dStencil(rank,commSize,false,true);
+        ierr = test_2dStencil(rank,commSize,PCUObj.get(),false,true);
         break;
     }
 
@@ -792,7 +793,7 @@ int main(int argc, char** argv) {
         }
     }
     misFinalize();
-    PCU_Comm_Free();
+    }
     MPI_Finalize();
     return 0;
 }

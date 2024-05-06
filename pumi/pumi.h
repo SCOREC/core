@@ -107,17 +107,16 @@ public:
 //      0- SYSTEM-LEVEL FUNCTIONS
 //************************************
 //************************************
-void pumi_start();
-void pumi_finalize(bool do_mpi_finalize=true);
+void pumi_finalize(pcu::PCU *PCUObj, bool do_mpi_finalize=true);
 
-int pumi_size();
-int pumi_rank();
+int pumi_size(pcu::PCU *PCUObj);
+int pumi_rank(pcu::PCU *PCUObj);
 
-void pumi_sync(void);
-void pumi_printSys();
+void pumi_sync(pcu::PCU *PCUObj);
+void pumi_printSys(pcu::PCU *PCUObj);
 double pumi_getTime();
 double pumi_getMem();
-void pumi_printTimeMem(const char* msg, double time, double memory);
+void pumi_printTimeMem(const char* msg, double time, double memory, pcu::PCU *PCUObj);
 
 //************************************
 //************************************
@@ -127,12 +126,12 @@ void pumi_printTimeMem(const char* msg, double time, double memory);
 
 // Geometric Model
 // create a model from gmi_model object
-pGeom pumi_geom_load(gmi_model* gm,
+pGeom pumi_geom_load(gmi_model* gm, pcu::PCU *PCUObj,
                      const char* model_type="mesh",
                      const char* fileName=NULL, 
                      void (*fp)(const char*)=NULL);
 // create a model from a file
-pGeom pumi_geom_load (const char* fileName, const char* model_type="mesh", 
+pGeom pumi_geom_load (const char* fileName, pcu::PCU *PCUObj, const char* model_type="mesh", 
                       void (*fp)(const char*)=NULL);
 void pumi_geom_delete(pGeom g);
 void pumi_geom_freeze(pGeom g); // shall be called after modifying model entities
@@ -140,7 +139,7 @@ void pumi_geom_createID(pGeom g); // generate sequential ID starting from 1
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 
-void pumi_geom_print(pGeom g, bool print_ent=false);
+void pumi_geom_print(pGeom g, pcu::PCU *PCUObj, bool print_ent=false);
 
 // Geometric Entity
 // get geometric entity's dimension
@@ -206,17 +205,17 @@ pMeshEnt pumi_mesh_createEnt(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt
 pMeshEnt pumi_mesh_createElem(pMesh m, pGeomEnt ge, int target_topology, pMeshEnt* vertices); 
 
 // load a serial mesh and no partitioning
-pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, const char* mesh_type="mds");
+pMesh pumi_mesh_loadSerial(pGeom g, const char* file_name, pcu::PCU* PCUObj, const char* mesh_type="mds");
 
 // load a mesh from a file. Do static partitioning if num_in_part==1
-pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, const char* mesh_type="mds");
+pMesh pumi_mesh_load(pGeom geom, const char* fileName, int num_in_part, pcu::PCU* PCUObj, const char* mesh_type="mds");
 
 // load a mesh from a an existing partitioned apf mesh
 pMesh pumi_mesh_load(pMesh mesh);
 
 // load a serial mesh on all processes and set up comm links and ptn classification 
 // note that the default owning PID is 0
-pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stich_link=true);
+pMesh pumi_mesh_loadAll(pGeom g, const char* filename, pcu::PCU *PCUObj, bool stich_link=true);
 
 // delete mesh
 void pumi_mesh_delete(pMesh m);

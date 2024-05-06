@@ -2,7 +2,6 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
@@ -15,6 +14,7 @@
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 
 class AnisotropicX: public ma::AnisotropicFunction {
   public:
@@ -85,10 +85,11 @@ class AnisotropicX: public ma::AnisotropicFunction {
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   if (argc != 5) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr << "usage: " << argv[0] 
         << " <model file> <in mesh> <split direction=[0-2]> <out mesh> \n";
     return EXIT_FAILURE;
@@ -101,7 +102,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2]);
+  ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
   AnisotropicX* ansx = new AnisotropicX(m, atoi(argv[3]));
   ma::Input* in = ma::makeAdvanced(ma::configure(m, ansx));
 #ifdef PUMI_HAS_ZOLTAN
@@ -129,6 +130,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

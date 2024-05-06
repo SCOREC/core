@@ -1,6 +1,7 @@
 #ifndef PHSTREAM_H_
 #define PHSTREAM_H_
 #include <stdio.h>
+#include <PCUObj.h>
 
 
 /** \file phstream.h
@@ -13,29 +14,29 @@
 typedef struct RStream* rstream;
 typedef struct GRStream* grstream;
 /** @brief make restart stream */
-rstream makeRStream();
+rstream makeRStream(pcu::PCU *PCUObj);
 /** @brief clear restart stream */
-void clearRStream(rstream rs);
+void clearRStream(rstream rs, pcu::PCU *PCUObj);
 /** @brief detach output stream */
-void destroyRStream(rstream rs);
+void destroyRStream(rstream rs, pcu::PCU *PCUObj);
 
 /** @brief make geom-restart stream */
-grstream makeGRStream();
+grstream makeGRStream(pcu::PCU *PCUObj);
 /** @brief clear geom-restart stream */
-void clearGRStream(grstream grs);
+void clearGRStream(grstream grs, pcu::PCU *PCUObj);
 /** @brief destroy geom-restart stream */
-void destroyGRStream(grstream grs);
+void destroyGRStream(grstream grs, pcu::PCU *PCUObj);
 
 /** @brief open restart stream for reading*/
-FILE* openRStreamRead(rstream rs);
+FILE* openRStreamRead(rstream rs, pcu::PCU *PCUObj);
 /** @brief open restart stream for writing*/
-FILE* openRStreamWrite(rstream rs);
+FILE* openRStreamWrite(rstream rs, pcu::PCU *PCUObj);
 
 /** @brief open named stream in geom-restart stream for reading*/
-FILE* openGRStreamRead(grstream grs, const char* named);
+FILE* openGRStreamRead(grstream grs, const char* named, pcu::PCU *PCUObj);
 /** @brief open named stream in geom-restart stream for writing*/
-FILE* openGRStreamWrite(grstream grs, const char* named);
+FILE* openGRStreamWrite(grstream grs, const char* named, pcu::PCU *PCUObj);
 
 /** @brief dev function */
-void attachRStream(grstream grs, rstream rs);
+void attachRStream(grstream grs, rstream rs, pcu::PCU *PCUObj);
 #endif 

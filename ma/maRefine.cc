@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maRefine.h"
 #include "maTemplates.h"
 #include "maAdapt.h"
@@ -246,12 +245,12 @@ void splitElement(Refine* r, Entity* e)
 
 static void linkNewVerts(Refine* r)
 {
-  if (PCU_Comm_Peers()==1)
+  if (r->adapt->mesh->getPCU()->Peers()==1)
     return;
   struct { Entity* parent; Entity* vert; } message;
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   for (int d=1; d < m->getDimension(); ++d)
     for (size_t i=0; i < r->newEntities[d].getSize(); ++i)
     {
@@ -267,16 +266,16 @@ static void linkNewVerts(Refine* r)
       {
         int to = rp->first;
         message.parent = rp->second;
-        PCU_COMM_PACK(to,message);
+        m->getPCU()->Pack(to,message);
       }
     }
-  PCU_Comm_Send();
-  while (PCU_Comm_Listen())
+  m->getPCU()->Send();
+  while (m->getPCU()->Listen())
   {
-    int from = PCU_Comm_Sender();
-    while ( ! PCU_Comm_Unpacked())
+    int from = m->getPCU()->Sender();
+    while ( ! m->getPCU()->Unpacked())
     {
-      PCU_COMM_UNPACK(message);
+      m->getPCU()->Unpack(message);
       Entity* v = findSplitVert(r,message.parent);
       m->addRemote(v,from,message.vert);
     }
@@ -403,7 +402,7 @@ long markEdgesToSplit(Adapt* a)
 void processNewElements(Refine* r)
 {
   linkNewVerts(r);
-  if (PCU_Comm_Peers()>1) {
+  if (r->adapt->mesh->getPCU()->Peers()>1) {
     apf::stitchMesh(r->adapt->mesh);
     r->adapt->mesh->acceptChanges();
   }
@@ -419,7 +418,7 @@ void cleanupAfter(Refine* r)
 
 bool refine(Adapt* a)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   --(a->refinesLeft);
   setupLayerForSplit(a);
   long count = markEdgesToSplit(a);
@@ -438,8 +437,8 @@ bool refine(Adapt* a)
   processNewElements(r);
   destroySplitElements(r);
   forgetNewEntities(r);
-  double t1 = PCU_Time();
-  print("refined %li edges in %f seconds",count,t1-t0);
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(),"refined %li edges in %f seconds",count,t1-t0);
   resetLayer(a);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after refinement");

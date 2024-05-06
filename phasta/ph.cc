@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 
 #include "ph.h"
@@ -63,14 +62,14 @@ void goToParentDir() {
   my_chdir("..");
 }
 
-void goToStepDir(int step, bool all_mkdir)
+void goToStepDir(int step, pcu::PCU *PCUObj, bool all_mkdir)
 {
   std::stringstream ss;
   ss << step;
   std::string s = ss.str();
-  if (all_mkdir || !PCU_Comm_Self())
+  if (all_mkdir || !PCUObj->Self())
     my_mkdir(s.c_str());
-  PCU_Barrier();
+  PCUObj->Barrier();
   my_chdir(s.c_str());
 }
 
@@ -78,22 +77,22 @@ enum {
   DIR_FANOUT = 2048
 };
 
-std::string setupOutputDir(bool all_mkdir)
+std::string setupOutputDir(pcu::PCU *PCUObj, bool all_mkdir)
 {
   std::stringstream ss;
-  ss << PCU_Comm_Peers() << "-procs_case/";
+  ss << PCUObj->Peers() << "-procs_case/";
   std::string s = ss.str();
-  if (all_mkdir || !PCU_Comm_Self())
+  if (all_mkdir || !PCUObj->Self())
     my_mkdir(s.c_str());
-  PCU_Barrier();
+  PCUObj->Barrier();
   return s;
 }
 
-void setupOutputSubdir(std::string& path, bool all_mkdir)
+void setupOutputSubdir(std::string& path, pcu::PCU *PCUObj, bool all_mkdir)
 {
-  if (PCU_Comm_Peers() <= DIR_FANOUT)
+  if (PCUObj->Peers() <= DIR_FANOUT)
     return;
-  int self = PCU_Comm_Self();
+  int self = PCUObj->Self();
   int subSelf = self % DIR_FANOUT;
   int subGroup = self / DIR_FANOUT;
   std::stringstream ss;
@@ -101,14 +100,14 @@ void setupOutputSubdir(std::string& path, bool all_mkdir)
   path = ss.str();
   if (all_mkdir || !subSelf)
     my_mkdir(path.c_str());
-  PCU_Barrier();
+  PCUObj->Barrier();
 }
 
-void setupInputSubdir(std::string& path)
+void setupInputSubdir(std::string& path, pcu::PCU *PCUObj)
 {
-  if (PCU_Comm_Peers() <= DIR_FANOUT)
+  if (PCUObj->Peers() <= DIR_FANOUT)
     return;
-  int self = PCU_Comm_Self();
+  int self = PCUObj->Self();
   int subGroup = self / DIR_FANOUT;
   std::string newpath;
   std::stringstream ss;
@@ -127,16 +126,16 @@ void setupInputSubdir(std::string& path)
 
 //  lion_oprint(1,"Rank: %d - Path in setupInputSubdir: %s\n", self, ss.str().c_str());
   path = ss.str();
-  PCU_Barrier();
+  PCUObj->Barrier();
 }
 
-void writeAuxiliaryFiles(std::string path, int timestep_or_dat)
+void writeAuxiliaryFiles(std::string path, int timestep_or_dat, pcu::PCU *PCUObj)
 {
   std::string numpePath = path;
   numpePath += "numpe.in";
   std::ofstream numpe(numpePath.c_str());
   PCU_ALWAYS_ASSERT(numpe.is_open());
-  numpe << PCU_Comm_Peers() << '\n';
+  numpe << PCUObj->Peers() << '\n';
   numpe.close();
   std::string numstartPath = path;
   numstartPath += "numstart.dat";
@@ -157,7 +156,7 @@ bool mesh_has_ext(const char* filename, const char* ext)
   }
 }
 
-apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
+apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile, pcu::PCU *PCUObj) {
   apf::Mesh2* mesh;
 #ifdef HAVE_SIMMETRIX
   /* if it is a simmetrix mesh */
@@ -174,7 +173,7 @@ apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile) {
 #endif
   /* if it is a SCOREC mesh */
   {
-    mesh = apf::loadMdsMesh(g, meshfile);
+    mesh = apf::loadMdsMesh(g, meshfile, PCUObj);
   }
   return mesh;
 }

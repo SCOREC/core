@@ -1092,7 +1092,7 @@ static bool findMatches(Mesh* m)
   return found;
 }
 
-Mesh2* createMesh(pParMesh mesh)
+Mesh2* createMesh(pParMesh mesh, pcu::PCU PCUObj)
 {
   /* require one part per process currently for SIM */
   PCU_ALWAYS_ASSERT(PM_numParts(mesh)==1);
@@ -1105,9 +1105,9 @@ Mesh2* createMesh(pParMesh mesh)
       serendipity = true;
   }
   if (serendipity)
-    m->init(getSerendipity());
+    m->init(getSerendipity(), PCUObj);
   else
-    m->init(getLagrange(order));
+    m->init(getLagrange(order), PCUObj);
   m->hasMatches = findMatches(m);
   return m;
 }

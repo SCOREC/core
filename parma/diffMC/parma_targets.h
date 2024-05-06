@@ -22,7 +22,7 @@ namespace parma {
       double vtxTol, double alpha);
   Targets* makeElmLtVtxEdgeTargets(Sides* s, Weights* w[3], int sideTol,
       double vtxTol, double edgeTol, double alpha);
-  Targets* makeShapeTargets(Sides* s);
+  Targets* makeShapeTargets(Sides* s, pcu::PCU *PCUObj);
   Targets* makeGhostTargets(Sides* s, Weights* w, Ghosts* g, double alpha);
 }
 #endif

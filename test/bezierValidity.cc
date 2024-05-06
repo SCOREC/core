@@ -9,11 +9,11 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 
 #include <math.h>
 #include <pcu_util.h>
+#include <memory>
 
 /* This test file uses an alternative and more traditional method to
  * compute Jacobian differences, using the property of Bezier's that
@@ -186,10 +186,10 @@ gmi_model* makeModel()
   return model;
 }
 
-apf::Mesh2* createMesh2D()
+apf::Mesh2* createMesh2D(pcu::PCU *PCUObj)
 {
   gmi_model* model = makeModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
   apf::MeshEntity* v[4];
   apf::Vector3 points2D[4] =
   {apf::Vector3(0,0,0),
@@ -245,10 +245,10 @@ void checkValidity(apf::Mesh* m, int order)
   m->end(it);
 }
 
-void test2D()
+void test2D(pcu::PCU *PCUObj)
 {
   for(int order = 2; order <= 6; ++order){
-      apf::Mesh2* m = createMesh2D();
+      apf::Mesh2* m = createMesh2D(PCUObj);
       apf::changeMeshShape(m, crv::getBezier(order),true);
       crv::BezierCurver bc(m,order,0);
       // creates interpolation points based on the edges of the geometry
@@ -299,10 +299,10 @@ void test2D()
     }
 }
 
-apf::Mesh2* createMesh3D()
+apf::Mesh2* createMesh3D(pcu::PCU *PCUObj)
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
 
   apf::Vector3 points3D[4] =
   {apf::Vector3(0,0,0),
@@ -319,12 +319,12 @@ apf::Mesh2* createMesh3D()
   return m;
 }
 
-void test3D()
+void test3D(pcu::PCU *PCUObj)
 {
   gmi_register_null();
 
   for(int order = 2; order <= 4; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     apf::changeMeshShape(m, crv::getBezier(order),true);
     apf::FieldShape* fs = m->getShape();
     crv::BezierCurver bc(m,order,0);
@@ -407,10 +407,11 @@ void test3D()
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  test2D();
-  test3D();
-  PCU_Comm_Free();
+  test2D(pcu_obj.get());
+  test3D(pcu_obj.get());
+  }
   MPI_Finalize();
 }
