@@ -18,37 +18,6 @@
 #include <pcu_util.h>
 #include <memory>
 
-#ifdef __bgq__
-#include <spi/include/kernel/memory.h>
-
-static double get_peak(pcu::PCU*)
-{
-  uint64_t heap;
-  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
-  return heap;
-}
-
-#elif defined (__linux__)
-
-static double get_peak(pcu::PCU*)
-{
-#if defined(__GNUG__) && defined(PUMI_HAS_MALLINFO2)
-  return mallinfo2().arena;
-#elif defined(__GNUG__)
-  return mallinfo().arena;
-#endif
-}
-
-#else
-
-static double get_peak(pcu::PCU *PCUObj)
-{
-  if(!PCUObj->Self())
-    printf("%s:%d: OS Not supported\n", __FILE__, __LINE__);
-  return(-1.0);
-}
-
-#endif
 
 static void print_stats(const char* name, double value, pcu::PCU *PCUObj)
 
@@ -62,27 +31,6 @@ static void print_stats(const char* name, double value, pcu::PCU *PCUObj)
   if (!PCUObj->Self())
     printf("%s: min %f max %f avg %f imb %f\n", name, min, max, avg, imb);
 }
-
-#if defined(__linux__)
-
-static double get_chunks(pcu::PCU*)
-{
-#if defined(__GNUG__) && defined(PUMI_HAS_MALLINFO2)
-  struct mallinfo2 m = mallinfo2();
-#elif defined(__GNUG__)
-  struct mallinfo m = mallinfo();
-#endif
-  return m.uordblks + m.hblkhd;
-}
-
-#else
-static double get_chunks(pcu::PCU *PCUObj)
-{
-  if(!PCUObj->Self())
-    printf("%s:%d: OS Not supported\n", __FILE__, __LINE__);
-  return(-1.0);
-}
-#endif
 
 static void list_tags(apf::Mesh* m)
 {
@@ -109,11 +57,10 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  print_stats("malloc used before", get_chunks(pcu_obj.get()), pcu_obj.get());
+  print_stats("kernal used before", pcu::GetMem(), pcu_obj.get());
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],pcu_obj.get());
   m->verify();
-  print_stats("kernel heap", get_peak(pcu_obj.get()), pcu_obj.get());
-  print_stats("malloc used", get_chunks(pcu_obj.get()), pcu_obj.get());
+  print_stats("kernel heap", pcu::GetMem(), pcu_obj.get());
   Parma_PrintPtnStats(m, "");
   list_tags(m);
   m->destroyNative();
