@@ -675,7 +675,7 @@ void readMesh(const char* meshfilename,
   int self = PCU_Comm_Self();
 
   char filename[1024];
-  sprintf(filename, "%s.%d",coordfilename,self);
+  snprintf(filename, 1024, "%s.%d",coordfilename,self);
     
   FILE* fc = fopen(filename , "r");
   PCU_ALWAYS_ASSERT(fc);
@@ -689,14 +689,14 @@ void readMesh(const char* meshfilename,
   fclose(fc);
  
   if(0==1) {
-  sprintf(filename, "%s.%d",solutionfilename,self);
+  snprintf(filename, 1024, "%s.%d",solutionfilename,self);
   FILE* fs = fopen(filename, "r");
   PCU_ALWAYS_ASSERT(fs);
   readSolution(fs, mesh.localNumVerts, &(mesh.solution));
   fclose(fs);
   }
 
-  sprintf(filename, "%s.%d",classfilename,self);
+  snprintf(filename, 1024, "%s.%d",classfilename,self);
   FILE* ff = fopen(filename, "r");
   PCU_ALWAYS_ASSERT(ff);
   readClassification(ff, mesh.localNumVerts, &(mesh.classification));
@@ -704,7 +704,7 @@ void readMesh(const char* meshfilename,
 
   if( strcmp(fathers2Dfilename, "NULL") ) {
   //add an argument to readMesh for the fathers2D
-    sprintf(filename, "%s.%d",fathers2Dfilename,self);
+    snprintf(filename, 1024, "%s.%d",fathers2Dfilename,self);
     FILE* fff = fopen(filename, "r");
     PCU_ALWAYS_ASSERT(fff);
     readFathers(fff, mesh.localNumVerts, &(mesh.fathers2D));
@@ -712,7 +712,7 @@ void readMesh(const char* meshfilename,
   }
 
   if( strcmp(matchfilename, "NULL") ) {
-    sprintf(filename, "%s.%d",matchfilename,self);
+    snprintf(filename, 1024, "%s.%d",matchfilename,self);
     FILE* fm = fopen(filename, "r");
     PCU_ALWAYS_ASSERT(fm);
     readMatches(fm, mesh.numVerts, mesh.localNumVerts, &(mesh.matches));
