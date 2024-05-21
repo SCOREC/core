@@ -1,0 +1,63 @@
+name: Systems
+on:
+  schedule:
+    # Sunday 4:30 UTC or 00:30 EDT
+    - cron: '30 4 * * 0' 
+
+concurrency:
+  group: systems-omega_h
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        machine: ["Perlmutter", "Frontier"]
+
+    steps:
+
+    - name: checkout omega_h
+      uses: actions/checkout@v4
+      with:
+        path: omega_h
+
+    - name: setup python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: install packing
+      run: sudo apt install python3-packaging
+
+    - name: install globus
+      run: |
+          python -m ensurepip --upgrade --user
+          python -m pip install globus-compute-endpoint
+
+    - name: use globus
+      working-directory: omega_h/.github/workflows
+      env:
+        GLOBUS_ID: ${{ secrets.GLOBUS_COMPUTE_ID }}
+        GLOBUS_SECRET: ${{ secrets.GLOBUS_COMPUTE_SECRET }}
+      run: |
+        export GLOBUS_COMPUTE_CLIENT_ID="$GLOBUS_ID"
+        export GLOBUS_COMPUTE_CLIENT_SECRET="$GLOBUS_SECRET"
+        if [ ${{matrix.machine}} == Perlmutter ]; then TARGET_ENDPOINT=0dd4499a-8d76-4977-bae9-841e4bb2f616; fi
+        if [ ${{matrix.machine}} == Frontier ]; then TARGET_ENDPOINT=d625c6cf-de7a-4228-ac44-56247a642fe0; fi
+        python test_on_system.py ${{ github.event.repository.name }} ${{ github.sha }} $TARGET_ENDPOINT
+
+    - name: print build log
+      working-directory: omega_h/.github/workflows
+      run: cat omega_h-test-result/Build.log
+
+    - name: print test log
+      working-directory: omega_h/.github/workflows
+      run: cat omega_h-test-result/Test.log
+
+    - name: check failed test
+      working-directory: omega_h/.github/workflows
+      run: if grep "Failed" omega_h-test-result/Test.log; then return 1; fi
+
+    
