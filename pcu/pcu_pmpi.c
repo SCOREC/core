@@ -31,6 +31,16 @@ void pcu_pmpi_finalize(pcu_mpi_t* self)
   MPI_Comm_free(&(self->coll_comm));
 }
 
+int pcu_pmpi_free(MPI_Comm* comm)
+{
+  return MPI_Comm_free(comm);
+}
+
+int pcu_pmpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm)
+{
+  return MPI_Comm_split(comm,color,key,newcomm);
+}
+
 int pcu_pmpi_size(const pcu_mpi_t* self)
 {
   return self->size;
@@ -43,12 +53,11 @@ int pcu_pmpi_rank(const pcu_mpi_t* self)
 
 void pcu_pmpi_send(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
-  pcu_pmpi_send2(self, m,0,comm);
+  pcu_pmpi_send2(self,m,0,comm);
 }
 
 void pcu_pmpi_send2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
-  // silence warning
   (void)self;
   if( m->buffer.size > (size_t)INT_MAX ) {
     fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
@@ -77,12 +86,11 @@ bool pcu_pmpi_receive(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
 {
   // silence warning
   (void)self;
-  return pcu_pmpi_receive2(self, m,0,comm);
+  return pcu_pmpi_receive2(self,m,0,comm);
 }
 
 bool pcu_pmpi_receive2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm comm)
 {
-  // silence warning
   (void)self;
   MPI_Status status;
   int flag;
@@ -102,4 +110,30 @@ bool pcu_pmpi_receive2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm 
       comm,
       MPI_STATUS_IGNORE);
   return true;
+}
+
+void pcu_pmpi_switch(MPI_Comm new_comm, pcu_mpi_t* self)
+{
+  pcu_pmpi_finalize(self);
+  pcu_pmpi_init(new_comm, self);
+}
+
+MPI_Comm pcu_pmpi_comm(const pcu_mpi_t* self)
+{
+  return self->original_comm;
+}
+
+int  pcu_pmpi_allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+{
+   return MPI_Allreduce(sendbuf,recvbuf,count, datatype, op, comm);
+}
+
+int  pcu_pmpi_allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+{
+  return MPI_Allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
+}
+
+int pcu_pmpi_barrier(MPI_Comm comm)
+{
+  return MPI_Barrier(comm);
 }

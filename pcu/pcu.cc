@@ -28,11 +28,24 @@
 
   The API documentation is here: pcu.c
 */
-
+#include <string.h>
+#include <stdarg.h>
 #include "PCU.h"
 #include "PCUObj.h"
+#include "pcu_msg.h"
+#if defined(SCOREC_NO_MPI)
+  #include "pcu_pnompi.h"
+#else
+  #include "pcu_pmpi.h"
+#endif
+#include "pcu_order.h"
 #include "reel.h"
 #include <cstdarg>
+#include <sys/types.h> /*required for mode_t for mkdir on some systems*/
+#include <sys/stat.h> /*using POSIX mkdir call for SMB "foo/" path*/
+#include <errno.h> /* for checking the error from mkdir */
+#include <limits.h> /*INT_MAX*/
+#include <stdlib.h> /*abort*/
 
 static pcu::PCU *global_pcu = nullptr;
 namespace pcu {
@@ -40,6 +53,7 @@ namespace pcu {
 }
 
 extern "C" {
+
 /** \brief Initializes the PCU library.
   \details This function must be called by all MPI processes before
   calling any other PCU functions.
@@ -61,6 +75,36 @@ int PCU_Comm_Free(void) {
     reel_fail("Comm_Free called before Comm_Init");
   delete global_pcu;
   global_pcu = nullptr;
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Free_One(MPI_Comm* com)
+{
+  pcu_pmpi_free(com);
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom)
+{
+  pcu_pmpi_split(oldCom,color,key,newCom);
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+{
+  pcu_pmpi_allreduce(sendbuf,recvbuf,count,datatype,op,comm);
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+{
+  pcu_pmpi_allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
+  return PCU_SUCCESS;
+}
+
+ int PCU_Comm_Barrier(MPI_Comm comm)
+{
+  pcu_pmpi_barrier(comm);
   return PCU_SUCCESS;
 }
 

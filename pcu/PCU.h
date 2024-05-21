@@ -10,7 +10,19 @@
 #ifndef PCU_H
 #define PCU_H
 #include "pcu_defines.h"
+#if defined(SCOREC_NO_MPI)
+#include "pcu_pnompi_types.h"
+  double MPI_Wtime(void);
+
+// Remove MPI calls.
+#define MPI_Init(argc, argv) do { \
+(void) argc; \
+(void) argv; \
+} while (0)
+#define MPI_Finalize(void) 
+#else
 #include <mpi.h>
+#endif
 
 #ifdef __cplusplus
 #include <cstddef>
@@ -25,6 +37,12 @@ extern "C" {
 /*library init/finalize*/
 int PCU_Comm_Init(void);
 int PCU_Comm_Free(void);
+int PCU_Comm_Free_One(MPI_Comm* com);
+int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom);
+int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
+int PCU_Comm_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);
+int PCU_Comm_Barrier(MPI_Comm comm);
+double PCU_Wtime();
 
 /*rank/size functions*/
 int PCU_Comm_Self(void);
@@ -122,9 +140,6 @@ double PCU_Time(void);
 
 /*Memory usage*/
 double PCU_GetMem(void);
-
-/*Access global variable*/
-
 
 #ifdef __cplusplus
 } /* extern "C" */

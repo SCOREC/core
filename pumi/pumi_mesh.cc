@@ -8,7 +8,6 @@
  
 *******************************************************************************/
 #include "pumi.h"
-#include <mpi.h>
 #include <parma.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
