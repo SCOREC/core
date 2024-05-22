@@ -11,7 +11,26 @@
 #include <cstring>
 #include <cerrno>
 #include <cstdarg>
+#if defined(SCOREC_NO_MPI)
+  #include "pcu_pnompi.h"
+#else
+  #include "pcu_pmpi.h"
+#endif
 namespace pcu {
+
+int PCU::Free_One(MPI_Comm* com) noexcept {
+  pcu_pmpi_free(com);
+  return PCU_SUCCESS;
+}
+int PCU::Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom) noexcept {
+  pcu_pmpi_split(oldCom,color,key,newCom);
+  return PCU_SUCCESS;
+}
+int PCU::Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) noexcept {
+  pcu_pmpi_allreduce(sendbuf,recvbuf,count,datatype,op,comm);
+  return PCU_SUCCESS;
+}
+
 
 int PCU::Peers() const noexcept { return pcu_mpi_size(mpi_); }
 int PCU::Self() const noexcept { return pcu_mpi_rank(mpi_); }

@@ -86,6 +86,10 @@ public:
 
   MPI_Comm SwitchMPIComm(MPI_Comm) noexcept;
 
+  int Free_One(MPI_Comm* com) noexcept;
+  int Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom) noexcept;
+  int Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) noexcept;
+
   //struct MPIComms {
   //  MPI_Comm original;
   //  MPI_Comm user;

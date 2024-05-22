@@ -80,18 +80,23 @@ int PCU_Comm_Free(void) {
 
 int PCU_Comm_Free_One(MPI_Comm* com)
 {
-  pcu_pmpi_free(com);
-  return PCU_SUCCESS;
+  if (global_pcu == nullptr)
+    reel_fail("Comm_Free_One called before Comm_Init");
+  return global_pcu->Free_One(com);
 }
 
 int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom)
 {
-  pcu_pmpi_split(oldCom,color,key,newCom);
-  return PCU_SUCCESS;
+  if (global_pcu == nullptr)
+    reel_fail("Comm_Split called before Comm_Init");
+  return global_pcu->Split(oldcom, color, key, newCom);
 }
 
 int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
+  if (global_pcu == nullptr)
+    reel_fail("Comm_Allreduce called before Comm_Init");
+  return global_pcu->Allreduce(sendbuf,recvbuf,count,datatype,op,comm);
   pcu_pmpi_allreduce(sendbuf,recvbuf,count,datatype,op,comm);
   return PCU_SUCCESS;
 }
