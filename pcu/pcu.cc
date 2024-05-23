@@ -89,7 +89,7 @@ int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom)
 {
   if (global_pcu == nullptr)
     reel_fail("Comm_Split called before Comm_Init");
-  return global_pcu->Split(oldcom, color, key, newCom);
+  return global_pcu->Split(oldCom, color, key, newCom);
 }
 
 int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
@@ -103,14 +103,17 @@ int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Dataty
 
 int PCU_Comm_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
 {
-  pcu_pmpi_allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
-  return PCU_SUCCESS;
+  if (global_pcu == nullptr)
+    reel_fail("Comm_Allgather called before Comm_Init");
+  return global_pcu->Allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
+  
 }
 
- int PCU_Comm_Barrier(MPI_Comm comm)
+int PCU_Comm_Barrier(MPI_Comm comm)
 {
-  pcu_pmpi_barrier(comm);
-  return PCU_SUCCESS;
+  if (global_pcu == nullptr)
+    reel_fail("Comm_Barrier called before Comm_Init");
+  return global_pcu->Barrier_One(comm);
 }
 
 /** \brief Returns the communication rank of the calling thread.

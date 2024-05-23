@@ -52,7 +52,7 @@ pcu::PCU* createGroupComm(int splitFactor, pcu::PCU *PCUObj)
   int groupRank = self / splitFactor;
   int group = self % splitFactor;
   MPI_Comm groupComm;
-  MPI_Comm_split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
+  PCUObj->Split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
   return new pcu::PCU(groupComm);
 }
 

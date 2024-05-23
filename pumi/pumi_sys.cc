@@ -33,7 +33,7 @@ int pumi_rank(pcu::PCU *PCUObj)
 
 void pumi_sync(pcu::PCU *PCUObj)
 {
-  MPI_Barrier(PCUObj->GetMPIComm());
+  PCUObj->Barrier_One(PCUObj->GetMPIComm());
 }
 
 #include <sys/utsname.h>

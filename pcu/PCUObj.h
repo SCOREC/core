@@ -89,6 +89,8 @@ public:
   int Free_One(MPI_Comm* com) noexcept;
   int Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom) noexcept;
   int Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) noexcept;
+  int Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm) noexcept;
+  int Barrier_One(MPI_Comm comm) noexcept;
 
   //struct MPIComms {
   //  MPI_Comm original;

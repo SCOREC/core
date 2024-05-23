@@ -170,8 +170,10 @@ int main(int argc, char** argv)
   {
   auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  MPI_Comm_rank(PCUObj.get()->GetMPIComm(), &myrank);
-  MPI_Comm_size(PCUObj.get()->GetMPIComm(), &commsize);
+  myrank = PCUObj.get()->Self();
+  commsize = PCUObj.get()->Peers();
+  //MPI_Comm_rank(PCUObj.get()->GetMPIComm(), &myrank);
+  //MPI_Comm_size(PCUObj.get()->GetMPIComm(), &commsize);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

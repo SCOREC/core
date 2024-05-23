@@ -47,7 +47,7 @@ CreateGroupCommResult createGroupComm(pcu::PCU *PCUObj)
     groupRank = 0;
   }
   MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
+  PCUObj->Split(MPI_COMM_WORLD, group, groupRank, &groupComm);
   CreateGroupCommResult result;
   result.isOriginal = isOriginal;
   result.group_pcu_obj = new pcu::PCU(groupComm);

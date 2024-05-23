@@ -183,7 +183,7 @@ void split_comm(int num_out_comm, pcu::PCU &PCUObj)
   int group_id = self % num_out_comm;
   int in_group_rank = self / num_out_comm;
   MPI_Comm groupComm;
-  MPI_Comm_split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
+  PCUObj.Split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
   PCUObj.SwitchMPIComm(groupComm);
 }
 
@@ -192,7 +192,7 @@ void merge_comm(MPI_Comm oldComm, pcu::PCU &PCUObj)
 {
   MPI_Comm prevComm = PCUObj.GetMPIComm();
   PCUObj.SwitchMPIComm(oldComm);
-  MPI_Comm_free(&prevComm);
+  PCUObj.Free_One(&prevComm);
 }
 
 
@@ -203,28 +203,6 @@ pGeom pumi_mesh_getGeom(pMesh)
 }
 
 // load a serial mesh on master process then distribute as per the distribution object
-/*
-pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
-{
-  if (strcmp(mesh_type,"mds"))
-  {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
-    return NULL;
-  }
-  MPI_Comm prevComm = PCU_Get_Comm();
-  int num_target_part = PCU_Comm_Peers();
-  bool isMaster = ((PCU_Comm_Self() % num_target_part) == 0);
-  pMesh m = 0;
-  split_comm(num_target_part);
-  if (isMaster) 
-    m = apf::loadMdsMesh(g->getGmi(), filename);
-  merge_comm(prevComm);
-  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1, m->getPCU());
-  return pumi::instance()->mesh;
-}
-*/
-
-
 pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, pcu::PCU *PCUObj, const char* mesh_type)
 {
   if (strcmp(mesh_type,"mds"))
@@ -250,41 +228,6 @@ pMesh pumi_mesh_load(pMesh m)
   pumi_mesh_print(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
-
-
-
-
-
-
-/*
-pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char* mesh_type)
-{
-  if (strcmp(mesh_type,"mds"))
-  {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
-    return NULL;
-  }
-  if (num_in_part==1 && pumi_size()>1) // do static partitioning
-  {
-    MPI_Comm prevComm = PCU_Get_Comm();
-    int num_target_part = PCU_Comm_Peers()/num_in_part;
-    bool isMaster = ((PCU_Comm_Self() % num_target_part) == 0);
-    pMesh m = 0;
-    apf::Migration* plan = 0;   
-    split_comm(num_target_part);
-    if (isMaster) {
-      m = apf::loadMdsMesh(g->getGmi(), filename);
-      plan = getPlan(m, num_target_part);
-    }
-    merge_comm(prevComm);
-    pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part);
-  }
-  else
-    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
-  pumi_mesh_print(pumi::instance()->mesh);
-  return pumi::instance()->mesh;
-}
-*/
 
 pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, pcu::PCU *PCUObj, const char* mesh_type)
 {
@@ -337,33 +280,7 @@ void send_entities(pMesh mesh, int dim)
 
 #include "apfMDS.h"
 #include "apfPM.h"
-/*
-pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
-{
-  if (pumi_size()==1) 
-    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
-  else
-  {
-    double t0 = pcu::Time();
-    MPI_Comm prevComm = PCU_Get_Comm();
-    int num_target_part = PCU_Comm_Peers();
-    split_comm(num_target_part);
-    // no pmodel & remote links setup
-    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename); 
-    merge_comm(prevComm);
-    if (!PCU_Comm_Self())
-      lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, pcu::Time() - t0);
-  }
 
-  if (pumi_size()>1 && stitch_link) 
-  {
-    stitchMesh(pumi::instance()->mesh);
-    pumi::instance()->mesh->acceptChanges();
-  }
-
-  return pumi::instance()->mesh;
-}
-*/
 
 pMesh pumi_mesh_loadAll(pGeom g, const char* filename, pcu::PCU *PCUObj, bool stitch_link)
 {
@@ -431,7 +348,7 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
       pumi::instance()->num_own_ent[dim] = n;
     }
   }
-  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
+  m->getPCU()->Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 #ifdef DEBUG
   if (!pumi_rank(m->getPCU())) std::cout<<"[PUMI INFO] "<<__func__<<" end\n";
 #endif
@@ -519,10 +436,10 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   int* global_local_entity_count = new int[4*m->getPCU()->Peers()]; 
   int* global_own_entity_count = new int[4*m->getPCU()->Peers()]; 
 
-  MPI_Allreduce(local_entity_count, global_local_entity_count, 4*m->getPCU()->Peers(), 
+  m->getPCU()->Allreduce(local_entity_count, global_local_entity_count, 4*m->getPCU()->Peers(), 
                 MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 
-  MPI_Allreduce(own_entity_count, global_own_entity_count, 4*m->getPCU()->Peers(), 
+  m->getPCU()->Allreduce(own_entity_count, global_own_entity_count, 4*m->getPCU()->Peers(), 
                 MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 
  

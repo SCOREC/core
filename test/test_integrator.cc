@@ -2,7 +2,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <pcu_util.h>
-#include <mpi.h>
 #include <iostream>
 #include <gmi_mesh.h>
 #include <gmi_null.h>

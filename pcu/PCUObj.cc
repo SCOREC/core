@@ -30,7 +30,14 @@ int PCU::Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype d
   pcu_pmpi_allreduce(sendbuf,recvbuf,count,datatype,op,comm);
   return PCU_SUCCESS;
 }
-
+int PCU::Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm) noexcept {
+  pcu_pmpi_allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
+  return PCU_SUCCESS;
+}
+int PCU::Barrier_One(MPI_Comm comm) noexcept {
+  pcu_pmpi_barrier(comm);
+  return PCU_SUCCESS;
+}
 
 int PCU::Peers() const noexcept { return pcu_mpi_size(mpi_); }
 int PCU::Self() const noexcept { return pcu_mpi_rank(mpi_); }
