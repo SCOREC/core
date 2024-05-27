@@ -1,8 +1,9 @@
 name: Systems
 on:
+  push:
   schedule:
     # Sunday 4:30 UTC or 00:30 EDT
-    - cron: '30 4 * * 0' 
+    - cron: '30 4 * * 1' 
 
 concurrency:
   group: systems-omega_h
@@ -50,14 +51,14 @@ jobs:
 
     - name: print build log
       working-directory: omega_h/.github/workflows
-      run: cat omega_h-test-result/Build.log
+      run: cat omega_h-result/Build.log
 
     - name: print test log
       working-directory: omega_h/.github/workflows
-      run: cat omega_h-test-result/Test.log
+      run: cat omega_h-result/Test.log
 
     - name: check failed test
       working-directory: omega_h/.github/workflows
-      run: if grep "Failed" omega_h-test-result/Test.log; then return 1; fi
+      run: if grep "Failed" omega_h-result/Test.log; then return 1; fi
 
     
