@@ -1,12 +1,11 @@
 name: Systems
 on:
-  push:
   schedule:
     # Monday 4:30 UTC or 00:30 EDT
     - cron: '30 4 * * 1' 
 
 concurrency:
-  group: systems-${{ github.event.repository.name }}
+  group: systems-core
   cancel-in-progress: true
 
 jobs:
@@ -19,10 +18,10 @@ jobs:
 
     steps:
 
-    - name: checkout ${{ github.event.repository.name }}
+    - name: checkout core
       uses: actions/checkout@v4
       with:
-        path: ${{ github.event.repository.name }}
+        path: core
 
     - name: setup python
       uses: actions/setup-python@v5
@@ -38,7 +37,7 @@ jobs:
           python -m pip install globus-compute-endpoint
 
     - name: use globus
-      working-directory: ${{ github.event.repository.name }}/.github/workflows
+      working-directory: core/.github/workflows
       env:
         GLOBUS_ID: ${{ secrets.GLOBUS_COMPUTE_ID }}
         GLOBUS_SECRET: ${{ secrets.GLOBUS_COMPUTE_SECRET }}
@@ -50,15 +49,15 @@ jobs:
         python test_on_system.py ${{ github.event.repository.name }} ${{ github.sha }} $TARGET_ENDPOINT
 
     - name: print build log
-      working-directory: ${{ github.event.repository.name }}/.github/workflows
-      run: cat ${{ github.event.repository.name }}-result/Build.log
+      working-directory: core/.github/workflows
+      run: cat core-result/Build.log
 
     - name: print test log
-      working-directory: ${{ github.event.repository.name }}/.github/workflows
-      run: cat ${{ github.event.repository.name }}-result/Test.log
+      working-directory: core/.github/workflows
+      run: cat core-result/Test.log
 
     - name: check failed test
-      working-directory: ${{ github.event.repository.name }}/.github/workflows
-      run: if grep "Failed" ${{ github.event.repository.name }}-result/Test.log; then return 1; fi
+      working-directory: core/.github/workflows
+      run: if grep "Failed" core-result/Test.log; then return 1; fi
 
     
