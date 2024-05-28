@@ -1,8 +1,7 @@
 name: Systems
 on:
-  push:
   schedule:
-    # Sunday 4:30 UTC or 00:30 EDT
+    # Monday 4:30 UTC or 00:30 EDT
     - cron: '30 4 * * 1' 
 
 concurrency:
