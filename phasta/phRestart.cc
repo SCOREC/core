@@ -343,8 +343,8 @@ int readAndAttachField(
   int nodes, vars, step;
   char hname[1024];
   const char* anyfield = "";
-  int ret = ph_read_field(f, anyfield, swap,
-      &data, &nodes, &vars, &step, hname);
+  int ret = ph_read_field(f, m->getPCU()->GetCHandle(), 
+      anyfield, swap, &data, &nodes, &vars, &step, hname);
   /* no field was found or the field has an empty data block */
   if(ret==0 || ret==1)
     return ret;
@@ -478,7 +478,7 @@ void readAndAttachFields(Input& in, apf::Mesh* m) {
     lion_eprint(1,"failed to open \"%s\"!\n", filename.c_str());
     abort();
   }
-  int swap = ph_should_swap(f);
+  int swap = ph_should_swap(f, m->getPCU()->GetCHandle());
   /* stops when ph_read_field returns 0 */
   while( readAndAttachField(in,f,m,swap) ) {}
   PHASTAIO_CLOSETIME(fclose(f);)

@@ -28,9 +28,9 @@
 using std::map;
 
 // mesh creation
-pMesh pumi_mesh_create(pGeom g, int mesh_dim, bool periodic)
+pMesh pumi_mesh_create(pGeom g, int mesh_dim, pcu::PCU *PCUObj, bool periodic)
 {
-  pumi::instance()->mesh = apf::makeEmptyMdsMesh(g->getGmi(), mesh_dim, periodic);
+  pumi::instance()->mesh = apf::makeEmptyMdsMesh(g->getGmi(), mesh_dim, periodic, PCUObj);
   return pumi::instance()->mesh;
 }
 
@@ -203,27 +203,6 @@ pGeom pumi_mesh_getGeom(pMesh)
   return pumi::instance()->model;
 }
 
-// load a serial mesh on master process then distribute as per the distribution object
-/*
-pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
-{
-  if (strcmp(mesh_type,"mds"))
-  {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
-    return NULL;
-  }
-  MPI_Comm prevComm = PCU_Get_Comm();
-  int num_target_part = PCU_Comm_Peers();
-  bool isMaster = ((PCU_Comm_Self() % num_target_part) == 0);
-  pMesh m = 0;
-  split_comm(num_target_part);
-  if (isMaster) 
-    m = apf::loadMdsMesh(g->getGmi(), filename);
-  merge_comm(prevComm);
-  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1, m->getPCU());
-  return pumi::instance()->mesh;
-}
-*/
 
 
 pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, pcu::PCU *PCUObj, const char* mesh_type)

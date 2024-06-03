@@ -199,7 +199,7 @@ void stitchMesh(Mesh2* m);
 /** \brief removes all entities and fields. */
 void clear(Mesh2* m);
 
-void packDataClone(Mesh2* m, int to, pcu::PCU *PCUObj = nullptr);
+void packDataClone(Mesh2* m, int to, pcu::PCU *PCUObj);
 void unpackDataClone(Mesh2* m);
 
 // common functions for migration/ghosting/distribution

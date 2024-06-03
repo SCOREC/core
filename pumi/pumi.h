@@ -197,7 +197,7 @@ void pumi_gent_getEntArrTag (pGeomEnt ent, pTag tag, pGeomEnt** data, int* data_
 //************************************
 
 // create an empty mesh
-pMesh pumi_mesh_create(pGeom g, int mesh_dim, bool periodic=false);
+pMesh pumi_mesh_create(pGeom g, int mesh_dim, pcu::PCU *PCUObj, bool periodic=false);
 void pumi_mesh_freeze(pMesh m);
 pMeshEnt pumi_mesh_createVtx(pMesh m, pGeomEnt ge, double* xyz);
 //ent_topology: VERTEX (0), EDGE (1), TRIANGLE (2), QUAD (3), TET (4), HEX (5), PRISM (6), PYRAMID (7)

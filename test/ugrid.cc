@@ -2,7 +2,6 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <cstdlib>

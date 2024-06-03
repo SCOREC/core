@@ -29,7 +29,7 @@ int main(int argc, char** argv)
   const char* ptnfile = argv[2];
   gmi_register_null();
   gmi_model* g = gmi_load(".null");
-  apf::printUgridPtnStats(g,ugridfile,ptnfile,weights);
+  apf::printUgridPtnStats(g,ugridfile,ptnfile,weights,PCUObj.get());
   }
   MPI_Finalize();
 }

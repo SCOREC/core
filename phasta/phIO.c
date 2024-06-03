@@ -162,18 +162,16 @@ static void parse_params(char* header, long* bytes,
   *step = params[STEP_PARAM];
 }
 
-int ph_should_swap(FILE* f) {
-  PCUHandle h = PCU_Get_Global_Handle();
+int ph_should_swap(FILE* f, PCUHandle h) {
   return read_magic_number(h, f);
 }
 
-int ph_read_field(FILE* f, const char* field, int swap,
+int ph_read_field(FILE* f, PCUHandle h, const char* field, int swap,
     double** data, int* nodes, int* vars, int* step, char* hname)
 {
   long bytes, n;
   char header[PH_LINE];
   int ok;
-  PCUHandle h = PCU_Get_Global_Handle();
   ok = find_header(h, f, field, hname, header);
   if(!ok) /* not found */
     return 0;

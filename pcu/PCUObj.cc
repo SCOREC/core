@@ -147,7 +147,7 @@ void PCU::DebugOpen() noexcept {
 
   append(path, bufsize, "%s", "debug");
   if (!msg_->file)
-    msg_->file = pcu_open_parallel2(GetCHandle(), path, "txt");
+    msg_->file = pcu_open_parallel(GetCHandle(), path, "txt");
   noto_free(path);
 }
 

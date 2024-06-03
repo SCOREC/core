@@ -62,7 +62,7 @@ typedef struct PCUHandle PCUHandle;
   \param dim the eventual mesh dimension. MDS needs to allocate
              arrays based on this before users add entities.
   \param isMatched whether or not there will be matched entities */
-Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj = nullptr);
+Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj);
 
 /** \brief load an MDS mesh and model from file
   \param modelfile will be passed to gmi_load to get the model
@@ -72,7 +72,6 @@ Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCU
         Parasolid, and ACIS models
   */
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj);
-Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
 
 /** \brief load an MDS mesh from files
   \param model the geometric model interface
@@ -88,10 +87,9 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
                   Calling apf::Mesh::writeNative on the
                   resulting object will do the same in reverse. */
 Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
-Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
 
 // make a serial mesh on all processes - no pmodel & remote link setup
-Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj = nullptr);
+Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
 
 /** \brief create an MDS mesh from an existing mesh
   \param from the mesh to copy
@@ -116,10 +114,8 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder=false, bool copy
            there are no gaps in the MDS arrays after this */
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t = 0);
 
-Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor);
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan, int factor, pcu::PCU *PCUObj);
 
-Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount);
 Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expandedPCU);
 /** \brief align the downward adjacencies of matched entities */
 bool alignMdsMatches(Mesh2* in);
@@ -218,14 +214,14 @@ Mesh2* loadMdsFromCGNS2(PCUHandle h, gmi_model* g, const char* filename, CGNSBCM
 
 int gmshMajorVersion(const char* filename);
 
-Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, pcu::PCU *PCUObj = nullptr);
+Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, pcu::PCU *PCUObj);
 
-Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename, pcu::PCU *PCUObj = nullptr);
+Mesh2* loadMdsDmgFromGmsh(const char* fnameDmg, const char* filename, pcu::PCU *PCUObj);
 
-Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename, pcu::PCU *PCUObj = nullptr);
+Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename, pcu::PCU *PCUObj);
 
 void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile,
-    const double elmWeights[], pcu::PCU *PCUObj = nullptr);
+    const double elmWeights[], pcu::PCU *PCUObj);
 
 /** \brief load an MDS mesh from ANSYS .node and .elem files
   \details this call takes two filenames, one
@@ -238,13 +234,13 @@ void printUgridPtnStats(gmi_model* g, const char* ugridfile, const char* ptnfile
   currently, ANSYS element types SOLID72 and SOLID92 are
   supported, which become linear and quadratic tetrahedra,
   respectively. */
-Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile, pcu::PCU *PCUObj = nullptr);
+Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile, pcu::PCU *PCUObj);
 
 void disownMdsModel(Mesh2* in);
 
 void setMdsMatching(Mesh2* in, bool has);
 
-Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj = nullptr);
+Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
 void writeMdsPart(Mesh2* m, const char* meshfile);
 
 }

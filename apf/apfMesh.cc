@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <pcu.cc>
 #include <PCUObj.h>
 #include "apfCoordData.h"
 #include "apfVectorField.h"
@@ -167,13 +166,7 @@ void Mesh::init(FieldShape* s, pcu::PCU *PCUObj)
   baseP->init("coordinates",this,s,data);
   data->init(baseP);
   hasFrozenFields = false;
-  if(PCUObj != nullptr){
-    pcu_ = PCUObj;
-  } else {
-    pcu_ = pcu::PCU_GetGlobal();
-    PCU_ALWAYS_ASSERT_VERBOSE(pcu_ != nullptr, "PCU must be initialized\n");
-  }
-  
+  pcu_ = PCUObj;
 }
 
 Mesh::~Mesh()

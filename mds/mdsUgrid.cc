@@ -664,11 +664,7 @@ namespace apf {
   Mesh2* loadMdsFromUgrid(gmi_model* g, const char* filename, pcu::PCU *PCUObj)
   {
     Mesh2* m;
-    if(PCUObj != nullptr){
-      m = makeEmptyMdsMesh(g, 0, false, PCUObj);
-    } else {
-      m = makeEmptyMdsMesh(g, 0, false);
-    }
+    m = makeEmptyMdsMesh(g, 0, false, PCUObj);
     header hdr;
     Reader r;
     initReader(&r, m, filename);
@@ -691,11 +687,7 @@ namespace apf {
   void printUgridPtnStats(gmi_model* g, const char* ufile, const char* vtxptn,
       const double elmWeights[], pcu::PCU *PCUObj) {
     Mesh2* m;
-    if(PCUObj != nullptr){
-      m = makeEmptyMdsMesh(g, 0, false, PCUObj);
-    } else {
-      m = makeEmptyMdsMesh(g, 0, false);
-    }
+    m = makeEmptyMdsMesh(g, 0, false, PCUObj);
     apf::changeMdsDimension(m, 3);
     printPtnStats(m, ufile, vtxptn, elmWeights);
     m->destroyNative();

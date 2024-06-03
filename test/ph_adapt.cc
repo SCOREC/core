@@ -38,8 +38,8 @@ static bool overwriteAPFCoord(apf::Mesh2* m) {
   return true;
 }
 
-static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU*) {
-  return pcu_group_open(path, false);
+static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU *PCUObj) {
+  return pcu_group_open(PCUObj->GetCHandle(), path, false);
 }
 
 int main(int argc, char** argv)

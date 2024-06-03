@@ -103,15 +103,15 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
 }//end namespace
 
 namespace chef {
-  static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU*) {
+  static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU *PCUObj) {
     FILE* f = NULL;
-    PHASTAIO_OPENTIME(f = pcu_group_open(path, false);)
+    PHASTAIO_OPENTIME(f = pcu_group_open(PCUObj->GetCHandle(), path, false);)
     return f;
   }
 
-  static FILE* openfile_write(ph::Output&, const char* path) {
+  static FILE* openfile_write(ph::Output& out, const char* path) {
     FILE* f = NULL;
-    PHASTAIO_OPENTIME(f = pcu_group_open(path, true);)
+    PHASTAIO_OPENTIME(f = pcu_group_open(out.mesh->getPCU()->GetCHandle(), path, true);)
     return f;
   }
 

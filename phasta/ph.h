@@ -16,7 +16,7 @@ void setupInputSubdir(std::string& path, pcu::PCU *PCUObj);
 void setupOutputSubdir(std::string& path, pcu::PCU *PCUObj, bool all_mkdir=false);
 void writeAuxiliaryFiles(std::string path, int timestep_or_dat, pcu::PCU *PCUObj);
 bool mesh_has_ext(const char* filename, const char* ext);
-apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile, pcu::PCU *PCUObj = nullptr);
+apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile, pcu::PCU *PCUObj);
 
 }
 

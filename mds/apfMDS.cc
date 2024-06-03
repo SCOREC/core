@@ -8,7 +8,6 @@
 
 *******************************************************************************/
 
-#include <PCU.h>
 #include <PCU2.h>
 #include <PCUObj.h>
 #include <lionPrint.h>
@@ -169,13 +168,9 @@ class MeshMDS : public Mesh2
       isMatched = false;
       ownsModel = false;
     }
-    MeshMDS(gmi_model* m, int d, bool isMatched_, pcu::PCU *PCUObj = nullptr)
+    MeshMDS(gmi_model* m, int d, bool isMatched_, pcu::PCU *PCUObj)
     {
-      if(PCUObj != nullptr){
-        init(apf::getLagrange(1), PCUObj);
-      } else {
-        init(apf::getLagrange(1));
-      }
+      init(apf::getLagrange(1), PCUObj);
       mds_id cap[MDS_TYPES] = {};
       mesh = mds_apf_create(m, d, cap);
       isMatched = isMatched_;
@@ -184,11 +179,7 @@ class MeshMDS : public Mesh2
     MeshMDS(gmi_model* m, Mesh* from, 
             apf::MeshEntity** nodes, apf::MeshEntity** elems, bool copy_data=true)
     {
-      if(from->getPCU() != nullptr){
-        init(apf::getLagrange(1), from->getPCU());
-      } else {
-        init(apf::getLagrange(1));
-      }
+      init(apf::getLagrange(1), from->getPCU());
       mds_id cap[MDS_TYPES];
       cap[MDS_VERTEX] = from->count(0);
       cap[MDS_EDGE] = from->count(1);
@@ -205,14 +196,10 @@ class MeshMDS : public Mesh2
       apf::convert(from, this, nodes, elems, copy_data);
     }
 
-    MeshMDS(gmi_model* m, const char* pathname, pcu::PCU *PCUObj = nullptr)
+    MeshMDS(gmi_model* m, const char* pathname, pcu::PCU *PCUObj)
     {
-      if(PCUObj != nullptr){
-        init(apf::getLagrange(1), PCUObj);
-      } else {
-        init(apf::getLagrange(1));
-      }
-      mesh = mds_read_smb2(this->getPCU()->GetCHandle(), m, pathname, 0, this);
+      init(apf::getLagrange(1), PCUObj);
+      mesh = mds_read_smb(this->getPCU()->GetCHandle(), m, pathname, 0, this);
       isMatched = this->getPCU()->Or(!mds_net_empty(&mesh->matches));
       ownsModel = true;
     }
@@ -598,7 +585,7 @@ class MeshMDS : public Mesh2
     void writeNative(const char* fileName)
     {
       double t0 = pcu::Time();
-      mesh = mds_write_smb2(this->getPCU()->GetCHandle(), mesh, fileName, 0, this);
+      mesh = mds_write_smb(this->getPCU()->GetCHandle(), mesh, fileName, 0, this);
       double t1 = pcu::Time();
       if (!this->getPCU()->Self())
         lion_oprint(1,"mesh %s written in %f seconds\n", fileName, t1 - t0);
@@ -794,11 +781,7 @@ class MeshMDS : public Mesh2
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj)
 {
   Mesh2* m;
-  if(PCUObj != nullptr){
-    m = new MeshMDS(model, dim, isMatched, PCUObj);
-  } else {
-    m = new MeshMDS(model, dim, isMatched);
-  }
+  m = new MeshMDS(model, dim, isMatched, PCUObj);
   initResidence(m, dim);
   return m;
 }
@@ -943,11 +926,7 @@ Mesh2* createMdsMesh(gmi_model* model, Mesh* from, bool reorder, bool copy_data)
 Mesh2* loadSerialMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj)
 {
   Mesh2* m;
-  if(PCUObj != nullptr){
-    m = new MeshMDS(model, meshfile, PCUObj);
-  } else {
-    m = new MeshMDS(model, meshfile);
-  }
+  m = new MeshMDS(model, meshfile, PCUObj);
   return m;
 }
 
@@ -966,23 +945,6 @@ Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj)
   return m;
 }
 
-
-Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile)
-{
-  double t0 = pcu::Time();
-  Mesh2* m = new MeshMDS(model, meshfile);
-  initResidence(m, m->getDimension());
-  stitchMesh(m);
-  m->acceptChanges();
-
-  if (!m->getPCU()->Self())
-    lion_oprint(1,"mesh %s loaded in %f seconds\n", meshfile, pcu::Time() - t0);
-  printStats(m);
-  warnAboutEmptyParts(m);
-  return m;
-}
-
-
 Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
 {
   double t0 = pcu::Time();
@@ -993,19 +955,6 @@ Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj
 
   return loadMdsMesh(model, meshfile, PCUObj);
 }
-
-Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile)
-{
-  double t0 = pcu::Time();
-  static gmi_model* model;
-  model = gmi_load(modelfile);
-  if (!PCU_Comm_Self())
-    lion_oprint(1,"model %s loaded in %f seconds\n", modelfile, pcu::Time() - t0);
-
-  return loadMdsMesh(model, meshfile);
-}
-
-
 
 void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
 {
@@ -1018,7 +967,7 @@ void reorderMdsMesh(Mesh2* mesh, MeshTag* t)
   } else {
     vert_nums = mds_number_verts_bfs(m->mesh);
   }
-  m->mesh = mds_reorder2(mesh->getPCU()->GetCHandle(), m->mesh, 0, vert_nums);
+  m->mesh = mds_reorder(mesh->getPCU()->GetCHandle(), m->mesh, 0, vert_nums);
   if (!mesh->getPCU()->Self())
     lion_oprint(1,"mesh reordered in %f seconds\n", pcu::Time()-t0);
 }
@@ -1061,61 +1010,6 @@ Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount, pcu::PCU *expan
   return m;
 }
 
-
-Mesh2* expandMdsMesh(Mesh2* m, gmi_model* g, int inputPartCount)
-{
-  double t0 = pcu::Time();
-  int self = PCU_Comm_Self();
-  int outputPartCount = PCU_Comm_Peers();
-  apf::Expand expand(inputPartCount, outputPartCount);
-  apf::Contract contract(inputPartCount, outputPartCount);
-  bool isOriginal = contract.isValid(self);
-  int dim;
-  bool isMatched;
-  PCU_Comm_Begin();
-  if (isOriginal) {
-    PCU_ALWAYS_ASSERT(m != 0);
-    dim = m->getDimension();
-    isMatched = m->hasMatching();
-    for (int i = self + 1; i < outputPartCount && !contract.isValid(i); ++i) {
-      PCU_COMM_PACK(i, dim);
-      PCU_COMM_PACK(i, isMatched);
-      packDataClone(m, i);
-    }
-  }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(dim);
-    PCU_COMM_UNPACK(isMatched);
-    m = makeEmptyMdsMesh(g, dim, isMatched);
-    unpackDataClone(m);
-  }
-  PCU_ALWAYS_ASSERT(m != 0);
-  apf::remapPartition(m, expand);
-  double t1 = pcu::Time();
-  if (!PCU_Comm_Self())
-    lion_oprint(1,"mesh expanded from %d to %d parts in %f seconds\n",
-        inputPartCount, outputPartCount, t1 - t0);
-  return m;
-}
-
-Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
-    int factor)
-{
-  m = expandMdsMesh(m, g, PCU_Comm_Peers() / factor);
-  double t0 = pcu::Time();
-  if (PCU_Comm_Self() % factor != 0)
-    plan = new apf::Migration(m, m->findTag("apf_migrate"));
-  m->migrate(plan);
-  double t1 = pcu::Time();
-  if (!PCU_Comm_Self())
-    lion_oprint(1,"mesh migrated from %d to %d in %f seconds\n",
-        PCU_Comm_Peers() / factor,
-        PCU_Comm_Peers(),
-        t1 - t0);
-  return m;
-}
-
 Mesh2* repeatMdsMesh(Mesh2* m, gmi_model* g, Migration* plan,
     int factor, pcu::PCU *PCUObj)
 {
@@ -1138,13 +1032,13 @@ bool alignMdsMatches(Mesh2* in)
   if (!in->hasMatching())
     return false;
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  return mds_align_matches2(in->getPCU()->GetCHandle(), m->mesh);
+  return mds_align_matches(in->getPCU()->GetCHandle(), m->mesh);
 }
 
 bool alignMdsRemotes(Mesh2* in)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  return mds_align_remotes2(in->getPCU()->GetCHandle(), m->mesh);
+  return mds_align_remotes(in->getPCU()->GetCHandle(), m->mesh);
 }
 
 void deriveMdsModel(Mesh2* in)
@@ -1413,12 +1307,8 @@ void hackMdsAdjacency(Mesh2* in, MeshEntity* up, int i, MeshEntity* down)
 Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj)
 {
   MeshMDS* m = new MeshMDS();
-  if(PCUObj != nullptr){
-    m->init(apf::getLagrange(1), PCUObj);
-  } else {
-    m->init(apf::getLagrange(1));
-  }
-  m->mesh = mds_read_smb2(m->getPCU()->GetCHandle(), model, meshfile, 1, m);
+  m->init(apf::getLagrange(1), PCUObj);
+  m->mesh = mds_read_smb(m->getPCU()->GetCHandle(), model, meshfile, 1, m);
   m->isMatched = false;
   m->ownsModel = true;
   initResidence(m, m->getDimension());
@@ -1428,7 +1318,7 @@ Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj)
 void writeMdsPart(Mesh2* in, const char* meshfile)
 {
   MeshMDS* m = static_cast<MeshMDS*>(in);
-  m->mesh = mds_write_smb2(m->getPCU()->GetCHandle(), m->mesh, meshfile, 1, m);
+  m->mesh = mds_write_smb(m->getPCU()->GetCHandle(), m->mesh, meshfile, 1, m);
 }
 
 

@@ -638,7 +638,7 @@ void TEST_NEW_MESH(pMesh m)
 
   // create an empty mesh
   pGeom new_g = pumi_geom_load("", m->getPCU(), "null");
-  pMesh new_m = pumi_mesh_create(new_g, 2);
+  pMesh new_m = pumi_mesh_create(new_g, 2, m->getPCU());
 
   double xyz[3];
   pMeshIter it = m->begin(1);

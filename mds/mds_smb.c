@@ -218,7 +218,7 @@ static void read_remotes(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
   struct mds_links ln = MDS_LINKS_INIT;
   read_links(f, &ln);
   if (!ignore_peers)
-    mds_set_type_links2(h, &m->remotes, &m->mds, MDS_VERTEX, &ln);
+    mds_set_type_links(h, &m->remotes, &m->mds, MDS_VERTEX, &ln);
   mds_free_links(&ln);
 }
 
@@ -227,7 +227,7 @@ static void write_remotes(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
 {
   struct mds_links ln = MDS_LINKS_INIT;
   if (!ignore_peers)
-    mds_get_type_links2(h, &m->remotes, &m->mds, MDS_VERTEX, &ln);
+    mds_get_type_links(h, &m->remotes, &m->mds, MDS_VERTEX, &ln);
   write_links(f, &ln);
   mds_free_links(&ln);
 }
@@ -516,10 +516,10 @@ static void read_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m
   struct mds_links ln = MDS_LINKS_INIT;
   read_links(f, &ln);
   if (!ignore_peers)
-    mds_set_local_matches2(h, &m->matches, &m->mds, t, &ln);
-  mds_free_local_links2(h, &ln);
+    mds_set_local_matches(h, &m->matches, &m->mds, t, &ln);
+  mds_free_local_links(h, &ln);
   if (!ignore_peers)
-    mds_set_type_links2(h, &m->matches, &m->mds, t, &ln);
+    mds_set_type_links(h, &m->matches, &m->mds, t, &ln);
   mds_free_links(&ln);
 }
 
@@ -528,8 +528,8 @@ static void write_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* 
 {
   struct mds_links ln = MDS_LINKS_INIT;
   if (!ignore_peers) {
-    mds_get_type_links2(h, &m->matches, &m->mds, t, &ln);
-    mds_get_local_matches2(h, &m->matches, &m->mds, t, &ln);
+    mds_get_type_links(h, &m->matches, &m->mds, t, &ln);
+    mds_get_local_matches(h, &m->matches, &m->mds, t, &ln);
   }
   write_links(f, &ln);
   mds_free_links(&ln);
@@ -571,7 +571,7 @@ static struct mds_apf* read_smb(PCUHandle h, struct gmi_model* model, const char
   int i;
   unsigned tmp;
   unsigned pi, pj;
-  f = pcu_fopen2(h, filename, 0, zip);
+  f = pcu_fopen(h, filename, 0, zip);
   PCU_ALWAYS_ASSERT(f);
   read_header(h, f, &version, &dim, ignore_peers);
   pcu_read_unsigneds(f, n, SMB_TYPES);
@@ -620,7 +620,7 @@ static void write_smb(PCUHandle h, struct mds_apf* m, const char* filename,
   struct pcu_file* f;
   unsigned n[SMB_TYPES] = {0};
   int i;
-  f = pcu_fopen2(h, filename, 1, zip);
+  f = pcu_fopen(h, filename, 1, zip);
   PCU_ALWAYS_ASSERT(f);
   write_header(h, f, m->mds.d, ignore_peers);
   for (i = 0; i < MDS_TYPES; ++i)
@@ -731,14 +731,7 @@ static char* handle_path(PCUHandle h, const char* in, int is_write, int* zip,
   return path;
 }
 
-struct mds_apf* mds_read_smb(struct gmi_model* model, const char* pathname,
-    int ignore_peers, void* apf_mesh)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_read_smb2(h, model, pathname, ignore_peers, apf_mesh);
-}
-
-struct mds_apf* mds_read_smb2(PCUHandle h, struct gmi_model* model, const char* pathname,
+struct mds_apf* mds_read_smb(PCUHandle h, struct gmi_model* model, const char* pathname,
     int ignore_peers, void* apf_mesh)
 {
   char* filename;
@@ -759,14 +752,7 @@ static int is_compact(struct mds_apf* m)
   return 1;
 }
 
-struct mds_apf* mds_write_smb(struct mds_apf* m, const char* pathname,
-    int ignore_peers, void* apf_mesh)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_write_smb2(h, m, pathname, ignore_peers, apf_mesh);
-}
-
-struct mds_apf* mds_write_smb2(PCUHandle h, struct mds_apf* m, const char* pathname,
+struct mds_apf* mds_write_smb(PCUHandle h, struct mds_apf* m, const char* pathname,
     int ignore_peers, void* apf_mesh)
 {
   const char* reorderWarning ="MDS: reordering before writing smb files\n";
@@ -774,11 +760,11 @@ struct mds_apf* mds_write_smb2(PCUHandle h, struct mds_apf* m, const char* pathn
   int zip;
   if (ignore_peers && (!is_compact(m))) {
     if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
-    m = mds_reorder2(h, m, 1, mds_number_verts_bfs(m));
+    m = mds_reorder(h, m, 1, mds_number_verts_bfs(m));
   }
   if ((!ignore_peers) && PCU_Or2(h, !is_compact(m))) {
     if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
-    m = mds_reorder2(h, m, 0, mds_number_verts_bfs(m));
+    m = mds_reorder(h, m, 0, mds_number_verts_bfs(m));
   }
   filename = handle_path(h, pathname, 1, &zip, ignore_peers);
   write_smb(h, m, filename, zip, ignore_peers, apf_mesh);

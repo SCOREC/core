@@ -222,14 +222,7 @@ static void recv_links(PCUHandle h, struct mds_links* ln)
     ln->l[pi][i] = mds_index(tmp[i]);
 }
 
-void mds_get_type_links(struct mds_net* net, struct mds* m,
-    int t, struct mds_links* ln)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_get_type_links2(h, net, m, t, ln);
-}
-
-void mds_get_type_links2(PCUHandle h, struct mds_net* net, struct mds* m,
+void mds_get_type_links(PCUHandle h, struct mds_net* net, struct mds* m,
     int t, struct mds_links* ln)
 {
   unsigned i;
@@ -251,14 +244,7 @@ void mds_get_type_links2(PCUHandle h, struct mds_net* net, struct mds* m,
     recv_links(h, ln);
 }
 
-void mds_set_type_links(struct mds_net* net, struct mds* m,
-    int t, struct mds_links* ln)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_set_type_links2(h, net, m, t, ln);
-}
-
-void mds_set_type_links2(PCUHandle h, struct mds_net* net, struct mds* m,
+void mds_set_type_links(PCUHandle h, struct mds_net* net, struct mds* m,
     int t, struct mds_links* ln)
 {
   unsigned i;
@@ -328,14 +314,7 @@ static void take_local_link(PCUHandle h, mds_id i, struct mds_copy c, void* u)
   }
 }
 
-void mds_get_local_matches(struct mds_net* net, struct mds* m,
-                         int t, struct mds_links* ln)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_get_local_matches2(h, net, m, t, ln);
-}
-
-void mds_get_local_matches2(PCUHandle h, struct mds_net* net, struct mds* m,
+void mds_get_local_matches(PCUHandle h, struct mds_net* net, struct mds* m,
                          int t, struct mds_links* ln)
 {
   int self, other;
@@ -352,14 +331,7 @@ void mds_get_local_matches2(PCUHandle h, struct mds_net* net, struct mds* m,
   for_type_net(h, net, m, t, take_local_link, ln);
 }
 
-void mds_set_local_matches(struct mds_net* net, struct mds* m,
-                         int t, struct mds_links* ln)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_set_local_matches2(h, net, m, t, ln);
-}
-
-void mds_set_local_matches2(PCUHandle h, struct mds_net* net, struct mds* m,
+void mds_set_local_matches(PCUHandle h, struct mds_net* net, struct mds* m,
                          int t, struct mds_links* ln)
 {
   int self, other;
@@ -384,13 +356,7 @@ void mds_set_local_matches2(PCUHandle h, struct mds_net* net, struct mds* m,
   }
 }
 
-void mds_free_local_links(struct mds_links* ln)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_free_local_links2(h, ln);
-}
-
-void mds_free_local_links2(PCUHandle h, struct mds_links* ln)
+void mds_free_local_links(PCUHandle h, struct mds_links* ln)
 {
   int self, other;
   self = find_peer(ln, PCU_Comm_Self2(h));

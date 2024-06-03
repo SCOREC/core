@@ -406,14 +406,7 @@ static struct mds_apf* rebuild(
   return m2;
 }
 
-struct mds_apf* mds_reorder(struct mds_apf* m, int ignore_peers,
-    struct mds_tag* vert_numbers)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_reorder2(h, m, ignore_peers, vert_numbers);
-}
-
-struct mds_apf* mds_reorder2(PCUHandle h, struct mds_apf* m, int ignore_peers,
+struct mds_apf* mds_reorder(PCUHandle h, struct mds_apf* m, int ignore_peers,
     struct mds_tag* vert_numbers)
 {
   struct mds_tag* tag;

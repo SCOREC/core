@@ -37,7 +37,7 @@ static void runInGroups(
 {
   int self;
   pcu::PCU* expandedPCU;
-  if(m != nullptr){
+  if(PCUObj == nullptr){
     self = m->getPCU()->Self();
     expandedPCU = m->getPCU();
   } else {
@@ -130,7 +130,7 @@ void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu
   }
   apf::Modulo inMap(factor);
   apf::Divide groupMap(factor);
-  if(m != nullptr){
+  if(PCUObj == nullptr){
     apf::Unmodulo outMap(m->getPCU()->Self(), factor);
     runInGroups(m, PCUObj, inMap, groupMap, outMap, toRun);
   } else {

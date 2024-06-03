@@ -9,7 +9,7 @@ message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 
 # Package sources
 set(SOURCES
-  pcu.cc
+  #pcu.cc
   pcu2.cc
   pcu_aa.c
   pcu_coll.c
@@ -27,7 +27,7 @@ set(SOURCES
 
 # Package headers
 set(HEADERS
-  PCU.h
+  #PCU.h
   PCU2.h
   pcu_io.h
   pcu_util.h

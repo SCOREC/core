@@ -207,25 +207,13 @@ static void packTagClone(Mesh2* m, MeshTag* t, int to, pcu::PCU *PCUObj)
 {
   std::string name;
   name = m->getTagName(t);
-  if(PCUObj != nullptr){
-    packString(name, to, PCUObj);
-  } else {
-    packString(name, to, m->getPCU());
-  }
+  packString(name, to, PCUObj);
   int type;
   type = m->getTagType(t);
-  if(PCUObj != nullptr){
-    PCUObj->Pack(to, type);
-  } else {
-    m->getPCU()->Pack(to, type);
-  }
+  PCUObj->Pack(to, type);
   int size;
   size = m->getTagSize(t);
-  if(PCUObj != nullptr){
-    PCUObj->Pack(to, size);
-  } else {
-    m->getPCU()->Pack(to, size);
-  }
+  PCUObj->Pack(to, size);
 }
 
 static MeshTag* unpackTagClone(Mesh2* m)
@@ -249,11 +237,7 @@ static void packTagClones(Mesh2* m, int to, pcu::PCU *PCUObj)
   DynamicArray<MeshTag*> tags;
   m->getTags(tags);
   int n = tags.getSize();
-  if(PCUObj != nullptr){
-    PCUObj->Pack(to, n);
-  } else {
-    m->getPCU()->Pack(to, n);
-  }
+  PCUObj->Pack(to, n);
   
   /* warning! this loop goes backward to cater to MDS
      implementation-specific behavior.
@@ -273,32 +257,15 @@ static void unpackTagClones(Mesh2* m)
 static void packFieldClone(Field* f, int to, pcu::PCU *PCUObj)
 {
   std::string name = f->getName();
-  if(PCUObj != nullptr){
-    packString(name, to, PCUObj);
-  } else {
-    packString(name, to, f->getMesh()->getPCU());
-  }
-  
+  packString(name, to, PCUObj);
   int valueType = f->getValueType();
-  if(PCUObj != nullptr){
-    PCUObj->Pack(to, valueType);
-  } else {
-    f->getMesh()->getPCU()->Pack(to, valueType);
-  }
+  PCUObj->Pack(to, valueType);
   
   int components = f->countComponents();
-  if(PCUObj != nullptr){
-    PCUObj->Pack(to, components);
-  } else {
-    f->getMesh()->getPCU()->Pack(to, components);
-  }
+  PCUObj->Pack(to, components);
   
   std::string shapeName = f->getShape()->getName();
-  if(PCUObj != nullptr){
-    packString(shapeName, to, PCUObj);
-  } else {
-    packString(shapeName, to, f->getMesh()->getPCU());
-  }
+  packString(shapeName, to, PCUObj);
 
   /* warning! this only supports tag-stored fields */
 }
@@ -320,11 +287,7 @@ static Field* unpackFieldClone(Mesh2* m)
 static void packFieldClones(Mesh2* m, int to, pcu::PCU *PCUObj)
 {
   int n = m->countFields();
-  if(PCUObj != nullptr){
-    PCUObj->Pack(to, n);
-  } else {
-    m->getPCU()->Pack(to, n);
-  }
+  PCUObj->Pack(to, n);
   
   for (int i = 0; i < n; ++i)
     packFieldClone(m->getField(i), to, PCUObj);
@@ -341,11 +304,7 @@ static void unpackFieldClones(Mesh2* m)
 static void packMeshShape(Mesh2* m, int to, pcu::PCU *PCUObj)
 {
   std::string shapeName = m->getShape()->getName();
-  if(PCUObj != nullptr){
-    packString(shapeName, to, PCUObj);
-  } else {
-    packString(shapeName, to, m->getPCU());
-  }
+  packString(shapeName, to, PCUObj);
 }
 
 static void unpackMeshShape(Mesh2* m)

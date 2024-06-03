@@ -286,36 +286,20 @@ static int align_copies(PCUHandle h, struct mds_net* net, struct mds* m)
   return PCU_Or2(h, did_change);
 }
 
-int mds_align_matches(struct mds_apf* m)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_align_matches2(h, m);
-}
 
-int mds_align_matches2(PCUHandle h, struct mds_apf* m)
+int mds_align_matches(PCUHandle h, struct mds_apf* m)
 {
   return align_copies(h, &m->matches, &m->mds);
 }
 
 // seol
-int mds_align_ghosts(struct mds_apf* m)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_align_ghosts2(h, m);
-}
-
-int mds_align_ghosts2(PCUHandle h, struct mds_apf* m)
+int mds_align_ghosts(PCUHandle h, struct mds_apf* m)
 {
   return align_copies(h, &m->ghosts, &m->mds);
 }
 
-int mds_align_remotes(struct mds_apf* m)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return mds_align_remotes2(h, m);
-}
 
-int mds_align_remotes2(PCUHandle h, struct mds_apf* m)
+int mds_align_remotes(PCUHandle h, struct mds_apf* m)
 {
   return align_copies(h, &m->remotes, &m->mds);
 }

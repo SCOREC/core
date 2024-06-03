@@ -158,12 +158,7 @@ static void close_compressed(pcu_file* pf)
  *        Ideally, the filesystem handles the load and this can be
  *        removed.
  */
-FILE* pcu_group_open(const char* path, bool write) {
-  PCUHandle h = PCU_Get_Global_Handle();
-  return pcu_group_open2(h, path, write);
-}
-
-FILE* pcu_group_open2(PCUHandle h, const char* path, bool write) {
+FILE* pcu_group_open(PCUHandle h, const char* path, bool write) {
   FILE* fp = NULL;
   const int rank = PCU_Comm_Self2(h);
   const char* mode = write ? "w" : "r";
@@ -187,18 +182,12 @@ FILE* pcu_group_open2(PCUHandle h, const char* path, bool write) {
   return fp;
 }
 
-pcu_file* pcu_fopen(const char* name, bool write, bool compress)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return pcu_fopen2(h, name, write, compress);
-}
-
-pcu_file* pcu_fopen2(PCUHandle h, const char* name, bool write, bool compress)
+pcu_file* pcu_fopen(PCUHandle h, const char* name, bool write, bool compress)
 {
   pcu_file* pf = (pcu_file*) malloc(sizeof(pcu_file));
   pf->compress = compress;
   pf->write = write;
-  pf->f = pcu_group_open2(h, name, write);
+  pf->f = pcu_group_open(h, name, write);
   if (!pf->f) {
     perror("pcu_fopen");
     reel_fail("pcu_fopen couldn't open \"%s\"", name);
@@ -366,13 +355,7 @@ void pcu_write_string (pcu_file * f, const char * p)
   pcu_write (f, p, len + 1);
 }
 
-FILE* pcu_open_parallel(const char* prefix, const char* ext)
-{
-  PCUHandle h = PCU_Get_Global_Handle();
-  return pcu_open_parallel2(h, prefix, ext);
-}
-
-FILE* pcu_open_parallel2(PCUHandle h, const char* prefix, const char* ext)
+FILE* pcu_open_parallel(PCUHandle h, const char* prefix, const char* ext)
 {
   //max_rank_chars = strlen("4294967296"), 4294967296 = 2^32 ~= INT_MAX
   static const size_t max_rank_chars = 10;

@@ -2,7 +2,6 @@
 
 #include <apf.h>
 #include <apfMesh.h>
-#include <PCU.h>
 
 namespace sam {
 

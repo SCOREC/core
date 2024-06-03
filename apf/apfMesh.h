@@ -14,7 +14,6 @@
 #include <vector>
 #include <map>
 #include <set>
-#include <PCU.h>
 #include <PCUObj.h>
 #include "apfVector.h"
 #include "apfDynamicArray.h"
@@ -109,7 +108,7 @@ class Mesh
       \param s the field distribution of the coordinate field,
                apf::getLagrange(1) is a good default
       */
-    void init(FieldShape* s, pcu::PCU *PCUObj = nullptr);
+    void init(FieldShape* s, pcu::PCU *PCUObj);
     /** \brief destroy the base class structures.
         \details this does not destroy the underlying data
                  structure, use apf::Mesh::destroyNative for that.
