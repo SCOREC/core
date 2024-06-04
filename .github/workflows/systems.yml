@@ -1,11 +1,11 @@
 name: Systems
 on:
   schedule:
-    # Sunday 4:30 UTC or 00:30 EDT
-    - cron: '30 4 * * 0' 
+    # Monday 4:30 UTC or 00:30 EDT
+    - cron: '30 4 * * 1' 
 
 concurrency:
-  group: systems-omega_h
+  group: systems-core
   cancel-in-progress: true
 
 jobs:
@@ -18,10 +18,10 @@ jobs:
 
     steps:
 
-    - name: checkout omega_h
+    - name: checkout core
       uses: actions/checkout@v4
       with:
-        path: omega_h
+        path: core
 
     - name: setup python
       uses: actions/setup-python@v5
@@ -37,7 +37,7 @@ jobs:
           python -m pip install globus-compute-endpoint
 
     - name: use globus
-      working-directory: omega_h/.github/workflows
+      working-directory: core/.github/workflows
       env:
         GLOBUS_ID: ${{ secrets.GLOBUS_COMPUTE_ID }}
         GLOBUS_SECRET: ${{ secrets.GLOBUS_COMPUTE_SECRET }}
@@ -49,15 +49,15 @@ jobs:
         python test_on_system.py ${{ github.event.repository.name }} ${{ github.sha }} $TARGET_ENDPOINT
 
     - name: print build log
-      working-directory: omega_h/.github/workflows
-      run: cat omega_h-test-result/Build.log
+      working-directory: core/.github/workflows
+      run: cat core-result/Build.log
 
     - name: print test log
-      working-directory: omega_h/.github/workflows
-      run: cat omega_h-test-result/Test.log
+      working-directory: core/.github/workflows
+      run: cat core-result/Test.log
 
     - name: check failed test
-      working-directory: omega_h/.github/workflows
-      run: if grep "Failed" omega_h-test-result/Test.log; then return 1; fi
+      working-directory: core/.github/workflows
+      run: if grep "Failed" core-result/Test.log; then return 1; fi
 
     
