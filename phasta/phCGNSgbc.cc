@@ -164,15 +164,12 @@ void commuInt(Output& o, cgsize_t* global)
   isbegin = (int*) malloc(sizeof(int) * maxseg);
   lenseg  = (int*) malloc(sizeof(int) * maxseg);
   ioffset = (int*) malloc(sizeof(int) * maxseg);
-// no VLA  but could not figure out how to malloc so maxtask FIXME/HELP       MPI_Request  req[numtask];
-// no VLA        MPI_Status stat[numtask];
-// no VLA  MPI_Datatype sevsegtype[numtask];
-  int maxtask=1000;
-  assert(maxtask>=numtask);
-  MPI_Request  req[maxtask];
-  MPI_Status stat[maxtask];
-  MPI_Datatype sevsegtype[maxtask];
-// FIXME/HELP
+  MPI_Request* req;
+  req = (MPI_Request*) malloc(sizeof(MPI_Request) * numtask); 
+  MPI_Status* stat;
+  stat = (MPI_Status*) malloc(sizeof(MPI_Status) * numtask); 
+  MPI_Datatype* sevsegtype;
+  sevsegtype = (MPI_Datatype*) malloc(sizeof(MPI_Datatype) * numtask); 
   int maxfront=0;
   int lfront;
   itkbeg=0;
@@ -1223,8 +1220,14 @@ if(0==1){
   sizes[2]=0;
   if(cgp_mpi_comm(MPI_COMM_WORLD)) cgp_error_exit;
   if ( cgp_open(outfile, CG_MODE_WRITE, &F) ||
-       cg_base_write(F, "Base", 3, 3, &B) ||
-       cg_zone_write(F, B, "Zone", sizes, CGNS_ENUMV(Unstructured), &Z))
+       cg_base_write(F, "Base", 3, 3, &B) )
+       cgp_error_exit();
+  if ( cg_goto(F,B,"end"))
+       cgp_error_exit();
+  if ( cg_dataclass_write(CGNS_ENUMV(Dimensional)))
+       cgp_error_exit();
+  cg_units_write(CGNS_ENUMV(Kilogram),CGNS_ENUMV(Meter),CGNS_ENUMV(Second),CGNS_ENUMV(Kelvin),CGNS_ENUMV(Degree));
+  if ( cg_zone_write(F, B, "Zone", sizes, CGNS_ENUMV(Unstructured), &Z))
        cgp_error_exit();
     // create data nodes for coordinates 
   cg_set_file_type(CG_FILE_HDF5);
