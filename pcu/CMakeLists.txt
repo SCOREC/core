@@ -37,6 +37,10 @@ set(HEADERS
   reel/reel.h
 )
 
+if(SCOREC_NO_MPI)
+  set(HEADERS ${HEADERS} pcu_pnompi_types.h)
+endif()
+
 # Add the pcu library
 add_library(pcu ${SOURCES})
 # this compiler definition is needed to silence warnings caused by the openmpi CXX
