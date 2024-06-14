@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <time.h>
 
 static int global_size;
 static int global_rank;
@@ -110,7 +111,9 @@ void free_nompi_msg(NoMpiMsg* msg)
 
 double MPI_Wtime(void)
 {
-  return 0.0;
+  struct timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
+  return (double)now.tv_sec + now.tv_nsec * 1.0e-9;
 }
 
 pcu_mpi pcu_pmpi =
