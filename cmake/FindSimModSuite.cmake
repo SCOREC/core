@@ -84,7 +84,7 @@ string(REGEX REPLACE
   "${SIM_VERSION}")
 
 set(MIN_VALID_SIM_VERSION 15.0.191017)
-set(MAX_VALID_SIM_VERSION 2024.0.240219)
+set(MAX_VALID_SIM_VERSION 2024.1.240606)
 if( ${SKIP_SIMMETRIX_VERSION_CHECK} )
   message(STATUS "Skipping Simmetrix SimModSuite version check."
     " This may result in undefined behavior")
@@ -124,10 +124,10 @@ endif()
 option(SIM_PARASOLID "Use Parasolid through Simmetrix" OFF)
 if (SIM_PARASOLID)
   set(MIN_SIM_PARASOLID_VERSION 290)
-  set(MAX_SIM_PARASOLID_VERSION 350)
+  set(MAX_SIM_PARASOLID_VERSION 361)
   foreach(version RANGE
       ${MAX_SIM_PARASOLID_VERSION}
-      ${MIN_SIM_PARASOLID_VERSION} -10)
+      ${MIN_SIM_PARASOLID_VERSION} -1)
     set(SIM_PARASOLID_VERSION ${version})
     getSimCadLib("${SIMMODSUITE_INSTALL_DIR}/lib/${SIM_ARCHOS}"
       SimParasolid${SIM_PARASOLID_VERSION} simParaLib FALSE)
