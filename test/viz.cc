@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
     }
     v.markPart(m,part_num);
-    snprintf(output,256,"Testing MIS %d",i);
+    snprintf(output,128,"Testing MIS %d",i);
     v.breakpoint(std::string(output));
   }
 
