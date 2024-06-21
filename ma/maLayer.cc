@@ -42,7 +42,7 @@ static long markLayerElements(Adapt* a)
   a->hasLayer = (n != 0);
   if ( ! a->hasLayer)
     return 0;
-  PCU_ALWAYS_ASSERT(meshDimension == 3);
+  PCU_ALWAYS_ASSERT(meshDimension == 3 || meshDimension == 2);
   for (int i=0; i < 4; ++i)
     syncFlag(a,i,LAYER);
   return n;

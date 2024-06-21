@@ -31,6 +31,18 @@
 #include <cstring>
 #include <iostream>
 
+static void print_stats(const char* name, double value)
+{
+  double min, max, avg;
+  min = PCU_Min_Double(value);
+  max = PCU_Max_Double(value);
+  avg = PCU_Add_Double(value);
+  avg /= PCU_Comm_Peers();
+  double imb = max / avg;
+  if (!PCU_Comm_Self())
+    printf("%s: min %f max %f avg %f imb %f\n", name, min, max, avg, imb);
+}
+
 #define SIZET(a) static_cast<size_t>(a)
 
 namespace {
@@ -78,8 +90,10 @@ void originalMain(apf::Mesh2*& m, ph::Input& in,
     m = loadMesh(g, in);
   else
     apf::printStats(m);
-  m->verify();
-  if (in.solutionMigration && !in.useAttachedFields)
+// Need to set a flag to enable avoiding this when short on time  m->verify();
+  if (in.useAttachedFields) 
+     lion_eprint(1,"because useAttachedFields set restart not read\n");
+  else if (in.solutionMigration && !in.useAttachedFields)
     ph::readAndAttachFields(in, m);
   else
     ph::attachZeroSolution(in, m);
@@ -134,6 +148,7 @@ namespace chef {
 namespace ph {
   void checkBalance(apf::Mesh2* m, ph::Input& in) {
     /* check if balancing was requested */
+      Parma_PrintPtnStats(m, "postSplit", false);
       if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
         ph::balance(in,m);
   }
@@ -148,9 +163,18 @@ namespace ph {
         in.isReorder )
     {
       apf::MeshTag* order = NULL;
+
+      print_stats("malloc used before Bfs", PCU_GetMem());
+
       if (in.isReorder && PCU_Comm_Peers() > 1)
         order = Parma_BfsReorder(m);
+
+      print_stats("malloc used before reorder", PCU_GetMem());
+
       apf::reorderMdsMesh(m,order);
+
+      print_stats("malloc used after reorder", PCU_GetMem());
+
     }
   }
 
@@ -225,9 +249,29 @@ namespace ph {
   }
 }
 
+namespace {
+  struct GroupCode : public Parma_GroupCode {
+    ph::Input* input;
+    ph::BCs* boundary;
+    apf::Mesh2* mesh;
+    void run(int) {
+      ph::Output groupOut;
+      //streaming not supported from group code!
+      groupOut.openfile_write = chef::openfile_write;
+      ph::checkBalance(mesh,*input);
+      ph::preprocess(mesh,*input,groupOut,*boundary);
+    }
+  };  
+}
+
 namespace chef {
   void bake(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& in, ph::Output& out) {
+    int shrinkFactor=0;
+    if(in.splitFactor < 0) {
+       shrinkFactor=-1*in.splitFactor; 
+       in.splitFactor=1; // this is used in to set readers so if shrinking need to read all
+    }
     PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % in.splitFactor == 0);
     apf::Migration* plan = 0;
     ph::BCs bcs;
@@ -240,8 +284,17 @@ namespace chef {
     switchToAll(comm);
     if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor);
-    ph::checkBalance(m,in);
-    ph::preprocess(m,in,out,bcs);
+    if (in.simmetrixMesh == 0 && shrinkFactor > 1){
+      GroupCode code;
+      apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+      code.mesh=m;
+      code.input=&in;
+      code.boundary=&bcs;
+      Parma_ShrinkPartition(code.mesh, shrinkFactor, code);
+    } else {
+      ph::checkBalance(m,in);
+      ph::preprocess(m,in,out,bcs);
+    }
   }
   void cook(gmi_model*& g, apf::Mesh2*& m) {
     ph::Input in;
@@ -250,6 +303,8 @@ namespace chef {
     ph::Output out;
     out.openfile_write = openfile_write;
     bake(g,m,in,out);
+    if ((in.writeVTK) == 1)  apf::writeVtkFiles("rendered",m);
+
   }
   void cook(gmi_model*& g, apf::Mesh2*& m,
       ph::Input& ctrl) {

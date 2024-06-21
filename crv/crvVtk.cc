@@ -954,7 +954,6 @@ void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
   apf::MeshEntity* ent;
   apf::MeshIterator* it;
   it = m->begin(1);
-  int count = 0;
   while( (ent = m->iterate(it)) )
   {
     if(!m->isOwned(ent)) continue;
@@ -989,7 +988,6 @@ void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
       v[1] = vs[i+1];
       apf::buildElement(wireMesh, 0, apf::Mesh::EDGE, v);
     }
-    count++;
   }
   m->end(it);
   apf::printStats(wireMesh);

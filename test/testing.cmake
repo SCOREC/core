@@ -78,6 +78,18 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   add_test(NAME chef-BL_query-diff
     COMMAND diff -r run_case/4-procs_case/ good_case/4-procs_case
     WORKING_DIRECTORY ${MDIR})
+  set(MDIR ${MESHES}/simExtrusionInfo)
+  mpi_test(convertExtrudedRoots 1 ${CMAKE_CURRENT_BINARY_DIR}/convert
+    --model-face-root=${MDIR}/ExtruRootID.txt
+    --native-model=${MDIR}/geom.xmt_txt
+    ${MDIR}/geom.smd ${MDIR}/geom.sms ${MDIR}/mdsMesh.smb
+    WORKING_DIRECTORY ${MDIR})
+  add_test(NAME convertExtrudedRoots_diff_cnn
+    COMMAND diff -r geom.cnn geom_expected.cnn
+    WORKING_DIRECTORY ${MDIR})
+  add_test(NAME convertExtrudedRoots_diff_crd
+    COMMAND diff -r geom.crd geom_expected.crd
+    WORKING_DIRECTORY ${MDIR})
 endif()
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
@@ -190,12 +202,49 @@ mpi_test(create_misSquare 1
   ${MESHES}/square/square.smb
   mis_test)
 
+set(MDIR ${MESHES}/matchedNodeElementReader)
+mpi_test(matchedNodeElementReader_p1 1
+  ./matchedNodeElmReader
+  "${MDIR}/model.dmg"
+  "${MDIR}/1part/geom3D.cnndt"
+  "${MDIR}/1part/geom3D.coord"
+  "${MDIR}/1part/geom3D.match"
+  "${MDIR}/1part/geom3D.class"
+  "${MDIR}/1part/geom3D.fathr"
+  "NULL"
+  "${MDIR}/1part/geom3DHead.cnn"
+  "geom.dmg" "geom.smb")
+
+mpi_test(matchedNodeElementReader_p4 4
+  ./matchedNodeElmReader
+  "${MDIR}/model.dmg"
+  "${MDIR}/4part/geom3D.cnndt"
+  "${MDIR}/4part/geom3D.coord"
+  "${MDIR}/4part/geom3D.match"
+  "${MDIR}/4part/geom3D.class"
+  "${MDIR}/4part/geom3D.fathr"
+  "NULL"
+  "${MDIR}/4part/geom3DHead.cnn"
+  "geom.dmg" "geom.smb")
+
 set(MDIR ${MESHES}/gmsh)
-mpi_test(twoQuads 1
+mpi_test(gmshv2TwoQuads 1
   ./from_gmsh
-  ".null"
+  "none"
   "${MDIR}/twoQuads.msh"
-  "${MDIR}/twoQuads.smb")
+  "${MDIR}/twoQuads.smb"
+  "${MDIR}/twoQuads.dmg")
+
+set(MDIR ${MESHES}/gmsh/v4)
+mpi_test(gmshV4AirFoil 1
+  ./from_gmsh
+  "none"
+  "${MDIR}/AirfoilDemo.msh"
+  "${MDIR}/AirfoilDemo.smb"
+  "${MDIR}/AirfoilDemo.dmg")
+add_test(NAME gmshV4AirFoil_dmgDiff
+  COMMAND diff -r ${MDIR}/AirfoilDemo.dmg AirfoilDemo_gold.dmg
+  WORKING_DIRECTORY ${MDIR})
 
 set(MDIR ${MESHES}/ugrid)
 mpi_test(naca_ugrid 2
@@ -285,6 +334,13 @@ if(ENABLE_ZOLTAN)
     ./torus_ma_test
     "${MESHES}/torus/torus.dmg"
     "${MESHES}/torus/4imb/torus.smb")
+  mpi_test(ma_2dLayersOff 1
+    ./ma_test
+    "${MESHES}/2dlayersNoAdapt/model.dmg"
+    "${MESHES}/2dlayersNoAdapt/mesh.smb"
+    "doNotAdapt" "8")
+  set_tests_properties(ma_2dLayersOff PROPERTIES
+    PASS_REGULAR_EXPRESSION "number of triangle 18698")
 endif()
 mpi_test(tet_serial 1
   ./tetrahedronize
@@ -458,6 +514,94 @@ if(ENABLE_ZOLTAN)
     "4" "rib" "reptn" "1"
   )
 endif()
+
+if(ENABLE_CGNS AND ENABLE_ZOLTAN)
+#
+# sort of an arbitrary choice
+set(numProcs 4)
+#
+set(CGNSDIR ${MESHES}/cgns/basic)
+#
+# 2D tests including for mixed cells
+#
+mpi_test(cgns_2d_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/4quads.cgns"
+  4quads.smb
+  additional)
+mpi_test(cgns_2d_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/5quad1Tri.cgns"
+  5quad1Tri.smb
+  additional)
+mpi_test(cgns_2d_3 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/5quad2Tri.cgns"
+  5quad2Tri.smb
+  additional)
+mpi_test(cgns_2d_4 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/2D/9tris.cgns"
+  9tris.smb
+  additional)
+#
+# 3D tests including for mixed cells
+#
+mpi_test(cgns_3d_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/3D/tets_pyra.cgns"
+  tets_pyra.smb
+  additional)
+mpi_test(cgns_3d_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/3D/hexs.cgns"
+  hexs.smb
+  additional)
+#
+# 3D BCS tests
+#
+set(numProcs 5)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/3D)
+#
+mpi_test(cgns_bcs_1 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/mixed.cgns"
+  bcs1.smb
+  additional)
+
+mpi_test(cgns_bcs_hex ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/8hexs.cgns"
+  bcshex.smb
+  additional)
+#
+# 2D BCS tests
+#
+set(numProcs 4)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/2D)
+#
+mpi_test(cgns_bcs_2 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/4quads.cgns"
+  bcs2.smb
+  additional)
+#
+# 1D BCS tests
+#
+set(numProcs 3)
+#
+set(CGNSDIR ${MESHES}/cgns/withBCS/1D)
+#
+mpi_test(cgns_bcs_3 ${numProcs}
+  ./from_cgns
+  "${CGNSDIR}/edges.cgns"
+  bcs3.smb
+  additional)
+
+endif(ENABLE_CGNS AND ENABLE_ZOLTAN)
+
 mpi_test(construct 4
   ./construct
   "${MDIR}/cube.dmg"
@@ -723,4 +867,18 @@ if (PCU_COMPRESS)
       ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
       WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
   endif()
+  set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
+  mpi_test(chef10 4 ${CMAKE_CURRENT_BINARY_DIR}/chef adapt.reducePartCount.inp
+    WORKING_DIRECTORY ${MDIR}/run)
+endif()
+
+if(ENABLE_CAPSTONE)
+  mpi_test(capCyl 1 ./capVol -v 1 ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(capWing 1 ./capVol -v 2 ${MESHES}/cap/wing_surf_only.cre)
+  mpi_test(capCube 1 ./capVol -v 3 ${MESHES}/cap/cube_surf_only.cre)
+  mpi_test(capCyl2 1 ./capVol -v 4 ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(capVolCyl 1 ./capVol -vg 1 ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(capVolWing 1 ./capVol -vg 2 ${MESHES}/cap/wing_surf_only.cre)
+  mpi_test(capVolCube 1 ./capVol -vg 3 ${MESHES}/cap/cube_surf_only.cre)
+  mpi_test(capVolCyl2 1 ./capVol -vg 4 ${MESHES}/cap/cyl_surf_only.cre)
 endif()

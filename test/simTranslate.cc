@@ -11,8 +11,6 @@
 #include "SimAdvModel.h"
 #include "SimUtil.h"
 #include "SimMessages.h"
-#include "SimError.h"
-#include "SimErrorCodes.h"
 #include "MeshSim.h"
 #include "SimAttribute.h"
 #include "AttributeTypes.h"
@@ -20,11 +18,21 @@
 #include <stdlib.h>
 #include <string>
 
-/* hack to get SIMMODSUITE_MAJOR_VERSION and SIMMODSUITE_MINOR_VERSION */
-#include "../apf_sim/apf_simConfig.h"
+#include <apf_simConfig.h>
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
+
+#if SIMMODSUITE_MAJOR_VERSION >= 18
+  #include "SimInfo.h"
+  #include "SimInfoCodes.h"
+  #define SIM_ERROR(suffix,err) SimInfo_##suffix(err)
+  typedef pSimInfo pSimError;
+#else
+  #include "SimError.h"
+  #include "SimErrorCodes.h"
+  #define SIM_ERROR(suffix,err) SimError_##suffix(err)
+#endif
 
 #ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
@@ -38,21 +46,18 @@ void messageHandler(int type, const char *msg);
 void progressHandler(const char *what, int level, int startVal, 
     int endVal, int currentVal, void *);
 
-void SModel_setAttManager(pModel model, pAManager attMan);
-pAManager SModel_attManager(pModel model);
-
 /* Constants (ugh -- FIXME) */
 static std::string acisExt = ".sat";
 static std::string paraExt = ".xmt_txt";
 static std::string paraExtshort = ".x_t";
 
-void printSimError(pSimError err)
-{
+void printSimError(pSimError err) {
   printf("Simmetrix error caught:\n");
-  printf("  Error code: %d\n",SimError_code(err));
-  printf("  Error string: %s\n",SimError_toString(err));
-  SimError_delete(err);
+  printf("  Error code: %d\n",SIM_ERROR(code,err));
+  printf("  Error string: %s\n",SIM_ERROR(toString,err));
+  SIM_ERROR(delete,err);
 }
+
 
 void translateModel(std::string mdlName, pGModel* simmodel, pProgress& progress)
 {
@@ -155,13 +160,17 @@ int main(int argc, char* argv[])
   if (argc == 4) {
     try {
       pGModel oldmodel = GM_load(argv[2], NULL, NULL);
-      attmngr = SModel_attManager(oldmodel);
+#if SIMMODSUITE_MAJOR_VERSION <= 2024 && SIMMODSUITE_MINOR_VERSION < 240219
+      attmngr = GM_attManager(oldmodel);
+#else
+      attmngr = GM_attManager(oldmodel,true);
+#endif
       //attmngr = AMAN_load(argv[2]);
       if(!attmngr) {
         fprintf(stderr, "file \"%s\" contains no attributes", argv[2]);
         abort();
       }
-      SModel_setAttManager(simmodel, attmngr);
+      GM_setAttManager(simmodel, attmngr);
       pACase currentCase;
       pPList allCases = AMAN_cases(attmngr);
       void* iter = 0;

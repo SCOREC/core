@@ -63,6 +63,7 @@ void setDefaultValues(Input* in)
   in->splitAllLayerEdges = false;
   in->userDefinedLayerTagName = "";
   in->shapeHandler = 0;
+  in->debugFolder = nullptr;
 }
 
 void rejectInput(const char* str)

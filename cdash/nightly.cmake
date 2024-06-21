@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.17)
 
 SET(CTEST_DO_SUBMIT ON)
 SET(CTEST_TEST_TYPE Nightly)
+set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
 
 set(CTEST_NIGHTLY_START_TIME "17:00:00 EST")
-set(CTEST_SITE "pachisi.scorec.rpi.edu" )
+set(CTEST_SITE "cranium.scorec.rpi.edu" )
 set(CTEST_DROP_METHOD "http")
 set(CTEST_DROP_SITE "my.cdash.org")
 set(CTEST_DROP_LOCATION "/submit.php?project=SCOREC")
@@ -13,7 +14,6 @@ set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 
 set(CTEST_DASHBOARD_ROOT "/lore/cwsmith/nightlyBuilds/" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
-set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
 set(CTEST_BUILD_FLAGS -j4)
 
 set(CTEST_PROJECT_NAME "SCOREC")
@@ -313,7 +313,7 @@ SET(CONFIGURE_OPTIONS-sim
   "${CONFIGURE_OPTIONS}"
   "-DENABLE_SIMMETRIX:BOOL=ON"
   "-DSIM_PARASOLID:BOOL=ON"
-  "-DSIM_MPI:STRING=mpich3.3"
+  "-DSIM_MPI:STRING=mpich3.3.2"
 )
 
 setup_repo()

@@ -155,13 +155,14 @@ static void computeLambdaVector(
           fJ, apf::getDimension(mesh, face));
 
       // obtain corrected flux vector
-      double comp[nc];
+      double* comp = new double[nc];
       apf::getComponents(flux_field, e, n, comp);
       apf::Vector3 theta_plus_tk;
       int index = ii*3;
       theta_plus_tk[0] = comp[index];
       theta_plus_tk[1] = comp[index+1];
       theta_plus_tk[2] = comp[index+2];
+      delete [] comp;
 
       // compute p+1 order 3D vector shapes
       apf::NewArray<apf::Vector3> tetVectorShapes (nedofs);

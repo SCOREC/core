@@ -28,13 +28,19 @@ if(NOT EXISTS "${METIS_LIBRARY}")
   message(FATAL_ERROR "metis library not found")
 endif()
 
-set(PARMETIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
+find_library(GK_LIBRARY GKlib PATHS "${PARMETIS_PREFIX}/lib")
+if(EXISTS "${GK_LIBRARY}")
+	set(PARMETIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY} ${GK_LIBRARY})
+else()
+	set(PARMETIS_LIBRARIES ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
+endif()
+
 set(PARMETIS_INCLUDE_DIRS ${PARMETIS_INCLUDE_DIR} ${METIS_INCLUDE_DIR})
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set PARMETIS_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(PARMETIS  DEFAULT_MSG
+find_package_handle_standard_args(Parmetis  DEFAULT_MSG
     PARMETIS_LIBRARY METIS_LIBRARY PARMETIS_INCLUDE_DIR)
 
 mark_as_advanced(PARMETIS_INCLUDE_DIR PARMETIS_LIBRARY METIS_LIBRARY)

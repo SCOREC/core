@@ -283,6 +283,15 @@ static void writeGrowthCurves(Output& o, FILE* f)
   }
 }
 
+static void writeSpanwiseAvgArrays(Output& o, FILE* f)
+{
+  if (o.arrays.nfather > 0) {
+    writeInt(f, "number of father-nodes", o.arrays.nfather);
+    writeInts(f, "number of son-nodes for each father", o.arrays.nsonsArr,o.arrays.nfather);
+    writeInts(f, "keyword ifath", o.arrays.ifather,o.mesh->count(0));
+  }
+}
+
 void writeGeomBC(Output& o, std::string path, int timestep)
 {
   double t0 = PCU_Time();
@@ -341,7 +350,6 @@ void writeGeomBC(Output& o, std::string path, int timestep)
     ph_write_doubles(f, "m2g parametric coordinate", o.arrays.m2gParCoord,
       params[0] * params[1], 2, params);
   }
-
   params[0] = m->count(0);
   params[1] = 3;
   ph_write_doubles(f, "co-ordinates", o.arrays.coordinates,
@@ -363,6 +371,7 @@ void writeGeomBC(Output& o, std::string path, int timestep)
   writeElementGraph(o, f);
   writeEdges(o, f);
   writeGrowthCurves(o, f);
+  writeSpanwiseAvgArrays(o, f);
   PHASTAIO_CLOSETIME(fclose(f);)
   double t1 = PCU_Time();
   if (!PCU_Comm_Self())

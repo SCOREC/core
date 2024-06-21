@@ -73,7 +73,7 @@ Field* makeField(
     FieldShape* shape,
     FieldData* data)
 {
-  PCU_ALWAYS_ASSERT( ! m->findField(name));
+  PCU_ALWAYS_ASSERT_VERBOSE( ! m->findField(name), name);
   Field* f = 0;
   // Cases with Vector shape functions
   if (shape->isVectorShape()) {

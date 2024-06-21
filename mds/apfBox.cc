@@ -335,4 +335,13 @@ Mesh2* makeMdsBox(
   return bb.m;
 }
 
+gmi_model* makeMdsBoxModel(
+    int nex, int ney, int nez,
+    double wx, double wy, double wz, bool is)
+{
+  BoxBuilder bb(nex, ney, nez, wx, wy, wz, is);
+  return bb.buildModel();
+}
+
+
 }

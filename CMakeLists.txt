@@ -4,9 +4,9 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # This is the top level CMake file for the SCOREC build
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8)
 
-project(SCOREC VERSION 2.2.7 LANGUAGES CXX C)
+project(SCOREC VERSION 2.2.8 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -16,7 +16,9 @@ option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
 #requre c++11 without extensions
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSION OFF)
-set(CMAKE_CXX_STANDARD 11)
+if(NOT ENABLE_CGNS)
+  set(CMAKE_CXX_STANDARD 11)
+endif()
 
 xsdk_begin_package()
 bob_begin_package()
@@ -25,12 +27,22 @@ if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
 endif()
 
+# require c++14
+option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
+message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
+
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
+  if(ENABLE_CGNS) #takes precedence over SCOREC_ENABLE_CXX11
+    message(STATUS "enabling cxx14")
+    bob_cxx14_flags()
+  elseif(SCOREC_ENABLE_CXX11)
+    bob_cxx11_flags()
+  endif()
 endif()
 message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
@@ -85,6 +97,15 @@ add_custom_target(doc
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generating API documentation with Doxygen" VERBATIM
 )
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile_internal.in
+  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal @ONLY
+)
+add_custom_target(docInternal
+  ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating Internal API documentation with Doxygen" VERBATIM
+)
 endif()
 
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
@@ -92,11 +113,17 @@ set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+option(ENABLE_CAPSTONE "Build with Capstone support" OFF)
+message(STATUS "ENABLE_CAPSTONE: ${ENABLE_CAPSTONE}")
 option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
 option(PUMI_USE_OMEGA_H_VERSION "Specify the Omega_h version PUMI should use" 10.0.0)
 message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
+
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
+endif()
+if(ENABLE_CAPSTONE)
+  add_definitions(-DHAVE_CAPSTONE)
 endif()
 
 option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
@@ -114,6 +141,11 @@ if(ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
 endif()
 
+if(ENABLE_CAPSTONE)
+  set(SCOREC_USE_CreateMG_DEFAULT ${ENABLE_CAPSTONE})
+  bob_public_dep(CreateMG)
+endif()
+
 if(ENABLE_OMEGA_H)
   # find the omega_h library
   set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
@@ -121,6 +153,15 @@ if(ENABLE_OMEGA_H)
   bob_public_dep(Omega_h)
 endif()
 
+if(ENABLE_CGNS)
+  set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(CGNS)
+  #CGNS does not provide cmake targets :(
+  include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
+  set(SCOREC_USE_HDF5_DEFAULT ${ENABLE_CGNS})
+  bob_public_dep(HDF5)
+  add_definitions(-DHAVE_CGNS)
+endif()
 
 # Include the SCOREC project packages
 add_subdirectory(lion)
@@ -144,25 +185,23 @@ add_subdirectory(phasta)
 add_subdirectory(stk)
 add_subdirectory(dsp)
 add_subdirectory(omega_h)
+add_subdirectory(gmi_cap)
+add_subdirectory(apf_cap)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
-target_compile_features(core INTERFACE cxx_std_11)
-scorec_export_library(core)
-
-#check for mallinfo2
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-  include(CheckCXXSymbolExists)
-  check_cxx_symbol_exists(mallinfo2 "malloc.h" PUMI_HAS_MALLINFO2)
-  if(PUMI_HAS_MALLINFO2)
-    target_compile_definitions(core INTERFACE -DPUMI_HAS_MALLINFO2)
-    target_compile_definitions(pumi PRIVATE -DPUMI_HAS_MALLINFO2)
-  endif()
+if(ENABLE_CGNS)
+  target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
+  target_compile_features(core INTERFACE cxx_std_14)
+else()
+  target_compile_features(core INTERFACE cxx_std_11)
 endif()
+scorec_export_library(core)
 
 if(BUILD_EXES)
   add_subdirectory(test)
+  add_subdirectory(capstone_clis)
 endif()
 
 if(PUMI_PYTHON_INTERFACE)

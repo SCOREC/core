@@ -410,7 +410,7 @@ class MeshMDS : public Mesh2
     MeshTag* createIntTag(const char* name, int size)
     {
       mds_tag* tag;
-      PCU_ALWAYS_ASSERT(!mds_find_tag(&mesh->tags, name));
+      PCU_ALWAYS_ASSERT_VERBOSE(!mds_find_tag(&mesh->tags, name), name);
       tag = mds_create_tag(&(mesh->tags),name,
           sizeof(int)*size, Mesh::INT);
       return reinterpret_cast<MeshTag*>(tag);
@@ -1059,10 +1059,10 @@ void deriveMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
   PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
           "MeshTag name \"_vert_id\" is used internally in this method\n");
-  apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
+  apf::MeshTag* vIDTag = mesh->createLongTag("_vert_id", 1);
   for (apf::GlobalToVert::iterator vit = globalToVert.begin();
-       vit != globalToVert.end(); vit++) {
-    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+       vit !=  globalToVert.end(); vit++) {
+    mesh->setLongTag(vit->second, vIDTag, &(vit->first));
   }
 
   // Reserve tags used for model faces
@@ -1175,10 +1175,10 @@ void derive2DMdlFromManifold(Mesh2* mesh, bool* isModelVert,
 
   PCU_ALWAYS_ASSERT_VERBOSE(!mesh->findTag("_vert_id"),
           "MeshTag name \"_vert_id\" is used internally in this method\n");
-  apf::MeshTag* vIDTag = mesh->createIntTag("_vert_id", 1);
+  apf::MeshTag* vIDTag = mesh->createLongTag("_vert_id", 1);
   for (apf::GlobalToVert::iterator vit = globalToVert.begin();
        vit != globalToVert.end(); vit++) {
-    mesh->setIntTag(vit->second, vIDTag, &(vit->first));
+    mesh->setLongTag(vit->second, vIDTag, &(vit->first));
   }
 
   // Reserve tags used for model edges

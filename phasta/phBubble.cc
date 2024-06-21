@@ -23,7 +23,7 @@ void readBubbles(Bubbles& bubbles, std::string bubbleFileName)
   FILE *filebubble;
   Bubble readbubble;
 
-  sprintf(bubblefname, "%s", bubbleFileName.c_str());
+  snprintf(bubblefname, 1024, "%s", bubbleFileName.c_str());
   if (!PCU_Comm_Self())
     lion_oprint(1,"reading bubbles info from %s\n",bubblefname);
 

@@ -141,12 +141,10 @@ void unMarkBadQuality(Adapt* a)
   Mesh* m = a->mesh;
   Iterator* it;
   Entity* e;
-  int count = 0;
   it = m->begin(m->getDimension());
   while ((e = m->iterate(it))) {
     if (getFlag(a, e, ma::BAD_QUALITY))
       clearFlag(a, e, ma::BAD_QUALITY);
-    count++;
   }
   m->end(it);
 }

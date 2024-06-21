@@ -56,6 +56,10 @@ set(SOURCES
   apfMIS.cc
 )
 
+if(ENABLE_CGNS)
+  set(SOURCES ${SOURCES} apfCGNS.cc)
+endif(ENABLE_CGNS)
+
 # Package headers
 set(HEADERS
   apf.h

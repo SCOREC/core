@@ -154,7 +154,7 @@ void getStats(
     char message[512];
     // first find the sizes field
     sizes  = m->findField(sizeName);
-    sprintf(message, "Couldn't find a field with name %s in mesh!", sizeName);
+    snprintf(message, 512, "Couldn't find a field with name %s in mesh!", sizeName);
     PCU_ALWAYS_ASSERT_VERBOSE(sizes, message);
   }
 

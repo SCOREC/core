@@ -126,14 +126,26 @@ idx:   0  1 2  3   4   5  6   7   8   9  10   11  12  13  14  15   16   17   18 
   int* rigidBodyMTs;
 /* an integer to indicate rigid body tag of a vertex */
   int* rigidBodyTag;
+/* an integer to indicate how many father nodes there are in the mesh*/
+  int nfather;
+/* an integer to indicate how many sons there are for each father */
+/* NOTE: currently this assumes each father has the same number of sons */
+/* uniform z spacing and constant domain thickness */
+  int nsons;
+/* an array of integers that holds the number of the father node */
+  int* ifather;
+/* an array of integers of size nfather that has nsons in each entry */
+  int* nsonsArr;
 };
 
 
 struct Output
 {
   ~Output();
+  Output() : nOwnedNodes(0) {}
   Input* in;
   apf::Mesh* mesh;
+  int txtCoord;
   int nOverlapNodes;
   int nOwnedNodes;
   int nBoundaryElements;

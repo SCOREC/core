@@ -32,7 +32,6 @@ util_exe_func(mktopomodel mktopomodel.cc)
 util_exe_func(modelInfo modelInfo.cc)
 
 # Mesh generation utilities
-util_exe_func(box box.cc)
 util_exe_func(uniform uniform.cc)
 util_exe_func(classifyThenAdapt classifyThenAdapt.cc)
 util_exe_func(refine2x refine2x.cc)
@@ -43,11 +42,15 @@ util_exe_func(extrude extrude.cc)
 
 # Mesh conversion/formatting utilities
 util_exe_func(from_gmsh gmsh.cc)
+if(ENABLE_CGNS)
+  util_exe_func(from_cgns cgns.cc)
+endif()
 util_exe_func(from_ansys ansys.cc)
 util_exe_func(from_neper neper.cc)
 util_exe_func(from_ugrid ugrid.cc)
 util_exe_func(nektar_align nektar_align.cc)
 util_exe_func(icesheet icesheet.cc)
+util_exe_func(matchedNodeElmReader matchedNodeElmReader.cc)
 if(ENABLE_OMEGA_H)
   util_exe_func(smb2osh smb2osh.cc)
   util_exe_func(osh2smb osh2smb.cc)
@@ -204,6 +207,11 @@ if(ENABLE_SIMMETRIX)
   test_exe_func(residualErrorEstimation_test residualErrorEstimation_test.cc)
   test_exe_func(highOrderSolutionTransfer highOrderSolutionTransfer.cc)
   test_exe_func(highOrderSizeFields highOrderSizeFields.cc)
+endif()
+
+if(ENABLE_CAPSTONE)
+  util_exe_func(capVol capVol.cc)
+  target_include_directories(capVol PRIVATE "${PROJECT_SOURCE_DIR}/capstone_clis")
 endif()
 
 # send all the newly added utility executable targets
