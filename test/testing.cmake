@@ -134,6 +134,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
        "${MDIR}/outmesh_4_parts.sms"
        3504
        WORKING_DIRECTORY ${MDIR})
+      set_tests_properties(countBL_part_mesh PROPERTIES DEPENDS partition_sim)
     endif()
   endif()
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
