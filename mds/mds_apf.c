@@ -162,9 +162,15 @@ static void downs_to_copies(
 {
   int i;
   struct mds_set s;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&s);
+  #endif
   mds_get_adjacent(m, e, mds_dim[mds_type(e)] - 1, &s);
   for (i = 0; i < c->n; ++i)
     downs_to_copy(&s, c->c[i]);
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&s);
+  #endif
 }
 
 static void change_down(struct mds* m, mds_id e, struct mds_set* s)
@@ -225,6 +231,11 @@ static int recv_down_copies(struct mds_net* net, struct mds* m)
   struct mds_set s;
   struct mds_set rs;
   struct mds_set s2;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&s);
+  mds_init_set(&rs);
+  mds_init_set(&s2);
+  #endif
   int i;
   int from = PCU_Comm_Sender();
   PCU_COMM_UNPACK(e);
@@ -232,12 +243,23 @@ static int recv_down_copies(struct mds_net* net, struct mds* m)
   rs.n = s.n;
   for (i = 0; i < s.n; ++i)
     PCU_COMM_UNPACK(rs.e[i]);
-  if (compare_copy_sets(net, &s, from, &rs))
+  if (compare_copy_sets(net, &s, from, &rs)) {
+    #ifdef MDS_SET_DYNAMIC
+    mds_destroy_set(&s);
+    mds_destroy_set(&rs);
+    mds_destroy_set(&s2);
+    #endif
     return 0;
+  }
   for (i = -s.n; i < s.n; ++i) {
     rotate_set(&s, i, &s2);
     if (compare_copy_sets(net, &s2, from, &rs)) {
       change_down(m, e, &s2);
+      #ifdef MDS_SET_DYNAMIC
+      mds_destroy_set(&s);
+      mds_destroy_set(&rs);
+      mds_destroy_set(&s2);
+      #endif
       return 1;
     }
   }
@@ -320,6 +342,9 @@ void mds_derive_model(struct mds_apf* m)
   int i;
   mds_id de;
   struct mds_set s;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&s);
+  #endif
   struct mds_copies* c;
   struct gmi_ent* interior = mds_find_model(m, m->mds.d, 0);
   struct gmi_ent* boundary = mds_find_model(m, m->mds.d - 1, 0);
@@ -346,4 +371,7 @@ void mds_derive_model(struct mds_apf* m)
       }
     }
   }
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&s);
+  #endif
 }

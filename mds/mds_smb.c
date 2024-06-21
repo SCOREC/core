@@ -158,6 +158,9 @@ static void read_conn(struct pcu_file* f, struct mds_apf* m)
 {
   unsigned* conn;
   struct mds_set down;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&down);
+  #endif
   int const* dt;
   mds_id cap;
   size_t size;
@@ -181,12 +184,18 @@ static void read_conn(struct pcu_file* f, struct mds_apf* m)
     free(conn);
     PCU_ALWAYS_ASSERT(m->mds.n[type_mds] == m->mds.cap[type_mds]);
   }
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&down);
+  #endif
 }
 
 static void write_conn(struct pcu_file* f, struct mds_apf* m)
 {
   unsigned* conn;
   struct mds_set down;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&down);
+  #endif
   mds_id end;
   size_t size;
   int type_mds;
@@ -208,6 +217,9 @@ static void write_conn(struct pcu_file* f, struct mds_apf* m)
     pcu_write_unsigneds(f, conn, size);
     free(conn);
   }
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&down);
+  #endif
 }
 
 static void read_remotes(struct pcu_file* f, struct mds_apf* m,

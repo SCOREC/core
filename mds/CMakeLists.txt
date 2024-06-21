@@ -5,8 +5,10 @@ endif()
 
 # Package options
 set(MDS_SET_MAX "256" CACHE STRING "Buffer size for adjacency computation")
+set(MDS_SET_DYNAMIC FALSE CACHE BOOL "Use dynamic buffers for adjacency computation")
 set(MDS_ID_TYPE "int" CACHE STRING "Interal identifier integer type")
 message(STATUS "MDS_SET_MAX: ${MDS_SET_MAX}")
+message(STATUS "MDS_SET_DYNAMIC: ${MDS_SET_DYNAMIC}")
 message(STATUS "MDS_ID_TYPE: ${MDS_ID_TYPE}")
 
 # Configure the input header

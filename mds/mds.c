@@ -469,6 +469,9 @@ static void copy_set(struct mds_set* to, struct mds_set* from)
 {
   int i;
   to->n = from->n;
+  #ifdef MDS_SET_DYNAMIC
+  if (from->cap > to->cap) mds_expand_set(to, from->cap);
+  #endif
   for (i = 0; i < from->n; ++i)
     to->e[i] = from->e[i];
 }
@@ -488,7 +491,13 @@ static void unite(struct mds_set* s, struct mds_set* with)
   int j = s->n;
   for (i = 0; i < with->n; ++i)
     if ( ! contains(s,with->e[i])) {
+      #ifndef MDS_SET_DYNAMIC
       PCU_ALWAYS_ASSERT(j < MDS_SET_MAX);
+      #else
+      if (j >= s->cap) {
+        mds_expand_set(s, j);
+      }
+      #endif
       s->e[j++] = with->e[i];
     }
   s->n = j;
@@ -599,8 +608,14 @@ static void check_ent(struct mds* m, mds_id e)
 static void unrelate_ent(struct mds* m, mds_id e)
 {
   struct mds_set down;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&down);
+  #endif
   look_down(m,e,mds_dim[TYPE(e)] - 1,&down);
   unrelate_back_up(m,down.e,e);
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&down);
+  #endif
 }
 
 void mds_destroy_entity(struct mds* m, mds_id e)
@@ -656,6 +671,10 @@ static void convert_down(struct mds* m,
     int t)
 {
   struct mds_set sets[2];
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&sets[0]);
+  mds_init_set(&sets[1]);
+  #endif
   struct mds_set* s[2];
   struct mds_set* tmp;
   s[0] = sets;
@@ -668,6 +687,10 @@ static void convert_down(struct mds* m,
     s[1] = tmp;
   }
   copy_set(to_s,s[0]);
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&sets[0]);
+  mds_destroy_set(&sets[1]);
+  #endif
 }
 
 mds_id mds_create_entity(struct mds* m, int t, mds_id* from)
@@ -684,6 +707,9 @@ static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
   int i;
   int dim;
   struct mds_set up;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&up);
+  #endif
   to->n = 0;
   PCU_ALWAYS_ASSERT(from->n);
   dim = mds_dim[TYPE(from->e[0])];
@@ -691,11 +717,18 @@ static void expand_once(struct mds* m, struct mds_set* from, struct mds_set* to)
     look_up(m,from->e[i],dim + 1,&up);
     unite(to,&up);
   }
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&up);
+  #endif
 }
 
 static void get_up(struct mds* m, mds_id e, int d, struct mds_set* out)
 {
   struct mds_set sets[2];
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&sets[0]);
+  mds_init_set(&sets[1]);
+  #endif
   struct mds_set* s[2];
   struct mds_set* tmp;
   int dim;
@@ -711,17 +744,27 @@ static void get_up(struct mds* m, mds_id e, int d, struct mds_set* out)
     s[1] = tmp;
   }
   copy_set(out,s[0]);
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&sets[0]);
+  mds_destroy_set(&sets[1]);
+  #endif
 }
 
 static void get_down(struct mds* m, mds_id e, int d, struct mds_set* out)
 {
   struct mds_set in;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&in);
+  #endif
   int t;
   int from_dim;
   t = TYPE(e);
   from_dim = mds_dim[t];
   look_down(m,e,from_dim - 1,&in);
   convert_down(m,&in,from_dim - 1,out,d,t);
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&in);
+  #endif
 }
 
 void mds_get_adjacent(struct mds* m, mds_id e, int d, struct mds_set* s)
@@ -781,6 +824,9 @@ void mds_add_adjacency(struct mds* m, int from_dim, int to_dim)
 {
   mds_id e;
   struct mds_set adj;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&adj);
+  #endif
   alloc_adjacency(m,from_dim,to_dim);
   if (from_dim < to_dim)
     for (e = mds_begin(m,to_dim);
@@ -797,6 +843,9 @@ void mds_add_adjacency(struct mds* m, int from_dim, int to_dim)
       relate_down(m,e,adj.e);
     }
   m->mrm[from_dim][to_dim] = 1;
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&adj);
+  #endif
 }
 
 int mds_has_up(struct mds* m, mds_id e)
@@ -838,3 +887,30 @@ void mds_change_dimension(struct mds* m, int d)
   while (m->d > d)
     decrease_dimension(m);
 }
+
+#ifdef MDS_SET_DYNAMIC
+void mds_init_set(struct mds_set* s)
+{
+  PCU_DEBUG_ASSERT(s);
+  s->n = 0;
+  s->cap = MDS_SET_MAX;
+  s->e = calloc(s->cap, sizeof(mds_id));
+}
+
+void mds_destroy_set(struct mds_set* s)
+{
+  PCU_DEBUG_ASSERT(s);
+  s->n = 0;
+  s->cap = 0;
+  free(s->e);
+}
+
+void mds_expand_set(struct mds_set* s, int cap)
+{
+  PCU_DEBUG_ASSERT(s);
+  PCU_DEBUG_ASSERT(s->cap > 0);
+  PCU_DEBUG_ASSERT(cap > 0);
+  while (cap > s->cap) s->cap *= 2;
+  s->e = realloc(s->e, s->cap * sizeof(mds_id));
+}
+#endif

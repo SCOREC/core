@@ -45,8 +45,30 @@ struct mds {
 
 struct mds_set {
   int n;
+#ifndef MDS_SET_DYNAMIC
   mds_id e[MDS_SET_MAX];
+#else
+  mds_id* e;
+  int cap;
+#endif
 };
+
+#ifdef MDS_SET_DYNAMIC
+/**
+ * @brief Initialize mds_set dynamic memory.
+ */
+void mds_init_set(struct mds_set* s);
+
+/**
+ * @brief Free mds_set dynamic memory. The set itself is not freed.
+ */
+void mds_destroy_set(struct mds_set* s);
+
+/**
+ * @brief Expand mds_set to hold at least cap items.
+ */
+void mds_expand_set(struct mds_set* s, int cap);
+#endif
 
 extern int const mds_dim[MDS_TYPES];
 extern int const mds_degree[MDS_TYPES][4];

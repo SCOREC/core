@@ -2,6 +2,7 @@
 #define MDS_CONFIG_H
 
 #define MDS_SET_MAX @MDS_SET_MAX@
+#cmakedefine MDS_SET_DYNAMIC
 #define MDS_ID_TYPE @MDS_ID_TYPE@
 
 #endif

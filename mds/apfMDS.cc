@@ -300,45 +300,78 @@ class MeshMDS : public Mesh2
     void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent)
     {
       mds_set s;
+      #ifdef MDS_SET_DYNAMIC
+      mds_init_set(&s);
+      #endif
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,dimension,&s);
       adjacent.setSize(s.n);
       for (int i = 0; i < s.n; ++i)
         adjacent[i] = toEnt(s.e[i]);
+      #ifdef MDS_SET_DYNAMIC
+      mds_destroy_set(&s);
+      #endif
     }
     int getDownward(MeshEntity* e, int dimension, MeshEntity** adjacent)
     {
       PCU_ALWAYS_ASSERT((0 <= dimension) && (dimension <= 3));
       mds_set s;
+      #ifdef MDS_SET_DYNAMIC
+      mds_init_set(&s);
+      #endif
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,dimension,&s);
       for (int i = 0; i < s.n; ++i)
         adjacent[i] = toEnt(s.e[i]);
-      return s.n;
+      int n = s.n;
+      #ifdef MDS_SET_DYNAMIC
+      mds_destroy_set(&s);
+      #endif
+      return n;
     }
     int countUpward(MeshEntity* e)
     {
       mds_set s;
+      #ifdef MDS_SET_DYNAMIC
+      mds_init_set(&s);
+      #endif
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,mds_dim[mds_type(id)] + 1,&s);
-      return s.n;
+      int n = s.n;
+      #ifdef MDS_SET_DYNAMIC
+      mds_destroy_set(&s);
+      #endif
+      return n;
     }
     MeshEntity* getUpward(MeshEntity* e, int i)
     {
       mds_set s;
+      #ifdef MDS_SET_DYNAMIC
+      mds_init_set(&s);
+      #endif
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,mds_dim[mds_type(id)] + 1,&s);
       PCU_ALWAYS_ASSERT(i < s.n);
-      return toEnt(s.e[i]);
+      MeshEntity* u = toEnt(s.e[i]);
+      #ifdef MDS_SET_DYNAMIC
+      mds_destroy_set(&s);
+      #endif
+      return u;
     }
     void getUp(MeshEntity* e, Up& up)
     {
       mds_set s;
+      #ifdef MDS_SET_DYNAMIC
+      mds_init_set(&s);
+      #endif
       mds_id id = fromEnt(e);
       mds_get_adjacent(&(mesh->mds),id,mds_dim[mds_type(id)] + 1,&s);
       up.n = s.n;
       for (int i = 0; i < s.n; ++i)
         up.e[i] = toEnt(s.e[i]);
+      #ifdef MDS_SET_DYNAMIC
+      mds_destroy_set(&s);
+      #endif
     }
     bool hasUp(MeshEntity* e)
     {
@@ -687,6 +720,9 @@ class MeshMDS : public Mesh2
         abort();
       }
       mds_set s;
+      #ifdef MDS_SET_DYNAMIC
+      mds_init_set(&s);
+      #endif
       if (type != VERTEX) {
         s.n = mds_degree[t][mds_dim[t]-1];
         for (int i = 0; i < s.n; ++i)
@@ -698,6 +734,9 @@ class MeshMDS : public Mesh2
       apf::Parts r;
       r.insert(getId());
       setResidence(e, r);
+      #ifdef MDS_SET_DYNAMIC
+      mds_destroy_set(&s);
+      #endif
       return e;
     }
     void destroy_(MeshEntity* e)

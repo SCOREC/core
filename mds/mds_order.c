@@ -54,10 +54,17 @@ static int queue_empty(struct queue* q)
 static mds_id other_vert(struct mds* m, mds_id e, mds_id v)
 {
   struct mds_set vs;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&vs);
+  #endif
   mds_get_adjacent(m,e,0,&vs);
-  if (vs.e[0] == v)
-    return vs.e[1];
-  return vs.e[0];
+  mds_id other;
+  if (vs.e[0] == v) other = vs.e[1];
+  else other = vs.e[0];
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&vs);
+  #endif
+  return other;
 }
 
 static int visit(
@@ -99,6 +106,10 @@ static void number_connected_verts(struct mds* m, mds_id v,
 {
   struct queue q;
   struct mds_set adj[2];
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&adj[0]);
+  mds_init_set(&adj[1]);
+  #endif
   int i;
   adj[0].n = adj[1].n = 0;
   if (!visit(m, tag, label, v))
@@ -116,6 +127,10 @@ static void number_connected_verts(struct mds* m, mds_id v,
         push_queue(&q, adj[0].e[i]);
   }
   free_queue(&q);
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&adj[0]);
+  mds_destroy_set(&adj[1]);
+  #endif
 }
 
 struct mds_tag* mds_number_verts_bfs(struct mds_apf* m)
@@ -152,6 +167,9 @@ static void number_ents_of_type(struct mds* m,
 {
   int dim;
   struct mds_set adj;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&adj);
+  #endif
   int label;
   int i, j;
   PCU_ALWAYS_ASSERT(m->n[type] < INT_MAX);
@@ -163,6 +181,9 @@ static void number_ents_of_type(struct mds* m,
       if (mds_type(adj.e[j]) == type)
         visit(m, tag, &label, adj.e[j]);
   }
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&adj);
+  #endif
 }
 
 static void number_other_ents(struct mds_apf* m, struct mds_tag* tag)
@@ -292,6 +313,10 @@ static void rebuild_ents(
   int j;
   struct mds_set old_down;
   struct mds_set new_down;
+  #ifdef MDS_SET_DYNAMIC
+  mds_init_set(&old_down);
+  mds_init_set(&new_down);
+  #endif
   for (t = 1; t < MDS_TYPES; ++t) {
     for (i = 0; i < m->mds.n[t]; ++i) {
       ne = mds_identify(t,i);
@@ -305,6 +330,10 @@ static void rebuild_ents(
     }
     PCU_ALWAYS_ASSERT(m->mds.n[t] == m2->mds.n[t]);
   }
+  #ifdef MDS_SET_DYNAMIC
+  mds_destroy_set(&old_down);
+  mds_destroy_set(&new_down);
+  #endif
 }
 
 static void rebuild_tags(
