@@ -347,7 +347,7 @@ int main(int argc, char** argv)
   /* ------------------------- */
   for (int i = 2; i < 7; i++) {
     char output[256];
-    sprintf(output,"crack_curved_to_order_%d", i);
+    snprintf(output,256,"crack_curved_to_order_%d", i);
     bCurver(modelFile, "crack_linear.smb", i, output);
   }
 
