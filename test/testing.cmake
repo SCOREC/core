@@ -772,6 +772,7 @@ if(ENABLE_SIMMETRIX)
         ./ma_test
         "${MDIR}/upright.smd"
         "67k/")
+      set_tests_properties(adapt_meshgen PROPERTIES DEPENDS parallel_meshgen)
     endif()
   endif()
   if(SIM_PARASOLID)
