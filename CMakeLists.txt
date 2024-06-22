@@ -31,6 +31,15 @@ endif()
 option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
 message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
 
+#
+# option related to MPI
+#
+option(SCOREC_NO_MPI "Use a stub MPI implementation" OFF)
+message(STATUS "SCOREC_NO_MPI: ${SCOREC_NO_MPI}")
+if (SCOREC_NO_MPI)
+   add_definitions(-DSCOREC_NO_MPI)
+endif()
+
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()

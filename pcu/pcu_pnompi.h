@@ -7,8 +7,8 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
-#ifndef PCU_PMPI_H
-#define PCU_PMPI_H
+#ifndef PCU_NO_PMPI_H
+#define PCU_NO_PMPI_H
 
 #include "pcu_mpi.h"
 
@@ -23,7 +23,7 @@ bool pcu_pmpi_receive(pcu_message* m, MPI_Comm comm);
 void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm);
 bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm);
 bool pcu_pmpi_done(pcu_message* m);
-int  pcu_pmpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm);
+int  pcu_pmpi_split(MPI_Comm c, int color, int key, MPI_Comm* nc);
 int  pcu_pmpi_free(MPI_Comm* comm);
 int  pcu_pmpi_allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 int  pcu_pmpi_allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);
@@ -36,5 +36,7 @@ extern pcu_mpi pcu_pmpi;
 
 extern MPI_Comm pcu_user_comm;
 extern MPI_Comm pcu_coll_comm;
+
+double MPI_Wtime(void);
 
 #endif
