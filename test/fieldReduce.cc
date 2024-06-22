@@ -69,7 +69,7 @@ bool testReduce(apf::Mesh* m, int casenum)
     addval = myrank;
 
   char fname[256];
-  sprintf(fname, "test%d", casenum);
+  snprintf(fname, 256, "test%d", casenum);
   apf::Field* f = getTestField(m, fname, addval);
   apf::FieldShape* fshape = apf::getShape(f);
   apf::Sharing* shr = apf::getSharing(m);
