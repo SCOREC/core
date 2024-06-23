@@ -134,6 +134,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
        "${MDIR}/outmesh_4_parts.sms"
        3504
        WORKING_DIRECTORY ${MDIR})
+      set_tests_properties(countBL_part_mesh PROPERTIES DEPENDS partition_sim)
     endif()
   endif()
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
@@ -264,6 +265,8 @@ mpi_test(inviscid_ghost 4
   "${MDIR}/inviscid_egg.dmg"
   "${MDIR}/4/"
   "${MDIR}/vis")
+set_tests_properties(inviscid_ghost PROPERTIES DEPENDS inviscid_ugrid)
+
 set(MDIR ${MESHES}/pipe)
 if(ENABLE_SIMMETRIX)
   mpi_test(convert 1
@@ -391,6 +394,7 @@ else()
     "pipe_4_.smb"
     2)
 endif()
+set_tests_properties(split_4 PROPERTIES DEPENDS split_2)
 mpi_test(pipe_condense 4
   ./serialize
   "${MDIR}/pipe.${GXT}"
@@ -415,11 +419,16 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/pipe.${GXT}"
     "pipe_4_.smb"
     "tet.smb")
+  set_tests_properties(ma_parallel tet_parallel
+    PROPERTIES DEPENDS split_4)
 endif()
 mpi_test(fieldReduce 4
   ./fieldReduce
   "${MDIR}/pipe.${GXT}"
   "pipe_4_.smb")
+set_tests_properties(pipe_condense verify_parallel fieldReduce verify_parallel
+  vtxElmMixedBalance
+  PROPERTIES DEPENDS split_4)
 
 set(MDIR ${MESHES}/torus)
 mpi_test(reorder 4
@@ -438,6 +447,7 @@ mpi_test(gap 4
   "${MDIR}/torusBal4p/"
   "1.08"
   "${MDIR}/torusOpt4p/")
+set_tests_properties(gap PROPERTIES DEPENDS balance)
 mpi_test(applyMatrixFunc 1
   ./applyMatrixFunc)
 if(ENABLE_ZOLTAN)
@@ -685,6 +695,8 @@ mpi_test(test_verify 4
   ./test_verify
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
+set_tests_properties(l2_shape_tet_parallel h1_shape_parallel test_verify
+  PROPERTIES DEPENDS "construct;constructThenGhost")
 set(MDIR ${MESHES}/nonmanifold)
 mpi_test(nonmanif_verify 1
   ./verify
@@ -700,6 +712,7 @@ mpi_test(nonmanif_verify2 2
   ./verify
   "${MDIR}/nonmanifold.dmg"
   "nonmanifold_2_.smb")
+set_tests_properties(nonmanif_verify2 PROPERTIES DEPENDS nonmanif_split2)
 set(MDIR ${MESHES}/fusion)
 mpi_test(mkmodel_fusion 1
   ./mkmodel
@@ -760,6 +773,7 @@ if(ENABLE_SIMMETRIX)
         ./ma_test
         "${MDIR}/upright.smd"
         "67k/")
+      set_tests_properties(adapt_meshgen PROPERTIES DEPENDS parallel_meshgen)
     endif()
   endif()
   if(SIM_PARASOLID)

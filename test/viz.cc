@@ -47,7 +47,7 @@ int main(int argc, char** argv)
   Visualization v;
   
   char output[128];
-  sprintf(output,"%d",PCU_Comm_Self());
+  snprintf(output,128,"%d",PCU_Comm_Self());
   std::string part_num(output);
 
   apf::MeshIterator* itr;
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
     }
     v.markPart(m,part_num);
-    sprintf(output,"Testing MIS %d",i);
+    snprintf(output,128,"Testing MIS %d",i);
     v.breakpoint(std::string(output));
   }
 
