@@ -388,7 +388,7 @@ static void owners_from_osh(
   for (int i = 0; i < om->nents(ent_dim); ++i) {
     osh::LO tmp = own_ids[i];
     am->getPCU()->Pack(own_ranks[i], tmp);
-    am->getPCU()->(own_ranks[i], ents[i]);
+    am->getPCU()->Pack(own_ranks[i], ents[i]);
   }
   am->getPCU()->Send();
   while (am->getPCU()->Receive()) {

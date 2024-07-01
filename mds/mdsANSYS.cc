@@ -156,8 +156,7 @@ Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile, pcu::PCU *PC
 {
   Nodes nodes;
   parseNodes(nodefile, nodes);
-  Mesh2* m;
-  m = parseElems(elemfile, nodes, PCUObj);
+  Mesh2* m = parseElems(elemfile, nodes, PCUObj);
   m->acceptChanges();
   deriveMdsModel(m);
   return m;

@@ -33,8 +33,8 @@ int main(int argc, char** argv)
     return 0;
   }
   {
-  auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  PCU_ALWAYS_ASSERT(expanded_pcu_obj.get()->Peers() == 1);
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  PCU_ALWAYS_ASSERT(PCUObj.get()->Peers() == 1);
 #ifdef HAVE_SIMMETRIX
   SimModel_start();
   Sim_readLicenseFile(0);
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
   gm = gmi_sim_load(modelfile, attribfile);
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);
-  apf::Mesh2* m = ph::loadMesh(gm, meshfile, expanded_pcu_obj.get());
+  apf::Mesh2* m = ph::loadMesh(gm, meshfile, PCUObj.get());
   m->verify();
 #ifdef HAVE_SIMMETRIX
   if (ph::mesh_has_ext(meshfile, "sms"))

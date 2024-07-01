@@ -121,7 +121,7 @@ void mymain(bool ismaster, pcu::PCU *PCUObj)
   gmi_model* g = gmi_load(modelFile);
   apf::Mesh2* m = NULL;
   apf::Migration* plan = NULL;
-  pcu::PCU *groupedPCUObj = getGroupedPCU(PCUObj)
+  pcu::PCU *groupedPCUObj = getGroupedPCU(PCUObj);
   if (ismaster) {
     m = apf::loadMdsMesh(modelFile,meshFile,groupedPCUObj);
     Parma_PrintPtnStats(m, "initial");

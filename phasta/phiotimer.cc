@@ -281,7 +281,6 @@ void phastaio_printStats(PCUHandle h) {
 }
 
 void phastaio_initStats(PCUHandle h) {
-  //removed checking if PCU is initiallized as it's a class invarient of apf::Mesh that it is
   (void) h;
 #ifdef __INTEL_COMPILER
   phastaio_global_stats.cpus = phastaio_getCyclesPerMicroSec(h);

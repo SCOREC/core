@@ -133,7 +133,7 @@ bool CavityOp::requestLocality(MeshEntity** entities, int count)
 
 bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
 {
-  int done = mesh->getPCU()->Min((int)requests.empty());
+  int done = mesh->getPCU()->Min(static_cast<int>(requests.empty()));
   if (done) return false;
   /* throw in the local pull requests */
   int self = mesh->getPCU()->Self();
@@ -166,7 +166,6 @@ bool CavityOp::sendPullRequests(std::vector<PullRequest>& received)
     while ( ! mesh->getPCU()->Unpacked())
     {
       mesh->getPCU()->Unpack(request.e);
-      //mesh->getPCU()->Unpack(&(request.e), sizeof(request.e));
       received.push_back(request);
     }
   }

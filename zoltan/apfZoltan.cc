@@ -30,12 +30,12 @@ class ZoltanSplitter : public Splitter
         for (int i = 0; i < plan->count(); ++i) {
           MeshEntity* e = plan->get(i);
           int p = plan->sending(e);
-          p += bridge->mesh->getPCU()->Self() * multiple;
+          p += bridge.mesh->getPCU()->Self() * multiple;
           plan->send(e, p);
         }
       }
       double t1 = pcu::Time();
-      if (!bridge->mesh->getPCU()->Self())
+      if (!bridge.mesh->getPCU()->Self())
         lion_oprint(1, "planned Zoltan split factor %d to target"
             " imbalance %f in %f seconds\n", multiple, tolerance, t1 - t0);
       return plan;

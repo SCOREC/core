@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   lion_set_verbosity(1);
   ph::Input in;
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], expanded_pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], pcu_obj.get());
   m->verify();
   in.restartFileName = argv[3];
   in.timeStepNumber = 0;

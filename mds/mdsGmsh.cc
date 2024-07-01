@@ -461,8 +461,7 @@ void gmshFindDmg(const char* fnameDmg, const char* filename)
 
 Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, pcu::PCU *PCUObj)
 {
-  Mesh2* m;
-  m = makeEmptyMdsMesh(g, 0, false, PCUObj);
+  Mesh2* m = makeEmptyMdsMesh(g, 0, false, PCUObj);
   readGmsh(m, filename);
   return m;
 }
@@ -470,8 +469,7 @@ Mesh2* loadMdsFromGmsh(gmi_model* g, const char* filename, pcu::PCU *PCUObj)
 Mesh2* loadMdsDmgFromGmsh(const char*fnameDmg, const char* filename, pcu::PCU *PCUObj)
 {
   gmshFindDmg(fnameDmg, filename);  // new function that scans $Entities and writes a dmg 
-  Mesh2* m;
-  m = makeEmptyMdsMesh(gmi_load(fnameDmg), 0, false, PCUObj);
+  Mesh2* m = makeEmptyMdsMesh(gmi_load(fnameDmg), 0, false, PCUObj);
   readGmsh(m, filename);
   return m;
 }

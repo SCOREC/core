@@ -16,10 +16,10 @@ extern "C" {
 
 #include <stddef.h>
 
-void *noto_malloc(size_t size);
-#define NOTO_MALLOC(p, c) ((p) = noto_malloc(sizeof(*(p)) * (c)))
-void *noto_realloc(void *p, size_t size);
-void noto_free(void *p);
+void* noto_malloc(size_t size);
+#define NOTO_MALLOC(p,c) ((p)=noto_malloc(sizeof(*(p))*(c)))
+void* noto_realloc(void* p, size_t size);
+void noto_free(void* p);
 size_t noto_malloced(void);
 #ifdef __cplusplus
 }

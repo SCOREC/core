@@ -35,7 +35,7 @@ namespace {
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   {
-  auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   pcu::Protect();
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
@@ -45,16 +45,16 @@ int main(int argc, char** argv) {
   gmi_register_mesh();
   gmi_model* g = NULL;
   apf::Mesh2* m = NULL;
-  GRStream* grs = makeGRStream(expanded_pcu_obj.get());
+  GRStream* grs = makeGRStream(PCUObj.get());
   ph::Input ctrl;
-  ctrl.load("adapt.inp", expanded_pcu_obj.get());
-  chef::cook(g,m,ctrl,grs,expanded_pcu_obj.get());
-  RStream* rs = makeRStream(expanded_pcu_obj.get());
-  attachRStream(grs,rs,expanded_pcu_obj.get());
+  ctrl.load("adapt.inp", PCUObj.get());
+  chef::cook(g,m,ctrl,grs,PCUObj.get());
+  RStream* rs = makeRStream(PCUObj.get());
+  attachRStream(grs,rs,PCUObj.get());
   reconfigureChef(ctrl);
-  chef::cook(g,m,ctrl,rs,expanded_pcu_obj.get());
-  destroyGRStream(grs,expanded_pcu_obj.get());
-  destroyRStream(rs,expanded_pcu_obj.get());
+  chef::cook(g,m,ctrl,rs,PCUObj.get());
+  destroyGRStream(grs,PCUObj.get());
+  destroyRStream(rs,PCUObj.get());
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();

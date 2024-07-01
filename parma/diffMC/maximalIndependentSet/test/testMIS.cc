@@ -715,9 +715,7 @@ int main(int argc, char** argv) {
     auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
     pcu::Protect();
     int rank = PCUObj.get()->Self();
-    //PCU_Comm_Rank(&rank);
     int commSize = PCUObj.get()->Peers();
-    //PCU_Comm_Size(&commSize);
 
     int opt;
     int debugMode = 0;

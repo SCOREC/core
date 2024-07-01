@@ -780,8 +780,7 @@ class MeshMDS : public Mesh2
 
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj)
 {
-  Mesh2* m;
-  m = new MeshMDS(model, dim, isMatched, PCUObj);
+  Mesh2* m = new MeshMDS(model, dim, isMatched, PCUObj);
   initResidence(m, dim);
   return m;
 }

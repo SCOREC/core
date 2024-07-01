@@ -23,10 +23,10 @@ namespace ma {
 void adapt(Input* in)
 {
   double t0 = pcu::Time();
+  print(in->mesh->getPCU(), "version 2.0 !");
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  print(a->mesh->getPCU(), "version 2.0 !");
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
@@ -63,10 +63,10 @@ void adapt(const Input* in)
 void adaptVerbose(Input* in, bool verbose)
 {
   double t0 = pcu::Time();
+  print(in->mesh->getPCU(), "version 2.0 - dev !");
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  print(a->mesh->getPCU(), "version 2.0 - dev !");
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
