@@ -10,7 +10,7 @@
 #include "apfShape.h"
 #include "gmi.h" /* this is for gmi_getline... */
 #include <lionPrint.h>
-#include <PCU2.h>
+#include <PCU.h>
 #include <apf.h>
 #include <apfConvert.h>
 #include "apfFieldData.h"
@@ -200,14 +200,14 @@ struct MeshDataGroup
 };
 
 template <typename Arg, typename... Args>
-void DebugParallelPrinter(PCUHandle h, std::ostream &out, Arg &&arg, Args &&... args)
+void DebugParallelPrinter(PCU_t h, std::ostream &out, Arg &&arg, Args &&... args)
 {
   //  if constexpr (debugOutput) // probably will not get away with c++17
   if (debugOutput)
   {
-    for (int i = 0; i < PCU_Comm_Peers2(h); i++)
+    for (int i = 0; i < PCU_Comm_Peers(h); i++)
     {
-      if (i == PCU_Comm_Self2(h))
+      if (i == PCU_Comm_Self(h))
       {
         out << "Rank [" << i << "] " << std::forward<Arg>(arg);
         //((out << ", " << std::forward<Args>(args)), ...); // probably will not get away with c++17
@@ -223,15 +223,15 @@ void DebugParallelPrinter(PCUHandle h, std::ostream &out, Arg &&arg, Args &&... 
 }
 
 template <typename... Args>
-void Kill(PCUHandle h, const int fid, Args &&... args)
+void Kill(PCU_t h, const int fid, Args &&... args)
 {
   DebugParallelPrinter(h, std::cout, "***** CGNS ERROR", args...);
 
-  if (PCU_Comm_Initialized2(h))
+  if (PCU_Comm_Initialized(h))
   {
     cgp_close(fid);
     // Finalize the MPI environment.
-    PCU_Comm_Free2(h);
+    PCU_Comm_Free(h);
     MPI_Finalize();
     cgp_error_exit();
     exit(EXIT_FAILURE);
@@ -244,15 +244,15 @@ void Kill(PCUHandle h, const int fid, Args &&... args)
   }
 }
 
-void Kill(PCUHandle h, const int fid)
+void Kill(PCU_t h, const int fid)
 {
   DebugParallelPrinter(h, std::cout, "***** CGNS ERROR");
 
-  if (PCU_Comm_Initialized2(h))
+  if (PCU_Comm_Initialized(h))
   {
     cgp_close(fid);
     // Finalize the MPI environment.
-    PCU_Comm_Free2(h);
+    PCU_Comm_Free(h);
     MPI_Finalize();
     cgp_error_exit();
     exit(EXIT_FAILURE);
@@ -265,7 +265,7 @@ void Kill(PCUHandle h, const int fid)
   }
 }
 
-auto ReadCGNSCoords(PCUHandle h, int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
+auto ReadCGNSCoords(PCU_t h, int cgid, int base, int zone, int ncoords, int nverts, const std::vector<cgsize_t> &, const apf::GlobalToVert &globalToVert)
 {
   // Read min required as defined by consecutive range
   // make one based as ReadElements makes zero based
@@ -332,14 +332,14 @@ auto ReadCGNSCoords(PCUHandle h, int cgid, int base, int zone, int ncoords, int 
   return points;
 }
 
-void SimpleElementPartition(PCUHandle h, std::vector<cgsize_t> &numberToReadPerProc, std::vector<cgsize_t> &startingIndex, int el_start /* one based */, int el_end, int numElements)
+void SimpleElementPartition(PCU_t h, std::vector<cgsize_t> &numberToReadPerProc, std::vector<cgsize_t> &startingIndex, int el_start /* one based */, int el_end, int numElements)
 {
-  numberToReadPerProc.resize(PCU_Comm_Peers2(h), 0);
+  numberToReadPerProc.resize(PCU_Comm_Peers(h), 0);
   const cgsize_t blockSize = static_cast<cgsize_t>(
       std::floor(static_cast<double>(numElements) /
-                 static_cast<double>(PCU_Comm_Peers2(h))));
+                 static_cast<double>(PCU_Comm_Peers(h))));
 
-  DebugParallelPrinter(h, std::cout, "BlockSize", blockSize, "numElements", numElements, "comms Size", PCU_Comm_Peers2(h));
+  DebugParallelPrinter(h, std::cout, "BlockSize", blockSize, "numElements", numElements, "comms Size", PCU_Comm_Peers(h));
 
   cgsize_t counter = 0;
   if (blockSize == 0 && numElements > 0)
@@ -349,7 +349,7 @@ void SimpleElementPartition(PCUHandle h, std::vector<cgsize_t> &numberToReadPerP
     bool keepGoing = true;
     while (keepGoing)
     {
-      for (int p = 0; p < PCU_Comm_Peers2(h) && keepGoing; p++)
+      for (int p = 0; p < PCU_Comm_Peers(h) && keepGoing; p++)
       {
         if (counter + blockSize <= numElements)
         {
@@ -368,9 +368,9 @@ void SimpleElementPartition(PCUHandle h, std::vector<cgsize_t> &numberToReadPerP
   }
   DebugParallelPrinter(h, std::cout, "Sanity check: Counter", counter, "numElements", numElements);
 
-  DebugParallelPrinter(h, std::cout, "numberToReadPerProc for rank", PCU_Comm_Self2(h), "is:", numberToReadPerProc[PCU_Comm_Self2(h)]);
+  DebugParallelPrinter(h, std::cout, "numberToReadPerProc for rank", PCU_Comm_Self(h), "is:", numberToReadPerProc[PCU_Comm_Self(h)]);
 
-  startingIndex.resize(PCU_Comm_Peers2(h), 0);
+  startingIndex.resize(PCU_Comm_Peers(h), 0);
   startingIndex[0] = el_start;
   for (std::size_t i = 1; i < numberToReadPerProc.size(); i++)
   {
@@ -381,7 +381,7 @@ void SimpleElementPartition(PCUHandle h, std::vector<cgsize_t> &numberToReadPerP
   DebugParallelPrinter(h, std::cout, "Element start, end, numElements ", el_start,
                        el_end, numElements);
 
-  DebugParallelPrinter(h, std::cout, "startingIndex for rank", PCU_Comm_Self2(h), "is:", startingIndex[PCU_Comm_Self2(h)]);
+  DebugParallelPrinter(h, std::cout, "startingIndex for rank", PCU_Comm_Self(h), "is:", startingIndex[PCU_Comm_Self(h)]);
 
   DebugParallelPrinter(h, std::cout, "Returning from SimpleElementPartition \n");
 }
@@ -389,25 +389,25 @@ void SimpleElementPartition(PCUHandle h, std::vector<cgsize_t> &numberToReadPerP
 using Pair = std::pair<cgsize_t, cgsize_t>;
 using LocalElementRanges = std::vector<Pair>; // one based
 
-auto ReadElements(PCUHandle h, int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
+auto ReadElements(PCU_t h, int cgid, int base, int zone, int section, int el_start /* one based */, int el_end, int numElements, int verticesPerElement, LocalElementRanges &localElementRanges)
 {
   std::vector<cgsize_t> numberToReadPerProc;
   std::vector<cgsize_t> startingIndex;
   SimpleElementPartition(h, numberToReadPerProc, startingIndex, el_start, el_end, numElements);
 
   std::vector<cgsize_t> vertexIDs;
-  if (numberToReadPerProc[PCU_Comm_Self2(h)] > 0)
-    vertexIDs.resize(numberToReadPerProc[PCU_Comm_Self2(h)] * verticesPerElement,
+  if (numberToReadPerProc[PCU_Comm_Self(h)] > 0)
+    vertexIDs.resize(numberToReadPerProc[PCU_Comm_Self(h)] * verticesPerElement,
                      -1234567);
 
-  const auto start = startingIndex[PCU_Comm_Self2(h)];
-  const auto end = startingIndex[PCU_Comm_Self2h(h)] + numberToReadPerProc[PCU_Comm_Self2(h)] - 1;
-  DebugParallelPrinter(h, std::cout, "Range", start, "to", end, numberToReadPerProc[PCU_Comm_Self2(h)]);
+  const auto start = startingIndex[PCU_Comm_Self(h)];
+  const auto end = startingIndex[PCU_Comm_Self(h)] + numberToReadPerProc[PCU_Comm_Self(h)] - 1;
+  DebugParallelPrinter(h, std::cout, "Range", start, "to", end, numberToReadPerProc[PCU_Comm_Self(h)]);
   //
   cgp_elements_read_data(cgid, base, zone, section, start,
                          end, vertexIDs.data());
 
-  if (numberToReadPerProc[PCU_Comm_Self2(h)] > 0)
+  if (numberToReadPerProc[PCU_Comm_Self(h)] > 0)
   {
     localElementRanges.push_back(std::make_pair(start, end));
   }
@@ -419,7 +419,7 @@ auto ReadElements(PCUHandle h, int cgid, int base, int zone, int section, int el
     i = i - 1;
   }
 
-  return std::make_tuple(vertexIDs, numberToReadPerProc[PCU_Comm_Self2(h)]);
+  return std::make_tuple(vertexIDs, numberToReadPerProc[PCU_Comm_Self(h)]);
 }
 
 struct CGNSBCMeta
@@ -856,7 +856,7 @@ struct BCInfo
   }
 }; // namespace
 
-void ReadBCInfo(PCUHandle h, const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections, std::vector<BCInfo> &bcInfos, const apf::GlobalToVert &globalToVert)
+void ReadBCInfo(PCU_t h, const int cgid, const int base, const int zone, const int nBocos, const int physDim, const int cellDim, const int nsections, std::vector<BCInfo> &bcInfos, const apf::GlobalToVert &globalToVert)
 {
   // Read the BCS.
   std::vector<CGNSBCMeta> bcMetas(nBocos);
@@ -1049,12 +1049,12 @@ void ReadBCInfo(PCUHandle h, const int cgid, const int base, const int zone, con
   }
 }
 
-apf::Mesh2 *DoIt(PCUHandle h, gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &readMeshData)
+apf::Mesh2 *DoIt(PCU_t h, gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &readMeshData)
 {
   static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
 
   int cgid = -1;
-  auto comm = PCU_Get_Comm2(h);
+  auto comm = PCU_Get_Comm(h);
   cgp_mpi_comm(comm);
   cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
   cgp_open(fname.c_str(), CGNS_ENUMV(CG_MODE_READ), &cgid);
@@ -1632,7 +1632,7 @@ apf::Mesh2 *DoIt(PCUHandle h, gmi_model *g, const std::string &fname, apf::CGNSB
   }
 
   // free up memory
-  if (PCU_Comm_Initialized2(h))
+  if (PCU_Comm_Initialized(h))
     cgp_close(cgid);
   else
     cg_close(cgid);
@@ -1711,7 +1711,7 @@ apf::Mesh2 *DoIt(PCUHandle h, gmi_model *g, const std::string &fname, apf::CGNSB
   return mesh;
 } // namespace
 
-apf::Mesh2 *DoIt(PCUHandle h, gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
+apf::Mesh2 *DoIt(PCU_t h, gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCMap)
 {
   std::vector<std::pair<std::string, std::string>> meshData;
   return DoIt(h, g, fname, cgnsBCMap, meshData);
@@ -1725,11 +1725,11 @@ namespace apf
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
 Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
-  PCUHandle h = PCU_Get_Global_Handle();
-  return loadMdsFromCGNS2(h, g, fname, cgnsBCMap, meshData);
+  PCU_t h = PCU_Get_Global_Handle();
+  return loadMdsFromCGNS(h, g, fname, cgnsBCMap, meshData);
 }
 
-Mesh2 *loadMdsFromCGNS2(PCUHandle h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
+Mesh2 *loadMdsFromCGNS(PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
 #ifdef HAVE_CGNS
   Mesh2 *m = DoIt(h, g, fname, cgnsBCMap, meshData);
@@ -1746,11 +1746,11 @@ Mesh2 *loadMdsFromCGNS2(PCUHandle h, gmi_model *g, const char *fname, apf::CGNSB
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
 Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
 {
-  PCUHandle h = PCU_Get_Global_Handle();
-  return loadMdsFromCGNS2(h, g, fname, cgnsBCMap);
+  PCU_t h = PCU_Get_Global_Handle();
+  return loadMdsFromCGNS(h, g, fname, cgnsBCMap);
 }
 
-Mesh2 *loadMdsFromCGNS2(PCUHandle h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
+Mesh2 *loadMdsFromCGNS(PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
 {
 #ifdef HAVE_CGNS
   Mesh2 *m = DoIt(h, g, fname, cgnsBCMap);

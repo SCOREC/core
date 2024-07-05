@@ -14,7 +14,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <pcu_util.h>
-#include <PCU2.h>
+#include <PCU.h>
 #include <pcu_io.h>
 #include <lionPrint.h>
 #include <reel.h>
@@ -51,7 +51,7 @@ enum {
 #define MAX_PEERS (10*1000)
 #define MAX_TAGS (100)
 
-typedef struct PCUHandle PCUHandle;
+typedef struct PCU_t PCU_t;
 
 static int smb2mds(int smb_type)
 {
@@ -118,7 +118,7 @@ static void write_links(struct pcu_file* f, struct mds_links* l)
     pcu_write_unsigneds(f, l->l[i], l->n[i]);
 }
 
-static void read_header(PCUHandle h, struct pcu_file* f, unsigned* version, unsigned* dim,
+static void read_header(PCU_t h, struct pcu_file* f, unsigned* version, unsigned* dim,
     int ignore_peers)
 {
   unsigned magic, np;
@@ -128,12 +128,12 @@ static void read_header(PCUHandle h, struct pcu_file* f, unsigned* version, unsi
   PCU_READ_UNSIGNED(f, *dim);
   PCU_READ_UNSIGNED(f, np);
   if (*version >= 1 && (!ignore_peers))
-  if (np != (unsigned)PCU_Comm_Peers2(h))
+  if (np != (unsigned)PCU_Comm_Peers(h))
     reel_fail("To whom it may concern\n"
         "the # of mesh partitions != the # of MPI ranks");
 }
 
-static void write_header(PCUHandle h, struct pcu_file* f, unsigned dim,
+static void write_header(PCU_t h, struct pcu_file* f, unsigned dim,
     int ignore_peers)
 {
   unsigned magic = 0;
@@ -145,7 +145,7 @@ static void write_header(PCUHandle h, struct pcu_file* f, unsigned dim,
   if (ignore_peers)
     np = 1;
   else
-    np = (unsigned)PCU_Comm_Peers2(h);
+    np = (unsigned)PCU_Comm_Peers(h);
   PCU_WRITE_UNSIGNED(f, np);
 }
 
@@ -212,7 +212,7 @@ static void write_conn(struct pcu_file* f, struct mds_apf* m)
   }
 }
 
-static void read_remotes(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
+static void read_remotes(PCU_t h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
@@ -222,7 +222,7 @@ static void read_remotes(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
   mds_free_links(&ln);
 }
 
-static void write_remotes(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
+static void write_remotes(PCU_t h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
@@ -510,7 +510,7 @@ static void write_tags(struct pcu_file* f, struct mds_apf* m)
   free(sizes);
 }
 
-static void read_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m, int t,
+static void read_type_matches(PCU_t h, struct pcu_file* f, struct mds_apf* m, int t,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
@@ -523,7 +523,7 @@ static void read_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m
   mds_free_links(&ln);
 }
 
-static void write_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m, int t,
+static void write_type_matches(PCU_t h, struct pcu_file* f, struct mds_apf* m, int t,
     int ignore_peers)
 {
   struct mds_links ln = MDS_LINKS_INIT;
@@ -535,7 +535,7 @@ static void write_type_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* 
   mds_free_links(&ln);
 }
 
-static void read_matches_old(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
+static void read_matches_old(PCU_t h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   int t;
@@ -543,7 +543,7 @@ static void read_matches_old(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     read_type_matches(h, f, m, t, ignore_peers);
 }
 
-static void read_matches_new(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
+static void read_matches_new(PCU_t h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   int t;
@@ -551,7 +551,7 @@ static void read_matches_new(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     read_type_matches(h, f, m, smb2mds(t), ignore_peers);
 }
 
-static void write_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
+static void write_matches(PCU_t h, struct pcu_file* f, struct mds_apf* m,
     int ignore_peers)
 {
   int t;
@@ -559,7 +559,7 @@ static void write_matches(PCUHandle h, struct pcu_file* f, struct mds_apf* m,
     write_type_matches(h, f, m, smb2mds(t), ignore_peers);
 }
 
-static struct mds_apf* read_smb(PCUHandle h, struct gmi_model* model, const char* filename,
+static struct mds_apf* read_smb(PCU_t h, struct gmi_model* model, const char* filename,
     int zip, int ignore_peers, void* apf_mesh)
 {
   struct mds_apf* m;
@@ -614,7 +614,7 @@ static void write_coords(struct pcu_file* f, struct mds_apf* m)
   pcu_write_doubles(f, &m->param[0][0], count);
 }
 
-static void write_smb(PCUHandle h, struct mds_apf* m, const char* filename,
+static void write_smb(PCU_t h, struct mds_apf* m, const char* filename,
     int zip, int ignore_peers, void* apf_mesh)
 {
   struct pcu_file* f;
@@ -688,7 +688,7 @@ static void safe_mkdir(const char* path, mode_t mode)
     reel_fail("MDS: could not create directory \"%s\"\n", path);
 }
 
-static char* handle_path(PCUHandle h, const char* in, int is_write, int* zip,
+static char* handle_path(PCU_t h, const char* in, int is_write, int* zip,
     int ignore_peers)
 {
   static const char* zippre = "bz2:";
@@ -696,7 +696,7 @@ static char* handle_path(PCUHandle h, const char* in, int is_write, int* zip,
   size_t bufsize;
   char* path;
   mode_t const dir_perm = S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
-  int self = PCU_Comm_Self2(h);
+  int self = PCU_Comm_Self(h);
   bufsize = strlen(in) + 256;
   path = malloc(bufsize);
   strcpy(path, in);
@@ -712,14 +712,14 @@ static char* handle_path(PCUHandle h, const char* in, int is_write, int* zip,
     if (is_write) {
       if (!self)
         safe_mkdir(path, dir_perm);
-      PCU_Barrier2(h);
+      PCU_Barrier(h);
     }
-    if (PCU_Comm_Peers2(h) > SMB_FANOUT) {
+    if (PCU_Comm_Peers(h) > SMB_FANOUT) {
       append(path, bufsize, "%d/", self / SMB_FANOUT);
       if (is_write) {
         if (self % SMB_FANOUT == 0)
           safe_mkdir(path, dir_perm);
-        PCU_Barrier2(h);
+        PCU_Barrier(h);
       }
     }
   } else if (ends_with(path, smbext)) {
@@ -731,7 +731,7 @@ static char* handle_path(PCUHandle h, const char* in, int is_write, int* zip,
   return path;
 }
 
-struct mds_apf* mds_read_smb(PCUHandle h, struct gmi_model* model, const char* pathname,
+struct mds_apf* mds_read_smb(PCU_t h, struct gmi_model* model, const char* pathname,
     int ignore_peers, void* apf_mesh)
 {
   char* filename;
@@ -752,18 +752,18 @@ static int is_compact(struct mds_apf* m)
   return 1;
 }
 
-struct mds_apf* mds_write_smb(PCUHandle h, struct mds_apf* m, const char* pathname,
+struct mds_apf* mds_write_smb(PCU_t h, struct mds_apf* m, const char* pathname,
     int ignore_peers, void* apf_mesh)
 {
   const char* reorderWarning ="MDS: reordering before writing smb files\n";
   char* filename;
   int zip;
   if (ignore_peers && (!is_compact(m))) {
-    if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
+    if(!PCU_Comm_Self(h)) lion_eprint(1, "%s", reorderWarning);
     m = mds_reorder(h, m, 1, mds_number_verts_bfs(m));
   }
-  if ((!ignore_peers) && PCU_Or2(h, !is_compact(m))) {
-    if(!PCU_Comm_Self2(h)) lion_eprint(1, "%s", reorderWarning);
+  if ((!ignore_peers) && PCU_Or(h, !is_compact(m))) {
+    if(!PCU_Comm_Self(h)) lion_eprint(1, "%s", reorderWarning);
     m = mds_reorder(h, m, 0, mds_number_verts_bfs(m));
   }
   filename = handle_path(h, pathname, 1, &zip, ignore_peers);

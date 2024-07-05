@@ -8,7 +8,7 @@
 
 *******************************************************************************/
 #include "pcu_io.h"
-#include "PCU2.h"
+#include "PCU.h"
 #include "noto_malloc.h"
 #include "pcu_buffer.h"
 #include "pcu_util.h"
@@ -158,18 +158,18 @@ static void close_compressed(pcu_file* pf)
  *        Ideally, the filesystem handles the load and this can be
  *        removed.
  */
-FILE* pcu_group_open(PCUHandle h, const char* path, bool write) {
+FILE* pcu_group_open(PCU_t h, const char* path, bool write) {
   FILE* fp = NULL;
-  const int rank = PCU_Comm_Self2(h);
+  const int rank = PCU_Comm_Self(h);
   const char* mode = write ? "w" : "r";
   const int group_size = 4096;
-  const int q = PCU_Comm_Peers2(h)/group_size;
-  const int r = PCU_Comm_Peers2(h)%group_size;
+  const int q = PCU_Comm_Peers(h)/group_size;
+  const int r = PCU_Comm_Peers(h)%group_size;
   const int groups = q + ( r > 0 );
   if(!rank && groups > 1) {
     fprintf(stderr,
         "pcu peers %d max group size %d posix groups %d\n",
-        PCU_Comm_Peers2(h), group_size, groups);
+        PCU_Comm_Peers(h), group_size, groups);
   }
   for(int i=0; i<groups; i++) {
     if(rank%groups == i) {
@@ -177,12 +177,12 @@ FILE* pcu_group_open(PCUHandle h, const char* path, bool write) {
       if (!fp)
         reel_fail("Could not find or open file \"%s\"\n", path);
     }
-    PCU_Barrier2(h);
+    PCU_Barrier(h);
   }
   return fp;
 }
 
-pcu_file* pcu_fopen(PCUHandle h, const char* name, bool write, bool compress)
+pcu_file* pcu_fopen(PCU_t h, const char* name, bool write, bool compress)
 {
   pcu_file* pf = (pcu_file*) malloc(sizeof(pcu_file));
   pf->compress = compress;
@@ -355,14 +355,14 @@ void pcu_write_string (pcu_file * f, const char * p)
   pcu_write (f, p, len + 1);
 }
 
-FILE* pcu_open_parallel(PCUHandle h, const char* prefix, const char* ext)
+FILE* pcu_open_parallel(PCU_t h, const char* prefix, const char* ext)
 {
   //max_rank_chars = strlen("4294967296"), 4294967296 = 2^32 ~= INT_MAX
   static const size_t max_rank_chars = 10;
   size_t path_size = strlen(prefix) + max_rank_chars + strlen(ext) + 1;
   char* path = noto_malloc(path_size);
   int rank;
-  PCU_Comm_Rank2(h, &rank);
+  PCU_Comm_Rank(h, &rank);
   snprintf(path,path_size,"%s%d.%s",prefix,rank,ext);
   FILE* file = fopen(path, "w");
   noto_free(path);

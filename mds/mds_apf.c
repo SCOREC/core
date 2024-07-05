@@ -11,7 +11,7 @@
 #include "mds_apf.h"
 #include <stdlib.h>
 #include <pcu_util.h>
-#include <PCU2.h>
+#include <PCU.h>
 
 struct mds_apf* mds_apf_create(struct gmi_model* model, int d,
     mds_id cap[MDS_TYPES])
@@ -148,17 +148,17 @@ int mds_model_id(struct mds_apf* m, struct gmi_ent* model)
   return gmi_tag(m->user_model, model);
 }
 
-static void downs_to_copy(PCUHandle h, struct mds_set* s,
+static void downs_to_copy(PCU_t h, struct mds_set* s,
     struct mds_copy c)
 {
   int i;
-  PCU_COMM_PACK2(h, c.p, c.e);
+  PCU_COMM_PACK(h, c.p, c.e);
   for (i = 0; i < s->n; ++i)
-    PCU_COMM_PACK2(h, c.p, s->e[i]);
+    PCU_COMM_PACK(h, c.p, s->e[i]);
 }
 
 static void downs_to_copies(
-    PCUHandle h, struct mds* m, mds_id e, struct mds_copies* c)
+    PCU_t h, struct mds* m, mds_id e, struct mds_copies* c)
 {
   int i;
   struct mds_set s;
@@ -219,19 +219,19 @@ static void rotate_set(struct mds_set* in, int r, struct mds_set* out)
       out->e[i] = in->e[(i + r) % in->n];
 }
 
-static int recv_down_copies(PCUHandle h, struct mds_net* net, struct mds* m)
+static int recv_down_copies(PCU_t h, struct mds_net* net, struct mds* m)
 {
   mds_id e;
   struct mds_set s;
   struct mds_set rs;
   struct mds_set s2;
   int i;
-  int from = PCU_Comm_Sender2(h);
-  PCU_COMM_UNPACK2(h, e);
+  int from = PCU_Comm_Sender(h);
+  PCU_COMM_UNPACK(h, e);
   mds_get_adjacent(m, e, mds_dim[mds_type(e)] - 1, &s);
   rs.n = s.n;
   for (i = 0; i < s.n; ++i)
-    PCU_COMM_UNPACK2(h, rs.e[i]);
+    PCU_COMM_UNPACK(h, rs.e[i]);
   if (compare_copy_sets(net, &s, from, &rs))
     return 0;
   for (i = -s.n; i < s.n; ++i) {
@@ -251,26 +251,26 @@ static int copy_less(struct mds_copy a, struct mds_copy b)
   return a.e < b.e;
 }
 
-static int owns_copies(PCUHandle h, mds_id e, struct mds_copies* c)
+static int owns_copies(PCU_t h, mds_id e, struct mds_copies* c)
 {
   int i;
   struct mds_copy mc;
   mc.e = e;
-  mc.p = PCU_Comm_Self2(h);
+  mc.p = PCU_Comm_Self(h);
   for (i = 0; i < c->n; ++i)
     if (copy_less(c->c[i], mc))
       return 0;
   return 1;
 }
 
-static int align_copies(PCUHandle h, struct mds_net* net, struct mds* m)
+static int align_copies(PCU_t h, struct mds_net* net, struct mds* m)
 {
   int d;
   mds_id e;
   struct mds_copies* c;
   int did_change = 0;
   for (d = 1; d < m->d; ++d){
-    PCU_Comm_Begin2(h);
+    PCU_Comm_Begin(h);
     for (e = mds_begin(m, d); e != MDS_NONE; e = mds_next(m, e)) {
       c = mds_get_copies(net, e);
       if (!c)
@@ -278,28 +278,28 @@ static int align_copies(PCUHandle h, struct mds_net* net, struct mds* m)
       if (owns_copies(h, e, c))
         downs_to_copies(h, m, e, c);
     }
-    PCU_Comm_Send2(h);
-    while (PCU_Comm_Receive2(h))
+    PCU_Comm_Send(h);
+    while (PCU_Comm_Receive(h))
       if (recv_down_copies(h, net, m))
         did_change = 1;
   }
-  return PCU_Or2(h, did_change);
+  return PCU_Or(h, did_change);
 }
 
 
-int mds_align_matches(PCUHandle h, struct mds_apf* m)
+int mds_align_matches(PCU_t h, struct mds_apf* m)
 {
   return align_copies(h, &m->matches, &m->mds);
 }
 
 // seol
-int mds_align_ghosts(PCUHandle h, struct mds_apf* m)
+int mds_align_ghosts(PCU_t h, struct mds_apf* m)
 {
   return align_copies(h, &m->ghosts, &m->mds);
 }
 
 
-int mds_align_remotes(PCUHandle h, struct mds_apf* m)
+int mds_align_remotes(PCU_t h, struct mds_apf* m)
 {
   return align_copies(h, &m->remotes, &m->mds);
 }

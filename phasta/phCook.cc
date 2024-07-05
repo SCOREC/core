@@ -176,7 +176,7 @@ namespace ph {
   }
 
   void preprocess(apf::Mesh2* m, Input& in, Output& out, BCs& bcs) {
-    PCUHandle h;
+    PCU_t h;
     h.ptr = static_cast<void*>(m->getPCU());
     phastaio_initStats(h);
     if(m->getPCU()->Peers() > 1)

@@ -466,7 +466,7 @@ static std::string buildRestartFileName(std::string prefix, int step, pcu::PCU *
 }
 
 void readAndAttachFields(Input& in, apf::Mesh* m) {
-  PCUHandle h;
+  PCU_t h;
   h.ptr = static_cast<void*>(m->getPCU());
   phastaio_initStats(h);
   double t0 = pcu::Time();

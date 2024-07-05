@@ -26,7 +26,7 @@ struct pcu_file;
 struct gmi_model;
 struct gmi_ent;
 
-typedef struct PCUHandle PCUHandle;
+typedef struct PCU_t PCU_t;
 
 struct mds_apf {
   struct mds mds;
@@ -57,24 +57,24 @@ void* mds_get_part(struct mds_apf* m, mds_id e);
 void mds_set_part(struct mds_apf* m, mds_id e, void* p);
 
 struct mds_tag* mds_number_verts_bfs(struct mds_apf* m);
-struct mds_apf* mds_reorder(PCUHandle h, struct mds_apf* m, int ignore_peers,
+struct mds_apf* mds_reorder(PCU_t h, struct mds_apf* m, int ignore_peers,
     struct mds_tag* vert_numbers);
 
 struct gmi_ent* mds_find_model(struct mds_apf* m, int dim, int id);
 int mds_model_dim(struct mds_apf* m, struct gmi_ent* model);
 int mds_model_id(struct mds_apf* m, struct gmi_ent* model);
 
-struct mds_apf* mds_read_smb(PCUHandle h, struct gmi_model* model, const char* pathname,
+struct mds_apf* mds_read_smb(PCU_t h, struct gmi_model* model, const char* pathname,
     int ignore_peers, void* apf_mesh);
-struct mds_apf* mds_write_smb(PCUHandle h, struct mds_apf* m, const char* pathname,
+struct mds_apf* mds_write_smb(PCU_t h, struct mds_apf* m, const char* pathname,
     int ignore_peers, void* apf_mesh);
 
 void mds_verify(struct mds_apf* m);
 void mds_verify_residence(struct mds_apf* m, mds_id e);
 
-int mds_align_matches(PCUHandle h, struct mds_apf* m);
-int mds_align_ghosts(PCUHandle h, struct mds_apf* m);
-int mds_align_remotes(PCUHandle h, struct mds_apf* m);
+int mds_align_matches(PCU_t h, struct mds_apf* m);
+int mds_align_ghosts(PCU_t h, struct mds_apf* m);
+int mds_align_remotes(PCU_t h, struct mds_apf* m);
 
 void mds_derive_model(struct mds_apf* m);
   void mds_update_model_for_entity(struct mds_apf* m, mds_id e,

@@ -27,7 +27,7 @@ public:
   [[nodiscard]] int Peers() const noexcept;
   [[nodiscard]] MPI_Comm GetMPIComm() const noexcept;
 
-  [[nodiscard]] PCUHandle GetCHandle() {PCUHandle h; h.ptr=this; return h;}
+  [[nodiscard]] PCU_t GetCHandle() {PCU_t h; h.ptr=this; return h;}
   /*recommended message passing API*/
   void Begin() noexcept;
   int Pack(int to_rank, const void *data, size_t size) noexcept;

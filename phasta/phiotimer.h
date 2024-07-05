@@ -5,13 +5,12 @@
     \brief timers for reading and writing phasta files
 */
 
-//#include <PCU2.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct PCUHandle PCUHandle;
+typedef struct PCU_t PCU_t;
 
 #define PHASTAIO_READTIME(cmd,bytes) {\
     phastaioTime t0,t1;\
@@ -85,9 +84,9 @@ void phastaio_addOpenTime(size_t t);
 /* \brief accumulate time closing */
 void phastaio_addCloseTime(size_t t);
 /* \brief initialize the counters and timers */
-void phastaio_initStats(PCUHandle h);
+void phastaio_initStats(PCU_t h);
 /* \brief print io information */
-void phastaio_printStats(PCUHandle h);
+void phastaio_printStats(PCU_t h);
 /* \brief set the current file to record counters and timers for
  * \detail see phastaio_file enum */
 void phastaio_setfile(int f);

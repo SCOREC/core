@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <pcu_util.h>
-#include <PCU2.h>
+#include <PCU.h>
 #include <PCUObj.h>
 #include <phiotimer.h>
 #include <lionPrint.h>
@@ -33,7 +33,7 @@ void phastaio_time(phastaioTime* t) {
   *t = _rdtsc(); //intel intrinsic
 }
 /* determine the reference clock frequency */
-static size_t phastaio_getCyclesPerMicroSec(PCUHandle h) {
+static size_t phastaio_getCyclesPerMicroSec(PCU_t h) {
   const size_t usec = 5*MILLION;
   size_t cpus, cycles;
   phastaioTime t0, t1;
@@ -45,7 +45,7 @@ static size_t phastaio_getCyclesPerMicroSec(PCUHandle h) {
   phastaio_time(&t1);
   cycles = t1 - t0;
   cpus = ((double)cycles)/(usec);
-  if(!PCU_Comm_Self2(h)) {
+  if(!PCU_Comm_Self(h)) {
     std::stringstream ss;
     ss << "cycles " << cycles << " us " << usec
        << " cycles per micro second " << cpus << "\n";
@@ -141,12 +141,12 @@ static const char* getFileName() {
   return names[phastaio_global_stats.fileIdx];
 }
 
-static void printMinMaxAvgSzt(const char* key, size_t v, PCUHandle h) {
-  size_t min = PCU_Min_SizeT2(h, v);
-  size_t max = PCU_Max_SizeT2(h, v);
-  size_t tot = PCU_Add_SizeT2(h, v);
-  double avg = ((double)tot)/PCU_Comm_Peers2(h);
-  if(!PCU_Comm_Self2(h)) {
+static void printMinMaxAvgSzt(const char* key, size_t v, PCU_t h) {
+  size_t min = PCU_Min_SizeT(h, v);
+  size_t max = PCU_Max_SizeT(h, v);
+  size_t tot = PCU_Add_SizeT(h, v);
+  double avg = ((double)tot)/PCU_Comm_Peers(h);
+  if(!PCU_Comm_Self(h)) {
     std::stringstream ss;
     ss << getFileName() << "_" << key << "min max avg"
        << min << " " << max << " " << avg << "\n";
@@ -155,12 +155,12 @@ static void printMinMaxAvgSzt(const char* key, size_t v, PCUHandle h) {
   }
 }
 
-static void printMinMaxAvgDbl(const char* key, double v, PCUHandle h) {
-  double min = PCU_Min_Double2(h, v);
-  double max = PCU_Max_Double2(h, v);
-  double tot = PCU_Add_Double2(h, v);
-  double avg = tot/PCU_Comm_Peers2(h);
-  if(!PCU_Comm_Self2(h))
+static void printMinMaxAvgDbl(const char* key, double v, PCU_t h) {
+  double min = PCU_Min_Double(h, v);
+  double max = PCU_Max_Double(h, v);
+  double tot = PCU_Add_Double(h, v);
+  double avg = tot/PCU_Comm_Peers(h);
+  if(!PCU_Comm_Self(h))
     lion_eprint(1, "%s_%s min max avg %f %f %f\n",
         getFileName(), key, min, max, avg);
 }
@@ -215,8 +215,8 @@ static size_t phastaio_getCloseTime() {
   return phastaio_global_stats.closeTime[i];
 }
 
-void phastaio_printStats(PCUHandle h) {
-  if(!PCU_Comm_Self2(h)) {
+void phastaio_printStats(PCU_t h) {
+  if(!PCU_Comm_Self(h)) {
     const size_t us = 1000;
     phastaioTime t0,t1;
     size_t elapsed;
@@ -233,9 +233,9 @@ void phastaio_printStats(PCUHandle h) {
     size_t totalus = 0;
     size_t totalbytes = 0;
     phastaio_setfile(chefFile);
-    if(!PCU_Comm_Self2(h))
+    if(!PCU_Comm_Self(h))
       lion_eprint(1, "phastaio_filename %s\n", getFileName());
-    int reads = PCU_Max_Int2(h, (int)phastaio_getReads());
+    int reads = PCU_Max_Int(h, (int)phastaio_getReads());
     if(reads) {
       totalus += phastaio_getReadTime();
       totalbytes += phastaio_getReadBytes();
@@ -249,7 +249,7 @@ void phastaio_printStats(PCUHandle h) {
        * us     1s     10^6B    s
        */
     }
-    int writes = PCU_Max_Int2(h, (int)phastaio_getWrites());
+    int writes = PCU_Max_Int(h, (int)phastaio_getWrites());
     if(writes) {
       totalus += phastaio_getWriteTime();
       totalbytes += phastaio_getWriteBytes();
@@ -259,13 +259,13 @@ void phastaio_printStats(PCUHandle h) {
       printMinMaxAvgDbl("writeBandwidth (MB/s)",
           ((double)phastaio_getWriteBytes())/phastaio_getWriteTime(), h);
     }
-    int opens = PCU_Max_Int2(h, (int)phastaio_getOpens());
+    int opens = PCU_Max_Int(h, (int)phastaio_getOpens());
     if(opens) {
       totalus += phastaio_getOpenTime();
       printMinMaxAvgSzt("opens", phastaio_getOpens(), h);
       printMinMaxAvgSzt("openTime (us)", phastaio_getOpenTime(), h);
     }
-    int closes = PCU_Max_Int2(h, (int)phastaio_getCloses());
+    int closes = PCU_Max_Int(h, (int)phastaio_getCloses());
     if(closes) {
       totalus += phastaio_getCloseTime();
       printMinMaxAvgSzt("closes", phastaio_getCloses(), h);
@@ -280,7 +280,7 @@ void phastaio_printStats(PCUHandle h) {
   }
 }
 
-void phastaio_initStats(PCUHandle h) {
+void phastaio_initStats(PCU_t h) {
   (void) h;
 #ifdef __INTEL_COMPILER
   phastaio_global_stats.cpus = phastaio_getCyclesPerMicroSec(h);

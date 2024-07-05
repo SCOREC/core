@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <pcu_io.h>
 #include <phIO.h>
-#include <PCU2.h>
+#include <PCU.h>
 #include <lionPrint.h>
 #include <phiotimer.h>
 #include <assert.h>
@@ -70,7 +70,7 @@ static void parse_header(char* header, char** name, long* bytes,
   }
 }
 
-static int find_header(PCUHandle h, FILE* f, const char* name, char* found, char header[PH_LINE])
+static int find_header(PCU_t h, FILE* f, const char* name, char* found, char header[PH_LINE])
 {
   char* hname;
   long bytes;
@@ -88,7 +88,7 @@ static int find_header(PCUHandle h, FILE* f, const char* name, char* found, char
     }
     fseek(f, bytes, SEEK_CUR);
   }
-  if (!PCU_Comm_Self2(h) && strlen(name) > 0)
+  if (!PCU_Comm_Self(h) && strlen(name) > 0)
     lion_eprint(1,"warning: phIO could not find \"%s\"\n",name);
   return 0;
 }
@@ -102,7 +102,7 @@ static void write_magic_number(FILE* f)
   fprintf(f,"\n");
 }
 
-static int seek_after_header(PCUHandle h, FILE* f, const char* name)
+static int seek_after_header(PCU_t h, FILE* f, const char* name)
 {
   char dummy[PH_LINE];
   char found[PH_LINE];
@@ -115,11 +115,11 @@ static void my_fread(void* p, size_t size, size_t nmemb, FILE* f)
   PCU_ALWAYS_ASSERT(r == nmemb);
 }
 
-static int read_magic_number(PCUHandle h, FILE* f)
+static int read_magic_number(PCU_t h, FILE* f)
 {
   int magic;
   if (!seek_after_header(h, f, magic_name)) {
-    if (!PCU_Comm_Self2(h))
+    if (!PCU_Comm_Self(h))
       lion_eprint(1,"warning: not swapping bytes\n");
     rewind(f);
     return 0;
@@ -162,11 +162,11 @@ static void parse_params(char* header, long* bytes,
   *step = params[STEP_PARAM];
 }
 
-int ph_should_swap(FILE* f, PCUHandle h) {
+int ph_should_swap(FILE* f, PCU_t h) {
   return read_magic_number(h, f);
 }
 
-int ph_read_field(FILE* f, PCUHandle h, const char* field, int swap,
+int ph_read_field(FILE* f, PCU_t h, const char* field, int swap,
     double** data, int* nodes, int* vars, int* step, char* hname)
 {
   long bytes, n;

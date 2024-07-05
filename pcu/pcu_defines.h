@@ -14,7 +14,7 @@
 extern "C"{
 #endif
 
-struct PCUHandle {
+struct PCU_t {
     void* ptr;
 };
 

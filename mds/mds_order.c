@@ -13,7 +13,7 @@
 #include <pcu_util.h>
 #include <string.h>
 #include <limits.h>
-#include <PCU2.h>
+#include <PCU.h>
 
 struct queue {
   mds_id* e;
@@ -183,7 +183,7 @@ static mds_id lookup(struct mds_tag* tag, mds_id old)
 }
 
 /* see apf/apfConvert.cc apf::Converter::createRemotes */
-static void rebuild_net(PCUHandle h, struct mds_net* net,
+static void rebuild_net(PCU_t h, struct mds_net* net,
     struct mds* m,
     struct mds_net* net2,
     struct mds* m2,
@@ -197,7 +197,7 @@ static void rebuild_net(PCUHandle h, struct mds_net* net,
   struct mds_copies* cs;
   struct mds_copy c;
   int i;
-  PCU_Comm_Begin2(h);
+  PCU_Comm_Begin(h);
   for (d = 0; d <= m->d; ++d)
     for (e = mds_begin(m, d); e != MDS_NONE; e = mds_next(m, e)) {
       cs = mds_get_copies(net, e);
@@ -206,16 +206,16 @@ static void rebuild_net(PCUHandle h, struct mds_net* net,
       ne = lookup(new_of, e);
       for (i = 0; i < cs->n; ++i) {
         ce = cs->c[i].e;
-        PCU_COMM_PACK2(h, cs->c[i].p, ce);
-        PCU_COMM_PACK2(h, cs->c[i].p, ne);
+        PCU_COMM_PACK(h, cs->c[i].p, ce);
+        PCU_COMM_PACK(h, cs->c[i].p, ne);
       }
     }
-  PCU_Comm_Send2(h);
-  while (PCU_Comm_Listen2(h)) {
-    c.p = PCU_Comm_Sender2(h);
-    while (!PCU_Comm_Unpacked2(h)) {
-      PCU_COMM_UNPACK2(h, ce);
-      PCU_COMM_UNPACK2(h, ne);
+  PCU_Comm_Send(h);
+  while (PCU_Comm_Listen(h)) {
+    c.p = PCU_Comm_Sender(h);
+    while (!PCU_Comm_Unpacked(h)) {
+      PCU_COMM_UNPACK(h, ce);
+      PCU_COMM_UNPACK(h, ne);
       c.e = ne;
       nce = lookup(new_of, ce);
       mds_add_copy(net2, m2, nce, c);
@@ -380,7 +380,7 @@ static void rebuild_parts(
 }
 
 static struct mds_apf* rebuild(
-    PCUHandle h,
+    PCU_t h,
     struct mds_apf* m,
     struct mds_tag* new_of,
     int ignore_peers)
@@ -406,7 +406,7 @@ static struct mds_apf* rebuild(
   return m2;
 }
 
-struct mds_apf* mds_reorder(PCUHandle h, struct mds_apf* m, int ignore_peers,
+struct mds_apf* mds_reorder(PCU_t h, struct mds_apf* m, int ignore_peers,
     struct mds_tag* vert_numbers)
 {
   struct mds_tag* tag;
