@@ -90,6 +90,8 @@ public:
     static pumi _instance;
     return &_instance;
   };
+  void setPCU(pcu::PCU *newPCU) {PCUObj = newPCU;}
+  [[nodiscard]] pcu::PCU* getPCU() const noexcept {return PCUObj;}
 
   pMesh mesh;
   pGeom model;  
@@ -100,6 +102,8 @@ public:
   pMeshTag ghost_tag;
   std::vector<pMeshEnt> ghost_vec[4];
   std::vector<pMeshEnt> ghosted_vec[4];
+  private:
+  pcu::PCU *PCUObj;
 };
 
 //************************************
@@ -107,16 +111,15 @@ public:
 //      0- SYSTEM-LEVEL FUNCTIONS
 //************************************
 //************************************
-void pumi_finalize(pcu::PCU *PCUObj, bool do_mpi_finalize=true);
 
-int pumi_size(pcu::PCU *PCUObj);
-int pumi_rank(pcu::PCU *PCUObj);
+int pumi_size();
+int pumi_rank();
 
-void pumi_sync(pcu::PCU *PCUObj);
-void pumi_printSys(pcu::PCU *PCUObj);
+void pumi_sync();
+void pumi_printSys();
 double pumi_getTime();
 double pumi_getMem();
-void pumi_printTimeMem(const char* msg, double time, double memory, pcu::PCU *PCUObj);
+void pumi_printTimeMem(const char* msg, double time, double memory);
 
 //************************************
 //************************************
@@ -139,7 +142,7 @@ void pumi_geom_createID(pGeom g); // generate sequential ID starting from 1
 int pumi_geom_getNumEnt(pGeom g, int d);
 pGeomEnt pumi_geom_findEnt(pGeom g, int d, int id);
 
-void pumi_geom_print(pGeom g, pcu::PCU *PCUObj, bool print_ent=false);
+void pumi_geom_print(pGeom g, bool print_ent=false);
 
 // Geometric Entity
 // get geometric entity's dimension

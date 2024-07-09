@@ -482,6 +482,7 @@ int main(int argc, char **argv)
   MPI_Init(&argc, &argv);
   {
   auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pumi::instance()->setPCU(PCUObj.get());
   lion_set_verbosity(1);
   bool additionalTests = false;
   if (argc < 3)

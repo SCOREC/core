@@ -46,7 +46,7 @@ pGeom pumi_geom_load(const char* filename, pcu::PCU *PCUObj, const char* model_t
   else if (!strcmp(model_type,"analytic")) 
     return pumi_geom_load(gmi_make_analytic(), PCUObj, model_type, filename, geom_load_fp);
   else
-    if (!pumi_rank(PCUObj)) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
+    if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
   
   return NULL;
 }
@@ -73,7 +73,7 @@ pGeom pumi_geom_load(gmi_model* gm, pcu::PCU *PCUObj, const char* model_type,
   }
   else
   {
-    if (!pumi_rank(PCUObj)) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
+    if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
     return NULL;
   }
 
@@ -191,9 +191,9 @@ void pumi_giter_reset(gIter iter)
   iter->reset();
 }
 
-void pumi_geom_print (pGeom g, pcu::PCU *PCUObj, bool print_ent)
+void pumi_geom_print (pGeom g, bool print_ent)
 {
-  if (PCUObj->Self()) return;
+  if (pumi::instance()->getPCU()->Self()) return;
   std::cout<<"\n=== model entity and tag info === \n";
   std::cout<<"# global geom ent: v "<<g->size(0)<<", e "
            <<g->size(1)<<", f "<<g->size(2)<<", r "<<g->size(3)<<"\n";

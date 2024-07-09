@@ -458,7 +458,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
 
   for (int layer=2; layer<num_layer+1; ++layer)
   {
-    for (int pid=0; pid<pumi_size(m->getPCU()); ++pid)
+    for (int pid=0; pid<pumi_size(); ++pid)
     {
       for (std::set<pMeshEnt>::iterator off_it=off_bridge_set[layer][pid].begin(); 
             off_it!=off_bridge_set[layer][pid].end(); ++off_it)
@@ -484,7 +484,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
   }
   // clean up
   for (int i=0; i<num_layer+1;++i)
-    for (int j=0; j<pumi_size(m->getPCU());++j)
+    for (int j=0; j<pumi_size();++j)
       off_bridge_set[i][j].clear();
 
   m->getPCU()->Send();
@@ -576,7 +576,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
   // the below runs only if num_layer>2
   int global_num_off_part, local_num_off_part=0;
   for (int i=0; i<num_layer+1;++i)
-    for (int j=0; j<pumi_size(m->getPCU());++j)
+    for (int j=0; j<pumi_size();++j)
       local_num_off_part+=off_bridge_set[i][j].size();
   MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
 
@@ -586,7 +586,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
 
     for (int layer=0; layer<num_layer+1; ++layer)
     {
-      for (int pid=0; pid<pumi_size(m->getPCU()); ++pid)
+      for (int pid=0; pid<pumi_size(); ++pid)
       {
         for (std::set<pMeshEnt>::iterator off_it=off_bridge_set[layer][pid].begin(); 
             off_it!=off_bridge_set[layer][pid].end(); ++off_it)
@@ -612,7 +612,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
     }
     // clean up
     for (int i=0; i<num_layer+1;++i)
-      for (int j=0; j<pumi_size(m->getPCU());++j)
+      for (int j=0; j<pumi_size();++j)
         off_bridge_set[i][j].clear();
 
     m->getPCU()->Send();
@@ -626,7 +626,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
 
       r_layer=r_int[0];
       r_pid=r_int[1];
-      PCU_ALWAYS_ASSERT(r_layer<=num_layer && r_pid<pumi_size(m->getPCU()));
+      PCU_ALWAYS_ASSERT(r_layer<=num_layer && r_pid<pumi_size());
       off_bridge_marker[r].insert(r_pid);
 
       apf::Adjacent ghost_cands;
@@ -697,7 +697,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
     }  // while (PCU_Comm_Read)
     local_num_off_part=0;
     for (int i=0; i<num_layer+1;++i)
-      for (int j=0; j<pumi_size(m->getPCU());++j)
+      for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
     MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
   } // while global_off_part_brg
@@ -710,7 +710,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
 {
   if (m->getPCU()->Peers()==1 || num_layer==0) return;
   
-  int dummy=1, mesh_dim=m->getDimension(), self = pumi_rank(m->getPCU());;
+  int dummy=1, mesh_dim=m->getDimension(), self = pumi_rank();;
   
   // brid/ghost dim check
   if (brg_dim>=ghost_dim || 0>brg_dim || brg_dim>=mesh_dim || 
@@ -738,7 +738,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
 
   std::set<pMeshEnt>** off_bridge_set=new std::set<pMeshEnt>*[num_layer+1];
   for (int i=0; i<num_layer+1;++i)
-    off_bridge_set[i]=new std::set<pMeshEnt>[pumi_size(m->getPCU())];
+    off_bridge_set[i]=new std::set<pMeshEnt>[pumi_size()];
 
   apf::MeshIterator* it = m->begin(brg_dim);
   while ((brg_ent = m->iterate(it)))
@@ -821,7 +821,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
   if (num_layer>=2)
   {
     for (int i=0; i<num_layer+1;++i)
-      for (int j=0; j<pumi_size(m->getPCU());++j)
+      for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
     MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
   }
@@ -832,7 +832,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
   // clean up
   m->destroyTag(tag);
   for (int i=0; i<num_layer+1;++i)
-    for (int j=0; j<pumi_size(m->getPCU());++j)
+    for (int j=0; j<pumi_size();++j)
       off_bridge_set[i][j].clear();
 
   for (int i=0; i<num_layer+1;++i)
@@ -904,10 +904,10 @@ void pumi_ghost_delete (pMesh m)
 }
 
 // *********************************************************
-void pumi_ghost_getInfo (pMesh m, std::vector<int>&)
+void pumi_ghost_getInfo (pMesh, std::vector<int>&)
 // *********************************************************
 {
-  if (!pumi_rank(m->getPCU())) 
+  if (!pumi_rank()) 
     std::cout<<"[PUMI ERROR] "<<__func__<<" failed: not supported\n";
 }
 

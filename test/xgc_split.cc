@@ -18,7 +18,7 @@ int serial=0;
 void getConfig(int argc, char** argv, pcu::PCU* PCUObj)
 {
   if (argc < 4) {
-    if (!pumi_rank(PCUObj) )
+    if (!PCUObj->Self())
       printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -34,11 +34,11 @@ Migration* get_xgc_plan(pGeom g, pMesh m)
 {
   int dim = pumi_mesh_getDim(m);
   Migration* plan = new Migration(m);
-  if (!pumi_rank(m->getPCU())) return plan;
+  if (!pumi_rank()) return plan;
 
   pMeshEnt e;
   int num_gface = pumi_geom_getNumEnt(g, dim);
-  PCU_ALWAYS_ASSERT(num_gface==pumi_size(m->getPCU()));
+  PCU_ALWAYS_ASSERT(num_gface==pumi_size());
   int gface_id;
   int dest_pid;
   pMeshIter it = m->begin(2); // face
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     pumi_mesh_write(m, outFile);
   }
   else 
-    m = pumi_mesh_load(g, meshFile, pumi_size(PCUObj.get()), PCUObj.get());
+    m = pumi_mesh_load(g, meshFile, pumi_size(), PCUObj.get());
 
   // write to vtk
   char without_extension[256];

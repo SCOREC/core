@@ -34,7 +34,7 @@ int pumi_ment_getNumAdj(pMeshEnt e, int target_dim)
   int ent_dim= apf::getDimension(pumi::instance()->mesh, e);
   if (ent_dim==target_dim) 
   {
-    if (!pumi_rank(pumi::instance()->mesh->getPCU())) std::cout<<"[pumi error] "<<__func__<<": invalid target dimension "<<target_dim<<"\n";
+    if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<": invalid target dimension "<<target_dim<<"\n";
     return 0;
   }
 
@@ -130,7 +130,7 @@ void pumi_ment_get2ndAdj (pMeshEnt e, int bridge_dim, int target_dim, std::vecto
 {
   if (bridge_dim==target_dim) 
   {
-    if (!pumi_rank(pumi::instance()->mesh->getPCU())) std::cout<<"[pumi error] "<<__func__<<": invalid bridge/target dimension \n";
+    if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<": invalid bridge/target dimension \n";
     return;  // error
   }
 
@@ -178,7 +178,7 @@ int pumi_ment_getOwnPID(pMeshEnt e, pOwnership o)
 pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o)
 {
   int own_partid = pumi_ment_getOwnPID(e, o);
-  if (own_partid==pumi_rank(pumi::instance()->mesh->getPCU())) return e;
+  if (own_partid==pumi_rank()) return e;
 
   if (pumi::instance()->mesh->isShared(e))
   {
@@ -195,14 +195,14 @@ pMeshEnt pumi_ment_getOwnEnt(pMeshEnt e, pOwnership o)
 bool pumi_ment_isOwned(pMeshEnt e, pOwnership o)
 {  
   if (!o) 
-    return (pumi_ment_getOwnPID(e)==pumi_rank(pumi::instance()->mesh->getPCU()));
+    return (pumi_ment_getOwnPID(e)==pumi_rank());
   return o->isOwned(e);
 }
 
 bool pumi_ment_isOn(pMeshEnt e, int partID)
 {
   // FIXME: include ghost copy
-  if (partID==pumi_rank(pumi::instance()->mesh->getPCU())) return true;
+  if (partID==pumi_rank()) return true;
   apf::Copies remotes;
   pumi::instance()->mesh->getRemotes(e,remotes);
   APF_ITERATE(Copies,remotes,rit)
@@ -250,22 +250,22 @@ pMeshEnt pumi_ment_getRmt(pMeshEnt& e, int pid)
 
 void pumi_ment_setRmt(pMeshEnt, int, pMeshEnt)
 {
-  if (!pumi_rank(pumi::instance()->mesh->getPCU())) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
+  if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
 void pumi_ment_deleteRmt (pMeshEnt, int)
 {
-  if (!pumi_rank(pumi::instance()->mesh->getPCU())) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
+  if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
 void pumi_ment_cleanRmt (pMeshEnt)
 {
-  if (!pumi_rank(pumi::instance()->mesh->getPCU())) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
+  if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
 void pumi_ment_setPtnTopology (pMeshEnt)
 {
-  if (!pumi_rank(pumi::instance()->mesh->getPCU())) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
+  if (!pumi_rank()) std::cout<<"[pumi error] "<<__func__<<" not supported\n";
 }
 
 int pumi_ment_getGlobalID(pMeshEnt e)

@@ -26,7 +26,7 @@ pNumbering pumi_numbering_create
   pNumbering n = m->findNumbering(name);
   if (n) 
   {
-    if (!pumi_rank(m->getPCU())) 
+    if (!pumi_rank()) 
       std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
     return n;
   }
@@ -40,7 +40,7 @@ pNumbering pumi_numbering_createLocal (pMesh m, const char* name, pShape shape)
   pNumbering n = m->findNumbering(name);
   if (n) 
   {
-    if (!pumi_rank(m->getPCU())) 
+    if (!pumi_rank()) 
       std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
     return n;
   }
@@ -54,7 +54,7 @@ pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s, pOwn
   pNumbering n = m->findNumbering(name);
   if (n) 
   {
-    if (!pumi_rank(m->getPCU())) 
+    if (!pumi_rank()) 
       std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
     return n;
   }
@@ -71,7 +71,7 @@ pNumbering pumi_numbering_createOwn (pMesh m, const char* name, pShape shape, pO
   pNumbering n = m->findNumbering(name);
   if (n) 
   {
-    if (!pumi_rank(m->getPCU())) 
+    if (!pumi_rank()) 
       std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
     return n;
   }
@@ -85,7 +85,7 @@ pNumbering pumi_numbering_createOwnDim (pMesh m, const char* name, int dim, pOwn
   pNumbering n = m->findNumbering(name);
   if (n) 
   {
-    if (!pumi_rank(m->getPCU())) 
+    if (!pumi_rank()) 
       std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
     return n;
   }
@@ -103,7 +103,7 @@ pNumbering pumi_numbering_createProcGrp (
   pNumbering n = m->findNumbering(name);
   if (n) 
   {
-    if (!pumi_rank(m->getPCU())) 
+    if (!pumi_rank()) 
       std::cout<<"[PUMI INFO] "<<__func__<<" failed: numbering \""<<name<<"\" already exists\n";
     return n;
   }
