@@ -16,7 +16,9 @@
 //      0- SYSTEM-LEVEL FUNCTIONS
 //************************************
 //************************************
-
+void pumi_load_pcu(pcu::PCU *PCUObj){
+  pumi::instance()->initializePCU(PCUObj);
+}
 
 int pumi_size()
 {

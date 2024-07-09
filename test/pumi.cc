@@ -90,7 +90,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   {
   auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  pumi::instance()->setPCU(PCUObj.get());
+  pumi_load_pcu(PCUObj.get());
   lion_set_verbosity(1);
   pumi_printSys();
 
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
   getConfig(argc,argv,PCUObj.get());
 
   // load model
-  pGeom g = pumi_geom_load(modelFile, PCUObj.get());
+  pGeom g = pumi_geom_load(modelFile);
 
   if (!pumi_rank()) std::cout<<"[test_pumi] testing geometric model/entity api's\n\n";
   {
@@ -145,10 +145,10 @@ int main(int argc, char** argv)
 
   pMesh m=NULL;
   if (do_distr)
-    m = pumi_mesh_loadSerial(g, meshFile, PCUObj.get());
+    m = pumi_mesh_loadSerial(g, meshFile);
   else
   {
-    m = pumi_mesh_load(g, meshFile, num_in_part, PCUObj.get()); // static partitioning if num_in_part=1
+    m = pumi_mesh_load(g, meshFile, num_in_part); // static partitioning if num_in_part=1
     if (num_in_part==1) 
       pumi_mesh_write(m,"mesh.smb");
   }
@@ -197,11 +197,11 @@ int main(int argc, char** argv)
   pumi_geom_delete(g);
   pumi_mesh_delete(m);
 
-  g = pumi_geom_load(modelFile, PCUObj.get());
+  g = pumi_geom_load(modelFile);
   if (num_in_part==1 && pumi_size()>1)
-    m =  pumi_mesh_load(g, "mesh.smb", pumi_size(), PCUObj.get()); 
+    m =  pumi_mesh_load(g, "mesh.smb", pumi_size()); 
   else
-    m = pumi_mesh_load(g, meshFile, num_in_part, PCUObj.get()); 
+    m = pumi_mesh_load(g, meshFile, num_in_part); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] delete and reload mesh\n";
 
   pOwnership o=new testOwnership(m);
@@ -638,8 +638,8 @@ void TEST_NEW_MESH(pMesh m)
   PCU_ALWAYS_ASSERT(pumi_shape_getNumNode(pumi_mesh_getShape(m), 1)==1);
 
   // create an empty mesh
-  pGeom new_g = pumi_geom_load("", m->getPCU(), "null");
-  pMesh new_m = pumi_mesh_create(new_g, 2, m->getPCU());
+  pGeom new_g = pumi_geom_load("", "null");
+  pMesh new_m = pumi_mesh_create(new_g, 2);
 
   double xyz[3];
   pMeshIter it = m->begin(1);

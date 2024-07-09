@@ -31,27 +31,27 @@ gEntity* gModel::getGeomEnt(int d, gmi_ent* ge)
   return allEntities.getGeomEnt(d, ge);
 }
 
-pGeom pumi_geom_load(const char* filename, pcu::PCU *PCUObj, const char* model_type, void (*geom_load_fp)(const char*))
+pGeom pumi_geom_load(const char* filename, const char* model_type, void (*geom_load_fp)(const char*))
 {
   if (!strcmp(model_type,"null"))
   {
     gmi_register_null();
-    return pumi_geom_load(gmi_load(".null"), PCUObj, model_type);
+    return pumi_geom_load(gmi_load(".null"), model_type);
   }
   else if (!strcmp(model_type,"mesh"))
   {
     gmi_register_mesh();
-    return pumi_geom_load(gmi_load(filename), PCUObj);
+    return pumi_geom_load(gmi_load(filename));
   }
   else if (!strcmp(model_type,"analytic")) 
-    return pumi_geom_load(gmi_make_analytic(), PCUObj, model_type, filename, geom_load_fp);
+    return pumi_geom_load(gmi_make_analytic(), model_type, filename, geom_load_fp);
   else
     if (!pumi_rank()) lion_eprint(1,"[PUMI ERROR] unsupported model type %s\n",model_type);
   
   return NULL;
 }
 
-pGeom pumi_geom_load(gmi_model* gm, pcu::PCU *PCUObj, const char* model_type, 
+pGeom pumi_geom_load(gmi_model* gm, const char* model_type, 
       const char* filename, void (*geom_load_fp)(const char*))
 {
   double t0 = pcu::Time();
@@ -77,7 +77,7 @@ pGeom pumi_geom_load(gmi_model* gm, pcu::PCU *PCUObj, const char* model_type,
     return NULL;
   }
 
-  if (!PCUObj->Self() && filename)
+  if (!pumi::instance()->getPCU()->Self() && filename)
     lion_oprint(1,"model %s loaded in %f seconds\n", filename, pcu::Time() - t0);
 
   return pumi::instance()->model;

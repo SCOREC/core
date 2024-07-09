@@ -16,7 +16,7 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   {
   auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  pumi::instance()->setPCU(pcu_obj.get());
+  pumi_load_pcu(pcu_obj.get());
   lion_set_verbosity(1);
   gmi_register_mesh();
   gmi_register_null();
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
   if (!pcu_obj.get()->Self()) printf("model/mesh converted to pumi instance\n");
 
   //create the pumi instance to use pumi api's
-  pGeom g = pumi_geom_load(model, pcu_obj.get());
+  pGeom g = pumi_geom_load(model);
   pMesh pm = pumi_mesh_load(m);
   pumi_mesh_verify(pm);
 

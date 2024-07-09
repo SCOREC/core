@@ -58,21 +58,21 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   {
   auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-
+  pumi_load_pcu(PCUObj.get());
   getConfig(argc,argv,PCUObj.get());
 
-  pGeom g = pumi_geom_load(modelFile, PCUObj.get());
+  pGeom g = pumi_geom_load(modelFile);
   pMesh m;
   if (serial) 
   {
-    m = pumi_mesh_loadSerial(g, meshFile, PCUObj.get());
+    m = pumi_mesh_loadSerial(g, meshFile);
     // split a serial mesh based on model ID
     Migration* plan = get_xgc_plan(g, m);
     pumi_mesh_migrate(m, plan);
     pumi_mesh_write(m, outFile);
   }
   else 
-    m = pumi_mesh_load(g, meshFile, pumi_size(), PCUObj.get());
+    m = pumi_mesh_load(g, meshFile, pumi_size());
 
   // write to vtk
   char without_extension[256];
