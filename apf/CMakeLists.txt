@@ -84,6 +84,7 @@ set(HEADERS
   apfField.h
   apfFieldData.h
   apfNumberingClass.h
+  apfElement.h
 )
 
 # Add the apf library
