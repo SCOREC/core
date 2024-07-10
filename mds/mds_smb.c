@@ -171,6 +171,9 @@ static void read_conn(struct pcu_file* f, struct mds_apf* m)
   for (i = 1; i < SMB_TYPES; ++i) {
     type_mds = smb2mds(i);
     down.n = down_degree(type_mds);
+    #ifdef MDS_SET_DYNAMIC
+    mds_expand_set(&down, down.n);
+    #endif
     cap = m->mds.cap[type_mds];
     dt = mds_types[type_mds][mds_dim[type_mds] - 1];
     size = down.n * cap;

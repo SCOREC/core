@@ -413,16 +413,23 @@ static void look_up(struct mds* m, mds_id const e, int d, struct mds_set* s)
   nv = *n;
   d = mds_dim[t];
   p = m->up[d];
+  s->n = 0;
   while (nv != MDS_NONE) {
     t = TYPE(nv);
     i = INDEX(nv);
     deg = mds_degree[t][d];
+    #ifdef MDS_SET_DYNAMIC
+    if (s->n == s->cap) {
+      mds_expand_set(s, s->n + 1);
+      es = s->e + s->n; // update es (if s->e was realloc'd).
+    }
+    #endif
     *es = ID(t, i / deg);
+    ++s->n;
     ++es;
     n = p[t] + i;
     nv = *n;
   }
-  s->n = es - s->e;
 }
 
 struct down {
@@ -448,6 +455,9 @@ static void look_down(struct mds* m, mds_id e, int d, struct mds_set* s)
   int j;
   dn = reach_down(m,e,d);
   s->n = dn.n;
+  #ifdef MDS_SET_DYNAMIC
+  if (s->n > s->cap) mds_expand_set(s, s->n);
+  #endif
   for (j = 0; j < dn.n; ++j)
     s->e[j] = dn.e[j];
 }
@@ -488,19 +498,18 @@ static int contains(struct mds_set* s, mds_id id)
 static void unite(struct mds_set* s, struct mds_set* with)
 {
   int i;
-  int j = s->n;
   for (i = 0; i < with->n; ++i)
     if ( ! contains(s,with->e[i])) {
       #ifndef MDS_SET_DYNAMIC
       PCU_ALWAYS_ASSERT(j < MDS_SET_MAX);
       #else
-      if (j >= s->cap) {
-        mds_expand_set(s, j);
+      if (s->n >= s->cap) {
+        mds_expand_set(s, s->n + 1);
       }
       #endif
-      s->e[j++] = with->e[i];
+      s->e[s->n] = with->e[i];
+      ++s->n;
     }
-  s->n = j;
 }
 
 static mds_id common_down(struct mds* m, mds_id a, mds_id b, int d)
@@ -658,6 +667,9 @@ static void step_down(struct mds* m,
   mds_id b;
   ci = convs[t][from_dim][to_dim];
   to_s->n = mds_degree[t][to_dim];
+  #ifdef MDS_SET_DYNAMIC
+  if (to_s->n > to_s->cap) mds_expand_set(to_s, to_s->n);
+  #endif
   for (i = 0; i < to_s->n; ++i) {
     a = from_s->e[ci[2*i]];
     b = from_s->e[ci[2*i + 1]];
@@ -895,14 +907,16 @@ void mds_init_set(struct mds_set* s)
   s->n = 0;
   s->cap = MDS_SET_MAX;
   s->e = calloc(s->cap, sizeof(mds_id));
+  if (!s->e) reel_fail("mds_init_set out of memory.\n");
 }
 
 void mds_destroy_set(struct mds_set* s)
 {
   PCU_DEBUG_ASSERT(s);
+  free(s->e);
+  s->e = NULL;
   s->n = 0;
   s->cap = 0;
-  free(s->e);
 }
 
 void mds_expand_set(struct mds_set* s, int cap)
@@ -911,6 +925,6 @@ void mds_expand_set(struct mds_set* s, int cap)
   PCU_DEBUG_ASSERT(s->cap > 0);
   PCU_DEBUG_ASSERT(cap > 0);
   while (cap > s->cap) s->cap *= 2;
-  s->e = realloc(s->e, s->cap * sizeof(mds_id));
+  REALLOC(s->e, s->cap * sizeof(mds_id));
 }
 #endif

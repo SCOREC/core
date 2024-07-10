@@ -46,6 +46,9 @@ mpi_test(test_matrix_gradient 1
          "${MESHES}/cube/cube.dmg"
          "${MESHES}/cube/pumi11/cube.smb"
          )
+if(MDS_SET_DYNAMIC)
+mpi_test(mds_dynamic_set 1 ./mds_dynamic_set)
+endif()
 
 mpi_test(modelInfo_dmg 1
   ./modelInfo

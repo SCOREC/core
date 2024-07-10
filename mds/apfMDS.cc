@@ -725,6 +725,9 @@ class MeshMDS : public Mesh2
       #endif
       if (type != VERTEX) {
         s.n = mds_degree[t][mds_dim[t]-1];
+        #ifdef MDS_SET_DYNAMIC
+        if (s.n > s.cap) mds_expand_set(&s, s.n);
+        #endif
         for (int i = 0; i < s.n; ++i)
           s.e[i] = fromEnt(down[i]);
       }

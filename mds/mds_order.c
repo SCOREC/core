@@ -112,13 +112,21 @@ static void number_connected_verts(struct mds* m, mds_id v,
   #endif
   int i;
   adj[0].n = adj[1].n = 0;
-  if (!visit(m, tag, label, v))
+  if (!visit(m, tag, label, v)) {
+    #ifdef MDS_SET_DYNAMIC
+    mds_destroy_set(&adj[0]);
+    mds_destroy_set(&adj[1]);
+    #endif
     return;
+  }
   make_queue(&q, m->n[MDS_VERTEX]);
   push_queue(&q, v);
   while ( ! queue_empty(&q)) {
     v = pop_queue(&q);
     mds_get_adjacent(m, v, 1, &adj[1]);
+    #ifdef MDS_SET_DYNAMIC
+    if (adj[0].cap < adj[1].cap) mds_expand_set(&adj[0], adj[1].cap);
+    #endif
     adj[0].n = adj[1].n;
     for (i = 0; i < adj[1].n; ++i)
       adj[0].e[i] = other_vert(m, adj[1].e[i], v);
@@ -323,6 +331,9 @@ static void rebuild_ents(
       e = lookup(old_of,ne);
       model = mds_apf_model(m,e);
       mds_get_adjacent(&(m->mds),e,mds_dim[mds_type(e)]-1,&old_down);
+      #ifdef MDS_SET_DYNAMIC
+      mds_expand_set(&new_down, old_down.cap);
+      #endif
       for (j = 0; j < old_down.n; ++j)
         new_down.e[j] = lookup(new_of,old_down.e[j]);
       ne = mds_apf_create_entity(m2,t,model,new_down.e);
