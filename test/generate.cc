@@ -281,7 +281,6 @@ pNativeModel loadNativeModel() {
 }
 
 void simStart() {
-  SimModel_start();
   SimPartitionedMesh_start(NULL,NULL);
   if(should_log)
     Sim_logOn("generate_sim.log");
