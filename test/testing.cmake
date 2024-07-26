@@ -795,37 +795,37 @@ if(ENABLE_SIMMETRIX)
     set(MDIR ${MESHES}/curved)
     mpi_test(curvedSphere 1
       ./curvetest
-      "${MDIR}/sphere1.xmt_txt"
+      "${MDIR}/sphere1_geomSim.smd"
       "${MDIR}/sphere1_4.smb")
     mpi_test(highOrderSolutionTransfer 1
       ./highOrderSolutionTransfer
-      "${MDIR}/sphere1.xmt_txt"
+      "${MDIR}/sphere1_geomSim.smd"
       "${MDIR}/sphere1_4.smb")
     mpi_test(curvedKova 1
       ./curvetest
-      "${MDIR}/Kova.xmt_txt"
+      "${MDIR}/Kova_geomSim.smd"
       "${MDIR}/Kova.smb")
     mpi_test(degen_shpere_full 1
       ./degenerate_test
-      "${MDIR}/sph_full_nat.x_t"
+      "${MDIR}/sph_full_geomSim.smd"
       "${MDIR}/sph_full.smb"
       "sph_full_refine"
       "3")
     mpi_test(degen_shpere_no_north 1
       ./degenerate_test
-      "${MDIR}/sph_no_north_nat.x_t"
+      "${MDIR}/sph_no_north_geomSim.smd"
       "${MDIR}/sph_no_north.smb"
       "sph_no_north_refine"
       "3")
     mpi_test(degen_shpere_vertical_slice 1
       ./degenerate_test
-      "${MDIR}/sph_vertical_slice_nat.x_t"
+      "${MDIR}/sph_vertical_slice_geomSim.smd"
       "${MDIR}/sph_vertical_slice.smb"
       "sph_vertical_slice_refine"
       "3")
     mpi_test(crack_test 1
       ./crack_test
-      "${MDIR}/crack_nat.x_t")
+      "${MDIR}/crack_geomSim.smd")
   endif(SIM_PARASOLID)
 endif()
 if (PCU_COMPRESS)
