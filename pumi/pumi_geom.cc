@@ -77,7 +77,7 @@ pGeom pumi_geom_load(gmi_model* gm, const char* model_type,
     return NULL;
   }
 
-  if (!pumi::instance()->getPCU()->Self() && filename)
+  if (!pumi_rank() && filename)
     lion_oprint(1,"model %s loaded in %f seconds\n", filename, pcu::Time() - t0);
 
   return pumi::instance()->model;
@@ -193,7 +193,7 @@ void pumi_giter_reset(gIter iter)
 
 void pumi_geom_print (pGeom g, bool print_ent)
 {
-  if (pumi::instance()->getPCU()->Self()) return;
+  if (pumi_rank()) return;
   std::cout<<"\n=== model entity and tag info === \n";
   std::cout<<"# global geom ent: v "<<g->size(0)<<", e "
            <<g->size(1)<<", f "<<g->size(2)<<", r "<<g->size(3)<<"\n";
