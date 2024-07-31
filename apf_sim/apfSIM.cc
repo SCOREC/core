@@ -1092,7 +1092,7 @@ static bool findMatches(Mesh* m)
   return found;
 }
 
-Mesh2* createMesh(pParMesh mesh, pcu::PCU PCUObj)
+Mesh2* createMesh(pParMesh mesh, pcu::PCU *PCUObj)
 {
   /* require one part per process currently for SIM */
   PCU_ALWAYS_ASSERT(PM_numParts(mesh)==1);
