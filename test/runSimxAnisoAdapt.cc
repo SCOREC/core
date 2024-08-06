@@ -112,25 +112,25 @@ int main(int argc, char** argv)
   char outImprovedSimxMesh[256];
   char outImprovedPumiMesh[256];
 
-  sprintf(outSimxModel, "%s.smd", prefix);
-  sprintf(outInitialSimxMesh, "%s_initial.sms", prefix);
-  sprintf(outAdaptedSimxMesh, "%s_adapted.sms", prefix);
-  sprintf(outAdaptedPumiMesh, "%s_adapted.smb", prefix);
-  sprintf(outImprovedSimxMesh, "%s_adapted_improved.sms", prefix);
-  sprintf(outImprovedPumiMesh, "%s_adapted_improved.smb", prefix);
+  snprintf(outSimxModel, 256, "%s.smd", prefix);
+  snprintf(outInitialSimxMesh, 256, "%s_initial.sms", prefix);
+  snprintf(outAdaptedSimxMesh, 256, "%s_adapted.sms", prefix);
+  snprintf(outAdaptedPumiMesh, 256, "%s_adapted.smb", prefix);
+  snprintf(outImprovedSimxMesh, 256, "%s_adapted_improved.sms", prefix);
+  snprintf(outImprovedPumiMesh, 256, "%s_adapted_improved.smb", prefix);
 
   apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh, PCUObj.get());
 
   char message[512];
   // first find the sizes field
   apf::Field* sizes  = m->findField(sizeName);
-  sprintf(message, "Couldn't find a field with name %s in mesh!", sizeName);
+  snprintf(message, 512, "Couldn't find a field with name %s in mesh!", sizeName);
   PCU_ALWAYS_ASSERT_VERBOSE(sizes, message);
 
   // then find the frames field if they exist
   apf::Field* frames;
   frames  = m->findField(frameName);
-  sprintf(message, "Couldn't find a field with name %s in mesh!", frameName);
+  snprintf(message, 512, "Couldn't find a field with name %s in mesh!", frameName);
   PCU_ALWAYS_ASSERT_VERBOSE(frames, message);
 
   // remove every field except for sizes and frames

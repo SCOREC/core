@@ -312,27 +312,27 @@ void ZoltanData::setup()
   char paramStr[128];
 
   //sizes
-  sprintf(paramStr, "%u", 1);
+  snprintf(paramStr, 128, "%u", 1);
   Zoltan_Set_Param(ztn, "num_gid_entries", paramStr);
-  sprintf(paramStr, "%u", 1);
+  snprintf(paramStr, 128, "%u", 1);
   Zoltan_Set_Param(ztn, "num_lid_entries", paramStr);
 
   //weights
-  sprintf(paramStr, "%d", zb->mesh->getTagSize(zb->weights));
+  snprintf(paramStr, 128, "%d", zb->mesh->getTagSize(zb->weights));
   Zoltan_Set_Param(ztn, "obj_weight_dim", paramStr);
   Zoltan_Set_Param(ztn, "edge_weight_dim", "0");
 
   //Debug
-  sprintf(paramStr, "%d", dbgLvl);
+  snprintf(paramStr, 128, "%d", dbgLvl);
   if ( zb->isLocal && 0 != zb->mesh->getPCU()->Self() )
-    sprintf(paramStr, "%d", 0);  //if local silence all but rank 0
+    snprintf(paramStr, 128, "%d", 0);  //if local silence all but rank 0
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
   Zoltan_Set_Param(ztn, "CHECK_GRAPH", "0");
   Zoltan_Set_Param(ztn, "CHECK_HYPERGRAPH", "0");
 
   //tolerance
-  sprintf(paramStr, "%f", zb->tolerance);
+  snprintf(paramStr, 128, "%f", zb->tolerance);
   Zoltan_Set_Param(ztn, "imbalance_tol", paramStr);
 
   Zoltan_Set_Param(ztn, "RETURN_LISTS", "EXPORT");
@@ -342,12 +342,12 @@ void ZoltanData::setup()
 
   /* Reset some load-balancing parameters. */
   if ( zb->isLocal ) {
-    sprintf(paramStr, "%d", zb->multiple);
+    snprintf(paramStr, 128, "%d", zb->multiple);
   } else {
-    sprintf(paramStr, "%d", zb->multiple*zb->mesh->getPCU()->Peers());
+    snprintf(paramStr, 128, "%d", zb->multiple*zb->mesh->getPCU()->Peers());
   }
   Zoltan_Set_Param(ztn, "NUM_GLOBAL_PARTS", paramStr);
-  sprintf(paramStr, "%d", zb->multiple);
+  snprintf(paramStr, 128, "%d", zb->multiple);
   Zoltan_Set_Param(ztn, "NUM_LOCAL_PARTS", paramStr);
 
   Zoltan_Set_Param(ztn, "GRAPH_BUILD_TYPE", "FAST_NO_DUP");

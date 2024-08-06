@@ -166,12 +166,12 @@ void visualizeSizeField(
     char message[512];
     // first find the sizes field
     sizes  = m->findField(sizeName);
-    sprintf(message, "Couldn't find a field with name %s in mesh!", sizeName);
+    snprintf(message, 512, "Couldn't find a field with name %s in mesh!", sizeName);
     PCU_ALWAYS_ASSERT_VERBOSE(sizes, message);
 
     // then find the frames field if they exist
     frames = m->findField(frameName);
-    sprintf(message, "Couldn't find a field with name %s in mesh!", frameName);
+    snprintf(message, 512, "Couldn't find a field with name %s in mesh!", frameName);
     PCU_ALWAYS_ASSERT_VERBOSE(frames, message);
   }
 

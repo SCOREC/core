@@ -52,7 +52,7 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
     PCU_IGNORE_DIAGNOSTIC_START(-Wdeprecated-declarations)  \
     if (! (cond)) {                                         \
       char omsg[2048];                                      \
-      sprintf(omsg, "%s failed at %s + %d \n",              \
+      snprintf(omsg, 2048, "%s failed at %s + %d \n",              \
         #cond, __FILE__, __LINE__);                         \
       PCU_Assert_Fail(omsg);                                \
     }                                                       \
@@ -63,7 +63,7 @@ void PCU_Assert_Fail(const char* msg) __attribute__ ((noreturn));
     PCU_IGNORE_DIAGNOSTIC_START(-Wdeprecated-declarations)  \
     if (! (cond)) {                                         \
       char omsg[2048];                                      \
-      sprintf(omsg, "%s failed at %s + %d \n %s",           \
+      snprintf(omsg, 2048, "%s failed at %s + %d \n %s",           \
         #cond, __FILE__, __LINE__, msg);                    \
       PCU_Assert_Fail(omsg);                                \
     }                                                       \

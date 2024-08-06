@@ -115,7 +115,7 @@ void phastaio_addWriteTime(size_t t) {
 }
 
 void phastaio_setfile(int f) {
-  char msg[64]; sprintf(msg, "f %d", f);
+  char msg[64]; snprintf(msg, 64, "f %d", f);
   PCU_ALWAYS_ASSERT_VERBOSE(f >= 0 && f < NUM_PHASTAIO_MODES, msg);
   phastaio_global_stats.fileIdx = f;
 }

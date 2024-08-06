@@ -319,10 +319,10 @@ int test_2dStencil(const int rank, const int totNumParts, pcu::PCU *PCUObj
   //only rank 0 will check the MIS
   int sizeIS = 0;
   char* statusMsg = new char[totNumParts * 4];
-  int pos = sprintf(statusMsg, "MIS: ");
+  int pos = snprintf(statusMsg, totNumParts * 4, "MIS: ");
   for (int i = 0; i < totNumParts; ++i) {
     if (globalIsInMIS[i]) {
-      pos += sprintf(&(statusMsg[pos]), " %d ", i);
+      pos += snprintf(&(statusMsg[pos]), totNumParts * 4 - pos, " %d ", i);
       ++sizeIS;
     }
   }
@@ -403,13 +403,13 @@ int test_StarA(const int rank, const int totNumParts, pcu::PCU *PCUObj,
         return 1;
       }
     }
-    sprintf(dbgMsg, " [%d] (%d) %s - adjPartIds=", 
+    snprintf(dbgMsg, 256, " [%d] (%d) %s - adjPartIds=", 
         rank, part.id, __FUNCTION__);
     Print <int, vector<int>::iterator > (cout, dbgMsg, 
         part.adjPartIds.begin(), part.adjPartIds.end(), 
         std::string(", "));
 
-    sprintf(dbgMsg, " [%d] (%d) %s - net=", 
+    snprintf(dbgMsg, 256, " [%d] (%d) %s - net=", 
         rank, part.id, __FUNCTION__);
     Print <int, vector<int>::iterator > (cout, dbgMsg, 
         part.net.begin(), part.net.end(), std::string(", "));
@@ -425,10 +425,10 @@ int test_StarA(const int rank, const int totNumParts, pcu::PCU *PCUObj,
     int sizeIS = 0;
     if (rank == 0) {
         char* statusMsg = new char[totNumParts * 4];
-        int pos = sprintf(statusMsg, "MIS: ");
+        int pos = snprintf(statusMsg, totNumParts * 4, "MIS: ");
         for (int i = 0; i < totNumParts; ++i) {
             if (globalIsInMIS[i]) {
-                pos += sprintf(&(statusMsg[pos]), " %d ", i);
+                pos += snprintf(&(statusMsg[pos]), totNumParts * 4 - pos, " %d ", i);
                 ++sizeIS;
             }
         }

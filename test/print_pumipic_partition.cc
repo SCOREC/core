@@ -59,7 +59,7 @@ int main(int argc, char** argv)
 
   //Write the partition out
   char filename[256];
-  sprintf(filename , "%s_%d.ptn", argv[4], num_ranks);
+  snprintf(filename , 256, "%s_%d.ptn", argv[4], num_ranks);
   printf("Writing partition to %s\n", filename);
   std::ofstream out(filename);
   apf::MeshIterator* mitr = m->begin(m->getDimension());

@@ -215,11 +215,11 @@ int main(int argc, char** argv)
       char cavityFileNameCurved[128];
       char entityFileNameLinear[128];
       char entityFileNameCurved[128];
-      sprintf(cavityFolderName, "%s_%05d", apf::Mesh::typeName[etype], index);
-      sprintf(cavityFileNameLinear, "%s", "cavity_linear");
-      sprintf(cavityFileNameCurved, "%s", "cavity_curved");
-      sprintf(entityFileNameLinear, "%s", "entity_linear");
-      sprintf(entityFileNameCurved, "%s", "entity_curved");
+      snprintf(cavityFolderName, 128, "%s_%05d", apf::Mesh::typeName[etype], index);
+      snprintf(cavityFileNameLinear, 128, "%s", "cavity_linear");
+      snprintf(cavityFileNameCurved, 128, "%s", "cavity_curved");
+      snprintf(entityFileNameLinear, 128, "%s", "entity_linear");
+      snprintf(entityFileNameCurved, 128, "%s", "entity_curved");
       writeMeshes(cavityMeshLinear, prefix, "cavities",
       	  cavityFolderName, cavityFileNameLinear, res);
       writeMeshes(cavityMeshCurved, prefix, "cavities",

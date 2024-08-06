@@ -176,8 +176,8 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 
   char coordfilename[64];
   char cnnfilename[64];
-  sprintf(coordfilename, "geom.crd");
-  sprintf(cnnfilename, "geom.cnn");
+  snprintf(coordfilename, 64, "geom.crd");
+  snprintf(cnnfilename, 64, "geom.cnn");
   FILE* fcr = fopen(coordfilename, "w");
   FILE* fcn = fopen(cnnfilename, "w");
 
