@@ -166,7 +166,7 @@ apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile, pcu::PCU *PCUObj) {
 
     pGModel simModel = gmi_export_sim(g);
     pParMesh sim_mesh = PM_load(meshfile, simModel, progress);
-    mesh = apf::createMesh(sim_mesh);
+    mesh = apf::createMesh(sim_mesh, PCUObj);
 
     Progress_delete(progress);
   } else
