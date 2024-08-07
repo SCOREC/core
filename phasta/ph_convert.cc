@@ -265,7 +265,7 @@ int main(int argc, char** argv)
   M_release(sim_mesh);
   postConvert(mesh);
   mesh->writeNative(smb_path);
-  std::string restartPath = ph::setupOutputDir();
+  std::string restartPath = ph::setupOutputDir(mesh->getPCU());
   ph::Input phIn;
   phIn.openfile_read = openFileRead;
   ph::Output phOut;

@@ -120,18 +120,18 @@ void getConfig(int argc, char** argv, pcu::PCU *pcu_obj) {
         gmi_native_path = optarg;
         break;
       case '?':
-        if (!pcu_obj.get()->Self())
+        if (!pcu_obj->Self())
           printf ("warning: skipping unrecognized option \'%s\'\n", argv[optind-1]);
         break;
       default:
-        if (!pcu_obj.get()->Self())
+        if (!pcu_obj->Self())
           printf("Usage %s %s", argv[0], usage);
         exit(EXIT_FAILURE);
     }
   }
 
   if(argc-optind != 3) {
-    if (!pcu_obj.get()->Self())
+    if (!pcu_obj->Self())
       printf("Usage %s %s", argv[0], usage);
     exit(EXIT_FAILURE);
   }
@@ -139,7 +139,7 @@ void getConfig(int argc, char** argv, pcu::PCU *pcu_obj) {
   gmi_path = argv[i++];
   sms_path = argv[i++];
   smb_path = argv[i++];
-  if (!pcu_obj.get()->Self()) {
+  if (!pcu_obj->Self()) {
     printf ("fix_pyramids %d attach_order %d enable_log %d extruRootPath %s\n",
             should_fix_pyramids, should_attach_order, should_log, extruRootPath);
     printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
@@ -359,7 +359,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
         int* fatherIdPtr;
         const int exists = EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&fatherIdPtr);
         if(!exists) {
-          if(!PCU_Comm_Self())
+          if(!simApfMesh->getPCU()->Self())
             fprintf(stderr, "Error: father id data pointer does not exist... exiting\n");
           exit(EXIT_FAILURE);
         }
