@@ -121,9 +121,12 @@ void Element::getNodeData()
 
 void Element::getElementNodeData(NewArray<double>& d)
 {
-  d.allocated() ? d.resize(nen) : d.allocate(nen);
-  for (int i = 0; i < nen; i++)
-    d[i] = nodeData[i];
+  d.resize(nodeData.size());
+  // to get the iterator 1 past the end without indexing one past the
+  // end we get the address to the last element then do ptr arithmetic
+  // to get one past that. Indexing at nodeData.size() can lead to segfault
+  // as you are actually accessing that memory.
+  std::copy(&nodeData[0], (&nodeData[nodeData.size()-1])+1, &d[0]);
 }
 
 }//namespace apf
