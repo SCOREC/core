@@ -3,6 +3,7 @@
 #include <apf.h>
 #include <phInterfaceCutter.h>
 #include <pcu_util.h>
+#include <memory>
 
 namespace ph {
 
@@ -23,7 +24,7 @@ struct PhastaSharing : public apf::Sharing {
     helperN = new apf::NormalSharing(m);
     helperM = new apf::MatchedSharing(m);
   }
-  ~PhastaSharing()
+  virtual ~PhastaSharing()
   {
     delete helperN;
     delete helperM;
@@ -97,21 +98,22 @@ struct PhastaSharing : public apf::Sharing {
 
 void getLinks(apf::Mesh* m, int dim, Links& links, BCs& bcs)
 {
-  PhastaSharing shr(m);
+  //PhastaSharing* shr = new PhastaSharing(m);
+  auto shr = std::unique_ptr<PhastaSharing>(new PhastaSharing(m));
   m->getPCU()->Begin();
   apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(v);
-    shr.isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
+    shr->isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
 /* the alignment is such that the owner part's
    array follows the order of its vertex iterator
    traversal. The owner dictates the order to the
    other part by sending remote copies */
-    if ( ! shr.isOwned(v))
+    if ( ! shr->isOwned(v))
       continue;
     apf::CopyArray remotes;
-    shr.getCopies(v, remotes);
+    shr->getCopies(v, remotes);
     for (size_t i = 0; i < remotes.getSize(); ++i) {
       /* in matching we may accumulate multiple occurrences
          of the same master in the outgoing links array
