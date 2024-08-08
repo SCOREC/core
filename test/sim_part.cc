@@ -39,6 +39,8 @@
 #endif
 #endif
 
+#include <PCUObj.h>
+#include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>

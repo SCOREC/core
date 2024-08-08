@@ -80,7 +80,7 @@ int main(int argc, char** argv)
       6 /*field_order*/);
 
   // cubic adapt
-  testCurveAdapt(modelFile, meshFile, PCUObj.get()
+  testCurveAdapt(modelFile, meshFile, PCUObj.get(),
       3 /*mesh_order*/,
       2 /*exact_order*/,
       6 /*field_order*/);
