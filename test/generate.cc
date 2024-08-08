@@ -42,7 +42,6 @@
 #include "SimAttribute.h"
 #include "ModelTypes.h"
 
-static const pcu::PCU* globalPCU = nullptr;
 
 namespace {
 
@@ -61,11 +60,11 @@ void messageHandler(int type, const char* msg)
 {
   switch (type) {
     case Sim_WarningMsg:
-      if(!globalPCU->Self())
+      if(!PCU_Comm_Self())
         fprintf(stdout, "Warning SimModeler %s\n", msg);
       break;
     case Sim_ErrorMsg:
-      if(!globalPCU->Self()) 
+      if(!PCU_Comm_Self()) 
         fprintf(stdout, "Error SimModeler %s ... exiting\n", msg);
       MPI_Finalize();
       exit(EXIT_SUCCESS); 
@@ -77,11 +76,11 @@ void messageHandler(int type, const char* msg)
 }
 
 pParMesh generate(pGModel mdl, std::string meshCaseName, pcu::PCU *PCUObj) {
+  pAManager attmngr = SModel_attManager(mdl);
 #if SIMMODSUITE_MAJOR_VERSION <= 2024 && SIMMODSUITE_MINOR_VERSION < 240219
   pAManager attmngr = GM_attManager(mdl);
 #else
   pAManager attmngr = GM_attManager(mdl,true);
-#endif
   if(0==PCUObj->Self())
     fprintf(stdout, "Loading mesh case %s...\n", meshCaseName.c_str());
   pACase mcaseFile = AMAN_findCase(attmngr, meshCaseName.c_str());
@@ -324,7 +323,6 @@ int main(int argc, char** argv)
   MPI_Init(&argc, &argv);
   {
   auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  globalPCU = PCUObj.get();
   lion_set_verbosity(1);
   pcu::Protect();
   getConfig(argc,argv,PCUObj.get());
