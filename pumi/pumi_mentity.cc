@@ -11,7 +11,6 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <apfNumbering.h>
 #include <vector>
 #include <algorithm>

@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maSnap.h"
 #include "maAdapt.h"
 #include "maOperator.h"
@@ -780,8 +779,8 @@ bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   SnapAll op(a, t, isSimple);
   applyOperator(a, &op);
-  successCount += PCU_Add_Long(op.successCount);
-  return PCU_Or(op.didAnything);
+  successCount += a->mesh->getPCU()->Add(op.successCount);
+  return a->mesh->getPCU()->Or(op.didAnything);
 }
 
 class SnapMatched : public Operator
@@ -831,8 +830,8 @@ bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   SnapMatched op(a, t, isSimple);
   applyOperator(a, &op);
-  successCount += PCU_Add_Long(op.successCount);
-  return PCU_Or(op.didAnything);
+  successCount += a->mesh->getPCU()->Add(op.successCount);
+  return a->mesh->getPCU()->Or(op.didAnything);
 }
 
 long tagVertsToSnap(Adapt* a, Tag*& t)
@@ -857,7 +856,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
       ++n;
   }
   m->end(it);
-  return PCU_Add_Long(n);
+  return m->getPCU()->Add(n);
 }
 
 static void markVertsToSnap(Adapt* a, Tag* t)
@@ -902,7 +901,7 @@ void snap(Adapt* a)
 {
   if ( ! a->input->shouldSnap)
     return;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   Tag* tag;
   /* we are starting to support a few operations on matched
      meshes, including snapping+UR. this should prevent snapping
@@ -913,8 +912,8 @@ void snap(Adapt* a)
   snapLayer(a, tag);
   apf::removeTagFromDimension(a->mesh, tag, 0);
   a->mesh->destroyTag(tag);
-  double t1 = PCU_Time();
-  print("snapped in %f seconds: %ld targets, %ld non-layer snaps",
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "snapped in %f seconds: %ld targets, %ld non-layer snaps",
     t1 - t0, targets, success);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after snapping");

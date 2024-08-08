@@ -2,12 +2,12 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <mpi.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfShape.h>
 #include <pcu_util.h>
 #include <gmi_mesh.h>
+#include <memory>
 
 /*
  * This test sets a nodal point matrix on a linear mesh. It then computes the gradient 
@@ -94,10 +94,11 @@ int main(int argc, char* argv[])
     return 1;
   }
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
   gmi_register_mesh();
-  apf::Mesh2* mesh = apf::loadMdsMesh(argv[1], argv[2]);
+  apf::Mesh2* mesh = apf::loadMdsMesh(argv[1], argv[2], pcu_obj.get());
   int order=1;
   apf::Field* nodal_matrix_fld = apf::createLagrangeField(mesh, "matrix", apf::MATRIX, order);
   apf::Field* matrix_deriv = apf::createPackedField(mesh, "matrix_deriv", 27, apf::getIPShape(3,order));
@@ -116,7 +117,7 @@ int main(int argc, char* argv[])
   std::cout<<"Done"<<std::endl;
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 }

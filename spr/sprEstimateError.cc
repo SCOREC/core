@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include <lionPrint.h>
 
 #include "spr.h"
@@ -25,9 +24,9 @@ class SInt : public apf::Integrator
     SInt(int order):
       apf::Integrator(order),r(0)
     {}
-    void parallelReduce()
+    void parallelReduce(pcu::PCU *PCUObj)
     {
-      PCU_Add_Doubles(&r,1);
+      PCUObj->Add(&r,1);
     }
     void reset() {r=0;}
     double r;
@@ -309,14 +308,14 @@ static void estimateError(Estimation* e)
   apf::destroyField(e->element_size);
 }
 
-apf::Field* getSPRSizeField(apf::Field* eps, double adaptRatio)
+apf::Field* getSPRSizeField(apf::Field* eps, double adaptRatio, pcu::PCU *PCUObj)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   Estimation e;
   setupEstimation(&e, eps, adaptRatio);
   estimateError(&e);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!PCUObj->Self())
     lion_eprint(1,"SPR: error estimated in %f seconds\n",t1-t0);
   return e.size;
 }

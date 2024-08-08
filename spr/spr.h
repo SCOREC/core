@@ -16,6 +16,8 @@
 #include "apfNew.h"
 #include "apfDynamicVector.h"
 #include "apfDynamicMatrix.h"
+#include "PCUObj.h"
+
 
 /** \namespace spr
   * \brief All SPR error estimator functions
@@ -43,7 +45,7 @@ apf::Field* recoverField(apf::Field* ip_field);
   *                    scales the output size field.
   * @returns a scalar mesh size field defined at vertices
   */
-apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio);
+apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio, pcu::PCU *PCUObj);
 
 /** @brief run the SPR ZZ error estimator with a target # of output  elems
   * @param f the integration-point input field
@@ -55,6 +57,7 @@ apf::Field* getSPRSizeField(apf::Field* f, double adapt_ratio);
 apf::Field* getTargetSPRSizeField(
     apf::Field* f,
     size_t t,
+    pcu::PCU *PCUObj,
     double alpha=0.25,
     double beta=2.0);
 

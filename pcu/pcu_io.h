@@ -20,8 +20,9 @@ extern "C" {
 #endif
 
 struct pcu_file;
+typedef struct PCU_t PCU_t;
 
-struct pcu_file* pcu_fopen(const char* path, bool write, bool compress);
+struct pcu_file* pcu_fopen(PCU_t h, const char* path, bool write, bool compress);
 void pcu_fclose (struct pcu_file * pf);
 void pcu_read(struct pcu_file* f, char* p, size_t n);
 void pcu_write(struct pcu_file* f, const char* p, size_t n);
@@ -34,8 +35,8 @@ void pcu_write_doubles(struct pcu_file* f, double* p, size_t n);
 void pcu_read_string(struct pcu_file* f, char** p);
 void pcu_write_string(struct pcu_file* f, const char* p);
 
-FILE* pcu_open_parallel(const char* prefix, const char* ext);
-FILE* pcu_group_open(const char* path, bool write);
+FILE* pcu_open_parallel(PCU_t h, const char* prefix, const char* ext);
+FILE* pcu_group_open(PCU_t h, const char* path, bool write);
 
 void pcu_swap_doubles(double* p, size_t n);
 void pcu_swap_unsigneds(unsigned* p, size_t n);

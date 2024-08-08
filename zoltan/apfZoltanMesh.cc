@@ -8,7 +8,6 @@
 #include "apfZoltanMesh.h"
 #include "apfZoltanCallbacks.h"
 #include "apfZoltan.h"
-#include <PCU.h>
 #include <pcu_util.h>
 
 namespace apf {

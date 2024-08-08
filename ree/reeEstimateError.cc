@@ -431,13 +431,13 @@ apf::Field* computeErrorField(apf::Field* ef, apf::Field* correctedFlux)
 
 apf::Field* estimateError(apf::Field* f)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   apf::Field* g = ree::equilibrateResiduals(f);
   lion_eprint(1,"1/4: residuals equilibrated \n");
   apf::Field* theta = ree::computeFluxCorrection(f, g);
   lion_eprint(1,"2/4: flux corrections computed \n");
   apf::destroyField(g);
-  PCU_Barrier();
+  f->getMesh()->getPCU()->Barrier();
 
   apf::Field* correctedFlux = ree::computeCorrectedFlux(f, theta);
   lion_eprint(1,"3/4: corrected flux field computed\n");
@@ -447,8 +447,8 @@ apf::Field* estimateError(apf::Field* f)
   lion_eprint(1,"4/4: error computed \n");
   apf::destroyField(correctedFlux);
 
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!f->getMesh()->getPCU()->Self())
     lion_eprint(1,"REE: Error estimated in %f seconds\n",t1-t0);
 
   return error_field;

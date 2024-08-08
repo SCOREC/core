@@ -1,5 +1,4 @@
 #include <pcu_util.h>
-#include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
 #include <apfNumbering.h>
@@ -126,9 +125,9 @@ namespace parma {
       {
         GhostElementFinder finder(m, wtag, layers, bridge);
         findGhostElements(&finder, s);
-        exchangeGhostElementsFrom();
+        exchangeGhostElementsFrom(m->getPCU());
         weight += ownedVtxWeight(m, wtag);
-        exchange();
+        exchange(m->getPCU());
       }
       ~GhostMPASWeights() {}
       double self() {
@@ -145,32 +144,32 @@ namespace parma {
           set(side->first, finder->weight(side->first));
         sides->end();
       }
-      void exchangeGhostElementsFrom() {
-        PCU_Comm_Begin();
+      void exchangeGhostElementsFrom(pcu::PCU *PCUObj) {
+        PCUObj->Begin();
         const GhostMPASWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
-          PCU_COMM_PACK(ghost->first, ghost->second);
+          PCUObj->Pack(ghost->first, ghost->second);
         end();
-        PCU_Comm_Send();
-        while (PCU_Comm_Listen()) {
+        PCUObj->Send();
+        while (PCUObj->Listen()) {
           double ghostsFromPeer = 0;
-          PCU_COMM_UNPACK(ghostsFromPeer);
+          PCUObj->Unpack(ghostsFromPeer);
           weight += ghostsFromPeer;
         }
       }
-      void exchange() {
-        PCU_Comm_Begin();
+      void exchange(pcu::PCU *PCUObj) {
+        PCUObj->Begin();
         const GhostMPASWeights::Item* ghost;
         begin();
         while( (ghost = iterate()) )
-          PCU_COMM_PACK(ghost->first, weight);
+          PCUObj->Pack(ghost->first, weight);
         end();
-        PCU_Comm_Send();
-        while (PCU_Comm_Listen()) {
+        PCUObj->Send();
+        while (PCUObj->Listen()) {
           double peerWeight;
-          PCU_COMM_UNPACK(peerWeight);
-          int peer = PCU_Comm_Sender();
+          PCUObj->Unpack(peerWeight);
+          int peer = PCUObj->Sender();
           set(peer, peerWeight);
         }
       }

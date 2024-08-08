@@ -8,7 +8,6 @@
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
 #include "apfShape.h"
-#include <PCU.h>
 #include <sstream>
 #include <pcu_util.h>
 #include <list>
@@ -228,8 +227,9 @@ static int number_ghost(
 static void globalize(
     int dofs,
     std::vector<Numbering*> const& owned,
-    std::vector<GlobalNumbering*>& global) {
-  long start = PCU_Exscan_Long(long(dofs));
+    std::vector<GlobalNumbering*>& global,
+    pcu::PCU *PCUObj) {
+  long start = PCUObj->Exscan(long(dofs));
   DynamicArray<Node> nodes;
   for (size_t f=0; f < global.size(); ++f) {
     getNodes(owned[f], nodes);
@@ -315,10 +315,11 @@ int numberGhost(
 
 void makeGlobal(
     std::vector<Numbering*>& owned,
-    std::vector<GlobalNumbering*>& global) {
+    std::vector<GlobalNumbering*>& global,
+    pcu::PCU *PCUObj) {
   int dofs = countDOFs(owned);
   create_global(owned, global);
-  globalize(dofs, owned, global);
+  globalize(dofs, owned, global, PCUObj);
 }
 
 }

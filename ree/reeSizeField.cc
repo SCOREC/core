@@ -156,14 +156,14 @@ apf::Field* getTargetEMSizeField(
     double alpha /*= 0.25*/,
     double beta /*= 2.0*/)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   Sizefield sz;
   setupSizefield(&sz, ef, error_field, n, alpha, beta);
   getElementSizeField(&sz);
   averageSizeField(&sz);
   apf::destroyField(sz.element_size);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!ef->getMesh()->getPCU()->Self())
     lion_eprint(1,"EM: SizeField computed in %f seconds\n",t1-t0);
   return sz.size;
 }

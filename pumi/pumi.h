@@ -15,6 +15,7 @@
 #include "GenIterator.h"
 #include "mPartEntityContainer.h"
 #include "apf.h"
+#include "pcu_util.h"
 
 enum PUMI_EntTopology {
   PUMI_VERTEX, // 0 
@@ -90,6 +91,11 @@ public:
     static pumi _instance;
     return &_instance;
   };
+  void initializePCU(pcu::PCU *newPCU) {
+    PCU_ALWAYS_ASSERT_VERBOSE(PCUObj==nullptr, "pumi::instance() PCUObj already initialized\n");
+    PCUObj = newPCU;
+  }
+  [[nodiscard]] pcu::PCU* getPCU() const noexcept {return PCUObj;}
 
   pMesh mesh;
   pGeom model;  
@@ -100,6 +106,9 @@ public:
   pMeshTag ghost_tag;
   std::vector<pMeshEnt> ghost_vec[4];
   std::vector<pMeshEnt> ghosted_vec[4];
+
+  private:
+  pcu::PCU *PCUObj;
 };
 
 //************************************
@@ -107,13 +116,12 @@ public:
 //      0- SYSTEM-LEVEL FUNCTIONS
 //************************************
 //************************************
-void pumi_start();
-void pumi_finalize(bool do_mpi_finalize=true);
 
+void pumi_load_pcu(pcu::PCU *PCUObj);
 int pumi_size();
 int pumi_rank();
 
-void pumi_sync(void);
+void pumi_sync();
 void pumi_printSys();
 double pumi_getTime();
 double pumi_getMem();

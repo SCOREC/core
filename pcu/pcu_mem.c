@@ -7,7 +7,16 @@
   BSD license as described in the LICENSE file in the top-level directory.
  
 *******************************************************************************/
-#include <PCU.h>
+#include <pcu_mem.h>
+#ifdef __cplusplus
+#include <cstddef>
+#include <cstdio>
+extern "C" {
+#else
+#include <stddef.h>
+#include <stdio.h>
+#include <stdbool.h>
+#endif
 
 #if defined(__APPLE__)
 
@@ -39,7 +48,7 @@
 
 #endif
 
-double PCU_GetMem() {
+double pcu_get_mem() {
   const double M = 1024*1024;
 #if defined(__APPLE__)
   bool resident = true;

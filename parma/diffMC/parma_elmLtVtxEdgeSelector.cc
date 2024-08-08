@@ -1,6 +1,5 @@
 #include <set>
 #include <apf.h>
-#include <PCU.h>
 #include "parma_vtxSelector.h"
 #include "parma_targets.h"
 #include "parma_weights.h"
@@ -137,21 +136,21 @@ namespace {
         }
 
         //send vtx and edge weight
-        PCU_Comm_Begin();
+        mesh->getPCU()->Begin();
         APF_ITERATE(PeerEntSet, peerVerts, pv) {
           const int dest = pv->first;
           double vw = weight(peerVerts[dest]);
-          PCU_COMM_PACK(dest, vw);
+          mesh->getPCU()->Pack(dest, vw);
           double ew = weight(peerEdges[dest]);
-          PCU_COMM_PACK(dest, ew);
+          mesh->getPCU()->Pack(dest, ew);
         }
-        PCU_Comm_Send();
+        mesh->getPCU()->Send();
         MigrComm incoming;
         double vw, ew;
-        while (PCU_Comm_Listen()) {
-          PCU_COMM_UNPACK(vw);
-          PCU_COMM_UNPACK(ew);
-          incoming.insert(Migr(PCU_Comm_Sender(),vw,ew)); //Migr ctor does not exist
+        while (mesh->getPCU()->Listen()) {
+          mesh->getPCU()->Unpack(vw);
+          mesh->getPCU()->Unpack(ew);
+          incoming.insert(Migr(mesh->getPCU()->Sender(),vw,ew)); //Migr ctor does not exist
         }
 
         Midd accept;
@@ -182,18 +181,18 @@ namespace {
           totW[1] += accept[nbor].b;
         }
 
-        PCU_Comm_Begin();
+        mesh->getPCU()->Begin();
         APF_ITERATE(Midd, accept, acc) {
-          PCU_COMM_PACK(acc->first, acc->second.a);
-          PCU_COMM_PACK(acc->first, acc->second.b);
+          mesh->getPCU()->Pack(acc->first, acc->second.a);
+          mesh->getPCU()->Pack(acc->first, acc->second.b);
         }
-        PCU_Comm_Send();
+        mesh->getPCU()->Send();
         Midd* capacity = new Midd;
         dtwo outw;
-        while (PCU_Comm_Listen()) {
-          PCU_COMM_UNPACK(outw.a);
-          PCU_COMM_UNPACK(outw.b);
-          (*capacity)[PCU_Comm_Sender()] = outw;
+        while (mesh->getPCU()->Listen()) {
+          mesh->getPCU()->Unpack(outw.a);
+          mesh->getPCU()->Unpack(outw.b);
+          (*capacity)[mesh->getPCU()->Sender()] = outw;
         }
         return capacity;
       }

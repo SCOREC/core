@@ -7,7 +7,6 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
-#include <PCU.h>
 #include "gmi_cap.h"
 #include <stdlib.h>
 #include <gmi.h>

@@ -2,6 +2,7 @@
 #define PARMA_COMMONS_H_
 
 #include "apfArray.h"
+#include "PCUObj.h"
 
 namespace parmaCommons {
 
@@ -16,7 +17,7 @@ template<class type1, class type2> int isEqlArr(type1 a, type2 b) {
 int isLess(double a, double b);
 int isMore(double a, double b);
 
-void printElapsedTime(const char* fn, double elapsed);
+void printElapsedTime(const char* fn, double elapsed, pcu::PCU *PCUObj);
 
 void debug(bool isActive, const char* fmt,...);
 void status(const char* fmt,...);

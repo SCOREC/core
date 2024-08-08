@@ -16,7 +16,7 @@ namespace parma {
   Sides* makeElmSideSides(apf::Mesh* m);
   Sides* makeVtxSides(apf::Mesh* m);
 
-  double avgSharedSides(Sides* s);
+  double avgSharedSides(Sides* s, pcu::PCU *PCUObj);
 }
 
 #endif
