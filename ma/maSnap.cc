@@ -486,7 +486,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
 
   /* check if the new point is inside the model.
    * otherwise re-run the above loop with last option
-   * in "interpolateParametricCoordinae" being 1.
+   * in "interpolateParametricCoordinate" being 1.
    * Notes
    * 1) we are assuming manifold surfaces
    * 2) we only check for faces that are periodic
