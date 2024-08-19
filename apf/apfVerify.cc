@@ -456,7 +456,7 @@ static long verifyCoords(Mesh* m)
   while (m->getPCU()->Receive())
     if (!receiveCoords(m))
       ++n;
-  return m->getPCU()->Add(n);
+  return m->getPCU()->Add<long>(n);
 }
 
 long verifyVolumes(Mesh* m, bool printVolumes)
@@ -482,7 +482,7 @@ long verifyVolumes(Mesh* m, bool printVolumes)
     }
   }
   m->end(it);
-  return m->getPCU()->Add(n);
+  return m->getPCU()->Add<long>(n);
 }
 
 static void packAlignment(Mesh* m, MeshEntity* e, MeshEntity* r, int to)
@@ -722,7 +722,7 @@ static void receiveTagData(Mesh* m, DynamicArray<MeshTag*>& tags)
     } // switch
   } // while
 
-  int global_size = m->getPCU()->Max((int)mismatch_tags.size());
+  int global_size = m->getPCU()->Max<int>((int)mismatch_tags.size());
   if (global_size&&!m->getPCU()->Self())
     for (std::set<MeshTag*>::iterator it=mismatch_tags.begin(); it!=mismatch_tags.end(); ++it)
       lion_oprint(1,"  - tag \"%s\" data mismatch over remote/ghost copies\n", m->getTagName(*it));

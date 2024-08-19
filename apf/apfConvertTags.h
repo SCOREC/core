@@ -10,7 +10,7 @@ namespace {
     apf::Gid max = -1;
     APF_CONST_ITERATE(apf::GlobalToVert, globalToVert, it)
       max = std::max(max, it->first);
-    return pcu_obj->Max(max); // this is type-dependent
+    return pcu_obj->Max<long>(max); // this is type-dependent
   }
 
   template <class T> inline

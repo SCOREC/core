@@ -233,7 +233,7 @@ struct LayerSnapper : public Crawler
       }
     }
     syncLayer(this, owned);
-    m->getPCU()->Add(&ncurves, 1);
+    m->getPCU()->Add<long>(&ncurves, 1);
   }
   void end()
   {
@@ -436,7 +436,7 @@ static void feedbackUnsnap(Adapt* a, Tag* snapTag, BaseTopLinker& l)
     setFlag(a, v, LAYER_UNSNAP);
     PCU_ALWAYS_ASSERT(m->hasTag(v, snapTag));
   }
-  n = m->getPCU()->Add(n);
+  n = m->getPCU()->Add<long>(n);
   print(m->getPCU(), "fed back unsnap flag from %ld tops", n);
 }
 
@@ -485,7 +485,7 @@ struct Unsnapper : public Crawler
           ++ncurves;
       }
     }
-    m->getPCU()->Add(&ncurves, 1);
+    m->getPCU()->Add<long>(&ncurves, 1);
     syncLayer(this, owned);
   }
   void end()

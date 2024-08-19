@@ -237,8 +237,8 @@ void getGrowthCurves(Output& o)
 
     lion_oprint(1,"%s: rank %d, ngc, nv: %d, %d\n", __func__, o.mesh->getPCU()->Self(), ngc, nv);
 
-    o.mesh->getPCU()->Add(&ngc,sizeof(ngc));
-    o.mesh->getPCU()->Add(&nv,sizeof(nv));
+    o.mesh->getPCU()->Add<int>(&ngc,sizeof(ngc));
+    o.mesh->getPCU()->Add<int>(&nv,sizeof(nv));
 
     if(o.mesh->getPCU()->Self() == 0)
       lion_oprint(1,"%s: total ngc, nv: %d, %d\n", __func__, ngc, nv);

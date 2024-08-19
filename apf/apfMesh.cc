@@ -872,7 +872,7 @@ void printTypes(Mesh* m)
   while ((e = m->iterate(it)))
     typeCnt[m->getType(e)]++;
   m->end(it);
-  m->getPCU()->Add(typeCnt,Mesh::TYPES);
+  m->getPCU()->Add<long>(typeCnt,Mesh::TYPES);
   if (!m->getPCU()->Self()) {
     lion_oprint(1,"number of");
     for (int i=0; i<Mesh::TYPES; i++)
@@ -887,7 +887,7 @@ void printStats(Mesh* m)
   long n[4];
   for (int i = 0; i < 4; ++i)
     n[i] = countOwned(m, i);
-  m->getPCU()->Add(n, 4);
+  m->getPCU()->Add<long>(n, 4);
   printTypes(m);
   if (!m->getPCU()->Self())
     lion_oprint(1,"mesh entity counts: v %ld e %ld f %ld r %ld\n",
@@ -899,7 +899,7 @@ void warnAboutEmptyParts(Mesh* m)
   int emptyParts = 0;
   if (!m->count(m->getDimension()))
     ++emptyParts;
-  emptyParts = m->getPCU()->Add(emptyParts);
+  emptyParts = m->getPCU()->Add<int>(emptyParts);
   if (emptyParts && (!m->getPCU()->Self()))
     lion_eprint(1,"APF warning: %d empty parts\n",emptyParts);
 }

@@ -302,7 +302,7 @@ int test_2dStencil(const int rank, const int totNumParts, pcu::PCU *PCUObj
   const double t1 = pcu::Time();
   int isInMis = mis(part, PCUObj, randNumsPredefined,isNeighbors);
   double elapsedTime = pcu::Time() - t1;
-  PCUObj->Max(&elapsedTime, 1);
+  PCUObj->Max<double>(&elapsedTime, 1);
 
   if( !PCUObj->Self() )
     status("elapsed time (seconds) = %f \n", elapsedTime);

@@ -682,7 +682,7 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(fc);
   getNumVerts(fc,mesh.numVerts);
   mesh.localNumVerts=mesh.numVerts;
-  mesh.numVerts=PCUObj->Add(mesh.numVerts);
+  mesh.numVerts=PCUObj->Add<long>(mesh.numVerts);
   
   if(!PCUObj->Self())
     fprintf(stderr, "numVerts %ld\n", mesh.numVerts);

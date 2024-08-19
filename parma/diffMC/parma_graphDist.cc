@@ -342,9 +342,9 @@ namespace parma_ordering {
     }
     m->end(it);
     m->getPCU()->DebugPrint("la %d\n", la);
-    long tot=m->getPCU()->Add(TO_LONG(la));
-    int max=m->getPCU()->Max(la);
-    int min=m->getPCU()->Min(la);
+    long tot=m->getPCU()->Add<long>(TO_LONG(la));
+    int max=m->getPCU()->Max<int>(la);
+    int min=m->getPCU()->Min<int>(la);
     double avg = TO_DOUBLE(tot)/m->getPCU()->Peers();
     if( !m->getPCU()->Self() )
       parmaCommons::status("la min %d max %d avg %.3f\n", min, max, avg);

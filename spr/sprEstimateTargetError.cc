@@ -66,7 +66,7 @@ class ScalarIntegrator : public apf::Integrator
     }
     void parallelReduce(pcu::PCU *PCUObj)
     {
-      PCUObj->Add(&result,1);
+      PCUObj->Add<double>(&result,1);
     }
     double result;
 };

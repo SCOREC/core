@@ -33,9 +33,9 @@
 static void print_stats(const char* name, double value, pcu::PCU *pcu_obj)
 {
   double min, max, avg;
-  min = pcu_obj->Min(value);
-  max = pcu_obj->Max(value);
-  avg = pcu_obj->Add(value);
+  min = pcu_obj->Min<double>(value);
+  max = pcu_obj->Max<double>(value);
+  avg = pcu_obj->Add<double>(value);
   avg /= pcu_obj->Peers();
   double imb = max / avg;
   if (!pcu_obj->Self())

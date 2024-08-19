@@ -93,7 +93,7 @@ bool isMixed(apf::Mesh2* m) {
       break;
     }
   m->end(it);
-  return m->getPCU()->Max(mixed);
+  return m->getPCU()->Max<int>(mixed);
 }
 
 void clearTags(apf::Mesh* m, apf::MeshTag* t) {

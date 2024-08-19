@@ -47,7 +47,7 @@ static Gid getMax(const GlobalToVert& globalToVert, Mesh2* m)
   Gid max = -1;
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it)
     max = std::max(max, it->first);
-  return m->getPCU()->Max(max); // this is type-dependent
+  return m->getPCU()->Max<long>(max); // this is type-dependent
 }
 
 

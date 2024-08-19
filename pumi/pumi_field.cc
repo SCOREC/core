@@ -494,7 +494,7 @@ void pumi_field_verify(pMesh m, pField f, pOwnership shr)
       receiveFieldData(fields,mismatch_fields,m->getPCU()); 
     }
   }
-  int global_size = m->getPCU()->Max((int)mismatch_fields.size());
+  int global_size = m->getPCU()->Max<int>((int)mismatch_fields.size());
   if (global_size)
   {
     if (!m->getPCU()->Self())

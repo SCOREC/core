@@ -131,7 +131,7 @@ int markInvalidEntities(Adapt* a)
   }
   m->end(it);
   delete qual;
-  return m->getPCU()->Add(count);
+  return m->getPCU()->Add<int>(count);
 }
 
 int getTag(Adapt* a, ma::Entity* e)

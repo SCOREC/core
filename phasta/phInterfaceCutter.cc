@@ -272,7 +272,7 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
   lion_oprint(1,"proc-%d: number of migrating elements: %d\n",m->getPCU()->Self(),plan->count());
 
   int totalPlan = plan->count();
-  totalPlan = m->getPCU()->Add(totalPlan);
+  totalPlan = m->getPCU()->Add<int>(totalPlan);
 
   m->migrate(plan);
   return totalPlan;

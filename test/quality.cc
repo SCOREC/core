@@ -39,14 +39,14 @@ static void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 static void parallelReduce(apf::Mesh2* m)
 {
   long numElems = m->count(m->getDimension());
-  numElems = m->getPCU()->Add(numElems);
-  avgQuality = m->getPCU()->Add(avgQuality);
+  numElems = m->getPCU()->Add<long>(numElems);
+  avgQuality = m->getPCU()->Add<double>(avgQuality);
   avgQuality /= numElems;
-  numElemsBelowTol = m->getPCU()->Add(numElemsBelowTol);
-  avgQualityBelowTol = m->getPCU()->Add(avgQualityBelowTol);
+  numElemsBelowTol = m->getPCU()->Add<long>(numElemsBelowTol);
+  avgQualityBelowTol = m->getPCU()->Add<double>(avgQualityBelowTol);
   if (numElemsBelowTol > 0)
     avgQualityBelowTol /= numElemsBelowTol;
-  minQuality = m->getPCU()->Min(minQuality);
+  minQuality = m->getPCU()->Min<double>(minQuality);
 }
 
 static void processMesh(apf::Mesh2* m)

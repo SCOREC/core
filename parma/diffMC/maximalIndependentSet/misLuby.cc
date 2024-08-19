@@ -459,7 +459,7 @@ int mis(partInfo& part, pcu::PCU *PCUObj, bool randNumsPredefined, bool isNeighb
     nodesRemoved.clear();
     rmtNodesToRemove.clear();
 
-    numNodesAdded = PCUObj->Add(numNodesAdded);
+    numNodesAdded = PCUObj->Add<int>(numNodesAdded);
   } while (numNodesAdded > 0);
 
   return isInMis;

@@ -279,8 +279,8 @@ void getBoundingBox(Mesh* m, Vector& lower, Vector& upper)
   lower.toArray(a);
   double b[3];
   upper.toArray(b);
-  m->getPCU()->Min(a, 3);
-  m->getPCU()->Max(b, 3);
+  m->getPCU()->Min<double>(a, 3);
+  m->getPCU()->Max<double>(b, 3);
   lower.fromArray(a);
   upper.fromArray(b);
 }
@@ -302,7 +302,7 @@ Vector getCentroid(Mesh* m)
   }
   m->end(it);
   pointSum.toArray(values);
-  m->getPCU()->Add(&(values[0]),4);
+  m->getPCU()->Add<double>(&(values[0]),4);
   return Vector(values)/values[3];
 }
 
@@ -369,7 +369,7 @@ double getAverageElementSize(Mesh* m)
   m->end(it);
   double& count = sums[1];
   count = m->count(m->getDimension());
-  m->getPCU()->Add(sums,2);
+  m->getPCU()->Add<double>(sums,2);
   return sizeSum / count;
 }
 
@@ -384,7 +384,7 @@ double getMinimumElementSize(Mesh* m)
     if (size < minimum) minimum=size;
   }
   m->end(it);
-  return m->getPCU()->Min(minimum);
+  return m->getPCU()->Min<double>(minimum);
 }
 
 void getFaceEdgesAndDirections(

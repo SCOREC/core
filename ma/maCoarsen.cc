@@ -247,7 +247,7 @@ bool coarsen(Adapt* a)
     else
       successCount += collapseAllEdges(a, modelDimension);
   }
-  successCount = m->getPCU()->Add(successCount);
+  successCount = m->getPCU()->Add<long>(successCount);
   double t1 = pcu::Time();
   print(m->getPCU(), "coarsened %li edges in %f seconds", successCount,t1-t0);
   return true;

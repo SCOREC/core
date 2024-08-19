@@ -189,11 +189,11 @@ static void fixCoords(apf::Mesh2* m)
   double global_max[2];
   global_max[0] = max_x_diff;
   global_max[1] = max_p_diff;
-  m->getPCU()->Max(global_max, 2);
+  m->getPCU()->Max<double>(global_max, 2);
   long global_diffs[2];
   global_diffs[0] = x_diffs;
   global_diffs[1] = p_diffs;
-  m->getPCU()->Add(global_diffs, 2);
+  m->getPCU()->Add<long>(global_diffs, 2);
   /* admittedly not the best way of checking
      which processor had the max */
   if (global_diffs[0] && (global_max[0] == max_x_diff))

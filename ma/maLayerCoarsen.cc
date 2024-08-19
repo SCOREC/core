@@ -40,7 +40,7 @@ static long markBaseEdgesToCollapse(Adapt* a)
       }
     }
   m->end(it);
-  return m->getPCU()->Add(n);
+  return m->getPCU()->Add<long>(n);
 }
 
 struct CurveLocalizer : public Crawler
@@ -258,7 +258,7 @@ static long collapseAllStacks(Adapt* a, int d)
     allSuccesses += successCount;
     ++round;
   } while (a->mesh->getPCU()->Or(skipCount));
-  return a->mesh->getPCU()->Add(allSuccesses);
+  return a->mesh->getPCU()->Add<long>(allSuccesses);
 }
 
 bool coarsenLayer(Adapt* a)

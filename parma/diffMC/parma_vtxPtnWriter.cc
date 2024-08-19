@@ -21,7 +21,7 @@ namespace {
     }
     public:
     Ptn(apf::Mesh* m) {
-      const long totv = m->getPCU()->Add(countOwned(m));
+      const long totv = m->getPCU()->Add<long>(countOwned(m));
       c = pp = totv / m->getPCU()->Peers();
       f = pp * m->getPCU()->Self();
       const int remainder = totv % m->getPCU()->Peers();

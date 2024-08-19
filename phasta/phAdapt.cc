@@ -94,7 +94,7 @@ struct AdaptCallback : public Parma_GroupCode
 
 static double getAveragePartDensity(apf::Mesh* m) {
   double nElements = m->count(m->getDimension());
-  nElements = m->getPCU()->Add(nElements);
+  nElements = m->getPCU()->Add<double>(nElements);
   return nElements / m->getPCU()->Peers();
 }
 

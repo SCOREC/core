@@ -26,7 +26,7 @@ namespace parma {
       int smallLimit;
       double totW;
       void init(Sides* s, pcu::PCU *PCUObj) {
-        const unsigned maxNb = TO_UINT(PCUObj->Max(s->size()));
+        const unsigned maxNb = TO_UINT(PCUObj->Max<int>(s->size()));
         if( s->size() != maxNb ) return;
         PCUObj->DebugPrint("maxNb %d\n", maxNb);
         std::string sstr = s->print("sides");

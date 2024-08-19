@@ -45,7 +45,7 @@ int parmaCommons::isMore(double a, double b) {
 }
 
 void parmaCommons::printElapsedTime(const char* fn, double elapsed, pcu::PCU *PCUObj) {
-   elapsed = PCUObj->Max(elapsed);
+   elapsed = PCUObj->Max<double>(elapsed);
    if( !PCUObj->Self() )
       status("%s elapsed time %lf seconds\n", fn, elapsed);
 }

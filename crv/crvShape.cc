@@ -634,7 +634,7 @@ static int markEdgesOppLargeAnglesTri(Adapt* a)
     }
     m->end(it);
   } while(count > prev_count);
-  return m->getPCU()->Add(count);
+  return m->getPCU()->Add<int>(count);
 }
 
 static int markEdgesOppLargeAnglesTet(Adapt* a)
@@ -662,7 +662,7 @@ static int markEdgesOppLargeAnglesTet(Adapt* a)
     }
     m->end(it);
   } while(count > prev_count);
-  return m->getPCU()->Add(count);
+  return m->getPCU()->Add<int>(count);
 }
 
 /* The whole idea is to do the quality check once,
@@ -700,7 +700,7 @@ static int markEdgesToFix(Adapt* a, int flag)
   }
   m->end(it);
 
-  return m->getPCU()->Add(count);
+  return m->getPCU()->Add<int>(count);
 }
 
 int fixLargeBoundaryAngles(Adapt* a)
@@ -732,7 +732,7 @@ static void collapseInvalidEdges(Adapt* a)
     findIndependentSet(a);
     successCount += ma::collapseAllEdges(a, modelDimension);
   }
-  successCount = m->getPCU()->Add(successCount);
+  successCount = m->getPCU()->Add<int>(successCount);
   double t1 = pcu::Time();
   ma::print(m->getPCU(), "Collapsed %d bad edges "
       "in %f seconds", successCount, t1-t0);

@@ -14,7 +14,7 @@ namespace {
   using parmaCommons::status;
 
   int getMaxNb(parma::Sides* s, pcu::PCU *PCUObj) {
-    return PCUObj->Max(s->size());
+    return PCUObj->Max<int>(s->size());
   }
 
   class ImbOrMaxNeighbor : public parma::Stop {
@@ -22,7 +22,7 @@ namespace {
       ImbOrMaxNeighbor(parma::Average* nbAvg, double maxNbTol, int targets, int v=0)
         : nb(nbAvg), nbTol(maxNbTol), tgts(targets), verbose(v) {}
       bool stop(double imb, double maxImb, pcu::PCU *PCUObj) {
-        int maxTgts = PCUObj->Max(tgts);
+        int maxTgts = PCUObj->Max<int>(tgts);
         const double nbSlope = nb->avg();
         if( !PCUObj->Self() && verbose )
           status("max neighbor slope %f tolerance %f\n", nbSlope, nbTol);

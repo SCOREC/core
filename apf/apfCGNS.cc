@@ -45,7 +45,7 @@ static Count count(apf::Mesh *m, int dim)
 {
   const int local = apf::countOwned(m, dim);
   int total = local;
-  m->getPCU()->Add(&total, 1); // size of total array
+  m->getPCU()->Add<int>(&total, 1); // size of total array
   return std::make_pair(total, local);
 }
 
@@ -288,7 +288,7 @@ void WriteFields(const CGNS &cgns, const std::vector<std::vector<apf::MeshEntity
     }
 
     int size = data.size();
-    m->getPCU()->Add(&size, 1); // size of total array
+    m->getPCU()->Add<int>(&size, 1); // size of total array
 
     // oddness of the api
     rmin[1] = rmin[0];
@@ -503,7 +503,7 @@ CellElementReturn WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbe
     m->end(cellIter);
     numbersByElementType[o] = counter;
     int total = counter;
-    m->getPCU()->Add(&total, 1); // size of total array
+    m->getPCU()->Add<int>(&total, 1); // size of total array
     globalNumbersByElementType[o] = total;
   }
   cgsize_t allTotal = std::accumulate(globalNumbersByElementType.begin(), globalNumbersByElementType.end(), 0);
@@ -633,7 +633,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       int startOfBCBlock = startingLocation + 1;
       const int number = bc.second.size();
       int total = number;
-      m->getPCU()->Add(&total, 1); // size of total array
+      m->getPCU()->Add<int<(&total, 1); // size of total array
       if (total > 0)
       {
         const auto allEnd = startOfBCBlock + total - 1; //one-based

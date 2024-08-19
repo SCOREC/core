@@ -31,11 +31,11 @@ static void getCounts(Output& o)
 
 static void checkLoadBalance(Output& o)
 {
-  long sumOwnedNodes = o.mesh->getPCU()->Add(o.nOwnedNodes);
-  long sumAllNodes = o.mesh->getPCU()->Add(o.nOverlapNodes);
+  long sumOwnedNodes = o.mesh->getPCU()->Add<long>(o.nOwnedNodes);
+  long sumAllNodes = o.mesh->getPCU()->Add<long>(o.nOverlapNodes);
   double avgNodes = static_cast<double>(sumAllNodes) / o.mesh->getPCU()->Peers();
   double vlbratio = o.nOverlapNodes / avgNodes;
-  double vlbratio_max = o.mesh->getPCU()->Max(vlbratio);
+  double vlbratio_max = o.mesh->getPCU()->Max<double>(vlbratio);
   if (!o.mesh->getPCU()->Self())
     lion_oprint(1,"max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
   if (!o.mesh->getPCU()->Self())
@@ -43,10 +43,10 @@ static void checkLoadBalance(Output& o)
 
   int dim = o.mesh->getDimension();
   int numElms = o.mesh->count(dim);
-  long sumElms = o.mesh->getPCU()->Add(numElms);
+  long sumElms = o.mesh->getPCU()->Add<long>(numElms);
   double avgElms = static_cast<double>(sumElms) / o.mesh->getPCU()->Peers();
   double elbratio = numElms / avgElms;
-  double elbratio_max = o.mesh->getPCU()->Max(elbratio);
+  double elbratio_max = o.mesh->getPCU()->Max<double>(elbratio);
   if (!o.mesh->getPCU()->Self())
     lion_oprint(1,"max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
 }
@@ -369,7 +369,7 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
       rbIDmap[rrbID] = rrbMT;
   }
 
-  int rbIDs_size = m->getPCU()->Max(rbIDmap.size());
+  int rbIDs_size = m->getPCU()->Max<int>(rbIDmap.size());
   int* rbIDs = new int[rbIDs_size]();
   int* rbMTs = new int[rbIDs_size]();
 
@@ -384,8 +384,8 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   }
 
 // allreduce the set
-  m->getPCU()->Max(rbIDs, rbIDs_size);
-  m->getPCU()->Max(rbMTs, rbIDs_size);
+  m->getPCU()->Max<int>(rbIDs, rbIDs_size);
+  m->getPCU()->Max<int>(rbMTs, rbIDs_size);
 
 // attach data
   o.numRigidBody = rbIDs_size;

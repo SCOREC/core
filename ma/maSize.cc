@@ -666,7 +666,7 @@ double getAverageEdgeLength(Mesh* m)
     edge_count += 1.0;
   }
   m->end(it);
-  m->getPCU()->Add(sums,2);
+  m->getPCU()->Add<double>(sums,2);
   return length_sum / edge_count;
 }
 
@@ -686,7 +686,7 @@ double getMaximumEdgeLength(Mesh* m, SizeField* sf)
       maxLength = length;
   }
   m->end(it);
-  m->getPCU()->Max(&maxLength,1);
+  m->getPCU()->Max<double>(&maxLength,1);
   return maxLength;
 }
 

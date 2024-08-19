@@ -26,7 +26,7 @@ class SInt : public apf::Integrator
     {}
     void parallelReduce(pcu::PCU *PCUObj)
     {
-      PCUObj->Add(&r,1);
+      PCUObj->Add<double>(&r,1);
     }
     void reset() {r=0;}
     double r;

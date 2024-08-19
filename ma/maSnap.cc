@@ -779,7 +779,7 @@ bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   SnapAll op(a, t, isSimple);
   applyOperator(a, &op);
-  successCount += a->mesh->getPCU()->Add(op.successCount);
+  successCount += a->mesh->getPCU()->Add<long>(op.successCount);
   return a->mesh->getPCU()->Or(op.didAnything);
 }
 
@@ -830,7 +830,7 @@ bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   SnapMatched op(a, t, isSimple);
   applyOperator(a, &op);
-  successCount += a->mesh->getPCU()->Add(op.successCount);
+  successCount += a->mesh->getPCU()->Add<long>(op.successCount);
   return a->mesh->getPCU()->Or(op.didAnything);
 }
 
@@ -856,7 +856,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
       ++n;
   }
   m->end(it);
-  return m->getPCU()->Add(n);
+  return m->getPCU()->Add<long>(n);
 }
 
 static void markVertsToSnap(Adapt* a, Tag* t)

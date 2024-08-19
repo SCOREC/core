@@ -71,7 +71,7 @@ void matchNewElements(Refine* r)
       }
     }
   }
-  face_count = m->getPCU()->Add(face_count);
+  face_count = m->getPCU()->Add<long>(face_count);
   print(m->getPCU(), "updated matching for %li faces", face_count);
 }
 

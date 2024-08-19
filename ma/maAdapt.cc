@@ -320,7 +320,7 @@ long markEntities(
       setFlag(a,e,setFalseFlag);
   }
   m->end(it);
-  return m->getPCU()->Add(count);
+  return m->getPCU()->Add<long>(count);
 }
 
 void NewEntities::reset()

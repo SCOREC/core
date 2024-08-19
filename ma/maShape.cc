@@ -165,7 +165,7 @@ double getMinQuality(Adapt* a)
       minqual = qual;
   }
   m->end(it);
-  return m->getPCU()->Min(minqual);
+  return m->getPCU()->Min<double>(minqual);
 }
 
 class ShortEdgeFixer : public Operator

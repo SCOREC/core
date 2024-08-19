@@ -34,7 +34,7 @@ namespace parma {
     if ( stop->stop(imb,maxImb,m->getPCU()) )
       return false;
     apf::Migration* plan = selects->run(targets);
-    int planSz = m->getPCU()->Add(plan->count());
+    int planSz = m->getPCU()->Add<int>(plan->count());
     const double t0 = pcu::Time();
     m->migrate(plan);
     if ( !m->getPCU()->Self() && verbosity )

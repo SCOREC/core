@@ -5,12 +5,12 @@
 namespace parma {  
   double getMaxWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
     double locW = getWeight(m,w,entDim);
-    return m->getPCU()->Max(locW);
+    return m->getPCU()->Max<double>(locW);
   }
 
   double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
     double locW = getWeight(m,w,entDim);
-    return m->getPCU()->Add(locW) / m->getPCU()->Peers();
+    return m->getPCU()->Add<double>(locW) / m->getPCU()->Peers();
   }
 
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
@@ -27,14 +27,14 @@ namespace parma {
   void getImbalance(Weights* w, double& imb, double& avg, pcu::PCU *PCUObj) {
     double sum, max;
     sum = max = w->self();
-    sum = PCUObj->Add(sum);
-    max = PCUObj->Max(max);
+    sum = PCUObj->Add<double>(sum);
+    max = PCUObj->Max<double>(max);
     avg = sum/PCUObj->Peers();
     imb = max/avg;
   }
 
   double getMaxWeight(Weights* w, pcu::PCU *PCUObj) {
-    return PCUObj->Max(w->self());
+    return PCUObj->Max<double>(w->self());
   }
 
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
