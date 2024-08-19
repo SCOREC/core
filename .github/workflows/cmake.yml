@@ -36,7 +36,7 @@ jobs:
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j 1
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j
 
     - name: Test
       env:

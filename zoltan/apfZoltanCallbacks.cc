@@ -322,9 +322,10 @@ void ZoltanData::setup()
   Zoltan_Set_Param(ztn, "obj_weight_dim", paramStr);
   Zoltan_Set_Param(ztn, "edge_weight_dim", "0");
 
+  Mesh* m = zb->mesh;
   //Debug
   snprintf(paramStr, 128, "%d", dbgLvl);
-  if ( zb->isLocal && 0 != zb->mesh->getPCU()->Self() )
+  if ( zb->isLocal && 0 != m->getPCU()->Self() )
     snprintf(paramStr, 128, "%d", 0);  //if local silence all but rank 0
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
@@ -344,7 +345,7 @@ void ZoltanData::setup()
   if ( zb->isLocal ) {
     snprintf(paramStr, 128, "%d", zb->multiple);
   } else {
-    snprintf(paramStr, 128, "%d", zb->multiple*zb->mesh->getPCU()->Peers());
+    snprintf(paramStr, 128, "%d", zb->multiple*m->getPCU()->Peers());
   }
   Zoltan_Set_Param(ztn, "NUM_GLOBAL_PARTS", paramStr);
   snprintf(paramStr, 128, "%d", zb->multiple);

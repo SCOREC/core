@@ -245,11 +245,11 @@ void splitElement(Refine* r, Entity* e)
 
 static void linkNewVerts(Refine* r)
 {
-  if (r->adapt->mesh->getPCU()->Peers()==1)
-    return;
-  struct { Entity* parent; Entity* vert; } message;
   Adapt* a = r->adapt;
   Mesh* m = a->mesh;
+  if (m->getPCU()->Peers()==1)
+    return;
+  struct { Entity* parent; Entity* vert; } message;
   m->getPCU()->Begin();
   for (int d=1; d < m->getDimension(); ++d)
     for (size_t i=0; i < r->newEntities[d].getSize(); ++i)
@@ -402,7 +402,8 @@ long markEdgesToSplit(Adapt* a)
 void processNewElements(Refine* r)
 {
   linkNewVerts(r);
-  if (r->adapt->mesh->getPCU()->Peers()>1) {
+  Mesh* m = r->adapt->mesh;
+  if (m->getPCU()->Peers()>1) {
     apf::stitchMesh(r->adapt->mesh);
     r->adapt->mesh->acceptChanges();
   }
