@@ -934,10 +934,10 @@ MeshEntity* castEntity(capEntity* entity)
   return 0;
 }
 
-Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb)
+Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb, pcu::PCU *PCUObj)
 {
   MeshCAP* m = new MeshCAP(mdb, gdb);
-  m->init(getLagrange(1));
+  m->init(getLagrange(1), PCUObj);
   return m;
 }
 

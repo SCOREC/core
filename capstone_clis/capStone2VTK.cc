@@ -1,4 +1,4 @@
-#include <PCU_C.h>
+#include <PCU.h>
 #include <apfCAP.h>
 #include <apfMDS.h>
 #include <samSz.h>
@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
+#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -41,10 +42,11 @@ using namespace CreateMG::Geometry;
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <output folder name>\n";
     return EXIT_FAILURE;
@@ -131,11 +133,11 @@ int main(int argc, char** argv)
   gmi_register_cap();
 
   // convert the mesh to apf/mds mesh
-  apf::Mesh2* mesh = apf::createMesh(m,g);
+  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
 
   apf::writeVtkFiles(folderName, mesh);
 
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

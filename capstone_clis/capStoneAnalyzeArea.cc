@@ -1,4 +1,4 @@
-#include <PCU_C.h>
+#include <PCU.h>
 #include <apfCAP.h>
 #include <apfMDS.h>
 #include <samSz.h>
@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
+#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -48,12 +49,13 @@ double addSizeDistribution(apf::Mesh2* m, int factor,
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  double initialTime = PCU_Time();
+  double initialTime = pcu::Time();
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <factor>\n";
     return EXIT_FAILURE;
@@ -143,7 +145,7 @@ int main(int argc, char** argv)
 
   // create the mesh object (this one is CapStone underneath)
   printf("\n---- Creating Mesh Wrapper Object. \n");
-  apf::Mesh2* mesh = apf::createMesh(m,g);
+  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
   // add size distribution based on area
@@ -174,7 +176,7 @@ int main(int argc, char** argv)
   printf("total bin count is %lu \n", totalBinCount);
 
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

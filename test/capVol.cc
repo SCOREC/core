@@ -1,11 +1,12 @@
 #include <cstring>
 #include <cstdlib>
+#include <memory>
 
 // Output
 #include <lionPrint.h>
 
 // Parallelism
-#include <PCU_C.h>
+#include <PCU.h>
 #include <pcu_util.h>
 
 // Mesh interfaces
@@ -30,7 +31,6 @@ namespace {
 
 void myExit(int exit_code = EXIT_SUCCESS) {
   gmi_cap_stop();
-  PCU_Comm_Free();
   MPI_Finalize();
   exit(exit_code);
 }
@@ -77,7 +77,8 @@ void printUsage(char *argv0) {
 int main(int argc, char** argv) {
   // Initialize parallelism.
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
   // Initialize logging.
   lion_set_stdout(stdout);
@@ -85,7 +86,7 @@ int main(int argc, char** argv) {
 
   // Check arguments or print usage.
   if (argc < 3) {
-    if (PCU_Comm_Self() == 0) {
+    if (PCUObj.get()->Self() == 0) {
       printUsage(argv[0]);
     }
     myExit(EXIT_FAILURE);
@@ -173,7 +174,7 @@ int main(int argc, char** argv) {
   MG_API_CALL(m, compute_adjacency());
 
   // Make APF adapter over Capstone mesh.
-  ma::Mesh* apfCapMesh = apf::createMesh(m, g);
+  ma::Mesh* apfCapMesh = apf::createMesh(m, g, PCUObj.get());
 
   // Choose appropriate size-field.
   ma::AnisotropicFunction* sf = nullptr;
@@ -271,6 +272,6 @@ int main(int argc, char** argv) {
 
   // Exit calls.
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

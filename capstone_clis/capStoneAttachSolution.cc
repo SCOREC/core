@@ -1,4 +1,4 @@
-#include <PCU_C.h>
+#include <PCU.h>
 #include <apfCAP.h>
 #include <apfMDS.h>
 #include <samSz.h>
@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
+#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -149,8 +150,8 @@ int gradeSizeModify(apf::Mesh* m, apf::Field* size_iso,double gradingFactor,
           m->getRemotes(edgAdjVert[idx1],remotes);
           double newSize = gradingFactor*size[idx2];
           int owningPart=m->getOwner(edgAdjVert[idx1]);
-          PCU_COMM_PACK(owningPart, remotes[owningPart]);
-          PCU_COMM_PACK(owningPart,newSize);
+          m->getPCU()->Pack(owningPart, remotes[owningPart]);
+          m->getPCU()->Pack(owningPart,newSize);
         }
       }
 
@@ -252,7 +253,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     m->getPCU()->Begin();
     needsParallel = serialGradation(m,size_iso,markedEdges,gradingFactor);
 
-    PCU_Add_Ints(&needsParallel,1);
+    m->getPCU()->Add<int>(&needsParallel,1);
     m->getPCU()->Send();
 
     apf::MeshEntity* ent;
@@ -267,8 +268,8 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     //owning copies are receiving
     while(m->getPCU()->Receive())
     {
-      PCU_COMM_UNPACK(ent);
-      PCU_COMM_UNPACK(receivedSize);
+      m->getPCU()->Unpack(ent);
+      m->getPCU()->Unpack(receivedSize);
 
       if(!m->isOwned(ent)){
         std::cout<<"THERE WAS AN ERROR"<<std::endl;
@@ -305,7 +306,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
       currentSize = apf::getScalar(size_iso,ent,0);
       for(apf::Copies::iterator iter=remotes.begin(); iter!=remotes.end();++iter)
       {
-        PCU_COMM_PACK(iter->first, iter->second);
+        m->getPCU()->Pack(iter->first, iter->second);
       }
       updateRemoteVertices.pop();
     }
@@ -315,7 +316,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     while(m->getPCU()->Receive())
     {
       //unpack
-      PCU_COMM_UNPACK(ent);
+      m->getPCU()->Unpack(ent);
       //PCU_COMM_UNPACK(receivedSize);
       assert(!m->isOwned(ent));
 
@@ -598,12 +599,13 @@ void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList,
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  double initialTime = PCU_Time();
+  double initialTime = pcu::Time();
 
   if (argc != 9) {
-    if(0==PCU_Comm_Self()) {
+    if(0==PCUObj.get()->Self()) {
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <data file .txt> <target field(s)> <strand size> <desired max size> <error reduction factor> <max refinement level> <boundary layer thickness>\n";
       std::cerr << "*target field(s) is a bit string to select which field(s) are used for error estimation\n";
@@ -711,7 +713,7 @@ int main(int argc, char** argv)
 
   // create the mesh object (this one is CapStone underneath)
   printf("\n---- Creating Mesh Wrapper Object. \n");
-  apf::Mesh2* mesh = apf::createMesh(m,g);
+  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
   // make the volume mesh (this one is MDS underneath)
@@ -735,7 +737,7 @@ int main(int argc, char** argv)
   printf("number of mesh regions(hexes): %zu\n", volMesh->count(3));
   printf("---- Printing Volume/Strand Mesh Stats: Done. \n");
 
-  double constructionTime = PCU_Time();
+  double constructionTime = pcu::Time();
   std::cout<<"TIMER: Finished converting capstone mesh to volume mesh "<<constructionTime-initialTime<<std::endl;
 
   //Get Size Field for Adapt
@@ -890,7 +892,7 @@ int main(int argc, char** argv)
   volMesh->end(itVol);
   std::cout<<"Finished surface fields from volume\n";
 
-  double getSurfaceTime = PCU_Time();
+  double getSurfaceTime = pcu::Time();
   std::cout<<"TIMER: Finished computing speed and transferring fields to surface "<<getSurfaceTime-constructionTime <<std::endl;
 
   //get the true pressure field
@@ -923,7 +925,7 @@ int main(int argc, char** argv)
 
   setSizeField(mesh,eBased.lambdaStrandMax,eBased.sizeField,eBased.lambda_max,eBased.lambda_cutoff(),eBased.h_lambdamax,h_global,factor);
 
-  double getPressureTime = PCU_Time();
+  double getPressureTime = pcu::Time();
   std::cout<<"TIMER: Finished pressure size field "<<getPressureTime-getSurfaceTime <<std::endl;
 
   //get surface shear stress for adaptivity
@@ -975,7 +977,7 @@ int main(int argc, char** argv)
 
   std::cout<<"set size field\n";
 
-  double getShearTime = PCU_Time();
+  double getShearTime = pcu::Time();
   std::cout<<"TIMER: Finished skin friction size field "<<getShearTime-getPressureTime<<std::endl;
 
   //Mesh Intersection
@@ -993,7 +995,7 @@ int main(int argc, char** argv)
 
   isotropicIntersect(mesh,sizeFieldList,userInputFields,finalSizeField,finalChoiceField);
 
-  double getIntersectionTime = PCU_Time();
+  double getIntersectionTime = pcu::Time();
   std::cout<<"TIMER: get mesh intersection "<<getIntersectionTime-getShearTime<<std::endl;
 
   // Printing a pre-modification gradation size field
@@ -1003,7 +1005,7 @@ int main(int argc, char** argv)
   gradeMesh(mesh,finalSizeField);
   std::cout<<"Exiting surface shear\n";
 
-  double getGradationTime = PCU_Time();
+  double getGradationTime = pcu::Time();
   std::cout<<"TIMER: get graded size field "<<getGradationTime-getIntersectionTime<<std::endl;
 
   //adjust refinement level
@@ -1031,7 +1033,7 @@ int main(int argc, char** argv)
   /* in->debugFolder = "debug"; */
   ma::adaptVerbose(in, false);
 
-  double adaptTime = PCU_Time();
+  double adaptTime = pcu::Time();
   std::cout<<"TIMER: adaptMesh "<<adaptTime-getGradationTime<<std::endl;
 
 
@@ -1068,7 +1070,7 @@ int main(int argc, char** argv)
   }
 
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

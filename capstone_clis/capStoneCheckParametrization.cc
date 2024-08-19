@@ -1,4 +1,4 @@
-#include <PCU_C.h>
+#include <PCU.h>
 #include <queue>
 #include <apf.h>
 #include <pcu_util.h>
@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -28,10 +29,11 @@ void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface*
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
   if (argc != 2) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre>\n";
     return EXIT_FAILURE;
@@ -112,7 +114,7 @@ int main(int argc, char** argv)
   // check parametrization using capstone apis
   checkParametrization(m, g);
 
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

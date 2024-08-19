@@ -1,4 +1,4 @@
-#include <PCU_C.h>
+#include <PCU.h>
 #include <apfCAP.h>
 #include <apfMDS.h>
 #include <samSz.h>
@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
+#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -125,8 +126,8 @@ int gradeSizeModify(apf::Mesh* m, apf::Field* size_iso,double gradingFactor,
           m->getRemotes(edgAdjVert[idx1],remotes);
           double newSize = gradingFactor*size[idx2];
           int owningPart=m->getOwner(edgAdjVert[idx1]);
-          PCU_COMM_PACK(owningPart, remotes[owningPart]);
-          PCU_COMM_PACK(owningPart,newSize);
+          m->getPCU()->Pack(owningPart, remotes[owningPart]);
+          m->getPCU()->Pack(owningPart,newSize);
         }
       }
 
@@ -228,7 +229,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     m->getPCU()->Begin();
     needsParallel = serialGradation(m,size_iso,markedEdges,gradingFactor);
 
-    PCU_Add_Ints(&needsParallel,1);
+    m->getPCU()->Add<int>(&needsParallel,1);
     m->getPCU()->Send(); 
 
     apf::MeshEntity* ent;
@@ -243,8 +244,8 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     //owning copies are receiving
     while(m->getPCU()->Receive())
     {
-      PCU_COMM_UNPACK(ent);
-      PCU_COMM_UNPACK(receivedSize);
+      m->getPCU()->Unpack(ent);
+      m->getPCU()->Unpack(receivedSize);
 
       if(!m->isOwned(ent)){
         std::cout<<"THERE WAS AN ERROR"<<std::endl;
@@ -281,7 +282,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
       currentSize = apf::getScalar(size_iso,ent,0);
       for(apf::Copies::iterator iter=remotes.begin(); iter!=remotes.end();++iter)
       {
-        PCU_COMM_PACK(iter->first, iter->second);
+        m->getPCU()->Pack(iter->first, iter->second);
       }
       updateRemoteVertices.pop();
     }
@@ -291,7 +292,7 @@ int gradeMesh(apf::Mesh* m,apf::Field* size_iso)
     while(m->getPCU()->Receive())
     {
       //unpack
-      PCU_COMM_UNPACK(ent);
+      m->getPCU()->Unpack(ent);
       //PCU_COMM_UNPACK(receivedSize);
       assert(!m->isOwned(ent));
 
@@ -497,12 +498,13 @@ void isotropicIntersect(apf::Mesh* m, std::queue<apf::Field*> sizeFieldList,apf:
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
   lion_set_verbosity(1);
-  double initialTime = PCU_Time();
+  double initialTime = pcu::Time();
 
   if (argc != 7) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.get()->Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <data file .txt> <data offset> <strand size> <desired max size> <error reduction factor>\n";
     return EXIT_FAILURE;
@@ -594,7 +596,7 @@ int main(int argc, char** argv)
 
   printf("---- CapStone Mesh Loaded. \n");
 
-  apf::Mesh2* mesh = apf::createMesh(m,g);
+  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
 
   //adapt the mesh
   ma::Input* in;
@@ -612,7 +614,7 @@ int main(int argc, char** argv)
   in->debugFolder = "debug";
   ma::adaptVerbose(in, true);
 
-  double adaptTime = PCU_Time();
+  double adaptTime = pcu::Time();
 
 
   // write the adapted mesh to vtk
@@ -635,7 +637,7 @@ int main(int argc, char** argv)
   } 
 
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
