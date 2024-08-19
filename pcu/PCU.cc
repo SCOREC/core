@@ -1,4 +1,4 @@
-#include "PCUObj.h"
+#include "PCU.h"
 #include "noto_malloc.h"
 #include "pcu_mem.h"
 #include "pcu_mpi.h"

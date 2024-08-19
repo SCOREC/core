@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <pcu_util.h>
+#include <PCU_C.h>
 #include <PCU.h>
-#include <PCUObj.h>
 #include <phiotimer.h>
 #include <lionPrint.h>
 #include <sstream>

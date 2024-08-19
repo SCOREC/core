@@ -1,4 +1,3 @@
-//#include <PCUObj.h>
 #include <lionPrint.h>
 #include "phBC.h"
 #ifdef HAVE_SIMMETRIX

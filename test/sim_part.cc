@@ -39,7 +39,7 @@
 #endif
 #endif
 
-#include <PCUObj.h>
+#include <PCU.h>
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>

@@ -1,120 +1,131 @@
-#ifndef PCU_H
-#define PCU_H
-#include "pcu_defines.h"
+#ifndef SCOREC_PCU_H
+#define SCOREC_PCU_H
+
+#include <cstdlib>
 #include <mpi.h>
+#include "pcu_defines.h"
 
-#ifdef __cplusplus
-#include <cstddef>
-#include <cstdio>
-extern "C" {
-#else
-#include <stddef.h>
-#include <stdio.h>
-#include <stdbool.h>
-#endif
+struct pcu_msg_struct;
+struct pcu_mpi_struct;
 
-typedef struct PCU_t PCU_t;
+namespace pcu {
+class PCU {
+public:
+  explicit PCU(MPI_Comm comm);
+  ~PCU() noexcept;
+  PCU(PCU const &) = delete;
+  PCU(PCU &&) noexcept;
+  PCU &operator=(PCU const &) = delete;
+  PCU &operator=(PCU &&) noexcept;
+  /** @brief Returns the rank of the current process.
+   *  @return The rank of the current process.
+   */
+  [[nodiscard]] int Self() const noexcept;
+  /** @brief Returns the number of ranks in the communicator.
+   *  @return The number of ranks in the communicator.
+   */
+  [[nodiscard]] int Peers() const noexcept;
+  [[nodiscard]] MPI_Comm GetMPIComm() const noexcept;
 
-int PCU_Comm_Init(PCU_t* h);
-int PCU_Comm_Free(PCU_t* h);
+  [[nodiscard]] PCU_t GetCHandle() {PCU_t h; h.ptr=this; return h;}
+  /*recommended message passing API*/
+  void Begin() noexcept;
+  int Pack(int to_rank, const void *data, size_t size) noexcept;
+  template<typename T> int Pack(int to_rank, T& data) noexcept {
+    return Pack(to_rank, &(data), sizeof(data));
+  }
+  template<typename T> int Pack(int to_rank, T*& data) noexcept {
+    return Pack(to_rank, &(data), sizeof(data));
+  }
 
-/*rank/size functions*/
-int PCU_Comm_Self(PCU_t h);
-int PCU_Comm_Peers(PCU_t h);
+  int Send() noexcept;
+  bool Receive() noexcept;
+  bool Listen() noexcept;
+  int Sender() noexcept;
+  bool Unpacked() noexcept;
+  int Unpack(void *data, size_t size) noexcept;
+  template<typename T> int Unpack(T& data) noexcept {
+    return Unpack(&(data), sizeof(data));
+  }
+  template<typename T> int Unpack(T*& data) noexcept {
+    return Unpack(&(data), sizeof(data));
+  }
+  /*IPComMan replacement API*/
+  int Write(int to_rank, const void *data, size_t size) noexcept;
+  bool Read(int *from_rank, void **data, size_t *size) noexcept;
 
-/*recommended message passing API*/
-void PCU_Comm_Begin(PCU_t h);
-int PCU_Comm_Pack(PCU_t h, int to_rank, const void* data, size_t size);
-#define PCU_COMM_PACK(handle, to_rank,object)\
-PCU_Comm_Pack(handle, to_rank,&(object),sizeof(object))
-int PCU_Comm_Send(PCU_t h);
-bool PCU_Comm_Receive(PCU_t h);
-bool PCU_Comm_Listen(PCU_t h);
-int PCU_Comm_Sender(PCU_t h);
-bool PCU_Comm_Unpacked(PCU_t h);
-int PCU_Comm_Unpack(PCU_t h, void* data, size_t size);
-#define PCU_COMM_UNPACK(handle, object)\
-PCU_Comm_Unpack(handle, &(object),sizeof(object))
+  /*turns deterministic ordering for the
+    above API on/off*/
+  void Order(bool on);
 
-/*turns deterministic ordering for the
-  above API on/off*/
-void PCU_Comm_Order(PCU_t h, bool on);
+  /*collective operations*/
+  void Barrier();
+  template <typename T> void Add(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Add(T p) noexcept;
+  template <typename T> void Min(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Min(T p) noexcept;
+  template <typename T> void Max(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Max(T p) noexcept;
+  template <typename T> void Exscan(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Exscan(T p) noexcept;
 
-/*collective operations*/
-void PCU_Barrier(PCU_t h);
-void PCU_Add_Doubles(PCU_t h, double* p, size_t n);
-double PCU_Add_Double(PCU_t h, double x);
-void PCU_Min_Doubles(PCU_t h, double* p, size_t n);
-double PCU_Min_Double(PCU_t h, double x);
-void PCU_Max_Doubles(PCU_t h, double* p, size_t n);
-double PCU_Max_Double(PCU_t h, double x);
-void PCU_Add_Ints(PCU_t h, int* p, size_t n);
-int PCU_Add_Int(PCU_t h, int x);
-void PCU_Add_Longs(PCU_t h, long* p, size_t n);
-long PCU_Add_Long(PCU_t h, long x);
-void PCU_Exscan_Ints(PCU_t h, int* p, size_t n);
-int PCU_Exscan_Int(PCU_t h, int x);
-void PCU_Exscan_Longs(PCU_t h, long* p, size_t n);
-long PCU_Exscan_Long(PCU_t h, long x);
-void PCU_Add_SizeTs(PCU_t h, size_t* p, size_t n);
-size_t PCU_Add_SizeT(PCU_t h, size_t x);
-void PCU_Min_SizeTs(PCU_t h, size_t* p, size_t n);
-size_t PCU_Min_SizeT(PCU_t h, size_t x);
-void PCU_Max_SizeTs(PCU_t h, size_t* p, size_t n);
-size_t PCU_Max_SizeT(PCU_t h, size_t x);
-void PCU_Min_Ints(PCU_t h, int* p, size_t n);
-int PCU_Min_Int(PCU_t h, int x);
-void PCU_Max_Ints(PCU_t h, int* p, size_t n);
-int PCU_Max_Int(PCU_t h, int x);
-void PCU_Max_Longs(PCU_t h, long* p, size_t n);
-long PCU_Max_Long(PCU_t h, long x);
-int PCU_Or(PCU_t h, int c);
-int PCU_And(PCU_t h, int c);
+  /*bitwise operations*/
+  [[nodiscard]] int Or(int c) noexcept;
+  [[nodiscard]] int And(int c) noexcept;
 
-/*process-level self/peers (mpi wrappers)*/
-int PCU_Proc_Self(PCU_t h);
-int PCU_Proc_Peers(PCU_t h);
+  /*lesser-used APIs*/
+  int Packed(int to_rank, size_t *size) noexcept;
+  int From(int *from_rank) noexcept;
+  int Received(size_t *size) noexcept;
+  void *Extract(size_t size) noexcept;
 
-/*IPComMan replacement API*/
-int PCU_Comm_Write(PCU_t h, int to_rank, const void* data, size_t size);
-#define PCU_COMM_WRITE(handle,to,data) \
-PCU_Comm_Write(handle, to,&(data),sizeof(data))
-bool PCU_Comm_Read(PCU_t h, int* from_rank, void** data, size_t* size);
+  void DebugPrint(const char* format, ...) noexcept PCU_FORMAT_ATTRIBUTE(2, 3);
+  void DebugPrint(const char* format, va_list args) noexcept;
+  /* Debug functions */
+  void DebugOpen() noexcept;
 
-/*Debug file I/O API*/
-void PCU_Debug_Open(PCU_t h);
+  MPI_Comm SwitchMPIComm(MPI_Comm) noexcept;
 
-void PCU_Debug_Print(PCU_t h, const char* format, ...) PCU_FORMAT_ATTRIBUTE(2,3);
-/*lesser-used APIs*/
-bool PCU_Comm_Initialized(PCU_t h);
-int PCU_Comm_Packed(PCU_t h ,int to_rank, size_t* size);
-int PCU_Comm_From(PCU_t h, int* from_rank);
-int PCU_Comm_Received(PCU_t h, size_t* size);
-void* PCU_Comm_Extract(PCU_t h, size_t size);
-int PCU_Comm_Rank(PCU_t h, int* rank);
-int PCU_Comm_Size(PCU_t h, int* size);
+  //struct MPIComms {
+  //  MPI_Comm original;
+  //  MPI_Comm user;
+  //  MPI_Comm coll;
+  //};
+  // takes ownership of newcomms.user & newcomms.coll
+  // user responsibility to free returned user/coll comm
+  //MPIComms SwitchMPIComms(MPIComms& newcomms) noexcept;
 
-/*deprecated method enum*/
-
-/*special MPI_Comm replacement API*/
-void PCU_Switch_Comm(PCU_t h, MPI_Comm new_comm);
-MPI_Comm PCU_Get_Comm(PCU_t h);
-
+private:
+  pcu_msg_struct *msg_;
+  pcu_mpi_struct *mpi_;
+};
 /*stack trace helpers using GNU/Linux*/
-void PCU_Protect(void);
-
-/*MPI_Wtime() equivalent*/
-double PCU_Time(void);
-
+void Protect() noexcept;
 /*Memory usage*/
-double PCU_GetMem(void);
+[[nodiscard]] double GetMem() noexcept;
+/*MPI_Wtime() equivalent*/
+[[nodiscard]] double Time() noexcept;
 
-/*Access global variable*/
-PCU_t PCU_Get_Global_Handle(void);
+PCU* PCU_GetGlobal();
+
+/* explicit instantiations of template functions */
+#define PCU_EXPL_INST_DECL(T)                                                  \
+  extern template void PCU::Add<T>(T * p, size_t n) noexcept;                  \
+  extern template T PCU::Add<T>(T p) noexcept;                                 \
+  extern template void PCU::Min<T>(T * p, size_t n) noexcept;                  \
+  extern template T PCU::Min<T>(T p) noexcept;                                 \
+  extern template void PCU::Max<T>(T * p, size_t n) noexcept;                  \
+  extern template T PCU::Max<T>(T p) noexcept;                                 \
+  extern template void PCU::Exscan<T>(T * p, size_t n) noexcept;               \
+  extern template T PCU::Exscan<T>(T p) noexcept;
+PCU_EXPL_INST_DECL(int)
+PCU_EXPL_INST_DECL(size_t)
+PCU_EXPL_INST_DECL(long)
+PCU_EXPL_INST_DECL(double)
+#undef PCU_EXPL_INST_DECL
+
+} // namespace pcu
+
+#endif // PCUOBJ_H
 
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
-
-#endif

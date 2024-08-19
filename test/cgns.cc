@@ -5,7 +5,7 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
+#include <PCU_C.h>
 #include <lionPrint.h>
 #include <cstdlib>
 //

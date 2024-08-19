@@ -2,7 +2,7 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCUObj.h>
+#include <PCU.h>
 #include <lionPrint.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>

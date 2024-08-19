@@ -10,7 +10,7 @@
 #include "mpi.h"
 
 #include <stddef.h>
-#include "PCUObj.h"
+#include "PCU.h"
 
 #define MIS_ITERATE(t,w,i) \
 for (t::iterator i = (w).begin(); \

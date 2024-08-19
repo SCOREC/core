@@ -5,7 +5,7 @@
 #include <lionPrint.h>
 
 // Parallelism
-#include <PCU.h>
+#include <PCU_C.h>
 #include <pcu_util.h>
 
 // Mesh interfaces

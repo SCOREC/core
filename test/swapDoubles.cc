@@ -1,5 +1,4 @@
-//#include <mpi.h>
-#include <PCUObj.h>
+#include <PCU.h>
 #include <pcu_io.h> //pcu_swap_doubles
 #include <pcu_util.h> //PCU_ALWAYS_ASSERT
 #include <numeric> //iota

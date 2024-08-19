@@ -2,7 +2,7 @@
 #define PARMA_COMMONS_H_
 
 #include "apfArray.h"
-#include "PCUObj.h"
+#include "PCU.h"
 
 namespace parmaCommons {
 

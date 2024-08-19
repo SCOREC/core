@@ -14,7 +14,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <pcu_util.h>
-#include <PCU.h>
+#include <PCU_C.h>
 #include <pcu_io.h>
 #include <lionPrint.h>
 #include <reel.h>

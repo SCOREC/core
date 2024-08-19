@@ -6,7 +6,7 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCUObj.h>
+#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_io.h>
 #include <phRestart.h>

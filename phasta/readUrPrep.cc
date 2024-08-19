@@ -2,7 +2,7 @@
 #include <apfMesh.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
-#include <PCUObj.h>
+#include <PCU.h>
 #include <chef.h>
 #include <memory>
 

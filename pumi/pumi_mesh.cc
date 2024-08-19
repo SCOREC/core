@@ -12,7 +12,7 @@
 #include <parma.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCUObj.h>
+#include <PCU.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
 #include <iostream>

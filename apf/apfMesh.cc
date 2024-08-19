@@ -5,7 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCUObj.h>
+#include <PCU.h>
 #include "apfCoordData.h"
 #include "apfVectorField.h"
 #include "apfShape.h"

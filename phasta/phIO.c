@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <pcu_io.h>
 #include <phIO.h>
-#include <PCU.h>
+#include <PCU_C.h>
 #include <lionPrint.h>
 #include <phiotimer.h>
 #include <assert.h>

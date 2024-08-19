@@ -8,7 +8,7 @@
 
 *******************************************************************************/
 #include "pcu_io.h"
-#include "PCU.h"
+#include "PCU_C.h"
 #include "noto_malloc.h"
 #include "pcu_buffer.h"
 #include "pcu_util.h"

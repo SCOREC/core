@@ -33,7 +33,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 #Sources & Headers
 set(SOURCES
-        pcu.cc
+        pcu_c.cc
         pcu_aa.c
         pcu_coll.c
         pcu_io.c
@@ -46,10 +46,10 @@ set(SOURCES
         pcu_util.c
         noto/noto_malloc.c
         reel/reel.c
-        PCUObj.cc)
+        PCU.cc)
 
 set(HEADERS
-        PCU.h
+        PCU_C.h
         pcu_io.h
         pcu_util.h
         reel/reel.h

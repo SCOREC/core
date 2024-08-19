@@ -8,7 +8,7 @@
 
 *******************************************************************************/
 
-#include <PCUObj.h>
+#include <PCU.h>
 #include <lionPrint.h>
 #include "apfMDS.h"
 #include "mds_apf.h"

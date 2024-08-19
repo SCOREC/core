@@ -2,7 +2,7 @@
 #define PARMA_STOP_H
 
 #include "parma_monitor.h"
-#include "PCUObj.h"
+#include "PCU.h"
 
 namespace parma {
   class Stop {

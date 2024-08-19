@@ -9,7 +9,7 @@
 #include <SimModel.h>
 #endif
 #include <cstdlib> //exit and exit_failure
-#include <PCUObj.h>
+#include <PCU.h>
 #include <memory>
 #include <mpi.h>
 

@@ -1,7 +1,7 @@
 #ifndef PHSTREAM_H_
 #define PHSTREAM_H_
 #include <stdio.h>
-#include <PCUObj.h>
+#include <PCU.h>
 
 
 /** \file phstream.h

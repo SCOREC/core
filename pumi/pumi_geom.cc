@@ -12,7 +12,7 @@
 #include "gmi_null.h"
 #include "gmi_analytic.h"
 #include "pumi_iter.h"
-#include <PCUObj.h>
+#include <PCU.h>
 #include <iostream>
 #include <cstring>
 #include <pcu_util.h>

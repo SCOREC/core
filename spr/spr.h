@@ -16,7 +16,7 @@
 #include "apfNew.h"
 #include "apfDynamicVector.h"
 #include "apfDynamicMatrix.h"
-#include "PCUObj.h"
+#include "PCU.h"
 
 
 /** \namespace spr

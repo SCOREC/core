@@ -18,7 +18,7 @@
 #include <apfNumbering.h>
 #include <ma.h>
 #include <parma.h>
-#include <PCUObj.h>
+#include <PCU.h>
 #include <pcu_util.h>
 #include <cstdlib>
 #include <memory>

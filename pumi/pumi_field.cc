@@ -13,7 +13,7 @@
 #include "apfFieldData.h"
 #include "apfNumbering.h"
 #include <pcu_util.h>
-#include <PCUObj.h>
+#include <PCU.h>
 #include <lionPrint.h>
 #include <cstdlib> // for malloc and free
 

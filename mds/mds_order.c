@@ -13,7 +13,7 @@
 #include <pcu_util.h>
 #include <string.h>
 #include <limits.h>
-#include <PCU.h>
+#include <PCU_C.h>
 
 struct queue {
   mds_id* e;

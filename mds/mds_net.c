@@ -9,7 +9,7 @@
 *******************************************************************************/
 
 #include "mds_net.h"
-#include <PCU.h>
+#include <PCU_C.h>
 #include <string.h>
 #include <stdlib.h>
 #include <pcu_util.h>
