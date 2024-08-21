@@ -227,7 +227,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
      This means we might need to send and recv some coords */
   double* c = new double[mySize*3];
 
-  Gid start = m->getPCU()->Exscan(nverts);
+  Gid start = m->getPCU()->Exscan<long>(nverts);
 
   m->getPCU()->Begin();  // the forced 64 bit math below may not be necessary 
   Gid tmpL=start / quotient; 
@@ -317,7 +317,7 @@ void setMatches(Mesh2* m, const Gid* matches, int nverts,
   /* Force each peer to have exactly mySize verts.
      This means we might need to send and recv some matches */
   Gid* c = new Gid[mySize];
-  Gid start = m->getPCU()->Exscan(nverts);
+  Gid start = m->getPCU()->Exscan<long>(nverts);
 
   m->getPCU()->Begin();
 

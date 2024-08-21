@@ -537,7 +537,7 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
 
 static long exscan(long x, pcu::PCU *PCUObj)
 {
-  return PCUObj->Exscan(x);
+  return PCUObj->Exscan<long>(x);
 }
 
 template <class T>

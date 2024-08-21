@@ -229,7 +229,7 @@ static void globalize(
     std::vector<Numbering*> const& owned,
     std::vector<GlobalNumbering*>& global,
     pcu::PCU *PCUObj) {
-  long start = PCUObj->Exscan(long(dofs));
+  long start = PCUObj->Exscan<long>(dofs);
   DynamicArray<Node> nodes;
   for (size_t f=0; f < global.size(); ++f) {
     getNodes(owned[f], nodes);

@@ -210,8 +210,8 @@ void Parma_GetNeighborStats(apf::Mesh* m, int& max, int& numMaxParts,
   getNeighborCounts(m,nborToShared);
   loc = TO_INT(nborToShared.size())-1;
   max = m->getPCU()->Max<int>(loc);
-  avg = TO_DOUBLE(m->getPCU()->Add<double>(loc)) / m->getPCU()->Peers();
-  numMaxParts = m->getPCU()->Add<int>( (int)(loc==max) );
+  avg = TO_DOUBLE(m->getPCU()->Add<int>(loc)) / m->getPCU()->Peers();
+  numMaxParts = m->getPCU()->Add<int>( (loc==max) );
 }
 
 void Parma_WriteSmallNeighbors(apf::Mesh* m, int small, const char* prefix) {

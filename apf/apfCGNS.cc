@@ -633,7 +633,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       int startOfBCBlock = startingLocation + 1;
       const int number = bc.second.size();
       int total = number;
-      m->getPCU()->Add<int<(&total, 1); // size of total array
+      m->getPCU()->Add<int>(&total, 1); // size of total array
       if (total > 0)
       {
         const auto allEnd = startOfBCBlock + total - 1; //one-based

@@ -86,7 +86,7 @@ apf::MeshTag* setMappedTag(Mesh2* m, const char* tagName,
      This means we might need to send and recv some coords */
   T* c = new T[mySize*entries];
 
-  apf::Gid start = m->getPCU()->Exscan(nverts);
+  apf::Gid start = m->getPCU()->Exscan<long>(nverts);
 
   m->getPCU()->Begin();
   apf::Gid tmpL=start / quotient;
