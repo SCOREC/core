@@ -27,8 +27,8 @@ jobs:
           submodules: recursive
           path: 'core_${{ github.event.issue.number }}'
           
-      - name: build
-        id: build        
+      - name: build_sim
+        id: build_sim
         shell: bash
         run: |
           set +e #avoid exiting when lua modules return non-zero on 'warning' messages
@@ -41,7 +41,7 @@ jobs:
           set -e
           
           cmake -S core_${{ github.event.issue.number }} \
-            -B ${RUNNER_TEMP}/build \
+            -B ${RUNNER_TEMP}/buildSim \
             -DCMAKE_CXX_COMPILER=mpicxx \
             -DCMAKE_C_COMPILER=mpicc \
             -DCMAKE_VERBOSE_MAKEFILE=ON \
@@ -55,16 +55,50 @@ jobs:
             -DIS_TESTING=ON \
             -DSCOREC_CXX_WARNINGS=ON \
             -DCMAKE_BUILD_TYPE=Release 
-          cmake --build ${RUNNER_TEMP}/build -j 4
-          ctest --test-dir ${RUNNER_TEMP}/build --output-on-failure
+          cmake --build ${RUNNER_TEMP}/buildSim -j 4
+          ctest --test-dir ${RUNNER_TEMP}/buildSim --output-on-failure
+
+      - name: build_sim_cgns
+        id: build_sim_cgns
+        shell: bash
+        run: |
+          set +e #avoid exiting when lua modules return non-zero on 'warning' messages
+          module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
+          module load gcc/12.3.0-iil3lno 
+          module load mpich/4.1.1-xpoyz4t
+          module load simmetrix-simmodsuite/2024.0-240119dev-7abimo4
+          module load zoltan/3.83-hap4ggo
+          module load cmake/3.26.3-2duxfcd
+          module load cgns/develop-cc4dfwp
+          set -e
+          
+          cmake -S core_${{ github.event.issue.number }} \
+            -B ${RUNNER_TEMP}/buildSimCgns\
+            -DCMAKE_CXX_COMPILER=mpicxx \
+            -DCMAKE_C_COMPILER=mpicc \
+            -DCMAKE_VERBOSE_MAKEFILE=ON \
+            -DENABLE_ZOLTAN=ON \
+            -DENABLE_SIMMETRIX=ON \
+            -DSIM_MPI=mpich4.1.1 \
+            -DSIM_PARASOLID=ON \
+            -DENABLE_CGNS=on \
+            -DSIM_ACIS=ON \
+            -DSKIP_SIMMETRIX_VERSION_CHECK=ON \
+            -DMESHES=${{github.workspace}}/core_${{ github.event.issue.number }}/pumi-meshes \
+            -DIS_TESTING=ON \
+            -DSCOREC_CXX_WARNINGS=ON \
+            -DCMAKE_BUILD_TYPE=Release 
+          cmake --build ${RUNNER_TEMP}/buildSimCgns -j 4
+          ctest --test-dir ${RUNNER_TEMP}/buildSimCgns --output-on-failure
 
       - name: Save Result Link
         if: ${{ !cancelled() }} #prepare report unless the job was cancelled
         run: |
           mkdir -p ./pr
           echo "${{ github.event.issue.number }}"  > ./pr/issueNumber
-          echo -n "Test Result: ${{ steps.build.outcome }} "  > ./pr/message
-          echo "[(details)](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})" >> ./pr/message
+          echo "[Build Log](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})" >> ./pr/message
+          echo "Simmetrix Test Result: ${{ steps.build_sim.outcome }} "  > ./pr/message
+          echo "Simmetrix + CGNS Test Result: ${{ steps.build_sim_cgns.outcome }} "  > ./pr/message
 
       - name: Upload result
         if: ${{ !cancelled() }} #upload unless the job was cancelled
