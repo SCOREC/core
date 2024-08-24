@@ -177,19 +177,19 @@ struct MeshDataGroup
     if (components.size() == 1)
     {
       std::cout << "Scalar Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto& m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else if (components.size() == 3)
     {
       std::cout << "Vector Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto& m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else if (components.size() == 9)
     {
       std::cout << "Matrix Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto&  m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else
