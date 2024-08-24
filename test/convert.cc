@@ -194,6 +194,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       int id = GEN_tag(gface);
       if(id==ExtruRootId) ExtruRootFace=gface;
     }
+    GFIter_delete(gfIter);
     assert(ExtruRootFace != NULL);
     // all of the work so far assumes translation extrusion.  Rotation extrusion (sweeping extruded entiy over an arc of some angle about 
     // a given axis) is useful but this would require some code change.  The principle is the same.  Every root entity has another 
@@ -345,7 +346,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 	   }
           PCU_ALWAYS_ASSERT(foundEETag != 0);
           count2D++;
-          int* vtxData = new int[1];
+          int* vtxData = new int;
           vtxData[0] = count2D;
           EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
           V_coord(vrts[i],coordNewPt[i].data());
@@ -415,7 +416,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
               }
             }
             my2Dfath=fatherIds[iMin];
-            int* vtxData = new int[1];
+            int* vtxData = new int;
             vtxData[0] = my2Dfath;
             EN_attachDataPtr((pEntity)sonVtx,myFather,(void*)vtxData);
           }
@@ -425,6 +426,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       }
       PList_delete(faces);
     } //end root face iterator
+    FIter_delete(fIter);
   }
   apf::MeshSIM* cake = reinterpret_cast<apf::MeshSIM*>(simApfMesh);
   cake->createIntTag("fathers2D", myFather, 1);
