@@ -2,7 +2,7 @@ name: simmetrx_enabled_pr_comment_trigger_self_hosted
 
 # Controls when the workflow will run
 on:
-  issue_comment:                                     
+  issue_comment:
     types: [created]
 
   # Allows you to run this workflow manually from the Actions tab
@@ -26,20 +26,20 @@ jobs:
           ref: refs/pull/${{ github.event.issue.number }}/head
           submodules: recursive
           path: 'core_${{ github.event.issue.number }}'
-          
+
       - name: build_sim
         id: build_sim
         shell: bash
         run: |
           set +e #avoid exiting when lua modules return non-zero on 'warning' messages
           module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
-          module load gcc/12.3.0-iil3lno 
+          module load gcc/12.3.0-iil3lno
           module load mpich/4.1.1-xpoyz4t
           module load simmetrix-simmodsuite/2024.0-240119dev-7abimo4
           module load zoltan/3.83-hap4ggo
           module load cmake/3.26.3-2duxfcd
           set -e
-          
+
           cmake -S core_${{ github.event.issue.number }} \
             -B ${RUNNER_TEMP}/buildSim \
             -DCMAKE_CXX_COMPILER=mpicxx \
@@ -54,7 +54,7 @@ jobs:
             -DMESHES=${{github.workspace}}/core_${{ github.event.issue.number }}/pumi-meshes \
             -DIS_TESTING=ON \
             -DSCOREC_CXX_WARNINGS=ON \
-            -DCMAKE_BUILD_TYPE=Release 
+            -DCMAKE_BUILD_TYPE=Release
           cmake --build ${RUNNER_TEMP}/buildSim -j 4
           ctest --test-dir ${RUNNER_TEMP}/buildSim --output-on-failure
 
@@ -64,14 +64,14 @@ jobs:
         run: |
           set +e #avoid exiting when lua modules return non-zero on 'warning' messages
           module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
-          module load gcc/12.3.0-iil3lno 
+          module load gcc/12.3.0-iil3lno
           module load mpich/4.1.1-xpoyz4t
           module load simmetrix-simmodsuite/2024.0-240119dev-7abimo4
           module load zoltan/3.83-hap4ggo
           module load cmake/3.26.3-2duxfcd
           module load cgns/develop-cc4dfwp
           set -e
-          
+
           cmake -S core_${{ github.event.issue.number }} \
             -B ${RUNNER_TEMP}/buildSimCgns\
             -DCMAKE_CXX_COMPILER=mpicxx \
@@ -87,7 +87,7 @@ jobs:
             -DMESHES=${{github.workspace}}/core_${{ github.event.issue.number }}/pumi-meshes \
             -DIS_TESTING=ON \
             -DSCOREC_CXX_WARNINGS=ON \
-            -DCMAKE_BUILD_TYPE=Release 
+            -DCMAKE_BUILD_TYPE=Release
           cmake --build ${RUNNER_TEMP}/buildSimCgns -j 4
           ctest --test-dir ${RUNNER_TEMP}/buildSimCgns --output-on-failure
 
