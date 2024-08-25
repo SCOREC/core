@@ -12,7 +12,7 @@ set(CTEST_DROP_LOCATION "/submit.php?project=SCOREC")
 set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 
-set(CTEST_DASHBOARD_ROOT "/lore/cwsmith/nightlyBuilds/" )
+set(CTEST_DASHBOARD_ROOT "/lore/smithc11/nightlyBuilds/" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_BUILD_FLAGS -j4)
 

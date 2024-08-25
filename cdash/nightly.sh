@@ -1,6 +1,6 @@
 #!/bin/bash -x
 source /etc/profile
-source /users/cwsmith/.bash_profile
+source /users/smithc11/.bash_profile
 
 #setup lmod
 export PATH=/usr/share/lmod/lmod/libexec:$PATH
@@ -17,7 +17,7 @@ module load cmake/3.26.3-2duxfcd
 module load cgns/develop-cc4dfwp
 
 #cdash output root
-d=/lore/cwsmith/nightlyBuilds/
+d=/lore/smithc11/nightlyBuilds/
 cd $d
 #remove compilation directories created by previous nightly.cmake runs
 [ -d build ] && rm -rf build/
