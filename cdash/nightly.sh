@@ -1,6 +1,6 @@
 #!/bin/bash -x
 source /etc/profile
-source /users/cwsmith/.bash_profile
+source /users/smithc11/.bash_profile
 
 #setup lmod
 export PATH=/usr/share/lmod/lmod/libexec:$PATH
@@ -8,17 +8,16 @@ export PATH=/usr/share/lmod/lmod/libexec:$PATH
 #setup spack modules
 unset MODULEPATH
 
-module unuse /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core
-module use /opt/scorec/modules
-module use /opt/scorec/spack/v0154_2/lmod/linux-rhel7-x86_64/Core
-module load gcc/10.1.0
-module load mpich/3.3.2
-module load simmetrix-simmodsuite/17.0-220516
-module load zoltan/3.83-int32
-module load cmake/3.20.0
+module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
+module load gcc/12.3.0-iil3lno
+module load mpich/4.1.1-xpoyz4t
+module load simmetrix-simmodsuite/2024.0-240119dev-7abimo4
+module load zoltan/3.83-hap4ggo
+module load cmake/3.26.3-2duxfcd
+module load cgns/develop-cc4dfwp
 
 #cdash output root
-d=/lore/cwsmith/nightlyBuilds/
+d=/lore/smithc11/nightlyBuilds/
 cd $d
 #remove compilation directories created by previous nightly.cmake runs
 [ -d build ] && rm -rf build/

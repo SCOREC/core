@@ -23,6 +23,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdio.h>
+#include <array> //std::array
 
 using namespace std;
 
@@ -193,6 +194,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       int id = GEN_tag(gface);
       if(id==ExtruRootId) ExtruRootFace=gface;
     }
+    GFIter_delete(gfIter);
     assert(ExtruRootFace != NULL);
     // all of the work so far assumes translation extrusion.  Rotation extrusion (sweeping extruded entiy over an arc of some angle about 
     // a given axis) is useful but this would require some code change.  The principle is the same.  Every root entity has another 
@@ -246,7 +248,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       int nvert=i;
       PList_delete(listV);
 
-      double coordNewPt[nvert][3];
+      std::vector<std::array<double,3>> coordNewPt(nvert,{0,0,0});
       for(i=0; i< nvert ; i++) {
         int* markedData;
         if(!EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&markedData)){  // not sure about marked yet
@@ -344,16 +346,16 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 	   }
           PCU_ALWAYS_ASSERT(foundEETag != 0);
           count2D++;
-          int* vtxData = new int[1];
+          int* vtxData = new int;
           vtxData[0] = count2D;
           EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
-          V_coord(vrts[i],coordNewPt[i]);
+          V_coord(vrts[i],coordNewPt[i].data());
 
           fprintf ( fcr, "%.15E %.15E %d %d %d %d  \n", coordNewPt[i][0],coordNewPt[i][1], vClassDim, foundESTag, foundETag, foundEETag );
         }
       }
 
-      double coordFather[nvert][3];
+      std::vector<std::array<double,3>> coordFather(nvert,{0,0,0});
       int fatherIds[4]; //store the ids of the fathers (vertices) on the root face
       for(i=0; i< nvert ; i++) {
         int* fatherIdPtr;
@@ -365,7 +367,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
         }
         assert(exists);
         fatherIds[i] = fatherIdPtr[0];
-        V_coord(vrts[i],coordFather[i]);
+        V_coord(vrts[i],coordFather[i].data());
         fprintf ( fcn, "%d ", fatherIds[i]);
       }
       fprintf ( fcn, "\n");
@@ -414,7 +416,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
               }
             }
             my2Dfath=fatherIds[iMin];
-            int* vtxData = new int[1];
+            int* vtxData = new int;
             vtxData[0] = my2Dfath;
             EN_attachDataPtr((pEntity)sonVtx,myFather,(void*)vtxData);
           }
@@ -424,6 +426,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       }
       PList_delete(faces);
     } //end root face iterator
+    FIter_delete(fIter);
   }
   apf::MeshSIM* cake = reinterpret_cast<apf::MeshSIM*>(simApfMesh);
   cake->createIntTag("fathers2D", myFather, 1);

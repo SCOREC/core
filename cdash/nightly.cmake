@@ -5,14 +5,14 @@ SET(CTEST_TEST_TYPE Nightly)
 set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
 
 set(CTEST_NIGHTLY_START_TIME "17:00:00 EST")
-set(CTEST_SITE "cranium.scorec.rpi.edu" )
+set(CTEST_SITE "checkers.scorec.rpi.edu" )
 set(CTEST_DROP_METHOD "http")
 set(CTEST_DROP_SITE "my.cdash.org")
 set(CTEST_DROP_LOCATION "/submit.php?project=SCOREC")
 set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 
-set(CTEST_DASHBOARD_ROOT "/lore/cwsmith/nightlyBuilds/" )
+set(CTEST_DASHBOARD_ROOT "/lore/smithc11/nightlyBuilds/" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_BUILD_FLAGS -j4)
 
@@ -123,6 +123,11 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS
     ERRVAR)
   file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}")
 
+  execute_process(COMMAND df -h /tmp OUTPUT_VARIABLE outVar)
+  message(STATUS "df result {\n${outVar}}")
+  execute_process(COMMAND pwd OUTPUT_VARIABLE outVar)
+  message(STATUS "pwd result output {\n${outVar}}")
+
   ctest_configure(
       BUILD "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}"
       SOURCE "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
@@ -133,6 +138,11 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS
   else()
     message("${BRANCH_NAME} config passed")
   endif()
+
+  execute_process(COMMAND df -h /tmp OUTPUT_VARIABLE outVar)
+  message(STATUS "df result {\n${outVar}}")
+  execute_process(COMMAND pwd OUTPUT_VARIABLE outVar)
+  message(STATUS "pwd result output {\n${outVar}}")
 
   ctest_build(
       BUILD "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}"
@@ -313,7 +323,7 @@ SET(CONFIGURE_OPTIONS-sim
   "${CONFIGURE_OPTIONS}"
   "-DENABLE_SIMMETRIX:BOOL=ON"
   "-DSIM_PARASOLID:BOOL=ON"
-  "-DSIM_MPI:STRING=mpich3.3.2"
+  "-DSIM_MPI:STRING=mpich4.1.1"
 )
 
 setup_repo()

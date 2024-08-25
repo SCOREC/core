@@ -177,19 +177,19 @@ struct MeshDataGroup
     if (components.size() == 1)
     {
       std::cout << "Scalar Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto& m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else if (components.size() == 3)
     {
       std::cout << "Vector Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto& m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else if (components.size() == 9)
     {
       std::cout << "Matrix Group has " << components.size() << " related componenets: " << std::endl;
-      for (const auto m : components)
+      for (const auto&  m : components)
         std::cout << "Field " << m.second.name << " @ " << m.second.si << " " << m.second.fi << std::endl;
     }
     else
@@ -1056,8 +1056,8 @@ apf::Mesh2 *DoIt(gmi_model *g, const std::string &fname, apf::CGNSBCMap &cgnsBCM
   int cgid = -1;
   auto comm = PCU_Get_Comm();
   cgp_mpi_comm(comm);
-  cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
-  cgp_open(fname.c_str(), CGNS_ENUMV(CG_MODE_READ), &cgid);
+  cgp_pio_mode(CGP_INDEPENDENT);
+  cgp_open(fname.c_str(), CG_MODE_READ, &cgid);
 
   int nbases = -1;
   cg_nbases(cgid, &nbases);
