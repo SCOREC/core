@@ -18,7 +18,6 @@
 #include <SimModel.h>
 #endif
 #include <pcu_util.h>
-#include <memory>
 
 static bool overwriteAPFCoord(apf::Mesh2* m) {
   apf::Field* f = m->findField("motion_coords");
@@ -49,7 +48,7 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -60,10 +59,10 @@ int main(int argc, char** argv)
 #endif
   gmi_register_mesh();
   /* load model, mesh and configure input */
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
   ph::Input in;
-  in.load("adapt.inp", PCUObj.get());
+  in.load("adapt.inp", &PCUObj);
   in.openfile_read = openfile_read;
   /* attach solution and other fields */
   ph::readAndAttachFields(in,m);

@@ -6,7 +6,6 @@
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
   void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim) {
@@ -36,17 +35,17 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc == 4);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 4 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out mesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
   //load model and mesh
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   Parma_PrintPtnStats(m, "initial");
   apf::MeshTag* weights = setWeights(m);
   const double step = 0.5; const int verbose = 2;

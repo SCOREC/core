@@ -6,7 +6,6 @@
 #include <parma.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
   const char* modelFile = 0;
@@ -79,11 +78,11 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv,PCUObj.get());
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  getConfig(argc,argv,&PCUObj);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   apf::MeshTag* weights = applyFun3dWeight(m);
   runParma(m,weights);
   m->destroyTag(weights);

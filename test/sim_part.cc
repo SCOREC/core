@@ -46,7 +46,6 @@
 #include <iostream>
 #include <cstring>
 #include <sstream>
-#include <memory>
 
 using namespace std;
 
@@ -69,7 +68,7 @@ int main(int argc, char **argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   pcu::Protect();
   // Initialize PartitionedMesh - this should be the first Simmetrix call
@@ -109,7 +108,7 @@ int main(int argc, char **argv)
   outmeshFilename = tmp.c_str();
 
   /* print message */
-  if (PCUObj.get()->Self()==0) {
+  if (PCUObj.Self()==0) {
     cout<<endl;
     cout<<"Using model and mesh: "<<modelFilename<<" "<<meshFilename<<endl;
     cout<<"Partitioning into "<< desiredTotNumParts <<" parts."<<endl;
@@ -156,7 +155,7 @@ int main(int argc, char **argv)
   NM_release(nmodel);
 #endif
 
-  if (PCUObj.get()->Self()==0) {
+  if (PCUObj.Self()==0) {
     cout<<"**********************************"<<endl;
     cout<<"Partitioned mesh output to: "<<outmeshFilename<<endl;
     cout<<endl;

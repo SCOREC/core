@@ -3,12 +3,11 @@
 #include <pcu_util.h> //PCU_ALWAYS_ASSERT
 #include <numeric> //iota
 #include <iostream> //cerr
-#include <memory>
 
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   const size_t n = 2;
   double *d_orig = new double[n];
   std::iota(d_orig,d_orig+n,0);

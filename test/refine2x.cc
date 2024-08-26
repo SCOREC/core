@@ -14,7 +14,6 @@
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
-#include <memory>
 
 class AnisotropicX: public ma::AnisotropicFunction {
   public:
@@ -86,10 +85,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if (argc != 5) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0] 
         << " <model file> <in mesh> <split direction=[0-2]> <out mesh> \n";
     return EXIT_FAILURE;
@@ -102,7 +101,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   AnisotropicX* ansx = new AnisotropicX(m, atoi(argv[3]));
   ma::Input* in = ma::makeAdvanced(ma::configure(m, ansx));
 #ifdef PUMI_HAS_ZOLTAN

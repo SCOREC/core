@@ -16,7 +16,6 @@
 #include <cassert>
 #include <stdlib.h>
 #include <iostream>
-#include <memory>
 
 void E_exact(const apf::Vector3& x, apf::Vector3& value, int p);
 
@@ -44,7 +43,7 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -64,23 +63,23 @@ int main(int argc, char** argv)
    */
 
   // linear adapt
-  testCurveAdapt(modelFile, meshFile, PCUObj.get(),
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       1 /*mesh_order*/,
       2 /*exact_order*/,
       2 /*field_order*/);
 
   // quadratic adapts
-  testCurveAdapt(modelFile, meshFile, PCUObj.get(),
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       2 /*mesh_order*/,
       2 /*exact_order*/,
       4 /*field_order*/);
-  testCurveAdapt(modelFile, meshFile, PCUObj.get(),
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       2 /*mesh_order*/,
       3 /*exact_order*/,
       6 /*field_order*/);
 
   // cubic adapt
-  testCurveAdapt(modelFile, meshFile, PCUObj.get(),
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       3 /*mesh_order*/,
       2 /*exact_order*/,
       6 /*field_order*/);

@@ -32,22 +32,22 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <in .[b8|lb8].ugrid> <out .dmg> <out .smb> <partition factor>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
   const int partitionFactor = atoi(argv[4]);
-  PCU_ALWAYS_ASSERT(partitionFactor <= PCUObj.get()->Peers());
-  bool isOriginal = ((PCUObj.get()->Self() % partitionFactor) == 0);
+  PCU_ALWAYS_ASSERT(partitionFactor <= PCUObj.Peers());
+  bool isOriginal = ((PCUObj.Self() % partitionFactor) == 0);
   gmi_model* g = gmi_load(".null");
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  pcu::PCU *groupedPCUObj = getGroupedPCU(partitionFactor, PCUObj.get());
+  pcu::PCU *groupedPCUObj = getGroupedPCU(partitionFactor, &PCUObj);
   if (isOriginal) {
     m = apf::loadMdsFromUgrid(g, argv[1], groupedPCUObj);
     apf::deriveMdsModel(m);
@@ -56,9 +56,9 @@ int main(int argc, char** argv)
   }
   //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
   //on the globalPCU
-  if(m != nullptr) m->switchPCU(PCUObj.get());
+  if(m != nullptr) m->switchPCU(&PCUObj);
   delete groupedPCUObj;
-  m = repeatMdsMesh(m, g, plan, partitionFactor, PCUObj.get());
+  m = repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   gmi_write_dmg(g,argv[2]);
   m->writeNative(argv[3]);

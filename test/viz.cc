@@ -5,7 +5,6 @@
 #include <apfMDS.h>
 #include <lionPrint.h>
 #include <parma.h>
-#include <memory>
 #include "../viz/viz.h"
 
 namespace {
@@ -38,17 +37,17 @@ int main(int argc, char** argv)
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   PCU_ALWAYS_ASSERT(provided==MPI_THREAD_MULTIPLE);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
  
   
   Visualization v;
   
   char output[128];
-  snprintf(output,128,"%d",PCUObj.get()->Self());
+  snprintf(output,128,"%d",PCUObj.Self());
   std::string part_num(output);
 
   apf::MeshIterator* itr;

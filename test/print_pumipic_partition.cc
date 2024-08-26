@@ -4,7 +4,6 @@
 #include <apfMDS.h>
 #include <lionPrint.h>
 #include <parma.h>
-#include <memory>
 
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -21,16 +20,16 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {  
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 && argc != 6) {
-    if ( !pcu_obj.get()->Self() )
+    if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <number of output parts> <partition file prefix>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
-  if (pcu_obj.get()->Peers() > 1) {
-    if ( !pcu_obj.get()->Self() )
+  if (pcu_obj.Peers() > 1) {
+    if ( !pcu_obj.Self() )
       printf("This tool must be run in serial.\n");
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -45,7 +44,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
 
 
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
 
   int num_ranks = atoi(argv[3]);
   //Partition the mesh (Taken from zsplit.cc)

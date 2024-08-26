@@ -7,7 +7,6 @@
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
-#include <memory>
 
 double const a_param = 0.2;
 double const b_param = 1.0;
@@ -157,16 +156,16 @@ int main( int argc, char* argv[])
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   GroupCode code;
   code.model = makeModel();
   code.meshFile = argv[1];
-  apf::Unmodulo outMap(pcu_obj.get()->Self(), 2);
-  Parma_SplitPartition(nullptr, 2, code, pcu_obj.get());
+  apf::Unmodulo outMap(pcu_obj.Self(), 2);
+  Parma_SplitPartition(nullptr, 2, code, &pcu_obj);
   //Have to call switchPCU here because the mesh needed to be made inside GroupCode run()
   //and inside parma_group.cc runInGroups() we set code.PCUObj to groupedPCU 
-  code.mesh->switchPCU(pcu_obj.get());
+  code.mesh->switchPCU(&pcu_obj);
   apf::remapPartition(code.mesh, outMap);
   code.mesh->verify();
   code.mesh->destroyNative();

@@ -6,7 +6,6 @@
 #include <apf.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <memory>
 
 /* This executable demos how to make a PUMI  mesh using a bottom up approach.
  * The info needed to achieve this:
@@ -140,10 +139,10 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 
-  PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.get()->Peers() == 1, "Not implemented in parallel!");
+  PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.Peers() == 1, "Not implemented in parallel!");
   if (argc < 2) {
     printf("USAGE 1 (  no model): %s <outmesh.smb>\n", argv[0]);
     printf("USAGE 2 (with model): %s <outmesh.smb> <model_file\n", argv[0]);
@@ -160,7 +159,7 @@ int main(int argc, char** argv)
   else
     mdl = gmi_load(".null");
 
-  apf::Mesh2* outMesh = apf::makeEmptyMdsMesh(mdl, 3, false, PCUObj.get());
+  apf::Mesh2* outMesh = apf::makeEmptyMdsMesh(mdl, 3, false, &PCUObj);
 
   apf::MeshEntity* verts[numV];
   apf::MeshEntity* edges[numE];

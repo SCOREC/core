@@ -11,7 +11,6 @@
 #include <SimModel.h>
 #endif
 #include <pcu_util.h>
-#include <memory>
 
 class Linear : public ma::IsotropicFunction
 {
@@ -42,7 +41,7 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -52,7 +51,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
   Linear sf(m);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));

@@ -18,7 +18,6 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
-#include <memory>
 
 
 using namespace std;
@@ -77,14 +76,14 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   MS_init(); // Call before calling Sim_readLicenseFile
   Sim_readLicenseFile(0);
   SimDiscrete_start(0);  // initialize GeomSim Discrete library
 
   if (argc < 7) {
-    if (PCUObj.get()->Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printf("USAGE: %s <model.dmg> <mesh.smb> <prefix>"
       	  "<scale field name> <frame field name> <min_quality>\n", argv[0]);
     }
@@ -95,7 +94,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_null();
 
-  PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.get()->Peers() == 1,
+  PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.Peers() == 1,
       "This utility only works for serial meshes!");
 
   const char* inputPumiModel = argv[1];
@@ -119,7 +118,7 @@ int main(int argc, char** argv)
   snprintf(outImprovedSimxMesh, 256, "%s_adapted_improved.sms", prefix);
   snprintf(outImprovedPumiMesh, 256, "%s_adapted_improved.smb", prefix);
 
-  apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh, PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh, &PCUObj);
 
   char message[512];
   // first find the sizes field
@@ -194,7 +193,7 @@ int main(int argc, char** argv)
   printf("%s\n", outAdaptedSimxMesh);
   printf("%s\n", outAdaptedPumiMesh);
   M_write(simxMesh,outAdaptedSimxMesh, 0,0);  // write out the initial mesh data
-  apf::Mesh2* m2 = convertToPumi(simxMesh, dim, sizeName, frameName, PCUObj.get());
+  apf::Mesh2* m2 = convertToPumi(simxMesh, dim, sizeName, frameName, &PCUObj);
 
   m2->writeNative(outAdaptedPumiMesh);
   printf("===DONE===\n");
@@ -208,7 +207,7 @@ int main(int argc, char** argv)
   printf("%s\n", outImprovedSimxMesh);
   printf("%s\n", outImprovedPumiMesh);
   M_write(simxMesh,outImprovedSimxMesh, 0,0);  // write out the initial mesh data
-  apf::Mesh2* m3 = convertToPumi(simxMesh, dim, sizeName, frameName, PCUObj.get());
+  apf::Mesh2* m3 = convertToPumi(simxMesh, dim, sizeName, frameName, &PCUObj);
 
   m3->writeNative(outImprovedPumiMesh);
   printf("===DONE===\n");

@@ -7,17 +7,16 @@
 #include <vector>
 #include <sstream>
 #include <pcu_util.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(argc == 3);
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   apf::DynamicArray<apf::Field*> fields(10);
   apf::FieldShape* shapes[10] = {
     apf::getLagrange(1),

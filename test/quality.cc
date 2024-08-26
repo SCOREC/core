@@ -7,7 +7,6 @@
 #include <maShape.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
 
@@ -92,13 +91,13 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv,PCUObj.get());
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  getConfig(argc,argv,&PCUObj);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   processMesh(m);
-  printDiagnostics(PCUObj.get());
+  printDiagnostics(&PCUObj);
   m->destroyNative();
   apf::destroyMesh(m);
   }

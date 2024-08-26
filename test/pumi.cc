@@ -12,7 +12,6 @@
 #include <iostream>
 #include <algorithm>
 #include <mpi.h>
-#include <memory>
 
 const char* modelFile = 0;
 const char* meshFile = 0;
@@ -89,25 +88,25 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  pumi_load_pcu(PCUObj.get());
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pumi_load_pcu(&PCUObj);
   lion_set_verbosity(1);
   pumi_printSys();
 
 #if 0
   int i, processid = getpid();
-  if (!PCUObj.get()->Self())
+  if (!PCUObj.Self())
   {
-    std::cout<<"Proc "<<PCUObj.get()->Self()<<">> pid "<<processid<<" Enter any digit...\n";
+    std::cout<<"Proc "<<PCUObj.Self()<<">> pid "<<processid<<" Enter any digit...\n";
     std::cin>>i;
   }
   else
-    std::cout<<"Proc "<<PCUObj.get()->Self()<<">> pid "<<processid<<" Waiting...\n";
+    std::cout<<"Proc "<<PCUObj.Self()<<">> pid "<<processid<<" Waiting...\n";
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
   // read input args - in-model-file in-mesh-file out-mesh-file num-in-part
-  getConfig(argc,argv,PCUObj.get());
+  getConfig(argc,argv,&PCUObj);
 
   // load model
   pGeom g = pumi_geom_load(modelFile);

@@ -10,7 +10,6 @@
 #include <mth.h>
 #include <mth_def.h>
 #include <pcu_util.h>
-#include <memory>
 
 /*
  * This contains all the tests for bezier subdivision
@@ -483,12 +482,12 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  testEdgeSubdivision(pcu_obj.get());
-  testTriSubdivision1(pcu_obj.get());
-  testTriSubdivision4(pcu_obj.get());
-  testTetSubdivision1(pcu_obj.get());
+  testEdgeSubdivision(&pcu_obj);
+  testTriSubdivision1(&pcu_obj);
+  testTriSubdivision4(&pcu_obj);
+  testTetSubdivision1(&pcu_obj);
   }
   MPI_Finalize();
 }

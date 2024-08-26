@@ -6,16 +6,15 @@
 #include <lionPrint.h>
 #include <cstdlib>
 #include <string.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <in .dmg> <in .msh> <out .smb> <out .dmg>\n"
              "The input .msh and output .smb file names are required. \n"
              "If 'none' is specified as the input model file name then \n"
@@ -40,15 +39,15 @@ int main(int argc, char** argv)
   apf::Mesh2* m = NULL;
   if (gmshVersion == 2) {
     if (model.compare("none") == 0) {
-      m = apf::loadMdsFromGmsh(gmi_load(".null"), gmsh.c_str(), PCUObj.get());
+      m = apf::loadMdsFromGmsh(gmi_load(".null"), gmsh.c_str(), &PCUObj);
       apf::deriveMdsModel(m);
       gmi_write_dmg(m->getModel(),outModel.c_str());
     } else {
-      m = apf::loadMdsFromGmsh(gmi_load(model.c_str()), gmsh.c_str(), PCUObj.get());
+      m = apf::loadMdsFromGmsh(gmi_load(model.c_str()), gmsh.c_str(), &PCUObj);
     }
   } else if (gmshVersion == 4) {
     if (model.compare("none") == 0) {
-      m = apf::loadMdsDmgFromGmsh(outModel.c_str(), gmsh.c_str(), PCUObj.get());
+      m = apf::loadMdsDmgFromGmsh(outModel.c_str(), gmsh.c_str(), &PCUObj);
     }
   }
   m->verify();

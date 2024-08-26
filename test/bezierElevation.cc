@@ -10,7 +10,6 @@
 #include <mth.h>
 #include <mth_def.h>
 #include <pcu_util.h>
-#include <memory>
 
 /*
  * This contains all the tests for bezier elevation
@@ -400,11 +399,11 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  testEdgeElevation(pcu_obj.get());
-  testTriElevation(pcu_obj.get());
-  testTetElevation(pcu_obj.get());
+  testEdgeElevation(&pcu_obj);
+  testTriElevation(&pcu_obj);
+  testTetElevation(&pcu_obj);
   }
   MPI_Finalize();
 }

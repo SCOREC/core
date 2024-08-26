@@ -12,7 +12,6 @@
 #endif
 #include <pcu_util.h>
 #include <stdlib.h>
-#include <memory>
 
 namespace {
   apf::MeshTag* setWeights(apf::Mesh* m) {
@@ -31,10 +30,10 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc == 5);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <max elm imb> <out prefix>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -48,7 +47,7 @@ int main(int argc, char** argv)
 #endif
   gmi_register_mesh();
   //load model and mesh
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   Parma_PrintPtnStats(m, "initial");
   apf::MeshTag* weights = setWeights(m);
   int verbose = 2; // set to 1 to silence the 'endStep' stats

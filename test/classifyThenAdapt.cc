@@ -6,7 +6,6 @@
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <stdlib.h>
-#include <memory>
 
 #define LEFT_EDGE 0
 #define TOP_EDGE 1
@@ -128,11 +127,11 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj =  pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 
   gmi_register_null();
-  ma::Mesh* m = createTriMesh(pcu_obj.get());
+  ma::Mesh* m = createTriMesh(&pcu_obj);
   m->verify(); // make sure the mesh is valid!
   gmi_model* g = m->getModel();
   gmi_write_dmg(g,"model.dmg");

@@ -16,7 +16,6 @@
 #include <cstdlib>
 #endif
 #include <pcu_util.h>
-#include <memory>
 
 
 static void print_stats(const char* name, double value, pcu::PCU *PCUObj)
@@ -47,7 +46,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -57,10 +56,10 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  print_stats("kernal used before", pcu::GetMem(), pcu_obj.get());
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],pcu_obj.get());
+  print_stats("kernal used before", pcu::GetMem(), &pcu_obj);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   m->verify();
-  print_stats("kernel heap", pcu::GetMem(), pcu_obj.get());
+  print_stats("kernel heap", pcu::GetMem(), &pcu_obj);
   Parma_PrintPtnStats(m, "");
   list_tags(m);
   m->destroyNative();

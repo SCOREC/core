@@ -18,7 +18,6 @@
 #include <iostream>
 #include <SimAdvMeshing.h>
 #include <getopt.h>
-#include <memory>
 
 
 
@@ -94,7 +93,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   MS_init();
   SimAdvMeshing_start();
@@ -102,7 +101,7 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
 
-  getConfig(argc, argv, PCUObj.get());
+  getConfig(argc, argv, &PCUObj);
   if( should_log )
     Sim_logOn("rm_extrusion.sim.log");
 
@@ -117,21 +116,21 @@ int main(int argc, char** argv)
   else
     mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
-  if(!PCUObj.get()->Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "Read model\n");
 
   double t0 = pcu::Time();
   pMesh sim_mesh = M_load(sms_path, simModel, progress);
-  if(!PCUObj.get()->Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "Read mesh\n");
 
   M_removeSurfaceExtrusionConstraints(sim_mesh, NULL);
-  if(!PCUObj.get()->Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "Removed surface extrusion constraints\n");
   M_write(sim_mesh, smsNew_path, 0, progress);
   double t1 = pcu::Time();
 
-  if(!PCUObj.get()->Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "read the mesh, removed the face extrusion attributes, and wrote the mesh %f seconds\n", t1-t0);
 
   M_release(sim_mesh);

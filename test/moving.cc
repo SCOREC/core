@@ -7,7 +7,6 @@
 #include <maMesh.h>
 #include <lionPrint.h>
 #include <sstream>
-#include <memory>
 
 static void writeStep(apf::Mesh* m, int i)
 {
@@ -21,14 +20,14 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 3 ) {
     fprintf(stderr, "Usage: %s <model> <mesh>\n", argv[0]);
     return 0;
   }
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   dsp::Boundary moving;
   moving.insert(m->findModelEntity(2, 57));
   moving.insert(m->findModelEntity(2, 62));

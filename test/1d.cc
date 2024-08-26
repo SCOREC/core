@@ -6,7 +6,6 @@
 #include <apfNumbering.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 void createMesh(gmi_model*& g, apf::Mesh2*& m, int n, pcu::PCU *PCUObj)
 {
@@ -67,14 +66,14 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_model* g;
   apf::Mesh2* m;
   int nverts = atoi(argv[1]);
   PCU_ALWAYS_ASSERT(2 <= nverts);
   PCU_ALWAYS_ASSERT(nverts <= 1000);
-  createMesh(g,m,nverts,pcu_obj.get());
+  createMesh(g,m,nverts,&pcu_obj);
   test(m);
   gmi_write_dmg(g,argv[2]);
   m->writeNative(argv[3]);

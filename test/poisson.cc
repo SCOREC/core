@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <iomanip>
 #include <fstream>
-#include <memory>
 
 namespace {
 
@@ -253,12 +252,12 @@ int main(int argc, char** argv) {
   PCU_ALWAYS_ASSERT(argc == 3);
   MPI_Init(&argc, &argv);
   {  
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  PCU_ALWAYS_ASSERT(! pcu_obj.get()->Self());
+  PCU_ALWAYS_ASSERT(! pcu_obj.Self());
   int dim = atoi(argv[1]);
   int p = atoi(argv[2]);
-  test(dim, p, pcu_obj.get());
+  test(dim, p, &pcu_obj);
   }
   MPI_Finalize();
 }

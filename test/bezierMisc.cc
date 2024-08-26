@@ -14,7 +14,6 @@
 #include <mth_def.h>
 #include <pcu_util.h>
 #include <ostream>
-#include <memory>
 /* This file contains miscellaneous tests relating to ordering, math
  * and transformation matrices
  */
@@ -168,7 +167,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   testNodeIndexing();
   testMatrixInverse();

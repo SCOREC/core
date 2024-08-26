@@ -12,7 +12,6 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
-#include <memory>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -64,8 +63,8 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  if (PCUObj.get()->Peers() > 1) {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  if (PCUObj.Peers() > 1) {
     printf("%s should only be used for serial (single part) meshes!\n", argv[0]);
     printf("use the serialize utility to get a serial mesh, and retry!\n");
     MPI_Finalize();
@@ -112,7 +111,7 @@ int main(int argc, char** argv)
 
 
   // load the mesh and check if the tag exists on the mesh
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
 
   if (mode.compare(std::string("aa")) == 0)
     tag = tagMesh(m, -1, 1);

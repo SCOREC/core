@@ -12,7 +12,6 @@
 #endif
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 apf::MeshTag* setWeights(apf::Mesh* m) {
   apf::MeshIterator* it = m->begin(m->getDimension());
@@ -30,10 +29,10 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc == 4);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 4 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out mesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -46,7 +45,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   double imbalance[4];
   Parma_GetEntImbalance(m,&imbalance);
   if(!m->getPCU()->Self())

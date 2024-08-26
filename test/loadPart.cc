@@ -12,11 +12,11 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  PCU_ALWAYS_ASSERT(PCUObj.get()->Peers() == 1);
+  PCU_ALWAYS_ASSERT(PCUObj.Peers() == 1);
   if ( argc != 4 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Load a single part from a partitioned mesh and "
              "write it as a serial part.\n"
              "Usage: %s <in part file> <out mesh file> <out model file (.dmg)>\n", argv[0]);
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
   gmi_register_null();
   gmi_register_mesh();
   gmi_model* g = gmi_load(".null");
-  apf::Mesh2* m = apf::loadMdsPart(g, argv[1], PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsPart(g, argv[1], &PCUObj);
   apf::deriveMdsModel(m);
   gmi_write_dmg(g, argv[3]);
   m->writeNative(argv[2]);

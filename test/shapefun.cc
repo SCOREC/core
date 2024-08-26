@@ -5,7 +5,6 @@
 #include <apfMesh2.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <memory>
 
 #include <iostream>
 
@@ -245,7 +244,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
   testP1LineNodeValues();
@@ -260,8 +259,8 @@ int main(int argc, char** argv)
   testPrismNodeValues();
   testPyramidNodeValues();
   testQuadrilateralNodeValues();
-  testPrismVolume(PCUObj.get());
-  testPyramidVolume(PCUObj.get());
+  testPrismVolume(&PCUObj);
+  testPyramidVolume(&PCUObj);
   }
   MPI_Finalize();
 }

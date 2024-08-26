@@ -15,7 +15,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <memory>
 
 namespace {
 
@@ -168,10 +167,10 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   bool failflag = false;
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  MPI_Comm_rank(PCUObj.get()->GetMPIComm(), &myrank);
-  MPI_Comm_size(PCUObj.get()->GetMPIComm(), &commsize);
+  MPI_Comm_rank(PCUObj.GetMPIComm(), &myrank);
+  MPI_Comm_size(PCUObj.GetMPIComm(), &commsize);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
@@ -180,11 +179,11 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv,PCUObj.get());
+  getConfig(argc,argv,&PCUObj);
   gmi_model* g = 0;
   g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
-  m = apf::loadMdsMesh(g, meshFile, PCUObj.get());
+  m = apf::loadMdsMesh(g, meshFile, &PCUObj);
 
   
   for (int i=0; i < 3; ++i)

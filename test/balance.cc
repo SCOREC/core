@@ -5,18 +5,17 @@
 #include <parma.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 4);
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
   //load model and mesh
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   apf::MeshTag* weights = Parma_WeighByMemory(m);
   double step = 0.1; int verbose=1;
   apf::Balancer* balancer = Parma_MakeCentroidDiffuser(m, step, verbose);

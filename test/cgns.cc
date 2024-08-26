@@ -16,7 +16,6 @@
 #include <apfShape.h>
 #include <pumi.h>
 #include <apfZoltan.h>
-#include <memory>
 
 // https://gist.github.com/bgranzow/98087114166956646da684ed98acab02
 apf::MeshTag *create_int_tag(const std::string &name, apf::Mesh2 *m, int dim)
@@ -481,13 +480,13 @@ int main(int argc, char **argv)
 #ifdef HAVE_CGNS
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  pumi_load_pcu(PCUObj.get());
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pumi_load_pcu(&PCUObj);
   lion_set_verbosity(1);
   bool additionalTests = false;
   if (argc < 3)
   {
-    if (!PCUObj.get()->Self())
+    if (!PCUObj.Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -499,7 +498,7 @@ int main(int argc, char **argv)
       additionalTests = true;
     else
     {
-      if (!PCUObj.get()->Self())
+      if (!PCUObj.Self())
         printf("Usage: %s <in .cgns> <out .smb> additional\n", argv[0]);
       MPI_Finalize();
       exit(EXIT_FAILURE);
@@ -508,7 +507,7 @@ int main(int argc, char **argv)
   }
   else if (argc > 4)
   {
-    if (!PCUObj.get()->Self())
+    if (!PCUObj.Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -520,7 +519,7 @@ int main(int argc, char **argv)
   {
     apf::CGNSBCMap cgnsBCMap;
     std::vector<std::pair<std::string, std::string>> meshData;
-    cgnsOutputName = doit(cgnsBCMap, argv[1], argv[2], "", additionalTests, additionalTests, meshData, PCUObj.get());
+    cgnsOutputName = doit(cgnsBCMap, argv[1], argv[2], "", additionalTests, additionalTests, meshData, &PCUObj);
   }
   // Phase 2
   if (additionalTests)
@@ -543,7 +542,7 @@ int main(int argc, char **argv)
     meshData.push_back(std::make_pair("CellCenter", "DummyMatrix_1"));
     apf::CGNSBCMap cgnsBCMap;
     std::cout << "RE-READING " << std::endl;
-    doit(cgnsBCMap, cgnsOutputName.c_str(), "tempy.smb", "_reread", false, true, meshData, PCUObj.get());
+    doit(cgnsBCMap, cgnsOutputName.c_str(), "tempy.smb", "_reread", false, true, meshData, &PCUObj);
   }
   //
   }

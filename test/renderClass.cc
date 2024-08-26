@@ -12,7 +12,6 @@
 #include <SimModel.h>
 #endif
 #include <cstdlib>
-#include <memory>
 
 static void number_dim(apf::Mesh* m, apf::FieldShape* shape, int dim, std::string const& prefix) {
   std::string name = prefix + "_class_dim";
@@ -35,10 +34,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if (!(argc == 4 || argc == 5)) {
-    if ( !PCUObj.get()->Self() ) {
+    if ( !PCUObj.Self() ) {
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
       printf("       %s <model> <mesh> <dim> <out prefix>\n", argv[0]);
     }
@@ -55,7 +54,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   char const* modelpath = argv[1];
   char const* meshpath = argv[2];
-  apf::Mesh2* m = apf::loadMdsMesh(modelpath, meshpath, PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(modelpath, meshpath, &PCUObj);
   int dim;
   char const* vtkpath;
   if (argc == 5) {

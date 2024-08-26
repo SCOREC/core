@@ -10,14 +10,13 @@
 #include <SimModel.h>
 #endif
 #include <pcu_util.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -27,7 +26,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(argv[1], argv[2], PCUObj.get());
+  ma::Mesh* m = apf::loadMdsMesh(argv[1], argv[2], &PCUObj);
   ma::Input* in = ma::makeAdvanced(ma::configureIdentity(m));
   in->shouldTurnLayerToTets = true;
   ma::adapt(in);

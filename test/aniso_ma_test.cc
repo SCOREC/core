@@ -5,7 +5,6 @@
 #include <apfShape.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <memory>
 
 #include <stdlib.h>
 
@@ -47,10 +46,10 @@ int main(int argc, char** argv)
   bool logInterpolation = atoi(argv[3]) > 0 ? true : false;
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
   apf::writeVtkFiles("aniso_before",m);
   AnIso sf(m);

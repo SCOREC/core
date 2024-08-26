@@ -8,7 +8,6 @@
 #include <pcu_util.h>
 #include <cstdlib>
 #include <string.h>
-#include <memory>
 
 /* tags on vertices */
 #define INTERIORTAG 0
@@ -484,7 +483,7 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
   gmi_register_null();
@@ -495,7 +494,7 @@ int main(int argc, char** argv)
   readMesh(argv[1],m);
 
   const int dim = 3;
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false, PCUObj.get());
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, dim, false, &PCUObj);
   apf::GlobalToVert outMap;
   apf::construct(mesh, m.elements, m.numElms, m.elementType, outMap);
   delete [] m.elements;

@@ -9,7 +9,6 @@
 #include <apfPartition.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
 
@@ -99,18 +98,18 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto expanded_pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU expanded_pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv,expanded_pcu_obj.get());
+  getConfig(argc,argv,&expanded_pcu_obj);
   gmi_model* g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
-  CreateGroupCommResult result = createGroupComm(expanded_pcu_obj.get());
+  CreateGroupCommResult result = createGroupComm(&expanded_pcu_obj);
 
   if (result.isOriginal)
     m = apf::loadMdsMesh(g, meshFile, result.group_pcu_obj);
   
-  m = apf::expandMdsMesh(m, g, inputPartCount, expanded_pcu_obj.get());
+  m = apf::expandMdsMesh(m, g, inputPartCount, &expanded_pcu_obj);
   balance(m);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);

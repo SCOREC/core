@@ -22,7 +22,6 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdio.h>
-#include <memory>
 
 using namespace std;
 
@@ -433,7 +432,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   MS_init();
   SimAdvMeshing_start(); //for fancy BL/extrusion queries
@@ -441,12 +440,12 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
 
-  getConfig(argc, argv, pcu_obj.get());
+  getConfig(argc, argv, &pcu_obj);
   if( should_log )
     Sim_logOn("convert.sim.log");
 
   if (should_attach_order && should_fix_pyramids) {
-    if (!pcu_obj.get()->Self())
+    if (!pcu_obj.Self())
       std::cout << "disabling pyramid fix because --attach-order was given\n";
     should_fix_pyramids = false;
   }
@@ -458,7 +457,7 @@ int main(int argc, char** argv)
 
   gmi_model* mdl;
   if( gmi_native_path ) {
-    if (!pcu_obj.get()->Self())
+    if (!pcu_obj.Self())
       fprintf(stderr, "loading native model %s\n", gmi_native_path);
     mdl = gmi_sim_load(gmi_native_path,gmi_path);
   } else {
@@ -487,10 +486,10 @@ int main(int argc, char** argv)
   double t0 = pcu::Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
   double t1 = pcu::Time();
-  if(!pcu_obj.get()->Self())
+  if(!pcu_obj.Self())
     fprintf(stderr, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
 
-  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, pcu_obj.get());
+  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, &pcu_obj);
 
   addFathersTag(simModel, sim_mesh, simApfMesh, extruRootPath);
 

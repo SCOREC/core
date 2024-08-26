@@ -4,18 +4,17 @@
 #include <apf.h>
 #include <lionPrint.h>
 #include <maReposition.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #if 0
   gmi_register_null();
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj.get());
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, &PCUObj);
   apf::Vector3 vx[4] =
   {apf::Vector3(0,0,0),
    apf::Vector3(1,0,0),
@@ -28,7 +27,7 @@ int main(int argc, char** argv)
   apf::MeshEntity* v = tv[0];
 #else
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], &PCUObj);
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {

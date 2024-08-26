@@ -6,7 +6,6 @@
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 int main(int argc, char** argv)
 {
@@ -20,10 +19,10 @@ int main(int argc, char** argv)
   const int order = atoi(argv[4]);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile, PCUObj.get());
+  apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile, &PCUObj);
   if (mesh->findTag("coordinates_edg"))
     mesh->changeShape(apf::getSerendipity(), false);
   apf::Field* f =
@@ -31,7 +30,7 @@ int main(int argc, char** argv)
   apf::Field* eps = spr::getGradIPField(f, "eps", order);
   apf::destroyField(f);
   double adaptRatio = 0.1;
-  apf::Field* sizef = spr::getSPRSizeField(eps,adaptRatio,PCUObj.get());
+  apf::Field* sizef = spr::getSPRSizeField(eps,adaptRatio,&PCUObj);
   apf::destroyField(eps);
   writeVtkFiles(outFile,mesh);
   apf::destroyField(sizef);

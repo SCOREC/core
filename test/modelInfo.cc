@@ -10,17 +10,16 @@
 #endif
 #include <cstdlib> //exit and exit_failure
 #include <PCU.h>
-#include <memory>
 #include <mpi.h>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 2 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);

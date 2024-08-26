@@ -5,7 +5,6 @@
 #include <apfShape.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <memory>
 
 class CylindricalShock : public ma::AnisotropicFunction
 {
@@ -49,10 +48,10 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
   apf::writeVtkFiles("torus_before",m);
   CylindricalShock sf(m);

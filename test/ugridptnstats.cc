@@ -5,7 +5,6 @@
 #include <lionPrint.h>
 #include <cstdlib>
 #include <pcu_util.h>
-#include <memory>
 
 const double vtxw = 1.0;
 const double edgew = 1.0;
@@ -21,7 +20,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
   PCU_ALWAYS_ASSERT( 3 == argc );
@@ -29,7 +28,7 @@ int main(int argc, char** argv)
   const char* ptnfile = argv[2];
   gmi_register_null();
   gmi_model* g = gmi_load(".null");
-  apf::printUgridPtnStats(g,ugridfile,ptnfile,weights,PCUObj.get());
+  apf::printUgridPtnStats(g,ugridfile,ptnfile,weights,&PCUObj);
   }
   MPI_Finalize();
 }

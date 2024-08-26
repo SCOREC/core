@@ -6,7 +6,6 @@
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
-#include <memory>
 #include "apfMDS.h"
 #include "apfShape.h"
 
@@ -57,9 +56,9 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  pumi_load_pcu(PCUObj.get());
-  getConfig(argc,argv,PCUObj.get());
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pumi_load_pcu(&PCUObj);
+  getConfig(argc,argv,&PCUObj);
 
   pGeom g = pumi_geom_load(modelFile);
   pMesh m;

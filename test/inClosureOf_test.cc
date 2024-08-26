@@ -12,7 +12,6 @@
 #endif
 #include <pcu_util.h>
 #include <stdlib.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
@@ -21,7 +20,7 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();

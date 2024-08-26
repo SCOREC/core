@@ -13,7 +13,6 @@
 #include <apfZoltan.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
 
@@ -71,7 +70,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -81,22 +80,22 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv,PCUObj.get());
-  bool isOriginal = ((PCUObj.get()->Self() % partitionFactor) == 0);
+  getConfig(argc,argv,&PCUObj);
+  bool isOriginal = ((PCUObj.Self() % partitionFactor) == 0);
   gmi_model* g = 0;
   g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  pcu::PCU *groupedPCUObj = getGroupedPCU(PCUObj.get());
+  pcu::PCU *groupedPCUObj = getGroupedPCU(&PCUObj);
   if (isOriginal) {
     m = apf::loadMdsMesh(g, meshFile, groupedPCUObj);
     plan = getPlan(m);
   }
   //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
   //on the globalPCU
-  if(m != nullptr) m->switchPCU(PCUObj.get());
+  if(m != nullptr) m->switchPCU(&PCUObj);
   delete groupedPCUObj;
-  m = apf::repeatMdsMesh(m, g, plan, partitionFactor, PCUObj.get());
+  m = apf::repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);

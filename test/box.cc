@@ -6,7 +6,6 @@
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
 
@@ -62,17 +61,17 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  verifyArgs(argc, argv, pcu_obj.get());
-  if(pcu_obj.get()->Peers()>1) {
-    if(pcu_obj.get()->Self())
+  verifyArgs(argc, argv, &pcu_obj);
+  if(pcu_obj.Peers()>1) {
+    if(pcu_obj.Self())
       fprintf(stderr, "%s must be run on a single process!\n", argv[0]);
     exit(1);
   }
   getArgs(argv);
   gmi_register_mesh();
-  apf::Mesh2* m = apf::makeMdsBox(nx,ny,nz,wx,wy,wz,is,pcu_obj.get());
+  apf::Mesh2* m = apf::makeMdsBox(nx,ny,nz,wx,wy,wz,is,&pcu_obj);
   gmi_model* g = m->getModel();
   m->verify();
   m->writeNative(meshFile);

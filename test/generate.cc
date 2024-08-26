@@ -21,7 +21,6 @@
 #include <PCU.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 #include <iostream> //cout
 #include <getopt.h> //option parser
@@ -323,28 +322,28 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  globalPCU = PCUObj.get();
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  globalPCU = &PCUObj;
   lion_set_verbosity(1);
   pcu::Protect();
-  getConfig(argc,argv,PCUObj.get());
+  getConfig(argc,argv,&PCUObj);
 
   if (should_attach_order && should_fix_pyramids) {
-    if (!PCUObj.get()->Self())
+    if (!PCUObj.Self())
       std::cout << "disabling pyramid fix because --attach-order was given\n";
     should_fix_pyramids = 0;
   }
 
   simStart();
-  pNativeModel nm = loadNativeModel(PCUObj.get());
+  pNativeModel nm = loadNativeModel(&PCUObj);
   pGModel simModel = GM_load(modelFile.c_str(), nm, NULL);
 
   const double t0 = MPI_Wtime();
-  pParMesh sim_mesh = generate(simModel, caseName, PCUObj.get());
+  pParMesh sim_mesh = generate(simModel, caseName, &PCUObj);
   const double t1 = MPI_Wtime();
-  if(!PCUObj.get()->Self())
+  if(!PCUObj.Self())
     printf("Mesh generated in %f seconds\n", t1-t0);
-  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, PCUObj.get());
+  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, &PCUObj);
   if (should_attach_order) attachOrder(simApfMesh);
 
   gmi_register_sim();

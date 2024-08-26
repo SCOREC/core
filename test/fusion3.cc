@@ -9,7 +9,6 @@
 #include <vector>
 #include <pcu_util.h>
 #include <iostream>
-#include <memory>
 
 using std::vector;
 class Expression
@@ -284,11 +283,11 @@ int main(int argc, char * argv[])
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_model* model = makeModel();
   gmi_write_dmg(model, "made.dmg");
-  apf::Mesh2* mesh=apf::loadMdsMesh(model, argv[1], PCUObj.get());
+  apf::Mesh2* mesh=apf::loadMdsMesh(model, argv[1], &PCUObj);
   mesh->verify();
   Vortex sfv(mesh, center, modelLen);
   const ma::Input* in = ma::configure(mesh,&sfv);

@@ -19,7 +19,6 @@
 #include <sstream>
 #include <string>
 #include <math.h>
-#include <memory>
 
 
 void computeSizesFrames(
@@ -38,7 +37,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 
 #ifdef HAVE_SIMMETRIX
@@ -51,16 +50,16 @@ int main(int argc, char** argv)
   gmi_register_mesh();
 
   if (argc != 3) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       std::cerr <<"usage: " << argv[0]
       	<< " <model.smd> <mesh.smb> <sizefield>\n";
     return EXIT_FAILURE;
   }
 
   for (int order = 3; order < 5; order++) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       lion_oprint(1, "Testing aniso adapt w/ sizefield order %d\n", order);
-    testAdapt(argv[1], argv[2], order, PCUObj.get());
+    testAdapt(argv[1], argv[2], order, &PCUObj);
   }
 
   }

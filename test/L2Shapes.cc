@@ -13,7 +13,6 @@
 #include <iostream>
 #include <string>
 #include <math.h>
-#include <memory>
 
 using namespace std;
 
@@ -33,12 +32,12 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   lion_set_verbosity(1);
 
   if (argc != 3) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <model.dmg or .null> <mesh.smb>\n";
     return EXIT_FAILURE;
@@ -48,7 +47,7 @@ int main(int argc, char** argv)
   gmi_register_null();
 
   gmi_model* g = gmi_load(argv[1]);
-  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2],PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2],&PCUObj);
   m->verify();
 
   for (int i = 0; i <= 6; i++) {

@@ -3,17 +3,16 @@
 #include <apfMesh2.h>
 #include <gmi_null.h>
 #include <lionPrint.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, PCUObj.get());
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, &PCUObj);
   apf::Vector3 points[4] = {
     apf::Vector3(0,0,0),
     apf::Vector3(1,0,0),

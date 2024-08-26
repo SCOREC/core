@@ -4,7 +4,6 @@
 #include <lionPrint.h>
 #include <apf.h>
 #include <pcu_util.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
@@ -31,7 +30,7 @@ int main(int argc, char** argv)
 
 	// Test insphere (create a mesh with one tet)
 	{
-	auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+	pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 	apf::Vector3 a(0, 0, 0);
 	apf::Vector3 b(-6, 0, 0);
@@ -40,7 +39,7 @@ int main(int argc, char** argv)
 
 	gmi_register_null();
 	gmi_model* model = gmi_load(".null");
-	apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, 3, true, PCUObj.get());
+	apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, 3, true, &PCUObj);
 	apf::ModelEntity* m = mesh->findModelEntity(0, 0);
 	apf::MeshEntity* v[4];
 	for (int i=0; i<4; i++) {

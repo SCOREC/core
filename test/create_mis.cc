@@ -6,16 +6,15 @@
 #include <lionPrint.h>
 #include <cstdlib>
 #include <apfShape.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 4 ) {
-    if ( !pcu_obj.get()->Self() )
+    if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -23,7 +22,7 @@ int main(int argc, char** argv)
   
   gmi_register_mesh();
 
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
 
   //We will create a field with the coloring as the values on each element
   apf::Field* coloring = apf::createField(m,"colors",apf::SCALAR,

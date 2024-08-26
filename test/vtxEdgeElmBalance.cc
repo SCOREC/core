@@ -12,7 +12,6 @@
 #endif
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
   void setWeight(apf::Mesh* m, apf::MeshTag* tag, int dim, double w=1.0) {
@@ -47,10 +46,10 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc == 6);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 6 ) {
-    if ( !PCUObj.get()->Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out mesh> <edge weight> <tgt imb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -65,7 +64,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   //load model and mesh
   double targetImb = atof(argv[5]);
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   apf::MeshTag* weights = setWeights(m,atof(argv[4]));
   Parma_PrintWeightedPtnStats(m, weights, "initial");
   const double step = 0.5; const int verbose = 1;

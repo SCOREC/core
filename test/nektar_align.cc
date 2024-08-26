@@ -13,7 +13,6 @@
 #include <SimModel.h>
 #endif
 #include <pcu_util.h>
-#include <memory>
 
 namespace apf {
 /* the more dangerous a function is,
@@ -111,7 +110,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -121,7 +120,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   alignForNektar(m);
   m->writeNative(argv[3]);
   m->destroyNative();

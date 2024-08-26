@@ -13,7 +13,6 @@
 
 #include <math.h>
 #include <pcu_util.h>
-#include <memory>
 
 const double pi = 3.14159265359;
 
@@ -172,10 +171,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 
-  apf::Mesh2* m = createSphereMesh(PCUObj.get());
+  apf::Mesh2* m = createSphereMesh(&PCUObj);
   m->verify();
 
   apf::writeVtkFiles("initial_mesh_on_analytic_model", m);

@@ -15,7 +15,6 @@
 #include <mth_def.h>
 #include <pcu_util.h>
 #include <ostream>
-#include <memory>
 /* This file contains miscellaneous tests relating to bezier shapes and
  * blended bezier shapes
  */
@@ -28,10 +27,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 7 ) {
-    if ( !PCUObj.get()->Self() ) {
+    if ( !PCUObj.Self() ) {
       printf("Usage: %s <ent_type> <order> <blend_order> <xi_0> <xi_1> <xi_2>>\n", argv[0]);
       printf("<ent_type>            can only be 2 (for triangles) and 4 (for tets)\n");
       printf("<order>               is the order of bezier\n");
@@ -51,7 +50,7 @@ int main(int argc, char** argv)
       "<blend_order> must be between -1 and 2!");
 
   apf::MeshEntity* ent = 0;
-  apf::Mesh2* m = type == 2 ? makeOneTriMesh(order,ent,PCUObj.get()) : makeOneTetMesh(order,ent,PCUObj.get());
+  apf::Mesh2* m = type == 2 ? makeOneTriMesh(order,ent,&PCUObj) : makeOneTetMesh(order,ent,&PCUObj);
 
   double xi0 = atof(argv[4]);
   double xi1 = atof(argv[5]);

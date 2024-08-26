@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <cassert>
 #include <cmath>
-#include <memory>
 
 double check_c_assert() {
   double t0 = pcu::Time();
@@ -32,7 +31,7 @@ int main(int argc, char** argv) {
   int opt = atoi(argv[1]);
   MPI_Init(0,0);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   /* i'm avoiding conditionals inside for loops b/c
      i'm paranoid about the timings even though timings

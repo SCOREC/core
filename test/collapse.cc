@@ -10,7 +10,6 @@
 #include <parma.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
 
@@ -47,7 +46,7 @@ namespace {
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   pcu::Protect();
 #ifdef HAVE_SIMMETRIX
@@ -56,10 +55,10 @@ int main(int argc, char** argv) {
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv,pcu_obj.get());
+  getConfig(argc,argv,&pcu_obj);
   GroupCode code;
-  code.mesh = apf::loadMdsMesh(modelFile, meshFile, pcu_obj.get());
-  apf::Unmodulo outMap(pcu_obj.get()->Self(), pcu_obj.get()->Peers());
+  code.mesh = apf::loadMdsMesh(modelFile, meshFile, &pcu_obj);
+  apf::Unmodulo outMap(pcu_obj.Self(), pcu_obj.Peers());
   Parma_ShrinkPartition(code.mesh, partitionFactor, code);
   code.mesh->destroyNative();
   apf::destroyMesh(code.mesh);

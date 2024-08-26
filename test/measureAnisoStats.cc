@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
-#include <memory>
 
 // === includes for safe_mkdir ===
 #include <reel.h>
@@ -44,10 +43,10 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if (argc < 5) {
-    if (PCUObj.get()->Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printf("USAGE1: %s <mesh.smb> <output_prefix> <scale field name>"
           "<frames field name>\n", argv[0]);
       printf("USAGE2: %s <mesh.sms> <output_prefix> <scale field name>"
@@ -78,7 +77,7 @@ int main(int argc, char** argv)
 
   safe_mkdir(inPrefix);
 
-  getStats(".null", meshFile, sizeName, frameName, inPrefix, PCUObj.get());
+  getStats(".null", meshFile, sizeName, frameName, inPrefix, &PCUObj);
 
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();

@@ -14,7 +14,6 @@
 #include <SimModel.h>
 #endif
 #include <cstdlib>
-#include <memory>
 
 namespace {
 
@@ -165,9 +164,9 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  if( !PCUObj.get()->Self() )
+  if( !PCUObj.Self() )
     lion_oprint(1, "PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -178,11 +177,11 @@ int main(int argc, char** argv)
 #endif
   gmi_register_mesh();
   lion_set_verbosity(1);
-  getConfig(argc,argv,PCUObj.get());
-  if (PCUObj.get()->Self() % partitionFactor)
-    mymain(false, PCUObj.get());
+  getConfig(argc,argv,&PCUObj);
+  if (PCUObj.Self() % partitionFactor)
+    mymain(false, &PCUObj);
   else
-    mymain(true, PCUObj.get());
+    mymain(true, &PCUObj);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();

@@ -8,17 +8,16 @@
 #include <lionPrint.h>
 #include <samSz.h>
 #include <samElementCount.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   apf::Field* identity_size = samSz::isoSize(m);
   double scaling_factor = sam::getIsoLengthScalar(identity_size,
       m->count(m->getDimension()));

@@ -11,7 +11,6 @@
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
 #include <pcu_util.h>
-#include <memory>
 
 class Linear : public ma::IsotropicFunction
 {
@@ -193,22 +192,22 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   int ne = m->count(1);
   int nf = m->count(2);
   m->destroyNative();
   apf::destroyMesh(m);
 
-  testInterpolating(modelFile,meshFile,ne,nf,PCUObj.get());
-  testBezier(modelFile,meshFile,ne,nf,PCUObj.get());
-  testGregory(modelFile,meshFile,ne,nf,PCUObj.get());
+  testInterpolating(modelFile,meshFile,ne,nf,&PCUObj);
+  testBezier(modelFile,meshFile,ne,nf,&PCUObj);
+  testGregory(modelFile,meshFile,ne,nf,&PCUObj);
 
   }
   gmi_sim_stop();

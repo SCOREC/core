@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
-#include <memory>
 
 // === includes for safe_mkdir ===
 #include <reel.h>
@@ -45,10 +44,10 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if (argc < 8) {
-    if (PCUObj.get()->Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printf("USAGE1: %s <mesh.smb> <output_prefix> <scale field name>"
           "<frames field name> <n_u> <n_v> <scale>\n", argv[0]);
       printf("USAGE2: %s <mesh.sms> <output_prefix> <scale field name>"
@@ -79,7 +78,7 @@ int main(int argc, char** argv)
   int sampleSize[2] = {atoi(argv[5]),atoi(argv[6])};
   double scale = atof(argv[7]);
   safe_mkdir(inPrefix);
-  visualizeSizeField(".null", meshFile, sizeName, frameName, sampleSize, scale, inPrefix, PCUObj.get());
+  visualizeSizeField(".null", meshFile, sizeName, frameName, sampleSize, scale, inPrefix, &PCUObj);
 
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();

@@ -13,7 +13,6 @@
 
 #include <math.h>
 #include <pcu_util.h>
-#include <memory>
 
 /* This test file uses an alternative and more traditional method to
  * compute Jacobian differences, using the property of Bezier's that
@@ -408,10 +407,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  test2D(pcu_obj.get());
-  test3D(pcu_obj.get());
+  test2D(&pcu_obj);
+  test3D(&pcu_obj);
   }
   MPI_Finalize();
 }

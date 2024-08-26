@@ -11,7 +11,6 @@
 #include <gmi_null.h>
 #include <pcu_util.h>
 #include <cassert>
-#include <memory>
 
 apf::Mesh2* createEmptyMesh(pcu::PCU *PCUObj)
 {
@@ -45,13 +44,13 @@ int main(int argc, char* argv[])
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
 
   // create meshes and write data to one of them
-  apf::Mesh* m1 = createMesh(PCUObj.get());
-  apf::Mesh2* m2 = createEmptyMesh(PCUObj.get());
+  apf::Mesh* m1 = createMesh(&PCUObj);
+  apf::Mesh2* m2 = createEmptyMesh(&PCUObj);
   // create field on m1
   apf::Field* f = apf::createLagrangeField(m1, "field1", apf::SCALAR, 1);
   apf::Function* func = new twox(f);
@@ -139,7 +138,7 @@ int main(int argc, char* argv[])
   m2->end(it);
 
   // check that not transfering Fields/Numberings/Tags also works
-  apf::Mesh2* m3 = createEmptyMesh(PCUObj.get());
+  apf::Mesh2* m3 = createEmptyMesh(&PCUObj);
   apf::convert(m1, m3, NULL, NULL, false);
   m3->verify();
 

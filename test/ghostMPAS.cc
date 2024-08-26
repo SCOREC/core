@@ -5,7 +5,6 @@
 #include <lionPrint.h>
 #include <parma.h>
 #include <pcu_util.h>
-#include <memory>
 
 namespace {
   const char* modelFile = 0;
@@ -54,11 +53,11 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   runParma(m);
   m->writeNative(argv[3]);
   freeMesh(m);

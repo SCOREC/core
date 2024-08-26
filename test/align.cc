@@ -5,7 +5,6 @@
 #include <lionPrint.h>
 #include <apf.h>
 #include <pcu_util.h>
-#include <memory>
 
 void testTriEdge(pcu::PCU *PCUObj)
 {
@@ -92,12 +91,12 @@ int main()
 {
   MPI_Init(0,0);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
-  testTriEdge(pcu_obj.get());
-  testTetEdge(pcu_obj.get());
-  testTetTri(pcu_obj.get());
+  testTriEdge(&pcu_obj);
+  testTetEdge(&pcu_obj);
+  testTetTri(&pcu_obj);
   }
   MPI_Finalize();
 }

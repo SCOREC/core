@@ -6,7 +6,6 @@
 #include <crv.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <memory>
 
 namespace test {
 
@@ -172,7 +171,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
 
@@ -181,7 +180,7 @@ int main(int argc, char** argv)
   crv::getBezier(1),crv::getBezier(2)};
 
   for (int i = 0; i < 4; ++i)
-    test::checkFieldShape(fs[i], PCUObj.get());
+    test::checkFieldShape(fs[i], &PCUObj);
 
   }
   MPI_Finalize();

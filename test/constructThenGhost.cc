@@ -8,15 +8,14 @@
 #include <pcu_util.h>
 #include <pumi.h>
 #include <algorithm>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
-  pumi_load_pcu(pcu_obj.get());
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pumi_load_pcu(&pcu_obj);
   lion_set_verbosity(1);
   gmi_register_mesh();
   gmi_register_null();
@@ -26,7 +25,7 @@ int main(int argc, char** argv)
   int etype;
   int nverts;
 
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2], pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2], &pcu_obj);
   int dim = m->getDimension();
   extractCoords(m, coords, nverts);
   destruct(m, conn, nelem, etype);
@@ -34,7 +33,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
 
   gmi_model* model = gmi_load(".null");
-  m = apf::makeEmptyMdsMesh(model, dim, false, pcu_obj.get());
+  m = apf::makeEmptyMdsMesh(model, dim, false, &pcu_obj);
   apf::GlobalToVert outMap;
   apf::construct(m, conn, nelem, etype, outMap);
   delete [] conn;

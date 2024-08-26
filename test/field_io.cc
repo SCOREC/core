@@ -5,18 +5,17 @@
 #include <gmi_mesh.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 3);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
   {
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], &PCUObj);
   apf::Field* f = apf::createLagrangeField(m, "foo", apf::VECTOR, 1);
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* vert;
@@ -29,7 +28,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
   }
   {
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], "tmp.smb", PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], "tmp.smb", &PCUObj);
   apf::Field* f = m->findField("foo");
   PCU_ALWAYS_ASSERT(f);
   PCU_ALWAYS_ASSERT(apf::VECTOR == apf::getValueType(f));

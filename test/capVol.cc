@@ -1,6 +1,5 @@
 #include <cstring>
 #include <cstdlib>
-#include <memory>
 
 // Output
 #include <lionPrint.h>
@@ -78,7 +77,7 @@ int main(int argc, char** argv) {
   // Initialize parallelism.
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   // Initialize logging.
   lion_set_stdout(stdout);
@@ -86,7 +85,7 @@ int main(int argc, char** argv) {
 
   // Check arguments or print usage.
   if (argc < 3) {
-    if (PCUObj.get()->Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printUsage(argv[0]);
     }
     myExit(EXIT_FAILURE);
@@ -174,7 +173,7 @@ int main(int argc, char** argv) {
   MG_API_CALL(m, compute_adjacency());
 
   // Make APF adapter over Capstone mesh.
-  ma::Mesh* apfCapMesh = apf::createMesh(m, g, PCUObj.get());
+  ma::Mesh* apfCapMesh = apf::createMesh(m, g, &PCUObj);
 
   // Choose appropriate size-field.
   ma::AnisotropicFunction* sf = nullptr;

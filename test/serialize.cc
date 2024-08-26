@@ -12,7 +12,6 @@
 #endif
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 struct GroupCode : public Parma_GroupCode
 {
@@ -28,10 +27,10 @@ int main( int argc, char* argv[])
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !pcu_obj.get()->Self() )
+    if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix> <reduction-factor>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -47,7 +46,7 @@ int main( int argc, char* argv[])
   gmi_register_null();
   crv::getBezier(2);//hack to make sure curved meshes can be serialized!
   GroupCode code;
-  code.mesh = apf::loadMdsMesh(argv[1], argv[2], pcu_obj.get());
+  code.mesh = apf::loadMdsMesh(argv[1], argv[2], &pcu_obj);
   code.meshFile = argv[3];
   apf::Unmodulo outMap(code.mesh->getPCU()->Self(), code.mesh->getPCU()->Peers());
   Parma_ShrinkPartition(code.mesh, atoi(argv[4]), code);

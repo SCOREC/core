@@ -6,7 +6,6 @@
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
-#include <memory>
 
 static apf::Mesh2* makeEmptyMesh(pcu::PCU *PCUObj)
 {
@@ -140,15 +139,15 @@ int main( int argc, char* argv[])
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  PCU_ALWAYS_ASSERT(PCUObj.get()->Peers() == 2);
+  PCU_ALWAYS_ASSERT(PCUObj.Peers() == 2);
   gmi_register_null();
   GroupCode code;
-  code.mesh = makeEmptyMesh(PCUObj.get());
+  code.mesh = makeEmptyMesh(&PCUObj);
   int const groupSize = 1;
-  apf::Unmodulo outMap(PCUObj.get()->Self(), groupSize);
-  Parma_SplitPartition(code.mesh, groupSize, code, PCUObj.get());
+  apf::Unmodulo outMap(PCUObj.Self(), groupSize);
+  Parma_SplitPartition(code.mesh, groupSize, code, &PCUObj);
   globalCode(code.mesh);
   }
   MPI_Finalize();

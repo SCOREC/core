@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
-#include <memory>
 
 
 void bCurver(const char* modelFile, const char* meshFile,
@@ -47,10 +46,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   if (argc < 2) {
-    if (PCUObj.get()->Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printf("USAGE: %s <model.x_t>\n", argv[0]);
     }
     MPI_Finalize();
@@ -70,7 +69,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_model* g = gmi_load(modelFile);
 
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(g, 2, false, PCUObj.get());
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(g, 2, false, &PCUObj);
 
   std::vector<apf::MeshEntity*> verts;
   // vertex coordinates
@@ -350,7 +349,7 @@ int main(int argc, char** argv)
   for (int i = 2; i < 7; i++) {
     char output[256];
     snprintf(output,256,"crack_curved_to_order_%d", i);
-    bCurver(modelFile, "crack_linear.smb", PCUObj.get(), i, output);
+    bCurver(modelFile, "crack_linear.smb", &PCUObj, i, output);
   }
 
 #ifdef HAVE_SIMMETRIX

@@ -10,7 +10,6 @@
 #include <apfSIM.h>
 #include <apfZoltan.h>
 #include <parma.h>
-#include <memory>
 
 
 static void load_balance(apf::Mesh2* m) {
@@ -27,7 +26,7 @@ static void load_balance(apf::Mesh2* m) {
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
@@ -40,7 +39,7 @@ int main(int argc, char** argv) {
   gmi_model* apf_model = gmi_sim_load(0, smd_file);
   pGModel sim_model = gmi_export_sim(apf_model);
   pParMesh sim_mesh = PM_load(sms_file, sim_model, NULL);
-  apf::Mesh2* apf_mesh = apf::createMesh(sim_mesh, PCUObj.get());
+  apf::Mesh2* apf_mesh = apf::createMesh(sim_mesh, &PCUObj);
   //apf_mesh->verify(); <- this calls Simmetrix's verify function
   apf::verify(apf_mesh);
   load_balance(apf_mesh);

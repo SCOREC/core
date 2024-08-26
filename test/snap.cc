@@ -7,21 +7,20 @@
 #include <MeshSim.h>
 #include <SimModel.h>
 #include <pcu_util.h>
-#include <memory>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
-  ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2],PCUObj.get());
+  ma::Mesh* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   const ma::Input* in = ma::configureIdentity(m);
   ma::adapt(in);
   m->writeNative(argv[3]);

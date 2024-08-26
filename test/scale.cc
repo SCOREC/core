@@ -5,7 +5,6 @@
 #include <gmi_mesh.h>
 #include <lionPrint.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
 
@@ -56,10 +55,10 @@ static void scale_mesh(apf::Mesh2* m, Scale const& s) {
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  if (argc != 8) print_usage(argv, PCUObj.get());
+  if (argc != 8) print_usage(argv, &PCUObj);
   const char* gfile = argv[1];
   const char* mfile = argv[2];
   const char* ofile = argv[3];
@@ -68,7 +67,7 @@ int main(int argc, char** argv) {
   scale.y = atof(argv[5]);
   scale.z = atof(argv[6]);
   scale.s = atof(argv[7]);
-  apf::Mesh2* m = apf::loadMdsMesh(gfile, mfile, PCUObj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(gfile, mfile, &PCUObj);
   m->verify();
   scale_mesh(m, scale);
   m->verify();

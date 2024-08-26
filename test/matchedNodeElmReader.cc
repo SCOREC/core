@@ -18,7 +18,6 @@
 #include <iostream>
 #include <string>
 #include <regex>
-#include <memory>
 
 /* from https://github.com/SCOREC/core/issues/205
 0=fully interior of the volume
@@ -746,11 +745,11 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   int noVerify=0;    // maintain default of verifying if not explicitly requesting it off
   if( argc < 11 ) {
-    if( !PCUObj.get()->Self() ) {
+    if( !PCUObj.Self() ) {
       printf("Usage: %s <input dmg model> "
           "<ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
@@ -773,17 +772,17 @@ int main(int argc, char** argv)
 
   double t0 = pcu::Time();
   MeshInfo m;
-  readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m,PCUObj.get());
+  readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m,&PCUObj);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
     isMatched = false;
 
-  if(!PCUObj.get()->Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "isMatched %d\n", isMatched);
 
   gmi_model* model = gmi_load(argv[1]);
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched, PCUObj.get());
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched, &PCUObj);
   apf::GlobalToVert outMap;
   for( size_t i=0; i< m.elements.size(); i++) {
     apf::assemble(mesh, m.elements[i], m.numElms[i], m.elementType[i], outMap);

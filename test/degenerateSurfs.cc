@@ -12,7 +12,6 @@
 #endif
 #include <pcu_util.h>
 #include <stdlib.h>
-#include <memory>
 
 const char* modelFile = 0;
 const char* meshFile = 0;
@@ -38,7 +37,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==5);
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -48,8 +47,8 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv,PCUObj.get());
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj.get());
+  getConfig(argc,argv,&PCUObj);
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
 
 
   int order = 2;

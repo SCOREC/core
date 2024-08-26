@@ -13,7 +13,6 @@
 
 #include <math.h>
 #include <pcu_util.h>
-#include <memory>
 
 // face areas are 1/2 and 19/30
 void vert0(double const p[2], double x[3], void*)
@@ -312,10 +311,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  test2D(pcu_obj.get());
-  test3D(pcu_obj.get());
+  test2D(&pcu_obj);
+  test3D(&pcu_obj);
   }
   MPI_Finalize();
 }
