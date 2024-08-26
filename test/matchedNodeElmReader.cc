@@ -438,7 +438,7 @@ void getLocalRange(apf::Gid total, int& local,
       local += lpd;
     }
   }
-  first = PCUObj->Exscan(local);
+  first = PCUObj->Exscan<long>(local);
   last = first+local;
 }
 

@@ -92,7 +92,6 @@ struct GroupCode : public Parma_GroupCode
   apf::Mesh2* mesh;
   void run(int group)
   {
-    //mesh = ::makeEmptyMesh(PCUObj);
     if (group == 0) {
       addOneTri(mesh);
       setValues(mesh);
@@ -150,8 +149,6 @@ int main( int argc, char* argv[])
   int const groupSize = 1;
   apf::Unmodulo outMap(PCUObj.get()->Self(), groupSize);
   Parma_SplitPartition(code.mesh, groupSize, code, PCUObj.get());
-  /* update mesh for leaving groups */
-  //apf::remapPartition(code.mesh, outMap);
   globalCode(code.mesh);
   }
   MPI_Finalize();

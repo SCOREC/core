@@ -198,8 +198,8 @@ class MeshMDS : public Mesh2
     MeshMDS(gmi_model* m, const char* pathname, pcu::PCU *PCUObj)
     {
       init(apf::getLagrange(1), PCUObj);
-      mesh = mds_read_smb(this->getPCU()->GetCHandle(), m, pathname, 0, this);
-      isMatched = this->getPCU()->Or(!mds_net_empty(&mesh->matches));
+      mesh = mds_read_smb(getPCU()->GetCHandle(), m, pathname, 0, this);
+      isMatched = getPCU()->Or(!mds_net_empty(&mesh->matches));
       ownsModel = true;
     }
     ~MeshMDS()
@@ -579,14 +579,14 @@ class MeshMDS : public Mesh2
     }
     int getId()
     {
-      return this->getPCU()->Self();
+      return getPCU()->Self();
     }
     void writeNative(const char* fileName)
     {
       double t0 = pcu::Time();
-      mesh = mds_write_smb(this->getPCU()->GetCHandle(), mesh, fileName, 0, this);
+      mesh = mds_write_smb(getPCU()->GetCHandle(), mesh, fileName, 0, this);
       double t1 = pcu::Time();
-      if (!this->getPCU()->Self())
+      if (!getPCU()->Self())
         lion_oprint(1,"mesh %s written in %f seconds\n", fileName, t1 - t0);
     }
     void destroyNative()

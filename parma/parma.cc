@@ -271,7 +271,7 @@ void Parma_GetDisconnectedStats(apf::Mesh* m, int& max, double& avg, int& loc) {
   dcPart dc(m);
   loc = TO_INT(dc.getNumDcComps());
   max = m->getPCU()->Max<int>(loc);
-  avg = TO_DOUBLE( m->getPCU()->Add<double>(loc) ) / m->getPCU()->Peers();
+  avg = TO_DOUBLE( m->getPCU()->Add<int>(loc) ) / m->getPCU()->Peers();
 }
 
 void Parma_ProcessDisconnectedParts(apf::Mesh* m) {

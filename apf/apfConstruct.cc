@@ -42,12 +42,12 @@ static NewElements constructElements(
   return newElements;
 }
 
-static Gid getMax(const GlobalToVert& globalToVert, Mesh2* m)
+static Gid getMax(const GlobalToVert& globalToVert, pcu::PCU *PCUObj)
 {
   Gid max = -1;
   APF_CONST_ITERATE(GlobalToVert, globalToVert, it)
     max = std::max(max, it->first);
-  return m->getPCU()->Max<long>(max); // this is type-dependent
+  return PCUObj->Max<long>(max); // this is type-dependent
 }
 
 
@@ -66,7 +66,7 @@ static void constructResidence(Mesh2* m, GlobalToVert& globalToVert)
     }
     ifirst++;
   }
-  Gid max = getMax(globalToVert, m);  // seems like we read this and know it already on every rank so why compute with global comm?
+  Gid max = getMax(globalToVert, m->getPCU());  // seems like we read this and know it already on every rank so why compute with global comm?
   ifirst=0;
   APF_ITERATE(GlobalToVert, globalToVert, it) {
     Gid gid = it->first;  
@@ -212,7 +212,7 @@ NewElements construct(Mesh2* m, const Gid* conn, int nelem, int etype,
 void setCoords(Mesh2* m, const double* coords, int nverts,
     GlobalToVert& globalToVert)
 {
-  Gid max = getMax(globalToVert, m);
+  Gid max = getMax(globalToVert, m->getPCU());
   Gid total = max + 1;
   int peers = m->getPCU()->Peers();
   int quotient = total / peers;
@@ -303,7 +303,7 @@ void setCoords(Mesh2* m, const double* coords, int nverts,
 void setMatches(Mesh2* m, const Gid* matches, int nverts,
     GlobalToVert& globalToVert)
 {
-  Gid max = getMax(globalToVert, m);
+  Gid max = getMax(globalToVert, m->getPCU());
   Gid total = max + 1;
   int peers = m->getPCU()->Peers();
   int quotient = total / peers;

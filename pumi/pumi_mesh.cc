@@ -69,7 +69,7 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim, pOwnership o)
       ++num_own;
   m->end(it);
 
-  m->getPCU()->Exscan(&num_own,1);
+  m->getPCU()->Exscan<int>(&num_own,1);
   int initial_id=num_own;
 
   m->getPCU()->Begin();
