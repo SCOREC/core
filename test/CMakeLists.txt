@@ -191,6 +191,11 @@ test_exe_func(create_mis create_mis.cc)
 test_exe_func(fieldReduce fieldReduce.cc)
 test_exe_func(test_integrator test_integrator.cc)
 test_exe_func(test_matrix_gradient test_matrix_grad.cc)
+if(MDS_SET_DYNAMIC)
+test_exe_func(mds_dynamic_set mds_dynamic_set.cc)
+target_include_directories(mds_dynamic_set PRIVATE
+  "${PROJECT_SOURCE_DIR}/mds" "${PROJECT_BINARY_DIR}/mds")
+endif()
 
 if(ENABLE_DSP)
   test_exe_func(graphdist graphdist.cc)
