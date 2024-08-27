@@ -15,7 +15,6 @@
 #include <cstring>
 #include <iostream>
 #include <iomanip>
-#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -117,7 +116,7 @@ int main(int argc, char** argv)
   gmi_register_cap();
 
 
-  apf::Mesh2* mesh0 = apf::createMesh(m,g,PCUObj.get());
+  apf::Mesh2* mesh0 = apf::createMesh(m,g,&PCUObj);
   apf::writeVtkFiles("mesh_no_param", mesh0);
 
   gmi_model* model = gmi_import_cap(g);
@@ -138,7 +137,7 @@ int main(int argc, char** argv)
   while( (ge = gmi_next(model, gi)) ){
     std::stringstream name_str;
     name_str << "face_" << gmi_tag(model, ge) << "_mesh";
-    visualizeFace(model, ge, 100, 100, name_str.str().c_str(), PCUObj.get());
+    visualizeFace(model, ge, 100, 100, name_str.str().c_str(), &PCUObj);
   }
   gmi_end(model, gi);
 
@@ -146,7 +145,7 @@ int main(int argc, char** argv)
   printf("creating mesh with param field\n");
 
 
-  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
   apf::Field* pf  = apf::createFieldOn(mesh, "param_field", apf::VECTOR);
   apf::Field* idf  = apf::createFieldOn(mesh, "id", apf::SCALAR);
   apf::MeshEntity* e;
@@ -272,7 +271,7 @@ void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* 
 
   // make the vertexes and set the coordinates using the array
   std::vector<ma::Entity*> vs;
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false, PCUObj.get());
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false, &PCUObj);
   for (size_t i = 0; i < ps.size(); i++) {
     ma::Entity* vert = mesh->createVert(0);
     mesh->setPoint(vert, 0, ps[i]);

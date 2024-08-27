@@ -3,7 +3,6 @@
 #include <gmi_mesh.h>
 #include <lionPrint.h>
 #include <pumi_version.h>
-#include <memory>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
@@ -32,10 +31,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   pcu::Protect();
   lion_set_verbosity(1);
-  if( !PCUObj.get()->Self() ) {
+  if( !PCUObj.Self() ) {
     lion_oprint(1,"PUMI Git hash %s\n", pumi_version());
     lion_oprint(1,"PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
   }
@@ -56,8 +55,8 @@ int main(int argc, char** argv)
   std::string inputPath = "adapt.inp";
   if(argc==2) inputPath = argv[1];
   ph::Input in;
-  in.load(inputPath.c_str(), PCUObj.get());
-  chef::cook(g,m,in,PCUObj.get());
+  in.load(inputPath.c_str(), &PCUObj);
+  chef::cook(g,m,in,&PCUObj);
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();

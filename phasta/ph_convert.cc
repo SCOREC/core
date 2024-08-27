@@ -19,7 +19,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <memory>
 #include <getopt.h>
 
 
@@ -216,18 +215,18 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
 
-  getConfig(argc, argv, pcu_obj.get());
+  getConfig(argc, argv, &pcu_obj);
   if( should_log )
     Sim_logOn("convert.sim.log");
 
   if (should_attach_order && should_fix_pyramids) {
-    if (!pcu_obj.get()->Self())
+    if (!pcu_obj.Self())
       std::cout << "disabling pyramid fix because --attach-order was given\n";
     should_fix_pyramids = false;
   }
@@ -246,9 +245,9 @@ int main(int argc, char** argv)
   double t0 = pcu::Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
   double t1 = pcu::Time();
-  if(!pcu_obj.get()->Self())
+  if(!pcu_obj.Self())
     lion_eprint(1, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
-  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, pcu_obj.get());
+  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, &pcu_obj);
   double t2 = pcu::Time();
   if(!simApfMesh->getPCU()->Self())
     lion_eprint(1, "created the apf_sim mesh in %f seconds\n", t2-t1);

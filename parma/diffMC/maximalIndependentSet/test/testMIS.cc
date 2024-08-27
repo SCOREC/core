@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <string>
 #include "parma_commons.h"
-#include <memory>
 
 using std::set;
 using std::vector;
@@ -712,10 +711,10 @@ bool getBool(int& isDebug) {
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     {
-    auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+    pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
     pcu::Protect();
-    int rank = PCUObj.get()->Self();
-    int commSize = PCUObj.get()->Peers();
+    int rank = PCUObj.Self();
+    int commSize = PCUObj.Peers();
 
     int opt;
     int debugMode = 0;
@@ -747,7 +746,7 @@ int main(int argc, char** argv) {
 
 
     testNum = broadcastInt(testNum);
-    randNumSeed = broadcastInt(randNumSeed) + PCUObj.get()->Self();
+    randNumSeed = broadcastInt(randNumSeed) + PCUObj.Self();
     bool predefinedRandNums = getBool(iPredefinedRandNums);
 
     mis_init(randNumSeed, getBool(debugMode));
@@ -764,22 +763,22 @@ int main(int argc, char** argv) {
         return 0;
         break;
       case 0:
-        ierr = test_4partsA(rank, commSize,  predefinedRandNums, PCUObj.get());
+        ierr = test_4partsA(rank, commSize,  predefinedRandNums, &PCUObj);
         break;
       case 1:
-        ierr = test_4partsB(rank, commSize,  predefinedRandNums, PCUObj.get());
+        ierr = test_4partsB(rank, commSize,  predefinedRandNums, &PCUObj);
         break;
       case 2:
-        ierr = test_4partsC(rank, commSize,  predefinedRandNums, PCUObj.get());
+        ierr = test_4partsC(rank, commSize,  predefinedRandNums, &PCUObj);
         break;
       case 3:
-        ierr = test_StarA(rank, commSize, PCUObj.get());
+        ierr = test_StarA(rank, commSize, &PCUObj);
         break;
       case 4:
-        ierr = test_2dStencil(rank, commSize, PCUObj.get());
+        ierr = test_2dStencil(rank, commSize, &PCUObj);
         break;
       case 5:
-        ierr = test_2dStencil(rank,commSize,PCUObj.get(),false,true);
+        ierr = test_2dStencil(rank,commSize,&PCUObj,false,true);
         break;
     }
 

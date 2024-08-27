@@ -16,7 +16,6 @@
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
-#include <memory>
 
 namespace
 {
@@ -59,7 +58,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -69,11 +68,11 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv,pcu_obj.get());
+  getConfig(argc,argv,&pcu_obj);
 
   gmi_model* gm;
   gm = gmi_sim_load(modelFile, attribFile);
-  apf::Mesh2* m = apf::loadMdsMesh(gm, inMesh, pcu_obj.get());
+  apf::Mesh2* m = apf::loadMdsMesh(gm, inMesh, &pcu_obj);
   m->verify();
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);

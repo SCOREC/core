@@ -11,7 +11,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -98,7 +97,7 @@ int main(int argc, char** argv)
   auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
   if (argc < 2) {
-    if (PCUObj.get()->Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printf("USAGE: %s <create_file.cre>\n", argv[0]);
     }
     MPI_Finalize();
@@ -151,7 +150,7 @@ int main(int argc, char** argv)
   MG_API_CALL(m, compute_adjacency());
 
   /* CONVERT THE MESH TO APF::MESH2 */
-  apf::Mesh2* apfCapMesh = apf::createMesh(m, g, PCUObj.get());
+  apf::Mesh2* apfCapMesh = apf::createMesh(m, g, &PCUObj);
 
   /* ADD A TEST FIELD TO THE MESH TO DEMONSTRATE SOLUTION TRANSFER */
   apf::Field* tf  = apf::createFieldOn(apfCapMesh, "test_field", apf::VECTOR);

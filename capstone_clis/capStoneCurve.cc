@@ -13,7 +13,6 @@
 #include <cstring>
 #include <iostream>
 #include <lionPrint.h>
-#include <memory>
 
 // === includes for safe_mkdir ===
 #include <reel.h>
@@ -162,7 +161,7 @@ int main(int argc, char** argv)
   MG_API_CALL(m, compute_adjacency());
 
   /* writeVtk(cs, "before.vtk"); */
-  apf::Mesh2* apfCapMesh = apf::createMesh(m, g, PCUObj.get());
+  apf::Mesh2* apfCapMesh = apf::createMesh(m, g, &PCUObj);
 
   apf::Field* tf  = apf::createFieldOn(apfCapMesh, "test_field", apf::VECTOR);
   apf::MeshEntity* ent;

@@ -22,7 +22,6 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
-#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -51,12 +50,12 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   double initialTime = pcu::Time();
 
   if (argc != 3) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <factor>\n";
     return EXIT_FAILURE;
@@ -146,7 +145,7 @@ int main(int argc, char** argv)
 
   // create the mesh object (this one is CapStone underneath)
   printf("\n---- Creating Mesh Wrapper Object. \n");
-  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
   // add size distribution based on area

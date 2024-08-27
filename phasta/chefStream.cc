@@ -18,7 +18,6 @@
 #include <SimUtil.h>
 #endif
 #include <stdio.h>
-#include <memory>
 
 namespace {
   void freeMesh(apf::Mesh* m) {
@@ -35,7 +34,7 @@ namespace {
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   pcu::Protect();
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
@@ -45,16 +44,16 @@ int main(int argc, char** argv) {
   gmi_register_mesh();
   gmi_model* g = NULL;
   apf::Mesh2* m = NULL;
-  GRStream* grs = makeGRStream(PCUObj.get());
+  GRStream* grs = makeGRStream(&PCUObj);
   ph::Input ctrl;
-  ctrl.load("adapt.inp", PCUObj.get());
-  chef::cook(g,m,ctrl,grs,PCUObj.get());
-  RStream* rs = makeRStream(PCUObj.get());
-  attachRStream(grs,rs,PCUObj.get());
+  ctrl.load("adapt.inp", &PCUObj);
+  chef::cook(g,m,ctrl,grs,&PCUObj);
+  RStream* rs = makeRStream(&PCUObj);
+  attachRStream(grs,rs,&PCUObj);
   reconfigureChef(ctrl);
-  chef::cook(g,m,ctrl,rs,PCUObj.get());
-  destroyGRStream(grs,PCUObj.get());
-  destroyRStream(rs,PCUObj.get());
+  chef::cook(g,m,ctrl,rs,&PCUObj);
+  destroyGRStream(grs,&PCUObj);
+  destroyRStream(rs,&PCUObj);
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();

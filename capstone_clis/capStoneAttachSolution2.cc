@@ -20,7 +20,6 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -500,7 +499,7 @@ int main(int argc, char** argv)
   double initialTime = pcu::Time();
 
   if (argc != 7) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <data file .txt> <data offset> <strand size> <desired max size> <error reduction factor>\n";
     return EXIT_FAILURE;
@@ -599,7 +598,7 @@ int main(int argc, char** argv)
 
   // create the mesh object (this one is CapStone underneath)
   printf("\n---- Creating Mesh Wrapper Object. \n");
-  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
   // remove unused verts

@@ -11,7 +11,6 @@
 #include <parma.h>
 #include <pcu_util.h>
 #include <cstdlib>
-#include <memory>
 
 namespace {
   static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU*) {
@@ -42,10 +41,10 @@ namespace {
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
   {
-  auto pcu_obj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   pcu::Protect();
   lion_set_verbosity(1);
-  checkInputs(argc,argv,pcu_obj.get());
+  checkInputs(argc,argv,&pcu_obj);
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
@@ -54,9 +53,9 @@ int main(int argc, char** argv) {
   gmi_register_mesh();
   GroupCode code;
   ph::Input in;
-  in.load(argv[1], pcu_obj.get());
+  in.load(argv[1], &pcu_obj);
   in.openfile_read = openfile_read;
-  code.mesh = apf::loadMdsMesh(in.modelFileName.c_str(), in.meshFileName.c_str(), pcu_obj.get());
+  code.mesh = apf::loadMdsMesh(in.modelFileName.c_str(), in.meshFileName.c_str(), &pcu_obj);
   chef::readAndAttachFields(in,code.mesh);
   apf::Unmodulo outMap(code.mesh->getPCU()->Self(), code.mesh->getPCU()->Peers());
   code.ctrl = in;

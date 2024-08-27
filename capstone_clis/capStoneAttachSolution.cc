@@ -22,7 +22,6 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
-#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -600,12 +599,12 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   double initialTime = pcu::Time();
 
   if (argc != 9) {
-    if(0==PCUObj.get()->Self()) {
+    if(0==PCUObj.Self()) {
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <data file .txt> <target field(s)> <strand size> <desired max size> <error reduction factor> <max refinement level> <boundary layer thickness>\n";
       std::cerr << "*target field(s) is a bit string to select which field(s) are used for error estimation\n";
@@ -713,7 +712,7 @@ int main(int argc, char** argv)
 
   // create the mesh object (this one is CapStone underneath)
   printf("\n---- Creating Mesh Wrapper Object. \n");
-  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
   // make the volume mesh (this one is MDS underneath)

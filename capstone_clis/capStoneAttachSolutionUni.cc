@@ -22,7 +22,6 @@
 #include <iomanip>
 #include <vector>
 #include <math.h>
-#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -499,12 +498,12 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   double initialTime = pcu::Time();
 
   if (argc != 7) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <data file .txt> <data offset> <strand size> <desired max size> <error reduction factor>\n";
     return EXIT_FAILURE;
@@ -596,7 +595,7 @@ int main(int argc, char** argv)
 
   printf("---- CapStone Mesh Loaded. \n");
 
-  apf::Mesh2* mesh = apf::createMesh(m,g,PCUObj.get());
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
 
   //adapt the mesh
   ma::Input* in;

@@ -7,7 +7,6 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <memory>
 
 
 #include "CapstoneModule.h"
@@ -30,10 +29,10 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   if (argc != 2) {
-    if(0==PCUObj.get()->Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre>\n";
     return EXIT_FAILURE;
