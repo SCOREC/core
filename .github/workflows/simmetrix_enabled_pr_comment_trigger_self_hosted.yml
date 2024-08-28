@@ -100,8 +100,8 @@ jobs:
           mkdir -p ./pr
           echo "${{ github.event.issue.number }}"  > ./pr/issueNumber
           echo "[Build Log](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})" >> ./pr/message
-          echo "Simmetrix Test Result: ${{ steps.build_sim.outcome }} "  > ./pr/message
-          echo "Simmetrix + CGNS Test Result: ${{ steps.build_sim_cgns.outcome }} "  > ./pr/message
+          echo "Simmetrix Test Result: ${{ steps.build_sim.outcome }} "  >> ./pr/message
+          echo "Simmetrix + CGNS Test Result: ${{ steps.build_sim_cgns.outcome }} "  >> ./pr/message
 
       - name: Upload result
         if: ${{ !cancelled() }} #upload unless the job was cancelled
