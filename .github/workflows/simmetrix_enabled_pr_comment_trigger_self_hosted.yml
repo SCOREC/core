@@ -18,7 +18,8 @@ jobs:
     if: |
       github.event.issue.pull_request &&
       contains(github.event.comment.body, '/runtests') &&
-      (github.event.comment.user.login == 'cwsmith')
+      ((github.event.comment.user.login == 'cwsmith') ||
+       (github.event.comment.user.login == 'jacobmerson' )
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
