@@ -156,8 +156,8 @@ endmacro(bob_public_dep)
 function(bob_export_target tgt_name)
   install(TARGETS ${tgt_name} EXPORT ${tgt_name}-target
       RUNTIME DESTINATION bin
-      ARCHIVE DESTINATION lib
-      LIBRARY DESTINATION lib)
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
   install(EXPORT ${tgt_name}-target NAMESPACE ${PROJECT_NAME}::
           DESTINATION lib/cmake/${PROJECT_NAME})
   set(${PROJECT_NAME}_EXPORTED_TARGETS
