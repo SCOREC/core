@@ -79,7 +79,7 @@ public:
   int Received(size_t *size) noexcept;
   void *Extract(size_t size) noexcept;
 
-  void DebugPrint(const char* format, ...) noexcept PCU_FORMAT_ATTRIBUTE(2, 3);
+  void DebugPrint(const char* format, ...) noexcept PCU_FORMAT_ATTRIBUTE(2, 3)
   void DebugPrint(const char* format, va_list args) noexcept;
   /* Debug functions */
   void DebugOpen() noexcept;
