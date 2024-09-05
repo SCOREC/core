@@ -218,6 +218,8 @@ if(ENABLE_CAPSTONE)
     util_exe_func(cap_smooth cap_smooth.cc)
   endif()
   util_exe_func(cap2vtk cap2vtk.cc)
+  util_exe_func(capGeomTest capGeomTest.cc)
+  util_exe_func(capCheckParam capCheckParam.cc)
 endif()
 
 # send all the newly added utility executable targets
