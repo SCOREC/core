@@ -16,7 +16,6 @@ endfunction(test_exe_func)
 
 # Capstone utilities
 if(ENABLE_CAPSTONE)
-  util_exe_func(capStoneAnisoAdapt capStoneAnisoAdapt.cc)
   util_exe_func(capStoneAttachSolution capStoneAttachSolution.cc)
 endif()
 
