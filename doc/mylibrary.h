@@ -1,4 +1,4 @@
 #ifndef MYLIBRARY_H
-#define MYLIBRARH_H
+#define MYLIBRARY_H
 void makeMesh();
 #endif
