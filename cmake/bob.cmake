@@ -173,7 +173,7 @@ endmacro(bob_end_subdir)
 
 function(bob_end_package)
   include(CMakePackageConfigHelpers)
-  set(INCLUDE_INSTALL_DIR include)
+  set(INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
   set(LIB_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}")
   set(CONFIG_CONTENT "
 set(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION})
