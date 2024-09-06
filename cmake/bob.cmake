@@ -155,11 +155,11 @@ endmacro(bob_public_dep)
 
 function(bob_export_target tgt_name)
   install(TARGETS ${tgt_name} EXPORT ${tgt_name}-target
-      RUNTIME DESTINATION bin
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+      RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+      LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
   install(EXPORT ${tgt_name}-target NAMESPACE ${PROJECT_NAME}::
-          DESTINATION lib/cmake/${PROJECT_NAME})
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
   set(${PROJECT_NAME}_EXPORTED_TARGETS
       ${${PROJECT_NAME}_EXPORTED_TARGETS} ${tgt_name} PARENT_SCOPE)
 endfunction(bob_export_target)
@@ -174,7 +174,7 @@ endmacro(bob_end_subdir)
 function(bob_end_package)
   include(CMakePackageConfigHelpers)
   set(INCLUDE_INSTALL_DIR include)
-  set(LIB_INSTALL_DIR lib)
+  set(LIB_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}")
   set(CONFIG_CONTENT "
 set(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION})
 include(CMakeFindDependencyMacro)
@@ -213,7 +213,7 @@ set(${PROJECT_NAME}_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\")
 ")
   install(FILES
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    DESTINATION lib/cmake/${PROJECT_NAME})
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
   if(PROJECT_VERSION)
     file(WRITE
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
@@ -224,6 +224,6 @@ set(${PROJECT_NAME}_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\")
         COMPATIBILITY SameMajorVersion)
     install(FILES
       "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-      DESTINATION lib/cmake/${PROJECT_NAME})
+      DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
   endif()
 endfunction(bob_end_package)
