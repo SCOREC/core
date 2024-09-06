@@ -31,8 +31,9 @@ else()
 endif()
 
 #this is just example code, do your own thing
-add_executable(mylibrary mylibrary.cpp)
+add_library(mylibrary mylibrary.cpp)
 add_executable(myprogram myprogram.cpp)
+target_include_directories(myprogram PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 #for any targets that use PUMI, just use this command
 #to it to include the right directories and link to all
@@ -40,4 +41,4 @@ add_executable(myprogram myprogram.cpp)
 #we recommend PUBLIC if the target is a library and
 #PRIVATE if the target is an executable
 target_link_libraries(mylibrary PUBLIC SCOREC::core)
-target_link_libraries(myprogram PRIVATE SCOREC::core)
+target_link_libraries(myprogram PRIVATE mylibrary)
