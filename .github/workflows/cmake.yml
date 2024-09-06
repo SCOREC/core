@@ -36,7 +36,7 @@ jobs:
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j --target install
 
     - name: Test
       env:
@@ -44,3 +44,13 @@ jobs:
         MPICH_CC: ${{matrix.compiler.CC}}
       working-directory: ${{github.workspace}}/build
       run: ctest --output-on-failure -C ${{matrix.build_type}}
+
+    - name: Build User Project
+      # only need to test with a single build config if the installed cmake config files work
+      if: ${{ matrix.compiler == 'GNU' }} && ${{ matrix.build_type == 'Release' }}
+      env:
+        MPICH_CXX: ${{matrix.compiler.CXX}}
+        MPICH_CC: ${{matrix.compiler.CC}}
+      run: |
+        cmake -S ${{github.workspace}}/doc -B ${{github.workspace}}/buildExample -DCMAKE_CXX_COMPILER=mpicxx -DSCOREC_PREFIX=${{github.workspace}}/build/install
+        cmake --build ${{github.workspace}}/buildExample
