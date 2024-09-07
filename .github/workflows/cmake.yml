@@ -12,8 +12,8 @@ jobs:
       fail-fast: false
       matrix:
         compiler:
-          - { compiler: GNU, CC: gcc-10, CXX: g++-10 }
-          - { compiler: LLVM, CC: clang, CXX: clang++ }
+          - { compiler: "GNU", CC: gcc-10, CXX: g++-10 }
+          - { compiler: "LLVM", CC: clang, CXX: clang++ }
         build_type: [Debug, Release]
 
     steps:
@@ -47,7 +47,7 @@ jobs:
 
     - name: Build User Project
       # only need to test with a single build config if the installed cmake config files work
-      if: ${{ matrix.compiler == 'GNU' && matrix.build_type == 'Release' }}
+      if: matrix.compiler == 'GNU' # && matrix.build_type == 'Release' #the compiler comparison is wrong
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
