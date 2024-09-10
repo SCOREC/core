@@ -224,7 +224,9 @@ static void closest_point(struct gmi_model* m, struct gmi_ent* e,
   M_GTopo topo = fromGmiEntity(e);
   vec3d xyz_in, xyz_out, param_out;
   xyz_in[0] = from[0]; xyz_in[1] = from[1]; xyz_in[2] = from[2];
-  lion_eprint(1, "gmi_cap: FIXME: no seedparam!\n");
+  // Capstone recommends replacing nullptr with `seedparam` -- a known nearby
+  // parametric point. This interface doesn't have that functionality, but if
+  // it becomes added, this call should be updated.
   MG_API_CALL(cm->geomInterface, get_closest_point_param(topo, xyz_in, nullptr,
     xyz_out, param_out));
   to[0] = xyz_out[0]; to[1] = xyz_out[1]; to[2] = xyz_out[2];
