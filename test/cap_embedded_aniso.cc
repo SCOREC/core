@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <PCU.h>
+#include <pcu_util.h>
 #include <lionPrint.h>
 #include <gmi.h>
 #include <gmi_cap.h>
@@ -54,15 +55,16 @@ namespace {
   class EmbeddedShockFunction : public ma::AnisotropicFunction {
   public:
     EmbeddedShockFunction(ma::Mesh* m, M_GTopo shock, double nsize,
-      double AR, double h0, double thickness) : mesh(m), shock_surface(shock),
+      double AR, double h0, double thickness) : mesh(m),
       norm_size(nsize), init_size(h0) {
+      shock_surface = reinterpret_cast<apf::ModelEntity*>(toGmiEntity(shock));
       thickness_tol = thickness * thickness / 4;
       tan_size = norm_size * AR;
     }
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
   private:
     ma::Mesh* mesh;
-    M_GTopo shock_surface;
+    apf::ModelEntity* shock_surface;
     double thickness_tol, norm_size, init_size, tan_size;
   }; // class EmbeddedSizeFunction
 } // namespace
@@ -73,16 +75,16 @@ int main(int argc, char* argv[]) {
   PCU_Comm_Init();
 
   Args args(argc, argv);
-  if (!args) {
+  if (args.help()) {
+    args.print_help(std::cout);
+    PCU_Comm_Free();
+    MPI_Finalize();
+    return !args ? 1 : 0;
+  } else if (!args) {
     args.print_usage(std::cerr);
     PCU_Comm_Free();
     MPI_Finalize();
     return 1;
-  } else if (args.help()) {
-    args.print_help(std::cout);
-    PCU_Comm_Free();
-    MPI_Finalize();
-    return 0;
   }
 
   if (args.verbosity() > 0) {
@@ -114,12 +116,14 @@ int main(int argc, char* argv[]) {
 
   std::cout << ++stage << ". Make apf::Mesh." << std::endl;
   apf::Mesh2* apfCapMesh = apf::createMesh(mdi, gdi);
+  apf::printStats(apfCapMesh);
 
   ma::Mesh* adaptMesh = apfCapMesh;
   if (args.mds_adapt()) {
     std::cout << ++stage << ". Convert mesh to MDS." << std::endl;
     adaptMesh = apf::createMdsMesh(apfCapMesh->getModel(), apfCapMesh);
     apf::disownMdsModel(adaptMesh);
+    apf::printStats(adaptMesh);
   }
 
   if (args.uniform() > 0) {
@@ -402,27 +406,28 @@ namespace {
 
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame,
     ma::Vector& scale) {
-    GeometryDatabaseInterface* gdi = gmi_export_cap(mesh->getModel());
-    // FIXME: Not sure how to use seedparam with get_closest_point_param.
-    apf::Vector3 pt = apf::getLinearCentroid(mesh, vtx);
-    vec3d capPt(pt.x(), pt.y(), pt.z()), closest_pt;
-    MG_API_CALL(gdi, get_closest_point(shock_surface, capPt, closest_pt));
-    if (closest_pt.closer2_than(thickness_tol, capPt)) {
-      if (closest_pt.closer2_than(0.0001 * 0.0001, capPt)) {
-        // FIXME: Handle this case.
+    apf::Vector3 pt = apf::getLinearCentroid(mesh, vtx), closest_pt,
+      closest_pt_par;
+    PCU_ALWAYS_ASSERT(mesh->canGetClosestPoint());
+    mesh->getClosestPoint(shock_surface, pt, closest_pt, closest_pt_par);
+    apf::Vector3 norm = closest_pt - pt;
+    if (std::abs(norm * norm) < thickness_tol) {
+      if (std::abs(norm * norm) < 0.0001 * 0.0001) {
+        // FIXME: Scale to mesh size.
+        PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
+        mesh->getNormal(shock_surface, closest_pt_par, norm);
+      } else {
+        norm = norm.normalize();
       }
-      vec3d norm = capPt - closest_pt;
-      norm.normalize();
       // Negate largest component to get tangent.
-      vec3d trial(norm[2], norm[1], norm[0]);
+      apf::Vector3 trial(norm[2], norm[1], norm[0]);
       int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
       trial[largest] *= -1;
-      vec3d tan1 = norm ^ trial;
-      tan1.normalize();
-      vec3d tan2 = norm ^ tan1;
-      frame[0][0] = norm.x(); frame[0][1] = norm.y(); frame[0][2] = norm.z();
-      frame[1][0] = tan1.x(); frame[1][1] = tan1.y(); frame[1][2] = tan1.z();
-      frame[2][0] = tan2.x(); frame[2][1] = tan2.y(); frame[2][2] = tan2.z();
+      apf::Vector3 tan1 = apf::cross(norm, trial).normalize();
+      apf::Vector3 tan2 = apf::cross(norm, tan1);
+      frame[0] = norm;
+      frame[1] = tan1;
+      frame[2] = tan2;
       scale[0] = norm_size; scale[1] = scale[2] = tan_size;
     } else {
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
