@@ -168,8 +168,8 @@ int main(int argc, char** argv)
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   lion_set_verbosity(1);
-  MPI_Comm_rank(PCU_Get_Comm(), &myrank);
-  MPI_Comm_size(PCU_Get_Comm(), &commsize);
+  PCU_Comm_Rank(&myrank);
+  PCU_Comm_Size(&commsize);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
