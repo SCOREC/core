@@ -36,29 +36,6 @@ void myExit(int exit_code = EXIT_SUCCESS) {
   exit(exit_code);
 }
 
-void writeCre(CapstoneModule& cs, const std::string& filename) {
-  GeometryDatabaseInterface    *gdbi = cs.get_geometry();
-  MeshDatabaseInterface        *mdbi = cs.get_mesh();
-  AppContext		       *ctx = cs.get_context();
-
-  // Get the CRE writer.
-  Writer *creWriter = get_writer(ctx, "Create Native Writer");
-  if (!creWriter) {
-    lion_eprint(1, "FATAL: Could not find the CRE writer.\n");
-    myExit(EXIT_FAILURE);
-  }
-
-  IdMapping idmapping;
-  std::vector<M_MModel> mmodels;
-  M_GModel gmodel;
-  M_MModel mmodel;
-  gdbi->get_current_model(gmodel);
-  mdbi->get_current_model(mmodel);
-  mmodels.clear();
-  mmodels.push_back(mmodel);
-  creWriter->write(ctx, gmodel, mmodels, filename.c_str(), idmapping);
-}
-
 void printUsage(char *argv0) {
   printf("USAGE: %s [-agwvm] <size-field> <create_file.cre>\n", argv0);
   printf("Flags:\n"
@@ -139,7 +116,7 @@ int main(int argc, char** argv) {
   const std::string mdbName("Mesh Database : Create");
   const std::string adbName("Attribution Database : Create");
 
-  CapstoneModule  cs("capTest", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
+  CapstoneModule  cs("capVol", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
 
   GeometryDatabaseInterface     *g = cs.get_geometry();
   MeshDatabaseInterface         *m = cs.get_mesh();
@@ -172,7 +149,7 @@ int main(int argc, char** argv) {
   }
 
   if (write_flag) {
-    writeCre(cs, "core_capVol_before.cre");
+    cs.save_file("core_capVol_before.cre", gmodel);
   }
 
   // Calculate adjacencies.
@@ -189,13 +166,14 @@ int main(int argc, char** argv) {
   if (mds_flag) {
     adaptMesh = apf::createMdsMesh(apfCapMesh->getModel(), apfCapMesh);
     adaptMesh->verify();
+    apf::reorderMdsMesh(adaptMesh);
+    adaptMesh->verify();
     if (write_flag) {
       apf::writeVtkFiles("core_capVol_mds.vtk", adaptMesh);
     }
     apfCapMesh->setModel(nullptr); // Disown the model.
     delete apfCapMesh;
     apfCapMesh = nullptr;
-    MG_API_CALL(m, delete_model(mmodel));
   }
 
   // Choose appropriate size-field.
@@ -250,22 +228,7 @@ int main(int argc, char** argv) {
     in = ma::makeAdvanced(ma::configure(adaptMesh, sf));
   }
 
-  in->shouldSnap = true;
-  in->shouldTransferParametric = true;
-  in->shouldFixShape = true;
-  in->shouldForceAdaptation = true;
-  if (adaptMesh->getDimension() == 2)
-    in->goodQuality = 0.04; // this is mean-ratio squared
-  else // 3D meshes
-    in->goodQuality = 0.027; // this is the mean-ratio cubed
-  in->maximumIterations = 10;
-
-  if (verbose_flag) {
-    // Adapt with verbose logging but without intermediate VTKs.
-    ma::adaptVerbose(in, false);
-  } else {
-    ma::adapt(in);
-  }
+  ma::adapt(in);
 
   if (volume_flag) {
     // We can't verify surface meshes.
@@ -275,11 +238,11 @@ int main(int argc, char** argv) {
   if (write_flag) {
     if (mds_flag) {
       apf::writeVtkFiles("core_capVol_after_mds.vtk", adaptMesh);
-      MG_API_CALL(m, create_associated_model(mmodel, gmodel, "MDS Adapt"));
+      MG_API_CALL(m, create_associated_model(mmodel, gmodel, "MeshAdapt"));
       MG_API_CALL(m, set_adjacency_state(REGION2FACE|REGION2EDGE|REGION2VERTEX|
                  FACE2EDGE|FACE2VERTEX));
       MG_API_CALL(m, set_reverse_states());
-      // MG_API_CALL(m, compute_adjacency());
+      // MG_API_CALL(m, compute_adjacency()); // unnecessary because no elements?
       ma::Mesh* newCapMesh = apf::createMesh(m, g);
       apf::convert(adaptMesh, newCapMesh);
       apf::writeVtkFiles("core_capVol_after_cap.vtk", newCapMesh);
@@ -287,7 +250,7 @@ int main(int argc, char** argv) {
     } else {
       apf::writeVtkFiles("core_capVol_after_cap.vtk", adaptMesh);
     }
-    writeCre(cs, "core_capVol_after.cre");
+    cs.save_file("core_capVol_after.cre", gmodel);
   }
 
   /* PRINT ADAPTED MESH INFO */
