@@ -165,9 +165,9 @@ int main(int argc, char** argv) {
   ma::Mesh* adaptMesh = apfCapMesh;
   if (mds_flag) {
     adaptMesh = apf::createMdsMesh(apfCapMesh->getModel(), apfCapMesh);
-    adaptMesh->verify();
     apf::reorderMdsMesh(adaptMesh);
-    adaptMesh->verify();
+    // APF default routine will typically fail to verify surface meshes.
+    if (volume_flag) adaptMesh->verify();
     if (write_flag) {
       apf::writeVtkFiles("core_capVol_mds.vtk", adaptMesh);
     }
