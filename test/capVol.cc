@@ -11,6 +11,8 @@
 // Mesh interfaces
 #include <apf.h>
 #include <apfCAP.h>
+#include <apfMDS.h>
+#include <apfConvert.h>
 
 // Geometry interfaces
 #include <gmi.h>
@@ -35,36 +37,14 @@ void myExit(int exit_code = EXIT_SUCCESS) {
   exit(exit_code);
 }
 
-void writeCre(CapstoneModule& cs, const std::string& filename) {
-  GeometryDatabaseInterface    *gdbi = cs.get_geometry();
-  MeshDatabaseInterface        *mdbi = cs.get_mesh();
-  AppContext		       *ctx = cs.get_context();
-
-  // Get the CRE writer.
-  Writer *creWriter = get_writer(ctx, "Create Native Writer");
-  if (!creWriter) {
-    lion_eprint(1, "FATAL: Could not find the CRE writer.\n");
-    myExit(EXIT_FAILURE);
-  }
-
-  IdMapping idmapping;
-  std::vector<M_MModel> mmodels;
-  M_GModel gmodel;
-  M_MModel mmodel;
-  gdbi->get_current_model(gmodel);
-  mdbi->get_current_model(mmodel);
-  mmodels.clear();
-  mmodels.push_back(mmodel);
-  creWriter->write(ctx, gmodel, mmodels, filename.c_str(), idmapping);
-}
-
 void printUsage(char *argv0) {
-  printf("USAGE: %s [-agwv] <size-field> <create_file.cre>\n", argv0);
+  printf("USAGE: %s [-agwvm] <size-field> <create_file.cre>\n", argv0);
   printf("Flags:\n"
   "-a\tEvaluate size-field analytically.\n"
   "-g\tForce mesh generation.\n"
   "-v\tEnable verbose output.\n"
   "-w\tWrite before.vtk, after.vtk, and after.cre.\n"
+  "-m\tConvert mesh to MDS during adaptation.\n"
   "SIZE-FIELDS:\n"
   "%d, for uniform anisotropic size-field\n"
   "%d, for wing-shock size-field\n"
@@ -80,6 +60,7 @@ int main(int argc, char** argv) {
   PCU_Comm_Init();
 
   // Initialize logging.
+  lion_set_verbosity(1);
   lion_set_stdout(stdout);
   lion_set_stderr(stderr);
 
@@ -93,7 +74,7 @@ int main(int argc, char** argv) {
 
   // Parse arguments.
   bool volume_flag = false, write_flag = false, analytic_flag = false,
-       verbose_flag = false;
+       verbose_flag = false, mds_flag = false;
   for (int i = 1; i < argc - 2; ++i) {
     if (*argv[i] == '-') {
       for (int j = 1; argv[i][j] != '\0'; ++j) {
@@ -110,6 +91,9 @@ int main(int argc, char** argv) {
           break;
         case 'w':
           write_flag = true;
+          break;
+        case 'm':
+          mds_flag = true;
           break;
         default:
           printf("Error: invalid flag.\n");
@@ -132,7 +116,7 @@ int main(int argc, char** argv) {
   const std::string mdbName("Mesh Database : Create");
   const std::string adbName("Attribution Database : Create");
 
-  CapstoneModule  cs("capTest", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
+  CapstoneModule  cs("capVol", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
 
   GeometryDatabaseInterface     *g = cs.get_geometry();
   MeshDatabaseInterface         *m = cs.get_mesh();
@@ -147,8 +131,9 @@ int main(int argc, char** argv) {
   filenames.push_back(createFileName);
   M_GModel gmodel = cs.load_files(filenames);
 
+  M_MModel mmodel;
   if (volume_flag) {
-    M_MModel mmodel = cs.generate_mesh();
+    mmodel = cs.generate_mesh();
     if (mmodel.is_invalid()) {
       lion_eprint(1, "FATAL: Failed to mesh the model.\n");
       myExit(EXIT_FAILURE);
@@ -159,11 +144,12 @@ int main(int argc, char** argv) {
     std::vector<M_MModel> mmodels;
     MG_API_CALL(m, get_associated_mesh_models(gmodel, mmodels));
     PCU_ALWAYS_ASSERT(mmodels.size() == 1);
-    MG_API_CALL(m, set_current_model(mmodels[0]));
+    mmodel = mmodels[0];
+    MG_API_CALL(m, set_current_model(mmodel));
   }
 
   if (write_flag) {
-    writeCre(cs, "core_capVol_before.cre");
+    cs.save_file("core_capVol_before.cre", gmodel);
   }
 
   // Calculate adjacencies.
@@ -174,21 +160,36 @@ int main(int argc, char** argv) {
 
   // Make APF adapter over Capstone mesh.
   ma::Mesh* apfCapMesh = apf::createMesh(m, g);
+  apf::writeVtkFiles("core_capVol_cap.vtk", apfCapMesh);
+
+  ma::Mesh* adaptMesh = apfCapMesh;
+  if (mds_flag) {
+    adaptMesh = apf::createMdsMesh(apfCapMesh->getModel(), apfCapMesh);
+    apf::reorderMdsMesh(adaptMesh);
+    // APF default routine will typically fail to verify surface meshes.
+    if (volume_flag) adaptMesh->verify();
+    if (write_flag) {
+      apf::writeVtkFiles("core_capVol_mds.vtk", adaptMesh);
+    }
+    apfCapMesh->setModel(nullptr); // Disown the model.
+    delete apfCapMesh;
+    apfCapMesh = nullptr;
+  }
 
   // Choose appropriate size-field.
   ma::AnisotropicFunction* sf = nullptr;
   switch (mode) {
     case 1:
-      sf = new UniformAniso(apfCapMesh);
+      sf = new UniformAniso(adaptMesh);
       break;
     case 2:
-      sf = new WingShock(apfCapMesh, 50);
+      sf = new WingShock(adaptMesh, 50);
       break;
     case 3:
-      sf = new Shock(apfCapMesh);
+      sf = new Shock(adaptMesh);
       break;
     case 4:
-      sf = new CylBoundaryLayer(apfCapMesh);
+      sf = new CylBoundaryLayer(adaptMesh);
       break;
     default:
       lion_eprint(1, "FATAL: Invalid size-field.\n");
@@ -200,58 +201,56 @@ int main(int argc, char** argv) {
   apf::Field* scaleField = nullptr;
   ma::Input *in = nullptr;
   if (!analytic_flag || write_flag) {
-    frameField = apf::createFieldOn(apfCapMesh, "adapt_frames", apf::MATRIX);
-    scaleField = apf::createFieldOn(apfCapMesh, "adapt_scales", apf::VECTOR);
+    frameField = apf::createFieldOn(adaptMesh, "adapt_frames", apf::MATRIX);
+    scaleField = apf::createFieldOn(adaptMesh, "adapt_scales", apf::VECTOR);
 
     ma::Entity *v;
-    ma::Iterator* it = apfCapMesh->begin(0);
-    while( (v = apfCapMesh->iterate(it)) ) {
+    ma::Iterator* it = adaptMesh->begin(0);
+    while( (v = adaptMesh->iterate(it)) ) {
       ma::Vector s;
       ma::Matrix f;
       sf->getValue(v, f, s);
       apf::setVector(scaleField, v, 0, s);
       apf::setMatrix(frameField, v, 0, f);
     }
-    apfCapMesh->end(it);
+    adaptMesh->end(it);
 
     if (write_flag) {
-      apf::writeVtkFiles("core_capVol_before", apfCapMesh);
+      apf::writeVtkFiles("core_capVol_before.vtk", adaptMesh);
     }
   }
 
   if (!analytic_flag) {
     // Pass the field data.
-    in = ma::makeAdvanced(ma::configure(apfCapMesh, scaleField, frameField));
+    in = ma::makeAdvanced(ma::configure(adaptMesh, scaleField, frameField));
   } else {
     // Pass the function.
-    in = ma::makeAdvanced(ma::configure(apfCapMesh, sf));
+    in = ma::makeAdvanced(ma::configure(adaptMesh, sf));
   }
 
-  in->shouldSnap = true;
-  in->shouldTransferParametric = true;
-  in->shouldFixShape = true;
-  in->shouldForceAdaptation = true;
-  if (apfCapMesh->getDimension() == 2)
-    in->goodQuality = 0.04; // this is mean-ratio squared
-  else // 3D meshes
-    in->goodQuality = 0.027; // this is the mean-ratio cubed
-  in->maximumIterations = 10;
-
-  if (verbose_flag) {
-    // Adapt with verbose logging but without intermediate VTKs.
-    ma::adaptVerbose(in, false);
-  } else {
-    ma::adapt(in);
-  }
+  ma::adapt(in);
 
   if (volume_flag) {
     // We can't verify surface meshes.
-    apfCapMesh->verify();
+    adaptMesh->verify();
   }
 
   if (write_flag) {
-    apf::writeVtkFiles("core_capVol_after", apfCapMesh);
-    writeCre(cs, "core_capVol_after.cre");
+    if (mds_flag) {
+      apf::writeVtkFiles("core_capVol_after_mds.vtk", adaptMesh);
+      MG_API_CALL(m, create_associated_model(mmodel, gmodel, "MeshAdapt"));
+      MG_API_CALL(m, set_adjacency_state(REGION2FACE|REGION2EDGE|REGION2VERTEX|
+                 FACE2EDGE|FACE2VERTEX));
+      MG_API_CALL(m, set_reverse_states());
+      // MG_API_CALL(m, compute_adjacency()); // unnecessary because no elements?
+      ma::Mesh* newCapMesh = apf::createMesh(m, g);
+      apf::convert(adaptMesh, newCapMesh);
+      apf::writeVtkFiles("core_capVol_after_cap.vtk", newCapMesh);
+      apf::destroyMesh(newCapMesh);
+    } else {
+      apf::writeVtkFiles("core_capVol_after_cap.vtk", adaptMesh);
+    }
+    cs.save_file("core_capVol_after.cre", gmodel);
   }
 
   /* PRINT ADAPTED MESH INFO */
@@ -264,9 +263,7 @@ int main(int argc, char** argv) {
   }
 
   // Clean up.
-  if (frameField) apf::destroyField(frameField);
-  if (scaleField) apf::destroyField(scaleField);
-  apf::destroyMesh(apfCapMesh);
+  apf::destroyMesh(adaptMesh);
   delete sf;
 
   // Exit calls.
