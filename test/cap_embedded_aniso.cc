@@ -406,19 +406,35 @@ namespace {
 
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame,
     ma::Vector& scale) {
-    apf::Vector3 pt = apf::getLinearCentroid(mesh, vtx), closest_pt,
-      closest_pt_par;
-    PCU_ALWAYS_ASSERT(mesh->canGetClosestPoint());
-    mesh->getClosestPoint(shock_surface, pt, closest_pt, closest_pt_par);
-    apf::Vector3 norm = closest_pt - pt;
-    if (std::abs(norm * norm) < thickness_tol) {
-      if (std::abs(norm * norm) < 0.0001 * 0.0001) {
-        // FIXME: Scale to mesh size.
-        PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
-        mesh->getNormal(shock_surface, closest_pt_par, norm);
-      } else {
-        norm = norm.normalize();
+    apf::Vector3 pt = apf::getLinearCentroid(mesh, vtx), pt_par;
+    
+    apf::ModelEntity* classified_ent = mesh->toModel(vtx);
+    int classified_tag = mesh->getModelTag(classified_ent);
+    int geom_dimension = mesh->getModelType(classified_ent);
+    //std::cout << "model dim: " << geom_dimension << std::endl;
+
+    int vertex_tags[] = {22, 25, 26, 27, 28, 29, 30, 39};
+    int edge_tags[] = {1, 6, 32, 33, 38, 40, 41, 43, 42, 57};
+    int face_tags[] = {15, 16, 23};
+    int sizes[3] = {8, 10, 3};
+    int* tags[3] = {vertex_tags, edge_tags, face_tags};
+    bool correct_tag = false;
+    if(geom_dimension<3) {
+      for (int i=0;i<sizes[geom_dimension];i++) {
+        if (*(tags[geom_dimension]+i) == classified_tag) {
+          correct_tag = true;
+          break;
+        }
       }
+    }
+
+    apf::Vector3 norm;
+    if (correct_tag) {
+      PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
+      //mesh->getParamOn(classified_ent, vtx, pt_par);
+      mesh->getParam(vtx, pt_par);
+      mesh->getNormal(classified_ent, pt_par, norm);
+      //std::cout << norm << std::endl;
       // Negate largest component to get tangent.
       apf::Vector3 trial(norm[2], norm[1], norm[0]);
       int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
