@@ -4,9 +4,14 @@
 #include <gmi.h>
 #include <gmi_cap.h>
 #include <cstdlib>
+#include <mth.h>
 #include <pcu_util.h>
 #include <algorithm>
+#include <lionPrint.h>
 
+#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
+#include <CreateMG_SizingMetricTool.h>
+#endif
 
 namespace apf {
 
@@ -941,5 +946,78 @@ Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb, pc
   return m;
 }
 
+bool has_smoothCAPAnisoSizes(void) noexcept {
+#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
+  apf::Field* scales, apf::Field* frames) {
+#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
+  apf::MeshCAP* m = dynamic_cast<apf::MeshCAP*>(mesh);
+  if (!m) {
+    lion_eprint(1, "ERROR: smoothCAPAnisoSizes: mesh is not an apf::MeshCAP*\n");
+    return false;
+  }
+  std::vector<Metric6> sizing6(m->count(0));
+  apf::Matrix3x3 Q;
+  apf::Vector3 H;
+  apf::MeshIterator* it = m->begin(0);
+  for (apf::MeshEntity* e = m->iterate(it); e; e = m->iterate(it)) {
+    apf::getVector(scales, e, 0, H);
+    apf::getMatrix(frames, e, 0, Q);
+    apf::Matrix3x3 L(H[0], 0, 0, 0, H[1], 0, 0, 0, H[2]);
+    apf::Matrix3x3 t = Q * L * apf::invert(Q);
+    size_t id;
+    MG_API_CALL(m->getMesh(), get_id(fromEntity(e), id));
+    PCU_DEBUG_ASSERT(id != 0);
+    --id;
+    sizing6[id][0] = t[0][0];
+    sizing6[id][1] = t[0][1];
+    sizing6[id][2] = t[0][2];
+    sizing6[id][3] = t[1][1];
+    sizing6[id][4] = t[1][2];
+    sizing6[id][5] = t[2][2];
+  }
+  m->end(it);
+  auto smooth_tool = get_sizing_metric_tool(m->getMesh()->get_context(),
+    "CreateSmoothingBase");
+  if (smooth_tool == nullptr) {
+    lion_eprint(1, "ERROR: Unable to find \"CreateSmoothingBase\"\n");
+    return false;
+  }
+  smooth_tool->set_context(m->getMesh()->get_context());
+  M_MModel mmodel;
+  MG_API_CALL(m->getMesh(), get_current_model(mmodel));
+  smooth_tool->set_metric(mmodel, "sizing6", sizing6);
+  std::vector<Metric6> ometric;
+  smooth_tool->smooth_metric(mmodel, analysis, "sizing6", ometric);
+  it = m->begin(0);
+  for (apf::MeshEntity* e = m->iterate(it); e; e = m->iterate(it)) {
+    size_t id;
+    MG_API_CALL(m->getMesh(), get_id(fromEntity(e), id));
+    PCU_DEBUG_ASSERT(id != 0);
+    --id;
+    const Metric6& m = ometric[id];
+    apf::Matrix3x3 t(m[0], m[1], m[2],
+      m[1], m[3], m[4],
+      m[2], m[4], m[5]);
+    PCU_DEBUG_ASSERT(apf::eigen(t, &Q[0], &H[0]) == 3);
+    apf::setMatrix(frames, e, 0, Q);
+    apf::setVector(scales, e, 0, H);
+  }
+  m->end(it);
+  return true;
+#else
+  (void) mesh;
+  (void) analysis;
+  (void) scales;
+  (void) frames;
+  apf::fail("smoothCAPAnisoSizes: Capstone does not have SizingMetricTool.");
+#endif
+}
 
 }//namespace apf

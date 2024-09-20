@@ -183,6 +183,31 @@ class MeshCAP : public Mesh2
     std::vector<TagCAP*> tags;
 };
 
+/**
+ * \brief Test for smoothCAPAnisoSizes support.
+ *
+ * \return A boolean indicating whether support was compiled. False indicates
+ *         the call would fail.
+ *
+ * \details smoothCAPAnisoSizes is only compiled if support for the underlying
+ *          call is detected in the version of Capstone apf_cap was compiled
+ *          against. Otherwise the call will always apf::fail. Use this
+ *          function to programmatically test for the capability.
+ */
+bool has_smoothCAPAnisoSizes(void) noexcept;
+
+/**
+ * \brief Use the SizingMetricTool to smooth a size field on a Capstone mesh.
+ *
+ * \param m A Capstone mesh.
+ * \param analysis The Capstone analysis to use.
+ * \param frames An apf::Field of apf::Matrix3x3 with orthogonal basis frames.
+ * \param scales An apf::Field of apf::Vector3 with frame scales (eigenvalues).
+ * \return A boolean indicating success.
+ * \pre m must be an apf::MeshCAP.
+ */
+bool smoothCAPAnisoSizes(apf::Mesh2* m, std::string analysis,
+  apf::Field* frames, apf::Field* scales);
 
 }//namespace apf
 
