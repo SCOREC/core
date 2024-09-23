@@ -5,7 +5,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <samSz.h>
 #include <samElementCount.h>
@@ -14,10 +13,11 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   apf::Field* identity_size = samSz::isoSize(m);
   double scaling_factor = sam::getIsoLengthScalar(identity_size,
       m->count(m->getDimension()));
@@ -26,6 +26,6 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(0.5 < scaling_factor);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

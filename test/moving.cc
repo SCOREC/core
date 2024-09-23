@@ -5,7 +5,6 @@
 #include <apfMesh2.h>
 #include <maSize.h>
 #include <maMesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <sstream>
 
@@ -20,14 +19,15 @@ static void writeStep(apf::Mesh* m, int i)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 3 ) {
     fprintf(stderr, "Usage: %s <model> <mesh>\n", argv[0]);
     return 0;
   }
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   dsp::Boundary moving;
   moving.insert(m->findModelEntity(2, 57));
   moving.insert(m->findModelEntity(2, 62));
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
   delete adapter;
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

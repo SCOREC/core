@@ -2,7 +2,6 @@
 
 #include <apf.h>
 #include <apfMesh.h>
-#include <PCU.h>
 
 namespace sam {
 
@@ -52,8 +51,8 @@ public:
     double vhat = getVolumeChange(dim, h);
     sum += vhat * w * dV;
   }
-  virtual void parallelReduce() {
-    sum = PCU_Add_Double(sum);
+  virtual void parallelReduce(pcu::PCU *PCUObj) {
+    sum = PCUObj->Add<double>(sum);
   }
 };
 

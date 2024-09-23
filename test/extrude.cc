@@ -2,7 +2,6 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <maExtrude.h>
 #include <cstdlib>
@@ -11,16 +10,17 @@
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <nlayers> <out mesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   ma::ModelExtrusions extrusions;
   extrusions.push_back(ma::ModelExtrusion(
         m->findModelEntity(1, 2),
@@ -39,6 +39,6 @@ int main(int argc, char** argv)
   m->writeNative(argv[4]);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

@@ -4,7 +4,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <crv.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -131,7 +130,7 @@ static void checkEntityShape(apf::Mesh* lm, apf::Mesh* m,
 /* For every shape function we test, for every type we test,
  * create two meshes
  */
-static void checkFieldShape(apf::FieldShape* fs)
+static void checkFieldShape(apf::FieldShape* fs, pcu::PCU *PCUObj)
 {
   for (int type = 1; type < apf::Mesh::TYPES; ++type){
     apf::EntityShape* es = fs->getEntityShape(type);
@@ -141,8 +140,8 @@ static void checkFieldShape(apf::FieldShape* fs)
       gmi_model* lmodel = gmi_load(".null");
       gmi_model* model = gmi_load(".null");
 
-      apf::Mesh2* lm = apf::makeEmptyMdsMesh(lmodel, typeDim, false);
-      apf::Mesh2* m = apf::makeEmptyMdsMesh(model, typeDim, false);
+      apf::Mesh2* lm = apf::makeEmptyMdsMesh(lmodel, typeDim, false, PCUObj);
+      apf::Mesh2* m = apf::makeEmptyMdsMesh(model, typeDim, false, PCUObj);
 
       apf::MeshEntity* le = apf::buildOneElement(
           lm, lm->findModelEntity(typeDim,0), type, points[type]);
@@ -171,7 +170,8 @@ static void checkFieldShape(apf::FieldShape* fs)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
 
@@ -180,9 +180,9 @@ int main(int argc, char** argv)
   crv::getBezier(1),crv::getBezier(2)};
 
   for (int i = 0; i < 4; ++i)
-    test::checkFieldShape(fs[i]);
+    test::checkFieldShape(fs[i], &PCUObj);
 
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

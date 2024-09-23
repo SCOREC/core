@@ -4,7 +4,6 @@
 #include <apfMesh2.h>
 #include <apfConvert.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -139,10 +138,11 @@ int main(int argc, char** argv)
 {
 
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 
-  PCU_ALWAYS_ASSERT_VERBOSE(PCU_Comm_Peers() == 1, "Not implemented in parallel!");
+  PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.Peers() == 1, "Not implemented in parallel!");
   if (argc < 2) {
     printf("USAGE 1 (  no model): %s <outmesh.smb>\n", argv[0]);
     printf("USAGE 2 (with model): %s <outmesh.smb> <model_file\n", argv[0]);
@@ -159,7 +159,7 @@ int main(int argc, char** argv)
   else
     mdl = gmi_load(".null");
 
-  apf::Mesh2* outMesh = apf::makeEmptyMdsMesh(mdl, 3, false);
+  apf::Mesh2* outMesh = apf::makeEmptyMdsMesh(mdl, 3, false, &PCUObj);
 
   apf::MeshEntity* verts[numV];
   apf::MeshEntity* edges[numE];
@@ -248,8 +248,7 @@ int main(int argc, char** argv)
 
   outMesh->destroyNative();
   apf::destroyMesh(outMesh);
-
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

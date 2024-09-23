@@ -1,5 +1,4 @@
 #include "parma_commons.h"
-#include "PCU.h"
 #include <lionPrint.h>
 #include <math.h>
 #include <unistd.h>
@@ -45,9 +44,9 @@ int parmaCommons::isMore(double a, double b) {
    return 0;
 }
 
-void parmaCommons::printElapsedTime(const char* fn, double elapsed) {
-   elapsed = PCU_Max_Double(elapsed);
-   if( !PCU_Comm_Self() )
+void parmaCommons::printElapsedTime(const char* fn, double elapsed, pcu::PCU *PCUObj) {
+   elapsed = PCUObj->Max<double>(elapsed);
+   if( !PCUObj->Self() )
       status("%s elapsed time %lf seconds\n", fn, elapsed);
 }
 

@@ -12,6 +12,9 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -28,5 +31,8 @@ void* pcu_walk_buffer(pcu_buffer* b, size_t size);
 bool pcu_buffer_walked(pcu_buffer* b);
 void pcu_resize_buffer(pcu_buffer* b, size_t size);
 void pcu_set_buffer(pcu_buffer* b, void* p, size_t size);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -2,7 +2,6 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #ifdef HAVE_SIMMETRIX
@@ -18,7 +17,8 @@ int main(int argc, char** argv)
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
   ma::localizeLayerStacks(m);
   m->verify();
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

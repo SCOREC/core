@@ -2,7 +2,6 @@
 #include "phBC.h"
 #include "phInterfaceCutter.h"
 #include <ph.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfMesh2.h>
@@ -31,10 +30,10 @@ void freeMesh(apf::Mesh* m)
   apf::destroyMesh(m);
 }
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU *pcu_obj)
 {
   if (argc < 4 || argc > 5) {
-    if ( !PCU_Comm_Self() ) {
+    if ( !pcu_obj->Self() ) {
       lion_eprint(1,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
       lion_eprint(1,"       to take model and attributes in separate files\n");
       lion_eprint(1,"Usage: %s <model+attributes .smd> <in mesh> <out mesh>\n", argv[0]);
@@ -58,7 +57,8 @@ void getConfig(int argc, char** argv)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -68,11 +68,11 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv);
+  getConfig(argc,argv,&pcu_obj);
 
   gmi_model* gm;
   gm = gmi_sim_load(modelFile, attribFile);
-  apf::Mesh2* m = apf::loadMdsMesh(gm, inMesh);
+  apf::Mesh2* m = apf::loadMdsMesh(gm, inMesh, &pcu_obj);
   m->verify();
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);
@@ -89,6 +89,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

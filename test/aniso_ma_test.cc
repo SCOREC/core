@@ -3,7 +3,6 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -46,10 +45,11 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   bool logInterpolation = atoi(argv[3]) > 0 ? true : false;
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
   apf::writeVtkFiles("aniso_before",m);
   AnIso sf(m);
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     apf::writeVtkFiles("aniso_after",m);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

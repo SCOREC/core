@@ -101,7 +101,8 @@ void writeVtk(CapstoneModule& cs, const std::string& vtkFileName)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
 
   lion_set_verbosity(1);
 
@@ -160,7 +161,7 @@ int main(int argc, char** argv)
   MG_API_CALL(m, compute_adjacency());
 
   /* writeVtk(cs, "before.vtk"); */
-  apf::Mesh2* apfCapMesh = apf::createMesh(m, g);
+  apf::Mesh2* apfCapMesh = apf::createMesh(m, g, &PCUObj);
 
   apf::Field* tf  = apf::createFieldOn(apfCapMesh, "test_field", apf::VECTOR);
   apf::MeshEntity* ent;
@@ -195,6 +196,6 @@ int main(int argc, char** argv)
   /* writeVtk(cs, "after.vtk"); */
 
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

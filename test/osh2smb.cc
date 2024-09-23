@@ -3,7 +3,6 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apfOmega_h.h>
 #include <cstdlib>
@@ -16,15 +15,15 @@
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if (argc != 4) {
-    if (PCU_Comm_Self() == 0) {
+    if (PCUObj.Self() == 0) {
       std::cout << "\n";
       std::cout << "usage: osh2smb in.osh in.dmg out.smb\n";
       std::cout << "   or: osh2smb               (usage)\n";
     }
-    PCU_Comm_Free();
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
@@ -35,12 +34,12 @@ int main(int argc, char** argv) {
     auto lib = Omega_h::Library(&argc, &argv);
     Omega_h::Mesh om(&lib);
     Omega_h::binary::read(argv[1], lib.world(), &om);
-    apf::Mesh2* am = apf::makeEmptyMdsMesh(model, om.dim(), false);
+    apf::Mesh2* am = apf::makeEmptyMdsMesh(model, om.dim(), false, &PCUObj);
     apf::from_omega_h(am, &om);
     am->writeNative(argv[3]);
     am->destroyNative();
     apf::destroyMesh(am);
   }
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

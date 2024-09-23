@@ -21,16 +21,16 @@ namespace {
     }
     public:
     Ptn(apf::Mesh* m) {
-      const long totv = PCU_Add_Long(countOwned(m));
-      c = pp = totv / PCU_Comm_Peers();
-      f = pp * PCU_Comm_Self();
-      const int remainder = totv % PCU_Comm_Peers();
-      if( PCU_Comm_Self() == PCU_Comm_Peers()-1 )
+      const long totv = m->getPCU()->Add<long>(countOwned(m));
+      c = pp = totv / m->getPCU()->Peers();
+      f = pp * m->getPCU()->Self();
+      const int remainder = totv % m->getPCU()->Peers();
+      if( m->getPCU()->Self() == m->getPCU()->Peers()-1 )
         c += remainder;
     }
-    int getWriter(int id) {
+    int getWriter(int id, pcu::PCU *PCUObj) {
       int writer = id / pp;
-      if ( writer == PCU_Comm_Peers() )
+      if ( writer == PCUObj->Peers() )
         writer--;
       return writer;
     }
@@ -48,21 +48,21 @@ namespace {
     apf::MeshEntity* vtx;
     apf::MeshIterator* itr = m->begin(0);
     int id = 0;
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     while( (vtx = m->iterate(itr)) ) {
       if( parma::isOwned(m, vtx) ) {
         m->getIntTag(vtx, t, &id);
-        PCU_COMM_PACK(p.getWriter(id), id);
+        m->getPCU()->Pack(p.getWriter(id, m->getPCU()), id);
       }
     }
     m->end(itr);
-    PCU_Comm_Send();
-    while( PCU_Comm_Receive() ) {
+    m->getPCU()->Send();
+    while( m->getPCU()->Receive() ) {
       int id = 0;
-      PCU_COMM_UNPACK(id);
+      m->getPCU()->Unpack(id);
       const int idx = id - p.first();
       PCU_ALWAYS_ASSERT(idx >= 0 && idx < p.count());
-      ptn[idx] = PCU_Comm_Sender();
+      ptn[idx] = m->getPCU()->Sender();
     }
   }
 
@@ -71,9 +71,9 @@ namespace {
       f << a[i] << '\n';
   }
 
-  void open(const char* name, std::fstream& f) {
+  void open(const char* name, std::fstream& f, pcu::PCU *PCUObj) {
     std::stringstream ss;
-    ss << name << PCU_Comm_Self() << ".ptn";
+    ss << name << PCUObj->Self() << ".ptn";
     std::string s = ss.str();
     f.open(s.c_str(), std::fstream::out);
   }
@@ -81,7 +81,7 @@ namespace {
   void writeVtxPtn(apf::Mesh* m, const char* name) {
     PCU_ALWAYS_ASSERT(name);
     std::fstream f;
-    open(name,f);
+    open(name,f,m->getPCU());
     Ptn p(m);
     int* ptn = new int[p.count()];
     getPtnArray(m, p, ptn);

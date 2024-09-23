@@ -14,7 +14,6 @@
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
 #include <assert.h>
-#include <PCU.h>
 #include <iostream>
 
 //************************************
@@ -62,7 +61,7 @@ pNumbering pumi_numbering_createGlobal(pMesh m, const char* name, pShape s, pOwn
 
   if (!s) s= m->getShape();
   n = numberOwnedNodes(m, name, s, o);
-  apf::globalize(n);
+  apf::globalize(n, m->getPCU());
   apf::synchronizeFieldData<int>(n->getData(), o, false); //synchronize(n, o); 
   return n;
 }
@@ -99,7 +98,7 @@ pNumbering pumi_numbering_createProcGrp (
     pMesh m, const char* name, int num_proc_grp, 
     int dim, pOwnership o)
 {
-  assert(PCU_Comm_Peers()%num_proc_grp==0);
+  assert(m->getPCU()->Peers()%num_proc_grp==0);
 
   pNumbering n = m->findNumbering(name);
   if (n) 
@@ -109,8 +108,8 @@ pNumbering pumi_numbering_createProcGrp (
     return n;
   }
 
-  int self = PCU_Comm_Self();
-  int pgrp_size = PCU_Comm_Peers()/num_proc_grp;
+  int self = m->getPCU()->Self();
+  int pgrp_size = m->getPCU()->Peers()/num_proc_grp;
   int local_pgrpid = self/pgrp_size; // divide
   int pgrp_rank = self % pgrp_size;
 
@@ -135,10 +134,10 @@ pNumbering pumi_numbering_createProcGrp (
   }
 
   int* in = new int;
-  int* out_arr = new int[PCU_Comm_Peers()]; // out[i] has local_numOwnedPartBdryEnt of process i on all processes
+  int* out_arr = new int[m->getPCU()->Peers()]; // out[i] has local_numOwnedPartBdryEnt of process i on all processes
   *in = owned_node_cnt;
 
-  MPI_Allgather(in, 1, MPI_INT, out_arr, 1, MPI_INT, PCU_Get_Comm());
+  MPI_Allgather(in, 1, MPI_INT, out_arr, 1, MPI_INT, m->getPCU()->GetMPIComm());
 
   it = m->begin(dim);
   int nbr = 0;
@@ -194,10 +193,10 @@ void pumi_numbering_print(pNumbering n, int pid)
   pMeshEnt e;
   int nnodes;
   pShape s = n->getShape();
-  if (pid==-1) pid = PCU_Comm_Peers();
+  if (pid==-1) pid = m->getPCU()->Peers();
   for (int rank=0; rank<pid; ++rank)
   {
-    if (rank==PCU_Comm_Self())
+    if (rank==m->getPCU()->Self())
     {
       for(int dd = 0; dd < m->getDimension(); ++dd)
       {
@@ -208,7 +207,7 @@ void pumi_numbering_print(pNumbering n, int pid)
           {
             nnodes = n->countNodesOn(e);
             for (int node=0; node < nnodes; ++node)
-               std::cout<<"("<<PCU_Comm_Self()<<") ent "<<pumi_ment_getID(e)
+               std::cout<<"("<<m->getPCU()->Self()<<") ent "<<pumi_ment_getID(e)
                      <<"/node "<<node<<" # "<<getNumber(n,e,node,0)<<" (ghost? "<<(m->isGhost(e)?1:0)<<")\n";
           } // while
           m->end(it);

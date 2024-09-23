@@ -1,6 +1,5 @@
 #include "phInterfaceCutter.h"
 #include <apfMDS.h>
-#include <PCU.h>
 #include <apf.h>
 #include <ph.h>
 #include <pcu_util.h>
@@ -262,18 +261,18 @@ int migrateInterface(apf::Mesh2*& m, ph::BCs& bcs) {
 
     int remoteResidence = -1;
     for (size_t j = 0; j != dgCopies.getSize(); ++j) {
-      if (dgCopies[j].peer != PCU_Comm_Self())
+      if (dgCopies[j].peer != m->getPCU()->Self())
         remoteResidence = dgCopies[j].peer;
     }
 
-    if (remoteResidence > PCU_Comm_Self())
+    if (remoteResidence > m->getPCU()->Self())
       plan->send(e,remoteResidence);
   }
   m->end(it);
-  lion_oprint(1,"proc-%d: number of migrating elements: %d\n",PCU_Comm_Self(),plan->count());
+  lion_oprint(1,"proc-%d: number of migrating elements: %d\n",m->getPCU()->Self(),plan->count());
 
   int totalPlan = plan->count();
-  totalPlan = PCU_Add_Int(totalPlan);
+  totalPlan = m->getPCU()->Add<int>(totalPlan);
 
   m->migrate(plan);
   return totalPlan;

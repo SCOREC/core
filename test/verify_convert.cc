@@ -2,7 +2,6 @@
  * this test verifies that the convert process properly clones the underlying
  * fields, numberings, and tags
  */
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfConvert.h>
@@ -12,14 +11,15 @@
 #include <gmi_null.h>
 #include <pcu_util.h>
 #include <cassert>
-apf::Mesh2* createEmptyMesh()
+
+apf::Mesh2* createEmptyMesh(pcu::PCU *PCUObj)
 {
   gmi_model* mdl = gmi_load(".null");
-  return apf::makeEmptyMdsMesh(mdl, 1, false);
+  return apf::makeEmptyMdsMesh(mdl, 1, false, PCUObj);
 }
-apf::Mesh2* createMesh()
+apf::Mesh2* createMesh(pcu::PCU *PCUObj)
 {
-  apf::Mesh2* m = createEmptyMesh();
+  apf::Mesh2* m = createEmptyMesh(PCUObj);
   apf::Vector3 pts[2] = {apf::Vector3(0,0,0), apf::Vector3(1,0,0)};
   apf::MeshEntity* verts[2];
   for( int i=0; i<2; i++)
@@ -43,13 +43,14 @@ class twox : public apf::Function {
 int main(int argc, char* argv[])
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
 
   // create meshes and write data to one of them
-  apf::Mesh* m1 = createMesh();
-  apf::Mesh2* m2 = createEmptyMesh();
+  apf::Mesh* m1 = createMesh(&PCUObj);
+  apf::Mesh2* m2 = createEmptyMesh(&PCUObj);
   // create field on m1
   apf::Field* f = apf::createLagrangeField(m1, "field1", apf::SCALAR, 1);
   apf::Function* func = new twox(f);
@@ -137,7 +138,7 @@ int main(int argc, char* argv[])
   m2->end(it);
 
   // check that not transfering Fields/Numberings/Tags also works
-  apf::Mesh2* m3 = createEmptyMesh();
+  apf::Mesh2* m3 = createEmptyMesh(&PCUObj);
   apf::convert(m1, m3, NULL, NULL, false);
   m3->verify();
 
@@ -160,7 +161,7 @@ int main(int argc, char* argv[])
   apf::destroyMesh(m1);
   apf::destroyMesh(m2);
   apf::destroyMesh(m3);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 }

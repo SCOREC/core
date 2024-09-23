@@ -3,7 +3,6 @@
 #include <apfBox.h>
 #include <apfMesh2.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
@@ -20,11 +19,11 @@ bool is = true;
 const char* modelFile = 0;
 const char* meshFile = 0;
 
-void verifyArgs(int argc, char** argv)
+void verifyArgs(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if (argc != 10)
   {
-    if (!PCU_Comm_Self())
+    if (!PCUObj->Self())
     {
       printf("Usage: %s <nx> <ny> <nz> <wx> "
              "<wy> <wz> <is> <model> <mesh>\n", argv[0]);
@@ -61,23 +60,24 @@ void getArgs(char** argv)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  verifyArgs(argc, argv);
-  if(PCU_Comm_Peers()>1) {
-    if(PCU_Comm_Self())
+  verifyArgs(argc, argv, &pcu_obj);
+  if(pcu_obj.Peers()>1) {
+    if(pcu_obj.Self())
       fprintf(stderr, "%s must be run on a single process!\n", argv[0]);
     exit(1);
   }
   getArgs(argv);
   gmi_register_mesh();
-  apf::Mesh2* m = apf::makeMdsBox(nx,ny,nz,wx,wy,wz,is);
+  apf::Mesh2* m = apf::makeMdsBox(nx,ny,nz,wx,wy,wz,is,&pcu_obj);
   gmi_model* g = m->getModel();
   m->verify();
   m->writeNative(meshFile);
   gmi_write_dmg(g, modelFile);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

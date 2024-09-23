@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maCoarsen.h"
 #include "maAdapt.h"
 #include "maCollapse.h"
@@ -230,7 +229,7 @@ bool coarsen(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
     return false;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   --(a->coarsensLeft);
   long count = markEdgesToCollapse(a);
   if ( ! count)
@@ -248,9 +247,9 @@ bool coarsen(Adapt* a)
     else
       successCount += collapseAllEdges(a, modelDimension);
   }
-  successCount = PCU_Add_Long(successCount);
-  double t1 = PCU_Time();
-  print("coarsened %li edges in %f seconds",successCount,t1-t0);
+  successCount = m->getPCU()->Add<long>(successCount);
+  double t1 = pcu::Time();
+  print(m->getPCU(), "coarsened %li edges in %f seconds", successCount,t1-t0);
   return true;
 }
 

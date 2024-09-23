@@ -2,17 +2,16 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
 #include <pcu_util.h>
 
-static apf::Mesh2* makeEmptyMesh()
+static apf::Mesh2* makeEmptyMesh(pcu::PCU *PCUObj)
 {
   /* dont use null model in production */
   gmi_model* g = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(g, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(g, 2, false, PCUObj);
   /* both planes create the field at the beginning */
   apf::createPackedField(m, "fusion", 6);
   return m;
@@ -68,7 +67,7 @@ static void backToTags(apf::Mesh2* m)
 static void connectPlanes(apf::Mesh2* m)
 {
   /* dont use any of this function in production. */
-  int peer = 1 - PCU_Comm_Self();
+  int peer = 1 - m->getPCU()->Self();
   for (int i = 0; i < 3; ++i) {
     apf::MeshEntity* v = apf::getMdsEntity(m, 0, i);
     m->addRemote(v, peer, v); //pointers aren't usually equal
@@ -92,7 +91,6 @@ struct GroupCode : public Parma_GroupCode
   apf::Mesh2* mesh;
   void run(int group)
   {
-    mesh = ::makeEmptyMesh();
     if (group == 0) {
       addOneTri(mesh);
       setValues(mesh);
@@ -108,7 +106,7 @@ struct GroupCode : public Parma_GroupCode
 static void copyPlane(apf::Mesh2* m)
 {
   /* this mimics the copy entity construction */
-  if (PCU_Comm_Self() == 1)
+  if (m->getPCU()->Self() == 1)
     addOneTri(m);
   /* this connects the two one-triangle planes together */
   connectPlanes(m);
@@ -140,17 +138,17 @@ static void globalCode(apf::Mesh2* m)
 int main( int argc, char* argv[])
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 2);
+  PCU_ALWAYS_ASSERT(PCUObj.Peers() == 2);
   gmi_register_null();
   GroupCode code;
+  code.mesh = makeEmptyMesh(&PCUObj);
   int const groupSize = 1;
-  apf::Unmodulo outMap(PCU_Comm_Self(), groupSize);
-  Parma_SplitPartition(NULL, groupSize, code);
-  /* update mesh for leaving groups */
-  apf::remapPartition(code.mesh, outMap);
+  apf::Unmodulo outMap(PCUObj.Self(), groupSize);
+  Parma_SplitPartition(code.mesh, groupSize, code, &PCUObj);
   globalCode(code.mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

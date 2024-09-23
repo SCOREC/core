@@ -12,6 +12,10 @@
 #include "apfNew.h"
 #include "apfDynamicArray.h"
 
+namespace pcu{
+  class PCU;
+}
+
 #include <vector>
 #include <map>
 #include <limits>
@@ -460,7 +464,7 @@ class Integrator
       * process-local integrations into a global mesh integration,
       * if that is the user's goal.
       */
-    virtual void parallelReduce();
+    virtual void parallelReduce(pcu::PCU*);
   protected:
     int order;
     int ipnode;

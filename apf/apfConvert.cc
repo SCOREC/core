@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "apf.h"
 #include "apfConvert.h"
 #include "apfMesh.h"
@@ -161,7 +160,7 @@ class Converter
       /* creating links backwards is OK because
          they go both ways; as long as every link
          gets a backward copy they will all get copies */
-      PCU_Comm_Begin();
+      inMesh->getPCU()->Begin();
       MeshIterator* it = inMesh->begin(dim);
       MeshEntity *oldLeft;
       while ((oldLeft = inMesh->iterate(it)))
@@ -173,23 +172,23 @@ class Converter
         {
           int rightPart = it->first;
           MeshEntity* oldRight = it->second;
-          PCU_COMM_PACK(rightPart,oldRight);
-          PCU_COMM_PACK(rightPart,newLeft);
+          inMesh->getPCU()->Pack(rightPart,oldRight);
+          inMesh->getPCU()->Pack(rightPart,newLeft);
         }
       }
       inMesh->end(it);
-      PCU_Comm_Send();
+      inMesh->getPCU()->Send();
       /* accumulation of residence sets... we could also constantly reclassify... */
       std::map<MeshEntity*, std::vector<int> > map_ent;
-      while (PCU_Comm_Listen())
+      while (inMesh->getPCU()->Listen())
       {
-        int leftPart = PCU_Comm_Sender();
-        while ( ! PCU_Comm_Unpacked())
+        int leftPart = inMesh->getPCU()->Sender();
+        while ( ! inMesh->getPCU()->Unpacked())
         {  
           MeshEntity* oldRight;
-          PCU_COMM_UNPACK(oldRight);
+          inMesh->getPCU()->Unpack(oldRight);
           MeshEntity* newLeft;
-          PCU_COMM_UNPACK(newLeft);
+          inMesh->getPCU()->Unpack(newLeft);
           MeshEntity *newRight = newFromOld[oldRight];
           outMesh->addRemote(newRight, leftPart, newLeft);
           map_ent[newRight].push_back(leftPart);
@@ -205,7 +204,7 @@ class Converter
         Copies remotes;
         Parts parts;
         parts.insert(vecEnt.begin(), vecEnt.end());
-        parts.insert(PCU_Comm_Self());
+        parts.insert(inMesh->getPCU()->Self());
         outMesh->setResidence(newE, parts);
       }
     }
@@ -407,7 +406,7 @@ class Converter
     {
       if (inMesh->getShape() != getLagrange(2) && inMesh->getShape() != getSerendipity())
         return;
-      if ( ! PCU_Comm_Self())
+      if ( ! inMesh->getPCU()->Self())
         lion_eprint(1,"transferring quadratic mesh\n");
       changeMeshShape(outMesh,inMesh->getShape(),/*project=*/false);
       convertField(inMesh->getCoordinateField(),outMesh->getCoordinateField());
@@ -415,7 +414,7 @@ class Converter
     void createMatches(int dim)
     {
       /* see createRemotes for the algorithm comments */
-      PCU_Comm_Begin();
+      inMesh->getPCU()->Begin();
       MeshIterator* it = inMesh->begin(dim);
       MeshEntity *oldLeft;
       while ((oldLeft = inMesh->iterate(it)))
@@ -427,21 +426,21 @@ class Converter
         {
           int rightPart = matches[i].peer;
           MeshEntity* oldRight = matches[i].entity;
-          PCU_COMM_PACK(rightPart,oldRight);
-          PCU_COMM_PACK(rightPart,newLeft);
+          inMesh->getPCU()->Pack(rightPart,oldRight);
+          inMesh->getPCU()->Pack(rightPart,newLeft);
         }
       }
       inMesh->end(it);
-      PCU_Comm_Send();
-      while (PCU_Comm_Listen())
+      inMesh->getPCU()->Send();
+      while (inMesh->getPCU()->Listen())
       {
-        int leftPart = PCU_Comm_Sender();
-        while ( ! PCU_Comm_Unpacked())
+        int leftPart = inMesh->getPCU()->Sender();
+        while ( ! inMesh->getPCU()->Unpacked())
         {  
           MeshEntity* oldRight;
-          PCU_COMM_UNPACK(oldRight);
+          inMesh->getPCU()->Unpack(oldRight);
           MeshEntity* newLeft;
-          PCU_COMM_UNPACK(newLeft);
+          inMesh->getPCU()->Unpack(newLeft);
           MeshEntity *newRight = newFromOld[oldRight];
           outMesh->addMatch(newRight, leftPart, newLeft);
         }

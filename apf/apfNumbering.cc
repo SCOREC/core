@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include "apfNumbering.h"
 #include "apfNumberingClass.h"
 #include "apfField.h"
@@ -228,10 +227,14 @@ void synchronize(Numbering * n, Sharing* shr, bool delete_shr)
 
 struct NoSharing : public Sharing
 {
-  int getOwner(MeshEntity*) {return PCU_Comm_Self();} 
+  NoSharing(pcu::PCU *PCUObj):pcu_obj{PCUObj}{PCU_ALWAYS_ASSERT(PCUObj != nullptr);}
+  int getOwner(MeshEntity*) {return pcu_obj->Self();}
   bool isOwned(MeshEntity*) {return true;}
   virtual void getCopies(MeshEntity*, CopyArray&) {}
   bool isShared(MeshEntity*) {return false;}
+
+  private:
+    pcu::PCU *pcu_obj;
 };
 
 Numbering* numberNodes(
@@ -278,7 +281,7 @@ Numbering* numberOwnedDimension(Mesh* mesh, const char* name, int dim,
 Numbering* numberOverlapDimension(Mesh* mesh, const char* name, int dim)
 {
   FieldShape* s = getConstant(dim);
-  Sharing* shr = new NoSharing();
+  Sharing* shr = new NoSharing(mesh->getPCU());
   return numberNodes(mesh, name, s, shr, true);
 }
 
@@ -291,7 +294,7 @@ Numbering* numberOverlapNodes(Mesh* mesh, const char* name, FieldShape* s)
 {
   if (!s)
     s = mesh->getShape();
-  Sharing* shr = new NoSharing();
+  Sharing* shr = new NoSharing(mesh->getPCU());
   return numberNodes(mesh, name, s, shr, true);
 }
 
@@ -401,20 +404,20 @@ static void synchronizeEntitySet(
     Mesh* m,
     EntitySet& set)
 {
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_ITERATE(EntitySet,set,it)
     if (m->isShared(*it))
     {
       Copies remotes;
       m->getRemotes(*it,remotes);
       APF_ITERATE(Copies,remotes,rit)
-        PCU_COMM_PACK(rit->first,rit->second);
+        m->getPCU()->Pack(rit->first,rit->second);
     }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive())
   {
     MeshEntity* e;
-    PCU_COMM_UNPACK(e);
+    m->getPCU()->Unpack(e);
     set.insert(e);
   }
 }
@@ -532,9 +535,9 @@ int getElementNumbers(GlobalNumbering* n, MeshEntity* e,
   return n->getData()->getElementData(e,numbers);
 }
 
-static long exscan(long x)
+static long exscan(long x, pcu::PCU *PCUObj)
 {
-  return PCU_Exscan_Long(x);
+  return PCUObj->Exscan<long>(x);
 }
 
 template <class T>
@@ -557,26 +560,26 @@ class Globalizer : public FieldOp
       }
       return false;
     }
-    void run(NumberingOf<T>* n)
+    void run(NumberingOf<T>* n, pcu::PCU *PCUObj)
     {
       numbering = n;
       data = n->getData();
       start = countFieldNodes(n);
-      start = exscan(start);
+      start = exscan(start, PCUObj);
       apply(n);
     }
 };
 
-static void globalize(GlobalNumbering* n)
+static void globalize(GlobalNumbering* n, pcu::PCU *PCUObj)
 {
   Globalizer<long> g;
-  g.run(n);
+  g.run(n, PCUObj);
 }
 
-void globalize(Numbering* n)
+void globalize(Numbering* n, pcu::PCU *PCUObj)
 {
   Globalizer<int> g;
-  g.run(n);
+  g.run(n, PCUObj);
 }
 
 GlobalNumbering* makeGlobal(Numbering* n, bool destroy)
@@ -606,7 +609,7 @@ GlobalNumbering* makeGlobal(Numbering* n, bool destroy)
   }
   if (destroy)
     apf::destroyNumbering(n);
-  globalize(gn);
+  globalize(gn, m->getPCU());
   return gn;
 }
 

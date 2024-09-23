@@ -49,12 +49,13 @@ void edgeLengthStats(apf::Mesh2* m);
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  double initialTime = PCU_Time();
+  double initialTime = pcu::Time();
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre> <factor>\n";
     return EXIT_FAILURE;
@@ -144,7 +145,7 @@ int main(int argc, char** argv)
 
   // create the mesh object (this one is CapStone underneath)
   printf("\n---- Creating Mesh Wrapper Object. \n");
-  apf::Mesh2* mesh = apf::createMesh(m,g);
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
   printf("---- Creating Mesh Wrapper Object: Done. \n");
 
   // add size distribution based on area
@@ -153,7 +154,7 @@ int main(int argc, char** argv)
   edgeLengthStats(mesh);
 
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

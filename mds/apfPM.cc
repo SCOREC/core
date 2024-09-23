@@ -8,7 +8,7 @@
 
 *******************************************************************************/
 
-#include <PCU.h>
+
 #include "apfPM.h"
 #include <apf.h>
 #include <pcu_util.h>
@@ -95,14 +95,14 @@ static void getCountMap(apf::Mesh* m, PM& ps, CountMap& mp)
   size_t n;
   getAdjacentParts(m, ps, peers);
   n = m->count(m->getDimension());
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_ITERATE(apf::Parts, peers, it)
-    PCU_COMM_PACK(*it, n);
-  PCU_Comm_Send();
+    m->getPCU()->Pack(*it, n);
+  m->getPCU()->Send();
   mp[m->getId()] = n;
-  while (PCU_Comm_Listen()) {
-    PCU_COMM_UNPACK(n);
-    mp[PCU_Comm_Sender()] = n;
+  while (m->getPCU()->Listen()) {
+    m->getPCU()->Unpack(n);
+    mp[m->getPCU()->Sender()] = n;
   }
 }
 

@@ -69,7 +69,8 @@ int numberGhost(
   * \param global The output global numberings. */
 void makeGlobal(
     std::vector<Numbering*>& owned,
-    std::vector<GlobalNumbering*>& global);
+    std::vector<GlobalNumbering*>& global,
+    pcu::PCU *PCUObj);
 
 }
 

@@ -2,7 +2,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #ifdef HAVE_SIMMETRIX
@@ -18,21 +17,23 @@
 #endif
 #include <pcu_util.h>
 
-static void print_stats(const char* name, double value)
+
+static void print_stats(const char* name, double value, pcu::PCU *PCUObj)
+
 {
   double min, max, avg;
-  min = PCU_Min_Double(value);
-  max = PCU_Max_Double(value);
-  avg = PCU_Add_Double(value);
-  avg /= PCU_Comm_Peers();
+  min = PCUObj->Min<double>(value);
+  max = PCUObj->Max<double>(value);
+  avg = PCUObj->Add<double>(value);
+  avg /= PCUObj->Peers();
   double imb = max / avg;
-  if (!PCU_Comm_Self())
+  if (!PCUObj->Self())
     printf("%s: min %f max %f avg %f imb %f\n", name, min, max, avg, imb);
 }
 
 static void list_tags(apf::Mesh* m)
 {
-  if (PCU_Comm_Self())
+  if (m->getPCU()->Self())
     return;
   apf::DynamicArray<apf::MeshTag*> tags;
   m->getTags(tags);
@@ -44,7 +45,8 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -54,10 +56,10 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  print_stats("kernel used before", PCU_GetMem());
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  print_stats("kernal used before", pcu::GetMem(), &pcu_obj);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   m->verify();
-  print_stats("kernel heap", PCU_GetMem());
+  print_stats("kernel heap", pcu::GetMem(), &pcu_obj);
   Parma_PrintPtnStats(m, "");
   list_tags(m);
   m->destroyNative();
@@ -68,6 +70,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

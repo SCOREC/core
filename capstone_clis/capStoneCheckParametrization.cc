@@ -28,10 +28,11 @@ void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface*
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   if (argc != 2) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <cre file .cre>\n";
     return EXIT_FAILURE;
@@ -112,7 +113,7 @@ int main(int argc, char** argv)
   // check parametrization using capstone apis
   checkParametrization(m, g);
 
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

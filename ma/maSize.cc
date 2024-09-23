@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maSize.h"
 #include "maSolutionTransferHelper.h"
 #include "apfMatrix.h"
@@ -667,7 +666,7 @@ double getAverageEdgeLength(Mesh* m)
     edge_count += 1.0;
   }
   m->end(it);
-  PCU_Add_Doubles(sums,2);
+  m->getPCU()->Add<double>(sums,2);
   return length_sum / edge_count;
 }
 
@@ -687,7 +686,7 @@ double getMaximumEdgeLength(Mesh* m, SizeField* sf)
       maxLength = length;
   }
   m->end(it);
-  PCU_Max_Doubles(&maxLength,1);
+  m->getPCU()->Max<double>(&maxLength,1);
   return maxLength;
 }
 

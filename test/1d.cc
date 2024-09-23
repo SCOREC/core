@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
@@ -8,11 +7,11 @@
 #include <pcu_util.h>
 #include <cstdlib>
 
-void createMesh(gmi_model*& g, apf::Mesh2*& m, int n)
+void createMesh(gmi_model*& g, apf::Mesh2*& m, int n, pcu::PCU *PCUObj)
 {
   gmi_register_null();
   g = gmi_load(".null");
-  m = apf::makeEmptyMdsMesh(g, 1, false);
+  m = apf::makeEmptyMdsMesh(g, 1, false, PCUObj);
   apf::ModelEntity* left = m->findModelEntity(0, 0);
   apf::ModelEntity* right = m->findModelEntity(0, 1);
   apf::ModelEntity* mid = m->findModelEntity(1, 1);
@@ -66,19 +65,20 @@ int main(int argc, char** argv)
     * 3 = mesh output name **/
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_model* g;
   apf::Mesh2* m;
   int nverts = atoi(argv[1]);
   PCU_ALWAYS_ASSERT(2 <= nverts);
   PCU_ALWAYS_ASSERT(nverts <= 1000);
-  createMesh(g,m,nverts);
+  createMesh(g,m,nverts,&pcu_obj);
   test(m);
   gmi_write_dmg(g,argv[2]);
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

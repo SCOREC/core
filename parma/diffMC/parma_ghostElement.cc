@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <PCU.h>
 #include "parma.h"
 #include "parma_balancer.h"
 #include "parma_step.h"
@@ -21,15 +20,15 @@ namespace {
         : Balancer(m, f, v, "ghostEdges")
       {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        sideTol = TO_INT(parma::avgSharedSides(s));
+        sideTol = TO_INT(parma::avgSharedSides(s, mesh->getPCU()));
         delete s;
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        double avgSides = parma::avgSharedSides(s);
-        if( !PCU_Comm_Self() && verbose )
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
+        if( !mesh->getPCU()->Self() && verbose )
           status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
@@ -40,9 +39,9 @@ namespace {
         destroyGhostWeights(gw);
 
         double faceImb, faceAvg, elmImb, elmAvg;
-        parma::getImbalance(faceW, faceImb, faceAvg);
-        parma::getImbalance(elmW, elmImb, elmAvg);
-        if( !PCU_Comm_Self() && verbose ) {
+        parma::getImbalance(faceW, faceImb, faceAvg, mesh->getPCU());
+        parma::getImbalance(elmW, elmImb, elmAvg, mesh->getPCU());
+        if( !mesh->getPCU()->Self() && verbose ) {
           status("face imbalance %.3f avg %.3f\n", faceImb, faceAvg);
           status("elm imbalance %.3f avg %.3f\n", elmImb, elmAvg);
         }
@@ -50,7 +49,7 @@ namespace {
         delete elmW;
 
         double edgeImb, edgeAvg;
-        parma::getImbalance(edgeW, edgeImb, edgeAvg);
+        parma::getImbalance(edgeW, edgeImb, edgeAvg, mesh->getPCU());
         monitorUpdate(edgeImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
 

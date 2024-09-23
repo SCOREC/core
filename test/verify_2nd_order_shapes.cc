@@ -4,7 +4,6 @@
 #include <apfMesh2.h>
 #include <apfShape.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #ifdef HAVE_SIMMETRIX
@@ -18,10 +17,11 @@
 
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 2 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <mesh .smb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   gmi_register_null();
   gmi_register_mesh();
   gmi_model* g = gmi_load(".null");
-  apf::Mesh2* m = apf::loadMdsMesh(g,argv[1]);
+  apf::Mesh2* m = apf::loadMdsMesh(g,argv[1],&PCUObj);
 
   int dim = m->getDimension();
 
@@ -110,6 +110,6 @@ int main(int argc, char** argv) {
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

@@ -3,7 +3,6 @@
 #include <gmi_analytic.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
@@ -142,12 +141,12 @@ struct GroupCode : public Parma_GroupCode
   void run(int group)
   {
     if (group == 0) {
-      mesh = apf::loadMdsMesh(model, meshFile);
+      mesh = apf::loadMdsMesh(model, meshFile, PCUObj.get());
       mesh->verify();
       testIndexing(mesh);
       fusionAdapt(mesh);
     } else {
-      mesh = apf::makeEmptyMdsMesh(model, 2, false);
+      mesh = apf::makeEmptyMdsMesh(model, 2, false, PCUObj.get());
     }
   }
 };
@@ -156,17 +155,21 @@ int main( int argc, char* argv[])
 {
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   GroupCode code;
   code.model = makeModel();
   code.meshFile = argv[1];
-  apf::Unmodulo outMap(PCU_Comm_Self(), 2);
-  Parma_SplitPartition(NULL, 2, code);
+  apf::Unmodulo outMap(pcu_obj.Self(), 2);
+  Parma_SplitPartition(nullptr, 2, code, &pcu_obj);
+  //Have to call switchPCU here because the mesh needed to be made inside GroupCode run()
+  //and inside parma_group.cc runInGroups() we set code.PCUObj to groupedPCU 
+  code.mesh->switchPCU(&pcu_obj);
   apf::remapPartition(code.mesh, outMap);
   code.mesh->verify();
   code.mesh->destroyNative();
   apf::destroyMesh(code.mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

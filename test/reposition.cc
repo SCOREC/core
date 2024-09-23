@@ -2,19 +2,19 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <maReposition.h>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #if 0
   gmi_register_null();
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, &PCUObj);
   apf::Vector3 vx[4] =
   {apf::Vector3(0,0,0),
    apf::Vector3(1,0,0),
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
   apf::MeshEntity* v = tv[0];
 #else
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], &PCUObj);
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* v;
   while ((v = m->iterate(it))) {
@@ -43,6 +43,6 @@ int main(int argc, char** argv)
   apf::writeVtkFiles("before", m);
   ma::repositionVertex(m, v, 20, 1.0);
   apf::writeVtkFiles("after", m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

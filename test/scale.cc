@@ -3,7 +3,6 @@
 #include <apfMesh2.h>
 #include <apfShape.h>
 #include <gmi_mesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <cstdlib>
 
@@ -16,8 +15,8 @@ struct Scale {
   double s;
 };
 
-static void print_usage(char** argv) {
-  if (! PCU_Comm_Self())
+static void print_usage(char** argv, pcu::PCU *PCUObj) {
+  if (! PCUObj->Self())
     printf("Usage: %s <model> <mesh> <out> <x> <y> <z> <scale>\n", argv[0]);
   MPI_Finalize();
   exit(EXIT_FAILURE);
@@ -55,10 +54,11 @@ static void scale_mesh(apf::Mesh2* m, Scale const& s) {
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  if (argc != 8) print_usage(argv);
+  if (argc != 8) print_usage(argv, &PCUObj);
   const char* gfile = argv[1];
   const char* mfile = argv[2];
   const char* ofile = argv[3];
@@ -67,13 +67,13 @@ int main(int argc, char** argv) {
   scale.y = atof(argv[5]);
   scale.z = atof(argv[6]);
   scale.s = atof(argv[7]);
-  apf::Mesh2* m = apf::loadMdsMesh(gfile, mfile);
+  apf::Mesh2* m = apf::loadMdsMesh(gfile, mfile, &PCUObj);
   m->verify();
   scale_mesh(m, scale);
   m->verify();
   m->writeNative(ofile);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

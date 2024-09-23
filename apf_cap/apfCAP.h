@@ -2,6 +2,7 @@
 #define APFCAP
 
 #include <apfMesh2.h>
+#include <PCU.h>
 
 #include "CapstoneModule.h"
 #include "CreateMG_Framework_Geometry.h"
@@ -24,7 +25,7 @@ namespace apf {
  *
  * \details This object should be destroyed by apf::destroyMesh.
  */
-Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
+Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb, pcu::PCU *PCUObj);
 
 /**
   * \brief Casts a CapStone entity to an apf::MeshEntity.

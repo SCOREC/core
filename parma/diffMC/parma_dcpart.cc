@@ -1,4 +1,3 @@
-#include "PCU.h"
 #include "parma_dcpart.h"
 #include "parma_commons.h"
 #include "parma_meshaux.h"
@@ -100,7 +99,7 @@ void dcPart::reset() {
 }
 
 unsigned dcPart::numDisconnectedComps() {
-   double t1 = PCU_Time();
+   double t1 = pcu::Time();
    reset();
    unsigned numDc = 0;
    size_t count = 0;
@@ -109,7 +108,7 @@ unsigned dcPart::numDisconnectedComps() {
    while( count != numElms ) {
       unsigned sz = walkPart(numDc);
       unsigned nbor = maxContactNeighbor(numDc);
-      if( nbor != self || PCU_Comm_Peers() == 1 ) {
+      if( nbor != self || m->getPCU()->Peers() == 1 ) {
         dcCompSz.push_back(sz);
         dcCompNbor.push_back(nbor);
         numDc++;
@@ -120,7 +119,7 @@ unsigned dcPart::numDisconnectedComps() {
       count += sz;
    }
    if( verbose )
-     parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
+     parmaCommons::printElapsedTime(__func__, pcu::Time() - t1, m->getPCU());
    PCU_ALWAYS_ASSERT(numDc+numIso >= 1);
    return (numDc+numIso)-1;
 }

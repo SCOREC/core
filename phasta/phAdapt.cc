@@ -2,7 +2,6 @@
 #include "chef.h"
 #include "ph.h"
 #include <ma.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <sam.h>
 #include <samSz.h>
@@ -14,7 +13,7 @@
 namespace ph {
 
 void setupBalance(const char* key, std::string& method,
-    bool& parmaBal, bool& zoltanBal, bool& zoltanRibBal) {
+    bool& parmaBal, bool& zoltanBal, bool& zoltanRibBal, pcu::PCU *PCUObj) {
   if ( method == "parma" ) {
     parmaBal = true;
     zoltanBal = false;
@@ -32,15 +31,15 @@ void setupBalance(const char* key, std::string& method,
     zoltanBal = false;
     zoltanRibBal = false;
   } else {
-    if (!PCU_Comm_Self())
+    if (!PCUObj->Self())
       lion_eprint(1,
           "warning: ignoring unknown value of %s = %s\n",
           key, method.c_str());
   }
 }
 
-void setupMatching(ma::Input& in) {
-  if (!PCU_Comm_Self())
+void setupMatching(ma::Input& in, pcu::PCU *PCUObj) {
+  if (!PCUObj->Self())
     lion_oprint(1,"Matched mesh: disabling"
            " snapping, and shape correction,\n");
   in.shouldSnap = false;
@@ -66,13 +65,13 @@ struct AdaptCallback : public Parma_GroupCode
       //override with user inputs if specified
       setupBalance("preAdaptBalanceMethod", in->preAdaptBalanceMethod,
           ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-          ma_in->shouldRunPreZoltanRib);
+          ma_in->shouldRunPreZoltanRib, mesh->getPCU());
       bool ignored;
       setupBalance("midAdaptBalanceMethod", in->midAdaptBalanceMethod,
-          ma_in->shouldRunMidParma, ma_in->shouldRunMidZoltan, ignored);
+          ma_in->shouldRunMidParma, ma_in->shouldRunMidZoltan, ignored, mesh->getPCU());
       setupBalance("postAdaptBalanceMethod", in->postAdaptBalanceMethod,
           ma_in->shouldRunPostParma, ma_in->shouldRunPostZoltan,
-          ma_in->shouldRunPostZoltanRib);
+          ma_in->shouldRunPostZoltanRib, mesh->getPCU());
       ma_in->shouldTransferParametric = in->transferParametric;
       ma_in->shouldSnap = in->snap;
       ma_in->maximumIterations = in->maxAdaptIterations;
@@ -88,33 +87,33 @@ struct AdaptCallback : public Parma_GroupCode
       ma_in->shouldRunPreZoltan = true;
     }
     if (mesh->hasMatching())
-      ph::setupMatching(*ma_in);
+      ph::setupMatching(*ma_in, mesh->getPCU());
     ma::adapt(ma_in);
   }
 };
 
 static double getAveragePartDensity(apf::Mesh* m) {
   double nElements = m->count(m->getDimension());
-  nElements = PCU_Add_Double(nElements);
-  return nElements / PCU_Comm_Peers();
+  nElements = m->getPCU()->Add<double>(nElements);
+  return nElements / m->getPCU()->Peers();
 }
 
 static int getShrinkFactor(apf::Mesh* m, double minPartDensity) {
   double partDensity = getAveragePartDensity(m);
   int factor = 1;
   while (partDensity < minPartDensity) {
-    if (factor >= PCU_Comm_Peers())
+    if (factor >= m->getPCU()->Peers())
       break;
     factor *= 2;
     partDensity *= 2;
   }
-  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() % factor == 0);
+  PCU_ALWAYS_ASSERT(m->getPCU()->Peers() % factor == 0);
   return factor;
 }
 
-static void warnAboutShrinking(int factor) {
-  int nprocs = PCU_Comm_Peers() / factor;
-  if (!PCU_Comm_Self()) {
+static void warnAboutShrinking(int factor, pcu::PCU *PCUObj) {
+  int nprocs = PCUObj->Peers() / factor;
+  if (!PCUObj->Self()) {
     lion_eprint(1,"sensing mesh is spread too thin: "
                    "adapting with %d procs\n", nprocs);
   }
@@ -123,12 +122,12 @@ static void warnAboutShrinking(int factor) {
 void adaptShrunken(apf::Mesh2* m, double minPartDensity,
                    Parma_GroupCode& callback) {
   int factor = getShrinkFactor(m, minPartDensity);
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     lion_eprint(1,"adaptShrunken limit set to %f factor computed as %d\n", minPartDensity, factor);
   if (factor == 1) {
     callback.run(0);
   } else {
-    warnAboutShrinking(factor);
+    warnAboutShrinking(factor, m->getPCU());
     Parma_ShrinkPartition(m, factor, callback);
   }
 }
@@ -159,7 +158,7 @@ void tetrahedronize(Input& in, apf::Mesh2* m)
   ma::Input* ma_in = ma::makeAdvanced(ma::configureIdentity(m));
   ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
       ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-      ma_in->shouldRunPreZoltanRib);
+      ma_in->shouldRunPreZoltanRib, m->getPCU());
   ma_in->shouldTurnLayerToTets = true;
   ma::adapt(ma_in);
   m->verify();
@@ -215,7 +214,7 @@ namespace chef {
     ma::Input* ma_in = ma::makeAdvanced(ma::configureMatching(m, in.recursiveUR));
     ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
         ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-        ma_in->shouldRunPreZoltanRib);
+        ma_in->shouldRunPreZoltanRib, m->getPCU());
     // get the level set
     apf::Field* soln = m->findField("solution");
     PCU_ALWAYS_ASSERT(soln);
@@ -247,7 +246,7 @@ namespace chef {
     ma::Input* ma_in = ma::makeAdvanced(ma::configureMatching(m, in.recursiveUR));
     ph::setupBalance("preAdaptBalanceMethod", in.preAdaptBalanceMethod,
         ma_in->shouldRunPreParma, ma_in->shouldRunPreZoltan,
-        ma_in->shouldRunPreZoltanRib);
+        ma_in->shouldRunPreZoltanRib, m->getPCU());
     ma_in->shouldRefineLayer = true;
     ma_in->splitAllLayerEdges = in.splitAllLayerEdges;
     if (in.snap) {
