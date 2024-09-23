@@ -692,7 +692,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
     return std::make_pair(cacheStarts, cacheEnds);
   };
 
-  const auto globalElementList = [](const std::vector<cgsize_t> &bcList, std::vector<cgsize_t> &allElements) {
+  const auto globalElementList = [&m](const std::vector<cgsize_t> &bcList, std::vector<cgsize_t> &allElements) {
     std::vector<int> sizes(m->getPCU()->Peers(), 0); // important initialiser
     const int l = bcList.size();
     MPI_Allgather(&l, 1, MPI_INT, sizes.data(), 1,
@@ -1049,11 +1049,11 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   auto communicator = m->getPCU()->GetMPIComm();
   cgp_mpi_comm(communicator);
   //
-  cgp_pio_mode(CGNS_ENUMV(CGP_INDEPENDENT));
+  cgp_pio_mode(CGP_INDEPENDENT);
 
   CGNS cgns;
   cgns.fname = std::string(prefix);
-  if (cgp_open(prefix, CGNS_ENUMV(CG_MODE_WRITE), &cgns.index))
+  if (cgp_open(prefix, CG_MODE_WRITE, &cgns.index))
     cgp_error_exit();
 
   {
