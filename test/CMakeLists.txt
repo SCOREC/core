@@ -212,6 +212,7 @@ endif()
 if(ENABLE_CAPSTONE)
   util_exe_func(capVol capVol.cc)
   target_include_directories(capVol PRIVATE "${PROJECT_SOURCE_DIR}/capstone_clis")
+  test_exe_func(cap_inClosureOf cap_inClosureOf.cc)
 endif()
 
 # send all the newly added utility executable targets
