@@ -213,6 +213,9 @@ if(ENABLE_CAPSTONE)
   util_exe_func(capVol capVol.cc)
   target_include_directories(capVol PRIVATE "${PROJECT_SOURCE_DIR}/capstone_clis")
   test_exe_func(cap_embedded_aniso cap_embedded_aniso.cc)
+  if(HAVE_CAPSTONE_SIZINGMETRICTOOL)
+    util_exe_func(cap_smooth cap_smooth.cc)
+  endif()
 endif()
 
 # send all the newly added utility executable targets
