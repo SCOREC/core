@@ -1005,7 +1005,8 @@ bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
     apf::Matrix3x3 t(m[0], m[1], m[2],
       m[1], m[3], m[4],
       m[2], m[4], m[5]);
-    PCU_DEBUG_ASSERT(apf::eigen(t, &Q[0], &H[0]) == 3);
+    int n = apf::eigen(t, &Q[0], &H[0]);
+    PCU_DEBUG_ASSERT(n == 3);
     apf::setMatrix(frames, e, 0, Q);
     apf::setVector(scales, e, 0, H);
   }
