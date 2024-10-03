@@ -477,14 +477,16 @@ static void interpolateParametricCoordinatesOnRegularFace(
 {
   double range[2];
   int dim = m->getModelType(g);
+  bool gface_isPeriodic = 0;
   for (int d=0; d < dim; ++d) {
     bool isPeriodic = m->getPeriodicRange(g,d,range);
+    if ((dim == 2) && (isPeriodic > 0)) gface_isPeriodic = 1;
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 0);
   }
 
   /* check if the new point is inside the model.
    * otherwise re-run the above loop with last option
-   * in "interpolateParametricCoordinae" being 1.
+   * in "interpolateParametricCoordinate" being 1.
    * Notes
    * 1) we are assuming manifold surfaces
    * 2) we only check for faces that are periodic
@@ -493,6 +495,8 @@ static void interpolateParametricCoordinatesOnRegularFace(
 #ifndef HAVE_CAPSTONE
   // this need to be done for faces, only
   if (dim != 2)
+    return;
+  if (!gface_isPeriodic)
     return;
 
   Vector x;
