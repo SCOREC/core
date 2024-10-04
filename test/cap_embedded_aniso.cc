@@ -93,6 +93,7 @@ int main(int argc, char* argv[]) {
 
   int stage = 0;
   std::cout << ++stage << ". Setup Capstone." << std::endl;
+  std::cout << "Isotropic adapt only" << std::endl;
   CapstoneModule cs("cap_aniso", "Geometry Database : SMLIB",
     "Mesh Database : Create", "Attribution Database : Create");
   GeometryDatabaseInterface* gdi = cs.get_geometry();
@@ -428,33 +429,17 @@ namespace {
       }
     }
 
+    apf::Vector3 pos;
+    mesh->getPoint(vtx, 0, pos);
+    apf::Vector3 sphere_cent(-0.250,0,0);
+    apf::Vector3 dist = pos - sphere_cent;
+    bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
+
     frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
     frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
     frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-    scale[0] = scale[1] = scale[2] = init_size;
-
-    apf::Vector3 norm;
-    if (correct_tag) {
-      if (false) {
-        PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
-        mesh->getParamOn(classified_ent, vtx, pt_par);
-        //mesh->getParam(vtx, pt_par);
-        mesh->getNormal(classified_ent, pt_par, norm);
-        PCU_ALWAYS_ASSERT(std::abs(norm * norm) > 0.0001 * 0.0001);
-        //std::cout << norm << std::endl;
-        // Negate largest component to get tangent.
-        apf::Vector3 trial(norm[2], norm[1], norm[0]);
-        int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
-        trial[largest] *= -1;
-        apf::Vector3 tan1 = apf::cross(norm, trial).normalize();
-        apf::Vector3 tan2 = apf::cross(norm, tan1);
-        frame[0] = norm;
-        frame[1] = tan1;
-        frame[2] = tan2;
-        scale[0] = norm_size; scale[1] = scale[2] = tan_size;
-      } else {
-        scale[0] = scale[1] = scale[2] = init_size/4;
-      }
-    }
+    //scale[0] = scale[1] = scale[2] = init_size;
+    //scale[0] = scale[1] = scale[2] = init_size;
+    scale[0] = scale[1] = scale[2] = in_sphere || correct_tag ? 0.013207031 : 0.2113125;
   }
 } // namespace
