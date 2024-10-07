@@ -94,6 +94,8 @@ int main(int argc, char* argv[]) {
   int stage = 0;
   std::cout << ++stage << ". Setup Capstone." << std::endl;
   std::cout << "Isotropic adapt only" << std::endl;
+  if(apf::has_smoothCAPAnisoSizes()) std::cout << "smoothCAPAnisoSizes supported" << std::endl;
+
   CapstoneModule cs("cap_aniso", "Geometry Database : SMLIB",
     "Mesh Database : Create", "Attribution Database : Create");
   GeometryDatabaseInterface* gdi = cs.get_geometry();
@@ -167,6 +169,10 @@ int main(int argc, char* argv[]) {
       apf::setMatrix(frameField, v, 0, frame);
     }
     adaptMesh->end(it);
+
+    std::cout << ++stage << ". Smooth size field." << std::endl;
+    apf::smoothCAPAnisoSizes(apfCapMesh, "cap_aniso", scaleField, frameField);
+
     if (!args.before().empty()) {
       std::cout << ++stage << ". Write before VTK." << std::endl;
       apf::writeVtkFiles(args.before().c_str(), adaptMesh);
