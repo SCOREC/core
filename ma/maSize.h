@@ -83,7 +83,7 @@ class AnisotropicFunction
   public:
     virtual ~AnisotropicFunction();
     /** \brief get the size field value at this vertex
-      \param r the orthonormal basis frame
+      \param r the orthonormal basis frame on each column
       \param h the desired element sizes along each
                of the frame's basis vectors */
     virtual void getValue(Entity* vert, Matrix& r, Vector& h) = 0;
