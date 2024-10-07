@@ -419,7 +419,7 @@ namespace {
     int sizes[3] = {8, 10, 3};
     int* tags[3] = {vertex_tags, edge_tags, face_tags};
     bool correct_tag = false;
-    if(geom_dimension<3) {
+    if(geom_dimension==2) {
       for (int i=0;i<sizes[geom_dimension];i++) {
         if (*(tags[geom_dimension]+i) == classified_tag) {
           correct_tag = true;
@@ -431,8 +431,7 @@ namespace {
     apf::Vector3 norm;
     if (correct_tag) {
       PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
-      //mesh->getParamOn(classified_ent, vtx, pt_par);
-      mesh->getParam(vtx, pt_par);
+      mesh->getParamOn(classified_ent, vtx, pt_par);
       mesh->getNormal(classified_ent, pt_par, norm);
       //std::cout << norm << std::endl;
       // Negate largest component to get tangent.
