@@ -26,6 +26,7 @@ namespace {
     ARGS_GETTER(analytic, bool)
     ARGS_GETTER(help, bool)
     ARGS_GETTER(mds_adapt, bool)
+    ARGS_GETTER(ref_shock_geom, const std::string&)
     ARGS_GETTER(shock_surf_id, int)
     ARGS_GETTER(uniform, int)
     ARGS_GETTER(verbosity, int)
@@ -49,7 +50,7 @@ namespace {
     bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false};
     int maxiter_{-1}, shock_surf_id_{0}, uniform_{0}, verbosity_{0};
     double aniso_size_{0.0}, thickness_{0.0}, ratio_{4.0};
-    std::string argv0, before_, after_, input_, output_;
+    std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
   }; // class Args
 
   class EmbeddedShockFunction : public ma::AnisotropicFunction {
@@ -135,6 +136,13 @@ int main(int argc, char* argv[]) {
     ma::runUniformRefinement(adaptMesh, args.uniform());
   }
 
+  if(args.ref_shock_geom().length() > 0) {
+    std::cout << ++stage << ". Load reference geometry." << std::endl;
+
+    std::cout << "INFO: Reference geometry file: " << args.ref_shock_geom() << std::endl;
+  }
+
+  // TODO: change this for multiple ids
   std::cout << ++stage << ". Identify shock surface by id." << std::endl;
   M_GTopo shock_surface = gdi->get_topo_by_id(Geometry::FACE,
     args.shock_surf_id());
@@ -303,7 +311,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "nst";
-    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:s:t:uv")) != -1) {
+    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uv")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -335,6 +343,9 @@ namespace {
         break;
       case 's':
         shock_surf_id_ = std::atoi(optarg);
+        break;
+      case 'G':
+        ref_shock_geom_ = optarg;
         break;
       case 't':
         thickness_ = std::atof(optarg);
@@ -380,7 +391,7 @@ namespace {
 
   void Args::print_usage(std::ostream& str) const {
     str << "USAGE: " << argv0 << " [-ahmuv] [-i MAXITER] [-B before.vtk] "
-      "[-A after.vtk] [-o OUTPUT.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
+      "[-A after.vtk] [-o OUTPUT.cre] [-G REF_GEOM.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
       << std::endl;
   }
 
@@ -402,6 +413,7 @@ namespace {
     "-o OUTPUT.cre   Write final mesh to OUTPUT.cre.\n"
     "-r RATIO        Set desired anisotropic aspect ratio (tan/norm)."
       " DEFAULT: 4\n"
+    "-G REF_GEOM.cre Set a different .cre file with shock geometry.\n"
     "-s ID           Set the face ID of the embedded shock surface. (required)\n"
     "-t THICKNESS    Set thickness (required).\n"
     "-u              Perform uniform adaptation. Specifying multiple times\n"
