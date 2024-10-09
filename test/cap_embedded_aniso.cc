@@ -27,7 +27,7 @@ namespace {
     ARGS_GETTER(help, bool)
     ARGS_GETTER(mds_adapt, bool)
     ARGS_GETTER(ref_shock_geom, const std::string&)
-    ARGS_GETTER(shock_surf_id, int)
+    ARGS_GETTER(shock_surf_ids, std::list<int>)
     ARGS_GETTER(uniform, int)
     ARGS_GETTER(verbosity, int)
     ARGS_GETTER(maxiter, int)
@@ -48,25 +48,27 @@ namespace {
 
   private:
     bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false};
-    int maxiter_{-1}, shock_surf_id_{0}, uniform_{0}, verbosity_{0};
+    int maxiter_{-1}, uniform_{0}, verbosity_{0};
     double aniso_size_{0.0}, thickness_{0.0}, ratio_{4.0};
     std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
+    std::list<int> shock_surf_ids_{};
   }; // class Args
 
   class EmbeddedShockFunction : public ma::AnisotropicFunction {
   public:
-    EmbeddedShockFunction(ma::Mesh* m, M_GTopo shock, double nsize,
+    EmbeddedShockFunction(ma::Mesh* m, std::list<M_GTopo> shock_surfs, double nsize,
       double AR, double h0, double thickness) : mesh(m),
       norm_size(nsize), init_size(h0) {
-      shock_surface = reinterpret_cast<apf::ModelEntity*>(toGmiEntity(shock));
+      //shock_surface = reinterpret_cast<apf::ModelEntity*>(toGmiEntity(shock));
+      shock_surfaces = shock_surfs;
       thickness_tol = thickness * thickness / 4;
       tan_size = norm_size * AR;
     }
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
   private:
     ma::Mesh* mesh;
-    apf::ModelEntity* shock_surface;
     double thickness_tol, norm_size, init_size, tan_size;
+    std::list<M_GTopo> shock_surfaces;
   }; // class EmbeddedSizeFunction
 } // namespace
 
@@ -143,16 +145,25 @@ int main(int argc, char* argv[]) {
   }
 
   // TODO: change this for multiple ids
-  std::cout << ++stage << ". Identify shock surface by id." << std::endl;
-  M_GTopo shock_surface = gdi->get_topo_by_id(Geometry::FACE,
-    args.shock_surf_id());
-  if (shock_surface.is_invalid()) {
-    std::cerr << "ERROR: Selected shock surface is invalid." << std::endl;
-    PCU_Comm_Free();
-    MPI_Finalize();
-    return 1;
+  std::cout << ++stage << ". Identify shock surfaces by ids." << std::endl;
+
+  // M_GTopo shock_surface = gdi->get_topo_by_id(Geometry::FACE, args.shock_surf_id());
+  std::list<M_GTopo> shock_surfaces;
+  std::string id_echo = "";
+  for(int surf_id : args.shock_surf_ids()) {
+    id_echo = id_echo + " " + std::to_string(surf_id);
+    M_GTopo surf = gdi->get_topo_by_id(Geometry::FACE, surf_id);
+    if (surf.is_invalid()) {
+      std::cerr << "ERROR: Shock surface id " << surf_id << " is invalid." << std::endl;
+      PCU_Comm_Free();
+      MPI_Finalize();
+      return 1;
+    }
+
+    shock_surfaces.push_back(surf);
   }
-  std::cout << "INFO: Selected surface: " << shock_surface << std::endl;
+  std::cout << "INFO: Selected surfaces: " << id_echo << std::endl;
+  //std::cout << "INFO: Selected surface: " << shock_surface << std::endl;
 
   std::cout << ++stage << ". Get average edge length." << std::endl;
   double h0 = ma::getAverageEdgeLength(adaptMesh);
@@ -162,7 +173,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << ++stage << ". Make sizefield." << std::endl;
   ma::AnisotropicFunction* sf = new EmbeddedShockFunction(adaptMesh,
-    shock_surface, args.aniso_size(), args.ratio(), h0, args.thickness());
+    shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
     frameField = apf::createFieldOn(adaptMesh, "adapt_frames", apf::MATRIX);
@@ -342,7 +353,8 @@ namespace {
         ratio_ = std::atof(optarg);
         break;
       case 's':
-        shock_surf_id_ = std::atoi(optarg);
+        shock_surf_ids_.push_back(std::atoi(optarg));
+        std::cout << "INFO: Processing arg: " << optarg << " last entry " << shock_surf_ids_.back() << std::endl;
         break;
       case 'G':
         ref_shock_geom_ = optarg;
@@ -414,7 +426,8 @@ namespace {
     "-r RATIO        Set desired anisotropic aspect ratio (tan/norm)."
       " DEFAULT: 4\n"
     "-G REF_GEOM.cre Set a different .cre file with shock geometry.\n"
-    "-s ID           Set the face ID of the embedded shock surface. (required)\n"
+    "-s ID           Set face IDs of the embedded shock surface. (required)\n"
+    "                Repeat flag multiple times to specify more tags.\n"
     "-t THICKNESS    Set thickness (required).\n"
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
