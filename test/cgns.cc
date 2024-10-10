@@ -179,7 +179,7 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
   gmi_model *g = gmi_load(".null");
   PCU_t h;
   h.ptr = static_cast<void*>(PCUObj);
-  apf::Mesh2 *m = apf::loadMdsFromCGNS2(h, g, argv1.c_str(), cgnsBCMap, meshData);
+  apf::Mesh2 *m = apf::loadMdsFromCGNS(h, g, argv1.c_str(), cgnsBCMap, meshData);
   m->verify();
   //
   m->writeNative(argv2.c_str());

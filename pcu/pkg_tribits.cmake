@@ -54,6 +54,7 @@ set(HEADERS
         pcu_util.h
         reel/reel.h
         pcu_defines.h
+        PCU.h
         )
 tribits_add_library(
    pcu

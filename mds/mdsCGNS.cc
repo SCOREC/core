@@ -231,7 +231,7 @@ void Kill(PCU_t h, const int fid, Args &&... args)
   {
     cgp_close(fid);
     // Finalize the MPI environment.
-    PCU_Comm_Free(h);
+    PCU_Comm_Free(&h);
     MPI_Finalize();
     cgp_error_exit();
     exit(EXIT_FAILURE);
@@ -252,7 +252,7 @@ void Kill(PCU_t h, const int fid)
   {
     cgp_close(fid);
     // Finalize the MPI environment.
-    PCU_Comm_Free(h);
+    PCU_Comm_Free(&h);
     MPI_Finalize();
     cgp_error_exit();
     exit(EXIT_FAILURE);
@@ -1286,7 +1286,7 @@ apf::Mesh2 *DoIt(PCU_t h, gmi_model *g, const std::string &fname, apf::CGNSBCMap
     };
 
     // process meshData and find vectors (and matrices)
-    const auto findMatch = [&meshData, &index, &cgid](MeshData &other, std::vector<MeshDataGroup> &meshDataGroups) {
+    const auto findMatch = [&meshData, &index, &cgid, &h](MeshData &other, std::vector<MeshDataGroup> &meshDataGroups) {
       MeshDataGroup group;
       for (auto &md : meshData)
       {
@@ -1723,12 +1723,6 @@ namespace apf
 {
 
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
-Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
-{
-  PCU_t h = PCU_Get_Global_Handle();
-  return loadMdsFromCGNS(h, g, fname, cgnsBCMap, meshData);
-}
-
 Mesh2 *loadMdsFromCGNS(PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
 #ifdef HAVE_CGNS
@@ -1744,12 +1738,6 @@ Mesh2 *loadMdsFromCGNS(PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap 
 }
 
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
-Mesh2 *loadMdsFromCGNS(gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
-{
-  PCU_t h = PCU_Get_Global_Handle();
-  return loadMdsFromCGNS(h, g, fname, cgnsBCMap);
-}
-
 Mesh2 *loadMdsFromCGNS(PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
 {
 #ifdef HAVE_CGNS
