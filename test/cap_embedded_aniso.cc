@@ -26,6 +26,7 @@ namespace {
     ARGS_GETTER(analytic, bool)
     ARGS_GETTER(help, bool)
     ARGS_GETTER(mds_adapt, bool)
+    ARGS_GETTER(smoothing, bool)
     ARGS_GETTER(ref_shock_geom, const std::string&)
     ARGS_GETTER(shock_surf_ids, std::list<int>)
     ARGS_GETTER(uniform, int)
@@ -47,7 +48,7 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false};
+    bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
     int maxiter_{-1}, uniform_{0}, verbosity_{0};
     double aniso_size_{0.0}, thickness_{0.0}, ratio_{4.0};
     std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
@@ -56,20 +57,27 @@ namespace {
 
   class EmbeddedShockFunction : public ma::AnisotropicFunction {
   public:
-    EmbeddedShockFunction(ma::Mesh* m, std::list<M_GTopo> shock_surfs, double nsize,
+    EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, double nsize,
       double AR, double h0, double thickness) : mesh(m),
-      norm_size(nsize), init_size(h0) {
+      norm_size(nsize), init_size(h0), ref(g), shock_surfaces(surfs) {
       //shock_surface = reinterpret_cast<apf::ModelEntity*>(toGmiEntity(shock));
-      shock_surfaces = shock_surfs;
       thickness_tol = thickness * thickness / 4;
       tan_size = norm_size * AR;
     }
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
-  private:
+  protected:
     ma::Mesh* mesh;
+    gmi_model* ref;
     double thickness_tol, norm_size, init_size, tan_size;
-    std::list<M_GTopo> shock_surfaces;
+    std::list<gmi_ent*> shock_surfaces;
   }; // class EmbeddedSizeFunction
+
+  class AnisotropicFunctionOnReference : public EmbeddedShockFunction {
+  public:
+    using EmbeddedShockFunction::EmbeddedShockFunction;
+    void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
+  }; // class AnisotropicFunctionOnReference
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -97,7 +105,6 @@ int main(int argc, char* argv[]) {
   int stage = 0;
   std::cout << ++stage << ". Setup Capstone." << std::endl;
   std::cout << "Isotropic adapt only" << std::endl;
-  if(apf::has_smoothCAPAnisoSizes()) std::cout << "smoothCAPAnisoSizes supported" << std::endl;
 
   CapstoneModule cs("cap_aniso", "Geometry Database : SMLIB",
     "Mesh Database : Create", "Attribution Database : Create");
@@ -106,6 +113,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << ++stage << ". Load CRE." << std::endl;
   M_GModel gmodel = cs.load_files(v_string(1, args.input()));
+  gmi_model* gmodelGMI = gmi_import_cap(gdi);
   std::vector<M_MModel> mmodels;
   MG_API_CALL(mdi, get_associated_mesh_models(gmodel, mmodels));
   MG_API_CALL(mdi, set_current_model(mmodels[0])); // Use first mesh.
@@ -138,31 +146,40 @@ int main(int argc, char* argv[]) {
     ma::runUniformRefinement(adaptMesh, args.uniform());
   }
 
-  if(args.ref_shock_geom().length() > 0) {
+  CapstoneModule* cs_ref = nullptr;
+  GeometryDatabaseInterface* gdi_ref = nullptr;
+  M_GModel gmodel_ref;
+  gmi_model* geom_ref = nullptr;
+  bool using_ref_geom = args.ref_shock_geom().length() > 0;
+  if(using_ref_geom) {
     std::cout << ++stage << ". Load reference geometry." << std::endl;
-
     std::cout << "INFO: Reference geometry file: " << args.ref_shock_geom() << std::endl;
+    
+    cs_ref = new CapstoneModule("cap_aniso", "Geometry Database : SMLIB",
+      "Mesh Database : Create", "Attribution Database : Create");
+    gdi_ref = cs_ref->get_geometry();
+    gmodel_ref = cs_ref->load_files(v_string(1, args.ref_shock_geom()));
+    geom_ref = gmi_import_cap(gdi_ref);
   }
 
   // TODO: change this for multiple ids
   std::cout << ++stage << ". Identify shock surfaces by ids." << std::endl;
 
   // M_GTopo shock_surface = gdi->get_topo_by_id(Geometry::FACE, args.shock_surf_id());
-  std::list<M_GTopo> shock_surfaces;
-  std::string id_echo = "";
+  std::list<gmi_ent*> shock_surfaces;
+  std::cout << "INFO: Selected surfaces: ";
   for(int surf_id : args.shock_surf_ids()) {
-    id_echo = id_echo + " " + std::to_string(surf_id);
-    M_GTopo surf = gdi->get_topo_by_id(Geometry::FACE, surf_id);
+    std::cout << surf_id << " ";
+    M_GTopo surf = (using_ref_geom ? gdi_ref : gdi)->get_topo_by_id(Geometry::FACE, surf_id);
     if (surf.is_invalid()) {
       std::cerr << "ERROR: Shock surface id " << surf_id << " is invalid." << std::endl;
       PCU_Comm_Free();
       MPI_Finalize();
       return 1;
     }
-
-    shock_surfaces.push_back(surf);
+    shock_surfaces.push_back(toGmiEntity(surf));
   }
-  std::cout << "INFO: Selected surfaces: " << id_echo << std::endl;
+  std::cout << std::endl;
   //std::cout << "INFO: Selected surface: " << shock_surface << std::endl;
 
   std::cout << ++stage << ". Get average edge length." << std::endl;
@@ -173,7 +190,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << ++stage << ". Make sizefield." << std::endl;
   ma::AnisotropicFunction* sf = new EmbeddedShockFunction(adaptMesh,
-    shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+    gmodelGMI, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
     frameField = apf::createFieldOn(adaptMesh, "adapt_frames", apf::MATRIX);
@@ -189,8 +206,14 @@ int main(int argc, char* argv[]) {
     }
     adaptMesh->end(it);
 
-    std::cout << ++stage << ". Smooth size field." << std::endl;
-    apf::smoothCAPAnisoSizes(apfCapMesh, "cap_aniso", scaleField, frameField);
+    if (args.smoothing()) {
+      std::cout << ++stage << ". Smooth size field." << std::endl;
+      if(apf::has_smoothCAPAnisoSizes()) {
+        apf::smoothCAPAnisoSizes(adaptMesh, "cap_aniso", scaleField, frameField);
+      } else {
+        std::cout << "apf::smoothCAPAnisoSizes is not supported, skipping" << std::endl;
+      }
+    }
 
     if (!args.before().empty()) {
       std::cout << ++stage << ". Write before VTK." << std::endl;
@@ -322,7 +345,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "nst";
-    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uv")) != -1) {
+    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvS")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -368,6 +391,9 @@ namespace {
       case 'v':
         ++verbosity_;
         break;
+      case 'S':
+        smoothing_ = true;
+        break;
       case ':':
         std::cerr << "ERROR: Option -" << char(optopt) << " requires an "
           "argument." << std::endl;
@@ -399,10 +425,10 @@ namespace {
       std::cerr << "ERROR: INPUT.cre is required." << std::endl;
       error_flag_ = true;
     }
-  }
+  } 
 
   void Args::print_usage(std::ostream& str) const {
-    str << "USAGE: " << argv0 << " [-ahmuv] [-i MAXITER] [-B before.vtk] "
+    str << "USAGE: " << argv0 << " [-ahmuvS] [-i MAXITER] [-B before.vtk] "
       "[-A after.vtk] [-o OUTPUT.cre] [-G REF_GEOM.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
       << std::endl;
   }
@@ -421,6 +447,7 @@ namespace {
     "-m              Convert to mesh to MDS before adaptation (and back to \n"
     "                Capstone mesh before writing if given -o). May boost \n"
     "                performance, but buggy.\n"
+    "-S              Do smoothing \n"
     "-n NORM_SIZE    Set anisotropic normal direction size. (required)\n"
     "-o OUTPUT.cre   Write final mesh to OUTPUT.cre.\n"
     "-r RATIO        Set desired anisotropic aspect ratio (tan/norm)."
@@ -472,5 +499,13 @@ namespace {
     //scale[0] = scale[1] = scale[2] = init_size;
     //scale[0] = scale[1] = scale[2] = init_size;
     scale[0] = scale[1] = scale[2] = in_sphere || correct_tag ? 0.013207031 : 0.2113125;
+  }
+
+  void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
+    ma::Vector& scale) {
+      frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
+      frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
+      frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
+      scale[0] = scale[1] = scale[2] = 0.2113125;
   }
 } // namespace
