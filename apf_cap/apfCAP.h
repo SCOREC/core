@@ -206,7 +206,7 @@ bool has_smoothCAPAnisoSizes(void) noexcept;
  * \pre m must be an apf::MeshCAP.
  */
 bool smoothCAPAnisoSizes(apf::Mesh2* m, std::string analysis,
-  apf::Field* frames, apf::Field* scales);
+  apf::Field* scales, apf::Field* frames);
 
 }//namespace apf
 
