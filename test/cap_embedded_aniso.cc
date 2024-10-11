@@ -80,6 +80,8 @@ namespace {
 
 } // namespace
 
+
+
 int main(int argc, char* argv[]) {
   // Initalize parallelism.
   MPI_Init(&argc, &argv);
@@ -189,8 +191,14 @@ int main(int argc, char* argv[]) {
   std::cout << "INFO: Tangent size: " << args.aniso_size() * args.ratio() << std::endl;
 
   std::cout << ++stage << ". Make sizefield." << std::endl;
-  ma::AnisotropicFunction* sf = new EmbeddedShockFunction(adaptMesh,
-    gmodelGMI, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+  ma::AnisotropicFunction* sf = nullptr;
+  if(using_ref_geom) {
+    sf = new AnisotropicFunctionOnReference(adaptMesh,
+      geom_ref, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+  } else {
+    sf = new EmbeddedShockFunction(adaptMesh,
+      gmodelGMI, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+  }
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
     frameField = apf::createFieldOn(adaptMesh, "adapt_frames", apf::MATRIX);
@@ -474,7 +482,7 @@ namespace {
 
     int vertex_tags[] = {22, 25, 26, 27, 28, 29, 30, 39};
     int edge_tags[] = {1, 6, 32, 33, 38, 40, 41, 43, 42, 57};
-    int face_tags[] = {15, 16, 23};
+    int face_tags[] = {15, 16, 23}; // -s 15 -s 16 -s 23
     int sizes[3] = {8, 10, 3};
     int* tags[3] = {vertex_tags, edge_tags, face_tags};
     bool correct_tag = false;
@@ -503,9 +511,25 @@ namespace {
 
   void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
     ma::Vector& scale) {
+      apf::Vector3 pos;
+      mesh->getPoint(vtx, 0, pos);
+      double posArr[3];
+      pos.toArray(posArr);
+      apf::Vector3 clsPos, clsParPos;
+      bool nearShock = false;
+      for(gmi_ent* surf : shock_surfaces) {
+        double clsArr[3], clsParArr[2];
+        //gmi_closest_point (struct gmi_model *m, struct gmi_ent *e, double const from[3], double to[3], double to_p[2])
+        gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
+        clsPos.fromArray(clsArr);
+        clsParPos.fromArray(clsParArr);
+        nearShock = std::abs((clsPos - pos) * (clsPos - pos)) < thickness_tol;
+        if (nearShock) break;
+      }
+
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
       frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      scale[0] = scale[1] = scale[2] = 0.2113125;
+      scale[0] = scale[1] = scale[2] = nearShock ? 0.013207031 : 0.2113125;
   }
 } // namespace
