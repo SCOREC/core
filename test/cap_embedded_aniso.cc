@@ -66,6 +66,7 @@ namespace {
     }
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
   protected:
+    double getZoneIsoSize(ma::Entity* vtx);
     ma::Mesh* mesh;
     gmi_model* ref;
     double thickness_tol, norm_size, init_size, tan_size;
@@ -471,6 +472,15 @@ namespace {
     "                VTK files.\n";
   }
 
+  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx) {
+    apf::Vector3 pos;
+    mesh->getPoint(vtx, 0, pos);
+    apf::Vector3 sphere_cent(-0.250,0,0);
+    apf::Vector3 dist = pos - sphere_cent;
+    bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
+    return in_sphere ? 0.013207031 : 0.2113125;
+  }
+
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame,
     ma::Vector& scale) {
     apf::Vector3 pt = apf::getLinearCentroid(mesh, vtx), pt_par;
@@ -495,18 +505,12 @@ namespace {
       }
     }
 
-    apf::Vector3 pos;
-    mesh->getPoint(vtx, 0, pos);
-    apf::Vector3 sphere_cent(-0.250,0,0);
-    apf::Vector3 dist = pos - sphere_cent;
-    bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
-
     frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
     frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
     frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
     //scale[0] = scale[1] = scale[2] = init_size;
     //scale[0] = scale[1] = scale[2] = init_size;
-    scale[0] = scale[1] = scale[2] = in_sphere || correct_tag ? 0.013207031 : 0.2113125;
+    scale[0] = scale[1] = scale[2] = correct_tag ? 0.013207031 : getZoneIsoSize(vtx);
   }
 
   void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
@@ -530,6 +534,6 @@ namespace {
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
       frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      scale[0] = scale[1] = scale[2] = nearShock ? 0.013207031 : 0.2113125;
+      scale[0] = scale[1] = scale[2] = nearShock ? 0.013207031 : getZoneIsoSize(vtx);
   }
 } // namespace
