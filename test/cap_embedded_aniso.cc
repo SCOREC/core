@@ -77,11 +77,10 @@ namespace {
   public:
     using EmbeddedShockFunction::EmbeddedShockFunction;
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
+    double getMaxEdgeLengthAcrossShock();
   }; // class AnisotropicFunctionOnReference
 
 } // namespace
-
-
 
 int main(int argc, char* argv[]) {
   // Initalize parallelism.
@@ -188,6 +187,9 @@ int main(int argc, char* argv[]) {
   std::cout << ++stage << ". Get average edge length." << std::endl;
   double h0 = ma::getAverageEdgeLength(adaptMesh);
   std::cout << "INFO: Average edge length: " << h0 << std::endl;
+  double h0_max = ma::getMaximumEdgeLength(adaptMesh, nullptr);
+  std::cout << "INFO: Maximum edge length: " << h0_max << std::endl;
+
   std::cout << "INFO: Normal size: " << args.aniso_size() << std::endl;
   std::cout << "INFO: Tangent size: " << args.aniso_size() * args.ratio() << std::endl;
 
@@ -196,6 +198,8 @@ int main(int argc, char* argv[]) {
   if(using_ref_geom) {
     sf = new AnisotropicFunctionOnReference(adaptMesh,
       geom_ref, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+    double h0_max_shock = reinterpret_cast<AnisotropicFunctionOnReference*>(sf)->getMaxEdgeLengthAcrossShock();
+    std::cout << "INFO: Maximum edge length crossing shock: " << h0_max_shock << std::endl;
   } else {
     sf = new EmbeddedShockFunction(adaptMesh,
       gmodelGMI, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
@@ -292,7 +296,7 @@ int main(int argc, char* argv[]) {
         capTagCount_f("dimtagct_cap.csv");
       mdsTagCount_f << "dim,tag,count\n";
       for (const auto& pairs : dimTagToCount_mds) {
-        mdsTagCount_f << pairs.first.first << ',' << pairs.first.second << ','
+        mdsTagCount_f << pairs.first.first   << ',' << pairs.first.second << ','
           << pairs.second << '\n';
       }
       capTagCount_f << "dim,tag,count\n";
@@ -478,7 +482,7 @@ namespace {
     apf::Vector3 sphere_cent(-0.250,0,0);
     apf::Vector3 dist = pos - sphere_cent;
     bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
-    return in_sphere ? 0.013207031 : 0.2113125;
+    return in_sphere ? 0.026414062 : 0.2113125;
   }
 
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame,
@@ -510,7 +514,7 @@ namespace {
     frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
     //scale[0] = scale[1] = scale[2] = init_size;
     //scale[0] = scale[1] = scale[2] = init_size;
-    scale[0] = scale[1] = scale[2] = correct_tag ? 0.013207031 : getZoneIsoSize(vtx);
+    scale[0] = scale[1] = scale[2] = correct_tag ? 0.026414062 : getZoneIsoSize(vtx);
   }
 
   void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
@@ -534,6 +538,35 @@ namespace {
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
       frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      scale[0] = scale[1] = scale[2] = nearShock ? 0.013207031 : getZoneIsoSize(vtx);
+      scale[0] = scale[1] = scale[2] = nearShock ? 0.026414062 : getZoneIsoSize(vtx);
+  }
+
+  double AnisotropicFunctionOnReference::getMaxEdgeLengthAcrossShock() {
+    double max_length = -1.0;
+    apf::MeshIterator* it = mesh->begin(1);
+    apf::MeshEntity* e;
+    while ((e = mesh->iterate(it))) {
+      for (gmi_ent* surf : shock_surfaces) {
+        apf::MeshEntity* adj_pts[2];
+        mesh->getDownward(e, 0, adj_pts);
+        apf::Vector3 pointA, pointB, closest;
+        mesh->getPoint(adj_pts[0], 0, pointA);
+        mesh->getPoint(adj_pts[1], 0, pointB);
+
+        double posArr[3], clsArr[3], clsParArr[2];
+        pointA.toArray(posArr);
+        gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
+        closest.fromArray(clsArr);
+
+        apf::Vector3 vecA = pointA - closest;
+        apf::Vector3 vecB = pointB - closest;
+        if (vecA * vecB < 0) {
+          max_length = std::max(max_length, (vecB-vecA).getLength());
+          break;
+        }
+      }
+    }
+    mesh->end(it);
+    return max_length;
   }
 } // namespace
