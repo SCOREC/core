@@ -77,13 +77,27 @@ function(bob_begin_cxx_flags)
   set(CMAKE_CXX_FLAGS "${FLAGS}" PARENT_SCOPE)
 endfunction(bob_begin_cxx_flags)
 
+# The following is from the book,"Professional CMake: 19th edition"
+macro(bob_set_cxx_standard standard)
+  # Require C++<standard>, but let a parent project ask for something higher
+  if(DEFINED CMAKE_CXX_STANDARD)
+    if(CMAKE_CXX_STANDARD EQUAL 98 OR CMAKE_CXX_STANDARD LESS ${standard})
+      message(FATAL_ERROR "This project requires at least C++${standard}")
+    endif()
+  else()
+    set(CMAKE_CXX_STANDARD ${standard})
+  endif()
+  message(STATUS "CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}")
+  # Always enforce the language constraint
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  # We don't need compiler extensions, but let a parent ask for them
+  if(NOT DEFINED CMAKE_CXX_EXTENSIONS)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+  endif()
+endmacro()
+
 function(bob_cxx11_flags)
   set(FLAGS "${CMAKE_CXX_FLAGS}")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "PGI")
-    set(FLAGS "${FLAGS} -std=c++11")
-  else()
-    set(FLAGS "${FLAGS} --std=c++11")
-  endif()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (${PROJECT_NAME}_CXX_WARNINGS)
       set(FLAGS "${FLAGS} -Wno-c++98-compat-pedantic -Wno-c++98-compat")
@@ -94,8 +108,7 @@ endfunction(bob_cxx11_flags)
 
 function(bob_cxx14_flags)
   set(FLAGS "${CMAKE_CXX_FLAGS}")
-  # clang only: -Werror=return-stack-address -Werror=mismatched-tags
-  set(FLAGS "${FLAGS} --std=c++14 -Wall -Wextra -Wpedantic -Werror -Wno-extra-semi -Werror=unused-parameter -Wno-error=deprecated-declarations")
+  set(FLAGS "${FLAGS} -Wall -Wextra -Wpedantic -Werror -Wno-extra-semi -Werror=unused-parameter -Wno-error=deprecated-declarations")
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (${PROJECT_NAME}_CXX_WARNINGS)
       set(FLAGS "${FLAGS} -Wno-c++98-compat-pedantic -Wno-c++98-compat")
