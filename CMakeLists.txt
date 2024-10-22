@@ -13,8 +13,6 @@ include(cmake/xsdk.cmake)
 
 option(USE_XSDK_DEFAULTS "enable the XDSK v0.3.0 default configuration" NO)
 
-bob_set_cxx_standard(11)
-
 xsdk_begin_package()
 bob_begin_package()
 
@@ -24,7 +22,9 @@ endif()
 
 option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
 message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
-if(ENABLE_CGNS)
+if(NOT ENABLE_CGNS)
+  bob_set_cxx_standard(11)
+else()
   message(STATUS "enabling cxx14")
   bob_set_cxx_standard(14)
 endif()
