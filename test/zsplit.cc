@@ -46,7 +46,7 @@ void switchToOriginals()
   int groupRank = self / partitionFactor;
   int group = self % partitionFactor;
   MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
+  PCU_Comm_Split(MPI_COMM_WORLD, group, groupRank, &groupComm);
   PCU_Switch_Comm(groupComm);
 }
 
@@ -54,7 +54,7 @@ void switchToAll()
 {
   MPI_Comm prevComm = PCU_Get_Comm();
   PCU_Switch_Comm(MPI_COMM_WORLD);
-  MPI_Comm_free(&prevComm);
+  PCU_Comm_Free_One(&prevComm);
   PCU_Barrier();
 }
 

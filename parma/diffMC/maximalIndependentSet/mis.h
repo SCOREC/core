@@ -7,8 +7,6 @@
 #include <iterator>
 #include <limits.h>
 
-#include "mpi.h"
-
 #include <stddef.h>
 #include "PCU.h"
 
