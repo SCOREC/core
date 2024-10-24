@@ -545,7 +545,7 @@ static MeshEntity* commonDown(Mesh2* m, MeshEntity* a, MeshEntity* b, int dim)
   for (int i = 0; i < na; i++)
     for (int j = 0; j < nb; j++)
       if (aDown[i] == bDown[j])
-      	return aDown[i];
+        return aDown[i];
   return 0;
 }
 
@@ -623,7 +623,7 @@ class TagCAP
 {
   public:
     TagCAP(MeshDatabaseInterface* m,
-	   const char* n,
+     const char* n,
            int c):
       mesh(m),
       count(c),
@@ -958,20 +958,25 @@ bool has_smoothCAPAnisoSizes(void) noexcept {
 bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
   apf::Field* scales, apf::Field* frames) {
 #ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
+  // Ensure input is a MeshCAP.
   apf::MeshCAP* m = dynamic_cast<apf::MeshCAP*>(mesh);
   if (!m) {
     lion_eprint(1, "ERROR: smoothCAPAnisoSizes: mesh is not an apf::MeshCAP*\n");
     return false;
   }
+
+  // Extract metric tensors from MeshAdapt frames and scales.
   std::vector<Metric6> sizing6(m->count(0));
   apf::Matrix3x3 Q;
   apf::Vector3 H;
   apf::MeshIterator* it = m->begin(0);
   for (apf::MeshEntity* e = m->iterate(it); e; e = m->iterate(it)) {
-    apf::getVector(scales, e, 0, H);
-    apf::getMatrix(frames, e, 0, Q);
-    apf::Matrix3x3 L(H[0], 0, 0, 0, H[1], 0, 0, 0, H[2]);
-    apf::Matrix3x3 t = Q * L * apf::invert(Q);
+    apf::getVector(scales, e, 0, H); // Desired element lengths.
+    apf::getMatrix(frames, e, 0, Q); // MeshAdapt uses column vectors.
+    apf::Matrix3x3 L(1.0/(H[0]*H[0]), 0, 0,
+      0, 1.0/(H[1]*H[1]), 0,
+      0, 0, 1.0/(H[2]*H[2]));
+    apf::Matrix3x3 t = Q * L * apf::transpose(Q); // Invert orthogonal frames.
     size_t id;
     MG_API_CALL(m->getMesh(), get_id(fromEntity(e), id));
     PCU_DEBUG_ASSERT(id != 0);
@@ -1006,7 +1011,12 @@ bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
     apf::Matrix3x3 t(m[0], m[1], m[2],
       m[1], m[3], m[4],
       m[2], m[4], m[5]);
-    PCU_DEBUG_ASSERT(apf::eigen(t, &Q[0], &H[0]) == 3);
+    int n = apf::eigen(t, &Q[0], &H[0]); // Eigenvectors in rows of Q.
+    PCU_DEBUG_ASSERT(n == 3);
+    Q = apf::transpose(Q); // Put eigenvectors back into columns for MeshAdapt.
+    for (int i = 0; i < 3; ++i) {
+      H[i] = 1.0/sqrt(H[i]);
+    }
     apf::setMatrix(frames, e, 0, Q);
     apf::setVector(scales, e, 0, H);
   }
