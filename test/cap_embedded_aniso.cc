@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
     std::cout << ++stage << ". Load reference geometry." << std::endl;
     std::cout << "INFO: Reference geometry file: " << args.ref_shock_geom() << std::endl;
     
-    cs_ref = new CapstoneModule("cap_aniso", "Geometry Database : SMLIB",
+    cs_ref = new CapstoneModule("cap_aniso_ref", "Geometry Database : SMLIB",
       "Mesh Database : Create", "Attribution Database : Create");
     gdi_ref = cs_ref->get_geometry();
     gmodel_ref = cs_ref->load_files(v_string(1, args.ref_shock_geom()));
@@ -482,7 +482,7 @@ namespace {
     apf::Vector3 sphere_cent(-0.250,0,0);
     apf::Vector3 dist = pos - sphere_cent;
     bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
-    return in_sphere ? 0.026414062 : 0.2113125;
+    return in_sphere ? 0.10565625 : 0.2113125;
   }
 
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame,
@@ -514,7 +514,7 @@ namespace {
     frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
     //scale[0] = scale[1] = scale[2] = init_size;
     //scale[0] = scale[1] = scale[2] = init_size;
-    scale[0] = scale[1] = scale[2] = correct_tag ? 0.026414062 : getZoneIsoSize(vtx);
+    scale[0] = scale[1] = scale[2] = correct_tag ? 0.10565625 : getZoneIsoSize(vtx);
   }
 
   void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
@@ -538,7 +538,7 @@ namespace {
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
       frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      scale[0] = scale[1] = scale[2] = nearShock ? 0.026414062 : getZoneIsoSize(vtx);
+      scale[0] = scale[1] = scale[2] = nearShock ? 0.10565625 : getZoneIsoSize(vtx);
   }
 
   double AnisotropicFunctionOnReference::getMaxEdgeLengthAcrossShock() {
