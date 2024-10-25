@@ -13,6 +13,7 @@
 #include <gmi.h>
 #include <vector>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 
 gmi_ent* toGmiEntity(M_GTopo topo)
@@ -219,7 +220,17 @@ static void closest_point(struct gmi_model* m, struct gmi_ent* e,
   (void)e;
   (void)to;
   (void)to_p;
-  printf("_closest_point_ not implemented!\n");
+  cap_model* cm = reinterpret_cast<cap_model*>(m);
+  M_GTopo topo = fromGmiEntity(e);
+  vec3d xyz_in, xyz_out, param_out;
+  xyz_in[0] = from[0]; xyz_in[1] = from[1]; xyz_in[2] = from[2];
+  // Capstone recommends replacing nullptr with `seedparam` -- a known nearby
+  // parametric point. This interface doesn't have that functionality, but if
+  // it becomes added, this call should be updated.
+  MG_API_CALL(cm->geomInterface, get_closest_point_param(topo, xyz_in, nullptr,
+    xyz_out, param_out));
+  to[0] = xyz_out[0]; to[1] = xyz_out[1]; to[2] = xyz_out[2];
+  to_p[0] = param_out[0]; to_p[1] = param_out[1];
 }
 
 static void normal(struct gmi_model* m, struct gmi_ent* e,
@@ -254,10 +265,14 @@ static void first_derivative(struct gmi_model* m, struct gmi_ent* e,
 static int is_point_in_region(struct gmi_model* m, struct gmi_ent* e,
     double point[3])
 {
-  (void)m;
-  (void)e;
-  (void)point;
-  printf("_is_point_in_region_ not implemented!\n");
+  cap_model* cm = (cap_model*) m;
+  std::vector<M_GTopo> topos;
+  MG_API_CALL(cm->geomInterface, find_point_containment(vec3d(point),
+    Geometry::REGION, topos, 0.0));
+  M_GTopo gtopo = fromGmiEntity(e);
+  for (size_t i = 0; i < topos.size(); ++i) {
+    if (topos[i] == gtopo) return 1;
+  }
   return 0;
 }
 
@@ -267,7 +282,20 @@ static int is_in_closure_of(struct gmi_model* m, struct gmi_ent* e,
   (void)m;
   (void)e;
   (void)et;
-  printf("_is_in_closure_of_ not implemented!\n");
+  if (get_dim(m, e) < get_dim(m, et)) {
+    cap_model* cm = (cap_model*)m;
+    M_GTopo ce = fromGmiEntity(e);
+    M_GTopo cet = fromGmiEntity(et);
+    GeometryTopo ce_type;
+    MG_API_CALL(cm->geomInterface, get_topo_type(ce, ce_type));
+    std::vector<M_GTopo> adj;
+    MG_API_CALL(cm->geomInterface, get_adjacency(cet, ce_type, adj));
+    for (size_t i = 0; i < adj.size(); ++i) {
+      if (ce == adj[i]) {
+        return 1;
+      }
+    }
+  }
   return 0;
 }
 
