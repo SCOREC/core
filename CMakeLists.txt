@@ -57,6 +57,8 @@ message(STATUS "IS_TESTING: ${IS_TESTING}")
 
 set(MESHES "${CMAKE_SOURCE_DIR}/pumi-meshes" CACHE STRING "Directory of test meshes")
 message(STATUS "MESHES: ${MESHES}")
+set(SMOKE_TEST_MESHES "${CMAKE_SOURCE_DIR}/smoke_test_meshes" CACHE STRING "Directory of
+meshes used for smoke testing")
 
 option(BUILD_EXES "Build executables" ON)
 message(STATUS "BUILD_EXES: ${BUILD_EXES}")
