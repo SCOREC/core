@@ -12,12 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         compiler:
-          - { compiler: GNU, CC: gcc-10, CXX: g++-10 }
-          - { compiler: LLVM, CC: clang, CXX: clang++ }
+          - { name: GNU, CC: gcc-10, CXX: g++-10 }
+          - { name: LLVM, CC: clang, CXX: clang++ }
         build_type: [Debug, Release]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
     
@@ -30,13 +30,13 @@ jobs:
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+      run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install
 
     - name: Build
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j --target install
 
     - name: Test
       env:
@@ -44,3 +44,13 @@ jobs:
         MPICH_CC: ${{matrix.compiler.CC}}
       working-directory: ${{github.workspace}}/build
       run: ctest --output-on-failure -C ${{matrix.build_type}}
+
+    - name: Build User Project
+      # only need to test with a single build config if the installed cmake config files work
+      if: matrix.compiler.name == 'GNU' && matrix.build_type == 'Release'
+      env:
+        MPICH_CXX: ${{matrix.compiler.CXX}}
+        MPICH_CC: ${{matrix.compiler.CC}}
+      run: |
+        cmake -S ${{github.workspace}}/doc -B ${{github.workspace}}/buildExample -DCMAKE_CXX_COMPILER=mpicxx -DSCOREC_PREFIX=${{github.workspace}}/build/install
+        cmake --build ${{github.workspace}}/buildExample

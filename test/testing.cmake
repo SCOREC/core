@@ -267,7 +267,7 @@ mpi_test(inviscid_ghost 4
   "${MDIR}/vis")
 set_tests_properties(inviscid_ghost PROPERTIES DEPENDS inviscid_ugrid)
 
-set(MDIR ${MESHES}/pipe)
+set(MDIR ${SMOKE_TEST_MESHES}/pipe)
 if(ENABLE_SIMMETRIX)
   mpi_test(convert 1
     ./convert
@@ -895,4 +895,9 @@ if(ENABLE_CAPSTONE)
   mpi_test(capVolWing 1 ./capVol -vg 2 ${MESHES}/cap/wing_surf_only.cre)
   mpi_test(capVolCube 1 ./capVol -vg 3 ${MESHES}/cap/cube_surf_only.cre)
   mpi_test(capVolCyl2 1 ./capVol -vg 4 ${MESHES}/cap/cyl_surf_only.cre)
+  mpi_test(cap_inClosureOf 1 ./cap_inClosureOf ${MESHES}/cap/cube_surf_only.cre)
+  mpi_test(cap_closestPoint 1 ./cap_closestPoint ${MESHES}/cap/cube_surf_only.cre)
+  if(HAVE_CAPSTONE_SIZINGMETRICTOOL)
+    mpi_test(cap_smooth 1 ./cap_smooth)
+  endif()
 endif()

@@ -77,13 +77,27 @@ function(bob_begin_cxx_flags)
   set(CMAKE_CXX_FLAGS "${FLAGS}" PARENT_SCOPE)
 endfunction(bob_begin_cxx_flags)
 
+# The following is from the book,"Professional CMake: 19th edition"
+macro(bob_set_cxx_standard standard)
+  # Require C++<standard>, but let a parent project ask for something higher
+  if(DEFINED CMAKE_CXX_STANDARD)
+    if(CMAKE_CXX_STANDARD EQUAL 98 OR CMAKE_CXX_STANDARD LESS ${standard})
+      message(FATAL_ERROR "This project requires at least C++${standard}")
+    endif()
+  else()
+    set(CMAKE_CXX_STANDARD ${standard})
+  endif()
+  message(STATUS "CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}")
+  # Always enforce the language constraint
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  # We don't need compiler extensions, but let a parent ask for them
+  if(NOT DEFINED CMAKE_CXX_EXTENSIONS)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+  endif()
+endmacro()
+
 function(bob_cxx11_flags)
   set(FLAGS "${CMAKE_CXX_FLAGS}")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "PGI")
-    set(FLAGS "${FLAGS} -std=c++11")
-  else()
-    set(FLAGS "${FLAGS} --std=c++11")
-  endif()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (${PROJECT_NAME}_CXX_WARNINGS)
       set(FLAGS "${FLAGS} -Wno-c++98-compat-pedantic -Wno-c++98-compat")
@@ -94,8 +108,7 @@ endfunction(bob_cxx11_flags)
 
 function(bob_cxx14_flags)
   set(FLAGS "${CMAKE_CXX_FLAGS}")
-  # clang only: -Werror=return-stack-address -Werror=mismatched-tags
-  set(FLAGS "${FLAGS} --std=c++14 -Wall -Wextra -Wpedantic -Werror -Wno-extra-semi -Werror=unused-parameter -Wno-error=deprecated-declarations")
+  set(FLAGS "${FLAGS} -Wall -Wextra -Wpedantic -Werror -Wno-extra-semi -Werror=unused-parameter -Wno-error=deprecated-declarations")
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (${PROJECT_NAME}_CXX_WARNINGS)
       set(FLAGS "${FLAGS} -Wno-c++98-compat-pedantic -Wno-c++98-compat")
@@ -155,11 +168,11 @@ endmacro(bob_public_dep)
 
 function(bob_export_target tgt_name)
   install(TARGETS ${tgt_name} EXPORT ${tgt_name}-target
-      RUNTIME DESTINATION bin
-      ARCHIVE DESTINATION lib
-      LIBRARY DESTINATION lib)
+      RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+      LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
   install(EXPORT ${tgt_name}-target NAMESPACE ${PROJECT_NAME}::
-          DESTINATION lib/cmake/${PROJECT_NAME})
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
   set(${PROJECT_NAME}_EXPORTED_TARGETS
       ${${PROJECT_NAME}_EXPORTED_TARGETS} ${tgt_name} PARENT_SCOPE)
 endfunction(bob_export_target)
@@ -173,8 +186,8 @@ endmacro(bob_end_subdir)
 
 function(bob_end_package)
   include(CMakePackageConfigHelpers)
-  set(INCLUDE_INSTALL_DIR include)
-  set(LIB_INSTALL_DIR lib)
+  set(INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
+  set(LIB_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}")
   set(CONFIG_CONTENT "
 set(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION})
 include(CMakeFindDependencyMacro)
@@ -213,7 +226,7 @@ set(${PROJECT_NAME}_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\")
 ")
   install(FILES
     "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    DESTINATION lib/cmake/${PROJECT_NAME})
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
   if(PROJECT_VERSION)
     file(WRITE
         ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
@@ -224,6 +237,6 @@ set(${PROJECT_NAME}_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\")
         COMPATIBILITY SameMajorVersion)
     install(FILES
       "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-      DESTINATION lib/cmake/${PROJECT_NAME})
+      DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
   endif()
 endfunction(bob_end_package)

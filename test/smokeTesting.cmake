@@ -6,7 +6,7 @@ function(smoke_test TESTNAME PROCS EXE)
   SET_TESTS_PROPERTIES(${tname} PROPERTIES LABELS "SMOKE_TEST" )
 endfunction(smoke_test)
 
-set(MDIR ${MESHES}/pipe)
+set(MDIR ${SMOKE_TEST_MESHES}/pipe)
 smoke_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.dmg"
