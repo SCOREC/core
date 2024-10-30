@@ -197,7 +197,6 @@ scorec_export_library(core)
 
 if(BUILD_EXES)
   add_subdirectory(test)
-  add_subdirectory(capstone_clis)
 endif()
 
 if(PUMI_PYTHON_INTERFACE)
