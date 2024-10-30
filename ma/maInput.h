@@ -153,7 +153,7 @@ const Input* configure(
  \param sizes a vector field of desired element sizes along the
               axes of the anisotropic frame
  \param frames a matrix field containing anisotropic frames
-               for each vertex
+               for each vertex along the columns
  \param s if non-zero, use that to transfer all fields. otherwise,
           transfer any associated fields with default algorithms
  \param logInterpolation if true uses logarithmic interpolation */

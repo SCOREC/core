@@ -10,6 +10,7 @@
 #include <apfMDS.h>
 #include <apfConvert.h>
 #include <ma.h>
+#include <float.h>
 
 #include <CapstoneModule.h>
 
@@ -26,7 +27,9 @@ namespace {
     ARGS_GETTER(analytic, bool)
     ARGS_GETTER(help, bool)
     ARGS_GETTER(mds_adapt, bool)
-    ARGS_GETTER(shock_surf_id, int)
+    ARGS_GETTER(smoothing, bool)
+    ARGS_GETTER(ref_shock_geom, const std::string&)
+    ARGS_GETTER(shock_surf_ids, std::list<int>)
     ARGS_GETTER(uniform, int)
     ARGS_GETTER(verbosity, int)
     ARGS_GETTER(maxiter, int)
@@ -46,27 +49,39 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false};
-    int maxiter_{-1}, shock_surf_id_{0}, uniform_{0}, verbosity_{0};
+    bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
+    int maxiter_{-1}, uniform_{0}, verbosity_{0};
     double aniso_size_{0.0}, thickness_{0.0}, ratio_{4.0};
-    std::string argv0, before_, after_, input_, output_;
+    std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
+    std::list<int> shock_surf_ids_{};
   }; // class Args
 
   class EmbeddedShockFunction : public ma::AnisotropicFunction {
   public:
-    EmbeddedShockFunction(ma::Mesh* m, M_GTopo shock, double nsize,
+    EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, double nsize,
       double AR, double h0, double thickness) : mesh(m),
-      norm_size(nsize), init_size(h0) {
-      shock_surface = reinterpret_cast<apf::ModelEntity*>(toGmiEntity(shock));
+      norm_size(nsize), init_size(h0), ref(g), shock_surfaces(surfs) {
+      //shock_surface = reinterpret_cast<apf::ModelEntity*>(toGmiEntity(shock));
       thickness_tol = thickness * thickness / 4;
       tan_size = norm_size * AR;
     }
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
-  private:
+  protected:
+    double getZoneIsoSize(ma::Entity* vtx);
+    double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt);
     ma::Mesh* mesh;
-    apf::ModelEntity* shock_surface;
+    gmi_model* ref;
     double thickness_tol, norm_size, init_size, tan_size;
+    std::list<gmi_ent*> shock_surfaces;
   }; // class EmbeddedSizeFunction
+
+  class AnisotropicFunctionOnReference : public EmbeddedShockFunction {
+  public:
+    using EmbeddedShockFunction::EmbeddedShockFunction;
+    void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
+    double getMaxEdgeLengthAcrossShock();
+  }; // class AnisotropicFunctionOnReference
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -93,6 +108,8 @@ int main(int argc, char* argv[]) {
 
   int stage = 0;
   std::cout << ++stage << ". Setup Capstone." << std::endl;
+  std::cout << "Isotropic adapt only" << std::endl;
+
   CapstoneModule cs("cap_aniso", "Geometry Database : SMLIB",
     "Mesh Database : Create", "Attribution Database : Create");
   GeometryDatabaseInterface* gdi = cs.get_geometry();
@@ -100,6 +117,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << ++stage << ". Load CRE." << std::endl;
   M_GModel gmodel = cs.load_files(v_string(1, args.input()));
+  gmi_model* gmodelGMI = gmi_import_cap(gdi);
   std::vector<M_MModel> mmodels;
   MG_API_CALL(mdi, get_associated_mesh_models(gmodel, mmodels));
   MG_API_CALL(mdi, set_current_model(mmodels[0])); // Use first mesh.
@@ -132,26 +150,62 @@ int main(int argc, char* argv[]) {
     ma::runUniformRefinement(adaptMesh, args.uniform());
   }
 
-  std::cout << ++stage << ". Identify shock surface by id." << std::endl;
-  M_GTopo shock_surface = gdi->get_topo_by_id(Geometry::FACE,
-    args.shock_surf_id());
-  if (shock_surface.is_invalid()) {
-    std::cerr << "ERROR: Selected shock surface is invalid." << std::endl;
-    PCU_Comm_Free();
-    MPI_Finalize();
-    return 1;
+  CapstoneModule* cs_ref = nullptr;
+  GeometryDatabaseInterface* gdi_ref = nullptr;
+  M_GModel gmodel_ref;
+  gmi_model* geom_ref = nullptr;
+  bool using_ref_geom = args.ref_shock_geom().length() > 0;
+  if(using_ref_geom) {
+    std::cout << ++stage << ". Load reference geometry." << std::endl;
+    std::cout << "INFO: Reference geometry file: " << args.ref_shock_geom() << std::endl;
+    
+    cs_ref = new CapstoneModule("cap_aniso_ref", "Geometry Database : SMLIB",
+      "Mesh Database : Create", "Attribution Database : Create");
+    gdi_ref = cs_ref->get_geometry();
+    gmodel_ref = cs_ref->load_files(v_string(1, args.ref_shock_geom()));
+    geom_ref = gmi_import_cap(gdi_ref);
   }
-  std::cout << "INFO: Selected surface: " << shock_surface << std::endl;
+
+  // TODO: change this for multiple ids
+  std::cout << ++stage << ". Identify shock surfaces by ids." << std::endl;
+
+  // M_GTopo shock_surface = gdi->get_topo_by_id(Geometry::FACE, args.shock_surf_id());
+  std::list<gmi_ent*> shock_surfaces;
+  std::cout << "INFO: Selected surfaces: ";
+  for(int surf_id : args.shock_surf_ids()) {
+    std::cout << surf_id << " ";
+    M_GTopo surf = (using_ref_geom ? gdi_ref : gdi)->get_topo_by_id(Geometry::FACE, surf_id);
+    if (surf.is_invalid()) {
+      std::cerr << "ERROR: Shock surface id " << surf_id << " is invalid." << std::endl;
+      PCU_Comm_Free();
+      MPI_Finalize();
+      return 1;
+    }
+    shock_surfaces.push_back(toGmiEntity(surf));
+  }
+  std::cout << std::endl;
+  //std::cout << "INFO: Selected surface: " << shock_surface << std::endl;
 
   std::cout << ++stage << ". Get average edge length." << std::endl;
   double h0 = ma::getAverageEdgeLength(adaptMesh);
   std::cout << "INFO: Average edge length: " << h0 << std::endl;
+  double h0_max = ma::getMaximumEdgeLength(adaptMesh, nullptr);
+  std::cout << "INFO: Maximum edge length: " << h0_max << std::endl;
+
   std::cout << "INFO: Normal size: " << args.aniso_size() << std::endl;
   std::cout << "INFO: Tangent size: " << args.aniso_size() * args.ratio() << std::endl;
 
   std::cout << ++stage << ". Make sizefield." << std::endl;
-  ma::AnisotropicFunction* sf = new EmbeddedShockFunction(adaptMesh,
-    shock_surface, args.aniso_size(), args.ratio(), h0, args.thickness());
+  ma::AnisotropicFunction* sf = nullptr;
+  if(using_ref_geom) {
+    sf = new AnisotropicFunctionOnReference(adaptMesh,
+      geom_ref, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+    //double h0_max_shock = reinterpret_cast<AnisotropicFunctionOnReference*>(sf)->getMaxEdgeLengthAcrossShock();
+    //std::cout << "INFO: Maximum edge length crossing shock: " << h0_max_shock << std::endl;
+  } else {
+    sf = new EmbeddedShockFunction(adaptMesh,
+      gmodelGMI, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+  }
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
     frameField = apf::createFieldOn(adaptMesh, "adapt_frames", apf::MATRIX);
@@ -166,6 +220,16 @@ int main(int argc, char* argv[]) {
       apf::setMatrix(frameField, v, 0, frame);
     }
     adaptMesh->end(it);
+
+    if (args.smoothing()) {
+      std::cout << ++stage << ". Smooth size field." << std::endl;
+      if(apf::has_smoothCAPAnisoSizes()) {
+        apf::smoothCAPAnisoSizes(adaptMesh, "cap_aniso", scaleField, frameField);
+      } else {
+        std::cout << "apf::smoothCAPAnisoSizes is not supported, skipping" << std::endl;
+      }
+    }
+
     if (!args.before().empty()) {
       std::cout << ++stage << ". Write before VTK." << std::endl;
       apf::writeVtkFiles(args.before().c_str(), adaptMesh);
@@ -234,7 +298,7 @@ int main(int argc, char* argv[]) {
         capTagCount_f("dimtagct_cap.csv");
       mdsTagCount_f << "dim,tag,count\n";
       for (const auto& pairs : dimTagToCount_mds) {
-        mdsTagCount_f << pairs.first.first << ',' << pairs.first.second << ','
+        mdsTagCount_f << pairs.first.first   << ',' << pairs.first.second << ','
           << pairs.second << '\n';
       }
       capTagCount_f << "dim,tag,count\n";
@@ -296,7 +360,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "nst";
-    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:s:t:uv")) != -1) {
+    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvS")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -327,7 +391,11 @@ namespace {
         ratio_ = std::atof(optarg);
         break;
       case 's':
-        shock_surf_id_ = std::atoi(optarg);
+        shock_surf_ids_.push_back(std::atoi(optarg));
+        std::cout << "INFO: Processing arg: " << optarg << " last entry " << shock_surf_ids_.back() << std::endl;
+        break;
+      case 'G':
+        ref_shock_geom_ = optarg;
         break;
       case 't':
         thickness_ = std::atof(optarg);
@@ -337,6 +405,9 @@ namespace {
         break;
       case 'v':
         ++verbosity_;
+        break;
+      case 'S':
+        smoothing_ = true;
         break;
       case ':':
         std::cerr << "ERROR: Option -" << char(optopt) << " requires an "
@@ -369,11 +440,11 @@ namespace {
       std::cerr << "ERROR: INPUT.cre is required." << std::endl;
       error_flag_ = true;
     }
-  }
+  } 
 
   void Args::print_usage(std::ostream& str) const {
-    str << "USAGE: " << argv0 << " [-ahmuv] [-i MAXITER] [-B before.vtk] "
-      "[-A after.vtk] [-o OUTPUT.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
+    str << "USAGE: " << argv0 << " [-ahmuvS] [-i MAXITER] [-B before.vtk] "
+      "[-A after.vtk] [-o OUTPUT.cre] [-G REF_GEOM.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
       << std::endl;
   }
 
@@ -391,17 +462,37 @@ namespace {
     "-m              Convert to mesh to MDS before adaptation (and back to \n"
     "                Capstone mesh before writing if given -o). May boost \n"
     "                performance, but buggy.\n"
+    "-S              Do smoothing \n"
     "-n NORM_SIZE    Set anisotropic normal direction size. (required)\n"
     "-o OUTPUT.cre   Write final mesh to OUTPUT.cre.\n"
     "-r RATIO        Set desired anisotropic aspect ratio (tan/norm)."
       " DEFAULT: 4\n"
-    "-s ID           Set the face ID of the embedded shock surface. (required)\n"
+    "-G REF_GEOM.cre Set a different .cre file with shock geometry.\n"
+    "-s ID           Set face IDs of the embedded shock surface. (required)\n"
+    "                Repeat flag multiple times to specify more tags.\n"
     "-t THICKNESS    Set thickness (required).\n"
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
     "-v              Increase verbosity. Level 1 enables lionPrint. Level 2\n"
     "                enables verbose adaptation. Level 3 writes intermediate\n"
     "                VTK files.\n";
+  }
+
+  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx) {
+    apf::Vector3 pos;
+    mesh->getPoint(vtx, 0, pos);
+    apf::Vector3 sphere_cent(-0.250,0,0);
+    apf::Vector3 dist = pos - sphere_cent;
+    bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
+    return in_sphere ? norm_size : 0.2113125;
+  }
+
+  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt) {
+    apf::Vector3 pos;
+    mesh->getPoint(vtx, 0, pos);
+    apf::Vector3 vecToPos = pos - closestPt;
+    // slight negative tolerance for outer outlet edge
+    return vecToPos.x() > -1e-3 ? 4 * getZoneIsoSize(vtx) : getZoneIsoSize(vtx);
   }
 
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame,
@@ -415,7 +506,7 @@ namespace {
 
     int vertex_tags[] = {22, 25, 26, 27, 28, 29, 30, 39};
     int edge_tags[] = {1, 6, 32, 33, 38, 40, 41, 43, 42, 57};
-    int face_tags[] = {15, 16, 23};
+    int face_tags[] = {15, 16, 23}; // -s 15 -s 16 -s 23
     int sizes[3] = {8, 10, 3};
     int* tags[3] = {vertex_tags, edge_tags, face_tags};
     bool correct_tag = false;
@@ -428,27 +519,69 @@ namespace {
       }
     }
 
-    apf::Vector3 norm;
-    if (correct_tag) {
-      PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
-      mesh->getParamOn(classified_ent, vtx, pt_par);
-      mesh->getNormal(classified_ent, pt_par, norm);
-      //std::cout << norm << std::endl;
-      // Negate largest component to get tangent.
-      apf::Vector3 trial(norm[2], norm[1], norm[0]);
-      int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
-      trial[largest] *= -1;
-      apf::Vector3 tan1 = apf::cross(norm, trial).normalize();
-      apf::Vector3 tan2 = apf::cross(norm, tan1);
-      frame[0] = norm;
-      frame[1] = tan1;
-      frame[2] = tan2;
-      scale[0] = norm_size; scale[1] = scale[2] = tan_size;
-    } else {
+    frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
+    frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
+    frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
+    //scale[0] = scale[1] = scale[2] = init_size;
+    scale[0] = scale[1] = scale[2] = correct_tag ? norm_size : getZoneIsoSize(vtx);
+  }
+
+  void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
+    ma::Vector& scale) {
+      apf::Vector3 pos;
+      mesh->getPoint(vtx, 0, pos);
+      double posArr[3];
+      pos.toArray(posArr);
+      apf::Vector3 clsPos, clsParPos;
+
+      double shockDistSquare = DBL_MAX;
+      for(gmi_ent* surf : shock_surfaces) {
+        double clsArr[3], clsParArr[2];
+        //gmi_closest_point (struct gmi_model *m, struct gmi_ent *e, double const from[3], double to[3], double to_p[2])
+        gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
+        double curShockDistSquare = (posArr[0]-clsArr[0])*(posArr[0]-clsArr[0])+
+          (posArr[1]-clsArr[1])*(posArr[1]-clsArr[1])+
+          (posArr[2]-clsArr[2])*(posArr[2]-clsArr[2]);
+        if (curShockDistSquare < shockDistSquare) {
+          shockDistSquare = curShockDistSquare;
+          clsPos.fromArray(clsArr);
+          clsParPos.fromArray(clsParArr);
+        }
+      }
+      bool nearShock = shockDistSquare < thickness_tol;
+
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
       frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      scale[0] = scale[1] = scale[2] = init_size;
+      scale[0] = scale[1] = scale[2] = nearShock ? norm_size : getZoneIsoSize(vtx, clsPos);
+  }
+
+  double AnisotropicFunctionOnReference::getMaxEdgeLengthAcrossShock() {
+    double max_length = -1.0;
+    apf::MeshIterator* it = mesh->begin(1);
+    apf::MeshEntity* e;
+    while ((e = mesh->iterate(it))) {
+      for (gmi_ent* surf : shock_surfaces) {
+        apf::MeshEntity* adj_pts[2];
+        mesh->getDownward(e, 0, adj_pts);
+        apf::Vector3 pointA, pointB, closest;
+        mesh->getPoint(adj_pts[0], 0, pointA);
+        mesh->getPoint(adj_pts[1], 0, pointB);
+
+        double posArr[3], clsArr[3], clsParArr[2];
+        pointA.toArray(posArr);
+        gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
+        closest.fromArray(clsArr);
+
+        apf::Vector3 vecA = pointA - closest;
+        apf::Vector3 vecB = pointB - closest;
+        if (vecA * vecB < 0) {
+          max_length = std::max(max_length, (vecB-vecA).getLength());
+          break;
+        }
+      }
     }
+    mesh->end(it);
+    return max_length;
   }
 } // namespace
