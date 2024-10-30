@@ -9,6 +9,8 @@
 #include <pcu_util.h>
 #include <algorithm>
 #include <lionPrint.h>
+#include <float.h>
+#include <string>
 
 #ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
 #include <CreateMG_SizingMetricTool.h>
@@ -970,6 +972,10 @@ bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
   apf::Matrix3x3 Q;
   apf::Vector3 H;
   apf::MeshIterator* it = m->begin(0);
+
+  double minQ[3] = {DBL_MAX, DBL_MAX, DBL_MAX};
+  double maxQ[3] = {DBL_MIN, DBL_MIN, DBL_MIN};
+
   for (apf::MeshEntity* e = m->iterate(it); e; e = m->iterate(it)) {
     apf::getVector(scales, e, 0, H); // Desired element lengths.
     apf::getMatrix(frames, e, 0, Q); // MeshAdapt uses column vectors.
@@ -978,6 +984,10 @@ bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
       0, 0, 1.0/(H[2]*H[2]));
     apf::Matrix3x3 t = Q * L * apf::transpose(Q); // Invert orthogonal frames.
     size_t id;
+    for(int i=0; i<3; i++) {
+      minQ[i] = std::min(minQ[i], H[i]);
+      maxQ[i] = std::max(maxQ[i], H[i]);
+    }
     MG_API_CALL(m->getMesh(), get_id(fromEntity(e), id));
     PCU_DEBUG_ASSERT(id != 0);
     --id;
@@ -988,6 +998,14 @@ bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
     sizing6[id][4] = t[1][2];
     sizing6[id][5] = t[2][2];
   }
+
+  std::cout << minQ[0] << " ";
+  std::cout << minQ[1] << " ";
+  std::cout << minQ[2] << std::endl;
+  std::cout << maxQ[0] << " ";
+  std::cout << maxQ[1] << " ";
+  std::cout << maxQ[2] << " ";
+
   m->end(it);
   auto smooth_tool = get_sizing_metric_tool(m->getMesh()->get_context(),
     "CreateSmoothingBase");

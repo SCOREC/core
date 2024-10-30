@@ -519,11 +519,29 @@ namespace {
       }
     }
 
-    frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
-    frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
-    frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-    //scale[0] = scale[1] = scale[2] = init_size;
-    scale[0] = scale[1] = scale[2] = correct_tag ? norm_size : getZoneIsoSize(vtx);
+    apf::Vector3 norm;
+    if (correct_tag) {
+      PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
+      mesh->getParamOn(classified_ent, vtx, pt_par);
+      mesh->getNormal(classified_ent, pt_par, norm);
+      //std::cout << norm << std::endl;
+      // Negate largest component to get tangent.
+      apf::Vector3 trial(norm[2], norm[1], norm[0]);
+      int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
+      trial[largest] *= -1;
+      apf::Vector3 tan1 = apf::cross(norm, trial).normalize();
+      apf::Vector3 tan2 = apf::cross(norm, tan1);
+      frame[0] = norm;
+      frame[1] = tan1;
+      frame[2] = tan2;
+      scale[0] = norm_size; scale[1] = scale[2] = getZoneIsoSize(vtx);
+    } else {
+      frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
+      frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
+      frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
+      //scale[0] = scale[1] = scale[2] = init_size;
+      scale[0] = scale[1] = scale[2] = getZoneIsoSize(vtx);
+    }
   }
 
   void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
