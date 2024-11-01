@@ -94,7 +94,7 @@ int main(int argc, char** argv)
   /* INIT CALLS */
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   if (argc < 2) {
     if (PCUObj.Self() == 0) {
