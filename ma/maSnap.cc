@@ -508,6 +508,8 @@ static void interpolateParametricCoordinatesOnRegularFace(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
+#else
+  (void) gface_isPeriodic;
 #endif
 }
 
