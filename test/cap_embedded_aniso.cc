@@ -501,9 +501,9 @@ namespace {
     double shockDistSquare = DBL_MAX;
     apf::Vector3 clsVec;
     gmi_ent* closestSurf;
+    PCU_ALWAYS_ASSERT(gmi_can_get_closest_point(ref));
     for(gmi_ent* surf : shock_surfaces) {
       //gmi_closest_point (struct gmi_model *m, struct gmi_ent *e, double const from[3], double to[3], double to_p[2])
-      PCU_ALWAYS_ASSERT(gmi_can_get_closest_point(ref));
       gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
       double curShockDistSquare = (posArr[0]-clsArr[0])*(posArr[0]-clsArr[0])+
         (posArr[1]-clsArr[1])*(posArr[1]-clsArr[1])+
@@ -515,12 +515,22 @@ namespace {
       }
     }
 
-    apf::Vector3 norm;
     if (shockDistSquare < thickness_tol) {
-      PCU_ALWAYS_ASSERT(gmi_has_normal(ref));
-      double nrmArr[3];
-      gmi_normal(ref, closestSurf, clsParArr, nrmArr);
-      norm.fromArray(nrmArr);
+      apf::Vector3 norm;
+      if (shockDistSquare > 1e-9) {
+        norm = (pos-clsVec).normalize();
+      } else {
+        double posPerturbedArr[3] = {posArr[0]+0.001, posArr[1], posArr[2]};
+        double clsPerturbedArr[3], clsPerturbedParArr[3];
+        gmi_closest_point(ref, closestSurf, posPerturbedArr, clsPerturbedArr, clsPerturbedParArr);
+        norm = apf::Vector3(posPerturbedArr[0]-clsPerturbedArr[0], posPerturbedArr[1]-clsPerturbedArr[1],
+          posPerturbedArr[2]-clsPerturbedArr[2]).normalize();
+      }
+
+      //PCU_ALWAYS_ASSERT(gmi_has_normal(ref));
+      //double nrmArr[3];
+      //gmi_normal(ref, closestSurf, clsParArr, nrmArr);
+      //norm.fromArray(nrmArr);
       // Negate largest component to get tangent.
       apf::Vector3 trial(norm[2], norm[1], norm[0]);
       int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
