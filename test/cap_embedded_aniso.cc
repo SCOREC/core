@@ -65,7 +65,11 @@ namespace {
       thickness_tol = thickness * thickness / 4;
       tan_size = norm_size * AR;
     }
+    EmbeddedShockFunction(ma::Mesh* m, std::list<gmi_ent*> surfs, double nsize,
+      double AR, double h0, double thickness) : 
+      EmbeddedShockFunction(m, m->getModel(), surfs, nsize, AR, h0, thickness) {};
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
+    double getMaxEdgeLengthAcrossShock();
   protected:
     double getZoneIsoSize(ma::Entity* vtx);
     double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt);
@@ -74,13 +78,6 @@ namespace {
     double thickness_tol, norm_size, init_size, tan_size;
     std::list<gmi_ent*> shock_surfaces;
   }; // class EmbeddedSizeFunction
-
-  class AnisotropicFunctionOnReference : public EmbeddedShockFunction {
-  public:
-    using EmbeddedShockFunction::EmbeddedShockFunction;
-    void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
-    double getMaxEdgeLengthAcrossShock();
-  }; // class AnisotropicFunctionOnReference
 
 } // namespace
 
@@ -198,13 +195,12 @@ int main(int argc, char* argv[]) {
   std::cout << ++stage << ". Make sizefield." << std::endl;
   ma::AnisotropicFunction* sf = nullptr;
   if(using_ref_geom) {
-    sf = new AnisotropicFunctionOnReference(adaptMesh,
+    sf = new EmbeddedShockFunction(adaptMesh,
       geom_ref, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
     //double h0_max_shock = reinterpret_cast<AnisotropicFunctionOnReference*>(sf)->getMaxEdgeLengthAcrossShock();
     //std::cout << "INFO: Maximum edge length crossing shock: " << h0_max_shock << std::endl;
   } else {
-    sf = new EmbeddedShockFunction(adaptMesh,
-      gmodelGMI, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
   }
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
@@ -484,7 +480,7 @@ namespace {
     apf::Vector3 sphere_cent(-0.250,0,0);
     apf::Vector3 dist = pos - sphere_cent;
     bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
-    return in_sphere ? norm_size : 0.2113125;
+    return in_sphere ? 0.10565625 : 0.2113125;
   }
 
   double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt) {
@@ -495,36 +491,36 @@ namespace {
     return vecToPos.x() > -1e-3 ? 4 * getZoneIsoSize(vtx) : getZoneIsoSize(vtx);
   }
 
-  void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame,
-    ma::Vector& scale) {
-    apf::Vector3 pt = apf::getLinearCentroid(mesh, vtx), pt_par;
-    
-    apf::ModelEntity* classified_ent = mesh->toModel(vtx);
-    int classified_tag = mesh->getModelTag(classified_ent);
-    int geom_dimension = mesh->getModelType(classified_ent);
-    //std::cout << "model dim: " << geom_dimension << std::endl;
+  void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale) {
+    apf::Vector3 pos;
+    mesh->getPoint(vtx, 0, pos);
+    double posArr[3];
+    pos.toArray(posArr);
+    double clsArr[3], clsParArr[2];
 
-    int vertex_tags[] = {22, 25, 26, 27, 28, 29, 30, 39};
-    int edge_tags[] = {1, 6, 32, 33, 38, 40, 41, 43, 42, 57};
-    int face_tags[] = {15, 16, 23}; // -s 15 -s 16 -s 23
-    int sizes[3] = {8, 10, 3};
-    int* tags[3] = {vertex_tags, edge_tags, face_tags};
-    bool correct_tag = false;
-    if(geom_dimension==2) {
-      for (int i=0;i<sizes[geom_dimension];i++) {
-        if (*(tags[geom_dimension]+i) == classified_tag) {
-          correct_tag = true;
-          break;
-        }
+    double shockDistSquare = DBL_MAX;
+    apf::Vector3 clsVec;
+    gmi_ent* closestSurf;
+    for(gmi_ent* surf : shock_surfaces) {
+      //gmi_closest_point (struct gmi_model *m, struct gmi_ent *e, double const from[3], double to[3], double to_p[2])
+      PCU_ALWAYS_ASSERT(gmi_can_get_closest_point(ref));
+      gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
+      double curShockDistSquare = (posArr[0]-clsArr[0])*(posArr[0]-clsArr[0])+
+        (posArr[1]-clsArr[1])*(posArr[1]-clsArr[1])+
+        (posArr[2]-clsArr[2])*(posArr[2]-clsArr[2]);
+      if (curShockDistSquare < shockDistSquare) {
+        shockDistSquare = curShockDistSquare;
+        clsVec.fromArray(clsArr);
+        closestSurf = surf;
       }
     }
 
     apf::Vector3 norm;
-    if (correct_tag) {
-      PCU_ALWAYS_ASSERT(mesh->canGetModelNormal());
-      mesh->getParamOn(classified_ent, vtx, pt_par);
-      mesh->getNormal(classified_ent, pt_par, norm);
-      //std::cout << norm << std::endl;
+    if (shockDistSquare < thickness_tol) {
+      PCU_ALWAYS_ASSERT(gmi_has_normal(ref));
+      double nrmArr[3];
+      gmi_normal(ref, closestSurf, clsParArr, nrmArr);
+      norm.fromArray(nrmArr);
       // Negate largest component to get tangent.
       apf::Vector3 trial(norm[2], norm[1], norm[0]);
       int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
@@ -540,41 +536,11 @@ namespace {
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
       frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
       //scale[0] = scale[1] = scale[2] = init_size;
-      scale[0] = scale[1] = scale[2] = getZoneIsoSize(vtx);
+      scale[0] = scale[1] = scale[2] = getZoneIsoSize(vtx, clsVec);
     }
   }
 
-  void AnisotropicFunctionOnReference::getValue(ma::Entity* vtx, ma::Matrix& frame,
-    ma::Vector& scale) {
-      apf::Vector3 pos;
-      mesh->getPoint(vtx, 0, pos);
-      double posArr[3];
-      pos.toArray(posArr);
-      apf::Vector3 clsPos, clsParPos;
-
-      double shockDistSquare = DBL_MAX;
-      for(gmi_ent* surf : shock_surfaces) {
-        double clsArr[3], clsParArr[2];
-        //gmi_closest_point (struct gmi_model *m, struct gmi_ent *e, double const from[3], double to[3], double to_p[2])
-        gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
-        double curShockDistSquare = (posArr[0]-clsArr[0])*(posArr[0]-clsArr[0])+
-          (posArr[1]-clsArr[1])*(posArr[1]-clsArr[1])+
-          (posArr[2]-clsArr[2])*(posArr[2]-clsArr[2]);
-        if (curShockDistSquare < shockDistSquare) {
-          shockDistSquare = curShockDistSquare;
-          clsPos.fromArray(clsArr);
-          clsParPos.fromArray(clsParArr);
-        }
-      }
-      bool nearShock = shockDistSquare < thickness_tol;
-
-      frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
-      frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
-      frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      scale[0] = scale[1] = scale[2] = nearShock ? norm_size : getZoneIsoSize(vtx, clsPos);
-  }
-
-  double AnisotropicFunctionOnReference::getMaxEdgeLengthAcrossShock() {
+  double EmbeddedShockFunction::getMaxEdgeLengthAcrossShock() {
     double max_length = -1.0;
     apf::MeshIterator* it = mesh->begin(1);
     apf::MeshEntity* e;
