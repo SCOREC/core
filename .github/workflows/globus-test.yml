@@ -1,10 +1,8 @@
 name: Globus-Systems
 on:
-  push:
-  pull_request:
   schedule:
-    # Monday 4:30 UTC or 00:30 EDT
-    - cron: '30 4 * * 1' 
+    # Monday 7:35 UTC or 03:35 EDT
+    - cron: '35 7 * * 1' 
 
 jobs:
 
