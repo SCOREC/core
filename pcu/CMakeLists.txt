@@ -18,11 +18,16 @@ set(SOURCES
   pcu_mpi.c
   pcu_msg.c
   pcu_order.c
-  pcu_pmpi.c
   pcu_util.c
   noto/noto_malloc.c
   reel/reel.c
 )
+
+if(SCOREC_NO_MPI)
+  set(SOURCES ${SOURCES} pcu_pnompi.c)
+else()
+  set(SOURCES ${SOURCES} pcu_pmpi.c)
+endif()
 
 # Package headers
 set(HEADERS
@@ -31,6 +36,10 @@ set(HEADERS
   pcu_util.h
   reel/reel.h
 )
+
+if(SCOREC_NO_MPI)
+  set(HEADERS ${HEADERS} pcu_pnompi_types.h)
+endif()
 
 # Add the pcu library
 add_library(pcu ${SOURCES})

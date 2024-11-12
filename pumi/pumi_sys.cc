@@ -10,7 +10,6 @@
 #include <PCU.h>
 #include "pumi.h"
 #include <lionPrint.h>
-#include <mpi.h>
 
 //************************************
 //************************************
@@ -40,7 +39,7 @@ int pumi_rank()
 
 void pumi_sync(void)
 {
-  MPI_Barrier(PCU_Get_Comm());
+  PCU_Comm_Barrier(PCU_Get_Comm());
 }
 
 #include <sys/utsname.h>

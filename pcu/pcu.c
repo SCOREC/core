@@ -33,7 +33,11 @@
 #include <stdarg.h>
 #include "PCU.h"
 #include "pcu_msg.h"
-#include "pcu_pmpi.h"
+#if defined(SCOREC_NO_MPI)
+  #include "pcu_pnompi.h"
+#else
+  #include "pcu_pmpi.h"
+#endif
 #include "pcu_order.h"
 #include "noto_malloc.h"
 #include "reel.h"
@@ -85,6 +89,36 @@ int PCU_Comm_Free(void)
   pcu_free_msg(&global_pmsg);
   pcu_pmpi_finalize();
   global_state = uninit;
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Free_One(MPI_Comm* com)
+{
+  pcu_pmpi_free(com);
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom)
+{
+  pcu_pmpi_split(oldCom,color,key,newCom);
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+{
+  pcu_pmpi_allreduce(sendbuf,recvbuf,count,datatype,op,comm);
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+{
+  pcu_pmpi_allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
+  return PCU_SUCCESS;
+}
+
+ int PCU_Comm_Barrier(MPI_Comm comm)
+{
+  pcu_pmpi_barrier(comm);
   return PCU_SUCCESS;
 }
 

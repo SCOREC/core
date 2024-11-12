@@ -1,7 +1,6 @@
 #include <iostream>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <mpi.h>
 #include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
