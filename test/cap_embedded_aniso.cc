@@ -77,6 +77,7 @@ namespace {
     gmi_model* ref;
     double thickness_tol, norm_size, init_size, tan_size;
     std::list<gmi_ent*> shock_surfaces;
+    int nInShockBand;
   }; // class EmbeddedSizeFunction
 
 } // namespace
@@ -496,27 +497,32 @@ namespace {
     mesh->getPoint(vtx, 0, pos);
     double posArr[3];
     pos.toArray(posArr);
-    double clsArr[3], clsParArr[2];
 
     double shockDistSquare = DBL_MAX;
+    double clsArr[3], clsParArr[2];
     apf::Vector3 clsVec;
     gmi_ent* closestSurf;
     PCU_ALWAYS_ASSERT(gmi_can_get_closest_point(ref));
     for(gmi_ent* surf : shock_surfaces) {
       //gmi_closest_point (struct gmi_model *m, struct gmi_ent *e, double const from[3], double to[3], double to_p[2])
-      gmi_closest_point(ref, surf, posArr, clsArr, clsParArr);
-      double curShockDistSquare = (posArr[0]-clsArr[0])*(posArr[0]-clsArr[0])+
-        (posArr[1]-clsArr[1])*(posArr[1]-clsArr[1])+
-        (posArr[2]-clsArr[2])*(posArr[2]-clsArr[2]);
+      double outClsArr[3], outClsParArr[2];
+      gmi_closest_point(ref, surf, posArr, outClsArr, outClsParArr);
+      double curShockDistSquare = (posArr[0]-outClsArr[0])*(posArr[0]-outClsArr[0])+
+        (posArr[1]-outClsArr[1])*(posArr[1]-outClsArr[1])+
+        (posArr[2]-outClsArr[2])*(posArr[2]-outClsArr[2]);
       if (curShockDistSquare < shockDistSquare) {
         shockDistSquare = curShockDistSquare;
-        clsVec.fromArray(clsArr);
+        clsArr[0] = outClsArr[0]; clsArr[1] = outClsArr[1]; clsArr[2] = outClsArr[2];
+        clsParArr[0] = outClsParArr[0]; clsParArr[1] = outClsParArr[1]; clsParArr[2] = outClsParArr[2];
         closestSurf = surf;
+        clsVec.fromArray(clsArr);
       }
     }
 
     if (shockDistSquare < thickness_tol) {
       apf::Vector3 norm;
+      nInShockBand++;
+      /*
       if (shockDistSquare > 1e-9) {
         norm = (pos-clsVec).normalize();
       } else {
@@ -526,21 +532,37 @@ namespace {
         norm = apf::Vector3(posPerturbedArr[0]-clsPerturbedArr[0], posPerturbedArr[1]-clsPerturbedArr[1],
           posPerturbedArr[2]-clsPerturbedArr[2]).normalize();
       }
+      */
 
-      //PCU_ALWAYS_ASSERT(gmi_has_normal(ref));
-      //double nrmArr[3];
-      //gmi_normal(ref, closestSurf, clsParArr, nrmArr);
-      //norm.fromArray(nrmArr);
+      PCU_ALWAYS_ASSERT(gmi_has_normal(ref));
+      double nrmArr[3];
+      gmi_normal(ref, closestSurf, clsParArr, nrmArr);
+      norm.fromArray(nrmArr);
+
       // Negate largest component to get tangent.
       apf::Vector3 trial(norm[2], norm[1], norm[0]);
       int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
       trial[largest] *= -1;
       apf::Vector3 tan1 = apf::cross(norm, trial).normalize();
       apf::Vector3 tan2 = apf::cross(norm, tan1);
-      frame[0] = norm;
-      frame[1] = tan1;
-      frame[2] = tan2;
-      scale[0] = norm_size; scale[1] = scale[2] = getZoneIsoSize(vtx);
+
+      frame[0][0] = nrmArr[0]; frame[0][1] = tan1[0]; frame[0][2] = tan2[0];
+      frame[1][0] = nrmArr[1]; frame[1][1] = tan1[1]; frame[1][2] = tan2[1];
+      frame[2][0] = nrmArr[2]; frame[2][1] = tan1[2]; frame[2][2] = tan2[2];
+
+      double zoneIsoSize = getZoneIsoSize(vtx);
+      scale[0] = norm_size;
+      scale[1] = zoneIsoSize;
+      scale[2] = zoneIsoSize;
+
+      if(lion_get_verbosity() >= 1 && nInShockBand % 500 == 0){
+        std::cout << posArr[0] << " " << posArr[1] << " " << posArr[2] << " ";
+        std::cout << clsArr[0] << " " << clsArr[1] << " " << clsArr[2] << " ";
+        std::cout << nrmArr[0] << " " << nrmArr[1] << " " << nrmArr[2] << " ";
+        std::cout << tan1[0] << " " << tan1[1] << " " << tan1[2] << " ";
+        std::cout << tan2[0] << " " << tan2[1] << " " << tan2[2] << std::endl;
+      }
+
     } else {
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
