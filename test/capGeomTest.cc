@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
   {
-  auto PCUObj = std::unique_ptr<pcu::PCU>(new pcu::PCU(MPI_COMM_WORLD));
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   gmi_register_mesh();
   gmi_register_null();
@@ -366,7 +366,7 @@ void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileNam
 
   // make the vertexes and set the coordinates using the array
   std::vector<ma::Entity*> vs;
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, pcu::PCU *PCUObj);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, PCUObj);
   for (size_t i = 0; i < ps.size(); i++) {
     ma::Entity* vert = mesh->createVert(0);
     mesh->setPoint(vert, 0, ps[i]);
