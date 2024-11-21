@@ -71,8 +71,7 @@ namespace {
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
     double getMaxEdgeLengthAcrossShock();
   protected:
-    double getZoneIsoSize(ma::Entity* vtx);
-    double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt);
+    double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand);
     ma::Mesh* mesh;
     gmi_model* ref;
     double thickness_tol, norm_size, init_size, tan_size;
@@ -475,21 +474,23 @@ namespace {
     "                VTK files.\n";
   }
 
-  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx) {
+  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand) {
     apf::Vector3 pos;
     mesh->getPoint(vtx, 0, pos);
-    apf::Vector3 sphere_cent(-0.250,0,0);
-    apf::Vector3 dist = pos - sphere_cent;
-    bool in_sphere = std::abs(dist * dist) < 0.4226 * 0.4226;
-    return in_sphere ? 0.10565625 : 0.2113125;
-  }
+    apf::Vector3 sphere_cent(0.422625,0,0);
+    double h_global = 0.2113125;
+    double h_tip = 0.052828125;
+    //double h_tip = norm_size;
 
-  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt) {
-    apf::Vector3 pos;
-    mesh->getPoint(vtx, 0, pos);
+    apf::Vector3 dist = pos - sphere_cent;
     apf::Vector3 vecToPos = pos - closestPt;
-    // slight negative tolerance for outer outlet edge
-    return vecToPos.x() > -1e-3 ? 4 * getZoneIsoSize(vtx) : getZoneIsoSize(vtx);
+
+    if (std::abs(dist * dist) < 0.422625*0.422625) {
+      return h_tip;
+    } else if (!inShockBand && vecToPos.x() > -1e-3) { // slight negative tolerance for outer outlet edge
+      return 4 * h_global;
+    }
+    return h_global;
   }
 
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale) {
@@ -550,7 +551,7 @@ namespace {
       frame[1][0] = nrmArr[1]; frame[1][1] = tan1[1]; frame[1][2] = tan2[1];
       frame[2][0] = nrmArr[2]; frame[2][1] = tan1[2]; frame[2][2] = tan2[2];
 
-      double zoneIsoSize = getZoneIsoSize(vtx);
+      double zoneIsoSize = getZoneIsoSize(vtx, clsVec, true);
       scale[0] = norm_size;
       scale[1] = zoneIsoSize;
       scale[2] = zoneIsoSize;
@@ -567,8 +568,7 @@ namespace {
       frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
       frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
       frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      //scale[0] = scale[1] = scale[2] = init_size;
-      scale[0] = scale[1] = scale[2] = getZoneIsoSize(vtx, clsVec);
+      scale[0] = scale[1] = scale[2] = getZoneIsoSize(vtx, clsVec, false);
     }
   }
 
