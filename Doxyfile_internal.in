@@ -826,7 +826,7 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_mesh.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_analytic.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_null.h \
-@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu.c \
+@CMAKE_CURRENT_SOURCE_DIR@/pcu/PCU.cc \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mth.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mth.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mthVector.h \

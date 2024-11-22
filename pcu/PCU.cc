@@ -1,3 +1,41 @@
+/** \file PCU.cc
+    \brief The PCU communication interface */
+/** \page pcu PCU
+  PCU (the Parallel Control Utility) is a library for parallel computation
+  based on MPI.
+  PCU provides three things to users:
+    1. A hybrid phased message passing system
+    2. Hybrid collective operations
+    3. Ability to have multiple PCU objects exist with different amounts of processors
+
+  Phased message passing is similar to Bulk Synchronous Parallel.
+  All messages are exchanged in a phase, which is a collective operation
+  involving all threads in the parallel program.
+  During a phase, the following events happen in sequence:
+    1. All threads send non-blocking messages to other threads
+    2. All threads receive all messages sent to them during this phase
+  PCU provides termination detection, which is the ability to detect when all
+  messages have been received without prior knowledge of which threads
+  are sending to which.
+
+  All mesh creation is tied to a PCU to operate on.
+  Sample:
+    \code{.cpp}
+    int main(int argc, char** argv){
+      const char* modelFile = argv[1];
+      const char* meshFile = argv[2];
+      MPI_Init(&argc,&argv);
+      pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+      ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
+      apf::destroyMesh(m);
+      MPI_Finalize();
+    }
+    \endcode
+
+  The API documentation is here: PCU.cc
+*/
+
+
 #include "PCU.h"
 #include "noto_malloc.h"
 #include "pcu_mem.h"
