@@ -39,9 +39,11 @@ char const* const typeName[4] =
  "region"};
 
 void printInfo(gmi_model* model, int dim);
+
 void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* fileName, pcu::PCU *PCUObj);
 void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileName, pcu::PCU *PCUObj);
 void visualizeEdges(gmi_model* model, int n, const char* fileName, pcu::PCU *PCUObj);
+
 
 
 int main(int argc, char** argv)

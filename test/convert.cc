@@ -22,7 +22,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdio.h>
-#include <array>
+#include <array> //std::array
 
 using namespace std;
 

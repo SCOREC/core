@@ -1,26 +1,12 @@
 #include <PCU.h>
-#include <apfCAP.h>
-#include <apfMDS.h>
-#include <samSz.h>
 #include <queue>
-#include <ma.h>
-#include <gmi.h>
-#include <gmi_cap.h>
-#include <gmi_null.h>
-#include <gmi_mesh.h>
 #include <apf.h>
-#include <apfConvert.h>
-#include <apfMesh2.h>
-#include <apfNumbering.h>
-#include <apfShape.h>
-#include <ma.h>
 #include <pcu_util.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <math.h>
 
 
 #include "CapstoneModule.h"
@@ -37,26 +23,21 @@ using namespace CreateMG::Attribution;
 using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
 
+void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  PCU_Comm_Init();
 
-  if (argc != 3) {
-    if(0==PCUObj.Self())
+  if (argc != 2) {
+    if(0==PCU_Comm_Self())
       std::cerr << "usage: " << argv[0]
-        << " <cre file .cre> <output folder name>\n";
+        << " <cre file .cre>\n";
     return EXIT_FAILURE;
   }
 
-
-  gmi_register_mesh();
-  gmi_register_null();
-
   const char* creFileName = argv[1];
-  const char* folderName = argv[2];
 
   // load capstone mesh
   // create an instance of the Capstone Module activating CREATE/CREATE/CREATE
@@ -128,16 +109,47 @@ int main(int argc, char** argv)
   MG_API_CALL(m, compute_adjacency());
 
 
-  gmi_cap_start();
-  gmi_register_cap();
+  // check parametrization using capstone apis
+  checkParametrization(m, g);
 
-  // convert the mesh to apf/mds mesh
-
-  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
-
-  apf::writeVtkFiles(folderName, mesh);
-
-  gmi_cap_stop();
-  }
+  PCU_Comm_Free();
   MPI_Finalize();
+}
+
+void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb)
+{
+   MeshSmartIterator miter(mdb);
+   mdb->get_topo_iterator(TOPO_VERTEX, miter);
+   int count = 0;
+   double sum = 0.0;
+   for(mdb->iterator_begin(miter); !mdb->iterator_end(miter); mdb->iterator_next(miter)) {
+     M_MTopo vert = mdb->iterator_value(miter);
+     M_GTopo geom;
+     GeometryTopoType gtype;
+     mdb->get_geom_entity(vert, gtype, geom);
+     if (!gdb->is_face(geom)) continue;
+     double range_u[2];
+     double range_v[2];
+     gdb->get_parametrization_range(geom, 0, range_u[0], range_u[1]);
+     gdb->get_parametrization_range(geom, 1, range_v[0], range_v[1]);
+     GeometryTopoType gtype1;
+     double u,v;
+     mdb->get_vertex_uv_parameters(vert, u, v, gtype1);
+     PCU_ALWAYS_ASSERT(gtype1 == gtype);
+
+     // coordinate from mesh
+     apf::Vector3 coord;
+     mdb->get_vertex_coord(vert, &(coord[0]));
+
+     // coordinate from surface
+     vec3d x;
+     gdb->get_point(geom, vec3d(u, v, 0.0), x);
+     apf::Vector3 pcoord(x[0], x[1], x[2]);
+
+     if (count < 50)
+       printf("%d, %e, %e, %e, %e, %e, %e, %e\n", count, u, v, range_u[0], range_u[1], range_v[0], range_v[1], (coord-pcoord).getLength());
+     sum += (coord-pcoord) * (coord-pcoord);
+     count++;
+   }
+   printf("norm of the difference vector is %e\n", std::sqrt(sum));
 }
