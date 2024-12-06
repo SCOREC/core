@@ -273,6 +273,8 @@ namespace chef {
     pcu::PCU *groupPCUObj = createGroupComm(in.splitFactor, expandedPCUObj);
     if ((worldRank % in.splitFactor) == 0)
       originalMain(m, in, g, plan, groupPCUObj);
+    if(m != nullptr) m->switchPCU(expandedPCUObj);
+    delete groupPCUObj;
     if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor, expandedPCUObj);
     if (in.simmetrixMesh == 0 && shrinkFactor > 1){
@@ -376,3 +378,4 @@ namespace chef {
     ph::preprocess(m,in,out);
   }
 }
+

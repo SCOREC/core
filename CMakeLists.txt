@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.8)
 
-project(SCOREC VERSION 3.0.0 LANGUAGES CXX C)
+project(SCOREC VERSION 3.0.2 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
