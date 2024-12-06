@@ -3,7 +3,6 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -206,10 +205,10 @@ void testQuadrilateralNodeValues() {
   testNodeValues(shp2, nodes2, 9);
 }
 
-void testVolume(int type, apf::Vector3 const* points, double volume)
+void testVolume(int type, apf::Vector3 const* points, double volume, pcu::PCU *PCUObj)
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
   apf::MeshEntity* e = apf::buildOneElement(
       m, m->findModelEntity(3,0), type, points);
   double v = apf::measure(m,e);
@@ -218,7 +217,7 @@ void testVolume(int type, apf::Vector3 const* points, double volume)
   apf::destroyMesh(m);
 }
 
-void testPrismVolume()
+void testPrismVolume(pcu::PCU *PCUObj)
 {
   apf::Vector3 points[6] =
   {apf::Vector3(0,0,0),
@@ -227,10 +226,10 @@ void testPrismVolume()
    apf::Vector3(0,0,1),
    apf::Vector3(1,0,1),
    apf::Vector3(0,1,1)};
-  testVolume(apf::Mesh::PRISM, points, 0.5);
+  testVolume(apf::Mesh::PRISM, points, 0.5, PCUObj);
 }
 
-void testPyramidVolume()
+void testPyramidVolume(pcu::PCU *PCUObj)
 {
   apf::Vector3 points[5] =
   {apf::Vector3(0,0,0),
@@ -238,13 +237,14 @@ void testPyramidVolume()
    apf::Vector3(1,1,0),
    apf::Vector3(0,1,0),
    apf::Vector3(0,0,3)};
-  testVolume(apf::Mesh::PYRAMID, points, 1);
+  testVolume(apf::Mesh::PYRAMID, points, 1, PCUObj);
 }
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
   testP1LineNodeValues();
@@ -259,8 +259,8 @@ int main(int argc, char** argv)
   testPrismNodeValues();
   testPyramidNodeValues();
   testQuadrilateralNodeValues();
-  testPrismVolume();
-  testPyramidVolume();
-  PCU_Comm_Free();
+  testPrismVolume(&PCUObj);
+  testPyramidVolume(&PCUObj);
+  }
   MPI_Finalize();
 }

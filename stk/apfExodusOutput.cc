@@ -10,7 +10,6 @@
 #error "configuration bug"
 #endif
 #include "apfSTK.h"
-#include "PCU.h"
 #include <stk_mesh/base/MetaData.hpp>
 #include <stk_mesh/base/BulkData.hpp>
 #include <stk_io/IossBridge.hpp>
@@ -53,14 +52,14 @@ void writeExodus(
   }
 
   if (bulk.is_null()) {
-    bulk = Teuchos::rcp(new stk::mesh::BulkData(*meta, PCU_Get_Comm()));
+    bulk = Teuchos::rcp(new stk::mesh::BulkData(*meta, mesh->getPCU()->GetMPIComm()));
     apf::copyMeshToBulk(n, models, meta.get(), bulk.get());
   }
   apf::copyFieldsToBulk(n, meta.get(), bulk.get());
 
   if (mesh_data.is_null()) {
     Ioss::Init::Initializer();
-    mesh_data = Teuchos::rcp(new stk::io::StkMeshIoBroker(PCU_Get_Comm()));
+    mesh_data = Teuchos::rcp(new stk::io::StkMeshIoBroker(mesh->getPCU()->GetMPIComm()));
     output_file_idx = mesh_data->create_output_mesh(filename,
                                                     stk::io::WRITE_RESULTS);
     mesh_data->set_bulk_data(*bulk);

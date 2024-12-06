@@ -2,7 +2,6 @@
 #include <apfMesh.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -26,10 +25,10 @@ namespace {
     }
   };
 
-  void getConfig(int argc, char** argv)
+  void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
   {
     if ( argc != 5 ) {
-      if ( !PCU_Comm_Self() )
+      if ( !PCUObj->Self() )
         printf("Usage: mpirun -np <inPartCount> %s <model> <mesh> <outMesh> <factor>\n"
                "Reduce the part count of mesh from inPartCount to inPartCount/factor.\n",
                argv[0]);
@@ -40,25 +39,26 @@ namespace {
     meshFile = argv[2];
     outFile = argv[3];
     partitionFactor = atoi(argv[4]);
-    PCU_ALWAYS_ASSERT(partitionFactor <= PCU_Comm_Peers());
+    PCU_ALWAYS_ASSERT(partitionFactor <= PCUObj->Peers());
   }
 }
 
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
-  PCU_Protect();
+  pcu::Protect();
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv);
+  getConfig(argc,argv,&pcu_obj);
   GroupCode code;
-  code.mesh = apf::loadMdsMesh(modelFile, meshFile);
-  apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+  code.mesh = apf::loadMdsMesh(modelFile, meshFile, &pcu_obj);
+  apf::Unmodulo outMap(pcu_obj.Self(), pcu_obj.Peers());
   Parma_ShrinkPartition(code.mesh, partitionFactor, code);
   code.mesh->destroyNative();
   apf::destroyMesh(code.mesh);
@@ -66,6 +66,6 @@ int main(int argc, char** argv) {
   gmi_sim_stop();
   Sim_unregisterAllKeys();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

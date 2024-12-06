@@ -222,7 +222,7 @@ void getNodes(GlobalNumbering* n, DynamicArray<Node>& nodes);
   number the vertices and elements of a mesh */
 MeshTag* reorder(Mesh* mesh, const char* name);
 
-void globalize(Numbering* n);
+void globalize(Numbering* n, pcu::PCU *PCUObj);
 
 /** \brief number all components by simple iteration */
 int naiveOrder(Numbering * num, Sharing * sharing = NULL);

@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include "phRestart.h"
 #include <apf.h>
@@ -29,7 +28,7 @@ apf::Field* extractField(apf::Mesh* m,
     bool simField)
 {
   apf::Field* f = m->findField(packedFieldname);
-  if(!f && PCU_Comm_Self() == 0)
+  if(!f && m->getPCU()->Self() == 0)
     lion_eprint(1, "No packed field \"%s\"", packedFieldname);
   PCU_ALWAYS_ASSERT(f);
   apf::Field* rf = m->findField(requestFieldname);
@@ -321,7 +320,7 @@ static bool isNodalField(const char* fieldname, int nnodes, apf::Mesh* m)
   for (int i = 0; i < known_rand_field_count; ++i)
     if (!strcmp(fieldname, known_rand_fields[i]))
       return false;
-  if( !PCU_Comm_Self() ) {
+  if( !m->getPCU()->Self() ) {
     lion_eprint(1, "unknown restart field name \"%s\"\n", fieldname);
     lion_eprint(1, "please add \"%s\" to isNodalField above line %d of %s\n",
         fieldname, __LINE__, __FILE__);
@@ -344,8 +343,8 @@ int readAndAttachField(
   int nodes, vars, step;
   char hname[1024];
   const char* anyfield = "";
-  int ret = ph_read_field(f, anyfield, swap,
-      &data, &nodes, &vars, &step, hname);
+  int ret = ph_read_field(f, m->getPCU()->GetCHandle(), 
+      anyfield, swap, &data, &nodes, &vars, &step, hname);
   /* no field was found or the field has an empty data block */
   if(ret==0 || ret==1)
     return ret;
@@ -363,7 +362,7 @@ int readAndAttachField(
   if ( std::string(hname) == std::string("solution") )
     out_size = in.ensa_dof;
   if (m->findField(hname)) {
-    if (!PCU_Comm_Self())
+    if (!m->getPCU()->Self())
       lion_eprint(1, "field \"%s\" already attached to the mesh, "
                       "ignoring request to re-attach...\n", hname);
   } else {
@@ -443,7 +442,7 @@ static double* buildMappingPartId(apf::Mesh* m)
   int n = m->count(0);
   /* malloc instead of new[] for consistency with ph_read_field */
   double* data = (double*)malloc(sizeof(double) * n);
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   for (int i = 0; i < n; ++i)
     data[i] = self;
   return data;
@@ -458,33 +457,35 @@ static double* buildMappingVtxId(apf::Mesh* m)
   return data;
 }
 
-static std::string buildRestartFileName(std::string prefix, int step)
+static std::string buildRestartFileName(std::string prefix, int step, pcu::PCU *PCUObj)
 {
   std::stringstream ss;
-  int rank = PCU_Comm_Self() + 1;
+  int rank = PCUObj->Self() + 1;
   ss << prefix << '.' << step << '.' << rank;
   return ss.str();
 }
 
 void readAndAttachFields(Input& in, apf::Mesh* m) {
-  phastaio_initStats();
-  double t0 = PCU_Time();
-  setupInputSubdir(in.restartFileName);
-  std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber);
+  PCU_t h;
+  h.ptr = static_cast<void*>(m->getPCU());
+  phastaio_initStats(h);
+  double t0 = pcu::Time();
+  setupInputSubdir(in.restartFileName, m->getPCU());
+  std::string filename = buildRestartFileName(in.restartFileName, in.timeStepNumber, m->getPCU());
   phastaio_setfile(RESTART_READ);
-  FILE* f = in.openfile_read(in, filename.c_str());
+  FILE* f = in.openfile_read(in, filename.c_str(), m->getPCU());
   if (!f) {
     lion_eprint(1,"failed to open \"%s\"!\n", filename.c_str());
     abort();
   }
-  int swap = ph_should_swap(f);
+  int swap = ph_should_swap(f, m->getPCU()->GetCHandle());
   /* stops when ph_read_field returns 0 */
   while( readAndAttachField(in,f,m,swap) ) {}
   PHASTAIO_CLOSETIME(fclose(f);)
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
     lion_oprint(1,"fields read and attached in %f seconds\n", t1 - t0);
-  if(in.printIOtime) phastaio_printStats();
+  if(in.printIOtime) phastaio_printStats(h);
 }
 
 static void destroyIfExists(apf::Mesh* m, const char* name)
@@ -517,8 +518,8 @@ void attachZeroSolution(Input& in, apf::Mesh* m)
 
 void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string path)
 {
-  double t0 = PCU_Time();
-  path += buildRestartFileName("restart", in.timeStepNumber);
+  double t0 = pcu::Time();
+  path += buildRestartFileName("restart", in.timeStepNumber, m->getPCU());
   phastaio_setfile(RESTART_WRITE);
   FILE* f = out.openfile_write(out, path.c_str());
   if (!f) {
@@ -564,8 +565,8 @@ void detachAndWriteSolution(Input& in, Output& out, apf::Mesh* m, std::string pa
   while(m->countFields())
     apf::destroyField( m->getField(0) );
   PHASTAIO_CLOSETIME(fclose(f);)
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
     lion_oprint(1,"solution written in %f seconds\n", t1 - t0);
 }
 

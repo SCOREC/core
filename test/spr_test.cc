@@ -3,7 +3,6 @@
 #include <apfShape.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
@@ -19,10 +18,11 @@ int main(int argc, char** argv)
   const char* outFile = argv[3];
   const int order = atoi(argv[4]);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile);
+  apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile, &PCUObj);
   if (mesh->findTag("coordinates_edg"))
     mesh->changeShape(apf::getSerendipity(), false);
   apf::Field* f =
@@ -30,13 +30,13 @@ int main(int argc, char** argv)
   apf::Field* eps = spr::getGradIPField(f, "eps", order);
   apf::destroyField(f);
   double adaptRatio = 0.1;
-  apf::Field* sizef = spr::getSPRSizeField(eps,adaptRatio);
+  apf::Field* sizef = spr::getSPRSizeField(eps,adaptRatio,&PCUObj);
   apf::destroyField(eps);
   writeVtkFiles(outFile,mesh);
   apf::destroyField(sizef);
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

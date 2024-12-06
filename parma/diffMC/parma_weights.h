@@ -26,8 +26,8 @@ namespace parma {
   double getMaxWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
   double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim);
-  double getMaxWeight(Weights* w);
-  void getImbalance(Weights* w, double& imb, double& avg);
+  double getMaxWeight(Weights* w, pcu::PCU *PCUObj);
+  void getImbalance(Weights* w, double& imb, double& avg, pcu::PCU *PCUObj);
 }
 
 #endif

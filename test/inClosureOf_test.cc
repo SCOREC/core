@@ -3,7 +3,6 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -20,7 +19,8 @@ int main(int argc, char** argv)
   const char* modelFile = argv[1];
 
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 
   gmi_destroy(model); // deleting the model
 
-  PCU_Comm_Free();
+  }
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();

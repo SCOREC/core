@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maMesh.h"
 #include "maTables.h"
 #include <algorithm>
@@ -280,8 +279,8 @@ void getBoundingBox(Mesh* m, Vector& lower, Vector& upper)
   lower.toArray(a);
   double b[3];
   upper.toArray(b);
-  PCU_Min_Doubles(a, 3);
-  PCU_Max_Doubles(b, 3);
+  m->getPCU()->Min<double>(a, 3);
+  m->getPCU()->Max<double>(b, 3);
   lower.fromArray(a);
   upper.fromArray(b);
 }
@@ -303,7 +302,7 @@ Vector getCentroid(Mesh* m)
   }
   m->end(it);
   pointSum.toArray(values);
-  PCU_Add_Doubles(&(values[0]),4);
+  m->getPCU()->Add<double>(&(values[0]),4);
   return Vector(values)/values[3];
 }
 
@@ -370,7 +369,7 @@ double getAverageElementSize(Mesh* m)
   m->end(it);
   double& count = sums[1];
   count = m->count(m->getDimension());
-  PCU_Add_Doubles(sums,2);
+  m->getPCU()->Add<double>(sums,2);
   return sizeSum / count;
 }
 
@@ -385,7 +384,7 @@ double getMinimumElementSize(Mesh* m)
     if (size < minimum) minimum=size;
   }
   m->end(it);
-  return PCU_Min_Double(minimum);
+  return m->getPCU()->Min<double>(minimum);
 }
 
 void getFaceEdgesAndDirections(

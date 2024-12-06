@@ -102,10 +102,10 @@ static void fill(pcu_order o, pcu_aa_tree t)
   fill(o, t->right);
 }
 
-static void prepare(pcu_order o, pcu_msg* t)
+static void prepare(pcu_mpi_t* mpi, pcu_order o, pcu_msg* t)
 {
   struct message* m;
-  while (pcu_msg_receive(t)) {
+  while (pcu_msg_receive(mpi, t)) {
     m = take_message(t);
     pcu_aa_insert(&m->node, &o->tree, message_less);
   }
@@ -117,10 +117,10 @@ static void prepare(pcu_order o, pcu_msg* t)
   o->ready = true;
 }
 
-bool pcu_order_receive(pcu_order o, pcu_msg* m)
+bool pcu_order_receive(pcu_mpi_t* mpi, pcu_order o, pcu_msg* m)
 {
   if (!o->ready)
-    prepare(o, m);
+    prepare(mpi, o, m);
   o->at++;
   if (o->at == o->count) {
     dtor_order(o);

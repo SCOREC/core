@@ -637,7 +637,7 @@ void Integrator::outElement()
 {
 }
 
-void Integrator::parallelReduce()
+void Integrator::parallelReduce(pcu::PCU*)
 {
 }
 
@@ -656,7 +656,7 @@ void Integrator::process(Mesh* m, int d)
     destroyMeshElement(e);
   }
   m->end(elements);
-  this->parallelReduce();
+  this->parallelReduce(m->getPCU());
 }
 
 void Integrator::process(MeshElement* e)

@@ -7,7 +7,6 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <apf.h>
 #include <lionPrint.h>
 
@@ -125,7 +124,7 @@ static void field_to_osh(osh::Mesh* om, apf::Field* f) {
       ) {
     ent_dim = dim;
   } else {
-    if (!PCU_Comm_Self()) {
+    if (!am->getPCU()->Self()) {
       lion_oprint(1,"not copying field %s to Omega_h\n",name.c_str());
     }
     return;
@@ -181,7 +180,7 @@ static void field_from_osh(apf::Mesh* am, osh::Tag<osh::Real> const* tag,
   if (ent_dim == 0) shape = apf::getLagrange(1);
   else if (ent_dim == dim) shape = apf::getIPFitShape(dim, 1);
   else {
-    if (!PCU_Comm_Self()) {
+    if (!am->getPCU()->Self()) {
       lion_oprint(1,"not copying field %s to Omega_h\n",name.c_str());
     }
     return;
@@ -293,7 +292,7 @@ static void globals_to_osh(
 }
 
 void to_omega_h(osh::Mesh* om, apf::Mesh* am) {
-  auto comm_mpi = PCU_Get_Comm();
+  auto comm_mpi = am->getPCU()->GetMPIComm();
   decltype(comm_mpi) comm_impl;
   MPI_Comm_dup(comm_mpi, &comm_impl);
   auto comm_osh = osh::CommPtr(new osh::Comm(om->library(), comm_impl));
@@ -385,56 +384,56 @@ static void owners_from_osh(
       am->setIntTag(ents[i], own_tag, &tmp);
     }
   }
-  PCU_Comm_Begin();
+  am->getPCU()->Begin();
   for (int i = 0; i < om->nents(ent_dim); ++i) {
     osh::LO tmp = own_ids[i];
-    PCU_COMM_PACK(own_ranks[i], tmp);
-    PCU_COMM_PACK(own_ranks[i], ents[i]);
+    am->getPCU()->Pack(own_ranks[i], tmp);
+    am->getPCU()->Pack(own_ranks[i], ents[i]);
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  am->getPCU()->Send();
+  while (am->getPCU()->Receive()) {
     int own_id;
-    PCU_COMM_UNPACK(own_id);
+    am->getPCU()->Unpack(own_id);
     apf::MeshEntity* r;
-    PCU_COMM_UNPACK(r);
-    int from = PCU_Comm_Sender();
-    if (from == PCU_Comm_Self()) {
+    am->getPCU()->Unpack(r);
+    int from = am->getPCU()->Sender();
+    if (from == am->getPCU()->Self()) {
       assert((int)from == own_ranks[own_id]);
       continue;
     }
     apf::MeshEntity* owner = ents[own_id];
     am->addRemote(owner, from, r);
   }
-  PCU_Comm_Begin();
+  am->getPCU()->Begin();
   for (int i = 0; i < om->nents(ent_dim); ++i)
-    if (own_ranks[i] == (int)(PCU_Comm_Self())) {
+    if (own_ranks[i] == (int)(am->getPCU()->Self())) {
       apf::Copies remotes;
       am->getRemotes(ents[i], remotes);
       int ncopies = remotes.size();
-      int self = PCU_Comm_Self();
+      int self = am->getPCU()->Self();
       APF_ITERATE(apf::Copies, remotes, it) {
-        PCU_COMM_PACK(it->first, it->second);
-        PCU_COMM_PACK(it->first, ncopies);
-        PCU_COMM_PACK(it->first, self);
-        PCU_COMM_PACK(it->first, ents[i]);
+        am->getPCU()->Pack(it->first, it->second);
+        am->getPCU()->Pack(it->first, ncopies);
+        am->getPCU()->Pack(it->first, self);
+        am->getPCU()->Pack(it->first, ents[i]);
         APF_ITERATE(apf::Copies, remotes, it2)
           if (it2->first != it->first) {
-            PCU_COMM_PACK(it->first, it2->first);
-            PCU_COMM_PACK(it->first, it2->second);
+            am->getPCU()->Pack(it->first, it2->first);
+            am->getPCU()->Pack(it->first, it2->second);
           }
       }
     }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  am->getPCU()->Send();
+  while (am->getPCU()->Receive()) {
     apf::MeshEntity* e;
-    PCU_COMM_UNPACK(e);
+    am->getPCU()->Unpack(e);
     int ncopies;
-    PCU_COMM_UNPACK(ncopies);
+    am->getPCU()->Unpack(ncopies);
     for (int i = 0; i < ncopies; ++i) {
       int p;
-      PCU_COMM_UNPACK(p);
+      am->getPCU()->Unpack(p);
       apf::MeshEntity* r;
-      PCU_COMM_UNPACK(r);
+      am->getPCU()->Unpack(r);
       am->addRemote(e, p, r);
     }
   }

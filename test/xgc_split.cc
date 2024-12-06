@@ -14,10 +14,10 @@ const char* meshFile = 0;
 const char* outFile = 0;
 int serial=0;
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU* PCUObj)
 {
   if (argc < 4) {
-    if (!pumi_rank() )
+    if (!PCUObj->Self())
       printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -55,9 +55,10 @@ Migration* get_xgc_plan(pGeom g, pMesh m)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  pumi_start();
-
-  getConfig(argc,argv);
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pumi_load_pcu(&PCUObj);
+  getConfig(argc,argv,&PCUObj);
 
   pGeom g = pumi_geom_load(modelFile);
   pMesh m;
@@ -93,7 +94,7 @@ int main(int argc, char** argv)
 
   pumi_mesh_delete(m);
 
-  pumi_finalize();
+  }
   MPI_Finalize();
 }
 

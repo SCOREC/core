@@ -12,6 +12,10 @@
 
 #include "pcu_mpi.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* The PCU Collectives system (pcu_coll for short) implements
    non-blocking collective operations based loosely on binary-tree
    or binomial communication patterns.
@@ -27,17 +31,6 @@
 
 typedef void pcu_merge(void* local, void* incoming, size_t size);
 void pcu_merge_assign(void* local, void* incoming, size_t size);
-void pcu_add_doubles(void* local, void* incoming, size_t size);
-void pcu_max_doubles(void* local, void* incoming, size_t size);
-void pcu_min_doubles(void* local, void* incoming, size_t size);
-void pcu_add_ints(void* local, void* incoming, size_t size);
-void pcu_min_ints(void* local, void* incoming, size_t size);
-void pcu_max_ints(void* local, void* incoming, size_t size);
-void pcu_max_longs(void* local, void* incoming, size_t size);
-void pcu_add_longs(void* local, void* incoming, size_t size);
-void pcu_add_sizets(void* local, void* incoming, size_t size);
-void pcu_min_sizets(void* local, void* incoming, size_t size);
-void pcu_max_sizets(void* local, void* incoming, size_t size);
 
 /* Enumerated actions that a rank takes during one
    step of the communication pattern */
@@ -57,11 +50,11 @@ enum
  */
 typedef struct
 {
-  int (*begin_bit)(void); //initialize state bit
-  bool (*end_bit)(int bit); //return true if bit is one past the last
-  int (*action)(int bit); //return action enum for this step
-  int (*peer)(int bit); //return the peer to communicate with
-  int (*shift)(int bit); //shift the bit up or down
+  int (*begin_bit)(pcu_mpi_t*); //initialize state bit
+  bool (*end_bit)(pcu_mpi_t*, int bit); //return true if bit is one past the last
+  int (*action)(pcu_mpi_t*, int bit); //return action enum for this step
+  int (*peer)(pcu_mpi_t*, int bit); //return the peer to communicate with
+  int (*shift)(pcu_mpi_t*, int bit); //shift the bit up or down
 } pcu_pattern;
 
 /* The pcu_coll object stores the state of a non-blocking
@@ -74,18 +67,21 @@ typedef struct
   int bit; //pattern's state bit
 } pcu_coll;
 
-void pcu_make_coll(pcu_coll* c, pcu_pattern* p, pcu_merge* m);
-void pcu_begin_coll(pcu_coll* c, void* data, size_t size);
+void pcu_make_coll(pcu_mpi_t *, pcu_coll* c, pcu_pattern* p, pcu_merge* m);
+void pcu_begin_coll(pcu_mpi_t *, pcu_coll* c, void* data, size_t size);
 //returns false when done
-bool pcu_progress_coll(pcu_coll* c);
+bool pcu_progress_coll(pcu_mpi_t* mpi, pcu_coll* c);
 
-void pcu_reduce(pcu_coll* c, pcu_merge* m, void* data, size_t size);
-void pcu_bcast(pcu_coll* c, void* data, size_t size);
-void pcu_allreduce(pcu_coll* c, pcu_merge* m, void* data, size_t size);
-void pcu_scan(pcu_coll* c, pcu_merge* m, void* data, size_t size);
+void pcu_reduce(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
+void pcu_bcast(pcu_mpi_t*, pcu_coll* c, void* data, size_t size);
+void pcu_allreduce(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
+void pcu_scan(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
 
-void pcu_begin_barrier(pcu_coll* c);
-bool pcu_barrier_done(pcu_coll* c);
-void pcu_barrier(pcu_coll* c);
+void pcu_begin_barrier(pcu_mpi_t*,pcu_coll* c);
+bool pcu_barrier_done(pcu_mpi_t*, pcu_coll* c);
+void pcu_barrier(pcu_mpi_t*, pcu_coll* c);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //PCU_COLL_H

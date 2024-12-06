@@ -2,7 +2,6 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -17,10 +16,10 @@ const char* modelFile = 0;
 const char* meshFile = 0;
 const char* outFile = 0;
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc != 4 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -34,7 +33,8 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -44,8 +44,8 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv);
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile);
+  getConfig(argc,argv,&PCUObj);
+  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   ma::Input* in = ma::makeAdvanced(ma::configureUniformRefine(m, 1));
   if (in->shouldSnap) {
     in->shouldSnap = false;
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

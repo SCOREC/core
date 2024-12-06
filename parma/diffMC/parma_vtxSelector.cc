@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <pcu_util.h>
 #include "parma.h"
 #include "parma_vtxSelector.h"
@@ -158,7 +157,7 @@ namespace parma {
       }
       destroy(peers);
     }
-    PCU_Debug_Print("sent %u disconnected cavities\n", dcCnt);
+    mesh->getPCU()->DebugPrint("sent %u disconnected cavities\n", dcCnt);
     delete bdryVerts;
     return planW;
   }

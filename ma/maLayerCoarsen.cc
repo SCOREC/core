@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "maMesh.h"
 #include "maAdapt.h"
 #include "maLayer.h"
@@ -41,7 +40,7 @@ static long markBaseEdgesToCollapse(Adapt* a)
       }
     }
   m->end(it);
-  return PCU_Add_Long(n);
+  return m->getPCU()->Add<long>(n);
 }
 
 struct CurveLocalizer : public Crawler
@@ -134,12 +133,12 @@ struct CurveLocalizer : public Crawler
   void send(Entity* v, int to)
   {
     int dest = getVertDest(v);
-    PCU_COMM_PACK(to, dest);
+    m->getPCU()->Pack(to, dest);
   }
   bool recv(Entity* v, int)
   {
     int dest;
-    PCU_COMM_UNPACK(dest);
+    m->getPCU()->Unpack(dest);
     return handle(v, dest);
   }
   Adapt* a;
@@ -161,8 +160,8 @@ static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
         (m->getModelType(m->toModel(e)) == d)) {
       Entity* v[2];
       m->getDownward(e, 0, v);
-      cl.handle(v[0], PCU_Comm_Self());
-      cl.handle(v[1], PCU_Comm_Self());
+      cl.handle(v[0], m->getPCU()->Self());
+      cl.handle(v[1], m->getPCU()->Self());
     }
   m->end(it);
   crawlLayers(&cl);
@@ -172,13 +171,13 @@ static apf::Migration* planLayerCollapseMigration(Adapt* a, int d, int round)
 static bool wouldEmptyParts(apf::Migration* plan)
 {
   apf::Mesh* m = plan->getMesh();
-  int self = PCU_Comm_Self();
+  int self = m->getPCU()->Self();
   size_t sendingAway = 0;
   for (int i = 0; i < plan->count(); ++i)
     if (plan->sending(plan->get(i)) != self)
       ++sendingAway;
   bool wouldEmptyThisPart = (sendingAway == m->count(m->getDimension()));
-  return PCU_Or(wouldEmptyThisPart);
+  return m->getPCU()->Or(wouldEmptyThisPart);
 }
 
 static void migrateForLayerCollapse(Adapt* a, int d, int round)
@@ -258,8 +257,8 @@ static long collapseAllStacks(Adapt* a, int d)
     collapseLocalStacks(a, skipCount, successCount, failureCount, d);
     allSuccesses += successCount;
     ++round;
-  } while (PCU_Or(skipCount));
-  return PCU_Add_Long(allSuccesses);
+  } while (a->mesh->getPCU()->Or(skipCount));
+  return a->mesh->getPCU()->Add<long>(allSuccesses);
 }
 
 bool coarsenLayer(Adapt* a)
@@ -268,7 +267,7 @@ bool coarsenLayer(Adapt* a)
     return false;
   if ( ! a->input->shouldCoarsenLayer)
     return false;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   allowLayerToCollapse(a);
   findLayerBase(a);
   long count = markBaseEdgesToCollapse(a);
@@ -283,8 +282,8 @@ bool coarsenLayer(Adapt* a)
     findIndependentSet(a);
     successCount += collapseAllStacks(a, d);
   }
-  double t1 = PCU_Time();
-  print("coarsened %li layer edges in %f seconds",successCount,t1-t0);
+  double t1 = pcu::Time();
+  print(m->getPCU(), "coarsened %li layer edges in %f seconds", successCount,t1-t0);
   resetLayer(a);
   return true;
 }
