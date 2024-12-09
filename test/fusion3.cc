@@ -3,7 +3,6 @@
 #include <gmi_analytic.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <apfZoltan.h>
@@ -283,11 +282,12 @@ int main(int argc, char * argv[])
 {
   PCU_ALWAYS_ASSERT(argc==2);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_model* model = makeModel();
   gmi_write_dmg(model, "made.dmg");
-  apf::Mesh2* mesh=apf::loadMdsMesh(model, argv[1]);
+  apf::Mesh2* mesh=apf::loadMdsMesh(model, argv[1], &PCUObj);
   mesh->verify();
   Vortex sfv(mesh, center, modelLen);
   const ma::Input* in = ma::configure(mesh,&sfv);
@@ -296,4 +296,7 @@ int main(int argc, char * argv[])
   apf::writeVtkFiles("adapted",mesh);
   //clean data
   // to do
+  apf::destroyMesh(mesh);
+  }
+  MPI_Finalize();
 }

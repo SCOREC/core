@@ -1,11 +1,12 @@
-#include <PCU.h>
 #include <parma.h>
+#include <pcu_util.h>
+#include <memory>
 
 using apf::Remap;
 
 static void retreat(apf::Mesh2* m, Remap& remap)
 {
-  int to = remap(PCU_Comm_Self());
+  int to = remap(m->getPCU()->Self());
   apf::Migration* plan = new apf::Migration(m);
   apf::MeshIterator* it = m->begin(m->getDimension());
   apf::MeshEntity* e;
@@ -27,25 +28,41 @@ typedef Parma_GroupCode GroupCode;
 
 static void runInGroups(
     apf::Mesh2* m,
+    pcu::PCU *PCUObj,
     Remap& inMap,
     Remap& groupMap,
     Remap& outMap,
-    GroupCode& code)
+    GroupCode& code
+    )
 {
-  int self = PCU_Comm_Self();
+  int self;
+  pcu::PCU* expandedPCU;
+  if(PCUObj == nullptr){
+    self = m->getPCU()->Self();
+    expandedPCU = m->getPCU();
+  } else {
+    self = PCUObj->Self();
+    expandedPCU = PCUObj;
+  }
+  
   int groupRank = inMap(self);
   int group = groupMap(self);
-  MPI_Comm oldComm = PCU_Get_Comm();
+  
   MPI_Comm groupComm;
-  MPI_Comm_split(oldComm, group, groupRank, &groupComm);
-  PCU_Switch_Comm(groupComm);
-  if (m)
+  MPI_Comm_split(expandedPCU->GetMPIComm(), group, groupRank, &groupComm);
+  auto groupedPCU = std::unique_ptr<pcu::PCU>(new pcu::PCU(groupComm));
+  if (m){
+    m->switchPCU(groupedPCU.get());
     apf::remapPartition(m, inMap);
+  }
+  code.PCUObj = std::move(groupedPCU);
   code.run(group);
-  PCU_Switch_Comm(oldComm);
+  
   MPI_Comm_free(&groupComm);
-  if (m)
+  if (m){
+    m->switchPCU(expandedPCU);
     apf::remapPartition(m, outMap);
+  }
 }
 
 struct RetreatCode : public GroupCode
@@ -79,28 +96,46 @@ static void retreatToGroup(
     Remap& retreatMap,
     Remap& groupMap,
     Remap& outMap,
-    GroupCode& code)
+    GroupCode& code,
+    pcu::PCU *PCUObj)
 {
   retreat(m, retreatMap);
   RetreatCode retreatCode(code, m, factor);
-  runInGroups(m, inMap, groupMap, outMap, retreatCode);
+  runInGroups(m, PCUObj, inMap, groupMap, outMap, retreatCode);
   m->migrate(retreatCode.plan);
 }
 
-void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun)
+void Parma_ShrinkPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu::PCU *PCUObj)
 {
+  if(m == nullptr){
+    PCU_ALWAYS_ASSERT(PCUObj != nullptr);
+  }
+  if(m != nullptr && PCUObj != nullptr){
+    PCU_ALWAYS_ASSERT(m->getPCU() == PCUObj);
+  }
   apf::Divide inMap(factor);
   apf::Modulo groupMap(factor);
   apf::Round retreatMap(factor);
   apf::Multiply outMap(factor);
-  retreatToGroup(m, factor, inMap, retreatMap, groupMap, outMap, toRun);
+  retreatToGroup(m, factor, inMap, retreatMap, groupMap, outMap, toRun, PCUObj);
 }
 
-void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun)
+void Parma_SplitPartition(apf::Mesh2* m, int factor, Parma_GroupCode& toRun, pcu::PCU *PCUObj)
 {
+  if(m == nullptr){
+    PCU_ALWAYS_ASSERT(PCUObj != nullptr);
+  }
+  if(m != nullptr && PCUObj != nullptr){
+    PCU_ALWAYS_ASSERT(m->getPCU() == PCUObj);
+  }
   apf::Modulo inMap(factor);
   apf::Divide groupMap(factor);
-  apf::Unmodulo outMap(PCU_Comm_Self(), factor);
-  runInGroups(m, inMap, groupMap, outMap, toRun);
+  if(PCUObj == nullptr){
+    apf::Unmodulo outMap(m->getPCU()->Self(), factor);
+    runInGroups(m, PCUObj, inMap, groupMap, outMap, toRun);
+  } else {
+    apf::Unmodulo outMap(PCUObj->Self(), factor);
+    runInGroups(m, PCUObj, inMap, groupMap, outMap, toRun);
+  }
 }
 

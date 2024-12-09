@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <MeshSim.h>
 #include <SimModel.h>
@@ -19,6 +18,7 @@
 #include <apfNumbering.h>
 #include <ma.h>
 #include <parma.h>
+#include <PCU.h>
 #include <pcu_util.h>
 #include <cstdlib>
 
@@ -41,6 +41,7 @@
 #include "SimAttribute.h"
 #include "ModelTypes.h"
 
+static const pcu::PCU* globalPCU = nullptr;
 
 namespace {
 
@@ -59,11 +60,11 @@ void messageHandler(int type, const char* msg)
 {
   switch (type) {
     case Sim_WarningMsg:
-      if(!PCU_Comm_Self())
+      if(!globalPCU->Self())
         fprintf(stdout, "Warning SimModeler %s\n", msg);
       break;
     case Sim_ErrorMsg:
-      if(!PCU_Comm_Self()) 
+      if(!globalPCU->Self()) 
         fprintf(stdout, "Error SimModeler %s ... exiting\n", msg);
       MPI_Finalize();
       exit(EXIT_SUCCESS); 
@@ -74,13 +75,13 @@ void messageHandler(int type, const char* msg)
   }
 }
 
-pParMesh generate(pGModel mdl, std::string meshCaseName) {
+pParMesh generate(pGModel mdl, std::string meshCaseName, pcu::PCU *PCUObj) {
 #if SIMMODSUITE_MAJOR_VERSION <= 2024 && SIMMODSUITE_MINOR_VERSION < 240219
   pAManager attmngr = GM_attManager(mdl);
 #else
   pAManager attmngr = GM_attManager(mdl,true);
 #endif
-  if(0==PCU_Comm_Self())
+  if(0==PCUObj->Self())
     fprintf(stdout, "Loading mesh case %s...\n", meshCaseName.c_str());
   pACase mcaseFile = AMAN_findCase(attmngr, meshCaseName.c_str());
   PCU_ALWAYS_ASSERT(mcaseFile);
@@ -91,6 +92,7 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
   MeshingOptions meshingOptions;
   MS_processSimModelerMeshingAtts(mcaseFile, mcase, &meshingOptions);
   MS_processSimModelerAdvMeshingAtts(mcaseFile, mcase);
+  AttCase_unassociate(mcaseFile);
   AttCase_setModel(mcase, mdl);
 
   pParMesh pmesh;
@@ -106,16 +108,16 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
 
   if( !disable_surface ) {
     const double stime = MPI_Wtime();
-    if(0==PCU_Comm_Self()) {
+    if(0==PCUObj->Self()) {
       printf("Meshing surface..."); fflush(stdout);
     }
     pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, pmesh);
     SurfaceMesher_execute(surfaceMesher, NULL);
     SurfaceMesher_delete(surfaceMesher);
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj->Self())
       printf(" %f seconds\n", MPI_Wtime()-stime);
     if( ! surfaceMeshFile.empty() ) {
-      if(0==PCU_Comm_Self())
+      if(0==PCUObj->Self())
         printf(" writing surface mesh %s\n", surfaceMeshFile.c_str());
       PM_write(pmesh, surfaceMeshFile.c_str(), NULL);
     }
@@ -123,20 +125,20 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
 
   if( !disable_volume ) {
     const double vtime = MPI_Wtime();
-    if(0==PCU_Comm_Self()) {
+    if(0==PCUObj->Self()) {
       printf("Meshing volume..."); fflush(stdout);
     }
     pVolumeMesher volumeMesher = VolumeMesher_new(mcase, pmesh);
     VolumeMesher_execute(volumeMesher, NULL);
     VolumeMesher_delete(volumeMesher);
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj->Self())
       printf(" %f seconds\n", MPI_Wtime()-vtime);
   }
-
+  MS_deleteMeshCase(mcase);
   return pmesh;
 }
 
-void getConfig(int argc, char** argv) {
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj) {
   opterr = 0;
 
   static struct option long_opts[] = {
@@ -169,7 +171,7 @@ void getConfig(int argc, char** argv) {
     if (c == -1) break; //end of options
     switch (c) {
       case 0: // enable-log|disable-volume|disable-surf
-        if (!PCU_Comm_Self())
+        if (!PCUObj->Self())
           printf ("read arg %d\n", c);
         break;
       case 'n':
@@ -179,11 +181,11 @@ void getConfig(int argc, char** argv) {
         surfaceMeshFile = std::string(optarg);
         break;
       case '?':
-        if (!PCU_Comm_Self())
+        if (!PCUObj->Self())
           printf ("warning: skipping unrecognized option\n");
         break;
       default:
-        if (!PCU_Comm_Self())
+        if (!PCUObj->Self())
           printf("Usage %s %s", argv[0], usage);
         exit(EXIT_FAILURE);
     }
@@ -191,7 +193,7 @@ void getConfig(int argc, char** argv) {
 
 
   if(argc-optind != 2) {
-    if (!PCU_Comm_Self())
+    if (!PCUObj->Self())
       printf("Usage %s %s", argv[0], usage);
     exit(EXIT_FAILURE);
   }
@@ -200,7 +202,7 @@ void getConfig(int argc, char** argv) {
   outMeshFile = caseName = std::string(argv[i++]);
   outMeshFile.append("/");
 
-  if (!PCU_Comm_Self()) {
+  if (!PCUObj->Self()) {
     std::cout << "enable_log " << should_log <<
                  " disable_surface " << disable_surface <<
                  " disable_volume " << disable_volume <<
@@ -254,7 +256,7 @@ bool hasExtension(std::string s, std::string ext) {
 }
 #endif
 
-pNativeModel loadNativeModel() {
+pNativeModel loadNativeModel(pcu::PCU *PCUObj) {
   enum { TEXT_FORMAT = 0 };
   pNativeModel nm = 0;
   if ( nativeModelFile.empty() ) {
@@ -262,18 +264,18 @@ pNativeModel loadNativeModel() {
 #ifdef SIM_ACIS
   } else if (hasExtension(nativeModelFile, "sat")) {
     nm = AcisNM_createFromFile(nativeModelFile.c_str(), TEXT_FORMAT);
-    if(!PCU_Comm_Self())
+    if(!PCUObj->Self())
       printf("loaded acis native model\n");
 #endif
 #ifdef SIM_PARASOLID
   } else if (hasExtension(nativeModelFile, "xmt_txt") ||
              hasExtension(nativeModelFile, "x_t")        ) {
     nm = ParasolidNM_createFromFile(nativeModelFile.c_str(), TEXT_FORMAT);
-    if(!PCU_Comm_Self())
+    if(!PCUObj->Self())
       printf("loaded parasolid native model\n");
 #endif
   } else {
-    if(!PCU_Comm_Self())
+    if(!PCUObj->Self())
       printf("native model file has bad extension");
     exit(EXIT_FAILURE);
   }
@@ -284,7 +286,7 @@ void simStart() {
   SimPartitionedMesh_start(NULL,NULL);
   if(should_log)
     Sim_logOn("generate_sim.log");
-  MS_init();
+  SimAdvMeshing_start();
   SimModel_start();
 #ifdef SIM_PARASOLID
   SimParasolid_start(1);
@@ -294,17 +296,11 @@ void simStart() {
 #endif
   SimDiscrete_start(0);
   Sim_readLicenseFile(NULL);
-  MS_init();
-  SimAdvMeshing_start();
   Sim_setMessageHandler(messageHandler);
 }
 
 void simStop() {
-  SimAdvMeshing_stop();
-  SimModel_stop();
-  SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
-  SimModel_stop();
   SimDiscrete_stop(0);
 #ifdef SIM_ACIS
   SimAcis_stop(1);
@@ -312,7 +308,9 @@ void simStop() {
 #ifdef SIM_PARASOLID
   SimParasolid_stop(1);
 #endif
-  MS_exit();
+  SimModel_stop();
+  SimAdvMeshing_stop();
+  SimPartitionedMesh_stop();
 }
 
 } //end unnamed namespace
@@ -320,27 +318,29 @@ void simStop() {
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  globalPCU = &PCUObj;
   lion_set_verbosity(1);
-  PCU_Protect();
-  getConfig(argc,argv);
+  pcu::Protect();
+  getConfig(argc,argv,&PCUObj);
 
   if (should_attach_order && should_fix_pyramids) {
-    if (!PCU_Comm_Self())
+    if (!PCUObj.Self())
       std::cout << "disabling pyramid fix because --attach-order was given\n";
     should_fix_pyramids = 0;
   }
 
   simStart();
-  pNativeModel nm = loadNativeModel();
+  pNativeModel nm = loadNativeModel(&PCUObj);
   pGModel simModel = GM_load(modelFile.c_str(), nm, NULL);
 
   const double t0 = MPI_Wtime();
-  pParMesh sim_mesh = generate(simModel, caseName);
+  pParMesh sim_mesh = generate(simModel, caseName, &PCUObj);
   const double t1 = MPI_Wtime();
-  if(!PCU_Comm_Self())
+  if(!PCUObj.Self())
     printf("Mesh generated in %f seconds\n", t1-t0);
-  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, &PCUObj);
   if (should_attach_order) attachOrder(simApfMesh);
 
   gmi_register_sim();
@@ -355,8 +355,9 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
 
+  GM_release(simModel);
   simStop();
   Sim_logOff();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

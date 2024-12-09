@@ -6,7 +6,8 @@
 
 int main(int argc, char** argv) {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   const size_t n = 2;
   double *d_orig = new double[n];
   std::iota(d_orig,d_orig+n,0);
@@ -25,7 +26,7 @@ int main(int argc, char** argv) {
   }
   delete [] d_orig;
   delete [] d;
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 }

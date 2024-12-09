@@ -2,7 +2,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -16,7 +15,8 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   m->verify();
   m->destroyNative();
   apf::destroyMesh(m);
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

@@ -5,31 +5,32 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <gmi_sim.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
 #include <SimModel.h>
 #include <cstdlib>
 
+
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   if ( argc != 5 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <order> <out prefix>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   int order = atoi(argv[3]);
   if(order < 1 || order > 6){
-    if ( !PCU_Comm_Self() )
+    if ( !pcu_obj.Self() )
       printf("Only 1st to 6th order supported\n");
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -37,7 +38,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   gmi_register_sim();
 
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   crv::BezierCurver bc(m,order,0);
   bc.run();
 
@@ -53,6 +54,6 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
   SimModel_stop();
   MS_exit();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

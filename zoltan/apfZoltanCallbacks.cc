@@ -9,7 +9,6 @@
 #include "apfZoltanMesh.h"
 #include "apfZoltan.h"
 #include "apfShape.h"
-#include <PCU.h>
 #include <metis.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -273,7 +272,7 @@ ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
   if (zb->isLocal)
     comm = MPI_COMM_SELF;
   else
-    comm = PCU_Get_Comm();
+    comm = zb->mesh->getPCU()->GetMPIComm();
   ztn =Zoltan_Create(comm);
   import_gids = NULL;
   import_lids = NULL;
@@ -323,9 +322,10 @@ void ZoltanData::setup()
   Zoltan_Set_Param(ztn, "obj_weight_dim", paramStr);
   Zoltan_Set_Param(ztn, "edge_weight_dim", "0");
 
+  Mesh* m = zb->mesh;
   //Debug
   snprintf(paramStr, 128, "%d", dbgLvl);
-  if ( zb->isLocal && 0 != PCU_Comm_Self() )
+  if ( zb->isLocal && 0 != m->getPCU()->Self() )
     snprintf(paramStr, 128, "%d", 0);  //if local silence all but rank 0
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
@@ -345,7 +345,7 @@ void ZoltanData::setup()
   if ( zb->isLocal ) {
     snprintf(paramStr, 128, "%d", zb->multiple);
   } else {
-    snprintf(paramStr, 128, "%d", zb->multiple*PCU_Proc_Peers());
+    snprintf(paramStr, 128, "%d", zb->multiple*m->getPCU()->Peers());
   }
   Zoltan_Set_Param(ztn, "NUM_GLOBAL_PARTS", paramStr);
   snprintf(paramStr, 128, "%d", zb->multiple);
@@ -372,7 +372,7 @@ void ZoltanData::ptn()
       &import_to_part, &num_exported, &export_gids,
       &export_lids, &export_procs, &export_to_part);
   if( ZOLTAN_OK != ret ) {
-    if( 0 == PCU_Comm_Self() )
+    if( 0 == zb->mesh->getPCU()->Self() )
       lion_eprint(1, "ERROR Zoltan partitioning failed\n");
     exit(EXIT_FAILURE);
   }

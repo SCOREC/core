@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <PCU.h>
 #include "parma.h"
 #include "parma_balancer.h"
 #include "parma_step.h"
@@ -21,15 +20,15 @@ namespace {
         : Balancer(m, f, v, "ghostElms"), layers(l)
       {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        sideTol = TO_INT(parma::avgSharedSides(s));
+        sideTol = TO_INT(parma::avgSharedSides(s, mesh->getPCU()));
         delete s;
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        double avgSides = parma::avgSharedSides(s);
-        if( !PCU_Comm_Self() && verbose )
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
+        if( !mesh->getPCU()->Self() && verbose )
           status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
@@ -39,13 +38,13 @@ namespace {
         destroyGhostWeights(gw);
 
         double vtxImb, vtxAvg;
-        parma::getImbalance(vtxW, vtxImb, vtxAvg);
-        if( !PCU_Comm_Self() && verbose )
+        parma::getImbalance(vtxW, vtxImb, vtxAvg, mesh->getPCU());
+        if( !mesh->getPCU()->Self() && verbose )
           status("vtx imbalance %.3f avg %.3f\n", vtxImb, vtxAvg);
         delete vtxW;
 
         double elmImb, elmAvg;
-        parma::getImbalance(elmW, elmImb, elmAvg);
+        parma::getImbalance(elmW, elmImb, elmAvg, mesh->getPCU());
         monitorUpdate(elmImb, iS, iA);
         monitorUpdate(avgSides, sS, sA);
 
@@ -71,15 +70,15 @@ namespace {
         : Balancer(m, f, v, "ghostVtxLtElms"), layers(l), maxElmW(0), stepNum(0)
       {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        sideTol = TO_INT(parma::avgSharedSides(s));
+        sideTol = TO_INT(parma::avgSharedSides(s, mesh->getPCU()));
         delete s;
-        if( !PCU_Comm_Self() && verbose )
+        if( !mesh->getPCU()->Self() && verbose )
           status("sideTol %d\n", sideTol);
       }
       bool runStep(apf::MeshTag* wtag, double tolerance) {
         parma::Sides* s = parma::makeVtxSides(mesh);
-        double avgSides = parma::avgSharedSides(s);
-        if( !PCU_Comm_Self() && verbose )
+        double avgSides = parma::avgSharedSides(s, mesh->getPCU());
+        if( !mesh->getPCU()->Self() && verbose )
           status("avgSides %f\n", avgSides);
 
         parma::GhostWeights* gw =
@@ -90,15 +89,15 @@ namespace {
         destroyGhostWeights(gw);
 
         double elmImb, elmAvg;
-        parma::getImbalance(elmW,elmImb,elmAvg);
+        parma::getImbalance(elmW,elmImb,elmAvg,mesh->getPCU());
         double edgeImb, edgeAvg;
-        parma::getImbalance(edgeW, edgeImb, edgeAvg);
-        if( !PCU_Comm_Self() && verbose ) {
+        parma::getImbalance(edgeW, edgeImb, edgeAvg, mesh->getPCU());
+        if( !mesh->getPCU()->Self() && verbose ) {
           status("elm imbalance %.3f avg %.3f\n", elmImb, elmAvg);
           status("edge imbalance %.3f avg %.3f\n", edgeImb, edgeAvg);
         }
         if( !stepNum ) //FIXME need to set the imbalance at the beginning for the primary entity
-          maxElmW = parma::getMaxWeight(elmW);
+          maxElmW = parma::getMaxWeight(elmW, mesh->getPCU());
         delete edgeW;
 
         monitorUpdate(elmImb, iS, iA);

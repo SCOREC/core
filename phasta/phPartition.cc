@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "phPartition.h"
 #include "phInput.h"
 #include "ph.h"
@@ -94,7 +93,7 @@ bool isMixed(apf::Mesh2* m) {
       break;
     }
   m->end(it);
-  return PCU_Max_Int(mixed);
+  return m->getPCU()->Max<int>(mixed);
 }
 
 void clearTags(apf::Mesh* m, apf::MeshTag* t) {
@@ -144,7 +143,7 @@ void parmaTet(Input& in, apf::Mesh2* m, bool runGap) {
       neighborReduction(m,weights,verbose,fineStats);
     double vtxImb = Parma_GetWeightedEntImbalance(m, weights, 0);
     if( vtxImb <= in.vertexImbalance ) {
-      if( !PCU_Comm_Self() )
+      if( !m->getPCU()->Self() )
         lion_oprint(1, "STATUS vtx imbalance target %.3f reached\n",
             in.vertexImbalance);
       break;
@@ -206,7 +205,7 @@ void simmetrixBalance(apf::Mesh2* m)
   // current total num parts in pmesh cannot be more than requested
   int currentTotalNumParts = PM_totalNumParts(pmesh);
   if (currentTotalNumParts > totalNumParts) {
-    if( !PCU_Comm_Self() )
+    if( !m->getPCU()->Self() )
       lion_eprint(1, "Error: cannot reduce number of partitions %d->%d\n",
               currentTotalNumParts, totalNumParts);
     totalNumParts = currentTotalNumParts;

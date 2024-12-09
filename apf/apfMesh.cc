@@ -158,7 +158,7 @@ Mesh::Type const Mesh::simplexTypes[4] =
 ,Mesh::TET
 };
 
-void Mesh::init(FieldShape* s)
+void Mesh::init(FieldShape* s, pcu::PCU *PCUObj)
 {
   coordinateField = new VectorField();
   FieldBase* baseP = coordinateField;
@@ -166,6 +166,7 @@ void Mesh::init(FieldShape* s)
   baseP->init("coordinates",this,s,data);
   data->init(baseP);
   hasFrozenFields = false;
+  pcu_ = PCUObj;
 }
 
 Mesh::~Mesh()
@@ -405,6 +406,12 @@ GlobalNumbering* Mesh::getGlobalNumbering(int i)
 {
   PCU_DEBUG_ASSERT(i < static_cast<int>(globalNumberings.size()) && i >= 0);
   return globalNumberings[i];
+}
+
+void Mesh::switchPCU(pcu::PCU *newPCU)
+{
+  PCU_ALWAYS_ASSERT(newPCU != nullptr);
+  pcu_ = newPCU;
 }
 
 
@@ -865,8 +872,8 @@ void printTypes(Mesh* m)
   while ((e = m->iterate(it)))
     typeCnt[m->getType(e)]++;
   m->end(it);
-  PCU_Add_Longs(typeCnt,Mesh::TYPES);
-  if (!PCU_Comm_Self()) {
+  m->getPCU()->Add<long>(typeCnt,Mesh::TYPES);
+  if (!m->getPCU()->Self()) {
     lion_oprint(1,"number of");
     for (int i=0; i<Mesh::TYPES; i++)
       if (dim == Mesh::typeDimension[i])
@@ -880,9 +887,9 @@ void printStats(Mesh* m)
   long n[4];
   for (int i = 0; i < 4; ++i)
     n[i] = countOwned(m, i);
-  PCU_Add_Longs(n, 4);
+  m->getPCU()->Add<long>(n, 4);
   printTypes(m);
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     lion_oprint(1,"mesh entity counts: v %ld e %ld f %ld r %ld\n",
         n[0], n[1], n[2], n[3]);
 }
@@ -892,8 +899,8 @@ void warnAboutEmptyParts(Mesh* m)
   int emptyParts = 0;
   if (!m->count(m->getDimension()))
     ++emptyParts;
-  emptyParts = PCU_Add_Int(emptyParts);
-  if (emptyParts && (!PCU_Comm_Self()))
+  emptyParts = m->getPCU()->Add<int>(emptyParts);
+  if (emptyParts && (!m->getPCU()->Self()))
     lion_eprint(1,"APF warning: %d empty parts\n",emptyParts);
 }
 
@@ -969,7 +976,7 @@ bool MatchedSharing::isLess(Copy const& a, Copy const& b)
 
 Copy MatchedSharing::getOwnerCopy(MeshEntity* e)
 {
-  Copy owner(PCU_Comm_Self(), e);
+  Copy owner(mesh->getPCU()->Self(), e);
   CopyArray copies;
   this->getCopies(e, copies);
   APF_ITERATE(CopyArray, copies, cit)
@@ -987,7 +994,7 @@ int MatchedSharing::getOwner(MeshEntity* e)
 bool MatchedSharing::isOwned(MeshEntity* e)
 {
   Copy owner = this->getOwnerCopy(e);
-  return owner.peer == PCU_Comm_Self() && owner.entity == e;
+  return owner.peer == mesh->getPCU()->Self() && owner.entity == e;
 }
 
 void MatchedSharing::getCopies(MeshEntity* e,
@@ -1009,23 +1016,23 @@ void MatchedSharing::getNeighbors(Parts& neighbors)
       neighbors.insert(cit->peer);
   }
   mesh->end(it);
-  neighbors.erase(PCU_Comm_Self());
+  neighbors.erase(mesh->getPCU()->Self());
 }
 
 void MatchedSharing::formCountMap()
 {
   size_t count = mesh->count(mesh->getDimension());
-  countMap[PCU_Comm_Self()] = count;
-  PCU_Comm_Begin();
+  countMap[mesh->getPCU()->Self()] = count;
+  mesh->getPCU()->Begin();
   Parts neighbors;
   getNeighbors(neighbors);
   APF_ITERATE(Parts, neighbors, nit)
-    PCU_COMM_PACK(*nit, count);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+    mesh->getPCU()->Pack(*nit, count);
+  mesh->getPCU()->Send();
+  while (mesh->getPCU()->Receive()) {
     size_t oc;
-    PCU_COMM_UNPACK(oc);
-    countMap[PCU_Comm_Sender()] = oc;
+    mesh->getPCU()->Unpack(oc);
+    countMap[mesh->getPCU()->Sender()] = oc;
   }
 }
 
@@ -1033,7 +1040,7 @@ bool MatchedSharing::isShared(MeshEntity* e) {
   CopyArray copies;
   this->getCopies(e, copies);
   APF_ITERATE(CopyArray, copies, it)
-    if (it->peer != PCU_Comm_Self())
+    if (it->peer != mesh->getPCU()->Self())
       return true;
   return false;
 }
@@ -1167,20 +1174,20 @@ void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
   rotate = findIn(bv, nbv, ebv[0]);
 }
 
-void packString(std::string s, int to)
+void packString(std::string s, int to, pcu::PCU *PCUObj)
 {
   size_t len = s.length();
-  PCU_COMM_PACK(to, len);
-  PCU_Comm_Pack(to, s.c_str(), len);
+  PCUObj->Pack(to, len);
+  PCUObj->Pack(to, s.c_str(), len);
 }
 
-std::string unpackString()
+std::string unpackString(pcu::PCU *PCUObj)
 {
   std::string s;
   size_t len;
-  PCU_COMM_UNPACK(len);
+  PCUObj->Unpack(len);
   s.resize(len);
-  PCU_Comm_Unpack((void*)s.c_str(), len);
+  PCUObj->Unpack((void*)s.c_str(), len);
   return s;
 }
 
@@ -1188,20 +1195,20 @@ void packTagInfo(Mesh* m, MeshTag* t, int to)
 {
   std::string name;
   name = m->getTagName(t);
-  packString(name, to);
+  packString(name, to, m->getPCU());
   int type;
   type = m->getTagType(t);
-  PCU_COMM_PACK(to, type);
+  m->getPCU()->Pack(to, type);
   int size;
   size = m->getTagSize(t);
-  PCU_COMM_PACK(to, size);
+  m->getPCU()->Pack(to, size);
 }
 
-void unpackTagInfo(std::string& name, int& type, int& size)
+void unpackTagInfo(std::string& name, int& type, int& size, pcu::PCU *PCUObj)
 {
-  name = unpackString();
-  PCU_COMM_UNPACK(type);
-  PCU_COMM_UNPACK(size);
+  name = unpackString(PCUObj);
+  PCUObj->Unpack(type);
+  PCUObj->Unpack(size);
 }
 
 char const* const dimName[4] = {

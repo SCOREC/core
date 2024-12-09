@@ -14,6 +14,10 @@
 #include "pcu_aa.h"
 #include "pcu_io.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* the PCU Messenger (pcu_msg for short) system implements
    a non-blocking Bulk Synchronous Parallel communication model
    it is based on PCU non-blocking Collectives and pcu_mpi,
@@ -45,13 +49,13 @@ struct pcu_msg_struct
 typedef struct pcu_msg_struct pcu_msg;
 
 void pcu_make_msg(pcu_msg* m);
-void pcu_msg_start(pcu_msg* b);
+void pcu_msg_start(pcu_mpi_t*, pcu_msg* b);
 void* pcu_msg_pack(pcu_msg* m, int id, size_t size);
 #define PCU_MSG_PACK(m,id,o) \
 memcpy(pcu_msg_pack(m,id,sizeof(o)),&(o),sizeof(o))
 size_t pcu_msg_packed(pcu_msg* m, int id);
-void pcu_msg_send(pcu_msg* m);
-bool pcu_msg_receive(pcu_msg* m);
+void pcu_msg_send(pcu_mpi_t *mpi, pcu_msg* m);
+bool pcu_msg_receive(pcu_mpi_t* mpi, pcu_msg* m);
 void* pcu_msg_unpack(pcu_msg* m, size_t size);
 #define PCU_MSG_UNPACK(m,o) \
 memcpy(&(o),pcu_msg_unpack(m,sizeof(o)),sizeof(o))
@@ -60,4 +64,7 @@ int pcu_msg_received_from(pcu_msg* m);
 size_t pcu_msg_received_size(pcu_msg* m);
 void pcu_free_msg(pcu_msg* m);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //PCU_MSG_H

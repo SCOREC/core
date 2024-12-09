@@ -1,6 +1,5 @@
 #include <limits.h>
 #include <apf.h>
-#include <PCU.h>
 #include <pcu_util.h>
 #include "parma_dijkstra.h" 
 #include "parma_meshaux.h" 

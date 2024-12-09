@@ -6,6 +6,10 @@
 #include <limits.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if CHAR_BIT != 8
 #error "unsupported char size"
 #endif
@@ -21,5 +25,9 @@ static const union {
 } pcu_host_order = { { 0, 1, 2, 3 } };
 
 #define PCU_HOST_ORDER (pcu_host_order.value)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

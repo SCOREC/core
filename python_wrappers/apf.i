@@ -2,7 +2,7 @@
 %{
 #include <mpi.h>
 #include <vector>
-#include <PCU.h>
+#include <PCU_C.h>
 #include <pcu_util.h>
 #include <gmi.h>
 #include <gmi_mesh.h>

@@ -39,15 +39,18 @@ char const* const typeName[4] =
  "region"};
 
 void printInfo(gmi_model* model, int dim);
-void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* fileName);
-void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileName);
-void visualizeEdges(gmi_model* model, int n, const char* fileName);
+
+void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* fileName, pcu::PCU *PCUObj);
+void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileName, pcu::PCU *PCUObj);
+void visualizeEdges(gmi_model* model, int n, const char* fileName, pcu::PCU *PCUObj);
+
 
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   gmi_register_mesh();
   gmi_register_null();
@@ -115,7 +118,7 @@ int main(int argc, char** argv)
   gmi_register_cap();
 
 
-  apf::Mesh2* mesh0 = apf::createMesh(m,g);
+  apf::Mesh2* mesh0 = apf::createMesh(m,g,&PCUObj);
   apf::writeVtkFiles("mesh_no_param", mesh0);
 
   gmi_model* model = gmi_import_cap(g);
@@ -136,7 +139,7 @@ int main(int argc, char** argv)
   while( (ge = gmi_next(model, gi)) ){
     std::stringstream name_str;
     name_str << "face_" << gmi_tag(model, ge) << "_mesh";
-    visualizeFace(model, ge, 100, 100, name_str.str().c_str());
+    visualizeFace(model, ge, 100, 100, name_str.str().c_str(), &PCUObj);
   }
   gmi_end(model, gi);
 
@@ -144,7 +147,7 @@ int main(int argc, char** argv)
   printf("creating mesh with param field\n");
 
 
-  apf::Mesh2* mesh = apf::createMesh(m,g);
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
   apf::Field* pf  = apf::createFieldOn(mesh, "param_field", apf::VECTOR);
   apf::Field* idf  = apf::createFieldOn(mesh, "id", apf::SCALAR);
   apf::MeshEntity* e;
@@ -162,7 +165,7 @@ int main(int argc, char** argv)
 
   gmi_cap_stop();
 
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
@@ -236,7 +239,7 @@ void printInfo(gmi_model* model, int dim)
   printf("-------------------------------------------\n");
 }
 
-void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* fileName)
+void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* fileName, pcu::PCU *PCUObj)
 {
   // assert type is 2
   // get the range
@@ -270,7 +273,7 @@ void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* 
 
   // make the vertexes and set the coordinates using the array
   std::vector<ma::Entity*> vs;
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false, &PCUObj);
   for (size_t i = 0; i < ps.size(); i++) {
     ma::Entity* vert = mesh->createVert(0);
     mesh->setPoint(vert, 0, ps[i]);
@@ -341,7 +344,7 @@ void visualizeFace(gmi_model* model, gmi_ent* entity, int n, int m, const char* 
 
 }
 
-void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileName)
+void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileName, pcu::PCU *PCUObj)
 {
   // assert type is 1
   // get the range
@@ -365,7 +368,7 @@ void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileNam
 
   // make the vertexes and set the coordinates using the array
   std::vector<ma::Entity*> vs;
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, PCUObj);
   for (size_t i = 0; i < ps.size(); i++) {
     ma::Entity* vert = mesh->createVert(0);
     mesh->setPoint(vert, 0, ps[i]);
@@ -404,9 +407,9 @@ void visualizeEdge(gmi_model* model, gmi_ent* entity, int n, const char* fileNam
   apf::destroyMesh(mesh);
 }
 
-void visualizeEdges(gmi_model* model, int n, const char* fileName)
+void visualizeEdges(gmi_model* model, int n, const char* fileName, pcu::PCU *PCUObj)
 {
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, PCUObj);
   gmi_ent* entity;
   gmi_iter* gi = gmi_begin(model, 1);
   while( (entity = gmi_next(model, gi)) ){

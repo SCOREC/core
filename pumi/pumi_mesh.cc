@@ -30,7 +30,7 @@ using std::map;
 // mesh creation
 pMesh pumi_mesh_create(pGeom g, int mesh_dim, bool periodic)
 {
-  pumi::instance()->mesh = apf::makeEmptyMdsMesh(g->getGmi(), mesh_dim, periodic);
+  pumi::instance()->mesh = apf::makeEmptyMdsMesh(g->getGmi(), mesh_dim, periodic, pumi::instance()->getPCU());
   return pumi::instance()->mesh;
 }
 
@@ -69,10 +69,10 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim, pOwnership o)
       ++num_own;
   m->end(it);
 
-  PCU_Exscan_Ints(&num_own,1);
+  m->getPCU()->Exscan<int>(&num_own,1);
   int initial_id=num_own;
 
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   it = m->begin(dim);
   while ((e = m->iterate(it)))
   {
@@ -84,8 +84,8 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim, pOwnership o)
     m->getRemotes(e, remotes);
     APF_ITERATE(Copies, remotes, it)
     {
-      PCU_COMM_PACK(it->first, it->second);
-      PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
+      m->getPCU()->Pack(it->first, it->second);
+      m->getPCU()->Pack(it->first, &initial_id, sizeof(int));
     }
 
     if (m->isGhosted(e))
@@ -94,22 +94,22 @@ void generate_globalid(pMesh m, pMeshTag tag, int dim, pOwnership o)
       m->getGhosts(e, ghosts);
       APF_ITERATE(Copies, ghosts, it)
       {
-        PCU_COMM_PACK(it->first, it->second);
-        PCU_Comm_Pack(it->first, &initial_id, sizeof(int));
+        m->getPCU()->Pack(it->first, it->second);
+        m->getPCU()->Pack(it->first, &initial_id, sizeof(int));
       }
     }
     ++initial_id;
   }
   m->end(it);
 
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   int global_id;
-  while (PCU_Comm_Listen())
-    while (!PCU_Comm_Unpacked())
+  while (m->getPCU()->Listen())
+    while (!m->getPCU()->Unpacked())
     {
       pMeshEnt remote_ent;
-      PCU_COMM_UNPACK(remote_ent);
-      PCU_Comm_Unpack(&global_id, sizeof(int));
+      m->getPCU()->Unpack(remote_ent);
+      m->getPCU()->Unpack(&global_id, sizeof(int));
       m->setIntTag(remote_ent, tag, &global_id);
     }
 }
@@ -178,22 +178,24 @@ apf::Migration* getPlan(apf::Mesh* m, int num_target_part)
   return plan;
 }
 
-void split_comm(int num_out_comm)
+void split_comm(int num_out_comm, pcu::PCU &PCUObj)
 {
-  int self = PCU_Comm_Self();
+  int self = PCUObj.Self();
   int group_id = self % num_out_comm;
   int in_group_rank = self / num_out_comm;
   MPI_Comm groupComm;
-  MPI_Comm_split(PCU_Get_Comm(), group_id, in_group_rank, &groupComm);
-  PCU_Switch_Comm(groupComm);
+  MPI_Comm_split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
+  PCUObj.SwitchMPIComm(groupComm);
 }
 
-void merge_comm(MPI_Comm oldComm)
+
+void merge_comm(MPI_Comm oldComm, pcu::PCU &PCUObj)
 {
-  MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(oldComm);
+  MPI_Comm prevComm = PCUObj.GetMPIComm();
+  PCUObj.SwitchMPIComm(oldComm);
   MPI_Comm_free(&prevComm);
 }
+
 
 
 pGeom pumi_mesh_getGeom(pMesh)
@@ -201,23 +203,24 @@ pGeom pumi_mesh_getGeom(pMesh)
   return pumi::instance()->model;
 }
 
-// load a serial mesh on master process then distribute as per the distribution object
+
+
 pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
 {
   if (strcmp(mesh_type,"mds"))
   {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
+    if (!pumi::instance()->getPCU()->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  MPI_Comm prevComm = PCU_Get_Comm();
-  int num_target_part = PCU_Comm_Peers();
-  bool isMaster = ((PCU_Comm_Self() % num_target_part) == 0);
+  MPI_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
+  int num_target_part = pumi::instance()->getPCU()->Peers();
+  bool isMaster = ((pumi::instance()->getPCU()->Self() % num_target_part) == 0);
   pMesh m = 0;
-  split_comm(num_target_part);
+  split_comm(num_target_part, *pumi::instance()->getPCU());
   if (isMaster) 
-    m = apf::loadMdsMesh(g->getGmi(), filename);
-  merge_comm(prevComm);
-  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1);
+    m = apf::loadMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU());
+  merge_comm(prevComm, *pumi::instance()->getPCU());
+  pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1, m->getPCU());
   return pumi::instance()->mesh;
 }
 
@@ -228,50 +231,50 @@ pMesh pumi_mesh_load(pMesh m)
   return pumi::instance()->mesh;
 }
 
-
 pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char* mesh_type)
 {
   if (strcmp(mesh_type,"mds"))
   {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
+    if (!pumi::instance()->getPCU()->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  if (num_in_part==1 && pumi_size()>1) // do static partitioning
+  if (num_in_part==1 && pumi::instance()->getPCU()->Peers()>1) // do static partitioning
   {
-    MPI_Comm prevComm = PCU_Get_Comm();
-    int num_target_part = PCU_Comm_Peers()/num_in_part;
-    bool isMaster = ((PCU_Comm_Self() % num_target_part) == 0);
+    MPI_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
+    int num_target_part = pumi::instance()->getPCU()->Peers()/num_in_part;
+    bool isMaster = ((pumi::instance()->getPCU()->Self() % num_target_part) == 0);
     pMesh m = 0;
     apf::Migration* plan = 0;   
-    split_comm(num_target_part);
+    split_comm(num_target_part, *pumi::instance()->getPCU());
     if (isMaster) {
-      m = apf::loadMdsMesh(g->getGmi(), filename);
+      m = apf::loadMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU());
       plan = getPlan(m, num_target_part);
     }
-    merge_comm(prevComm);
-    pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part);
+    merge_comm(prevComm, *pumi::instance()->getPCU());
+    pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part, pumi::instance()->getPCU());
   }
   else
-    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU());
   pumi_mesh_print(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
 
 
 
+
 void send_entities(pMesh mesh, int dim)
 {
-  int local_id, self = PCU_Comm_Self();
+  int local_id, self = mesh->getPCU()->Self();
   pMeshEnt e;
   pMeshIter it = mesh->begin(dim);
   while ((e = mesh->iterate(it)))
   {
     local_id = getMdsIndex(mesh, e);
-    for (int pid=0; pid<PCU_Comm_Peers(); ++pid)
+    for (int pid=0; pid<mesh->getPCU()->Peers(); ++pid)
     {
       if (pid==self) continue;
-      PCU_Comm_Pack(pid, &local_id, sizeof(int));
-      PCU_COMM_PACK(pid, e);
+      mesh->getPCU()->Pack(pid, &local_id, sizeof(int));
+      mesh->getPCU()->Pack(pid, e);
     }
   }
   mesh->end(it);
@@ -279,21 +282,22 @@ void send_entities(pMesh mesh, int dim)
 
 #include "apfMDS.h"
 #include "apfPM.h"
+
 pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
 {
   if (pumi_size()==1) 
-    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename);
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU());
   else
   {
-    double t0 = PCU_Time();
-    MPI_Comm prevComm = PCU_Get_Comm();
-    int num_target_part = PCU_Comm_Peers();
-    split_comm(num_target_part);
+    double t0 = pcu::Time();
+    MPI_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
+    int num_target_part = pumi::instance()->getPCU()->Peers();
+    split_comm(num_target_part, *pumi::instance()->getPCU());
     // no pmodel & remote links setup
-    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename); 
-    merge_comm(prevComm);
-    if (!PCU_Comm_Self())
-      lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, PCU_Time() - t0);
+    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU()); 
+    merge_comm(prevComm, *pumi::instance()->getPCU());
+    if (!pumi::instance()->getPCU()->Self())
+      lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, pcu::Time() - t0);
   }
 
   if (pumi_size()>1 && stitch_link) 
@@ -345,7 +349,7 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
       pumi::instance()->num_own_ent[dim] = n;
     }
   }
-  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, PCU_Get_Comm());
+  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 #ifdef DEBUG
   if (!pumi_rank()) std::cout<<"[PUMI INFO] "<<__func__<<" end\n";
 #endif
@@ -357,7 +361,7 @@ int pumi_mesh_getNumEnt(pMesh m, int dim)
 int pumi_mesh_getNumOwnEnt(pMesh m, int dim)
 { 
   PCU_ALWAYS_ASSERT(pumi::instance()->num_own_ent);
-  if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !PCU_Comm_Self()) 
+  if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !m->getPCU()->Self()) 
   {
     std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is not set. Please call pumi_mesh_setCount\n";
     return -1;
@@ -368,7 +372,7 @@ int pumi_mesh_getNumOwnEnt(pMesh m, int dim)
 int pumi_mesh_getNumGlobalEnt(pMesh m, int dim)
 { 
   PCU_ALWAYS_ASSERT(pumi::instance()->num_global_ent);
-  if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !PCU_Comm_Self()) 
+  if (pumi::instance()->num_local_ent[dim]!=(int)m->count(dim) && !m->getPCU()->Self()) 
   {
     std::cout<<"[PUMI ERROR] "<<__func__<<": mesh count is not set. Please call pumi_mesh_setCount\n";
     return -1;
@@ -407,12 +411,12 @@ void print_copies(pMesh m, pMeshEnt e)
 
 void pumi_mesh_print (pMesh m, bool print_ent)
 {
-  if (!PCU_Comm_Self()) std::cout<<"\n=== mesh size and tag info === \n";
+  if (!m->getPCU()->Self()) std::cout<<"\n=== mesh size and tag info === \n";
 
-  int* local_entity_count = new int[4*PCU_Comm_Peers()];
-  int* own_entity_count = new int[4*PCU_Comm_Peers()];
+  int* local_entity_count = new int[4*m->getPCU()->Peers()];
+  int* own_entity_count = new int[4*m->getPCU()->Peers()];
 
-  for (int i=0; i<4*PCU_Comm_Peers();++i)
+  for (int i=0; i<4*m->getPCU()->Peers();++i)
     local_entity_count[i]=own_entity_count[i]=0;
 
   pMeshEnt e;
@@ -430,23 +434,23 @@ void pumi_mesh_print (pMesh m, bool print_ent)
     m->end(it);
   }
   
-  int* global_local_entity_count = new int[4*PCU_Comm_Peers()]; 
-  int* global_own_entity_count = new int[4*PCU_Comm_Peers()]; 
+  int* global_local_entity_count = new int[4*m->getPCU()->Peers()]; 
+  int* global_own_entity_count = new int[4*m->getPCU()->Peers()]; 
 
-  MPI_Allreduce(local_entity_count, global_local_entity_count, 4*PCU_Comm_Peers(), 
-                MPI_INT, MPI_SUM, PCU_Get_Comm());
+  MPI_Allreduce(local_entity_count, global_local_entity_count, 4*m->getPCU()->Peers(), 
+                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 
-  MPI_Allreduce(own_entity_count, global_own_entity_count, 4*PCU_Comm_Peers(), 
-                MPI_INT, MPI_SUM, PCU_Get_Comm());
+  MPI_Allreduce(own_entity_count, global_own_entity_count, 4*m->getPCU()->Peers(), 
+                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
 
  
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
   {
     int* global_entity_count = new int[4]; 
     global_entity_count[0]=global_entity_count[1]=global_entity_count[2]=global_entity_count[3]=0;
     for (int d=0; d<4;++d)
     {
-      for (int p=0; p<PCU_Comm_Peers();++p)
+      for (int p=0; p<m->getPCU()->Peers();++p)
         global_entity_count[d] += global_own_entity_count[p*4+d];
     }
 
@@ -455,12 +459,12 @@ void pumi_mesh_print (pMesh m, bool print_ent)
 
     delete [] global_entity_count;
 
-    for (int p=0; p<PCU_Comm_Peers(); ++p)
+    for (int p=0; p<m->getPCU()->Peers(); ++p)
       std::cout<<"(p"<<p<<") # local ent: v "<<global_local_entity_count[p*4]
         <<", e "<<global_local_entity_count[p*4+1]
         <<", f "<<global_local_entity_count[p*4+2]
         <<", r "<<global_local_entity_count[p*4+3]<<"\n";
-    for (int p=0; p<PCU_Comm_Peers(); ++p)
+    for (int p=0; p<m->getPCU()->Peers(); ++p)
       if (global_own_entity_count[p*4])
         std::cout<<"(p"<<p<<") # own ent: v "<<global_own_entity_count[p*4]
           <<", e "<<global_own_entity_count[p*4+1]
@@ -474,7 +478,7 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   delete [] own_entity_count;
   delete [] global_own_entity_count;
 
-  if (!PCU_Comm_Self()) 
+  if (!m->getPCU()->Self()) 
   {
     std::cout<<"mesh shape: \""<< m->getShape()->getName()<<"\"\n";
 
@@ -508,7 +512,7 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   if (!m->findTag("global_id")) 
   {  
     pumi_mesh_createGlobalID(m);
-    if (!PCU_Comm_Self()) std::cout<<__func__<<": global id generated\n";
+    if (!m->getPCU()->Self()) std::cout<<__func__<<": global id generated\n";
   }
 
   int global_id;
@@ -518,10 +522,10 @@ void pumi_mesh_print (pMesh m, bool print_ent)
     apf::Vector3 xyz;
     m->getPoint(e, 0, xyz);
     if (m->isGhost(e))
-      std::cout<<"("<<PCU_Comm_Self()<<") GHOST vtx "<<e<<": "<<pumi_ment_getGlobalID(e)
+      std::cout<<"("<<m->getPCU()->Self()<<") GHOST vtx "<<e<<": "<<pumi_ment_getGlobalID(e)
              <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
     else
-      std::cout<<"("<<PCU_Comm_Self()<<") vtx "<<e<<": "<<pumi_ment_getGlobalID(e)
+      std::cout<<"("<<m->getPCU()->Self()<<") vtx "<<e<<": "<<pumi_ment_getGlobalID(e)
              <<" ("<<xyz[0]<<", "<<xyz[1]<<", "<<xyz[2]<<")\n";
     print_copies(m,e);
   }
@@ -536,9 +540,9 @@ void pumi_mesh_print (pMesh m, bool print_ent)
       apf::Downward down;
       int num_down=m->getDownward(e,d-1,down); 
       if (m->isGhost(e)) 
-        std::cout<<"("<<PCU_Comm_Self()<<") GHOST e "<<e<<": [d "<<d<<", id "<<global_id<<"] down: ";
+        std::cout<<"("<<m->getPCU()->Self()<<") GHOST e "<<e<<": [d "<<d<<", id "<<global_id<<"] down: ";
       else
-        std::cout<<"("<<PCU_Comm_Self()<<") e "<<e<<": [d "<<d<<", id "<<global_id<<"] down: ";
+        std::cout<<"("<<m->getPCU()->Self()<<") e "<<e<<": [d "<<d<<", id "<<global_id<<"] down: ";
       for (int i=0; i<num_down; ++i)
         std::cout<<pumi_ment_getGlobalID(down[i])<<" ";
       std::cout<<"\n";
@@ -580,7 +584,7 @@ void pumi_mesh_write (pMesh m, const char* filename, const char* mesh_type)
     destroyField(own_f);
   }
   else
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
+    if (!m->getPCU()->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
 }
 
 void pumi_mesh_delete(pMesh m)
@@ -654,7 +658,7 @@ void pumi_ownership_verify(pMesh m, pOwnership o)
             print_copies(m,e);
           }
           assert(own_copy);
-          if (own_partid==PCU_Comm_Self()) 
+          if (own_partid==m->getPCU()->Self()) 
           {
             ++num_own_ent;
             if (own_copy!=e)
@@ -753,7 +757,7 @@ void Distribution::print()
     ++i;
     if (parts_vec[i].size()==0) continue;
     APF_ITERATE(Parts,parts_vec[i],pit)
-      std::cout<<"("<<PCU_Comm_Self()<<") distribute element "<<i<<" to "<<*pit<<"\n";
+      std::cout<<"("<<m->getPCU()->Self()<<") distribute element "<<i<<" to "<<*pit<<"\n";
 
   }
   m->end(it);
@@ -780,7 +784,7 @@ static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affecte
   for (int dimension=maxDimension-1; dimension >= 0; --dimension)
   {
     int upDimension = dimension + 1;
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     APF_ITERATE(EntityVector,affected[upDimension],it)
     {
       pMeshEnt up = *it;
@@ -796,21 +800,21 @@ static void distr_getAffected (pMesh m, Distribution* plan, EntityVector affecte
         Copies remotes;
         m->getRemotes(adjacent[i],remotes);
         APF_ITERATE(Copies,remotes,rit)
-          PCU_COMM_PACK(rit->first,rit->second);
+          m->getPCU()->Pack(rit->first,rit->second);
         if (m->hasMatching())
         {
           apf::Matches matches;
           m->getMatches(adjacent[i],matches);
           for (size_t j=0; j < matches.getSize(); ++j)
-            PCU_COMM_PACK(matches[j].peer,matches[j].entity);
+            m->getPCU()->Pack(matches[j].peer,matches[j].entity);
         }
       }//downward adjacent loop
     }//upward affected loop
-    PCU_Comm_Send();
-    while (PCU_Comm_Receive())
+    m->getPCU()->Send();
+    while (m->getPCU()->Receive())
     {
       pMeshEnt entity;
-      PCU_COMM_UNPACK(entity);
+      m->getPCU()->Unpack(entity);
       if ( !m->hasTag(entity,tag))
       {
         m->setIntTag(entity,tag,&dummy);
@@ -854,7 +858,7 @@ static void distr_updateResidences(pMesh m,
 
   for (int dimension = maxDimension-1; dimension >= 0; --dimension)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     APF_ITERATE(EntityVector,affected[dimension],it)
     {
       pMeshEnt entity = *it;
@@ -873,19 +877,19 @@ static void distr_updateResidences(pMesh m,
       m->getRemotes(entity,remotes);
       APF_ITERATE(Copies,remotes,rit)
       {
-        PCU_COMM_PACK(rit->first,rit->second);
-        apf::packParts(rit->first,newResidence);
+        m->getPCU()->Pack(rit->first,rit->second);
+        apf::packParts(rit->first,newResidence, m->getPCU());
       }
     }
-    PCU_Comm_Send();
-    while(PCU_Comm_Receive())
+    m->getPCU()->Send();
+    while(m->getPCU()->Receive())
     {
       pMeshEnt entity;
-      PCU_COMM_UNPACK(entity);
+      m->getPCU()->Unpack(entity);
       Parts current;
       m->getResidence(entity,current);
       Parts incoming;
-      apf::unpackParts(incoming);
+      apf::unpackParts(incoming, m->getPCU());
       apf::unite(current,incoming);
       m->setResidence(entity,current);
     }
@@ -913,11 +917,11 @@ void distribute(pMesh m, Distribution* plan)
 void pumi_mesh_distribute(pMesh m, Distribution* plan)
 // *********************************************************
 {
-  if (PCU_Comm_Peers()==1) return;
+  if (m->getPCU()->Peers()==1) return;
 
   if (pumi::instance()->ghosted_tag)
   {
-    if (!PCU_Comm_Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported with ghosted mesh\n";
+    if (!m->getPCU()->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" not supported with ghosted mesh\n";
     return;
   }
   distribute(m, plan);

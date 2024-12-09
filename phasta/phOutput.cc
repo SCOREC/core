@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include "phOutput.h"
 #include "phGrowthCurves.h"
@@ -32,23 +31,23 @@ static void getCounts(Output& o)
 
 static void checkLoadBalance(Output& o)
 {
-  long sumOwnedNodes = PCU_Add_Long(o.nOwnedNodes);
-  long sumAllNodes = PCU_Add_Long(o.nOverlapNodes);
-  double avgNodes = static_cast<double>(sumAllNodes) / PCU_Comm_Peers();
+  long sumOwnedNodes = o.mesh->getPCU()->Add<long>(o.nOwnedNodes);
+  long sumAllNodes = o.mesh->getPCU()->Add<long>(o.nOverlapNodes);
+  double avgNodes = static_cast<double>(sumAllNodes) / o.mesh->getPCU()->Peers();
   double vlbratio = o.nOverlapNodes / avgNodes;
-  double vlbratio_max = PCU_Max_Double(vlbratio);
-  if (!PCU_Comm_Self())
+  double vlbratio_max = o.mesh->getPCU()->Max<double>(vlbratio);
+  if (!o.mesh->getPCU()->Self())
     lion_oprint(1,"max vertex load imbalance of partitioned mesh = %f\n", vlbratio_max);
-  if (!PCU_Comm_Self())
+  if (!o.mesh->getPCU()->Self())
     lion_oprint(1,"ratio of sum of all vertices to sum of owned vertices = %f\n", sumAllNodes / (double) sumOwnedNodes);
 
   int dim = o.mesh->getDimension();
   int numElms = o.mesh->count(dim);
-  long sumElms = PCU_Add_Long(numElms);
-  double avgElms = static_cast<double>(sumElms) / PCU_Comm_Peers();
+  long sumElms = o.mesh->getPCU()->Add<long>(numElms);
+  double avgElms = static_cast<double>(sumElms) / o.mesh->getPCU()->Peers();
   double elbratio = numElms / avgElms;
-  double elbratio_max = PCU_Max_Double(elbratio);
-  if (!PCU_Comm_Self())
+  double elbratio_max = o.mesh->getPCU()->Max<double>(elbratio);
+  if (!o.mesh->getPCU()->Self())
     lion_oprint(1,"max region (3D) or face (2D) load imbalance of partitioned mesh = %f\n", elbratio_max);
 }
 
@@ -115,8 +114,8 @@ static void getGlobal(Output& o)
 {
   apf::Mesh* m = o.mesh;
   int n = m->count(0);
-  int self = PCU_Comm_Self();
-  int peers = PCU_Comm_Peers();
+  int self = m->getPCU()->Self();
+  int peers = m->getPCU()->Peers();
   int id = self + 1;
   o.arrays.globalNodeNumbers = new int[n];
   for (int i = 0; i < n; ++i) {
@@ -299,7 +298,7 @@ static void getBoundary(Output& o, BCs& bcs, apf::Numbering* n)
 }
 
 static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
-  PCU_Comm_Begin();
+  o.mesh->getPCU()->Begin();
   apf::Mesh* m = o.mesh;
   gmi_model* gm = m->getModel();
   int rbID = 0; // id - set by user
@@ -343,8 +342,8 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
         rit = rbIDmap.find(rbID);
         if(rit == rbIDmap.end()) {
           rbIDmap[rbID] = rbMT;
-          PCU_Comm_Pack(0, &rbID, sizeof(int));
-          PCU_Comm_Pack(0, &rbMT, sizeof(int));
+          m->getPCU()->Pack(0, &rbID, sizeof(int));
+          m->getPCU()->Pack(0, &rbMT, sizeof(int));
         }
         int vID = apf::getNumber(n, e, 0, 0);
         if(f[vID] > -1 && f[vID] != rbID) {
@@ -359,22 +358,22 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   } // end if rigid body attribute exists
 
 // master receives and form the complete set
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     int rrbID = 0;
     int rrbMT = 0;
-    PCU_Comm_Unpack(&rrbID, sizeof(int));
-    PCU_Comm_Unpack(&rrbMT, sizeof(int));
+    m->getPCU()->Unpack(&rrbID, sizeof(int));
+    m->getPCU()->Unpack(&rrbMT, sizeof(int));
     rit = rbIDmap.find(rrbID);
     if(rit == rbIDmap.end())
       rbIDmap[rrbID] = rrbMT;
   }
 
-  int rbIDs_size = PCU_Max_Int(rbIDmap.size());
+  int rbIDs_size = m->getPCU()->Max<int>(rbIDmap.size());
   int* rbIDs = new int[rbIDs_size]();
   int* rbMTs = new int[rbIDs_size]();
 
-  if (!PCU_Comm_Self()) {
+  if (!m->getPCU()->Self()) {
     int count = 0;
     for (rit=rbIDmap.begin(); rit!=rbIDmap.end(); rit++) {
       rbIDs[count] = rit->first;
@@ -385,8 +384,8 @@ static void getRigidBody(Output& o, BCs& bcs, apf::Numbering* n) {
   }
 
 // allreduce the set
-  PCU_Max_Ints(rbIDs, rbIDs_size);
-  PCU_Max_Ints(rbMTs, rbIDs_size);
+  m->getPCU()->Max<int>(rbIDs, rbIDs_size);
+  m->getPCU()->Max<int>(rbMTs, rbIDs_size);
 
 // attach data
   o.numRigidBody = rbIDs_size;
@@ -434,7 +433,7 @@ bool checkInterface(Output& o, BCs& bcs) {
   m->end(it);
   PCU_ALWAYS_ASSERT(aID!=bID); //assert different material ID on two sides
   PCU_ALWAYS_ASSERT(a==b); //assert same number of faces on each side
-  if (PCU_Comm_Self() == 0)
+  if (m->getPCU()->Self() == 0)
     lion_oprint(1,"Checked! Same number of faces on each side of interface.\n");
   return true;
 }
@@ -627,12 +626,12 @@ static void getMaxElementNodes(Output& o)
 /* returns the global periodic master iff it is on this
    part, otherwise returns e */
 static apf::MeshEntity* getLocalPeriodicMaster(apf::MatchedSharing* sh,
-    apf::MeshEntity* e)
+    apf::MeshEntity* e, pcu::PCU *PCUObj)
 {
   if ( ! sh)
     return e;
   apf::Copy globalMaster = sh->getOwnerCopy(e);
-  if (globalMaster.peer == PCU_Comm_Self())
+  if (globalMaster.peer == PCUObj->Self())
     return globalMaster.entity;
   else
     return e;
@@ -649,7 +648,7 @@ static void getLocalPeriodicMasters(Output& o, apf::Numbering* n, BCs& bcs)
   while ((e = m->iterate(it))) {
     apf::ModelEntity* me = m->toModel(e);
     bool isDG = ph::isInterface(m->getModel(),(gmi_ent*) me,bcs.fields["DG interface"]);
-    apf::MeshEntity* master = getLocalPeriodicMaster(sh, e);
+    apf::MeshEntity* master = getLocalPeriodicMaster(sh, e, m->getPCU());
     if (master == e || isDG)
       iper[i] = 0;
     else
@@ -739,7 +738,7 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
   apf::Mesh* m = o.mesh;
   if(!in.ensa_melas_dof)
     return;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
 
   int nec = countEssentialBCs(in);
   int& ei = o.nEssentialBCNodes;
@@ -793,9 +792,9 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
       if(j == igcnv - 1 && m->isShared(vent)){
         m->getRemotes(vent, remotes);
         APF_ITERATE(apf::Copies, remotes, rit) {
-          PCU_COMM_PACK(rit->first, rit->second);
-          PCU_Comm_Pack(rit->first, &ibc, sizeof(int));
-          PCU_Comm_Pack(rit->first, &(bbc[0]), nec*sizeof(double));
+          m->getPCU()->Pack(rit->first, rit->second);
+          m->getPCU()->Pack(rit->first, &ibc, sizeof(int));
+          m->getPCU()->Pack(rit->first, &(bbc[0]), nec*sizeof(double));
         }
       }
     } // end loop over nodes on a growth curve
@@ -803,14 +802,14 @@ static void getGCEssentialBCs(Output& o, apf::Numbering* n)
   }
 
 // receive top most node
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
     apf::MeshEntity* rvent;
-    PCU_COMM_UNPACK(rvent);
+    m->getPCU()->Unpack(rvent);
     int ribc = 0;
-    PCU_Comm_Unpack(&ribc, sizeof(int));
+    m->getPCU()->Unpack(&ribc, sizeof(int));
     double* rbc = new double[nec];
-    PCU_Comm_Unpack(&(rbc[0]), nec*sizeof(double));
+    m->getPCU()->Unpack(&(rbc[0]), nec*sizeof(double));
     vID = apf::getNumber(n, rvent, 0, 0);
     if(o.arrays.nbc[vID] <= 0){
       o.arrays.nbc[vID] = ei + 1;
@@ -841,7 +840,7 @@ static void getInitialConditions(BCs& bcs, Output& o)
 {
   Input& in = *o.in;
   if (in.solutionMigration) {
-    if (!PCU_Comm_Self())
+    if (!o.mesh->getPCU()->Self())
       lion_oprint(1,"All attribute-based initial conditions, "
              "if any, "
              "are ignored due to request for SolutionMigration\n");
@@ -967,10 +966,10 @@ static void getSpanwiseAverageArrays(Input& in, Output& o) {
     o.arrays.ifather = new int[nnodes]; //initialize ifath
     apf::MeshTag* t = m->findTag("fathers2D");
     if (t==NULL) {
-      if (!PCU_Comm_Self())
+      if (!m->getPCU()->Self())
        lion_oprint(1,"Did not find tag fathers2D\n");
     } else if (t != NULL) {
-      if (!PCU_Comm_Self())
+      if (!m->getPCU()->Self())
        lion_oprint(1,"Found tag fathers2D\n");
     }
     int tagNum; 
@@ -1073,7 +1072,7 @@ Output::~Output()
 
 void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   o.in = &in;
   o.mesh = mesh;
   getCounts(o);
@@ -1107,8 +1106,8 @@ void generateOutput(Input& in, BCs& bcs, apf::Mesh* mesh, Output& o)
   apf::destroyNumbering(rn);
   if (in.initBubbles)
     initBubbles(o.mesh, in);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!o.mesh->getPCU()->Self())
     lion_oprint(1,"generated output structs in %f seconds\n",t1 - t0);
 }
 

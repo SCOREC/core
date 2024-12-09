@@ -1,4 +1,3 @@
-#include "PCU.h"
 #include "parma_dcpart.h"
 #include "parma_commons.h"
 #include "parma_convert.h"
@@ -8,11 +7,11 @@
 typedef std::map<unsigned, unsigned> muu;
 
 namespace {
-  bool isInMis(muu& mt) {
-    unsigned seed = TO_UINT(PCU_Comm_Self()+1);
+  bool isInMis(muu& mt, pcu::PCU *PCUObj) {
+    unsigned seed = TO_UINT(PCUObj->Self()+1);
     mis_init(seed);
     misLuby::partInfo part;
-    part.id = PCU_Comm_Self();
+    part.id = PCUObj->Self();
     std::set<int> targets;
     APF_ITERATE(muu, mt, mtItr) {
       int peer = TO_INT(mtItr->second);
@@ -23,7 +22,7 @@ namespace {
       }
     }
     part.net.push_back(part.id);
-    return mis(part,false,true);
+    return mis(part,PCUObj,false,true);
   }
 }
 
@@ -41,7 +40,7 @@ class dcPartFixer::PartFixer : public dcPart {
 
     int totNumDc() {
       int ndc = TO_INT(numDisconnectedComps());
-      return PCU_Add_Int(ndc);
+      return m->getPCU()->Add<int>(ndc);
     }
 
     void setupPlan(muu& dcCompTgts, apf::Migration* plan) {
@@ -64,11 +63,11 @@ class dcPartFixer::PartFixer : public dcPart {
      *         are tagged
      */
     void fix() {
-      double t1 = PCU_Time();
+      double t1 = pcu::Time();
       int loop = 0;
       int ndc = 0;
       while( (ndc = totNumDc()) && loop++ < 50 ) {
-        double t2 = PCU_Time();
+        double t2 = pcu::Time();
         muu dcCompTgts;
 
         unsigned maxSz = 0;
@@ -81,18 +80,18 @@ class dcPartFixer::PartFixer : public dcPart {
             dcCompTgts[i] = getCompPeer(i);
         PCU_ALWAYS_ASSERT( dcCompTgts.size() == getNumComps()-1 );
         apf::Migration* plan = new apf::Migration(m);
-        if ( isInMis(dcCompTgts) )
+        if ( isInMis(dcCompTgts, m->getPCU()) )
           setupPlan(dcCompTgts, plan);
 
         reset();
-        double t3 = PCU_Time();
+        double t3 = pcu::Time();
         m->migrate(plan);
-        if( ! PCU_Comm_Self() && vb)
+        if( ! m->getPCU()->Self() && vb)
           parmaCommons::status(
               "loop %d components %d seconds <fix migrate> %.3f %.3f\n",
-              loop, ndc, t3-t2, PCU_Time()-t3);
+              loop, ndc, t3-t2, pcu::Time()-t3);
       }
-      parmaCommons::printElapsedTime(__func__, PCU_Time() - t1);
+      parmaCommons::printElapsedTime(__func__, pcu::Time() - t1, m->getPCU());
     }
 };
 

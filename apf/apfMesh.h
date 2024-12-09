@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <PCU.h>
 #include "apfVector.h"
 #include "apfDynamicArray.h"
 
@@ -107,7 +108,7 @@ class Mesh
       \param s the field distribution of the coordinate field,
                apf::getLagrange(1) is a good default
       */
-    void init(FieldShape* s);
+    void init(FieldShape* s, pcu::PCU *PCUObj);
     /** \brief destroy the base class structures.
         \details this does not destroy the underlying data
                  structure, use apf::Mesh::destroyNative for that.
@@ -395,6 +396,9 @@ class Mesh
     GlobalNumbering* findGlobalNumbering(const char* name);
 
     GlobalNumbering* getGlobalNumbering(int i);
+    /** \brief get the mesh pcu */
+    pcu::PCU* getPCU() const {return pcu_;}
+    void switchPCU(pcu::PCU *newPCU);
     /** \brief true if any associated fields use array storage */
     bool hasFrozenFields;
   protected:
@@ -402,6 +406,7 @@ class Mesh
     std::vector<Field*> fields;
     std::vector<Numbering*> numberings;
     std::vector<GlobalNumbering*> globalNumberings;
+    pcu::PCU* pcu_;
 };
 
 /** \brief run consistency checks on an apf::Mesh structure
@@ -615,10 +620,10 @@ int getFirstType(Mesh* m, int dim);
 void getAlignment(Mesh* m, MeshEntity* elem, MeshEntity* boundary,
     int& which, bool& flip, int& rotate);
 
-void packString(std::string s, int to);
-std::string unpackString();
+void packString(std::string s, int to, pcu::PCU *PCUObj);
+std::string unpackString(pcu::PCU *PCUObj);
 void packTagInfo(Mesh* m, MeshTag* t, int to);
-void unpackTagInfo(std::string& name, int& type, int& size);
+void unpackTagInfo(std::string& name, int& type, int& size, pcu::PCU *PCUObj);
 
 extern char const* const dimName[4];
 

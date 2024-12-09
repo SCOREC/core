@@ -3,7 +3,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <gmi_mesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <vector>
 #include <sstream>
@@ -12,11 +11,12 @@
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(argc == 3);
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   apf::DynamicArray<apf::Field*> fields(10);
   apf::FieldShape* shapes[10] = {
     apf::getLagrange(1),
@@ -43,6 +43,6 @@ int main(int argc, char** argv)
     apf::destroyField(fields[i]);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

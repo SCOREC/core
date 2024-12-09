@@ -9,7 +9,6 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <mth.h>
 #include <mth_def.h>
@@ -25,10 +24,10 @@ static apf::Vector3 points3D[4] =
     apf::Vector3(0,1,0),
     apf::Vector3(0,0,1)};
 
-apf::Mesh2* createMesh2D()
+apf::Mesh2* createMesh2D(pcu::PCU *PCUObj)
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
 
   apf::buildOneElement(m,0,apf::Mesh::TRIANGLE,points3D);
   apf::deriveMdsModel(m);
@@ -38,10 +37,10 @@ apf::Mesh2* createMesh2D()
   return m;
 }
 
-apf::Mesh2* createMesh3D()
+apf::Mesh2* createMesh3D(pcu::PCU *PCUObj)
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
 
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
   apf::deriveMdsModel(m);
@@ -167,11 +166,12 @@ void testMatrixInverse(){
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   testNodeIndexing();
   testMatrixInverse();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

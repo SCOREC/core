@@ -1,17 +1,16 @@
 #include <pcu_util.h>
-#include <PCU.h>
 #include "parma_entWeights.h"
 #include "parma_sides.h"
 
 namespace parma {  
   double getMaxWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
     double locW = getWeight(m,w,entDim);
-    return PCU_Max_Double(locW);
+    return m->getPCU()->Max<double>(locW);
   }
 
   double getAvgWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
     double locW = getWeight(m,w,entDim);
-    return PCU_Add_Double(locW) / PCU_Comm_Peers();
+    return m->getPCU()->Add<double>(locW) / m->getPCU()->Peers();
   }
 
   double getWeight(apf::Mesh* m, apf::MeshTag* w, int entDim) {
@@ -25,17 +24,17 @@ namespace parma {
     return sum;
   }
 
-  void getImbalance(Weights* w, double& imb, double& avg) {
+  void getImbalance(Weights* w, double& imb, double& avg, pcu::PCU *PCUObj) {
     double sum, max;
     sum = max = w->self();
-    sum = PCU_Add_Double(sum);
-    max = PCU_Max_Double(max);
-    avg = sum/PCU_Comm_Peers();
+    sum = PCUObj->Add<double>(sum);
+    max = PCUObj->Max<double>(max);
+    avg = sum/PCUObj->Peers();
     imb = max/avg;
   }
 
-  double getMaxWeight(Weights* w) {
-    return PCU_Max_Double(w->self());
+  double getMaxWeight(Weights* w, pcu::PCU *PCUObj) {
+    return PCUObj->Max<double>(w->self());
   }
 
   double getEntWeight(apf::Mesh* m, apf::MeshEntity* e, apf::MeshTag* w) {
@@ -63,18 +62,18 @@ namespace parma {
     return entW;
   }
 
-  void EntWeights::init(apf::Mesh*, apf::MeshTag*, Sides* s) {
-    PCU_Comm_Begin();
+  void EntWeights::init(apf::Mesh* m, apf::MeshTag*, Sides* s) {
+    m->getPCU()->Begin();
     const Sides::Item* side;
     s->begin();
     while( (side = s->iterate()) ) 
-      PCU_COMM_PACK(side->first, weight);
+      m->getPCU()->Pack(side->first, weight);
     s->end();
-    PCU_Comm_Send();
-    while (PCU_Comm_Listen()) {
+    m->getPCU()->Send();
+    while (m->getPCU()->Listen()) {
       double otherWeight;
-      PCU_COMM_UNPACK(otherWeight);
-      set(PCU_Comm_Sender(), otherWeight);
+      m->getPCU()->Unpack(otherWeight);
+      set(m->getPCU()->Sender(), otherWeight);
     }
   }
   Weights* makeEntWeights(apf::Mesh* m, apf::MeshTag* w, Sides* s, int dim) {

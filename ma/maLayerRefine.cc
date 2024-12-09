@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "maCrawler.h"
 #include "maRefine.h"
 #include "maLayer.h"
@@ -73,12 +72,12 @@ struct SplitTagger : public Crawler
   void send(Entity* e, int to)
   {
     bool has = getFlag(a, e, SPLIT);
-    PCU_COMM_PACK(to, has);
+    m->getPCU()->Pack(to, has);
   }
   bool recv(Entity* e, int)
   {
     bool has;
-    PCU_COMM_UNPACK(has);
+    m->getPCU()->Unpack(has);
     if (getFlag(a, e, CHECKED))
       return false;
     handle(e, has);
@@ -209,12 +208,12 @@ struct Disambiguator : public Crawler
   void send(Entity* t, int to)
   {
     int diag = getDiagonalFromFlag(a, t);
-    PCU_COMM_PACK(to, diag);
+    m->getPCU()->Pack(to, diag);
   }
   bool recv(Entity* t, int)
   {
     int diag;
-    PCU_COMM_UNPACK(diag);
+    m->getPCU()->Unpack(diag);
     if (getFlag(a, t, CHECKED))
       return false;
     setFlag(a, t, CHECKED);

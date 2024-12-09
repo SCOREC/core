@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <stdio.h>
 #include <limits.h>
 #include "parma.h"
@@ -14,20 +13,20 @@
 namespace {
   using parmaCommons::status;
 
-  int getMaxNb(parma::Sides* s) {
-    return PCU_Max_Int(s->size());
+  int getMaxNb(parma::Sides* s, pcu::PCU *PCUObj) {
+    return PCUObj->Max<int>(s->size());
   }
 
   class ImbOrMaxNeighbor : public parma::Stop {
     public:
       ImbOrMaxNeighbor(parma::Average* nbAvg, double maxNbTol, int targets, int v=0)
         : nb(nbAvg), nbTol(maxNbTol), tgts(targets), verbose(v) {}
-      bool stop(double imb, double maxImb) {
-        int maxTgts = PCU_Max_Int(tgts);
+      bool stop(double imb, double maxImb, pcu::PCU *PCUObj) {
+        int maxTgts = PCUObj->Max<int>(tgts);
         const double nbSlope = nb->avg();
-        if( !PCU_Comm_Self() && verbose )
+        if( !PCUObj->Self() && verbose )
           status("max neighbor slope %f tolerance %f\n", nbSlope, nbTol);
-        if( !PCU_Comm_Self() && verbose && maxTgts == 0 )
+        if( !PCUObj->Self() && verbose && maxTgts == 0 )
           status("no targets found... stopping\n");
         return imb > maxImb || ( fabs(nbSlope) < nbTol ) || ( maxTgts == 0 );
       }
@@ -49,9 +48,9 @@ namespace {
         parma::Weights* w =
           parma::makeEntWeights(mesh, wtag, s, mesh->getDimension());
         parma::Targets* t =
-          parma::makeShapeTargets(s);
+          parma::makeShapeTargets(s, mesh->getPCU());
         parma::Selector* sel = parma::makeShapeSelector(mesh, wtag);
-        double maxNb = TO_DOUBLE(getMaxNb(s));
+        double maxNb = TO_DOUBLE(getMaxNb(s, mesh->getPCU()));
         monitorUpdate(maxNb, sS, sA);
         parma::Stop* stopper =
           new ImbOrMaxNeighbor(sA, maxNb*.001, t->size(), verbose);

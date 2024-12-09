@@ -1,7 +1,6 @@
 #ifndef PARMA_GHOSTOWNER_H 
 #define PARMA_GHOSTOWNER_H
  
-#include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
 

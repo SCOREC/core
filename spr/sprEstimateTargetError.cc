@@ -11,8 +11,6 @@
    and engineering 195.48 (2006): 6626-6645. */
 
 #include "spr.h"
-
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apfMesh.h>
 #include <apfShape.h>
@@ -66,9 +64,9 @@ class ScalarIntegrator : public apf::Integrator
       result(0)
     {
     }
-    void parallelReduce()
+    void parallelReduce(pcu::PCU *PCUObj)
     {
-      PCU_Add_Doubles(&result,1);
+      PCUObj->Add<double>(&result,1);
     }
     double result;
 };
@@ -243,17 +241,18 @@ static void estimateError(Estimation* e)
 apf::Field* getTargetSPRSizeField(
     apf::Field* eps,
     size_t target,
+    pcu::PCU *PCUObj,
     double alpha,
     double beta)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   PCU_ALWAYS_ASSERT(target > 0);
   PCU_ALWAYS_ASSERT(alpha < beta);
   target::Estimation e;
   target::setupEstimation(&e, eps, target, alpha, beta);
   target::estimateError(&e);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!PCUObj->Self())
     lion_eprint(1, "SPR (target): error estimated in %f seconds\n",t1-t0);
   return e.vtx_size;
 }

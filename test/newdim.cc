@@ -2,17 +2,17 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <gmi_null.h>
-#include <PCU.h>
 #include <lionPrint.h>
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_null();
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, &PCUObj);
   apf::Vector3 points[4] = {
     apf::Vector3(0,0,0),
     apf::Vector3(1,0,0),
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
   m->verify();
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
