@@ -2,6 +2,7 @@
 #define SCOREC_PCU_H
 
 #include <cstdlib>
+#include <cstdarg> //va_list
 #include <mpi.h>
 #include "pcu_defines.h"
 
