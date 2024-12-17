@@ -60,7 +60,7 @@ namespace {
   public:
     EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, double nsize,
       double AR, double h0, double thickness) : mesh(m),
-      norm_size(nsize), init_size(h0), ref(g), shock_surfaces(surfs) {
+      norm_size(nsize), init_size(h0), ref(g), shock_surfaces(surfs), thickness(thickness) {
       //shock_surface = reinterpret_cast<apf::ModelEntity*>(toGmiEntity(shock));
       thickness_tol = thickness * thickness / 4;
       tan_size = norm_size * AR;
@@ -74,7 +74,7 @@ namespace {
     double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand);
     ma::Mesh* mesh;
     gmi_model* ref;
-    double thickness_tol, norm_size, init_size, tan_size;
+    double thickness_tol, thickness, norm_size, init_size, tan_size;
     std::list<gmi_ent*> shock_surfaces;
     int nInShockBand;
   }; // class EmbeddedSizeFunction
@@ -477,20 +477,36 @@ namespace {
   double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand) {
     apf::Vector3 pos;
     mesh->getPoint(vtx, 0, pos);
-    apf::Vector3 sphere_cent(0.422625,0,0);
+    double sphere_size = 0.422625; // h_global*2
+    apf::Vector3 sphere_cent(sphere_size,0,0);
+
     double h_global = 0.2113125;
-    double h_tip = 0.052828125;
+    double h_tip = 0.052828125; // h_global/4
+    double h_upstream = 4 * h_global;
     //double h_tip = norm_size;
 
     apf::Vector3 dist = pos - sphere_cent;
     apf::Vector3 vecToPos = pos - closestPt;
 
-    if (std::abs(dist * dist) < 0.422625*0.422625) {
+    double sphere_dist_sqr = std::abs(dist * dist);    
+    if (sphere_dist_sqr < sphere_size*sphere_size) {
       return h_tip;
-    } else if (!inShockBand && vecToPos.x() > -1e-3) { // slight negative tolerance for outer outlet edge
-      return 4 * h_global;
     }
-    return h_global;
+
+    // (h_norm-h_global)*exp(-abs(testx)/smooth_dist) + h_global;
+    #define EXP_SMOOTH(initial, final, x, distance) ( initial - final )*exp(-abs(x)/ distance ) + final
+
+    double sphere_smooth_pos = std::sqrt(sphere_dist_sqr)-sphere_size;
+    double sphere_smooth_dist = 4*h_global;
+    double sphere_smooth_size = EXP_SMOOTH(h_tip, h_global, sphere_smooth_pos, sphere_smooth_dist);
+
+    double fs_smooth_pos = std::sqrt(std::abs(vecToPos * vecToPos))-0.5*thickness;
+    double fs_smooth_dist = 6*h_global;
+    double fs_smooth_size = EXP_SMOOTH(sphere_smooth_size, h_upstream, fs_smooth_pos, fs_smooth_dist);
+    if (!inShockBand && vecToPos.x() > -1e-3) { // slight negative tolerance for outer outlet edge
+      return fs_smooth_size;
+    }
+    return sphere_smooth_size;
   }
 
   void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale) {
