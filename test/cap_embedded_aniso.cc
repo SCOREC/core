@@ -476,14 +476,15 @@ namespace {
 
   double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand) {
     apf::Vector3 pos;
-    mesh->getPoint(vtx, 0, pos);
-    double sphere_size = 0.422625; // h_global*2
-    apf::Vector3 sphere_cent(sphere_size,0,0);
 
     double h_global = 0.2113125;
-    double h_tip = 0.052828125; // h_global/4
+    double h_tip = h_global/4; // h_global/4
     double h_upstream = 4 * h_global;
     //double h_tip = norm_size;
+
+    mesh->getPoint(vtx, 0, pos);
+    double sphere_size = 2*h_global;
+    apf::Vector3 sphere_cent(-h_global,0,0);
 
     apf::Vector3 dist = pos - sphere_cent;
     apf::Vector3 vecToPos = pos - closestPt;
@@ -500,9 +501,13 @@ namespace {
     double sphere_smooth_dist = 4*h_global;
     double sphere_smooth_size = EXP_SMOOTH(h_tip, h_global, sphere_smooth_pos, sphere_smooth_dist);
 
+    double sphere_fs_smooth_pos = std::sqrt(sphere_dist_sqr)-sphere_size;
+    double sphere_fs_smooth_dist = 6*h_global;
+    double sphere_fs_smooth_size = EXP_SMOOTH(h_tip, h_upstream, sphere_smooth_pos, sphere_smooth_dist);
+
     double fs_smooth_pos = std::sqrt(std::abs(vecToPos * vecToPos))-0.5*thickness;
     double fs_smooth_dist = 6*h_global;
-    double fs_smooth_size = EXP_SMOOTH(sphere_smooth_size, h_upstream, fs_smooth_pos, fs_smooth_dist);
+    double fs_smooth_size = EXP_SMOOTH(sphere_smooth_size, sphere_fs_smooth_size, fs_smooth_pos, fs_smooth_dist);
     if (!inShockBand && vecToPos.x() > -1e-3) { // slight negative tolerance for outer outlet edge
       return fs_smooth_size;
     }
