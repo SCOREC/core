@@ -1,6 +1,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <random>
+#include <iostream>
+#include <fstream>
 
 // Output
 #include <lionPrint.h>
@@ -51,20 +53,44 @@ void analyticClosestPoint(double const from[3], double to[3], double to_norm[3])
   #define Power(base, exp) std::pow(base,exp)
   #define Sqrt(arg) std::sqrt(arg)
 
+  // from NX, intersection point Point( -3.27529516[m], 1.84356815[m], 0.0[m] )
+  double intersection_y = 1.84356815;
   // Parabola
   double pA =  -0.0516559000000000;
   double pZ = -3.0997300000000000;
   double p_y = (-1 - 2*pA*pZ + 2*pA*x0)/(Power(6,0.3333333333333333)*Power(9*Power(pA,4)*y0 + Sqrt(3)*Sqrt(Power(pA,6)*(2*Power(1 + 2*pA*(pZ - x0),3) + 27*Power(pA,2)*Power(y0,2))),0.3333333333333333)) + Power(9*Power(pA,4)*y0 + Sqrt(3)*Sqrt(Power(pA,6)*(2*Power(1 + 2*pA*(pZ - x0),3) + 27*Power(pA,2)*Power(y0,2))),0.3333333333333333)/ (Power(6,0.6666666666666666)*Power(pA,2));
+  p_y = std::max(intersection_y, p_y);
   double p_x = pA*p_y*p_y + pZ;
   double p_d2 = std::pow(p_x-x0,2) + std::pow(p_y-y0,2);
 
-  // Cone
+  // Cone (l for line)
   double A = 1000;
   double B = 1786.99;
   double C = -19.1427;
-  double l_d2 = Power(C + A*x0 + B*y0,2)/(Power(A,2) + Power(B,2));
-  double l_x = (-(A*C) + B*(B*x0 - A*y0))/(Power(A,2) + Power(B,2));
+  //double l_d2 = Power(C + A*x0 + B*y0,2)/(Power(A,2) + Power(B,2));
+  //double l_x = (-(A*C) + B*(B*x0 - A*y0))/(Power(A,2) + Power(B,2));
   double l_y = (-(B*C) + A*(-(B*x0) + A*y0))/(Power(A,2) + Power(B,2));
+  l_y = std::min(intersection_y, l_y);
+  double l_x = -(B*l_y + C)/A;
+  double l_d2 = std::pow(l_x-x0,2) + std::pow(l_y-y0,2);
+
+  /* old idea for rejecting invalid cone/parabola regions
+  p_x_l_y = pA*l_y*l_y + pZ; // x coordinate of closest point on cone projected in the x direction to the parabola
+  l_x_p_y = -(B*p_y + C)/A; // x coordinate of the closest point on parabola projected in the x direction to the cone
+  if (p_y > l_y) {
+    // outside cone-parabola intersection
+    // if the closest point on the cone is behind the
+    // closest point on the parabola in this region
+    // make parabola win
+    if (l_x_p_y < p_x) p_d2 = 0; 
+  } else {
+    // inside cone-parabola intersection
+    // if closest point on the parabola is behind the
+    // cloest point on the cone in this region
+    // make cone win
+    if (p_x_l_y < l_x) l_d2 = 0;
+  }
+  */
 
   // Convert to x y z
   // Normals
@@ -170,8 +196,8 @@ int main(int argc, char** argv) {
     random[i][1] = unify(re);
     random[i][2] = unifz(re);
   }
-  lion_oprint(0, "%.6f %.6f %.6f\n", random[2][0], random[2][1], random[2][2]);
-  lion_oprint(0, "%.6f %.6f %.6f\n", random[362][0], random[362][1], random[362][2]);
+  double closestPts[npts][3];
+  double normalVecs[npts][3];
 
   // gmi_closest point and gmi_normal
   double t0_a = MPI_Wtime();
@@ -187,11 +213,21 @@ int main(int argc, char** argv) {
   // analytic methods
   t0_a = MPI_Wtime();
   for(int i=0; i<npts; i++) {
-    double clsArr[3], nrmArr[3];
-    analyticClosestPoint(random[i], clsArr, nrmArr);
+    //double clsArr[3], nrmArr[3];
+    analyticClosestPoint(random[i], closestPts[i], normalVecs[i]);
   }
   t1_a = MPI_Wtime();
-  lion_oprint(0, "gmi_closest point and gmi_normal: Total runtime %.12f s, average runtime %.12f s \n", t1_a-t0_a, (t1_a-t0_a)/npts);
+  lion_oprint(0, "analytic: Total runtime %.12f s, average runtime %.12f s \n", t1_a-t0_a, (t1_a-t0_a)/npts);
+
+  // write results
+  std::ofstream outfile("closesttable.txt");
+  for(int i=0; i<npts; i++) {
+    outfile << random[i][0] << " " << random[i][1] << " " << random[i][2] << " ";
+    outfile << closestPts[i][0] << " " << closestPts[i][1] << " " << closestPts[i][2] << " ";
+    outfile << normalVecs[i][0] << " " << normalVecs[i][1] << " " << normalVecs[i][2] << " ";
+    outfile << "0 0 0 0 0 0" << std::endl;
+  }
+  outfile.close();
 
   // Clean up.
 

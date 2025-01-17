@@ -474,6 +474,66 @@ namespace {
     "                VTK files.\n";
   }
 
+  void analyticClosestPoint(double const from[3], double to[3], double to_norm[3]) {
+    double x0 = from[0];
+    // x axis axisymmetry, y0 here is distance from x axis
+    double y0 = std::sqrt(from[1]*from[1] + from[2]*from[2]);
+
+    // For Mathematica CForm output
+    #define Power(base, exp) std::pow(base,exp)
+    #define Sqrt(arg) std::sqrt(arg)
+
+    // from NX, intersection point Point( -3.27529516[m], 1.84356815[m], 0.0[m] )
+    double intersection_y = 1.84356815;
+    // Parabola
+    double pA =  -0.0516559000000000;
+    double pZ = -3.0997300000000000;
+    double p_y = (-1 - 2*pA*pZ + 2*pA*x0)/(Power(6,0.3333333333333333)*Power(9*Power(pA,4)*y0 + Sqrt(3)*Sqrt(Power(pA,6)*(2*Power(1 + 2*pA*(pZ - x0),3) + 27*Power(pA,2)*Power(y0,2))),0.3333333333333333)) + Power(9*Power(pA,4)*y0 + Sqrt(3)*Sqrt(Power(pA,6)*(2*Power(1 + 2*pA*(pZ - x0),3) + 27*Power(pA,2)*Power(y0,2))),0.3333333333333333)/ (Power(6,0.6666666666666666)*Power(pA,2));
+    p_y = std::max(intersection_y, p_y);
+    double p_x = pA*p_y*p_y + pZ;
+    double p_d2 = std::pow(p_x-x0,2) + std::pow(p_y-y0,2);
+
+    // Cone (l for line)
+    double A = 1000;
+    double B = 1786.99;
+    double C = -19.1427;
+    double l_y = (-(B*C) + A*(-(B*x0) + A*y0))/(Power(A,2) + Power(B,2));
+    l_y = std::min(intersection_y, l_y);
+    double l_x = -(B*l_y + C)/A;
+    double l_d2 = std::pow(l_x-x0,2) + std::pow(l_y-y0,2);
+
+    // Convert to x y z
+    // Normals
+    double cls_y;
+    double dx;
+    double dy;
+    if (p_d2 < l_d2) {
+      to[0] = p_x;
+      cls_y = p_y; 
+      dx = -1.0;
+      dy = 2*pA*p_y;
+    } else {
+      to[0] = l_x;
+      cls_y = l_y;
+      dx = A;
+      dy = B;
+    }
+
+    double ratio = cls_y/y0;
+    to[1] = from[1]*ratio;
+    to[2] = from[2]*ratio;
+
+    // Build normal vector in x y z
+    to_norm[0] = dx;
+    double norm_ratio = dy/y0;
+    to_norm[1] = from[1]*norm_ratio;
+    to_norm[2] = from[2]*norm_ratio;
+    double norm_norm = std::sqrt(to_norm[0]*to_norm[0] + to_norm[1]*to_norm[1] + to_norm[2]*to_norm[2]);
+    to_norm[0] /= norm_norm;
+    to_norm[1] /= norm_norm;
+    to_norm[2] /= norm_norm;
+  }
+
   double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand) {
     apf::Vector3 pos;
 
@@ -520,29 +580,18 @@ namespace {
     double posArr[3];
     pos.toArray(posArr);
 
-    double shockDistSquare = DBL_MAX;
     double clsArr[3], clsParArr[2];
+    double nrmArr[3];
     apf::Vector3 clsVec;
+    apf::Vector3 norm;
     gmi_ent* closestSurf;
     PCU_ALWAYS_ASSERT(gmi_can_get_closest_point(ref));
-    for(gmi_ent* surf : shock_surfaces) {
-      //gmi_closest_point (struct gmi_model *m, struct gmi_ent *e, double const from[3], double to[3], double to_p[2])
-      double outClsArr[3], outClsParArr[2];
-      gmi_closest_point(ref, surf, posArr, outClsArr, outClsParArr);
-      double curShockDistSquare = (posArr[0]-outClsArr[0])*(posArr[0]-outClsArr[0])+
-        (posArr[1]-outClsArr[1])*(posArr[1]-outClsArr[1])+
-        (posArr[2]-outClsArr[2])*(posArr[2]-outClsArr[2]);
-      if (curShockDistSquare < shockDistSquare) {
-        shockDistSquare = curShockDistSquare;
-        clsArr[0] = outClsArr[0]; clsArr[1] = outClsArr[1]; clsArr[2] = outClsArr[2];
-        clsParArr[0] = outClsParArr[0]; clsParArr[1] = outClsParArr[1]; clsParArr[2] = outClsParArr[2];
-        closestSurf = surf;
-        clsVec.fromArray(clsArr);
-      }
-    }
+    analyticClosestPoint(posArr, clsArr, nrmArr);
+    clsVec.fromArray(clsArr);
+    norm.fromArray(nrmArr);
+    double shockDistSquare = std::abs((pos-clsVec)*(pos-clsVec));
 
     if (shockDistSquare < thickness_tol) {
-      apf::Vector3 norm;
       nInShockBand++;
       /*
       if (shockDistSquare > 1e-9) {
@@ -555,11 +604,6 @@ namespace {
           posPerturbedArr[2]-clsPerturbedArr[2]).normalize();
       }
       */
-
-      PCU_ALWAYS_ASSERT(gmi_has_normal(ref));
-      double nrmArr[3];
-      gmi_normal(ref, closestSurf, clsParArr, nrmArr);
-      norm.fromArray(nrmArr);
 
       // Negate largest component to get tangent.
       apf::Vector3 trial(norm[2], norm[1], norm[0]);
