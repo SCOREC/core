@@ -42,7 +42,7 @@ void myExit(int exit_code = EXIT_SUCCESS) {
 }
 
 void printUsage(char *argv0) {
-  printf("USAGE: %s <create_file.cre> <surface id>\n", argv0);
+  printf("USAGE: %s <create_file.cre> <surface id> <bounds expand multiplier, default 1>\n", argv0);
 }
 
 } // namespace
@@ -67,6 +67,10 @@ int main(int argc, char** argv) {
   // Parse arguments.
   const char* createFileName = argv[1];
   int surf_id = atoi(argv[2]);
+  double expand = 1;
+  if (argc > 3) {
+    expand = atof(argv[3]);
+  }
 
   // Initialize GMI.
   gmi_cap_start();
@@ -108,14 +112,15 @@ int main(int argc, char** argv) {
 
   int npts = 500;
   double random[npts][3];
-  std::uniform_real_distribution<double> unifx(bmin[0],bmax[0]);
-  std::uniform_real_distribution<double> unify(bmin[1],bmax[1]);
-  std::uniform_real_distribution<double> unifz(bmin[2],bmax[2]);
+  #define bounds(index, expandby) bmin[index]-expandby*(bmax[index]-bmin[index]),bmax[index]+expandby*(bmax[index]-bmin[index])
+  std::uniform_real_distribution<double> unifx(bounds(0,expand));
+  std::uniform_real_distribution<double> unify(bounds(1,expand));
+  std::uniform_real_distribution<double> unifz(bounds(2,expand));
   std::default_random_engine re;
   for(int i=0; i<npts; i++) {
-    random[i][0] = unifx(re);
-    random[i][1] = unify(re);
-    random[i][2] = unifz(re);
+    random[i][0] = unifx(re)*expand;
+    random[i][1] = unify(re)*expand;
+    random[i][2] = unifz(re)*expand;
   }
 
   // specific test points

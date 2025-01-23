@@ -25,6 +25,7 @@ void doubleConeClosestPointAnalytic(double const from[3], double to[3], double t
   //double l_x = (-(A*C) + B*(B*x0 - A*y0))/(Power(A,2) + Power(B,2));
   double l_y = (-(B*C) + A*(-(B*x0) + A*y0))/(Power(A,2) + Power(B,2));
   l_y = std::min(intersection_y, l_y);
+  l_y = std::max(0.0d, l_y);
   double l_x = -(B*l_y + C)/A;
   double l_d2 = std::pow(l_x-x0,2) + std::pow(l_y-y0,2);
 

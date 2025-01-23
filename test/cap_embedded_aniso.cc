@@ -73,6 +73,7 @@ namespace {
     double getMaxEdgeLengthAcrossShock();
   protected:
     double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand);
+    double h_global = 0.2113125;
     ma::Mesh* mesh;
     gmi_model* ref;
     double thickness_tol, thickness, norm_size, init_size, tan_size;
@@ -478,7 +479,6 @@ namespace {
   double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand) {
     apf::Vector3 pos;
 
-    double h_global = 0.2113125;
     double h_tip = h_global/4; // h_global/4
     double h_upstream = 4 * h_global;
     //double h_tip = norm_size;
@@ -532,50 +532,33 @@ namespace {
     norm.fromArray(nrmArr);
     double shockDistSquare = std::abs((pos-clsVec)*(pos-clsVec));
 
-    if (shockDistSquare < thickness_tol) {
-      nInShockBand++;
-      /*
-      if (shockDistSquare > 1e-9) {
-        norm = (pos-clsVec).normalize();
-      } else {
-        double posPerturbedArr[3] = {posArr[0]+0.001, posArr[1], posArr[2]};
-        double clsPerturbedArr[3], clsPerturbedParArr[3];
-        gmi_closest_point(ref, closestSurf, posPerturbedArr, clsPerturbedArr, clsPerturbedParArr);
-        norm = apf::Vector3(posPerturbedArr[0]-clsPerturbedArr[0], posPerturbedArr[1]-clsPerturbedArr[1],
-          posPerturbedArr[2]-clsPerturbedArr[2]).normalize();
-      }
-      */
+    // Negate largest component to get tangent.
+    apf::Vector3 trial(norm[2], norm[1], norm[0]);
+    int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
+    trial[largest] *= -1;
+    apf::Vector3 tan1 = apf::cross(norm, trial).normalize();
+    apf::Vector3 tan2 = apf::cross(norm, tan1);
 
-      // Negate largest component to get tangent.
-      apf::Vector3 trial(norm[2], norm[1], norm[0]);
-      int largest = trial[0] > trial[1] && trial[0] > trial[2] ? 0 : (trial[1] > trial[0] && trial[1] > trial[2] ? 1 : 2);
-      trial[largest] *= -1;
-      apf::Vector3 tan1 = apf::cross(norm, trial).normalize();
-      apf::Vector3 tan2 = apf::cross(norm, tan1);
+    frame[0][0] = nrmArr[0]; frame[0][1] = tan1[0]; frame[0][2] = tan2[0];
+    frame[1][0] = nrmArr[1]; frame[1][1] = tan1[1]; frame[1][2] = tan2[1];
+    frame[2][0] = nrmArr[2]; frame[2][1] = tan1[2]; frame[2][2] = tan2[2];
 
-      frame[0][0] = nrmArr[0]; frame[0][1] = tan1[0]; frame[0][2] = tan2[0];
-      frame[1][0] = nrmArr[1]; frame[1][1] = tan1[1]; frame[1][2] = tan2[1];
-      frame[2][0] = nrmArr[2]; frame[2][1] = tan1[2]; frame[2][2] = tan2[2];
+    double shockDist = std::sqrt(shockDistSquare);
+    //#define EXP_SMOOTH2(hi, hf, x, d, dAR) (hi-hf)*exp(-x*x/(-d*d/std::log((dAR-1)*hf/(hi-hf))))+hf
+    #define TANH_SMOOTH(min, max, x, slope) min+(max-min)*std::tanh(slope*x)
+    double zoneIsoSize = getZoneIsoSize(vtx, clsVec, false);
+    scale[0] = TANH_SMOOTH(norm_size, h_global, shockDist, 0.333d);
+    scale[1] = zoneIsoSize;
+    scale[2] = zoneIsoSize;
 
-      double zoneIsoSize = getZoneIsoSize(vtx, clsVec, true);
-      scale[0] = norm_size;
-      scale[1] = zoneIsoSize;
-      scale[2] = zoneIsoSize;
-
-      if(lion_get_verbosity() >= 1 && nInShockBand % 500 == 0){
-        std::cout << posArr[0] << " " << posArr[1] << " " << posArr[2] << " ";
-        std::cout << clsArr[0] << " " << clsArr[1] << " " << clsArr[2] << " ";
-        std::cout << nrmArr[0] << " " << nrmArr[1] << " " << nrmArr[2] << " ";
-        std::cout << tan1[0] << " " << tan1[1] << " " << tan1[2] << " ";
-        std::cout << tan2[0] << " " << tan2[1] << " " << tan2[2] << std::endl;
-      }
-
-    } else {
-      frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
-      frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
-      frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
-      scale[0] = scale[1] = scale[2] = getZoneIsoSize(vtx, clsVec, false);
+    if(lion_get_verbosity() >= 1 && nInShockBand % 500 == 0){
+      std::cout << posArr[0] << " " << posArr[1] << " " << posArr[2] << " ";
+      std::cout << clsArr[0] << " " << clsArr[1] << " " << clsArr[2] << " ";
+      std::cout << nrmArr[0] << " " << nrmArr[1] << " " << nrmArr[2] << " ";
+      std::cout << tan1[0] << " " << tan1[1] << " " << tan1[2] << " ";
+      std::cout << tan2[0] << " " << tan2[1] << " " << tan2[2] << std::endl;
     }
+
   }
 
   double EmbeddedShockFunction::getMaxEdgeLengthAcrossShock() {
