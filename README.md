@@ -51,7 +51,7 @@ For more information, start at our
 ### Who do I talk to? ###
 
 * If you have a usage question or have found a bug please post an [issue](https://github.com/SCOREC/core/issues).
-* Otherwise, email [Cameron Smith](https://www.scorec.rpi.edu/~cwsmith) and pumi@scorec.rpi.edu.
+* Otherwise, email scorec-pumi@lists.rpi.edu.
 
 ### Citing PUMI
 
