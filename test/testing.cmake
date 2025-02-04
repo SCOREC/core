@@ -328,6 +328,11 @@ if(ENABLE_ZOLTAN)
     "${MESHES}/cube/cube.dmg"
     "${MESHES}/cube/pumi670/cube.smb"
     "0")
+  mpi_test(aniso_ma2 1
+    ./aniso_ma_test
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb"
+    "1" "8")
   mpi_test(aniso_ma_serial_log_interpolation 1
     ./aniso_ma_test
     "${MESHES}/cube/cube.dmg"
@@ -345,6 +350,11 @@ if(ENABLE_ZOLTAN)
   set_tests_properties(ma_2dLayersOff PROPERTIES
     PASS_REGULAR_EXPRESSION "number of triangle 18698")
 endif()
+mpi_test(aniso_ma2 1
+  ./aniso_ma_test2
+  "${MESHES}/cube/cube.dmg"
+  "${MESHES}/cube/pumi670/cube.smb"
+  "1" "8")
 mpi_test(tet_serial 1
   ./tetrahedronize
   "${MDIR}/pipe.${GXT}"
