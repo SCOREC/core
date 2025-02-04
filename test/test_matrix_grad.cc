@@ -93,10 +93,11 @@ int main(int argc, char* argv[])
     return 1;
   }
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  apf::Mesh2* mesh = apf::loadMdsMesh(argv[1], argv[2]);
+  apf::Mesh2* mesh = apf::loadMdsMesh(argv[1], argv[2], &pcu_obj);
   int order=1;
   apf::Field* nodal_matrix_fld = apf::createLagrangeField(mesh, "matrix", apf::MATRIX, order);
   apf::Field* matrix_deriv = apf::createPackedField(mesh, "matrix_deriv", 27, apf::getIPShape(3,order));
@@ -115,7 +116,7 @@ int main(int argc, char* argv[])
   std::cout<<"Done"<<std::endl;
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
   return 0;
 }

@@ -4,7 +4,6 @@
 #include <map>
 #include <set>
 #include <string>
-
 #include <apfVector.h>
 #include <gmi.h>
 #include "phInput.h"
@@ -128,7 +127,7 @@ struct BCs
 };
 
 void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs);
-void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs);
+void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs, pcu::PCU *PCUObj);
 
 bool applyNaturalBCs(gmi_model* gm, gmi_ent* ge,
     BCs& appliedBCs, apf::Vector3 const& x, double* values, int* bits);

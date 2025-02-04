@@ -3,7 +3,6 @@
 #include <apfMesh2.h>
 #include <gmi_mesh.h>
 #include <parma.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -25,7 +24,7 @@ namespace {
 
   apf::MeshTag* setWeights(apf::Mesh* m, double edgeWeight) {
     double weights[4] = {1.,edgeWeight,1.,1.};
-    weights[1] = (!PCU_Comm_Self()) ? edgeWeight : 1.0;
+    weights[1] = (!m->getPCU()->Self()) ? edgeWeight : 1.0;
     const int d = m->getDimension();
     apf::MeshTag* tag = m->createDoubleTag("parma_weight", 1);
     setWeight(m, tag, 0, weights[0]);
@@ -46,10 +45,11 @@ int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 6);
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 6 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out mesh> <edge weight> <tgt imb>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -64,12 +64,12 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   //load model and mesh
   double targetImb = atof(argv[5]);
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   apf::MeshTag* weights = setWeights(m,atof(argv[4]));
   Parma_PrintWeightedPtnStats(m, weights, "initial");
   const double step = 0.5; const int verbose = 1;
   apf::Balancer* balancer = Parma_MakeVtxEdgeElmBalancer(m, step, verbose);
-  if( !PCU_Comm_Self() )
+  if( !m->getPCU()->Self() )
     fprintf(stderr, "STATUS target imbalance %.2f\n", targetImb);
   balancer->balance(weights, targetImb);
   delete balancer;
@@ -86,6 +86,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

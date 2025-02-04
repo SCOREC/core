@@ -36,10 +36,10 @@ struct testOwnership : public Ownership
   pOwnership o;
 };
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc < 4 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh> <num_part_in_mesh> <do_distribution(0/1)>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -86,24 +86,26 @@ int main(int argc, char** argv)
 //*********************************************************
 {
   MPI_Init(&argc,&argv);
-  pumi_start();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pumi_load_pcu(&PCUObj);
   lion_set_verbosity(1);
   pumi_printSys();
 
 #if 0
   int i, processid = getpid();
-  if (!PCU_Comm_Self())
+  if (!PCUObj.Self())
   {
-    std::cout<<"Proc "<<PCU_Comm_Self()<<">> pid "<<processid<<" Enter any digit...\n";
+    std::cout<<"Proc "<<PCUObj.Self()<<">> pid "<<processid<<" Enter any digit...\n";
     std::cin>>i;
   }
   else
-    std::cout<<"Proc "<<PCU_Comm_Self()<<">> pid "<<processid<<" Waiting...\n";
+    std::cout<<"Proc "<<PCUObj.Self()<<">> pid "<<processid<<" Waiting...\n";
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
   // read input args - in-model-file in-mesh-file out-mesh-file num-in-part
-  getConfig(argc,argv);
+  getConfig(argc,argv,&PCUObj);
 
   // load model
   pGeom g = pumi_geom_load(modelFile);
@@ -169,10 +171,10 @@ int main(int argc, char** argv)
     pMeshIter it = m->begin(dim);
     while ((e = m->iterate(it)))
     {
-      pid=pumi_ment_getID(e)%PCU_Comm_Peers();
+      pid=pumi_ment_getID(e)%m->getPCU()->Peers();
       plan->send(e, pid);
       if (pid-1>=0) plan->send(e, pid-1);
-      if (pid+1<PCU_Comm_Peers()) plan->send(e, pid+1);
+      if (pid+1<m->getPCU()->Peers()) plan->send(e, pid+1);
       if (count==5) break;
       ++count;
     }
@@ -248,7 +250,7 @@ int main(int argc, char** argv)
   // print elapsed time and increased heap memory
   pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem);
 
-  pumi_finalize();
+  }
   MPI_Finalize();
 }
 
@@ -788,7 +790,7 @@ void TEST_GHOSTING(pMesh m)
   pumi_ghost_create(m, ghosting_plan);
 
   int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-  PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+  PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm()); 
   if (!pumi_rank()) std::cout<<"\n[test_pumi] element-wise pumi_ghost_create: #ghost increase="<<total_mcount_diff<<"\n";
 
   int num_ghost_vtx=0;
@@ -819,7 +821,7 @@ void TEST_GHOSTING(pMesh m)
         before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-        PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+        PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
         if (!pumi_rank()) std::cout<<"\n[test_pumi] layer-wise pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
         pumi_mesh_verify(m);
         TEST_FIELD(m);
@@ -836,7 +838,7 @@ void TEST_GHOSTING(pMesh m)
         int before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-        PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, PCU_Get_Comm());
+        PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
         if (!pumi_rank()) 
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";

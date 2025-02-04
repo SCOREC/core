@@ -6,7 +6,6 @@
  */
 
 #include "crv.h"
-#include "PCU.h"
 #include "apfDynamicVector.h"
 #include "apfFieldData.h"
 #include "apfMDS.h"
@@ -737,7 +736,7 @@ static void writePvtuFile(const char* prefix, const char* suffix,
   }
   writePPointData(file,m);
   file << "</PPointData>\n";
-  for (int i=0; i < PCU_Comm_Peers(); ++i)
+  for (int i=0; i < m->getPCU()->Peers(); ++i)
   {
     std::stringstream ssPart;
     ssPart << "vtu/"
@@ -764,13 +763,13 @@ static void writePointData(std::ostream& file, apf::Mesh* m,
 
 void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     writePvtuFile(prefix,"_interPts",m,apf::Mesh::VERTEX);
 
-  PCU_Barrier();
+  m->getPCU()->Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self() << "_interPts"
+  ss << prefix << m->getPCU()->Self() << "_interPts"
      << "_" << m->getShape()->getOrder()
      << ".vtu";
 
@@ -831,18 +830,18 @@ void writeInterpolationPointVtuFiles(apf::Mesh* m, const char* prefix)
     file << buf.rdbuf();
   }
 
-  PCU_Barrier();
+  m->getPCU()->Barrier();
 }
 
 void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
 {
-  if (!PCU_Comm_Self())
+  if (!m->getPCU()->Self())
     writePvtuFile(prefix,getSuffix(apf::Mesh::VERTEX),m,apf::Mesh::VERTEX);
 
-  PCU_Barrier();
+  m->getPCU()->Barrier();
 
   std::stringstream ss;
-  ss << prefix << PCU_Comm_Self()
+  ss << prefix << m->getPCU()->Self()
      << getSuffix(apf::Mesh::VERTEX)
      << "_" << m->getShape()->getOrder()
      << ".vtu";
@@ -901,7 +900,7 @@ void writeControlPointVtuFiles(apf::Mesh* m, const char* prefix)
     file << buf.rdbuf();
   }
 
-  PCU_Barrier();
+  m->getPCU()->Barrier();
 }
 
 static void safe_mkdir(const char* path)
@@ -949,7 +948,7 @@ static void makeDirectories(const char* prefix, int type, int n)
 
 void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
 {
-  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(NULL, 1, false);
+  apf::Mesh2* wireMesh = apf::makeEmptyMdsMesh(NULL, 1, false, m->getPCU());
   apf::Field* f = m->getCoordinateField();
   apf::MeshEntity* ent;
   apf::MeshIterator* it;
@@ -1001,17 +1000,17 @@ void writeCurvedWireFrame(apf::Mesh* m, int n, const char* prefix)
 
 void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
 {
-  double t0 = PCU_Time();
-  if (!PCU_Comm_Self()) {
+  double t0 = pcu::Time();
+  if (!m->getPCU()->Self()) {
     makeDirectories(prefix, type, n);
     writePvtuFile(getPvtuDirectoryStr(prefix, type, n).c_str(),"",m,type);
   }
-  PCU_Barrier();
+  m->getPCU()->Barrier();
 
   std::stringstream ss;
   ss << getVtuDirectoryStr(prefix, type, n) << "/order_"
      << m->getShape()->getOrder() << "_"
-     << PCU_Comm_Self()
+     << m->getPCU()->Self()
      << ".vtu";
   std::string fileName = ss.str();
   std::stringstream buf;
@@ -1055,9 +1054,9 @@ void writeCurvedVtuFiles(apf::Mesh* m, int type, int n, const char* prefix)
     file << buf.rdbuf();
   }
 
-  PCU_Barrier();
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  m->getPCU()->Barrier();
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
     lion_oprint(1,"%s vtk files %s written in %f seconds\n",
         apf::Mesh::typeName[type],getPvtuDirectoryStr(prefix, type, n).c_str(),t1 - t0);
 }

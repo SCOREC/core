@@ -90,7 +90,7 @@ static void parseNodes(const char* nodefile, Nodes& nodes)
 
 typedef std::map<int, MeshEntity*> Vertices;
 
-static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
+static Mesh2* parseElems(const char* elemfile, Nodes& nodes, pcu::PCU *PCUObj)
 {
   Mesh2* m = 0;
   std::ifstream f(elemfile);
@@ -107,7 +107,8 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
   apf::Numbering* enumbers = 0;
   while (parseElem(f, en, type, id, shape)) {
     if (!m) {
-      m = makeEmptyMdsMesh(gmi_load(".null"), Mesh::typeDimension[type], false);
+      m = makeEmptyMdsMesh(gmi_load(".null"), Mesh::typeDimension[type], false, PCUObj);
+      
       if (shape != m->getShape())
         changeMeshShape(m, shape, false);
       enumbers = createNumbering(m, "ansys_element", getConstant(m->getDimension()), 1);
@@ -151,11 +152,11 @@ static Mesh2* parseElems(const char* elemfile, Nodes& nodes)
   return m;
 }
 
-Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile)
+Mesh2* loadMdsFromANSYS(const char* nodefile, const char* elemfile, pcu::PCU *PCUObj)
 {
   Nodes nodes;
   parseNodes(nodefile, nodes);
-  Mesh2* m = parseElems(elemfile, nodes);
+  Mesh2* m = parseElems(elemfile, nodes, PCUObj);
   m->acceptChanges();
   deriveMdsModel(m);
   return m;

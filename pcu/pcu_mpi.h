@@ -18,6 +18,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
   pcu_buffer buffer;
@@ -28,23 +32,27 @@ typedef struct
 void pcu_make_message(pcu_message* m);
 void pcu_free_message(pcu_message* m);
 
-typedef struct
+struct pcu_mpi_struct
 {
-  int (*size)(void);
-  int (*rank)(void);
-  void (*send)(pcu_message* m, MPI_Comm comm);
-  bool (*done)(pcu_message* m);
-  bool (*receive)(pcu_message* m, MPI_Comm comm);
-} pcu_mpi;
+  MPI_Comm original_comm;
+  MPI_Comm user_comm;
+  MPI_Comm coll_comm;
+  int rank;
+  int size;
+};
+typedef struct pcu_mpi_struct pcu_mpi_t;
 
-void pcu_set_mpi(pcu_mpi* m);
-pcu_mpi* pcu_get_mpi(void);
-int pcu_mpi_size(void);
-int pcu_mpi_rank(void);
-void pcu_mpi_send(pcu_message* m, MPI_Comm comm);
-bool pcu_mpi_done(pcu_message* m);
-bool pcu_mpi_receive(pcu_message* m, MPI_Comm comm);
+int pcu_mpi_size(const pcu_mpi_t*);
+int pcu_mpi_rank(const pcu_mpi_t*);
+void pcu_mpi_send(const pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
+bool pcu_mpi_done(const pcu_mpi_t*, pcu_message* m);
+bool pcu_mpi_receive(const pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
+void pcu_mpi_init(MPI_Comm comm, pcu_mpi_t* mpi);
+void pcu_mpi_finalize(pcu_mpi_t* mpi);
 int  pcu_mpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm);
 int  pcu_mpi_free(MPI_Comm comm);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

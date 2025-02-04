@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.8)
 
-project(SCOREC VERSION 2.2.8 LANGUAGES CXX C)
+project(SCOREC VERSION 3.0.3 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -66,6 +66,8 @@ message(STATUS "IS_TESTING: ${IS_TESTING}")
 
 set(MESHES "${CMAKE_SOURCE_DIR}/pumi-meshes" CACHE STRING "Directory of test meshes")
 message(STATUS "MESHES: ${MESHES}")
+set(SMOKE_TEST_MESHES "${CMAKE_SOURCE_DIR}/smoke_test_meshes" CACHE STRING "Directory of
+meshes used for smoke testing")
 
 option(BUILD_EXES "Build executables" ON)
 message(STATUS "BUILD_EXES: ${BUILD_EXES}")
@@ -204,7 +206,6 @@ scorec_export_library(core)
 
 if(BUILD_EXES)
   add_subdirectory(test)
-  add_subdirectory(capstone_clis)
 endif()
 
 if(PUMI_PYTHON_INTERFACE)

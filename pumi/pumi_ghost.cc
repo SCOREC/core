@@ -83,7 +83,7 @@ void Ghosting::send(pMeshEnt e, int to)
 /** assign a destination part id of all entities of dimension */
 void Ghosting::send (int to)
 {
-  if (to==PCU_Comm_Self()) return;
+  if (to==m->getPCU()->Self()) return;
 
   pMeshEnt e;
   apf::MeshIterator* it = m->begin(ghost_dim);
@@ -103,7 +103,7 @@ void Ghosting::print()
     m->getIntTag(e, parts_index_tag, &index);
     
     APF_ITERATE(Parts,*(parts_vec[ghost_dim][index]),pit)
-      std::cout<<"("<<PCU_Comm_Self()<<") ghost e "<<getMdsIndex(m,e)<<" to "<<*pit<<"\n";
+      std::cout<<"("<<m->getPCU()->Self()<<") ghost e "<<getMdsIndex(m,e)<<" to "<<*pit<<"\n";
   }
   m->end(it);
 }
@@ -134,9 +134,9 @@ int Ghosting::count()
 static pMeshEnt unpackGhost(Ghosting* plan, apf::DynamicArray<pMeshTag>& tags)
 // *********************************************************
 {
-  int from = PCU_Comm_Sender();
+  int from = plan->getMesh()->getPCU()->Sender();
   int type;
-  PCU_COMM_UNPACK(type);
+  plan->getMesh()->getPCU()->Unpack(type);
   pMeshEnt sender;
   apf::ModelEntity* c;
   Parts residence;
@@ -164,7 +164,7 @@ static void ghost_receiveEntities(Ghosting* plan, apf::DynamicArray<pMeshTag>& t
 // *********************************************************
 {
   received.reserve(1024);
-  while (PCU_Comm_Receive())
+  while (plan->getMesh()->getPCU()->Receive())
     received.push_back(unpackGhost(plan,tags));
 }
 
@@ -172,7 +172,7 @@ static void ghost_receiveEntities(Ghosting* plan, apf::DynamicArray<pMeshTag>& t
 static void setupGhosts(pMesh m, EntityVector& received)
 // *********************************************************
 {
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   APF_ITERATE(EntityVector,received,it)
   {
     pMeshEnt entity = *it;
@@ -181,24 +181,24 @@ static void setupGhosts(pMesh m, EntityVector& received)
     apf::Copies temp;
     m->getGhosts(entity,temp);
     int to = temp.begin()->first;
-    PCU_COMM_PACK(to,temp.begin()->second); // sender
-    PCU_COMM_PACK(to,entity);
+    m->getPCU()->Pack(to,temp.begin()->second); // sender
+    m->getPCU()->Pack(to,entity);
     apf::Copies remotes;
     m->getRemotes(entity, remotes);
     APF_ITERATE(Copies,remotes,rit)
     {
-      PCU_COMM_PACK(rit->first, rit->second); // sender
-      PCU_COMM_PACK(rit->first,entity);
+      m->getPCU()->Pack(rit->first, rit->second); // sender
+      m->getPCU()->Pack(rit->first,entity);
     }
   }
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive())
   {
-    int from = PCU_Comm_Sender();
+    int from = m->getPCU()->Sender();
     pMeshEnt entity;
-    PCU_COMM_UNPACK(entity);
+    m->getPCU()->Unpack(entity);
     pMeshEnt sender;
-    PCU_COMM_UNPACK(sender);
+    m->getPCU()->Unpack(sender);
     m->addGhost(entity, from, sender);
     if (!m->hasTag(entity, pumi::instance()->ghosted_tag))
     {
@@ -264,7 +264,7 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
   size_t msg_size;
   for (int dim = 0; dim <=ghost_dim; ++dim)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     APF_ITERATE(EntityVector,entitiesToGhost[dim],it)
     {
       e = *it;
@@ -288,18 +288,18 @@ static void ghost_collectEntities (pMesh m, Ghosting* plan, EntityVector entitie
           pids[pos]=*pit;
           ++pos;
         }
-        PCU_Comm_Write(rit->first, (void*)msg_send, msg_size);
+        m->getPCU()->Write(rit->first, (void*)msg_send, msg_size);
         free(msg_send);    
       }
     } // for entitiesToGhost[dim]
-    PCU_Comm_Send();
+    m->getPCU()->Send();
   
     // receive phase
     void *msg_recv;
     int pid_from;
     int* pids;
     pMeshEnt r;
-    while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
+    while(m->getPCU()->Read(&pid_from, &msg_recv, &msg_size))
     {
       r = *((pMeshEnt*)msg_recv); 
       if ( !m->hasTag(r,tag))
@@ -340,7 +340,7 @@ void ghost_sendEntities(Ghosting* plan, int entDim,
 // **********************************************
 {
   pMeshEnt ent;
-  int src_partid=PCU_Comm_Self();
+  int src_partid=plan->getMesh()->getPCU()->Self();
   pMesh m = plan->getMesh();
 
   std::set<int> res_parts, temp; 
@@ -393,7 +393,7 @@ void ghost_sendEntities(Ghosting* plan, int entDim,
 void pumi_ghost_create(pMesh m, Ghosting* plan)
 // *********************************************************
 {
-  if (PCU_Comm_Peers()==1) {
+  if (m->getPCU()->Peers()==1) {
     delete plan;
     return;
   }
@@ -410,7 +410,7 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
     }
   }
 
-  double t0=PCU_Time();
+  double t0=pcu::Time();
 
   EntityVector entities_to_ghost[4];
   ghost_collectEntities(m, plan, entities_to_ghost);
@@ -419,9 +419,9 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   plan->getMesh()->getTags(tags);
   for (int dimension = 0; dimension <= plan->ghost_dim; ++dimension)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     ghost_sendEntities(plan, dimension, entities_to_ghost[dimension], tags);
-    PCU_Comm_Send();
+    m->getPCU()->Send();
     EntityVector received;
     ghost_receiveEntities(plan,tags,received);
     setupGhosts(plan->getMesh(),received);
@@ -438,8 +438,8 @@ void pumi_ghost_create(pMesh m, Ghosting* plan)
   for (std::vector<apf::Field*>::iterator fit=frozen_fields.begin(); fit!=frozen_fields.end(); ++fit)
     apf::freeze(*fit);    
 
-  if (!PCU_Comm_Self())
-    lion_oprint(1,"mesh ghosted in %f seconds\n", PCU_Time()-t0);
+  if (!m->getPCU()->Self())
+    lion_oprint(1,"mesh ghosted in %f seconds\n", pcu::Time()-t0);
 }
 
 // *********************************************************
@@ -454,7 +454,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
   pMeshEnt* s_ent;
   size_t msg_size;
   int dummy=1;
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
 
   for (int layer=2; layer<num_layer+1; ++layer)
   {
@@ -476,7 +476,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
           int *s_int = (int*)((char*)msg_send + sizeof(pMeshEnt));
           s_int[0]=layer;
           s_int[1]=pid;
-          PCU_Comm_Write(brg_rit->first, (void*)msg_send, msg_size);
+          m->getPCU()->Write(brg_rit->first, (void*)msg_send, msg_size);
           free(msg_send);    
         }  // APF_ITERATE
       } // for (std::map<pMeshEnt, set<int> >::iterator iter     
@@ -487,7 +487,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int j=0; j<pumi_size();++j)
       off_bridge_set[i][j].clear();
 
-  PCU_Comm_Send();
+  m->getPCU()->Send();
   // receive phase
   void *msg_recv;
   int pid_from;
@@ -498,7 +498,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
   std::vector<pMeshEnt> processed_ent;
   std::vector<pMeshEnt> adj_ent;
 
-  while(PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
+  while(m->getPCU()->Read(&pid_from, &msg_recv, &msg_size))
   {
     processed_ent.clear();
 
@@ -578,11 +578,11 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
   for (int i=0; i<num_layer+1;++i)
     for (int j=0; j<pumi_size();++j)
       local_num_off_part+=off_bridge_set[i][j].size();
-  PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,PCU_Get_Comm());
+  PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
 
   while (global_num_off_part)
   {
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
 
     for (int layer=0; layer<num_layer+1; ++layer)
     {
@@ -604,7 +604,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
             int *p_int = (int*)((char*)msg_send + sizeof(pMeshEnt));
             p_int[0]=layer;
             p_int[1]=pid;
-            PCU_Comm_Write(brg_rit->first, (void*)msg_send, msg_size);
+            m->getPCU()->Write(brg_rit->first, (void*)msg_send, msg_size);
             free(msg_send);    
           }  // APF_ITERATE
         } // for off_it     
@@ -615,9 +615,9 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
       for (int j=0; j<pumi_size();++j)
         off_bridge_set[i][j].clear();
 
-    PCU_Comm_Send();
+    m->getPCU()->Send();
 
-    while (PCU_Comm_Read(&pid_from, &msg_recv, &msg_size))
+    while (m->getPCU()->Read(&pid_from, &msg_recv, &msg_size))
     {
       processed_ent.clear();
 
@@ -699,7 +699,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int i=0; i<num_layer+1;++i)
       for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
-    PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,PCU_Get_Comm());
+    PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU->GetMPIComm());
   } // while global_off_part_brg
 }
 
@@ -708,7 +708,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
 void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer, int include_copy)
 // *********************************************************
 {
-  if (PCU_Comm_Peers()==1 || num_layer==0) return;
+  if (m->getPCU()->Peers()==1 || num_layer==0) return;
   
   int dummy=1, mesh_dim=m->getDimension(), self = pumi_rank();;
   
@@ -721,7 +721,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
     return;
   }
 
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
 
   pMeshTag tag = m->createIntTag("ghost_check_mark",1);
   Ghosting* plan = new Ghosting(m, ghost_dim);
@@ -823,7 +823,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int i=0; i<num_layer+1;++i)
       for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
-    PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,PCU_Get_Comm());
+    PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
   }
 
   if (global_num_off_part)
@@ -842,8 +842,8 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
 // ********************************************
 // STEP 3: perform ghosting
 // ********************************************
-  if (!PCU_Comm_Self())
-    lion_oprint(1,"ghosting plan computed in %f seconds\n", PCU_Time()-t0);
+  if (!m->getPCU()->Self())
+    lion_oprint(1,"ghosting plan computed in %f seconds\n", pcu::Time()-t0);
 
   pumi_ghost_create(m, plan);
 }

@@ -24,13 +24,12 @@ using namespace CreateMG::Attribution;
 using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
 
-#include "capStoneSizeFields.h"
+#include "capVolSizeFields.h"
 
 namespace {
 
 void myExit(int exit_code = EXIT_SUCCESS) {
   gmi_cap_stop();
-  PCU_Comm_Free();
   MPI_Finalize();
   exit(exit_code);
 }
@@ -77,7 +76,8 @@ void printUsage(char *argv0) {
 int main(int argc, char** argv) {
   // Initialize parallelism.
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   // Initialize logging.
   lion_set_stdout(stdout);
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
   // Check arguments or print usage.
   if (argc < 3) {
-    if (PCU_Comm_Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printUsage(argv[0]);
     }
     myExit(EXIT_FAILURE);
@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
   MG_API_CALL(m, compute_adjacency());
 
   // Make APF adapter over Capstone mesh.
-  ma::Mesh* apfCapMesh = apf::createMesh(m, g);
+  ma::Mesh* apfCapMesh = apf::createMesh(m, g, &PCUObj);
 
   // Choose appropriate size-field.
   ma::AnisotropicFunction* sf = nullptr;
@@ -271,7 +271,6 @@ int main(int argc, char** argv) {
 
   // Exit calls.
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
-

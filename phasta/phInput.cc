@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "phInput.h"
 #include <fstream>
 #include <map>
@@ -210,10 +209,10 @@ static void makeDeprecated(stringset& old)
   old.insert("writePhastaFiles");
 }
 
-static bool deprecated(stringset& old, std::string const& name)
+static bool deprecated(stringset& old, std::string const& name, pcu::PCU *PCUObj)
 {
   if( old.count(name) ) {
-    if( !PCU_Comm_Self() )
+    if( !PCUObj->Self() )
       lion_eprint(1, "WARNING deprecated input \"%s\" ... "
           "carefully check stderr and stdout for unexpected behavior\n",
           name.c_str());
@@ -227,7 +226,8 @@ static void readInputFile(
     const char* filename,
     StringMap& stringMap,
     IntMap& intMap,
-    DblMap& dblMap)
+    DblMap& dblMap,
+    pcu::PCU *PCUObj)
 {
   stringset old;
   makeDeprecated(old);
@@ -236,7 +236,7 @@ static void readInputFile(
     fail("could not open \"%s\"", filename);
   std::string name;
   while (f >> name) {
-    if (name[0] == '#' || deprecated(old,name)) {
+    if (name[0] == '#' || deprecated(old,name,PCUObj)) {
       std::getline(f, name, '\n');
       continue;
     }
@@ -257,14 +257,14 @@ static void validate(Input& in)
   PCU_ALWAYS_ASSERT( ! (in.buildMapping && in.adaptFlag));
 }
 
-void Input::load(const char* filename)
+void Input::load(const char* filename, pcu::PCU *PCUObj)
 {
   setDefaults(*this);
   StringMap stringMap;
   IntMap intMap;
   DblMap dblMap;
   formMaps(*this, stringMap, intMap, dblMap);
-  readInputFile(filename, stringMap, intMap, dblMap);
+  readInputFile(filename, stringMap, intMap, dblMap, PCUObj);
   validate(*this);
 }
 

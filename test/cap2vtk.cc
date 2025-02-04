@@ -15,7 +15,6 @@
 #include <apfShape.h>
 #include <ma.h>
 #include <pcu_util.h>
-#include <lionPrint.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -39,24 +38,16 @@ using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
 
 
-double totalArea(apf::Mesh2* m);
-
-double addSizeDistribution(apf::Mesh2* m, int factor,
-    std::vector<int>& binCount, std::vector<double>& binArea);
-
-void edgeLengthStats(apf::Mesh2* m);
-
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
-  lion_set_verbosity(1);
-  double initialTime = PCU_Time();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
-        << " <cre file .cre> <factor>\n";
+        << " <cre file .cre> <output folder name>\n";
     return EXIT_FAILURE;
   }
 
@@ -65,7 +56,7 @@ int main(int argc, char** argv)
   gmi_register_null();
 
   const char* creFileName = argv[1];
-  int factor = atoi(argv[2]);
+  const char* folderName = argv[2];
 
   // load capstone mesh
   // create an instance of the Capstone Module activating CREATE/CREATE/CREATE
@@ -140,114 +131,13 @@ int main(int argc, char** argv)
   gmi_cap_start();
   gmi_register_cap();
 
-  printf("---- CapStone Mesh Loaded. \n");
+  // convert the mesh to apf/mds mesh
 
-  // create the mesh object (this one is CapStone underneath)
-  printf("\n---- Creating Mesh Wrapper Object. \n");
-  apf::Mesh2* mesh = apf::createMesh(m,g);
-  printf("---- Creating Mesh Wrapper Object: Done. \n");
+  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
 
-  // add size distribution based on area
-  std::vector<int> binCount;
-  std::vector<double> binArea;
-  edgeLengthStats(mesh);
+  apf::writeVtkFiles(folderName, mesh);
 
   gmi_cap_stop();
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
-}
-
-double totalArea(apf::Mesh2* m)
-{
-  double area = 0.0;
-  apf::MeshEntity* e;
-  apf::MeshIterator* it;
-  it = m->begin(2);
-  while ( (e = m->iterate(it)) )
-    area += apf::measure(m, e);
-  m->end(it);
-  return area;
-}
-
-double  addSizeDistribution(apf::Mesh2* m, int factor,
-    std::vector<int>& binCount, std::vector<double>& binArea)
-{
-  // find the min length edge
-  apf::MeshEntity* e;
-  apf::MeshIterator* it;
-
-  double minLength = 1.0e12;
-  it = m->begin(1);
-  while ( (e = m->iterate(it)) ) {
-    double l = apf::measure(m, e);
-    if (l < minLength)
-      minLength = l;
-  }
-  m->end(it);
-
-  double minArea = minLength * minLength / 2.;
-
-  // initialize the arrays
-  for (int i = 1; i <= factor*factor; i*=4) {
-    binCount.push_back(0);
-    binArea.push_back(0.0);
-  }
-
-  binCount.push_back(0);
-  binCount.push_back(0);
-  binArea.push_back(0.0);
-  binArea.push_back(0.0);
-
-  it = m->begin(2);
-  while ( (e = m->iterate(it)) ) {
-    double a = apf::measure(m, e);
-    if (a < minArea){
-      binCount[0] += 1;
-      binArea[0] += a;
-      continue;
-    }
-    int count = 1;
-    int i;
-    for (i = 1; i <= factor*factor; i*=4) {
-      if ((a >= i * minArea) && (a < 4 * i * minArea)) {
-      	binCount[count] += 1;
-      	binArea[count] += a;
-      }
-      count++;
-    }
-    i = i/4;
-    if (a >= 4 * i * minArea) {
-      binCount[count] += 1;
-      binArea[count] += a;
-    }
-  }
-  m->end(it);
-  return minArea;
-}
-
-void  edgeLengthStats(apf::Mesh2* m)
-{
-  // find the min length edge
-  apf::MeshEntity* e;
-  apf::MeshIterator* it;
-
-  double minLength = 1.0e12;
-  double maxLength = 0.0;
-  double avgLength = 0.0;
-  double count = 0;
-  it = m->begin(1);
-  while ( (e = m->iterate(it)) ) {
-    double l = apf::measure(m, e);
-    if (l < minLength)
-      minLength = l;
-    if (l > maxLength)
-      maxLength = l;
-    avgLength += l;
-    count++;
-  }
-  m->end(it);
-  avgLength /= count;
-
-  printf("min/max/avg lengths are: %E/%E/%E\n", minLength, maxLength, avgLength);
-  printf("num tris is %d\n", m->count(2));
 }

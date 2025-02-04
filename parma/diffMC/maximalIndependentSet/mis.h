@@ -50,7 +50,7 @@ namespace misLuby {
  * @param randNumsPredefined (In) 0: compute random numbers, 1:uses defined random numbers
  * @return 1 if local part is in mis, 0 o.w.
  */
-int mis(misLuby::partInfo& part,
+int mis(misLuby::partInfo& part, pcu::PCU *PCUObj,
     bool randNumsPredefined = false,
     bool isNeighbors = false);
 

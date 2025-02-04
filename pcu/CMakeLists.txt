@@ -9,7 +9,7 @@ message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 
 # Package sources
 set(SOURCES
-  pcu.c
+  pcu_c.cc
   pcu_aa.c
   pcu_coll.c
   pcu_io.c
@@ -21,7 +21,7 @@ set(SOURCES
   pcu_util.c
   noto/noto_malloc.c
   reel/reel.c
-)
+  PCU.cc)
 
 if(SCOREC_NO_MPI)
   set(SOURCES ${SOURCES} pcu_pnompi.c)
@@ -31,10 +31,12 @@ endif()
 
 # Package headers
 set(HEADERS
-  PCU.h
+  PCU_C.h
   pcu_io.h
   pcu_util.h
   reel/reel.h
+  pcu_defines.h
+  PCU.h
 )
 
 if(SCOREC_NO_MPI)

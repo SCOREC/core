@@ -164,7 +164,7 @@ Entity* rebuildElement(
 void setBuildCallback(Adapt* a, apf::BuildCallback* cb);
 void clearBuildCallback(Adapt* a);
 
-void print(const char* format, ...) __attribute__((format(printf,1,2)));
+void print(pcu::PCU *PCUObj, const char* format, ...) __attribute__((format(printf,2,3)));
 
 void setFlagOnClosure(Adapt* a, Entity* e, int flag);
 void syncFlag(Adapt* a, int dimension, int flag);

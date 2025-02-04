@@ -291,7 +291,7 @@ mpi_test(inviscid_ghost 4
   "${MDIR}/vis")
 mpi_test_depends(TESTS inviscid_ghost DEPENDS inviscid_ugrid)
 
-set(MDIR ${MESHES}/pipe)
+set(MDIR ${SMOKE_TEST_MESHES}/pipe)
 if(ENABLE_SIMMETRIX)
   mpi_test(convert 1
     ./convert

@@ -8,7 +8,7 @@
 
 int main (int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  pcu::PCU* PCUObj = new pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_cap();
 
@@ -19,7 +19,7 @@ int main (int argc, char* argv[]) {
     "Mesh Database : Create", "Attribution Database : Create");
   cs.load_files(v_string(1, creFile));
   // 2. CreateMesh.
-  apf::Mesh2* m = apf::createMesh(cs.get_mesh(), cs.get_geometry());
+  apf::Mesh2* m = apf::createMesh(cs.get_mesh(), cs.get_geometry(), PCUObj);
 
   PCU_ALWAYS_ASSERT(m->canGetClosestPoint());
 
@@ -34,6 +34,6 @@ int main (int argc, char* argv[]) {
   PCU_ALWAYS_ASSERT((to - apf::Vector3(0.5, 0.34, 0.5)).getLength() < 0.0001);
 
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  delete PCUObj;
   MPI_Finalize();
 }

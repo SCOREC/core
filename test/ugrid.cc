@@ -2,7 +2,6 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <cstdlib>
@@ -19,56 +18,53 @@ apf::Migration* getPlan(apf::Mesh* m, const int partitionFactor)
   return plan;
 }
 
-void switchToOriginals(const int partitionFactor)
+pcu::PCU* getGroupedPCU(const int partitionFactor, pcu::PCU *PCUObj)
 {
-  int self = PCU_Comm_Self();
+  int self = PCUObj->Self();
   int groupRank = self / partitionFactor;
   int group = self % partitionFactor;
   MPI_Comm groupComm;
   PCU_Comm_Split(MPI_COMM_WORLD, group, groupRank, &groupComm);
-  PCU_Switch_Comm(groupComm);
+  return new pcu::PCU(groupComm);
 }
 
-void switchToAll()
-{
-  MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(MPI_COMM_WORLD);
-  PCU_Comm_Free_One(&prevComm);
-  PCU_Barrier();
-}
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <in .[b8|lb8].ugrid> <out .dmg> <out .smb> <partition factor>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
   const int partitionFactor = atoi(argv[4]);
-  PCU_ALWAYS_ASSERT(partitionFactor <= PCU_Comm_Peers());
-  bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
+  PCU_ALWAYS_ASSERT(partitionFactor <= PCUObj.Peers());
+  bool isOriginal = ((PCUObj.Self() % partitionFactor) == 0);
   gmi_model* g = gmi_load(".null");
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  switchToOriginals(partitionFactor);
+  pcu::PCU *groupedPCUObj = getGroupedPCU(partitionFactor, &PCUObj);
   if (isOriginal) {
-    m = apf::loadMdsFromUgrid(g, argv[1]);
+    m = apf::loadMdsFromUgrid(g, argv[1], groupedPCUObj);
     apf::deriveMdsModel(m);
     m->verify();
     plan = getPlan(m, partitionFactor);
   }
-  switchToAll();
-  m = repeatMdsMesh(m, g, plan, partitionFactor);
+  //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
+  //on the globalPCU
+  if(m != nullptr) m->switchPCU(&PCUObj);
+  delete groupedPCUObj;
+  m = repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   gmi_write_dmg(g,argv[2]);
   m->writeNative(argv[3]);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 

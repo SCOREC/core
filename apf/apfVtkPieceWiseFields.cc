@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include <lionBase64.h>
 #include <lionCompress.h>
 #include "apfMesh.h"
@@ -72,7 +71,7 @@ static std::string getFileNameAndPathVtu(const char* prefix,
 static void writeNedelecVtkFile(const char* prefix, Mesh* m,
     std::vector<std::string> writeFields)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
 
   // get the number of points on this part
   MeshEntity* e;
@@ -101,8 +100,8 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
     apf::Vector3(0., 0., 1.)
   };
 
-  std::string fileName = getPieceFileName(PCU_Comm_Self());
-  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, PCU_Comm_Self());
+  std::string fileName = getPieceFileName(m->getPCU()->Self());
+  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, m->getPCU()->Self());
   std::stringstream buf;
   buf <<
     "# vtk DataFile Version 3.0\n"
@@ -163,7 +162,7 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
   buf << "LOOKUP_TABLE default\n";
   it = m->begin(m->getDimension());
   while( (e = m->iterate(it)) ) {
-    buf << PCU_Comm_Self() << '\n';
+    buf << m->getPCU()->Self() << '\n';
   }
   m->end(it);
 
@@ -190,8 +189,8 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
     }
     m->end(it);
   }
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"writeVtuFile into buffers: %f seconds\n", t1 - t0);
   }
@@ -200,8 +199,8 @@ static void writeNedelecVtkFile(const char* prefix, Mesh* m,
     PCU_ALWAYS_ASSERT(file.is_open());
     file << buf.rdbuf();
   }
-  double t2 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t2 = pcu::Time();
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"writeNedelecVtkFile buffers to disk: %f seconds\n", t2 - t1);
   }

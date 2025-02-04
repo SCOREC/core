@@ -15,7 +15,6 @@
 
 #include "apf.h"
 #include <apfMesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include "apfShape.h"
 #include "apfField.h"

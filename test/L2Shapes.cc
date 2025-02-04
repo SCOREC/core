@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apf.h>
@@ -32,12 +31,13 @@ void testL2writeNative(
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
   lion_set_verbosity(1);
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <model.dmg or .null> <mesh.smb>\n";
     return EXIT_FAILURE;
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
   gmi_register_null();
 
   gmi_model* g = gmi_load(argv[1]);
-  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2],&PCUObj);
   m->verify();
 
   for (int i = 0; i <= 6; i++) {
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
   testL2writeNative(m, 3, 3);
 
   apf::destroyMesh(m);
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
@@ -96,12 +96,12 @@ void testL2(
 
   for (int d = 0; d <= dim; d++) {
     if (!l2Field->getShape()->countNodesOn(apf::Mesh::simplexTypes[d])) {
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "no nodes in dimension %d\n", d);
       continue;
     }
     else
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
     while( (ent = m->iterate(it)) ) {
@@ -147,7 +147,7 @@ void testL2(
   m->end(it);
 
   // check for field interpolation
-  if(0==PCU_Comm_Self())
+  if(0==m->getPCU()->Self())
     lion_oprint(1, "L2ErrorE is %e\n", L2ErrorE);
   PCU_ALWAYS_ASSERT_VERBOSE(L2ErrorE < 1.e-16,
       "Fields were not interpolated correctly!");
@@ -169,12 +169,12 @@ void testL2writeNative(
 
   for (int d = 0; d <= dim; d++) {
     if (!l2Field->getShape()->countNodesOn(apf::Mesh::simplexTypes[d])) {
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "no nodes in dimension %d\n", d);
       continue;
     }
     else
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
     while( (ent = m->iterate(it)) ) {
@@ -204,10 +204,10 @@ void testL2writeNative(
   // 2- read the mesh back in and make sure fields are on the mesh
   // 3- clean up the newly loaded mesh
   m->writeNative("L2Shape_test_mesh.smb");
-  apf::Mesh2* m2 = apf::loadMdsMesh(".null", "./L2Shape_test_mesh.smb");
+  apf::Mesh2* m2 = apf::loadMdsMesh(".null", "./L2Shape_test_mesh.smb", m->getPCU());
   int fCount = 0;
   for (int i = 0; i < m2->countFields(); i++) {
-    if(0==PCU_Comm_Self())
+    if(0==m2->getPCU()->Self())
       lion_oprint(1, "field %d's name and shape are %s and %s\n", i,
 	  m2->getField(i)->getName(), m2->getField(i)->getShape()->getName());
     fCount++;

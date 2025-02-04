@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "ma.h"
 #include "maAdapt.h"
 #include "maCoarsen.h"
@@ -23,14 +22,14 @@ namespace ma {
 
 void adapt(Input* in)
 {
-  print("version 2.0 !");
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
+  print(in->mesh->getPCU(), "version 2.0 !");
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
   for (int i = 0; i < in->maximumIterations; ++i)
   {
-    print("iteration %d",i);
+    print(a->mesh->getPCU(), "iteration %d", i);
     coarsen(a);
     coarsenLayer(a);
     midBalance(a);
@@ -51,8 +50,8 @@ void adapt(Input* in)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
-  double t1 = PCU_Time();
-  print("mesh adapted in %f seconds",t1-t0);
+  double t1 = pcu::Time();
+  print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
   apf::printStats(m);
 }
 
@@ -63,14 +62,14 @@ void adapt(const Input* in)
 
 void adaptVerbose(Input* in, bool verbose)
 {
-  print("version 2.0 - dev !");
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
+  print(in->mesh->getPCU(), "version 2.0 - dev !");
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
   for (int i = 0; i < in->maximumIterations; ++i)
   {
-    print("iteration %d",i);
+    print(a->mesh->getPCU(), "iteration %d", i);
     coarsen(a);
     if (verbose && in->shouldCoarsen)
       ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
@@ -100,14 +99,14 @@ void adaptVerbose(Input* in, bool verbose)
    */
   int count = 0;
   double lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
-  print("Maximum (metric) edge length in the mesh is %f", lMax);
+  print(a->mesh->getPCU(), "Maximum (metric) edge length in the mesh is %f", lMax);
   while (lMax > 1.5) {
-    print("%dth additional refine-snap call", count);
+    print(a->mesh->getPCU(), "%dth additional refine-snap call", count);
     refine(a);
     snap(a);
     lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
     count++;
-    print("Maximum (metric) edge length in the mesh is %f", lMax);
+    print(a->mesh->getPCU(), "Maximum (metric) edge length in the mesh is %f", lMax);
     if (count > 5) break;
   }
   if (verbose)
@@ -125,8 +124,8 @@ void adaptVerbose(Input* in, bool verbose)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
-  double t1 = PCU_Time();
-  print("mesh adapted in %f seconds",t1-t0);
+  double t1 = pcu::Time();
+  print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
   apf::printStats(m);
 }
 

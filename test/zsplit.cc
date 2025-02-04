@@ -2,7 +2,6 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #ifdef HAVE_SIMMETRIX
@@ -40,28 +39,20 @@ apf::Migration* getPlan(apf::Mesh* m)
   return plan;
 }
 
-void switchToOriginals()
+pcu::PCU* getGroupedPCU(pcu::PCU *PCUObj)
 {
-  int self = PCU_Comm_Self();
+  int self = PCUObj->Self();
   int groupRank = self / partitionFactor;
   int group = self % partitionFactor;
   MPI_Comm groupComm;
   PCU_Comm_Split(MPI_COMM_WORLD, group, groupRank, &groupComm);
-  PCU_Switch_Comm(groupComm);
+  return new pcu::PCU(groupComm);
 }
 
-void switchToAll()
-{
-  MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(MPI_COMM_WORLD);
-  PCU_Comm_Free_One(&prevComm);
-  PCU_Barrier();
-}
-
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc != 5 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh> <factor>\n", argv[0]);
     MPI_Finalize();
     exit(EXIT_FAILURE);
@@ -70,7 +61,7 @@ void getConfig(int argc, char** argv)
   meshFile = argv[2];
   outFile = argv[3];
   partitionFactor = atoi(argv[4]);
-  PCU_ALWAYS_ASSERT(partitionFactor <= PCU_Comm_Peers());
+  PCU_ALWAYS_ASSERT(partitionFactor <= PCUObj->Peers());
 }
 
 }
@@ -78,7 +69,8 @@ void getConfig(int argc, char** argv)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -88,19 +80,22 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv);
-  bool isOriginal = ((PCU_Comm_Self() % partitionFactor) == 0);
+  getConfig(argc,argv,&PCUObj);
+  bool isOriginal = ((PCUObj.Self() % partitionFactor) == 0);
   gmi_model* g = 0;
   g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  switchToOriginals();
+  pcu::PCU *groupedPCUObj = getGroupedPCU(&PCUObj);
   if (isOriginal) {
-    m = apf::loadMdsMesh(g, meshFile);
+    m = apf::loadMdsMesh(g, meshFile, groupedPCUObj);
     plan = getPlan(m);
   }
-  switchToAll();
-  m = apf::repeatMdsMesh(m, g, plan, partitionFactor);
+  //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
+  //on the globalPCU
+  if(m != nullptr) m->switchPCU(&PCUObj);
+  delete groupedPCUObj;
+  m = apf::repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);
@@ -110,6 +105,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }

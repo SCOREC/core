@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include "parma_rib.h"
 #include <apfPartition.h>
 #include <pcu_util.h>
@@ -63,7 +62,7 @@ class RibSplitter : public apf::Splitter
     virtual apf::Migration* split(apf::MeshTag* weights, double,
         int multiple)
     {
-      double t0 = PCU_Time();
+      double t0 = pcu::Time();
       int depth;
       for (depth = 0; (1 << depth) < multiple; ++depth);
       PCU_ALWAYS_ASSERT((1 << depth) == multiple);
@@ -75,8 +74,8 @@ class RibSplitter : public apf::Splitter
           int p = plan->sending(e);
           plan->send(e, p + offset);
         }
-        double t1 = PCU_Time();
-        if (!PCU_Comm_Self())
+        double t1 = pcu::Time();
+        if (!mesh->getPCU()->Self())
           lion_oprint(1,"planned RIB factor %d in %f seconds\n",
               multiple, t1 - t0);
       }

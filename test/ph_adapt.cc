@@ -37,8 +37,8 @@ static bool overwriteAPFCoord(apf::Mesh2* m) {
   return true;
 }
 
-static FILE* openfile_read(ph::Input&, const char* path) {
-  return pcu_group_open(path, false);
+static FILE* openfile_read(ph::Input&, const char* path, pcu::PCU *PCUObj) {
+  return pcu_group_open(PCUObj->GetCHandle(), path, false);
 }
 
 int main(int argc, char** argv)
@@ -47,7 +47,8 @@ int main(int argc, char** argv)
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -58,10 +59,10 @@ int main(int argc, char** argv)
 #endif
   gmi_register_mesh();
   /* load model, mesh and configure input */
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
   ph::Input in;
-  in.load("adapt.inp");
+  in.load("adapt.inp", &PCUObj);
   in.openfile_read = openfile_read;
   /* attach solution and other fields */
   ph::readAndAttachFields(in,m);
@@ -88,7 +89,7 @@ int main(int argc, char** argv)
   ma::adapt(ma_in);
   m->verify();
   apf::writeVtkFiles("after",m);
-  if (in.prePhastaBalanceMethod != "none" && PCU_Comm_Peers() > 1)
+  if (in.prePhastaBalanceMethod != "none" && m->getPCU()->Peers() > 1)
     ph::balance(in,m);
   /* output restart and geombc */
   chef::preprocess(m,in);
@@ -100,7 +101,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
+  }
   MPI_Finalize();
 }
 
