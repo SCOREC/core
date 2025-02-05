@@ -220,6 +220,7 @@ PCU::PCU(MPI_Comm comm) {
 PCU::~PCU() noexcept {
   pcu_mpi_finalize(mpi_);
   delete mpi_;
+  if (msg_->order) pcu_order_free(msg_->order);
   pcu_free_msg(msg_);
   delete msg_;
 }
