@@ -57,8 +57,6 @@ static void runInGroups(
   }
   code.PCUObj = std::move(groupedPCU);
   code.run(group);
-  PCU_Comm_Free_One(&groupComm);
-  MPI_Comm_free(&groupComm);
   if (m){
     m->switchPCU(expandedPCU);
     apf::remapPartition(m, outMap);

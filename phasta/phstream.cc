@@ -11,7 +11,7 @@
 
 namespace {
   inline double getTime() {
-    return PCU_Time();
+    return pcu::Time();
   }
 #if PHSTREAM_TIMERS_ON==1
   inline bool isRankZero(pcu::PCU *pcu_obj) {

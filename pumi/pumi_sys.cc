@@ -31,7 +31,7 @@ int pumi_rank()
 
 void pumi_sync()
 {
-  PCU_Comm_Barrier(pumi::instance()->getPCU()->GetMPIComm());
+  pumi::instance()->getPCU()->Barrier();
 }
 
 #include <sys/utsname.h>

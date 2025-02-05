@@ -3,14 +3,16 @@
 
 #if defined(SCOREC_NO_MPI)
 #include "pcu_pnompi_types.h"
-  double MPI_Wtime(void);
-
 // Remove MPI calls.
 #define MPI_Init(argc, argv) do { \
 (void) argc; \
 (void) argv; \
 } while (0)
 #define MPI_Finalize(void) 
+#ifdef __cplusplus
+extern "C"
+#endif
+double MPI_Wtime(void);
 #else
 #include <mpi.h>
 #endif
@@ -21,11 +23,12 @@
 struct pcu_msg_struct;
 struct pcu_mpi_struct;
 
+extern "C" {
 int PCU_Comm_Free_One(MPI_Comm* com);
 int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom);
 int PCU_Comm_Allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 int PCU_Comm_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);
-double PCU_Wtime();
+}
 namespace pcu {
 class PCU {
 public:

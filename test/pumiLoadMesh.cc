@@ -1,4 +1,3 @@
-#include "mpi.h"
 #include "pumi.h"
 
 int main(int argc, char** argv)

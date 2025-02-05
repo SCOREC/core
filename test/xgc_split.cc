@@ -2,7 +2,6 @@
 
 #include <apf.h>
 #include <cstring>
-#include <mpi.h>
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>

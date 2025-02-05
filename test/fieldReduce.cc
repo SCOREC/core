@@ -170,7 +170,7 @@ int main(int argc, char** argv)
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   myrank = PCUObj.Self();
-  commsize = PCUObj.Size();
+  commsize = PCUObj.Peers();
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();

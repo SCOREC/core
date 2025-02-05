@@ -214,6 +214,6 @@ void pumi_numbering_print(pNumbering n, int pid)
         } // if shp
       } // for dd
     }  // if (pid==PCU_Comm_Self())
-    PCU_Comm_Barrier(MPI_COMM_WORLD);
+    m->getPCU()->Barrier();
   } // for
 }

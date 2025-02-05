@@ -699,7 +699,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int i=0; i<num_layer+1;++i)
       for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
-    PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU->GetMPIComm());
+    PCU_Comm_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
   } // while global_off_part_brg
 }
 

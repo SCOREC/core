@@ -10,7 +10,6 @@
 #endif
 #include <cstdlib> //exit and exit_failure
 #include <PCU.h>
-#include <mpi.h>
 
 int main(int argc, char** argv)
 {

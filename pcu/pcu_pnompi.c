@@ -14,13 +14,8 @@
 #include <limits.h>
 #include <time.h>
 
-static int global_size;
-static int global_rank;
-
-MPI_Comm original_comm;
-MPI_Comm pcu_user_comm;
-MPI_Comm pcu_coll_comm;
-
+void pcu_pmpi_send2(const pcu_mpi_t *, pcu_message* m, int tag, MPI_Comm comm);
+bool pcu_pmpi_receive2(const pcu_mpi_t *, pcu_message* m, int tag, MPI_Comm);
 
 //
 // ------------------------------------------------------------------
@@ -116,160 +111,83 @@ double MPI_Wtime(void)
   return (double)now.tv_sec + now.tv_nsec * 1.0e-9;
 }
 
-pcu_mpi pcu_pmpi =
-{ .size = pcu_pmpi_size,
-  .rank = pcu_pmpi_rank,
-  .send = pcu_pmpi_send,
-  .done = pcu_pmpi_done,
-  .receive = pcu_pmpi_receive };
-
-void pcu_pmpi_init(MPI_Comm comm)
-{
-    original_comm = comm;
-    pcu_user_comm = comm+1;
-    pcu_coll_comm = comm+2;
-
-    global_size = 1;
-    global_rank = 0;
-    
-//  MPI_Comm_dup(comm,&pcu_user_comm);
-//  MPI_Comm_dup(comm,&pcu_coll_comm);
-//  MPI_Comm_size(comm,&global_size);
-//  MPI_Comm_rank(comm,&global_rank);
+void pcu_pmpi_init(MPI_Comm comm, pcu_mpi_t *self) {
+  self->original_comm = comm;
+  self->user_comm = comm+1;
+  self->coll_comm = comm+2;
+  self->size = 1;
+  self->rank = 0;
 }
 
-void pcu_pmpi_finalize(void)
-{
-    pcu_user_comm = 0;
-    pcu_coll_comm = 0;
-//  MPI_Comm_free(&pcu_user_comm);
-//  MPI_Comm_free(&pcu_coll_comm);
+void pcu_pmpi_finalize(pcu_mpi_t* self) {
+  self->user_comm = 0;
+  self->coll_comm = 0;
 }
 
-int pcu_pmpi_free(MPI_Comm* comm)
+int pcu_pmpi_free(MPI_Comm*)
 {
-  (void) comm;
   return 0;
 }
 
-int pcu_pmpi_split(MPI_Comm c, int color, int key, MPI_Comm* nc)
-{
-  (void) c;
-  (void) color;
-  (void) key;
-  (void) nc;
+int pcu_pmpi_split(MPI_Comm, int, int, MPI_Comm*) {
   return 1;
 }
 
-int pcu_pmpi_size(void)
-{
-  return global_size;
+int pcu_pmpi_size(const pcu_mpi_t *self) {
+  return self->size;
 }
 
-int pcu_pmpi_rank(void)
-{
-  return global_rank;
+int pcu_pmpi_rank(const pcu_mpi_t *self) {
+  return self->rank;
 }
 
-void pcu_pmpi_send(pcu_message* m, MPI_Comm comm)
-{
-  pcu_pmpi_send2(m,0,comm);
+void pcu_pmpi_send(const pcu_mpi_t *self, pcu_message* m, MPI_Comm comm) {
+  pcu_pmpi_send2(self, m, 0, comm);
 }
 
-void pcu_pmpi_send2(pcu_message* m, int tag, MPI_Comm comm)
-{
-    (void) comm;
-    if( m->buffer.size > (size_t)INT_MAX ) {
-        fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
-        abort();
-    }
-    
-    add_nompi_msg(m->buffer.start,
-                  (int)(m->buffer.size),
-                  tag,
-                  global_rank,
-                  m->peer
-                  );
+void pcu_pmpi_send2(const pcu_mpi_t *self, pcu_message* m, int tag, MPI_Comm) {
+  if (m->buffer.size > (size_t)INT_MAX) {
+    fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
+    abort();
+  }
+
+  add_nompi_msg(
+    m->buffer.start, (int)(m->buffer.size), tag, self->rank, m->peer
+  );
 }
 
-bool pcu_pmpi_done(pcu_message* m)
-{
-    (void) m;
-    return true;
-//  int flag;
-//  MPI_Test(&(m->request),&flag,MPI_STATUS_IGNORE);
-//  return flag;
+bool pcu_pmpi_done(const pcu_mpi_t*, pcu_message*) { return true; }
+
+bool pcu_pmpi_receive(const pcu_mpi_t *self, pcu_message* m, MPI_Comm comm) {
+  return pcu_pmpi_receive2(self, m, 0, comm);
 }
 
-bool pcu_pmpi_receive(pcu_message* m, MPI_Comm comm)
-{
-    return pcu_pmpi_receive2(m,0,comm);
+bool pcu_pmpi_receive2(const pcu_mpi_t *self, pcu_message* m, int tag,
+  MPI_Comm) {
+  NoMpiMsg* msg = get_nompi_msg(tag, self->rank);
+  if (msg==0) return false;
+  m->peer = msg->sender;
+  int msize = msg->size;
+  pcu_resize_buffer(&(m->buffer),(size_t)msize);
+  for (int i = 0; i < msize; i++) {
+    ((char*)m->buffer.start)[i] = msg->msg[i];
+  }
+  // delete the message
+  free(msg->msg);
+  free(msg);
+  return true;
 }
 
-bool pcu_pmpi_receive2(pcu_message* m, int tag, MPI_Comm comm)
-{
-    (void) comm;
-    NoMpiMsg* msg = get_nompi_msg(tag,global_rank);
-    if (msg==0)
-    {
-        return false;
-    }
-
-    m->peer = msg->sender;
-    
-    int msize = msg->size;
-    
-    pcu_resize_buffer(&(m->buffer),(size_t)msize);
-    
-    for (int i=0; i<msize; i++)
-    {
-        ((char*)m->buffer.start)[i] = msg->msg[i];
-    }
-    
-    // delete the message
-    free(msg->msg);
-    free(msg);
-    return true;
-}
-
-void pcu_pmpi_switch(MPI_Comm new_comm)
-{
-    (void) new_comm;
-    return ;
-//  pcu_pmpi_finalize();
-//  pcu_pmpi_init(new_comm);
-}
-
-MPI_Comm pcu_pmpi_comm(void)
-{
-  return original_comm;
-}
-
-int pcu_pmpi_allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
-{
-  (void) sendbuf;
-  (void) recvbuf;
-  (void) count;
-  (void) datatype;
-  (void) op;
-  (void) comm;
+int pcu_pmpi_allreduce(const void*, void*, int,
+  MPI_Datatype, MPI_Op, MPI_Comm) {
   return 0;
 }
 
-int  pcu_pmpi_allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-{
-  (void) sendbuf;
-  (void) sendcount;
-  (void) sendtype;
-  (void) recvbuf;
-  (void) recvcount;
-  (void) recvtype;
-  (void) comm;
+int  pcu_pmpi_allgather(const void *, int, MPI_Datatype, void *, int,
+  MPI_Datatype, MPI_Comm) {
   return 0;
 }
 
-int  pcu_pmpi_barrier(MPI_Comm comm)
-{
-  (void) comm;
+int pcu_pmpi_barrier(MPI_Comm) {
   return 0;
 }

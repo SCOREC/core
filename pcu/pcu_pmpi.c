@@ -31,7 +31,6 @@ void pcu_pmpi_finalize(pcu_mpi_t* self)
   MPI_Comm_free(&(self->coll_comm));
 }
 
-<<<<<<< HEAD
 int pcu_pmpi_free(MPI_Comm* comm)
 {
   return MPI_Comm_free(comm);
@@ -42,10 +41,7 @@ int pcu_pmpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm)
   return MPI_Comm_split(comm,color,key,newcomm);
 }
 
-int pcu_pmpi_size(void)
-=======
 int pcu_pmpi_size(const pcu_mpi_t* self)
->>>>>>> develop
 {
   return self->size;
 }
