@@ -124,12 +124,13 @@ void pcu_pmpi_finalize(pcu_mpi_t* self) {
   self->coll_comm = 0;
 }
 
-int pcu_pmpi_free(MPI_Comm*)
-{
+int pcu_pmpi_free(MPI_Comm *c) {
+  (void) c;
   return 0;
 }
 
-int pcu_pmpi_split(MPI_Comm, int, int, MPI_Comm*) {
+int pcu_pmpi_split(MPI_Comm cm, int c, int k, MPI_Comm *cm2) {
+  (void) cm, (void) c, (void) k, (void) cm2;
   return 1;
 }
 
@@ -145,7 +146,9 @@ void pcu_pmpi_send(const pcu_mpi_t *self, pcu_message* m, MPI_Comm comm) {
   pcu_pmpi_send2(self, m, 0, comm);
 }
 
-void pcu_pmpi_send2(const pcu_mpi_t *self, pcu_message* m, int tag, MPI_Comm) {
+void pcu_pmpi_send2(const pcu_mpi_t *self, pcu_message* m, int tag,
+  MPI_Comm c) {
+  (void) c;
   if (m->buffer.size > (size_t)INT_MAX) {
     fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
     abort();
@@ -156,14 +159,18 @@ void pcu_pmpi_send2(const pcu_mpi_t *self, pcu_message* m, int tag, MPI_Comm) {
   );
 }
 
-bool pcu_pmpi_done(const pcu_mpi_t*, pcu_message*) { return true; }
+bool pcu_pmpi_done(const pcu_mpi_t* a, pcu_message* b) {
+  (void) a, (void) b;
+  return true;
+}
 
 bool pcu_pmpi_receive(const pcu_mpi_t *self, pcu_message* m, MPI_Comm comm) {
   return pcu_pmpi_receive2(self, m, 0, comm);
 }
 
 bool pcu_pmpi_receive2(const pcu_mpi_t *self, pcu_message* m, int tag,
-  MPI_Comm) {
+  MPI_Comm comm) {
+  (void) comm;
   NoMpiMsg* msg = get_nompi_msg(tag, self->rank);
   if (msg==0) return false;
   m->peer = msg->sender;
@@ -178,16 +185,19 @@ bool pcu_pmpi_receive2(const pcu_mpi_t *self, pcu_message* m, int tag,
   return true;
 }
 
-int pcu_pmpi_allreduce(const void*, void*, int,
-  MPI_Datatype, MPI_Op, MPI_Comm) {
+int pcu_pmpi_allreduce(const void* a, void* b, int c,
+  MPI_Datatype d, MPI_Op e, MPI_Comm f) {
+  (void) a, (void) b, (void) c, (void) d, (void) e, (void) f;
   return 0;
 }
 
-int  pcu_pmpi_allgather(const void *, int, MPI_Datatype, void *, int,
-  MPI_Datatype, MPI_Comm) {
+int  pcu_pmpi_allgather(const void * a, int b, MPI_Datatype c, void * d, int e,
+  MPI_Datatype f, MPI_Comm g) {
+  (void) a, (void) b, (void) c, (void) d, (void) e, (void) f, (void) g;
   return 0;
 }
 
-int pcu_pmpi_barrier(MPI_Comm) {
+int pcu_pmpi_barrier(MPI_Comm a) {
+  (void) a;
   return 0;
 }
