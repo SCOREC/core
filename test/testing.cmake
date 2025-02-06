@@ -3,14 +3,18 @@ set(MESHES ""
     "Extracted http://scorec.rpi.edu/pumi/pumi_test_meshes.tar.gz")
 function(mpi_test TESTNAME PROCS EXE)
   if(SCOREC_NO_MPI)
-  if(${PROCS} EQUAL "1")
-  add_test(NAME ${TESTNAME} COMMAND ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN})
-  endif()
+    if(${PROCS} EQUAL "1")
+      add_test(
+        NAME ${TESTNAME}
+        COMMAND ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
+      )
+    endif()
   else()
-  add_test(
-    NAME ${TESTNAME}
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
-  )
+    add_test(
+      NAME ${TESTNAME}
+      COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS}
+        ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
+    )
   endif()
 endfunction(mpi_test)
 
