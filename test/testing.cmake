@@ -6,6 +6,7 @@ function(mpi_test TESTNAME PROCS EXE)
     NAME ${TESTNAME}
     COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
   )
+  set_tests_properties(${TESTNAME} PROPERTIES PROCESSORS ${PROCS})
 endfunction(mpi_test)
 
 mpi_test(shapefun 1 ./shapefun)
