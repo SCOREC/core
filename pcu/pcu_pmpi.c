@@ -114,23 +114,15 @@ bool pcu_pmpi_receive2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm 
   return true;
 }
 
-void pcu_pmpi_switch(MPI_Comm new_comm)
-{
-  pcu_pmpi_finalize();
-  pcu_pmpi_init(new_comm);
+int pcu_pmpi_allreduce( const void* sendbuf, void* recvbuf, int count,
+  MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
+  return MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
 }
 
-MPI_Comm pcu_pmpi_comm(void)
-{
-  return original_comm;
-}
-
-int  pcu_pmpi_allreduce(const void* sendbuf, void* recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
-{
-   return MPI_Allreduce(sendbuf,recvbuf,count, datatype, op, comm);
-}
-
-int  pcu_pmpi_allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-{
-  return MPI_Allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
+int  pcu_pmpi_allgather(const void *sendbuf, int sendcount,
+  MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype,
+  MPI_Comm comm) {
+  return MPI_Allgather(
+    sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm
+  );
 }
