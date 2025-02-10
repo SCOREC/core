@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   int val = rank + 1, sum;
   MPI_Allreduce(&val, &sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   int pval = rank + 1, psum;
-  PCU_Comm_Allreduce(&pval, &psum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  psum = PCUObj->Add(pval);
   for (int i = 0; i < size; ++i) {
     if (rank == i)
       std::cout << "MPI(" << rank << ") sum: " << sum <<

@@ -347,8 +347,9 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
       m->end(it);
       pumi::instance()->num_own_ent[dim] = n;
     }
+    pumi::instance()->num_global_ent = pumi::instance()->num_own_ent;
   }
-  PCU_Comm_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
+  m->getPCU()->Add(pumi::instance()->num_global_ent, 4);
 #ifdef DEBUG
   if (!pumi_rank()) std::cout<<"[PUMI INFO] "<<__func__<<" end\n";
 #endif
@@ -436,12 +437,17 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   int* global_local_entity_count = new int[4*m->getPCU()->Peers()]; 
   int* global_own_entity_count = new int[4*m->getPCU()->Peers()]; 
 
-  PCU_Comm_Allreduce(local_entity_count, global_local_entity_count, 4*m->getPCU()->Peers(), 
-                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
+  memcpy(
+    global_local_entity_count, local_entity_count,
+    sizeof(int) * 4 * m->getPCU()->Peers()
+  );
+  m->getPCU()->Add(global_local_entity_count, 4);
 
-  PCU_Comm_Allreduce(own_entity_count, global_own_entity_count, 4*m->getPCU()->Peers(), 
-                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
-
+  memcpy(
+    global_own_entity_count, own_entity_count,
+    sizeof(int) * 4 * m->getPCU()->Peers()
+  );
+  m->getPCU()->Add(global_own_entity_count, 4);
  
   if (!m->getPCU()->Self())
   {

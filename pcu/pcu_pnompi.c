@@ -185,12 +185,6 @@ bool pcu_pmpi_receive2(const pcu_mpi_t *self, pcu_message* m, int tag,
   return true;
 }
 
-int pcu_pmpi_allreduce(const void* a, void* b, int c,
-  MPI_Datatype d, MPI_Op e, MPI_Comm f) {
-  (void) a, (void) b, (void) c, (void) d, (void) e, (void) f;
-  return 0;
-}
-
 int  pcu_pmpi_allgather(const void * a, int b, MPI_Datatype c, void * d, int e,
   MPI_Datatype f, MPI_Comm g) {
   (void) a, (void) b, (void) c, (void) d, (void) e, (void) f, (void) g;

@@ -790,7 +790,7 @@ void TEST_GHOSTING(pMesh m)
   pumi_ghost_create(m, ghosting_plan);
 
   int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-  PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm()); 
+  total_mcount_diff = m->getPCU()->Add(mcount_diff);
   if (!pumi_rank()) std::cout<<"\n[test_pumi] element-wise pumi_ghost_create: #ghost increase="<<total_mcount_diff<<"\n";
 
   int num_ghost_vtx=0;
@@ -821,7 +821,7 @@ void TEST_GHOSTING(pMesh m)
         before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-        PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
+        total_mcount_diff = m->getPCU()->Add(mcount_diff);
         if (!pumi_rank()) std::cout<<"\n[test_pumi] layer-wise pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim<<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";
         pumi_mesh_verify(m);
         TEST_FIELD(m);
@@ -838,7 +838,7 @@ void TEST_GHOSTING(pMesh m)
         int before_mcount=pumi_mesh_getNumEnt(m, mesh_dim);
         pumi_ghost_createLayer (m, brg_dim, mesh_dim, num_layer, include_copy);
         int total_mcount_diff=0, mcount_diff = pumi_mesh_getNumEnt(m, mesh_dim)-before_mcount;
-        PCU_Comm_Allreduce(&mcount_diff, &total_mcount_diff,1, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
+        total_mcount_diff = m->getPCU()->Add(mcount_diff);
         if (!pumi_rank()) 
           std::cout<<"\n[test_pumi] accumulative pumi_ghost_createLayer (bd "<<brg_dim<<", gd "<<mesh_dim
                    <<", nl "<<num_layer<<", ic"<<include_copy<<"), #ghost increase="<<total_mcount_diff<<"\n";

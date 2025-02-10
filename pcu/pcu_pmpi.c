@@ -114,11 +114,6 @@ bool pcu_pmpi_receive2(const pcu_mpi_t* self, pcu_message* m, int tag, MPI_Comm 
   return true;
 }
 
-int pcu_pmpi_allreduce( const void* sendbuf, void* recvbuf, int count,
-  MPI_Datatype datatype, MPI_Op op, MPI_Comm comm) {
-  return MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
-}
-
 int  pcu_pmpi_allgather(const void *sendbuf, int sendcount,
   MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype,
   MPI_Comm comm) {
