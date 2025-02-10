@@ -58,13 +58,15 @@ jobs:
 
     - name: Build MPI-NoMPI Example
       # Test if a SCOREC_NO_MPI build works with MPI applications.
-      if: matrix.compiler.name == 'GNU' && matrix.build_type == 'Release' matrix.nompi == 'ON'
+      if: >-
+        matrix.compiler.name == 'GNU' && matrix.build_type == 'Release' &&
+        matrix.no_mpi == 'ON'
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
       run: >
         cmake -S ${{github.workspace}}/example/mpi-nompi
-          -B ${{github.workspace}}/example/mpi-nompi/build
-          -DCMAKE_CXX_COMPILER=mpicxx
-          -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
+        -B ${{github.workspace}}/example/mpi-nompi/build
+        -DCMAKE_CXX_COMPILER=mpicxx
+        -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/example/mpi-nompi/build
