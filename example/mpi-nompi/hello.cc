@@ -10,6 +10,7 @@
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  // Print rank info.
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -22,9 +23,21 @@ int main(int argc, char** argv) {
         PCUObj->Self() << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
   }
+  // Test SCOREC functions.
   gmi_register_mesh();
   apf::Mesh2* m = apf::makeMdsBox(1, 1, 1, 1, 1, 1, 0, PCUObj);
   apf::destroyMesh(m);
+  // MPI Allreduce
+  int val = rank + 1, sum;
+  MPI_Allreduce(&val, &sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  int pval = rank + 1, psum;
+  PCU_Comm_Allreduce(&pval, &psum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  for (int i = 0; i < size; ++i) {
+    if (rank == i)
+      std::cout << "MPI(" << rank << ") sum: " << sum <<
+      "; PCU sum: " << psum << std::endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
   delete PCUObj;
   MPI_Finalize();
   return 0;

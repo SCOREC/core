@@ -19,13 +19,16 @@ enable_testing()
 add_test(NAME hello1 COMMAND mpirun -np 1 $<TARGET_FILE:hello>)
 set_property(TEST hello1 PROPERTY PASS_REGULAR_EXPRESSION 
   "MPI size: 1\; PCU size: 1
-Hello from MPI rank: 0\; PCU rank: 0"
+Hello from MPI rank: 0\; PCU rank: 0
+MPI(0) sum: 1; PCU sum: 1"
 )
 add_test(NAME hello2 COMMAND mpirun -np 2 $<TARGET_FILE:hello>)
 set_property(TEST hello2 PROPERTY PASS_REGULAR_EXPRESSION 
   "MPI size: 2\; PCU size: 1
 Hello from MPI rank: 0\; PCU rank: 0
-Hello from MPI rank: 1\; PCU rank: 0"
+Hello from MPI rank: 1\; PCU rank: 0
+MPI(0) sum: 3; PCU sum: 1
+MPI(1) sum: 3; PCU sum: 1"
 )
 add_test(NAME hello4 COMMAND mpirun -np 4 $<TARGET_FILE:hello>)
 set_property(TEST hello4 PROPERTY PASS_REGULAR_EXPRESSION 
@@ -33,6 +36,10 @@ set_property(TEST hello4 PROPERTY PASS_REGULAR_EXPRESSION
 Hello from MPI rank: 0\; PCU rank: 0
 Hello from MPI rank: 1\; PCU rank: 0
 Hello from MPI rank: 2\; PCU rank: 0
-Hello from MPI rank: 3\; PCU rank: 0"
+Hello from MPI rank: 3\; PCU rank: 0
+MPI(0) sum: 10\; PCU sum: 1
+MPI(1) sum: 10\; PCU sum: 1
+MPI(2) sum: 10\; PCU sum: 1
+MPI(3) sum: 10\; PCU sum: 1"
 )
 
