@@ -15,6 +15,7 @@ function(mpi_test TESTNAME PROCS EXE)
       COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS}
         ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
     )
+    set_tests_properties(${TESTNAME} PROPERTIES PROCESSORS ${PROCS})
   endif()
 endfunction(mpi_test)
 
