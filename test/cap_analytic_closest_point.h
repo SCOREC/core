@@ -55,8 +55,8 @@ void doubleConeClosestPointAnalytic(double const from[3], double to[3], double t
   if (p_d2 < l_d2) {
     to[0] = p_x;
     cls_y = p_y; 
-    dx = -1.0;
-    dy = 2*pA*p_y;
+    dx = -1.0*-1.0;
+    dy = 2*pA*p_y*-1.0;
   } else {
     to[0] = l_x;
     cls_y = l_y;

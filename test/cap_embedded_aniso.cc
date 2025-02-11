@@ -480,19 +480,21 @@ namespace {
     apf::Vector3 pos;
 
     double h_tip = h_global/4; // h_global/4
+    double h_tip_min = h_global/16;
     double h_upstream = 4 * h_global;
     //double h_tip = norm_size;
 
     mesh->getPoint(vtx, 0, pos);
-    double sphere_size = 2*h_global;
-    apf::Vector3 sphere_cent(-h_global,0,0);
+    double sphere_size = 4*h_global;
+    //apf::Vector3 sphere_cent(-h_global,0,0);
+    apf::Vector3 sphere_cent(0,0,0);
 
     apf::Vector3 dist = pos - sphere_cent;
     apf::Vector3 vecToPos = pos - closestPt;
 
     double sphere_dist_sqr = std::abs(dist * dist);    
     if (sphere_dist_sqr < sphere_size*sphere_size) {
-      return h_tip;
+      return h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size);
     }
 
     // (h_norm-h_global)*exp(-abs(testx)/smooth_dist) + h_global;
@@ -545,9 +547,11 @@ namespace {
 
     double shockDist = std::sqrt(shockDistSquare);
     //#define EXP_SMOOTH2(hi, hf, x, d, dAR) (hi-hf)*exp(-x*x/(-d*d/std::log((dAR-1)*hf/(hi-hf))))+hf
-    #define TANH_SMOOTH(min, max, x, slope) min+(max-min)*std::tanh(slope*x)
-    double zoneIsoSize = getZoneIsoSize(vtx, clsVec, false);
-    scale[0] = TANH_SMOOTH(norm_size, h_global, shockDist, 0.333d);
+    //#define TANH_SMOOTH(min, max, x, slope) min+(max-min)*std::tanh(slope*x)
+    //TANH_SMOOTH(norm_size, h_global, shockDist, 0.333d);
+    #define LINE(mins, maxs, x, slope) std::min(std::max(slope*x,mins),maxs)
+    double zoneIsoSize = getZoneIsoSize(vtx, clsVec, shockDistSquare < thickness_tol);
+    scale[0] = LINE(norm_size, h_global, shockDist, 1);
     scale[1] = zoneIsoSize;
     scale[2] = zoneIsoSize;
 
