@@ -213,7 +213,11 @@ static void postConvert(apf::Mesh2* m)
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   MS_init();
@@ -290,5 +294,7 @@ int main(int argc, char** argv)
   if( should_log )
     Sim_logOff();
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

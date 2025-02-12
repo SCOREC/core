@@ -4,11 +4,6 @@
 #if defined(SCOREC_NO_MPI)
 #include "pcu_pnompi_types.h"
 // Remove MPI calls.
-#define MPI_Init(argc, argv) do { \
-(void) argc; \
-(void) argv; \
-} while (0)
-#define MPI_Finalize(void) 
 #ifdef __cplusplus
 extern "C"
 #endif

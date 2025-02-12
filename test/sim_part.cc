@@ -66,7 +66,11 @@ void messageHandler(int type, const char *msg);
 
 int main(int argc, char **argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -173,7 +177,9 @@ int main(int argc, char **argv)
   SimDiscrete_stop(0);
   SimPartitionedMesh_stop();
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
   return 0;
 }
 

@@ -7,7 +7,11 @@
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
 	MPI_Init(&argc,&argv);
+#else
+	(void) argc, (void) argv;
+#endif
 
 	// Test determinant functions
 	double input[4][4] = {
@@ -58,5 +62,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(mesh);
 
 	}
+#ifndef SCOREC_NO_MPI
 	MPI_Finalize();
+#endif
 }

@@ -44,7 +44,11 @@ void bCurver(const char* modelFile, const char* meshFile,
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
 
@@ -52,7 +56,9 @@ int main(int argc, char** argv)
     if (PCUObj.Self() == 0) {
       printf("USAGE: %s <model.x_t>\n", argv[0]);
     }
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
   const char* modelFile   = argv[1];
@@ -359,5 +365,7 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

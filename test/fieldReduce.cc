@@ -151,7 +151,9 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
   if ( argc != 3 ) {
     if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh>\n", argv[0]);
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -164,7 +166,11 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   bool failflag = false;
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
@@ -197,7 +203,9 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 
   return failflag;
   

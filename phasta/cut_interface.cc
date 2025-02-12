@@ -22,7 +22,11 @@ char const* outfile;
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
+#else
+  (void) argc, (void) argv;
+#endif
   lion_set_verbosity(1);
   if (argc < 4 || argc > 5) {
     lion_eprint(1,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
@@ -82,5 +86,7 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

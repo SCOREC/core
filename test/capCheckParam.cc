@@ -27,7 +27,11 @@ void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface*
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
+#else
+  (void) argc, (void) argv;
+#endif
   pcu::PCU *PCUobj = new pcu::PCU(MPI_COMM_WORLD);
 
   if (argc != 2) {
@@ -112,7 +116,9 @@ int main(int argc, char** argv)
   checkParametrization(m, g);
 
   delete PCUobj;
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }
 
 void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb)

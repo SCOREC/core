@@ -30,7 +30,9 @@ namespace {
     if ( argc != 3 ) {
       if ( !pcu_obj->Self() )
         lion_oprint(1,"Usage: %s <control .inp> <reduction-factor>\n", argv[0]);
+#ifndef SCOREC_NO_MPI
       MPI_Finalize();
+#endif
       exit(EXIT_FAILURE);
     }
     if ( !pcu_obj->Self() )
@@ -39,7 +41,11 @@ namespace {
 }
 
 int main(int argc, char** argv) {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   pcu::Protect();
@@ -65,5 +71,7 @@ int main(int argc, char** argv) {
   Sim_unregisterAllKeys();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }
