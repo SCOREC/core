@@ -16,7 +16,6 @@ typedef int MPI_Datatype;
 typedef int MPI_Op;
 #define MPI_COMM_WORLD 0
 #define MPI_ANY_SOURCE -1
-#define MPI_SUM 1
 #define MPI_INT 2
 
 #endif // PCU_PNOMPI_TYPES_H
