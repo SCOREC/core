@@ -26,10 +26,6 @@ bool pcu_pmpi_done(const pcu_mpi_t *, pcu_message *m);
 
 int pcu_pmpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm);
 int pcu_pmpi_free(MPI_Comm* comm);
-int pcu_pmpi_allgather(
-  const void *sendbuf, int sendcount, MPI_Datatype sendtype,
-  void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm
-);
 
 #ifdef __cplusplus
 }

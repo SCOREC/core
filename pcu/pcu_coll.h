@@ -76,6 +76,8 @@ void pcu_reduce(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
 void pcu_bcast(pcu_mpi_t*, pcu_coll* c, void* data, size_t size);
 void pcu_allreduce(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
 void pcu_scan(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
+void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,
+                   void *recv_data, size_t size);
 
 void pcu_begin_barrier(pcu_mpi_t*,pcu_coll* c);
 bool pcu_barrier_done(pcu_mpi_t*, pcu_coll* c);

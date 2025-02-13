@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <time.h>
 
 void pcu_pmpi_send2(const pcu_mpi_t *, pcu_message* m, int tag, MPI_Comm comm);
 bool pcu_pmpi_receive2(const pcu_mpi_t *, pcu_message* m, int tag, MPI_Comm);
@@ -104,13 +103,6 @@ void free_nompi_msg(NoMpiMsg* msg)
 // -------------------------------------------------------------------
 //
 
-double MPI_Wtime(void)
-{
-  struct timespec now;
-  clock_gettime(CLOCK_REALTIME, &now);
-  return (double)now.tv_sec + now.tv_nsec * 1.0e-9;
-}
-
 void pcu_pmpi_init(MPI_Comm comm, pcu_mpi_t *self) {
   self->original_comm = comm;
   self->user_comm = comm+1;
@@ -183,12 +175,6 @@ bool pcu_pmpi_receive2(const pcu_mpi_t *self, pcu_message* m, int tag,
   free(msg->msg);
   free(msg);
   return true;
-}
-
-int  pcu_pmpi_allgather(const void * a, int b, MPI_Datatype c, void * d, int e,
-  MPI_Datatype f, MPI_Comm g) {
-  (void) a, (void) b, (void) c, (void) d, (void) e, (void) f, (void) g;
-  return 0;
 }
 
 int pcu_pmpi_barrier(MPI_Comm a) {

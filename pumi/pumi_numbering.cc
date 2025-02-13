@@ -137,7 +137,7 @@ pNumbering pumi_numbering_createProcGrp (
   int* out_arr = new int[m->getPCU()->Peers()]; // out[i] has local_numOwnedPartBdryEnt of process i on all processes
   *in = owned_node_cnt;
 
-  PCU_Comm_Allgather(in, 1, MPI_INT, out_arr, 1, MPI_INT, m->getPCU()->GetMPIComm());
+  m->getPCU()->Allgather(in, out_arr, 1);
 
   it = m->begin(dim);
   int nbr = 0;

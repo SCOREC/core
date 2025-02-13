@@ -49,6 +49,7 @@
 #include <cstring>
 #include <cerrno>
 #include <cstdarg>
+#include <time.h>
 namespace pcu {
 
 int PCU::Peers() const noexcept { return pcu_mpi_size(mpi_); }
@@ -193,7 +194,15 @@ void PCU::DebugOpen() noexcept {
 
 double GetMem() noexcept { return pcu_get_mem(); }
 void Protect() noexcept { reel_protect(); }
-double Time() noexcept { return MPI_Wtime(); }
+double Time() noexcept {
+#ifndef SCOREC_NO_MPI
+  return MPI_Wtime();
+#else
+  struct timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
+  return (double)now.tv_sec + now.tv_nsec * 1.0e-9;
+#endif
+}
 
 void PCU::DebugPrint(const char *format, ...) noexcept {
   va_list args;
@@ -317,6 +326,11 @@ template <typename T> T PCU::Exscan(T p) noexcept {
   Exscan(&p, 1);
   return p;
 }
+
+template <typename T> void PCU::Allgather(T *send_data, T *recv_data, size_t n) noexcept {
+  pcu_allgather(mpi_, &(msg_->coll), send_data, recv_data, n * sizeof(T));
+}
+
 #define PCU_EXPL_INST_DECL(T)                                                  \
   template void PCU::Add<T>(T * p, size_t n) noexcept;                         \
   template T PCU::Add<T>(T p) noexcept;                                        \
@@ -325,7 +339,8 @@ template <typename T> T PCU::Exscan(T p) noexcept {
   template void PCU::Max<T>(T * p, size_t n) noexcept;                         \
   template T PCU::Max<T>(T p) noexcept;                                        \
   template void PCU::Exscan<T>(T * p, size_t n) noexcept;                      \
-  template T PCU::Exscan<T>(T p) noexcept;
+  template T PCU::Exscan<T>(T p) noexcept;                                     \
+  template void PCU::Allgather<T>(T *in, T *out, size_t n) noexcept;
 PCU_EXPL_INST_DECL(int)
 PCU_EXPL_INST_DECL(size_t)
 PCU_EXPL_INST_DECL(long)

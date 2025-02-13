@@ -35,12 +35,6 @@ int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom) {
   return PCU_SUCCESS;
 }
 
-int PCU_Comm_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-{
-  pcu_pmpi_allgather(sendbuf,sendcount,sendtype,recvbuf,recvcount,recvtype,comm);
-  return PCU_SUCCESS;
-}
-
 int PCU_Comm_Self(PCU_t h) {
   if (h.ptr == nullptr)
     reel_fail("Comm_Self called before Comm_Init");
