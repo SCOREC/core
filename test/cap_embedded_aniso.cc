@@ -72,7 +72,7 @@ namespace {
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
     double getMaxEdgeLengthAcrossShock();
   protected:
-    double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand);
+    double getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand, bool& inTipRef);
     double h_global = 0.2113125;
     ma::Mesh* mesh;
     gmi_model* ref;
@@ -476,13 +476,13 @@ namespace {
     "                VTK files.\n";
   }
 
-  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand) {
+  double EmbeddedShockFunction::getZoneIsoSize(ma::Entity* vtx, apf::Vector3 closestPt, bool inShockBand, bool& inTipRef) {
     apf::Vector3 pos;
 
-    double h_tip = h_global/4; // h_global/4
-    double h_tip_min = h_global/16;
+    //double h_tip = h_global/4; // h_global/4
+    double h_tip = norm_size;
+    double h_tip_min = h_global/32;
     double h_upstream = 4 * h_global;
-    //double h_tip = norm_size;
 
     mesh->getPoint(vtx, 0, pos);
     double sphere_size = 4*h_global;
@@ -494,6 +494,7 @@ namespace {
 
     double sphere_dist_sqr = std::abs(dist * dist);    
     if (sphere_dist_sqr < sphere_size*sphere_size) {
+      inTipRef = true;
       return h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size);
     }
 
@@ -529,7 +530,7 @@ namespace {
     apf::Vector3 norm;
     gmi_ent* closestSurf;
     PCU_ALWAYS_ASSERT(gmi_can_get_closest_point(ref));
-    doubleConeClosestPointAnalytic(posArr, clsArr, nrmArr);
+    doubleConeClosestPointAnalytic(posArr, clsArr, nrmArr, h_global);
     clsVec.fromArray(clsArr);
     norm.fromArray(nrmArr);
     double shockDistSquare = std::abs((pos-clsVec)*(pos-clsVec));
@@ -550,10 +551,18 @@ namespace {
     //#define TANH_SMOOTH(min, max, x, slope) min+(max-min)*std::tanh(slope*x)
     //TANH_SMOOTH(norm_size, h_global, shockDist, 0.333d);
     #define LINE(mins, maxs, x, slope) std::min(std::max(slope*x,mins),maxs)
-    double zoneIsoSize = getZoneIsoSize(vtx, clsVec, shockDistSquare < thickness_tol);
+    bool inTipRef = false;
+    double zoneIsoSize = getZoneIsoSize(vtx, clsVec, shockDistSquare < thickness_tol, inTipRef);
     scale[0] = LINE(norm_size, h_global, shockDist, 1);
-    scale[1] = zoneIsoSize;
-    scale[2] = zoneIsoSize;
+    //scale[0] = zoneIsoSize;
+    scale[1] = std::max(zoneIsoSize, scale[0]);
+    scale[2] = std::max(zoneIsoSize, scale[0]);
+
+    if(inTipRef) {
+      frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
+      frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
+      frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
+    }
 
     if(lion_get_verbosity() >= 1 && nInShockBand % 500 == 0){
       std::cout << posArr[0] << " " << posArr[1] << " " << posArr[2] << " ";

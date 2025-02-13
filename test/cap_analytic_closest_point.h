@@ -1,4 +1,4 @@
-void doubleConeClosestPointAnalytic(double const from[3], double to[3], double to_norm[3]) {
+void doubleConeClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double ref_length) {
   double x0 = from[0];
   // x axis axisymmetry, y0 here is distance from x axis
   double y0 = std::sqrt(from[1]*from[1] + from[2]*from[2]);
@@ -29,24 +29,6 @@ void doubleConeClosestPointAnalytic(double const from[3], double to[3], double t
   double l_x = -(B*l_y + C)/A;
   double l_d2 = std::pow(l_x-x0,2) + std::pow(l_y-y0,2);
 
-  /* old idea for rejecting invalid cone/parabola regions
-  p_x_l_y = pA*l_y*l_y + pZ; // x coordinate of closest point on cone projected in the x direction to the parabola
-  l_x_p_y = -(B*p_y + C)/A; // x coordinate of the closest point on parabola projected in the x direction to the cone
-  if (p_y > l_y) {
-    // outside cone-parabola intersection
-    // if the closest point on the cone is behind the
-    // closest point on the parabola in this region
-    // make parabola win
-    if (l_x_p_y < p_x) p_d2 = 0; 
-  } else {
-    // inside cone-parabola intersection
-    // if closest point on the parabola is behind the
-    // cloest point on the cone in this region
-    // make cone win
-    if (p_x_l_y < l_x) l_d2 = 0;
-  }
-  */
-
   // Convert to x y z
   // Normals
   double cls_y;
@@ -64,14 +46,14 @@ void doubleConeClosestPointAnalytic(double const from[3], double to[3], double t
     dy = B;
   }
 
-  double zero_tol = 1e-6;
-  double ratio = cls_y/std::max(y0,zero_tol);
+  double zero_tol = 1e-3;
+  double ratio = y0<ref_length*zero_tol ? 0.0 : cls_y/y0;
   to[1] = from[1]*ratio;
   to[2] = from[2]*ratio;
 
   // Build normal vector in x y z
   to_norm[0] = dx;
-  double norm_ratio = dy/std::max(y0,zero_tol);
+  double norm_ratio = y0<ref_length*zero_tol ? 0.0 : dy/y0;
   to_norm[1] = from[1]*norm_ratio;
   to_norm[2] = from[2]*norm_ratio;
   double norm_norm = std::sqrt(to_norm[0]*to_norm[0] + to_norm[1]*to_norm[1] + to_norm[2]*to_norm[2]);
