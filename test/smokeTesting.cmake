@@ -1,8 +1,18 @@
 function(smoke_test TESTNAME PROCS EXE)
   set(tname smoke_test_${TESTNAME})
-  add_test(
-    NAME ${tname}
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN})
+  if(SCOREC_NO_MPI)
+    if(PROCS EQUAL "1")
+      add_test(NAME ${tname} COMMAND ${VALGRIND} ${VALGRIND_ARGS}
+        ${EXE} ${ARGN})
+    else()
+      return()
+    endif()
+  else()
+    add_test(
+      NAME ${tname}
+      COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS}
+        ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN})
+  endif()
   SET_TESTS_PROPERTIES(${tname} PROPERTIES LABELS "SMOKE_TEST" )
 endfunction(smoke_test)
 

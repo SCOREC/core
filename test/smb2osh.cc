@@ -14,7 +14,11 @@
 #include <Omega_h_file.hpp>
 
 int main(int argc, char** argv) {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -24,7 +28,9 @@ int main(int argc, char** argv) {
       std::cout << "usage: smb2osh in.dmg in.smb out.osh\n";
       std::cout << "   or: smb2osh               (usage)\n";
     }
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
@@ -39,5 +45,7 @@ int main(int argc, char** argv) {
     Omega_h::binary::write(argv[3], &om);
   }
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

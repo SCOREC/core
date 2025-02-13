@@ -42,11 +42,16 @@ set(SOURCES
         pcu_mpi.c
         pcu_msg.c
         pcu_order.c
-        pcu_pmpi.c
         pcu_util.c
         noto/noto_malloc.c
         reel/reel.c
         PCU.cc)
+
+if(SCOREC_NO_MPI)
+  set(SOURCES ${SOURCES} pcu_pnompi.c)
+else()
+  set(SOURCES ${SOURCES} pcu_pmpi.c)
+endif()
 
 set(HEADERS
         PCU_C.h
@@ -56,6 +61,10 @@ set(HEADERS
         pcu_defines.h
         PCU.h
         )
+
+if(SCOREC_NO_MPI)
+  set(HEADERS ${HEADERS} pcu_pnompi_types.h)
+endif()
 tribits_add_library(
    pcu
    HEADERS ${HEADERS}

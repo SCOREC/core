@@ -18,7 +18,11 @@ static double process_element(apf::Vector3 x[4], double sol[4][9])
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
 #ifdef HAVE_SIMMETRIX
@@ -59,5 +63,7 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

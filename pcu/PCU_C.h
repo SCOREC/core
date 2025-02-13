@@ -1,7 +1,21 @@
 #ifndef PCU_C_H
 #define PCU_C_H
 #include "pcu_defines.h"
+#if defined(SCOREC_NO_MPI)
+#include "pcu_pnompi_types.h"
+// Remove MPI calls.
+#define MPI_Init(argc, argv) do { \
+(void) argc; \
+(void) argv; \
+} while (0)
+#define MPI_Finalize(void)
+#ifdef __cplusplus
+extern "C"
+#endif
+double MPI_Wtime(void);
+#else
 #include <mpi.h>
+#endif
 
 #ifdef __cplusplus
 #include <cstddef>

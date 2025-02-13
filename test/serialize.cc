@@ -25,14 +25,20 @@ struct GroupCode : public Parma_GroupCode
 
 int main( int argc, char* argv[])
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix> <reduction-factor>\n", argv[0]);
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -59,6 +65,8 @@ int main( int argc, char* argv[])
   MS_exit();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }
 

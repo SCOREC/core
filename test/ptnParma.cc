@@ -142,7 +142,9 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
     if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh> "
              "<factor> <method> <approach> <0:global|1:local>\n", argv[0]);
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -162,7 +164,11 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -189,5 +195,7 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

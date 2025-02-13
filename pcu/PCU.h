@@ -1,14 +1,22 @@
 #ifndef SCOREC_PCU_H
 #define SCOREC_PCU_H
 
+#if defined(SCOREC_NO_MPI)
+#include "pcu_pnompi_types.h"
+#else
+#include <mpi.h>
+#endif
 #include <cstdlib>
 #include <cstdarg> //va_list
-#include <mpi.h>
 #include "pcu_defines.h"
 
 struct pcu_msg_struct;
 struct pcu_mpi_struct;
 
+extern "C" {
+int PCU_Comm_Free_One(MPI_Comm* com);
+int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom);
+}
 namespace pcu {
 class PCU {
 public:
@@ -69,6 +77,7 @@ public:
   template <typename T> [[nodiscard]] T Max(T p) noexcept;
   template <typename T> void Exscan(T *p, size_t n) noexcept;
   template <typename T> [[nodiscard]] T Exscan(T p) noexcept;
+  template <typename T> void Allgather(T *send, T *recv, size_t n) noexcept;
 
   /*bitwise operations*/
   [[nodiscard]] int Or(int c) noexcept;
@@ -118,7 +127,8 @@ PCU* PCU_GetGlobal();
   extern template void PCU::Max<T>(T * p, size_t n) noexcept;                  \
   extern template T PCU::Max<T>(T p) noexcept;                                 \
   extern template void PCU::Exscan<T>(T * p, size_t n) noexcept;               \
-  extern template T PCU::Exscan<T>(T p) noexcept;
+  extern template T PCU::Exscan<T>(T p) noexcept;                              \
+  extern template void PCU::Allgather<T>(T *send, T *recv, size_t n) noexcept;
 PCU_EXPL_INST_DECL(int)
 PCU_EXPL_INST_DECL(size_t)
 PCU_EXPL_INST_DECL(long)

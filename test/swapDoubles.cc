@@ -5,7 +5,11 @@
 #include <iostream> //cerr
 
 int main(int argc, char** argv) {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   const size_t n = 2;
@@ -27,6 +31,8 @@ int main(int argc, char** argv) {
   delete [] d_orig;
   delete [] d;
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
   return 0;
 }

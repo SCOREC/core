@@ -9,7 +9,6 @@
 *******************************************************************************/
 #include "pumi.h"
 #include <lionPrint.h>
-#include <mpi.h>
 
 //************************************
 //************************************
@@ -32,7 +31,7 @@ int pumi_rank()
 
 void pumi_sync()
 {
-  MPI_Barrier(pumi::instance()->getPCU()->GetMPIComm());
+  pumi::instance()->getPCU()->Barrier();
 }
 
 #include <sys/utsname.h>

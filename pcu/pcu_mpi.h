@@ -11,7 +11,12 @@
 #define PCU_MPI_H
 
 #include "pcu_buffer.h"
+
+#if defined(SCOREC_NO_MPI)
+#include "pcu_pnompi_types.h"
+#else
 #include <mpi.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +49,8 @@ bool pcu_mpi_done(const pcu_mpi_t*, pcu_message* m);
 bool pcu_mpi_receive(const pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
 void pcu_mpi_init(MPI_Comm comm, pcu_mpi_t* mpi);
 void pcu_mpi_finalize(pcu_mpi_t* mpi);
+int  pcu_mpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm);
+int  pcu_mpi_free(MPI_Comm comm);
 
 #ifdef __cplusplus
 }

@@ -29,6 +29,15 @@ else()
   bob_set_cxx_standard(14)
 endif()
 
+#
+# option related to MPI
+#
+option(SCOREC_NO_MPI "Disable MPI support.  When enabled only serial execution is supported." OFF)
+message(STATUS "SCOREC_NO_MPI: ${SCOREC_NO_MPI}")
+if (SCOREC_NO_MPI)
+   add_definitions(-DSCOREC_NO_MPI)
+endif()
+
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()

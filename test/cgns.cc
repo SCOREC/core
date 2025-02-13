@@ -478,7 +478,11 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
 int main(int argc, char **argv)
 {
 #ifdef HAVE_CGNS
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   pumi_load_pcu(&PCUObj);
@@ -488,7 +492,9 @@ int main(int argc, char **argv)
   {
     if (!PCUObj.Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
     return -1;
   }
@@ -500,7 +506,9 @@ int main(int argc, char **argv)
     {
       if (!PCUObj.Self())
         printf("Usage: %s <in .cgns> <out .smb> additional\n", argv[0]);
+#ifndef SCOREC_NO_MPI
       MPI_Finalize();
+#endif
       exit(EXIT_FAILURE);
       return -1;
     }
@@ -509,7 +517,9 @@ int main(int argc, char **argv)
   {
     if (!PCUObj.Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
     return -1;
   }
@@ -546,7 +556,9 @@ int main(int argc, char **argv)
   }
   //
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
   return 0;
 #else
   PCU_ALWAYS_ASSERT_VERBOSE(true == false,

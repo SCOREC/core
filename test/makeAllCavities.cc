@@ -61,13 +61,19 @@ static apf::MeshTag* tagMesh(
 int main(int argc, char** argv)
 {
 
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   if (PCUObj.Peers() > 1) {
     printf("%s should only be used for serial (single part) meshes!\n", argv[0]);
     printf("use the serialize utility to get a serial mesh, and retry!\n");
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
   if (argc != 6) {
@@ -87,7 +93,9 @@ int main(int argc, char** argv)
     printf("fb: creates all face cavities classified on boundary\n");
     printf("ls: get a list from user and creates cavities for that list\n");
     printf("tagname: creates cavities for all entities that have tagname\n");
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
 
@@ -166,7 +174,9 @@ int main(int argc, char** argv)
     tag = m->findTag(mode.c_str());
     if (!tag) {
       printf("tag with name %s was not found on the mesh. Aborting!\n", mode.c_str());
+#ifndef SCOREC_NO_MPI
       MPI_Finalize();
+#endif
       exit(EXIT_FAILURE);
     }
   }
@@ -254,7 +264,9 @@ int main(int argc, char** argv)
 #endif
 
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }
 
 static void safe_mkdir(

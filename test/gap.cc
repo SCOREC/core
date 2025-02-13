@@ -28,14 +28,20 @@ namespace {
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 5);
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <max elm imb> <out prefix>\n", argv[0]);
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -69,5 +75,7 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

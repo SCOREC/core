@@ -33,6 +33,10 @@ void pcu_merge_assign(void* local, void* incoming, size_t size)
   memcpy(local,incoming,size);
 }
 
+// Advanced merge prototype with access to bit info.
+typedef void pcu_merge2(int mpi_size, int bit, void* local, void* incoming,
+                        size_t size);
+
 /* initiates non-blocking calls for this
    communication step */
 static void begin_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
@@ -49,7 +53,7 @@ static void begin_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
    Returns false if communication is not done,
    otherwise wraps up communication, merges
    if necessary, and returns true */
-static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
+static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c, bool use_merge2)
 {
   int action = c->pattern->action(mpi, c->bit);
   if (action == pcu_coll_idle)
@@ -64,7 +68,14 @@ static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
   if (c->message.buffer.size != incoming.buffer.size)
     reel_fail("PCU unexpected incoming message.\n"
               "Most likely a PCU collective was not called by all ranks.");
-  c->merge(c->message.buffer.start,incoming.buffer.start,incoming.buffer.size);
+  if (use_merge2) {
+    pcu_merge2 *merge2 = (pcu_merge2*)(void*) c->merge;
+    merge2(pcu_mpi_size(mpi), c->bit, c->message.buffer.start,
+           incoming.buffer.start, incoming.buffer.size);
+  } else {
+    c->merge(c->message.buffer.start, incoming.buffer.start,
+             incoming.buffer.size);
+  }
   pcu_free_message(&incoming);
   return true;
 }
@@ -108,11 +119,12 @@ void pcu_begin_coll(pcu_mpi_t* mpi, pcu_coll* c, void* data, size_t size)
 /* makes progress on a collective operation
    started by pcu_begin_coll.
    returns false if its done. */
-bool pcu_progress_coll(pcu_mpi_t* mpi, pcu_coll* c)
+static bool pcu_progress_coll_internal(pcu_mpi_t* mpi, pcu_coll* c,
+                                       bool use_merge2)
 {
   if (c->pattern->end_bit(mpi, c->bit))
     return false;
-  if (end_coll_step(mpi, c))
+  if (end_coll_step(mpi, c, use_merge2))
   {
     c->bit = c->pattern->shift(mpi, c->bit);
     if (c->pattern->end_bit(mpi, c->bit))
@@ -120,6 +132,11 @@ bool pcu_progress_coll(pcu_mpi_t* mpi, pcu_coll* c)
     begin_coll_step(mpi, c);
   }
   return true;
+}
+
+bool pcu_progress_coll(pcu_mpi_t *mpi, pcu_coll *c)
+{
+  return pcu_progress_coll_internal(mpi, c, false);
 }
 
 /* reduce merges odd ranks into even ones,
@@ -401,6 +418,28 @@ void pcu_scan(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size
   pcu_make_coll(mpi, c,&scan_down,m);
   pcu_begin_coll(mpi, c,data,size);
   while(pcu_progress_coll(mpi, c));
+}
+
+void merge_gather(int mpi_size, int bit, void *local, void *incoming,
+                  size_t size) {
+  // bit is equal to the current number of items in local and incoming.
+  // Since all items incoming are from greater ranks, they got to the right.
+  size_t block_size = size / mpi_size;
+  memcpy(local + bit * block_size, incoming, bit * block_size);
+}
+
+void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,
+                   void *recv_data, size_t size) {
+  memcpy(recv_data, send_data, size);
+  pcu_make_coll(mpi, c, &reduce, (pcu_merge*)(void*) merge_gather);
+  pcu_begin_coll(mpi, c, recv_data, size * pcu_mpi_size(mpi));
+  while (pcu_progress_coll_internal(mpi, c, true));
+}
+
+void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,
+                   void *recv_data, size_t size) {
+  pcu_gather(mpi, c, send_data, recv_data, size);
+  pcu_bcast(mpi, c, recv_data, size * pcu_mpi_size(mpi));
 }
 
 /* a barrier is just an allreduce of nothing in particular */

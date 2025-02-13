@@ -309,12 +309,18 @@ void test3D(pcu::PCU *PCUObj)
 }
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   test2D(&pcu_obj);
   test3D(&pcu_obj);
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

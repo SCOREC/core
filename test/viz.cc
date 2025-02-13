@@ -106,5 +106,7 @@ int main(int argc, char** argv)
 
   freeMesh(m);
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }

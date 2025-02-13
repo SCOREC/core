@@ -10,7 +10,7 @@
 #include "pumi.h"
 #include <iostream>
 #include <vector>
-#include <mpi.h>
+#include <PCU.h>
 #include <map>
 #include <set>
 #include <pcu_util.h>
@@ -578,7 +578,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
   for (int i=0; i<num_layer+1;++i)
     for (int j=0; j<pumi_size();++j)
       local_num_off_part+=off_bridge_set[i][j].size();
-  MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
+  global_num_off_part = m->getPCU()->Add(local_num_off_part);
 
   while (global_num_off_part)
   {
@@ -699,7 +699,7 @@ void do_off_part_bridge(pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int i=0; i<num_layer+1;++i)
       for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
-    MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
+    global_num_off_part = m->getPCU()->Add(local_num_off_part);
   } // while global_off_part_brg
 }
 
@@ -823,7 +823,7 @@ void pumi_ghost_createLayer (pMesh m, int brg_dim, int ghost_dim, int num_layer,
     for (int i=0; i<num_layer+1;++i)
       for (int j=0; j<pumi_size();++j)
         local_num_off_part+=off_bridge_set[i][j].size();
-    MPI_Allreduce(&local_num_off_part, &global_num_off_part, 1,MPI_INT,MPI_SUM,m->getPCU()->GetMPIComm());
+    global_num_off_part = m->getPCU()->Add(local_num_off_part);
   }
 
   if (global_num_off_part)

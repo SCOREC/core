@@ -8,7 +8,6 @@
  
 *******************************************************************************/
 #include "pumi.h"
-#include <mpi.h>
 #include <parma.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
@@ -184,7 +183,7 @@ void split_comm(int num_out_comm, pcu::PCU &PCUObj)
   int group_id = self % num_out_comm;
   int in_group_rank = self / num_out_comm;
   MPI_Comm groupComm;
-  MPI_Comm_split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
+  PCU_Comm_Split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
   PCUObj.SwitchMPIComm(groupComm);
 }
 
@@ -193,7 +192,7 @@ void merge_comm(MPI_Comm oldComm, pcu::PCU &PCUObj)
 {
   MPI_Comm prevComm = PCUObj.GetMPIComm();
   PCUObj.SwitchMPIComm(oldComm);
-  MPI_Comm_free(&prevComm);
+  PCU_Comm_Free_One(&prevComm);
 }
 
 
@@ -348,8 +347,9 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
       m->end(it);
       pumi::instance()->num_own_ent[dim] = n;
     }
+    pumi::instance()->num_global_ent = pumi::instance()->num_own_ent;
   }
-  MPI_Allreduce(pumi::instance()->num_own_ent, pumi::instance()->num_global_ent, 4, MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
+  m->getPCU()->Add(pumi::instance()->num_global_ent, 4);
 #ifdef DEBUG
   if (!pumi_rank()) std::cout<<"[PUMI INFO] "<<__func__<<" end\n";
 #endif
@@ -437,12 +437,17 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   int* global_local_entity_count = new int[4*m->getPCU()->Peers()]; 
   int* global_own_entity_count = new int[4*m->getPCU()->Peers()]; 
 
-  MPI_Allreduce(local_entity_count, global_local_entity_count, 4*m->getPCU()->Peers(), 
-                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
+  memcpy(
+    global_local_entity_count, local_entity_count,
+    sizeof(int) * 4 * m->getPCU()->Peers()
+  );
+  m->getPCU()->Add(global_local_entity_count, 4);
 
-  MPI_Allreduce(own_entity_count, global_own_entity_count, 4*m->getPCU()->Peers(), 
-                MPI_INT, MPI_SUM, m->getPCU()->GetMPIComm());
-
+  memcpy(
+    global_own_entity_count, own_entity_count,
+    sizeof(int) * 4 * m->getPCU()->Peers()
+  );
+  m->getPCU()->Add(global_own_entity_count, 4);
  
   if (!m->getPCU()->Self())
   {

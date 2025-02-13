@@ -25,7 +25,11 @@ static apf::Mesh2* makeOneTetMesh(int order, apf::MeshEntity* &ent, pcu::PCU *PC
 
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -37,7 +41,9 @@ int main(int argc, char** argv)
       printf("<blend_order>         can be -1, 0, 1, 2 (-1 means no blending)\n");
       printf("<xi_0> <xi_1> <xi_2>  inquiry point in the parent entity)\n");
     }
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
 
@@ -81,7 +87,9 @@ int main(int argc, char** argv)
   }
 
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }
 
 static apf::Mesh2* makeOneTriMesh(int order, apf::MeshEntity* &ent, pcu::PCU *PCUObj)

@@ -1,5 +1,6 @@
 #include "PCU_C.h"
 #include "PCU.h"
+#include "pcu_pmpi.h"
 #include "reel.h"
 #include <cstdarg>
 
@@ -20,6 +21,17 @@ int PCU_Comm_Free(PCU_t* h) {
     reel_fail("Comm_Free called before Comm_Init");
   delete static_cast<pcu::PCU*>(h->ptr);
   h->ptr = nullptr;
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Free_One(MPI_Comm* com)
+{
+  pcu_pmpi_free(com);
+  return PCU_SUCCESS;
+}
+
+int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom) {
+  pcu_pmpi_split(oldCom, color, key, newCom);
   return PCU_SUCCESS;
 }
 

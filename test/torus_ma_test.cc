@@ -46,7 +46,11 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -70,6 +74,8 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }
 

@@ -74,7 +74,11 @@ apf::Mesh2* convertToPumi(
     const char* sizeName, const char* frameName, pcu::PCU *PCUObj);
 int main(int argc, char** argv)
 {
+#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
+#else
+  (void) argc, (void) argv;
+#endif
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -87,7 +91,9 @@ int main(int argc, char** argv)
       printf("USAGE: %s <model.dmg> <mesh.smb> <prefix>"
       	  "<scale field name> <frame field name> <min_quality>\n", argv[0]);
     }
+#ifndef SCOREC_NO_MPI
     MPI_Finalize();
+#endif
     exit(EXIT_FAILURE);
   }
 
@@ -229,7 +235,9 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
   MS_exit();
   }
+#ifndef SCOREC_NO_MPI
   MPI_Finalize();
+#endif
 }
 
 void printModelStats(pGModel model)
