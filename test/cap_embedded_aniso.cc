@@ -553,7 +553,7 @@ namespace {
     #define LINE(mins, maxs, x, slope) std::min(std::max(slope*x,mins),maxs)
     bool inTipRef = false;
     double zoneIsoSize = getZoneIsoSize(vtx, clsVec, shockDistSquare < thickness_tol, inTipRef);
-    scale[0] = LINE(norm_size, h_global, shockDist, 1);
+    scale[0] = inTipRef ? zoneIsoSize : LINE(norm_size, h_global, shockDist, 1);
     //scale[0] = zoneIsoSize;
     scale[1] = std::max(zoneIsoSize, scale[0]);
     scale[2] = std::max(zoneIsoSize, scale[0]);
