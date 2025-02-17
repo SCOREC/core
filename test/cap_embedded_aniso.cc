@@ -13,7 +13,6 @@
 #include <float.h>
 
 #include <CapstoneModule.h>
-#include "cap_analytic_closest_point.h"
 #include "embedded_aniso_function.h"
 
 using namespace CreateMG;
@@ -83,7 +82,6 @@ int main(int argc, char* argv[]) {
 
   int stage = 0;
   std::cout << ++stage << ". Setup Capstone." << std::endl;
-  std::cout << "Isotropic adapt only" << std::endl;
 
   CapstoneModule cs("cap_aniso", "Geometry Database : SMLIB",
     "Mesh Database : Create", "Attribution Database : Create");
@@ -146,19 +144,23 @@ int main(int argc, char* argv[]) {
 
   // M_GTopo shock_surface = gdi->get_topo_by_id(Geometry::FACE, args.shock_surf_id());
   std::list<gmi_ent*> shock_surfaces;
-  std::cout << "INFO: Selected surfaces: ";
-  for(int surf_id : args.shock_surf_ids()) {
-    std::cout << surf_id << " ";
-    M_GTopo surf = (using_ref_geom ? gdi_ref : gdi)->get_topo_by_id(Geometry::FACE, surf_id);
-    if (surf.is_invalid()) {
-      std::cerr << "ERROR: Shock surface id " << surf_id << " is invalid." << std::endl;
-      PCU_Comm_Free();
-      MPI_Finalize();
-      return 1;
+  if (args.shock_surf_ids().size() == 0) {
+    std::cout << "INFO: No surface ids specified - using analytic shock geometry definitions" << std::endl;
+  } else {
+    std::cout << "INFO: Selected surfaces: ";
+    for (int surf_id : args.shock_surf_ids()) {
+      std::cout << surf_id << " ";
+      M_GTopo surf = (using_ref_geom ? gdi_ref : gdi)->get_topo_by_id(Geometry::FACE, surf_id);
+      if (surf.is_invalid()) {
+        std::cerr << "ERROR: Shock surface id " << surf_id << " is invalid." << std::endl;
+        PCU_Comm_Free();
+        MPI_Finalize();
+        return 1;
+      }
+      shock_surfaces.push_back(toGmiEntity(surf));
     }
-    shock_surfaces.push_back(toGmiEntity(surf));
+    std::cout << std::endl;
   }
-  std::cout << std::endl;
   //std::cout << "INFO: Selected surface: " << shock_surface << std::endl;
 
   std::cout << ++stage << ". Get average edge length." << std::endl;
@@ -333,7 +335,7 @@ namespace {
     argv0 = argv[0];
     int c;
     int given[256] = {0};
-    const char* required = "nst";
+    const char* required = "nt";
     while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvS")) != -1) {
       ++given[c];
       switch (c) {
