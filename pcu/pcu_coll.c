@@ -28,14 +28,12 @@ static int ceil_log2(int n)
   return r;
 }
 
-void pcu_merge_assign(void* local, void* incoming, size_t size)
+void pcu_merge_assign(int peers, int bit, void* local, void* incoming,
+                      size_t size)
 {
+  (void) peers, (void) bit;
   memcpy(local,incoming,size);
 }
-
-// Advanced merge prototype with access to bit info.
-typedef void pcu_merge2(int mpi_size, int bit, void* local, void* incoming,
-                        size_t size);
 
 /* initiates non-blocking calls for this
    communication step */
@@ -53,7 +51,7 @@ static void begin_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
    Returns false if communication is not done,
    otherwise wraps up communication, merges
    if necessary, and returns true */
-static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c, bool use_merge2)
+static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
 {
   int action = c->pattern->action(mpi, c->bit);
   if (action == pcu_coll_idle)
@@ -68,14 +66,8 @@ static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c, bool use_merge2)
   if (c->message.buffer.size != incoming.buffer.size)
     reel_fail("PCU unexpected incoming message.\n"
               "Most likely a PCU collective was not called by all ranks.");
-  if (use_merge2) {
-    pcu_merge2 *merge2 = (pcu_merge2*)(void*) c->merge;
-    merge2(pcu_mpi_size(mpi), c->bit, c->message.buffer.start,
+  c->merge(pcu_mpi_size(mpi), c->bit, c->message.buffer.start,
            incoming.buffer.start, incoming.buffer.size);
-  } else {
-    c->merge(c->message.buffer.start, incoming.buffer.start,
-             incoming.buffer.size);
-  }
   pcu_free_message(&incoming);
   return true;
 }
@@ -119,12 +111,11 @@ void pcu_begin_coll(pcu_mpi_t* mpi, pcu_coll* c, void* data, size_t size)
 /* makes progress on a collective operation
    started by pcu_begin_coll.
    returns false if its done. */
-static bool pcu_progress_coll_internal(pcu_mpi_t* mpi, pcu_coll* c,
-                                       bool use_merge2)
+bool pcu_progress_coll(pcu_mpi_t* mpi, pcu_coll* c)
 {
   if (c->pattern->end_bit(mpi, c->bit))
     return false;
-  if (end_coll_step(mpi, c, use_merge2))
+  if (end_coll_step(mpi, c))
   {
     c->bit = c->pattern->shift(mpi, c->bit);
     if (c->pattern->end_bit(mpi, c->bit))
@@ -132,11 +123,6 @@ static bool pcu_progress_coll_internal(pcu_mpi_t* mpi, pcu_coll* c,
     begin_coll_step(mpi, c);
   }
   return true;
-}
-
-bool pcu_progress_coll(pcu_mpi_t *mpi, pcu_coll *c)
-{
-  return pcu_progress_coll_internal(mpi, c, false);
 }
 
 /* reduce merges odd ranks into even ones,
@@ -390,6 +376,15 @@ static pcu_pattern scan_down =
   .shift = scan_down_shift,
 };
 
+static pcu_pattern gather =
+{
+  .begin_bit = reduce_begin_bit,
+  .end_bit = reduce_end_bit,
+  .action = reduce_action,
+  .peer = reduce_peer,
+  .shift = reduce_shift,
+};
+
 void pcu_reduce(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size)
 {
   pcu_make_coll(mpi, c,&reduce,m);
@@ -420,20 +415,20 @@ void pcu_scan(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size
   while(pcu_progress_coll(mpi, c));
 }
 
-void merge_gather(int mpi_size, int bit, void *local, void *incoming,
-                  size_t size) {
+void pcu_merge_gather(int peers, int bit, void *local, void *incoming,
+                      size_t size) {
   // bit is equal to the current number of items in local and incoming.
   // Since all items incoming are from greater ranks, they got to the right.
-  size_t block_size = size / mpi_size;
+  size_t block_size = size / peers;
   memcpy(local + bit * block_size, incoming, bit * block_size);
 }
 
 void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,
                    void *recv_data, size_t size) {
   memcpy(recv_data, send_data, size);
-  pcu_make_coll(mpi, c, &reduce, (pcu_merge*)(void*) merge_gather);
+  pcu_make_coll(mpi, c, &gather, pcu_merge_gather);
   pcu_begin_coll(mpi, c, recv_data, size * pcu_mpi_size(mpi));
-  while (pcu_progress_coll_internal(mpi, c, true));
+  while (pcu_progress_coll(mpi, c));
 }
 
 void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,

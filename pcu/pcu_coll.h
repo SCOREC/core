@@ -29,8 +29,10 @@ extern "C" {
    arguments are usually arrays of some type,
    and the operations is sum, min, max, etc. */
 
-typedef void pcu_merge(void* local, void* incoming, size_t size);
-void pcu_merge_assign(void* local, void* incoming, size_t size);
+typedef void pcu_merge(int peers, int bit, void* local, void* incoming,
+                       size_t size);
+void pcu_merge_assign(int peers, int bit, void* local, void* incoming,
+                      size_t size);
 
 /* Enumerated actions that a rank takes during one
    step of the communication pattern */

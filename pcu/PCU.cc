@@ -265,7 +265,7 @@ PCU_Comm PCU::SwitchMPIComm(PCU_Comm newcomm) noexcept {
 template <typename T> void PCU::Add(T *p, size_t n) noexcept {
   pcu_allreduce(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
@@ -281,7 +281,7 @@ template <typename T> T PCU::Add(T p) noexcept {
 template <typename T> void PCU::Min(T *p, size_t n) noexcept {
   pcu_allreduce(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
@@ -297,7 +297,7 @@ template <typename T> T PCU::Min(T p) noexcept {
 template <typename T> void PCU::Max(T *p, size_t n) noexcept {
   pcu_allreduce(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
@@ -316,7 +316,7 @@ template <typename T> void PCU::Exscan(T *p, size_t n) noexcept {
     originals[i] = p[i];
   pcu_scan(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
