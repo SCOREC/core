@@ -61,7 +61,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   pumi_load_pcu(&PCUObj);
   getConfig(argc,argv,&PCUObj);
 

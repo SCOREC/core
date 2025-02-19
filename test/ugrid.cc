@@ -23,8 +23,8 @@ pcu::PCU* getGroupedPCU(const int partitionFactor, pcu::PCU *PCUObj)
   int self = PCUObj->Self();
   int groupRank = self / partitionFactor;
   int group = self % partitionFactor;
-  MPI_Comm groupComm;
-  PCU_Comm_Split(MPI_COMM_WORLD, group, groupRank, &groupComm);
+  PCU_Comm groupComm;
+  PCU_Comm_Split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
   return new pcu::PCU(groupComm);
 }
 
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !PCUObj.Self() )

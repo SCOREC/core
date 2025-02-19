@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();

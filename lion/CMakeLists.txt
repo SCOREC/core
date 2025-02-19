@@ -33,7 +33,6 @@ add_library(lion ${SOURCES})
 # Include directories
 target_include_directories(lion INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 # Do extra work if compression is enabled

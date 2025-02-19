@@ -34,9 +34,6 @@ endif()
 #
 option(SCOREC_NO_MPI "Disable MPI support.  When enabled only serial execution is supported." OFF)
 message(STATUS "SCOREC_NO_MPI: ${SCOREC_NO_MPI}")
-if (SCOREC_NO_MPI)
-   add_definitions(-DSCOREC_NO_MPI)
-endif()
 
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
@@ -143,6 +140,9 @@ endif()
 macro(scorec_export_library target)
 bob_export_target(${target})
 install(FILES ${HEADERS} DESTINATION include)
+target_include_directories(${target} INTERFACE
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
 endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
@@ -170,6 +170,10 @@ if(ENABLE_CGNS)
   bob_public_dep(HDF5)
   add_definitions(-DHAVE_CGNS)
 endif()
+
+configure_file(SCOREC_config.h.in SCOREC_config.h)
+install(FILES "${CMAKE_BINARY_DIR}/SCOREC_config.h" DESTINATION include)
+include_directories(PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>")
 
 # Include the SCOREC project packages
 add_subdirectory(lion)

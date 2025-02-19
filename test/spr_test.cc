@@ -23,7 +23,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile, &PCUObj);

@@ -7,14 +7,14 @@
   BSD license as described in the LICENSE file in the top-level directory.
 
 *******************************************************************************/
-#include "pcu_pnompi.h"
+#include "pcu_pmpi.h"
 #include "pcu_buffer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 
-void pcu_pmpi_send2(const pcu_mpi_t *, pcu_message* m, int tag, MPI_Comm comm);
-bool pcu_pmpi_receive2(const pcu_mpi_t *, pcu_message* m, int tag, MPI_Comm);
+void pcu_pmpi_send2(const pcu_mpi_t *, pcu_message* m, int tag, PCU_Comm comm);
+bool pcu_pmpi_receive2(const pcu_mpi_t *, pcu_message* m, int tag, PCU_Comm);
 
 //
 // ------------------------------------------------------------------
@@ -103,7 +103,7 @@ void free_nompi_msg(NoMpiMsg* msg)
 // -------------------------------------------------------------------
 //
 
-void pcu_pmpi_init(MPI_Comm comm, pcu_mpi_t *self) {
+void pcu_pmpi_init(PCU_Comm comm, pcu_mpi_t *self) {
   self->original_comm = comm;
   self->user_comm = comm+1;
   self->coll_comm = comm+2;
@@ -116,12 +116,12 @@ void pcu_pmpi_finalize(pcu_mpi_t* self) {
   self->coll_comm = 0;
 }
 
-int pcu_pmpi_free(MPI_Comm *c) {
+int pcu_pmpi_free(PCU_Comm *c) {
   (void) c;
   return 0;
 }
 
-int pcu_pmpi_split(MPI_Comm cm, int c, int k, MPI_Comm *cm2) {
+int pcu_pmpi_split(PCU_Comm cm, int c, int k, PCU_Comm *cm2) {
   (void) cm, (void) c, (void) k, (void) cm2;
   return 1;
 }
@@ -134,12 +134,12 @@ int pcu_pmpi_rank(const pcu_mpi_t *self) {
   return self->rank;
 }
 
-void pcu_pmpi_send(const pcu_mpi_t *self, pcu_message* m, MPI_Comm comm) {
+void pcu_pmpi_send(const pcu_mpi_t *self, pcu_message* m, PCU_Comm comm) {
   pcu_pmpi_send2(self, m, 0, comm);
 }
 
 void pcu_pmpi_send2(const pcu_mpi_t *self, pcu_message* m, int tag,
-  MPI_Comm c) {
+  PCU_Comm c) {
   (void) c;
   if (m->buffer.size > (size_t)INT_MAX) {
     fprintf(stderr, "ERROR PCU message size exceeds INT_MAX... exiting\n");
@@ -156,12 +156,12 @@ bool pcu_pmpi_done(const pcu_mpi_t* a, pcu_message* b) {
   return true;
 }
 
-bool pcu_pmpi_receive(const pcu_mpi_t *self, pcu_message* m, MPI_Comm comm) {
+bool pcu_pmpi_receive(const pcu_mpi_t *self, pcu_message* m, PCU_Comm comm) {
   return pcu_pmpi_receive2(self, m, 0, comm);
 }
 
 bool pcu_pmpi_receive2(const pcu_mpi_t *self, pcu_message* m, int tag,
-  MPI_Comm comm) {
+  PCU_Comm comm) {
   (void) comm;
   NoMpiMsg* msg = get_nompi_msg(tag, self->rank);
   if (msg==0) return false;
@@ -177,7 +177,7 @@ bool pcu_pmpi_receive2(const pcu_mpi_t *self, pcu_message* m, int tag,
   return true;
 }
 
-int pcu_pmpi_barrier(MPI_Comm a) {
+int pcu_pmpi_barrier(PCU_Comm a) {
   (void) a;
   return 0;
 }

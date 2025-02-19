@@ -8,7 +8,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   pumi_load_pcu(&PCUObj);
   pGeom g = pumi_geom_load(argv[1], "mesh");
   pMesh m = pumi_mesh_load(g, argv[2], 1);

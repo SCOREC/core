@@ -26,7 +26,6 @@ target_link_libraries(gmi_sim PUBLIC gmi pcu ${SIMMODSUITE_LIBS})
 # Include directories
 target_include_directories(gmi_sim PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 # make sure the compiler can find the config header
 target_include_directories(gmi_sim PRIVATE

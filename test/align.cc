@@ -93,7 +93,7 @@ int main()
   MPI_Init(0,0);
 #endif
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   gmi_register_null();
   testTriEdge(&pcu_obj);

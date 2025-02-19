@@ -173,7 +173,7 @@ int main(int argc, char** argv)
 #endif
   bool failflag = false;
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   myrank = PCUObj.Self();
   commsize = PCUObj.Peers();

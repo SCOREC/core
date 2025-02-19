@@ -216,7 +216,14 @@ void PCU::DebugPrint(const char *format, va_list args) noexcept {
   vfprintf(msg_->file, format, args);
   fflush(msg_->file);
 }
-PCU::PCU(MPI_Comm comm) {
+PCU::PCU() :
+#ifndef SCOREC_NO_MPI
+PCU(MPI_COMM_WORLD)
+#else
+PCU(0)
+#endif
+{}
+PCU::PCU(PCU_Comm comm) {
   mpi_ = new pcu_mpi_t;
   msg_ = new pcu_msg;
   pcu_mpi_init(comm, mpi_);
@@ -242,9 +249,9 @@ PCU &PCU::operator=(PCU && other) noexcept {
   std::swap(msg_, other.msg_);
   return *this;
 }
-MPI_Comm PCU::GetMPIComm() const noexcept { return mpi_->original_comm; }
+PCU_Comm PCU::GetMPIComm() const noexcept { return mpi_->original_comm; }
 
-MPI_Comm PCU::SwitchMPIComm(MPI_Comm newcomm) noexcept {
+PCU_Comm PCU::SwitchMPIComm(PCU_Comm newcomm) noexcept {
   if(newcomm == mpi_->original_comm) {
     return mpi_->original_comm;
   }

@@ -48,7 +48,7 @@ static void runInGroups(
   int groupRank = inMap(self);
   int group = groupMap(self);
   
-  MPI_Comm groupComm;
+  PCU_Comm groupComm;
   PCU_Comm_Split(expandedPCU->GetMPIComm(), group, groupRank, &groupComm);
   auto groupedPCU = std::unique_ptr<pcu::PCU>(new pcu::PCU(groupComm));
   if (m){

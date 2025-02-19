@@ -143,7 +143,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
 
   PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.Peers() == 1, "Not implemented in parallel!");

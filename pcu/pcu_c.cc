@@ -11,7 +11,7 @@ extern "C" {
 int PCU_Comm_Init(PCU_t* h) {
   if (h->ptr != nullptr)
     reel_fail("nested calls to Comm_Init");
-  pcu::PCU* pcu_object = new pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU* pcu_object = new pcu::PCU();
   h->ptr = static_cast<void*>(pcu_object);
   return PCU_SUCCESS;
 }
@@ -24,13 +24,13 @@ int PCU_Comm_Free(PCU_t* h) {
   return PCU_SUCCESS;
 }
 
-int PCU_Comm_Free_One(MPI_Comm* com)
+int PCU_Comm_Free_One(PCU_Comm* com)
 {
   pcu_pmpi_free(com);
   return PCU_SUCCESS;
 }
 
-int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom) {
+int PCU_Comm_Split(PCU_Comm oldCom, int color, int key, PCU_Comm* newCom) {
   pcu_pmpi_split(oldCom, color, key, newCom);
   return PCU_SUCCESS;
 }
@@ -486,7 +486,7 @@ void *PCU_Comm_Extract(PCU_t h, size_t size) {
  in the previous communicator. This is a very heavy weight function
  and should be used sparingly.
  */
-void PCU_Switch_Comm(PCU_t h, MPI_Comm new_comm) {
+void PCU_Switch_Comm(PCU_t h, PCU_Comm new_comm) {
   if (h.ptr == nullptr)
     reel_fail("Switch_Comm called before Comm_Init");
   static_cast<pcu::PCU*>(h.ptr)->SwitchMPIComm(new_comm);
@@ -497,7 +497,7 @@ void PCU_Switch_Comm(PCU_t h, MPI_Comm new_comm) {
   most recent PCU_Switch_Comm call, or MPI_COMM_WORLD
   otherwise.
  */
-MPI_Comm PCU_Get_Comm(PCU_t h) {
+PCU_Comm PCU_Get_Comm(PCU_t h) {
   if (h.ptr == nullptr)
     reel_fail("Get_Comm called before Comm_Init");
   return static_cast<pcu::PCU*>(h.ptr)->GetMPIComm();

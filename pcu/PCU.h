@@ -1,11 +1,6 @@
 #ifndef SCOREC_PCU_H
 #define SCOREC_PCU_H
 
-#if defined(SCOREC_NO_MPI)
-#include "pcu_pnompi_types.h"
-#else
-#include <mpi.h>
-#endif
 #include <cstdlib>
 #include <cstdarg> //va_list
 #include "pcu_defines.h"
@@ -14,13 +9,14 @@ struct pcu_msg_struct;
 struct pcu_mpi_struct;
 
 extern "C" {
-int PCU_Comm_Free_One(MPI_Comm* com);
-int PCU_Comm_Split(MPI_Comm oldCom, int color, int key, MPI_Comm* newCom);
+int PCU_Comm_Free_One(PCU_Comm* com);
+int PCU_Comm_Split(PCU_Comm oldCom, int color, int key, PCU_Comm* newCom);
 }
 namespace pcu {
 class PCU {
 public:
-  explicit PCU(MPI_Comm comm);
+  PCU();
+  explicit PCU(PCU_Comm comm);
   ~PCU() noexcept;
   PCU(PCU const &) = delete;
   PCU(PCU &&) noexcept;
@@ -34,7 +30,7 @@ public:
    *  @return The number of ranks in the communicator.
    */
   [[nodiscard]] int Peers() const noexcept;
-  [[nodiscard]] MPI_Comm GetMPIComm() const noexcept;
+  [[nodiscard]] PCU_Comm GetMPIComm() const noexcept;
 
   [[nodiscard]] PCU_t GetCHandle() {PCU_t h; h.ptr=this; return h;}
   /*recommended message passing API*/
@@ -94,16 +90,7 @@ public:
   /* Debug functions */
   void DebugOpen() noexcept;
 
-  MPI_Comm SwitchMPIComm(MPI_Comm) noexcept;
-
-  //struct MPIComms {
-  //  MPI_Comm original;
-  //  MPI_Comm user;
-  //  MPI_Comm coll;
-  //};
-  // takes ownership of newcomms.user & newcomms.coll
-  // user responsibility to free returned user/coll comm
-  //MPIComms SwitchMPIComms(MPIComms& newcomms) noexcept;
+  PCU_Comm SwitchMPIComm(PCU_Comm) noexcept;
 
 private:
   pcu_msg_struct *msg_;

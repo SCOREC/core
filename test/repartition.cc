@@ -45,8 +45,8 @@ CreateGroupCommResult createGroupComm(pcu::PCU *PCUObj)
        no need to spend time computing a good contiguous number */
     groupRank = 0;
   }
-  MPI_Comm groupComm;
-  PCU_Comm_Split(MPI_COMM_WORLD, group, groupRank, &groupComm);
+  PCU_Comm groupComm;
+  PCU_Comm_Split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
   CreateGroupCommResult result;
   result.isOriginal = isOriginal;
   result.group_pcu_obj = new pcu::PCU(groupComm);
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU expanded_pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU expanded_pcu_obj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv,&expanded_pcu_obj);

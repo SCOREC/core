@@ -182,15 +182,15 @@ void split_comm(int num_out_comm, pcu::PCU &PCUObj)
   int self = PCUObj.Self();
   int group_id = self % num_out_comm;
   int in_group_rank = self / num_out_comm;
-  MPI_Comm groupComm;
+  PCU_Comm groupComm;
   PCU_Comm_Split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
   PCUObj.SwitchMPIComm(groupComm);
 }
 
 
-void merge_comm(MPI_Comm oldComm, pcu::PCU &PCUObj)
+void merge_comm(PCU_Comm oldComm, pcu::PCU &PCUObj)
 {
-  MPI_Comm prevComm = PCUObj.GetMPIComm();
+  PCU_Comm prevComm = PCUObj.GetMPIComm();
   PCUObj.SwitchMPIComm(oldComm);
   PCU_Comm_Free_One(&prevComm);
 }
@@ -211,7 +211,7 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
     if (!pumi::instance()->getPCU()->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  MPI_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
+  PCU_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
   int num_target_part = pumi::instance()->getPCU()->Peers();
   bool isMaster = ((pumi::instance()->getPCU()->Self() % num_target_part) == 0);
   pMesh m = 0;
@@ -239,7 +239,7 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
   }
   if (num_in_part==1 && pumi::instance()->getPCU()->Peers()>1) // do static partitioning
   {
-    MPI_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
+    PCU_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
     int num_target_part = pumi::instance()->getPCU()->Peers()/num_in_part;
     bool isMaster = ((pumi::instance()->getPCU()->Self() % num_target_part) == 0);
     pMesh m = 0;
@@ -289,7 +289,7 @@ pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
   else
   {
     double t0 = pcu::Time();
-    MPI_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
+    PCU_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
     int num_target_part = pumi::instance()->getPCU()->Peers();
     split_comm(num_target_part, *pumi::instance()->getPCU());
     // no pmodel & remote links setup

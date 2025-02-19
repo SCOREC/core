@@ -39,7 +39,6 @@ include(GNUInstallDirs)
 
 target_include_directories(apf_cap PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 scorec_export_library(apf_cap)

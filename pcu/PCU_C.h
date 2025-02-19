@@ -1,21 +1,6 @@
 #ifndef PCU_C_H
 #define PCU_C_H
 #include "pcu_defines.h"
-#if defined(SCOREC_NO_MPI)
-#include "pcu_pnompi_types.h"
-// Remove MPI calls.
-#define MPI_Init(argc, argv) do { \
-(void) argc; \
-(void) argv; \
-} while (0)
-#define MPI_Finalize(void)
-#ifdef __cplusplus
-extern "C"
-#endif
-double MPI_Wtime(void);
-#else
-#include <mpi.h>
-#endif
 
 #ifdef __cplusplus
 #include <cstddef>
@@ -111,8 +96,8 @@ int PCU_Comm_Size(PCU_t h, int* size);
 /*deprecated method enum*/
 
 /*special MPI_Comm replacement API*/
-void PCU_Switch_Comm(PCU_t h, MPI_Comm new_comm);
-MPI_Comm PCU_Get_Comm(PCU_t h);
+void PCU_Switch_Comm(PCU_t h, PCU_Comm new_comm);
+PCU_Comm PCU_Get_Comm(PCU_t h);
 
 /*stack trace helpers using GNU/Linux*/
 void PCU_Protect(void);

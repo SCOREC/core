@@ -67,7 +67,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   if (PCUObj.Peers() > 1) {
     printf("%s should only be used for serial (single part) meshes!\n", argv[0]);
     printf("use the serialize utility to get a serial mesh, and retry!\n");

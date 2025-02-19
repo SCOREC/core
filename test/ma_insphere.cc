@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 
 	// Test insphere (create a mesh with one tet)
 	{
-	pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+	pcu::PCU PCUObj;
   lion_set_verbosity(1);
 	apf::Vector3 a(0, 0, 0);
 	apf::Vector3 b(-6, 0, 0);

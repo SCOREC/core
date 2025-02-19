@@ -17,7 +17,6 @@ add_library(sam ${SOURCES})
 # Include directories
 target_include_directories(sam INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 # Link this package to these libraries

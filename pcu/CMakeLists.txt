@@ -39,10 +39,6 @@ set(HEADERS
   PCU.h
 )
 
-if(SCOREC_NO_MPI)
-  set(HEADERS ${HEADERS} pcu_pnompi_types.h)
-endif()
-
 # Add the pcu library
 add_library(pcu ${SOURCES})
 # this compiler definition is needed to silence warnings caused by the openmpi CXX
@@ -75,7 +71,6 @@ target_include_directories(pcu
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/reel>
-    $<INSTALL_INTERFACE:include>
     PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/noto>
     )

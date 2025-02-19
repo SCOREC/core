@@ -28,7 +28,7 @@ int main(int argc, char ** argv) {
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   // argument should be model, mesh
   PCU_ALWAYS_ASSERT(argc == 3);
 

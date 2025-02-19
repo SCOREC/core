@@ -20,7 +20,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   MS_init();
   SimModel_start();

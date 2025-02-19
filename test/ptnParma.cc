@@ -170,7 +170,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if( !PCUObj.Self() )
     lion_oprint(1, "PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());

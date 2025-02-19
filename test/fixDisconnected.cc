@@ -16,7 +16,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   if ( argc != 4 ) {
     if ( !pcu_obj.Self() )

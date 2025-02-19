@@ -47,7 +47,6 @@ add_library(apf_zoltan ${SOURCES})
 # Include directories
 target_include_directories(apf_zoltan INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 # Link this package to these libraries

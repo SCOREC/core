@@ -31,7 +31,6 @@ add_library(gmi ${SOURCES})
 target_link_libraries(gmi pcu lion)
 target_include_directories(gmi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 scorec_export_library(gmi)

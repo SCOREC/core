@@ -10,13 +10,8 @@
 #ifndef PCU_MPI_H
 #define PCU_MPI_H
 
+#include "pcu_defines.h"
 #include "pcu_buffer.h"
-
-#if defined(SCOREC_NO_MPI)
-#include "pcu_pnompi_types.h"
-#else
-#include <mpi.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +20,7 @@ extern "C" {
 typedef struct
 {
   pcu_buffer buffer;
-  MPI_Request request;
+  PCU_Request request;
   int peer;
 } pcu_message;
 
@@ -34,9 +29,9 @@ void pcu_free_message(pcu_message* m);
 
 struct pcu_mpi_struct
 {
-  MPI_Comm original_comm;
-  MPI_Comm user_comm;
-  MPI_Comm coll_comm;
+  PCU_Comm original_comm;
+  PCU_Comm user_comm;
+  PCU_Comm coll_comm;
   int rank;
   int size;
 };
@@ -44,13 +39,13 @@ typedef struct pcu_mpi_struct pcu_mpi_t;
 
 int pcu_mpi_size(const pcu_mpi_t*);
 int pcu_mpi_rank(const pcu_mpi_t*);
-void pcu_mpi_send(const pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
+void pcu_mpi_send(const pcu_mpi_t*, pcu_message* m, PCU_Comm comm);
 bool pcu_mpi_done(const pcu_mpi_t*, pcu_message* m);
-bool pcu_mpi_receive(const pcu_mpi_t*, pcu_message* m, MPI_Comm comm);
-void pcu_mpi_init(MPI_Comm comm, pcu_mpi_t* mpi);
+bool pcu_mpi_receive(const pcu_mpi_t*, pcu_message* m, PCU_Comm comm);
+void pcu_mpi_init(PCU_Comm comm, pcu_mpi_t* mpi);
 void pcu_mpi_finalize(pcu_mpi_t* mpi);
-int  pcu_mpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm);
-int  pcu_mpi_free(MPI_Comm comm);
+int  pcu_mpi_split(PCU_Comm comm, int color, int key, PCU_Comm* newcomm);
+int  pcu_mpi_free(PCU_Comm comm);
 
 #ifdef __cplusplus
 }

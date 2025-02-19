@@ -50,7 +50,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
 
   if (argc < 2) {
     if (PCUObj.Self() == 0) {

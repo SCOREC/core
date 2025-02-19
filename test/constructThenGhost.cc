@@ -18,7 +18,7 @@ int main(int argc, char** argv)
   (void) argc, (void) argv;
 #endif
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   pumi_load_pcu(&pcu_obj);
   lion_set_verbosity(1);
   gmi_register_mesh();
