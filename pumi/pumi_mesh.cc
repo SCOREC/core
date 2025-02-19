@@ -177,26 +177,6 @@ apf::Migration* getPlan(apf::Mesh* m, int num_target_part)
   return plan;
 }
 
-void split_comm(int num_out_comm, pcu::PCU &PCUObj)
-{
-  int self = PCUObj.Self();
-  int group_id = self % num_out_comm;
-  int in_group_rank = self / num_out_comm;
-  PCU_Comm groupComm;
-  PCU_Comm_Split(PCUObj.GetMPIComm(), group_id, in_group_rank, &groupComm);
-  PCUObj.SwitchMPIComm(groupComm);
-}
-
-
-void merge_comm(PCU_Comm oldComm, pcu::PCU &PCUObj)
-{
-  PCU_Comm prevComm = PCUObj.GetMPIComm();
-  PCUObj.SwitchMPIComm(oldComm);
-  PCU_Comm_Free_One(&prevComm);
-}
-
-
-
 pGeom pumi_mesh_getGeom(pMesh)
 {
   return pumi::instance()->model;
@@ -211,14 +191,15 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
     if (!pumi::instance()->getPCU()->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  PCU_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
-  int num_target_part = pumi::instance()->getPCU()->Peers();
-  bool isMaster = ((pumi::instance()->getPCU()->Self() % num_target_part) == 0);
+  bool isMaster = pumi::instance()->getPCU()->Self() == 0;
   pMesh m = 0;
-  split_comm(num_target_part, *pumi::instance()->getPCU());
+  pcu::PCU *split_comm = pumi::instance()->getPCU()->Split(
+    pumi::instance()->getPCU()->Self(), 0
+  );
   if (isMaster) 
-    m = apf::loadMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU());
-  merge_comm(prevComm, *pumi::instance()->getPCU());
+    m = apf::loadMdsMesh(g->getGmi(), filename, split_comm);
+  if (m != nullptr) m->switchPCU(pumi::instance()->getPCU());
+  delete split_comm;
   pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1, m->getPCU());
   return pumi::instance()->mesh;
 }
@@ -232,28 +213,31 @@ pMesh pumi_mesh_load(pMesh m)
 
 pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char* mesh_type)
 {
+  pcu::PCU *pcu_obj = pumi::instance()->getPCU();
   if (strcmp(mesh_type,"mds"))
   {
-    if (!pumi::instance()->getPCU()->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
+    if (!pcu_obj->Self()) std::cout<<"[PUMI ERROR] "<<__func__<<" failed: invalid mesh type "<<mesh_type<<"\n";
     return NULL;
   }
-  if (num_in_part==1 && pumi::instance()->getPCU()->Peers()>1) // do static partitioning
+  if (num_in_part==1 && pcu_obj->Peers()>1) // do static partitioning
   {
-    PCU_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
-    int num_target_part = pumi::instance()->getPCU()->Peers()/num_in_part;
-    bool isMaster = ((pumi::instance()->getPCU()->Self() % num_target_part) == 0);
+    int num_target_part = pcu_obj->Peers()/num_in_part;
+    bool isMaster = ((pcu_obj->Self() % num_target_part) == 0);
     pMesh m = 0;
     apf::Migration* plan = 0;   
-    split_comm(num_target_part, *pumi::instance()->getPCU());
+    pcu::PCU *split_comm = pcu_obj->Split(
+      pcu_obj->Self() % num_target_part, pcu_obj->Self() / num_target_part
+    );
     if (isMaster) {
-      m = apf::loadMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU());
+      m = apf::loadMdsMesh(g->getGmi(), filename, split_comm);
       plan = getPlan(m, num_target_part);
     }
-    merge_comm(prevComm, *pumi::instance()->getPCU());
-    pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part, pumi::instance()->getPCU());
+    if (m != nullptr) m->switchPCU(split_comm);
+    delete split_comm;
+    pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part, pcu_obj);
   }
   else
-    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU());
+    pumi::instance()->mesh = apf::loadMdsMesh(g->getGmi(), filename, pcu_obj);
   pumi_mesh_print(pumi::instance()->mesh);
   return pumi::instance()->mesh;
 }
@@ -289,12 +273,13 @@ pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
   else
   {
     double t0 = pcu::Time();
-    PCU_Comm prevComm = pumi::instance()->getPCU()->GetMPIComm();
-    int num_target_part = pumi::instance()->getPCU()->Peers();
-    split_comm(num_target_part, *pumi::instance()->getPCU());
+    pcu::PCU *split_comm = pumi::instance()->getPCU()->Split(
+      pumi::instance()->getPCU()->Self(), 0
+    );
     // no pmodel & remote links setup
-    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename, pumi::instance()->getPCU()); 
-    merge_comm(prevComm, *pumi::instance()->getPCU());
+    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename, split_comm); 
+    pumi::instance()->mesh->switchPCU(pumi::instance()->getPCU());
+    delete split_comm;
     if (!pumi::instance()->getPCU()->Self())
       lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, pcu::Time() - t0);
   }

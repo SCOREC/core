@@ -44,9 +44,7 @@ pcu::PCU* getGroupedPCU(pcu::PCU *PCUObj)
   int self = PCUObj->Self();
   int groupRank = self / partitionFactor;
   int group = self % partitionFactor;
-  PCU_Comm groupComm;
-  PCU_Comm_Split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
-  return new pcu::PCU(groupComm);
+  return PCUObj->Split(group, groupRank);
 }
 
 void getConfig(int argc, char** argv, pcu::PCU *PCUObj)

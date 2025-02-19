@@ -51,9 +51,7 @@ pcu::PCU* createGroupComm(int splitFactor, pcu::PCU *PCUObj)
   int self = PCUObj->Self();
   int groupRank = self / splitFactor;
   int group = self % splitFactor;
-  PCU_Comm groupComm;
-  PCU_Comm_Split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
-  return new pcu::PCU(groupComm);
+  return PCUObj->Split(group, groupRank);
 }
 
 void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g, pcu::PCU *PCUObj)

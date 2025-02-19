@@ -45,11 +45,9 @@ CreateGroupCommResult createGroupComm(pcu::PCU *PCUObj)
        no need to spend time computing a good contiguous number */
     groupRank = 0;
   }
-  PCU_Comm groupComm;
-  PCU_Comm_Split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
   CreateGroupCommResult result;
   result.isOriginal = isOriginal;
-  result.group_pcu_obj = new pcu::PCU(groupComm);
+  result.group_pcu_obj = PCUObj->Split(group, groupRank);
   return result;
 }
 
