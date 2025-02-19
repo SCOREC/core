@@ -258,11 +258,15 @@ PCU &PCU::operator=(PCU && other) noexcept {
   std::swap(msg_, other.msg_);
   return *this;
 }
-PCU_Comm PCU::GetMPIComm() const noexcept { return mpi_->original_comm; }
+PCU_Comm PCU::GetMPIComm() const noexcept { return GetComm(); }
+PCU_Comm PCU::GetComm() const noexcept { return mpi_->original_comm; }
 bool PCU::OwnsComm() const noexcept { return mpi_->owned; }
 void PCU::OwnsComm(bool on) const noexcept { mpi_->owned = on ? 1 : 0; }
 
 PCU_Comm PCU::SwitchMPIComm(PCU_Comm newcomm) noexcept {
+  return SwitchComm(newcomm);
+}
+PCU_Comm PCU::SwitchComm(PCU_Comm newcomm) noexcept {
   if(newcomm == mpi_->original_comm) {
     return mpi_->original_comm;
   }

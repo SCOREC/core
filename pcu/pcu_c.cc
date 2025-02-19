@@ -478,7 +478,7 @@ void *PCU_Comm_Extract(PCU_t h, size_t size) {
 void PCU_Switch_Comm(PCU_t h, PCU_Comm new_comm) {
   if (h.ptr == nullptr)
     reel_fail("Switch_Comm called before Comm_Init");
-  static_cast<pcu::PCU*>(h.ptr)->SwitchMPIComm(new_comm);
+  static_cast<pcu::PCU*>(h.ptr)->SwitchComm(new_comm);
 }
 
 /** \brief Return the current MPI communicator
@@ -489,7 +489,7 @@ void PCU_Switch_Comm(PCU_t h, PCU_Comm new_comm) {
 PCU_Comm PCU_Get_Comm(PCU_t h) {
   if (h.ptr == nullptr)
     reel_fail("Get_Comm called before Comm_Init");
-  return static_cast<pcu::PCU*>(h.ptr)->GetMPIComm();
+  return static_cast<pcu::PCU*>(h.ptr)->GetComm();
 }
 
 /** \brief Return the time in seconds since some time in the past
