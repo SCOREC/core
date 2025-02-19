@@ -126,6 +126,15 @@ void PCU::Order(bool on) {
 void PCU::Barrier() { pcu_barrier(mpi_, &(msg_->coll)); }
 int PCU::Or(int c) noexcept { return Max(c); }
 int PCU::And(int c) noexcept { return Min(c); }
+
+PCU* PCU::Split(int color, int key) noexcept {
+  PCU_Comm newcomm;
+  pcu_mpi_split(mpi_, color, key, &newcomm);
+  PCU* splitpcu = new PCU(newcomm);
+  splitpcu->OwnsComm(true);
+  return splitpcu;
+}
+
 int PCU::Packed(int to_rank, size_t *size) noexcept {
   if ((to_rank < 0) || (to_rank >= Peers()))
     reel_fail("Invalid rank in Comm_Packed");
@@ -250,6 +259,8 @@ PCU &PCU::operator=(PCU && other) noexcept {
   return *this;
 }
 PCU_Comm PCU::GetMPIComm() const noexcept { return mpi_->original_comm; }
+bool PCU::OwnsComm() const noexcept { return mpi_->owned; }
+void PCU::OwnsComm(bool on) const noexcept { mpi_->owned = on ? 1 : 0; }
 
 PCU_Comm PCU::SwitchMPIComm(PCU_Comm newcomm) noexcept {
   if(newcomm == mpi_->original_comm) {

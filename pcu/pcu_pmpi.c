@@ -23,22 +23,23 @@ void pcu_pmpi_init(MPI_Comm comm, pcu_mpi_t* self)
   MPI_Comm_dup(comm,&(self->coll_comm));
   MPI_Comm_size(comm,&(self->size));
   MPI_Comm_rank(comm,&(self->rank));
+  self->owned = 0;
 }
 
 void pcu_pmpi_finalize(pcu_mpi_t* self)
 {
   MPI_Comm_free(&(self->user_comm));
   MPI_Comm_free(&(self->coll_comm));
+  // Prevent accidental freeing of MPI_COMM_WORLD.
+  int result;
+  MPI_Comm_compare(self->original_comm, MPI_COMM_WORLD, &result);
+  if (self->owned && result != MPI_IDENT)
+    MPI_Comm_free(&(self->original_comm));
 }
 
-int pcu_pmpi_free(MPI_Comm* comm)
+int pcu_pmpi_split(const pcu_mpi_t *mpi, int color, int key, MPI_Comm* newcomm)
 {
-  return MPI_Comm_free(comm);
-}
-
-int pcu_pmpi_split(MPI_Comm comm, int color, int key, MPI_Comm* newcomm)
-{
-  return MPI_Comm_split(comm,color,key,newcomm);
+  return MPI_Comm_split(mpi->original_comm,color,key,newcomm);
 }
 
 int pcu_pmpi_size(const pcu_mpi_t* self)

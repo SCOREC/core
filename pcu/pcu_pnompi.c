@@ -109,6 +109,7 @@ void pcu_pmpi_init(PCU_Comm comm, pcu_mpi_t *self) {
   self->coll_comm = comm+2;
   self->size = 1;
   self->rank = 0;
+  self->owned = 0;
 }
 
 void pcu_pmpi_finalize(pcu_mpi_t* self) {
@@ -116,13 +117,8 @@ void pcu_pmpi_finalize(pcu_mpi_t* self) {
   self->coll_comm = 0;
 }
 
-int pcu_pmpi_free(PCU_Comm *c) {
-  (void) c;
-  return 0;
-}
-
-int pcu_pmpi_split(PCU_Comm cm, int c, int k, PCU_Comm *cm2) {
-  (void) cm, (void) c, (void) k, (void) cm2;
+int pcu_pmpi_split(const pcu_mpi_t *mpi, int c, int k, PCU_Comm *cm2) {
+  (void) mpi, (void) c, (void) k, (void) cm2;
   return 1;
 }
 

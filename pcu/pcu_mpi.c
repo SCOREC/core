@@ -62,3 +62,8 @@ void pcu_mpi_init(PCU_Comm comm, pcu_mpi_t* mpi) {
 void pcu_mpi_finalize(pcu_mpi_t* mpi) {
   pcu_pmpi_finalize(mpi);
 }
+
+int pcu_mpi_split(const pcu_mpi_t* mpi, int color, int key,
+                  PCU_Comm* newcomm) {
+  return pcu_pmpi_split(mpi, color, key, newcomm);
+}

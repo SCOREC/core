@@ -24,17 +24,6 @@ int PCU_Comm_Free(PCU_t* h) {
   return PCU_SUCCESS;
 }
 
-int PCU_Comm_Free_One(PCU_Comm* com)
-{
-  pcu_pmpi_free(com);
-  return PCU_SUCCESS;
-}
-
-int PCU_Comm_Split(PCU_Comm oldCom, int color, int key, PCU_Comm* newCom) {
-  pcu_pmpi_split(oldCom, color, key, newCom);
-  return PCU_SUCCESS;
-}
-
 int PCU_Comm_Self(PCU_t h) {
   if (h.ptr == nullptr)
     reel_fail("Comm_Self called before Comm_Init");

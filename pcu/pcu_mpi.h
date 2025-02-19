@@ -34,6 +34,7 @@ struct pcu_mpi_struct
   PCU_Comm coll_comm;
   int rank;
   int size;
+  int owned;
 };
 typedef struct pcu_mpi_struct pcu_mpi_t;
 
@@ -44,8 +45,7 @@ bool pcu_mpi_done(const pcu_mpi_t*, pcu_message* m);
 bool pcu_mpi_receive(const pcu_mpi_t*, pcu_message* m, PCU_Comm comm);
 void pcu_mpi_init(PCU_Comm comm, pcu_mpi_t* mpi);
 void pcu_mpi_finalize(pcu_mpi_t* mpi);
-int  pcu_mpi_split(PCU_Comm comm, int color, int key, PCU_Comm* newcomm);
-int  pcu_mpi_free(PCU_Comm comm);
+int  pcu_mpi_split(const pcu_mpi_t* mpi, int color, int key, PCU_Comm* newcomm);
 
 #ifdef __cplusplus
 }

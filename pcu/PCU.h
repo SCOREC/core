@@ -8,10 +8,6 @@
 struct pcu_msg_struct;
 struct pcu_mpi_struct;
 
-extern "C" {
-int PCU_Comm_Free_One(PCU_Comm* com);
-int PCU_Comm_Split(PCU_Comm oldCom, int color, int key, PCU_Comm* newCom);
-}
 namespace pcu {
 class PCU {
 public:
@@ -31,6 +27,17 @@ public:
    */
   [[nodiscard]] int Peers() const noexcept;
   [[nodiscard]] PCU_Comm GetMPIComm() const noexcept;
+  /** @brief Check if the original PCU_Comm is owned by this object.
+   * If true, it will be freed during destruction. */
+  bool OwnsComm() const noexcept;
+  /** @brief Set ownership of the orignal PCU_Comm passed to the constructor.
+   *
+   * This function can enable or disable ownership. If a communicator created
+   * with PCU::Split() is disowned, it should be freed by the user.
+   *
+   * @param on true to enable ownership.
+   */
+  void OwnsComm(bool on) const noexcept;
 
   [[nodiscard]] PCU_t GetCHandle() {PCU_t h; h.ptr=this; return h;}
   /*recommended message passing API*/
@@ -78,6 +85,19 @@ public:
   /*bitwise operations*/
   [[nodiscard]] int Or(int c) noexcept;
   [[nodiscard]] int And(int c) noexcept;
+
+  /**
+   * @brief Split a communicator into distinct subgroups.
+   *
+   * The resulting communicator is marked owned and automatically free the
+   * underlying communicator. This can be disabled with PCU::OwnsComm(bool). In
+   * that case, the user is responsible for cleanup.
+   *
+   * @param color subgroup indicator.
+   * @param key used for subgroup ordering; specify 0 if you don't care.
+   * @return a new communicator defined on the resulting subgroup.
+   */
+  PCU* Split(int color, int key) noexcept;
 
   /*lesser-used APIs*/
   int Packed(int to_rank, size_t *size) noexcept;
