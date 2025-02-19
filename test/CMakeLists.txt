@@ -219,6 +219,10 @@ if(ENABLE_CAPSTONE)
   endif()
 endif()
 
+if(ENABLE_CAPSTONE AND ENABLE_SIMMETRIX)
+  test_exe_func(simx_embedded_aniso simx_embedded_aniso.cc)
+endif()
+
 # send all the newly added utility executable targets
 # back up to the parent (root) scope to be included
 # in scorec-config.cmake

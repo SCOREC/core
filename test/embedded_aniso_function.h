@@ -28,6 +28,7 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
         EmbeddedShockFunction(m, m->getModel(), surfs, nsize, AR, h0, thickness) {};
 
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
+    void getValue(apf::Vector3& pos, ma::Matrix& frame, ma::Vector& scale);
     double getMaxEdgeLengthAcrossShock();
 
     protected:
@@ -47,9 +48,9 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
 
 double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref) {
 
-    //double h_tip = h_global/4; // h_global/4
-    double h_tip = norm_size;
-    double h_tip_min = h_global/32;
+    double h_tip = h_global/4;
+    //double h_tip = norm_size;
+    double h_tip_min = h_global/16;
     double h_upstream = 4 * h_global;
 
     double sphere_size = 4*h_global;
@@ -88,6 +89,10 @@ double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 clos
 void EmbeddedShockFunction::getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale) {
     apf::Vector3 pos;
     mesh->getPoint(vtx, 0, pos);
+    getValue(pos, frame, scale);
+}
+
+void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::Vector& scale) {
     double pos_arr[3];
     pos.toArray(pos_arr);
 
