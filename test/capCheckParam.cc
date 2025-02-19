@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 #else
   (void) argc, (void) argv;
 #endif
-  pcu::PCU *PCUobj = new pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU *PCUobj = new pcu::PCU;
 
   if (argc != 2) {
     if (PCUobj->Self() == 0)

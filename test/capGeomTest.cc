@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 #else
   (void) argc, (void) argv;
 #endif
-  pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU *PCUObj = new pcu::PCU;
 
   gmi_register_mesh();
   gmi_register_null();
