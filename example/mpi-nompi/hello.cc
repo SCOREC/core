@@ -1,6 +1,4 @@
-#include <chrono>
 #include <iostream>
-#include <thread>
 
 #include <mpi.h>
 #include <PCU.h>
@@ -25,8 +23,6 @@ int main(int argc, char** argv) {
     if (rank == i)
       std::cout << "Hello from MPI rank: " << rank << "; PCU rank: " <<
         PCUObj->Self() << std::endl;
-    // Print deterministically please and thank you.
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     MPI_Barrier(MPI_COMM_WORLD);
   }
   // Test SCOREC functions.
@@ -42,8 +38,6 @@ int main(int argc, char** argv) {
     if (rank == i)
       std::cout << "MPI(" << rank << ") sum: " << sum <<
       "; PCU sum: " << psum << std::endl;
-    // Print deterministically please and thank you.
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     MPI_Barrier(MPI_COMM_WORLD);
   }
   // Test Allgather
@@ -59,8 +53,6 @@ int main(int argc, char** argv) {
       print_array(pvals1, PCUObj->Peers());
       std::cout << std::endl;
     }
-    // Print deterministically please and thank you.
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     MPI_Barrier(MPI_COMM_WORLD);
   }
   delete vals1;
@@ -77,8 +69,6 @@ int main(int argc, char** argv) {
       print_array(pvals2, 2 * PCUObj->Peers());
       std::cout << std::endl;
     }
-    // Print deterministically please and thank you.
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     MPI_Barrier(MPI_COMM_WORLD);
   }
   delete vals2;
