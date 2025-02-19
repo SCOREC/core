@@ -71,3 +71,4 @@ jobs:
         -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/example/mpi-nompi/build ;
         ctest --test-dir ${{github.workspace}}/example/mpi-nompi/build
+        --output-on-failure
