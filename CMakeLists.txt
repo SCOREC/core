@@ -139,7 +139,7 @@ endif()
 
 macro(scorec_export_library target)
 bob_export_target(${target})
-install(FILES ${HEADERS} DESTINATION include)
+install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 target_include_directories(${target} INTERFACE
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
