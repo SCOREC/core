@@ -17,15 +17,22 @@
 class EmbeddedShockFunction : public ma::AnisotropicFunction {
     public:
 
-    EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, double nsize,
-        double AR, double h0, double thickness) : mesh(m),
-        norm_size(nsize), init_size(h0), ref(g), shock_surfaces(surfs), thickness(thickness) {
+    EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, double anisosize, double t) : 
+        mesh(m), ref(g), shock_surfaces(surfs) {
+        if(anisosize > 0) {
+            norm_size = anisosize;
+            std::cout << "Overriding normal size with valid value " << norm_size << std::endl;
+        }
+        if(t > 0) {
+            thickness = t;
+            std::cout << "Overriding thickness with valid value " << thickness << std::endl;
+        }
         thickness_tol = thickness * thickness / 4;
-        tan_size = norm_size * AR;
     }
-    EmbeddedShockFunction(ma::Mesh* m, std::list<gmi_ent*> surfs, double nsize,
-        double AR, double h0, double thickness) : 
-        EmbeddedShockFunction(m, m->getModel(), surfs, nsize, AR, h0, thickness) {};
+    EmbeddedShockFunction(ma::Mesh* m, std::list<gmi_ent*> surfs, double anisosize, double t) : 
+        EmbeddedShockFunction(m, m->getModel(), surfs, anisosize, t) {};
+    EmbeddedShockFunction(ma::Mesh* m, std::list<gmi_ent*> surfs) : 
+        EmbeddedShockFunction(m, m->getModel(), surfs, -1, -1) {};
 
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
     void getValue(apf::Vector3& pos, ma::Matrix& frame, ma::Vector& scale);
@@ -38,9 +45,12 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
     double getClosestPointAndNormal(double pos_arr[3], double cls_arr[3], double nrm_arr[3]);
 
     double h_global = 0.2113125;
+    double norm_size = h_global/16;
+    double thickness = 0.721796;
+
     ma::Mesh* mesh;
     gmi_model* ref;
-    double thickness_tol, thickness, norm_size, init_size, tan_size;
+    double thickness_tol;
     std::list<gmi_ent*> shock_surfaces;
     int n_evals;
 

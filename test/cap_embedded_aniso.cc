@@ -34,9 +34,8 @@ namespace {
     ARGS_GETTER(uniform, int)
     ARGS_GETTER(verbosity, int)
     ARGS_GETTER(maxiter, int)
-    ARGS_GETTER(aniso_size, double)
+    ARGS_GETTER(aniso_size, double) 
     ARGS_GETTER(thickness, double)
-    ARGS_GETTER(ratio, double)
     ARGS_GETTER(before, const std::string&)
     ARGS_GETTER(after, const std::string&)
     ARGS_GETTER(input, const std::string&)
@@ -52,7 +51,7 @@ namespace {
   private:
     bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
     int maxiter_{-1}, uniform_{0}, verbosity_{0};
-    double aniso_size_{0.0}, thickness_{0.0}, ratio_{4.0};
+    double aniso_size_{-1}, thickness_{-1};
     std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
     std::list<int> shock_surf_ids_{};
   }; // class Args
@@ -170,17 +169,16 @@ int main(int argc, char* argv[]) {
   std::cout << "INFO: Maximum edge length: " << h0_max << std::endl;
 
   std::cout << "INFO: Normal size: " << args.aniso_size() << std::endl;
-  std::cout << "INFO: Tangent size: " << args.aniso_size() * args.ratio() << std::endl;
 
   std::cout << ++stage << ". Make sizefield." << std::endl;
   ma::AnisotropicFunction* sf = nullptr;
   if(using_ref_geom) {
     sf = new EmbeddedShockFunction(adaptMesh,
-      geom_ref, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+      geom_ref, shock_surfaces, args.aniso_size(), args.thickness());
     //double h0_max_shock = reinterpret_cast<AnisotropicFunctionOnReference*>(sf)->getMaxEdgeLengthAcrossShock();
     //std::cout << "INFO: Maximum edge length crossing shock: " << h0_max_shock << std::endl;
   } else {
-    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.aniso_size(), args.ratio(), h0, args.thickness());
+    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.aniso_size(), args.thickness());
   }
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
@@ -335,7 +333,7 @@ namespace {
     argv0 = argv[0];
     int c;
     int given[256] = {0};
-    const char* required = "nt";
+    const char* required = "";
     while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvS")) != -1) {
       ++given[c];
       switch (c) {
@@ -364,7 +362,8 @@ namespace {
         output_ = optarg;
         break;
       case 'r':
-        ratio_ = std::atof(optarg);
+        std::cout << "INFO: Ratio argument is deprecated" << std::endl;
+        //ratio_ = std::atof(optarg);
         break;
       case 's':
         shock_surf_ids_.push_back(std::atoi(optarg));
@@ -402,14 +401,6 @@ namespace {
         error_flag_ = true;
       }
     }
-    if (thickness_ < 0) {
-      std::cerr << "ERROR: Thickness must be positive." << std::endl;
-      error_flag_ = true;
-    }
-    if (aniso_size_ < 0) {
-      std::cerr << "ERROR: Aniso size must be positive." << std::endl;
-      error_flag_ = true;
-    }
     if (optind < argc) {
       input_ = argv[optind];
     } else {
@@ -439,14 +430,12 @@ namespace {
     "                Capstone mesh before writing if given -o). May boost \n"
     "                performance, but buggy.\n"
     "-S              Do smoothing \n"
-    "-n NORM_SIZE    Set anisotropic normal direction size. (required)\n"
+    "-n NORM_SIZE    Override anisotropic normal direction size.\n"
     "-o OUTPUT.cre   Write final mesh to OUTPUT.cre.\n"
-    "-r RATIO        Set desired anisotropic aspect ratio (tan/norm)."
-      " DEFAULT: 4\n"
     "-G REF_GEOM.cre Set a different .cre file with shock geometry.\n"
     "-s ID           Set face IDs of the embedded shock surface. (required)\n"
     "                Repeat flag multiple times to specify more tags.\n"
-    "-t THICKNESS    Set thickness (required).\n"
+    "-t THICKNESS    Override thickness.\n"
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
     "-v              Increase verbosity. Level 1 enables lionPrint. Level 2\n"

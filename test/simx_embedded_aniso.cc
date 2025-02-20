@@ -162,14 +162,9 @@ int main(int argc, char *argv[])
   cout<<" Reading model and mesh done ..."<<endl;
   cout<<endl;
 
-  // Adaptation size field
-  double ref_size = 0.2113125;
-  double normal_size = ref_size/16;
-  double anisotropy_thickness = 0.721796;
-
   // Setup and run size field
   ma::Mesh* mesh_ref = apf::createMesh(mesh_conv);
-  EmbeddedShockFunction sf(mesh_ref, {}, normal_size, ref_size/normal_size, ref_size, anisotropy_thickness);
+  EmbeddedShockFunction sf(mesh_ref, {});
   
   pACase mesh_case = MS_newMeshCase(model);
   MS_setAnisoSizeAttFunc(mesh_case, "anisoUDF", anisoUDF, &sf);
