@@ -116,7 +116,14 @@ public:
   void DebugOpen() noexcept;
 
   [[deprecated("Use PCU::SwitchComm instead.")]]
+#if __cplusplus >= 201703L
+  [[nodiscard]]
+#endif
   PCU_Comm SwitchMPIComm(PCU_Comm) noexcept;
+
+#if __cplusplus >= 201703L
+  [[nodiscard]]
+#endif
   PCU_Comm SwitchComm(PCU_Comm) noexcept;
 
 private:
