@@ -14,46 +14,11 @@ endif()
 
 add_executable(hello hello.cc)
 target_link_libraries(hello PRIVATE SCOREC::core)
+add_executable(test_coll test_coll.cc)
+target_link_libraries(test_coll PRIVATE SCOREC::core)
 
 enable_testing()
-add_test(NAME hello1 COMMAND mpirun -np 1 $<TARGET_FILE:hello>)
-set_property(TEST hello1 PROPERTY PASS_REGULAR_EXPRESSION 
-  "MPI size: 1\; PCU size: 1
-Hello from MPI rank: 0\; PCU rank: 0
-MPI\\(0\\) sum: 1\; PCU sum: 1
-MPI\\(0\\) gather: \\[1\\]\; PCU gather: \\[1\\]
-MPI\\(0\\) gather2: \\[1, -1\\]\; PCU gather2: \\[1, -1\\]"
-)
-add_test(NAME hello2 COMMAND mpirun -np 2 $<TARGET_FILE:hello>)
-set_property(TEST hello2 PROPERTY PASS_REGULAR_EXPRESSION 
-  "MPI size: 2\; PCU size: 1
-Hello from MPI rank: 0\; PCU rank: 0
-Hello from MPI rank: 1\; PCU rank: 0
-MPI\\(0\\) sum: 3\; PCU sum: 1
-MPI\\(1\\) sum: 3\; PCU sum: 2
-MPI\\(0\\) gather: \\[1, 2\\]\; PCU gather: \\[1\\]
-MPI\\(1\\) gather: \\[1, 2\\]\; PCU gather: \\[2\\]
-MPI\\(0\\) gather2: \\[1, -1, 2, -2\\]\; PCU gather2: \\[1, -1\\]
-MPI\\(1\\) gather2: \\[1, -1, 2, -2\\]\; PCU gather2: \\[2, -2\\]"
-)
-add_test(NAME hello4 COMMAND mpirun -np 4 $<TARGET_FILE:hello>)
-set_property(TEST hello4 PROPERTY PASS_REGULAR_EXPRESSION 
-  "MPI size: 4\; PCU size: 1
-Hello from MPI rank: 0\; PCU rank: 0
-Hello from MPI rank: 1\; PCU rank: 0
-Hello from MPI rank: 2\; PCU rank: 0
-Hello from MPI rank: 3\; PCU rank: 0
-MPI\\(0\\) sum: 10\; PCU sum: 1
-MPI\\(1\\) sum: 10\; PCU sum: 2
-MPI\\(2\\) sum: 10\; PCU sum: 3
-MPI\\(3\\) sum: 10\; PCU sum: 4
-MPI\\(0\\) gather: \\[1, 2, 3, 4\\]\; PCU gather: \\[1\\]
-MPI\\(1\\) gather: \\[1, 2, 3, 4\\]\; PCU gather: \\[2\\]
-MPI\\(2\\) gather: \\[1, 2, 3, 4\\]\; PCU gather: \\[3\\]
-MPI\\(3\\) gather: \\[1, 2, 3, 4\\]\; PCU gather: \\[4\\]
-MPI\\(0\\) gather2: \\[1, -1, 2, -2, 3, -3, 4, -4\\]\; PCU gather2: \\[1, -1\\]
-MPI\\(1\\) gather2: \\[1, -1, 2, -2, 3, -3, 4, -4\\]\; PCU gather2: \\[2, -2\\]
-MPI\\(2\\) gather2: \\[1, -1, 2, -2, 3, -3, 4, -4\\]\; PCU gather2: \\[3, -3\\]
-MPI\\(3\\) gather2: \\[1, -1, 2, -2, 3, -3, 4, -4\\]\; PCU gather2: \\[4, -4\\]"
-)
+add_test(NAME coll1 COMMAND mpirun -np 1 $<TARGET_FILE:test_coll>)
+add_test(NAME coll2 COMMAND mpirun -np 2 $<TARGET_FILE:test_coll>)
+add_test(NAME coll4 COMMAND mpirun -np 4 $<TARGET_FILE:test_coll>)
 
