@@ -35,6 +35,36 @@ using std::endl;
 using std::cerr;
 using std::ofstream;
 
+namespace {
+  class Args {
+  public:
+    Args(int argc, char* argv[]);
+
+    #define ARGS_GETTER(name, type) type name(void) const noexcept { return name##_; }
+    ARGS_GETTER(help, bool)
+    ARGS_GETTER(before, const std::string&)
+    ARGS_GETTER(after, const std::string&)
+    ARGS_GETTER(input_mesh, const std::string&)
+    ARGS_GETTER(input_model, const std::string&)
+    ARGS_GETTER(input_nmodel, const std::string&)
+    ARGS_GETTER(output_mesh, const std::string&)
+    ARGS_GETTER(isotropic, bool)
+    #undef ARGS_GETTER
+
+    /** @brief Check for argument parse errors. */
+    operator bool() const { return !error_flag_; }
+
+    void print_usage(std::ostream& str) const;
+    void print_help(std::ostream& str) const;
+
+  private:
+    bool isotropic_{false}, error_flag_{false}, help_{false};
+    int verbosity_{0};
+    std::string argv0, input_mesh_, input_model_, input_nmodel_, output_mesh_;
+    std::string before_, after_;
+  }; // class Args
+} // namespace
+
 void anisoUDF(pSizeAttData sadata, void* userdata, double anisosize[3][3]) {
   EmbeddedShockFunction* sf = static_cast<EmbeddedShockFunction*>(userdata);
   double pt[3];
@@ -62,44 +92,25 @@ void anisoUDF(pSizeAttData sadata, void* userdata, double anisosize[3][3]) {
 
 int main(int argc, char *argv[])
 {
-  // Argument parsing
-  int displayHelp = 0;
-  for(int iArgc=0; iArgc<argc; iArgc++) {
-    if(!strcmp(argv[iArgc],"-h")) {
-      cout << endl;
-      cout << "  HELP requested (by using \"-h\" in arguments) -- " << endl;
-      displayHelp = 1;
-    }
+  MPI_Init(&argc, &argv);
+  PCU_Comm_Init();
+  Args args(argc, argv);
+  if (args.help()) {
+    args.print_help(std::cout);
+    PCU_Comm_Free();
+    MPI_Finalize();
+    return !args ? 1 : 0;
+  } else if (!args) {
+    args.print_usage(std::cerr);
+    PCU_Comm_Free();
+    MPI_Finalize();
+    return 1;
   }
 
-  if (argc<6 || displayHelp) {
-    cout << endl;
-    cout << " usage : " << endl;
-    cout << "   <executable-name>" << endl;
-    cout << "   <model-name.smd>" << endl;
-    cout << "   <model-name.x_t or - > ('-' if discrete)" << endl;
-    cout << "   <mesh-name.sms>" << endl;
-    cout << "   <shock_geometry-model-name.smd or - > ('-' if unused)" << endl;
-    cout << "   <model-name.x_t or - > ('-' if unused or if discrete)" << endl;
-    cout << endl;
-    exit(0);
-  }
-
-  char model_file[1024];
-  strcpy(model_file,argv[1]);
-  char nmodel_file[1024];
-  strcpy(nmodel_file,argv[2]);
-  char mesh_file[1024];
-  strcpy(mesh_file,argv[3]);
-  char src_model_file[1024];
-  strcpy(src_model_file,argv[4]);
-  char src_nmodel_file[1024];
-  strcpy(src_nmodel_file,argv[5]);
-
-  cout<<endl;
-  cout<<" Reading ... "<<endl;
-  cout<<"  Model from file : "<<model_file<<endl;
-  cout<<"  Mesh from file  : "<<mesh_file<<endl;
+  cout << endl;
+  cout <<" Reading ... " << endl;
+  cout <<"  Model from file : " << args.input_model() << endl;
+  cout <<"  Mesh from file  : " << args.input_mesh() << endl;
 
   // Init MeshSim
   Sim_logOn("shock_anisoadapt.log");
@@ -113,50 +124,29 @@ int main(int argc, char *argv[])
   // Geometry fields
   pNativeModel nmodel = 0;
   pGModel model = 0;
-  //pMesh mesh;
-  pParMesh mesh;
-
-  // Shock source geometry
-  pNativeModel src_nmodel = 0;
-  pGModel src_model = 0;
+  // use pParMesh for compatibility with apf::createMesh
+  pParMesh mesh = 0;
 
   // Load geometry 
   int PARASOLID_TEXT_FORMAT = 0; // 0 for .xmt_txt o .x_t files
-  nmodel = strcmp(nmodel_file, "-") ? ParasolidNM_createFromFile(nmodel_file, PARASOLID_TEXT_FORMAT) : NULL;
+  nmodel = !args.input_nmodel().empty() ? ParasolidNM_createFromFile(args.input_nmodel().data(), PARASOLID_TEXT_FORMAT) : NULL;
   if (nmodel && NM_isAssemblyModel(nmodel)) {
     std::cerr << " Parasolid assembly model detected ... cannot handle" << std::endl;
-    exit(0);
+    PCU_Comm_Free();
+    MPI_Finalize();
+    return 1;
   }
   if (!nmodel) cout<<"  Model is assumed to be discrete"<<endl;
   cout<<endl;
 
-  model = GM_load(model_file, nmodel, NULL);
+  model = GM_load(args.input_model().data(), nmodel, NULL);
   if(!model) {
     cerr << " ERROR : Didn't load a model, check that code was compiled with the correct MODELER specified and that the model file has an extension such as .xmt_txt, or .XMT_TXT, or .x_t" << endl << endl;
+    PCU_Comm_Free();
+    MPI_Finalize();
     return 1;
   }
-  //mesh = M_load(mesh_file, model, NULL);
-  mesh = PM_load(mesh_file, model, NULL); //pParMesh version for apf::createMesh
-
-  // Load source geometry
-  if (strcmp(src_model_file, "-")) {
-    cout<<" Reading shock source geometry ... "<<endl;
-    cout<<"  Model from file : "<<src_model_file<<endl;
-
-    src_nmodel = strcmp(src_nmodel_file, "-") ? ParasolidNM_createFromFile(src_nmodel_file, PARASOLID_TEXT_FORMAT) : NULL;
-    if (src_nmodel && NM_isAssemblyModel(src_nmodel)) {
-      std::cerr << " Shock source geometry is parasolid assembly model ... cannot handle" << std::endl;
-      exit(0);
-    }
-    if (!src_nmodel) cout<<"  Source model is assumed to be discrete"<<endl;
-    cout<<endl;
-
-    src_model = GM_load(src_model_file, src_nmodel, NULL);
-    if(!src_model) {
-      cerr << " ERROR : Failed to load shock source geometry" << endl << endl;
-      return 1;
-    }
-  }
+  mesh = PM_load(args.input_mesh().data(), model, NULL);
   
   cout<<endl;
   cout<<" Reading model and mesh done ..."<<endl;
@@ -164,7 +154,27 @@ int main(int argc, char *argv[])
 
   // Setup and run size field
   ma::Mesh* mesh_ref = apf::createMesh(mesh);
-  EmbeddedShockFunction sf(mesh_ref);
+  EmbeddedShockFunction sf(mesh_ref, args.isotropic());
+
+  if (!args.before().empty()) {
+    std::cout << " writing size field to before vtk file" << std::endl;
+
+    apf::Field *frameField = nullptr, *scaleField = nullptr;
+    frameField = apf::createFieldOn(mesh_ref, "adapt_frames", apf::MATRIX);
+    scaleField = apf::createFieldOn(mesh_ref, "adapt_scales", apf::VECTOR);
+    ma::Iterator* it = mesh_ref->begin(0);
+    for (ma::Entity *v = mesh_ref->iterate(it); v;
+      v = mesh_ref->iterate(it)) {
+      ma::Vector scale;
+      ma::Matrix frame;
+      sf.getValue(v, frame, scale);
+      apf::setVector(scaleField, v, 0, scale);
+      apf::setMatrix(frameField, v, 0, frame);
+    }
+    mesh_ref->end(it);
+
+    apf::writeVtkFiles(args.before().data(), mesh_ref);
+  }
   
   pACase mesh_case = MS_newMeshCase(model);
   MS_setAnisoSizeAttFunc(mesh_case, "anisoUDF", anisoUDF, &sf);
@@ -173,22 +183,29 @@ int main(int argc, char *argv[])
   MSA_adapt(adapter, NULL);
 
   // Write adapted mesh
-  pMesh mesh_write = PM_mesh(mesh,0);
-  cout<<"Adapted mesh statistics: Num. elements: "<<M_numRegions(mesh_write)<<", num. vertices: "<<M_numVertices(mesh_write)<<endl;
-  cout<<" start writing adapted mesh: "<<endl;
-  M_write(mesh_write,"shock_anisoadapt_output.sms",0,NULL);
-  cout<<" done writing adapted mesh: "<<endl;
+  if (!args.output_mesh().empty()) {
+    pMesh mesh_write = PM_mesh(mesh,0); // no need to free this according to PM_mesh documentation? 
+    cout<<"Adapted mesh statistics: Num. elements: "<<M_numRegions(mesh_write)<<", num. vertices: "<<M_numVertices(mesh_write)<<endl;
+    cout<<" start writing adapted mesh: "<<endl;
+    M_write(mesh_write,args.output_mesh().data(),0,NULL);
+    cout<<" done writing adapted mesh: "<<endl;
+  }
+  
+  if (!args.after().empty()) {
+    ma::Mesh* mesh_adapted = apf::createMesh(mesh);
+    std::cout << " writing adapted mesh to vtk file" << std::endl;
+    apf::writeVtkFiles(args.after().data(), mesh_adapted);
+    //apf::destroyMesh(mesh_adapted);
+  }
 
   // Release everything
+  //apf::destroyMesh(mesh_ref);
   MS_deleteMeshCase(mesh_case);
   MSA_delete(adapter);
   //M_release(mesh);
   M_release(mesh); 
   GM_release(model);
   NM_release(nmodel);
-
-  GM_release(src_model);
-  NM_release(src_nmodel);
 
   // Stop everything
   SimAdvMeshing_stop();  
@@ -201,5 +218,87 @@ int main(int argc, char *argv[])
 
   Sim_unregisterAllKeys();
 
+  PCU_Comm_Free();
+  MPI_Finalize();
+
   return 0;
 }
+
+namespace {
+  Args::Args(int argc, char* argv[]) {
+    argv0 = argv[0];
+    int c;
+    int given[256] = {0};
+    const char* required = "M";
+    while ((c = getopt(argc, argv, ":A:B:hM:G:o:vI")) != -1) {
+      ++given[c];
+      switch (c) {
+      case 'A':
+        after_ = optarg;
+        break;
+      case 'B':
+        before_ = optarg;
+        break;
+      case 'h':
+        help_ = true;
+        break;
+      case 'M':
+        input_model_ = optarg;
+        break;
+      case 'G':
+        input_nmodel_ = optarg;
+        break;
+      case 'o':
+        output_mesh_ = optarg;
+        break;
+      case 'v':
+        ++verbosity_;
+        break;
+      case 'I':
+        isotropic_ = true;
+        break;
+      case ':':
+        std::cerr << "ERROR: Option -" << char(optopt) << " requires an "
+          "argument." << std::endl;
+        error_flag_ = true;
+        break;
+      case '?':
+        std::cerr << "ERROR: Unrecognized option: -" << char(optopt) << std::endl;
+        error_flag_ = true;
+        break;
+      }
+    }
+    for (const char* r = required; *r != '\0'; ++r) {
+      if (!given[int(*r)]) {
+        std::cerr << "ERROR: Flag -" << *r << " is required." << std::endl;
+        error_flag_ = true;
+      }
+    }
+    if (optind < argc) {
+      input_mesh_ = argv[optind];
+    } else {
+      std::cerr << "ERROR: INPUT.sms is required." << std::endl;
+      error_flag_ = true;
+    }
+  } 
+
+  void Args::print_usage(std::ostream& str) const {
+    str << "USAGE: " << argv0 << " [-hvI] [-B before.vtk] [-A after.vtk] "
+      "[-o OUTPUT.sms] [-M MODEL.smd] [-G MODEL_nat.x_t] INITIAL.sms"
+      << std::endl;
+  }
+
+  void Args::print_help(std::ostream& str) const {
+    print_usage(str);
+    str << "simx_aniso adapts a simmetrix mesh with an embedded shock surface.\n";
+    str << "OPTIONS:\n"
+    "-M MODEL.smd       Set the simmetrix model file (required).\n"
+    "-G MODEL_nat.x_t   Set a _nat file, model is discrete when not set.\n"
+    "-o OUTPUT.sms      Write final mesh to OUTPUT.sms.\n"
+    "-A after.vtk       Write adapted mesh to after.vtk.\n"
+    "-B before.vtk      Write initial mesh with size field to before.vtk.\n"
+    "-h                 Display this help menu.\n"
+    "-I                 Run completely isotropic adaptation for testing purposes.\n"
+    "-v                 Increase verbosity. \n";
+  }
+} // namespace
