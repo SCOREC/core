@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
   // Geometry fields
   pNativeModel nmodel = 0;
   pGModel model = 0;
-  pMesh mesh;
-  pParMesh mesh_conv;
+  //pMesh mesh;
+  pParMesh mesh;
 
   // Shock source geometry
   pNativeModel src_nmodel = 0;
@@ -135,8 +135,8 @@ int main(int argc, char *argv[])
     cerr << " ERROR : Didn't load a model, check that code was compiled with the correct MODELER specified and that the model file has an extension such as .xmt_txt, or .XMT_TXT, or .x_t" << endl << endl;
     return 1;
   }
-  mesh = M_load(mesh_file, model, NULL);
-  mesh_conv = PM_load(mesh_file, model, NULL); //pParMesh version for apf::createMesh
+  //mesh = M_load(mesh_file, model, NULL);
+  mesh = PM_load(mesh_file, model, NULL); //pParMesh version for apf::createMesh
 
   // Load source geometry
   if (strcmp(src_model_file, "-")) {
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
   cout<<endl;
 
   // Setup and run size field
-  ma::Mesh* mesh_ref = apf::createMesh(mesh_conv);
+  ma::Mesh* mesh_ref = apf::createMesh(mesh);
   EmbeddedShockFunction sf(mesh_ref, {});
   
   pACase mesh_case = MS_newMeshCase(model);
@@ -173,17 +173,17 @@ int main(int argc, char *argv[])
   MSA_adapt(adapter, NULL);
 
   // Write adapted mesh
-  cout<<"Adapted mesh statistics: Num. elements: "<<M_numRegions(mesh)<<", num. vertices: "<<M_numVertices(mesh)<<endl;
-
+  pMesh mesh_write = PM_mesh(mesh,0);
+  cout<<"Adapted mesh statistics: Num. elements: "<<M_numRegions(mesh_write)<<", num. vertices: "<<M_numVertices(mesh_write)<<endl;
   cout<<" start writing adapted mesh: "<<endl;
-  M_write(mesh,"shock_anisoadapt_output.sms",0,NULL);
+  M_write(mesh_write,"shock_anisoadapt_output.sms",0,NULL);
   cout<<" done writing adapted mesh: "<<endl;
 
   // Release everything
   MS_deleteMeshCase(mesh_case);
   MSA_delete(adapter);
-  M_release(mesh);
-  M_release(mesh_conv); 
+  //M_release(mesh);
+  M_release(mesh); 
   GM_release(model);
   NM_release(nmodel);
 
