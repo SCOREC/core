@@ -36,6 +36,7 @@ namespace {
     ARGS_GETTER(maxiter, int)
     ARGS_GETTER(aniso_size, double) 
     ARGS_GETTER(thickness, double)
+    ARGS_GETTER(global_size, double)
     ARGS_GETTER(before, const std::string&)
     ARGS_GETTER(after, const std::string&)
     ARGS_GETTER(input, const std::string&)
@@ -52,7 +53,7 @@ namespace {
   private:
     bool analytic_{false}, isotropic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
     int maxiter_{-1}, uniform_{0}, verbosity_{0};
-    double aniso_size_{-1}, thickness_{-1};
+    double aniso_size_{-1}, thickness_{-1}, global_size_{-1};
     std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
     std::list<int> shock_surf_ids_{};
   }; // class Args
@@ -175,11 +176,11 @@ int main(int argc, char* argv[]) {
   ma::AnisotropicFunction* sf = nullptr;
   if(using_ref_geom) {
     sf = new EmbeddedShockFunction(adaptMesh,
-      geom_ref, shock_surfaces, args.isotropic(), args.aniso_size(), args.thickness());
+      geom_ref, shock_surfaces, args.isotropic(), args.global_size(), args.aniso_size(), args.thickness());
     //double h0_max_shock = reinterpret_cast<AnisotropicFunctionOnReference*>(sf)->getMaxEdgeLengthAcrossShock();
     //std::cout << "INFO: Maximum edge length crossing shock: " << h0_max_shock << std::endl;
   } else {
-    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.isotropic(), args.aniso_size(), args.thickness());
+    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.isotropic(), args.global_size(), args.aniso_size(), args.thickness());
   }
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
@@ -335,7 +336,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "";
-    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvSI")) != -1) {
+    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvSIg:")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -358,6 +359,9 @@ namespace {
         break;
       case 'n':
         aniso_size_ = std::atof(optarg);
+        break;
+      case 'g':
+        global_size_ = std::atof(optarg);
         break;
       case 'o':
         output_ = optarg;
@@ -440,6 +444,7 @@ namespace {
     "-s ID           Set face IDs of the embedded shock surface. (required)\n"
     "                Repeat flag multiple times to specify more tags.\n"
     "-t THICKNESS    Override thickness.\n"
+    "-g h_global     Override h_global."
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
     "-I              Run completely isotropic adaptation for testing purposes.\n"

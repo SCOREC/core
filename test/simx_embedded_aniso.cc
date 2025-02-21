@@ -22,6 +22,7 @@
 #include <MeshSim.h>
 #include <SimUtil.h>
 #include <SimPartitionedMesh.h>
+#include <PCU.h>
 
 #include "SimParasolidKrnl.h"
 #include "MeshSimAdapt.h"
@@ -48,7 +49,10 @@ namespace {
     ARGS_GETTER(input_model, const std::string&)
     ARGS_GETTER(input_nmodel, const std::string&)
     ARGS_GETTER(output_mesh, const std::string&)
+    ARGS_GETTER(mesh_adapt, const std::string&)
     ARGS_GETTER(isotropic, bool)
+    ARGS_GETTER(global_size, double)
+    ARGS_GETTER(verbosity, bool)
     #undef ARGS_GETTER
 
     /** @brief Check for argument parse errors. */
@@ -60,8 +64,10 @@ namespace {
   private:
     bool isotropic_{false}, error_flag_{false}, help_{false};
     int verbosity_{0};
+    double global_size_{-1};
     std::string argv0, input_mesh_, input_model_, input_nmodel_, output_mesh_;
     std::string before_, after_;
+    std::string mesh_adapt_;
   }; // class Args
 } // namespace
 
@@ -71,7 +77,7 @@ void anisoUDF(pSizeAttData sadata, void* userdata, double anisosize[3][3]) {
   int haspt = SizeAttData_point(sadata, pt);
   PCU_ALWAYS_ASSERT(haspt);
   
-  apf::Vector3 pos;
+  apf::Vector3 pos; 
   pos.fromArray(pt);
   ma::Matrix frame;
   ma::Vector scale;
@@ -115,46 +121,45 @@ int main(int argc, char *argv[])
   // Init MeshSim
   Sim_logOn("shock_anisoadapt.log");
   MS_init();
-  Sim_readLicenseFile(0);
-
-  SimParasolid_start(1);
-  SimDiscrete_start(0);
   SimAdvMeshing_start();
+  SimModel_start();
+  Sim_readLicenseFile(NULL);
+  SimPartitionedMesh_start(&argc,&argv);
 
-  // Geometry fields
-  pNativeModel nmodel = 0;
+  gmi_sim_start();
+  gmi_register_sim();
+  pProgress progress = Progress_new();
+  Progress_setDefaultCallback(progress);
+
+  // Simmetrix
+  //pNativeModel nmodel = 0;
   pGModel model = 0;
-  // use pParMesh for compatibility with apf::createMesh
   pParMesh mesh = 0;
 
-  // Load geometry 
-  int PARASOLID_TEXT_FORMAT = 0; // 0 for .xmt_txt o .x_t files
-  nmodel = !args.input_nmodel().empty() ? ParasolidNM_createFromFile(args.input_nmodel().data(), PARASOLID_TEXT_FORMAT) : NULL;
-  if (nmodel && NM_isAssemblyModel(nmodel)) {
-    std::cerr << " Parasolid assembly model detected ... cannot handle" << std::endl;
-    PCU_Comm_Free();
-    MPI_Finalize();
-    return 1;
-  }
-  if (!nmodel) cout<<"  Model is assumed to be discrete"<<endl;
-  cout<<endl;
+  // SCOREC
+  gmi_model* mdl_ref;
+  ma::Mesh* mesh_ref;
 
-  model = GM_load(args.input_model().data(), nmodel, NULL);
-  if(!model) {
-    cerr << " ERROR : Didn't load a model, check that code was compiled with the correct MODELER specified and that the model file has an extension such as .xmt_txt, or .XMT_TXT, or .x_t" << endl << endl;
-    PCU_Comm_Free();
-    MPI_Finalize();
-    return 1;
+  // Load geometry (closely following convert.cc)
+  // todo: maybe some modules not loaded?
+  if(!args.input_nmodel().empty()) {
+    mdl_ref = gmi_sim_load(args.input_nmodel().data(),args.input_model().data());
+  } else {
+    mdl_ref = gmi_load(args.input_model().data());
   }
-  mesh = PM_load(args.input_mesh().data(), model, NULL);
+  model = gmi_export_sim(mdl_ref);
+
+  // Load mesh
+  mesh = PM_load(args.input_mesh().data(), model, progress);
+  mesh_ref = apf::createMesh(mesh);
   
   cout<<endl;
   cout<<" Reading model and mesh done ..."<<endl;
+  cout<<"Initial mesh statistics: Num. elements: "<<M_numRegions(PM_mesh(mesh,0))<<", num. vertices: "<<M_numRegions(PM_mesh(mesh,0))<<endl;
   cout<<endl;
 
   // Setup and run size field
-  ma::Mesh* mesh_ref = apf::createMesh(mesh);
-  EmbeddedShockFunction sf(mesh_ref, args.isotropic());
+  EmbeddedShockFunction sf(mesh_ref, args.isotropic(), args.global_size());
 
   if (!args.before().empty()) {
     std::cout << " writing size field to before vtk file" << std::endl;
@@ -175,17 +180,45 @@ int main(int argc, char *argv[])
 
     apf::writeVtkFiles(args.before().data(), mesh_ref);
   }
+
+  // Try SCOREC meshadapt
+  if (!args.mesh_adapt().empty()) {
+
+    cout << " trying meshadapt" << endl;
+
+    apf::Mesh2* mesh_mds = apf::createMdsMesh(mdl_ref, mesh_ref);
+    EmbeddedShockFunction sf_simx(mesh_mds, args.isotropic(), args.global_size());
+    ma::Input* in = ma::makeAdvanced(ma::configure(mesh_mds, &sf_simx));
+
+    double t0 = PCU_Time();
+    if (args.verbosity() > 1) {
+      ma::adaptVerbose(in, args.verbosity() > 2);
+    } else {
+      ma::adapt(in);
+    }
+    cout << " MeshAdapt adapt time (s): " << PCU_Time()-t0 << endl;
+
+    cout<<"Adapted mesh statistics (MDS): Num. elements: "<<mesh_mds->count(3)<<", num. vertices: "<<mesh_mds->count(0)<<endl;
+    cout << " writing meshdapt result" << endl;
+    apf::writeVtkFiles(args.mesh_adapt().data(), mesh_mds);
+
+    cout << " destroying meshdapt objects" << endl;
+    apf::destroyMesh(mesh_mds);
+  }
   
   pACase mesh_case = MS_newMeshCase(model);
   MS_setAnisoSizeAttFunc(mesh_case, "anisoUDF", anisoUDF, &sf);
   MS_setAnisoMeshSize(mesh_case, GM_domain(model), MS_userDefinedType | 1, 0, "anisoUDF");
   pMSAdapt adapter = MSA_createFromCase(mesh_case, mesh);
+
+  double t1 = PCU_Time();
   MSA_adapt(adapter, NULL);
+  cout << " Simmetrix adapt time (s): " << PCU_Time()-t1 << endl;
 
   // Write adapted mesh
   if (!args.output_mesh().empty()) {
     pMesh mesh_write = PM_mesh(mesh,0); // no need to free this according to PM_mesh documentation? 
-    cout<<"Adapted mesh statistics: Num. elements: "<<M_numRegions(mesh_write)<<", num. vertices: "<<M_numVertices(mesh_write)<<endl;
+    cout<<"Adapted mesh statistics (Simmetrix): Num. elements: "<<M_numRegions(mesh_write)<<", num. vertices: "<<M_numVertices(mesh_write)<<endl;
     cout<<" start writing adapted mesh: "<<endl;
     M_write(mesh_write,args.output_mesh().data(),0,NULL);
     cout<<" done writing adapted mesh: "<<endl;
@@ -193,31 +226,33 @@ int main(int argc, char *argv[])
   
   if (!args.after().empty()) {
     ma::Mesh* mesh_adapted = apf::createMesh(mesh);
-    std::cout << " writing adapted mesh to vtk file" << std::endl;
+    cout << " writing adapted mesh to vtk file" << endl;
     apf::writeVtkFiles(args.after().data(), mesh_adapted);
-    //apf::destroyMesh(mesh_adapted);
   }
 
   // Release everything
-  //apf::destroyMesh(mesh_ref);
   MS_deleteMeshCase(mesh_case);
   MSA_delete(adapter);
-  //M_release(mesh);
   M_release(mesh); 
-  GM_release(model);
-  NM_release(nmodel);
+  //GM_release(model);
 
   // Stop everything
+  /*
   SimAdvMeshing_stop();  
-
   SimParasolid_stop(1);
   SimDiscrete_stop(0);
+  SimPartitionedMesh_stop();
+  SimModel_stop();
+  */
+
+  Progress_delete(progress);
+  gmi_sim_stop();
+  SimPartitionedMesh_stop();
+  Sim_unregisterAllKeys();
+  SimModel_stop();
 
   MS_exit();
   Sim_logOff();
-
-  Sim_unregisterAllKeys();
-
   PCU_Comm_Free();
   MPI_Finalize();
 
@@ -230,7 +265,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "M";
-    while ((c = getopt(argc, argv, ":A:B:hM:G:o:vI")) != -1) {
+    while ((c = getopt(argc, argv, ":A:B:hM:G:o:vIm:g:")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -251,11 +286,17 @@ namespace {
       case 'o':
         output_mesh_ = optarg;
         break;
+      case 'm':
+        mesh_adapt_ = optarg;
+        break;
       case 'v':
         ++verbosity_;
         break;
       case 'I':
         isotropic_ = true;
+        break;
+      case 'g':
+        global_size_ = std::atof(optarg);
         break;
       case ':':
         std::cerr << "ERROR: Option -" << char(optopt) << " requires an "
@@ -297,8 +338,11 @@ namespace {
     "-o OUTPUT.sms      Write final mesh to OUTPUT.sms.\n"
     "-A after.vtk       Write adapted mesh to after.vtk.\n"
     "-B before.vtk      Write initial mesh with size field to before.vtk.\n"
+    "-B before.vtk      Write initial mesh with size field to before.vtk.\n"\
+    "-m meshadapt.vtk   Also try SCOREC MeshAdapt and write to meshadapt.vtk"
     "-h                 Display this help menu.\n"
     "-I                 Run completely isotropic adaptation for testing purposes.\n"
+    "-g h_global        Override h_global."
     "-v                 Increase verbosity. \n";
   }
 } // namespace

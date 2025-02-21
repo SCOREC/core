@@ -17,10 +17,14 @@
 class EmbeddedShockFunction : public ma::AnisotropicFunction {
     public:
 
-    #define SIZING_PARAMS iso, anisosize, t
-    #define SIZING_DEFAULTS bool iso = false, double anisosize = -1, double t = -1
+    #define SIZING_PARAMS iso, global, anisosize, t
+    #define SIZING_DEFAULTS bool iso = false, double global = -1, double anisosize = -1, double t = -1
     EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, SIZING_DEFAULTS) 
         : mesh(m), ref(g), shock_surfaces(surfs), test_iso(iso) {
+        if (global > 0) {
+            h_global = global;
+            std::cout << "Overriding h_global size with valid value " << global << std::endl;
+        }
         if(anisosize > 0) {
             norm_size = anisosize;
             std::cout << "Overriding normal size with valid value " << norm_size << std::endl;
@@ -35,6 +39,8 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
         EmbeddedShockFunction(m, m->getModel(), surfs, SIZING_PARAMS) {};
     EmbeddedShockFunction(ma::Mesh* m, SIZING_DEFAULTS) : 
         EmbeddedShockFunction(m, m->getModel(), {}, SIZING_PARAMS) {};
+    #undef SIZING_PARAMS
+    #undef SIZING_DEFAULTS
 
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
     void getValue(apf::Vector3& pos, ma::Matrix& frame, ma::Vector& scale);
@@ -74,9 +80,9 @@ double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 clos
     apf::Vector3 vecToPos = pos - closest_pt;
 
     double sphere_dist_sqr = std::abs(dist * dist);
-    if (sphere_dist_sqr < sphere_size*sphere_size) {
+    if (test_iso || sphere_dist_sqr < sphere_size*sphere_size) {
         in_tip_ref = true;
-        return h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size);
+        return std::min(h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size), h_global);
     }
 
     // (h_norm-h_global)*exp(-abs(testx)/smooth_dist) + h_global;
