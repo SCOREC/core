@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 
   // Setup and run size field
   ma::Mesh* mesh_ref = apf::createMesh(mesh);
-  EmbeddedShockFunction sf(mesh_ref, {});
+  EmbeddedShockFunction sf(mesh_ref);
   
   pACase mesh_case = MS_newMeshCase(model);
   MS_setAnisoSizeAttFunc(mesh_case, "anisoUDF", anisoUDF, &sf);

@@ -40,6 +40,7 @@ namespace {
     ARGS_GETTER(after, const std::string&)
     ARGS_GETTER(input, const std::string&)
     ARGS_GETTER(output, const std::string&)
+    ARGS_GETTER(isotropic, bool)
     #undef ARGS_GETTER
 
     /** @brief Check for argument parse errors. */
@@ -49,7 +50,7 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool analytic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
+    bool analytic_{false}, isotropic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
     int maxiter_{-1}, uniform_{0}, verbosity_{0};
     double aniso_size_{-1}, thickness_{-1};
     std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
@@ -174,11 +175,11 @@ int main(int argc, char* argv[]) {
   ma::AnisotropicFunction* sf = nullptr;
   if(using_ref_geom) {
     sf = new EmbeddedShockFunction(adaptMesh,
-      geom_ref, shock_surfaces, args.aniso_size(), args.thickness());
+      geom_ref, shock_surfaces, args.isotropic(), args.aniso_size(), args.thickness());
     //double h0_max_shock = reinterpret_cast<AnisotropicFunctionOnReference*>(sf)->getMaxEdgeLengthAcrossShock();
     //std::cout << "INFO: Maximum edge length crossing shock: " << h0_max_shock << std::endl;
   } else {
-    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.aniso_size(), args.thickness());
+    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.isotropic(), args.aniso_size(), args.thickness());
   }
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
@@ -334,7 +335,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "";
-    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvS")) != -1) {
+    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvSI")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -381,6 +382,9 @@ namespace {
       case 'v':
         ++verbosity_;
         break;
+      case 'I':
+        isotropic_ = true;
+        break;
       case 'S':
         smoothing_ = true;
         break;
@@ -410,7 +414,7 @@ namespace {
   } 
 
   void Args::print_usage(std::ostream& str) const {
-    str << "USAGE: " << argv0 << " [-ahmuvS] [-i MAXITER] [-B before.vtk] "
+    str << "USAGE: " << argv0 << " [-ahmuvSI] [-i MAXITER] [-B before.vtk] "
       "[-A after.vtk] [-o OUTPUT.cre] [-G REF_GEOM.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
       << std::endl;
   }
@@ -429,7 +433,7 @@ namespace {
     "-m              Convert to mesh to MDS before adaptation (and back to \n"
     "                Capstone mesh before writing if given -o). May boost \n"
     "                performance, but buggy.\n"
-    "-S              Do smoothing \n"
+    "-S              Do smoothing. \n"
     "-n NORM_SIZE    Override anisotropic normal direction size.\n"
     "-o OUTPUT.cre   Write final mesh to OUTPUT.cre.\n"
     "-G REF_GEOM.cre Set a different .cre file with shock geometry.\n"
@@ -438,6 +442,7 @@ namespace {
     "-t THICKNESS    Override thickness.\n"
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
+    "-I              Run completely isotropic adaptation for testing purposes.\n"
     "-v              Increase verbosity. Level 1 enables lionPrint. Level 2\n"
     "                enables verbose adaptation. Level 3 writes intermediate\n"
     "                VTK files.\n";

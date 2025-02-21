@@ -17,8 +17,10 @@
 class EmbeddedShockFunction : public ma::AnisotropicFunction {
     public:
 
-    EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, double anisosize, double t) : 
-        mesh(m), ref(g), shock_surfaces(surfs) {
+    #define SIZING_PARAMS iso, anisosize, t
+    #define SIZING_DEFAULTS bool iso = false, double anisosize = -1, double t = -1
+    EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, SIZING_DEFAULTS) 
+        : mesh(m), ref(g), shock_surfaces(surfs), test_iso(iso) {
         if(anisosize > 0) {
             norm_size = anisosize;
             std::cout << "Overriding normal size with valid value " << norm_size << std::endl;
@@ -29,10 +31,10 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
         }
         thickness_tol = thickness * thickness / 4;
     }
-    EmbeddedShockFunction(ma::Mesh* m, std::list<gmi_ent*> surfs, double anisosize, double t) : 
-        EmbeddedShockFunction(m, m->getModel(), surfs, anisosize, t) {};
-    EmbeddedShockFunction(ma::Mesh* m, std::list<gmi_ent*> surfs) : 
-        EmbeddedShockFunction(m, m->getModel(), surfs, -1, -1) {};
+    EmbeddedShockFunction(ma::Mesh* m, std::list<gmi_ent*> surfs, SIZING_DEFAULTS) : 
+        EmbeddedShockFunction(m, m->getModel(), surfs, SIZING_PARAMS) {};
+    EmbeddedShockFunction(ma::Mesh* m, SIZING_DEFAULTS) : 
+        EmbeddedShockFunction(m, m->getModel(), {}, SIZING_PARAMS) {};
 
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
     void getValue(apf::Vector3& pos, ma::Matrix& frame, ma::Vector& scale);
@@ -48,6 +50,7 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
     double norm_size = h_global/16;
     double thickness = 0.721796;
 
+    bool test_iso;
     ma::Mesh* mesh;
     gmi_model* ref;
     double thickness_tol;
@@ -119,7 +122,7 @@ void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::V
     bool in_tip_ref = false;
     #define LINE(mins, maxs, x, slope) std::min(std::max(slope*x,mins),maxs)
     double zoneIsoSize = getZoneIsoSize(pos, cls_vec, shock_dist_square < thickness_tol, in_tip_ref);
-    scale[0] = in_tip_ref ? zoneIsoSize : LINE(norm_size, h_global, shockDist, 1);
+    scale[0] = test_iso || in_tip_ref ? zoneIsoSize : LINE(norm_size, h_global, shockDist, 1);
     //scale[0] = zoneIsoSize;
     scale[1] = std::max(zoneIsoSize, scale[0]);
     scale[2] = std::max(zoneIsoSize, scale[0]);
