@@ -6,6 +6,7 @@
 #include <crv.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
+#include <iostream>
 
 namespace test {
 
@@ -25,8 +26,8 @@ static apf::Vector3 const edge[2] = {
 };
 static apf::Vector3 const tri[3] = {
   apf::Vector3(0,0,0),
-  apf::Vector3(1,0,0),
-  apf::Vector3(0,1,0)
+  apf::Vector3(5,1,0),
+  apf::Vector3(3,4,0)
 };
 static apf::Vector3 const quad[4] = {
   apf::Vector3(-1,-1,0),
@@ -100,10 +101,9 @@ static void checkEntityShape(apf::Mesh* lm, apf::Mesh* m,
   // chosen to avoid hitting a nodeXi exactly,
   // two points per dimension are chosen, one on the interior,
   // one on the boundary
-  static apf::Vector3 xi[2][3] = {{apf::Vector3(1./3.,0,0),
-      apf::Vector3(1./4,1./3,0), apf::Vector3(1./6,1./4,1./2)},
-      {apf::Vector3(1.,0,0), apf::Vector3(1./6,0,0),
-          apf::Vector3(0,1./4,1./3)}};
+  static apf::Vector3 xi[2][3] = {
+    {apf::Vector3(1./3.,0,0), apf::Vector3(1./4,1./3,0), apf::Vector3(1./6,1./4,1./2)},
+    {apf::Vector3(1.,0,0),    apf::Vector3(1./6,0,0),    apf::Vector3(0,1./4,1./3)}};
   for (int i = 0; i < 2; ++i){
     apf::getVector(lelem,xi[i][typeDim-1],lvalue);
     apf::getVector(elem,xi[i][typeDim-1],value);
@@ -116,9 +116,16 @@ static void checkEntityShape(apf::Mesh* lm, apf::Mesh* m,
     PCU_ALWAYS_ASSERT(std::abs(apf::measure(lme)-apf::measure(me)) < 1e-15);
 
     // check Jacobians are identical
-    for (int i = 0; i < 3; ++i)
-      for (int j = 0; j < 3; ++j)
+    std::cout << "type " << type << " dim " << typeDim << " Jacobian\n";
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
         PCU_ALWAYS_ASSERT(std::abs(Jacobian[i][j]-lJacobian[i][j]) < 1e-15);
+        std::cout << Jacobian[i][j];
+        if(j==2) std::cout << "\n";
+        else std::cout << ", ";
+      }
+    }
+    std::cout << "determinant " << getJacobianDeterminant(Jacobian, typeDim) << "\n";
   }
   // clean up
   apf::destroyMeshElement(lme);

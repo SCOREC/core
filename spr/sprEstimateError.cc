@@ -202,16 +202,19 @@ class Error2 : public ElementError
     }
 };
 
+/* computes the scalar size factor term (in parenthesis raised to (1/2p))
+ * described in section 4 of spr.tex
+ */
 static void computeSizeFactor(Estimation* e)
 {
   SelfProduct epsStarNormIntegrator(e);
   epsStarNormIntegrator.process(e->mesh);
-  double epsStarNorm = sqrt(epsStarNormIntegrator.r);
+  double epsStarNorm = sqrt(epsStarNormIntegrator.r); // ||e*||
   Error errorIntegrator(e);
   errorIntegrator.process(e->mesh);
-  double a = e->tolerance * e->tolerance *
-             epsStarNorm * epsStarNorm;
-  double b = a / errorIntegrator.r;
+  double a = e->tolerance * e->tolerance * // (n^hat)^2
+             epsStarNorm * epsStarNorm; // ||e*||^2
+  double b = a / errorIntegrator.r; // term in parenthesis in section 4 of spr.tex
   double p = e->recovered_order;
   e->size_factor = pow(b, 1.0 / (2.0 * p));
 }
@@ -227,14 +230,15 @@ static double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e)
   return h;
 }
 
+/* computes h_e^new from section 4 of spr.tex */
 static double getDesiredSize(Estimation* e, apf::MeshEntity* entity)
 {
   Error2 errorNormIntegrator(e);
   apf::MeshElement* element = apf::createMeshElement(e->mesh, entity);
   errorNormIntegrator.process(element);
-  double errorNorm = errorNormIntegrator.r;
+  double errorNorm = errorNormIntegrator.r; // (||e_eps||_e)^(-2/(2p+d)) - see Error2 class
   apf::destroyMeshElement(element);
-  double h = getCurrentSize(e->mesh, entity);
+  double h = getCurrentSize(e->mesh, entity); // h_e^current
   return h * errorNorm * e->size_factor;
 }
 
