@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
   }
   // Test SCOREC functions.
   gmi_register_mesh();
-  apf::Mesh2* m = apf::makeMdsBox(1, 1, 1, 1, 1, 1, 0, PCUObj);
+  apf::Mesh2* m = apf::makeMdsBox(1, 1, 1, 1, 1, 1, 0, &PCUObj);
   apf::destroyMesh(m);
   // MPI Allreduce
   int val = rank + 1, sum;
