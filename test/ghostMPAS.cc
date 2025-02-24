@@ -51,7 +51,7 @@ namespace {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -62,5 +62,5 @@ int main(int argc, char** argv)
   m->writeNative(argv[3]);
   freeMesh(m);
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

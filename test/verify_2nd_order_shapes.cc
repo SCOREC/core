@@ -16,14 +16,14 @@
 #include <pcu_util.h>
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 2 ) {
     if ( !PCUObj.Self() )
       printf("Usage: %s <mesh .smb>\n", argv[0]);
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -111,5 +111,5 @@ int main(int argc, char** argv) {
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

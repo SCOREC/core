@@ -44,7 +44,7 @@ static void list_tags(apf::Mesh* m)
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -71,5 +71,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

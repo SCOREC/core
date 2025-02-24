@@ -7,7 +7,7 @@
 #include <PCU.h>
 
 int main (int argc, char* argv[]) {
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   pcu::PCU* PCUObj = new pcu::PCU;
   lion_set_verbosity(1);
   gmi_register_cap();
@@ -35,5 +35,5 @@ int main (int argc, char* argv[]) {
 
   apf::destroyMesh(m);
   delete PCUObj;
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

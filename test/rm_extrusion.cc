@@ -91,7 +91,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj) {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -145,5 +145,5 @@ int main(int argc, char** argv)
   if( should_log )
     Sim_logOff();
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

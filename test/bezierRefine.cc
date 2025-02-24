@@ -309,12 +309,12 @@ void test3D(pcu::PCU *PCUObj)
 }
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   test2D(&pcu_obj);
   test3D(&pcu_obj);
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

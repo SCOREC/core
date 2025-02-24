@@ -18,7 +18,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==2);
   const char* modelFile = argv[1];
 
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -94,6 +94,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 

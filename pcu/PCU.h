@@ -137,6 +137,25 @@ void Protect() noexcept;
 /*MPI_Wtime() equivalent*/
 [[nodiscard]] double Time() noexcept;
 
+/**
+ * @brief Initialize the underlying parallel library.
+ *
+ * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * the difference.
+ *
+ * @return 0 on success, nonzero otherwise.
+ */
+int PCU_Init(int *argc, char ***argv);
+/**
+ * @brief Finalize the underlying parallel library.
+ *
+ * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * the difference.
+ *
+ * @return 0 on success, nonzero otherwise.
+ */
+int PCU_Finalize();
+
 PCU* PCU_GetGlobal();
 
 /* explicit instantiations of template functions */

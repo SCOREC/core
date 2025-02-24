@@ -9,14 +9,14 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   if ( argc != 4 ) {
     if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
   }
   
@@ -61,6 +61,6 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
 
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 

@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -23,7 +23,7 @@ int main(int argc, char** argv)
              "the mesh.\n"
              "When a **gmsh v4** .msh is passed in, a topological model will be created "
              "from the geometric model entities defined in the gmsh input file.\n", argv[0]);
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
@@ -55,6 +55,6 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 

@@ -478,7 +478,7 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
 int main(int argc, char **argv)
 {
 #ifdef HAVE_CGNS
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
   pumi_load_pcu(&PCUObj);
@@ -488,7 +488,7 @@ int main(int argc, char **argv)
   {
     if (!PCUObj.Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
     return -1;
   }
@@ -500,7 +500,7 @@ int main(int argc, char **argv)
     {
       if (!PCUObj.Self())
         printf("Usage: %s <in .cgns> <out .smb> additional\n", argv[0]);
-      MPI_Finalize();
+      pcu::PCU_Finalize();
       exit(EXIT_FAILURE);
       return -1;
     }
@@ -509,7 +509,7 @@ int main(int argc, char **argv)
   {
     if (!PCUObj.Self())
       printf("Usage: %s <in .cgns> <out .smb>\n", argv[0]);
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
     return -1;
   }
@@ -546,7 +546,7 @@ int main(int argc, char **argv)
   }
   //
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
   return 0;
 #else
   PCU_ALWAYS_ASSERT_VERBOSE(true == false,

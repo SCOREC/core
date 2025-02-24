@@ -52,6 +52,23 @@
 #include <time.h>
 namespace pcu {
 
+int PCU_Init(int *argc, char ***argv) {
+#ifndef SCOREC_NO_MPI
+  return MPI_Init(argc, argv);
+#else
+  (void) argc, (void) argv;
+  return 0;
+#endif
+}
+
+int PCU_Finalize() {
+#ifndef SCOREC_NO_MPI
+  return MPI_Finalize();
+#else
+  return 0;
+#endif
+}
+
 int PCU::Peers() const noexcept { return pcu_mpi_size(mpi_); }
 int PCU::Self() const noexcept { return pcu_mpi_rank(mpi_); }
 void PCU::Begin() noexcept { pcu_msg_start(mpi_, msg_); }

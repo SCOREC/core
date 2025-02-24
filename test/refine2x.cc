@@ -83,7 +83,7 @@ class AnisotropicX: public ma::AnisotropicFunction {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -130,5 +130,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

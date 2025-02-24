@@ -18,7 +18,7 @@ static double process_element(apf::Vector3 x[4], double sol[4][9])
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   {
   pcu::PCU pcu_obj;
 #ifdef HAVE_SIMMETRIX
@@ -59,5 +59,5 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

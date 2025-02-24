@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -17,7 +17,7 @@ int main(int argc, char** argv)
     if ( !pcu_obj.Self() )
       printf("Create a discrete geometric model from a mesh\n"
              "Usage: %s <mesh> <out model (.dmg)>\n", argv[0]);
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
@@ -27,6 +27,6 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 

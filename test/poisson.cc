@@ -250,7 +250,7 @@ void test(int dim, int p, pcu::PCU *PCUObj) {
 
 int main(int argc, char** argv) {
   PCU_ALWAYS_ASSERT(argc == 3);
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   {  
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -259,5 +259,5 @@ int main(int argc, char** argv) {
   int p = atoi(argv[2]);
   test(dim, p, &pcu_obj);
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

@@ -137,7 +137,7 @@ const int tet_info[11][6] = {
 int main(int argc, char** argv)
 {
 
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -249,6 +249,6 @@ int main(int argc, char** argv)
   outMesh->destroyNative();
   apf::destroyMesh(outMesh);
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 

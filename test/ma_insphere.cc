@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv)
 {
-	MPI_Init(&argc,&argv);
+	pcu::PCU_Init(&argc,&argv);
 
 	// Test determinant functions
 	double input[4][4] = {
@@ -58,5 +58,5 @@ int main(int argc, char** argv)
   apf::destroyMesh(mesh);
 
 	}
-	MPI_Finalize();
+	pcu::PCU_Finalize();
 }

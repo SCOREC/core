@@ -52,7 +52,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
   if ( argc != 5 ) {
     if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh> <factor>\n", argv[0]);
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -66,7 +66,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -104,5 +104,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

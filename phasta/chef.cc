@@ -29,7 +29,7 @@ namespace {
 /** @brief run the operations requested in "adapt.inp" */
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   pcu::Protect();
@@ -69,6 +69,6 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 

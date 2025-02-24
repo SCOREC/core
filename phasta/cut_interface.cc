@@ -22,7 +22,7 @@ char const* outfile;
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   lion_set_verbosity(1);
   if (argc < 4 || argc > 5) {
     lion_eprint(1,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
@@ -82,5 +82,5 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

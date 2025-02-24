@@ -32,7 +32,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
   pcu::Protect();
@@ -60,5 +60,5 @@ int main(int argc, char** argv) {
   Sim_unregisterAllKeys();
 #endif
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }

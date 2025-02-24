@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   pumi_load_pcu(&PCUObj);
@@ -11,6 +11,6 @@ int main(int argc, char** argv)
   pumi_mesh_delete(m);
   pumi_geom_delete(g);
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 

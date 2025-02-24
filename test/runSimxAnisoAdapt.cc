@@ -74,7 +74,7 @@ apf::Mesh2* convertToPumi(
     const char* sizeName, const char* frameName, pcu::PCU *PCUObj);
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::PCU_Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
       printf("USAGE: %s <model.dmg> <mesh.smb> <prefix>"
       	  "<scale field name> <frame field name> <min_quality>\n", argv[0]);
     }
-    MPI_Finalize();
+    pcu::PCU_Finalize();
     exit(EXIT_FAILURE);
   }
 
@@ -229,7 +229,7 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
   MS_exit();
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 
 void printModelStats(pGModel model)

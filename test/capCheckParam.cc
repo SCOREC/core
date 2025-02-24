@@ -27,7 +27,7 @@ void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface*
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::PCU_Init(&argc, &argv);
   pcu::PCU *PCUobj = new pcu::PCU;
 
   if (argc != 2) {
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
   checkParametrization(m, g);
 
   delete PCUobj;
-  MPI_Finalize();
+  pcu::PCU_Finalize();
 }
 
 void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb)

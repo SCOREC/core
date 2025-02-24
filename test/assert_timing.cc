@@ -29,7 +29,7 @@ double check_pcu_assert() {
 int main(int argc, char** argv) {
   PCU_ALWAYS_ASSERT(argc == 2);
   int opt = atoi(argv[1]);
-  MPI_Init(0,0);
+  pcu::PCU_Init(0,0);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -43,6 +43,6 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 5; ++i)
       printf("pcu assert in %f seconds\n", check_pcu_assert());
   }
-  MPI_Finalize();
+  pcu::PCU_Finalize();
   return 0;
 }
