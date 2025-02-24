@@ -1,6 +1,7 @@
 #ifndef SCOREC_PCU_H
 #define SCOREC_PCU_H
 
+#include <memory>
 #include <cstdlib>
 #include <cstdarg> //va_list
 #include "pcu_defines.h"
@@ -102,7 +103,7 @@ public:
    * @param key used for subgroup ordering; specify 0 if you don't care.
    * @return a new communicator defined on the resulting subgroup.
    */
-  PCU* Split(int color, int key) noexcept;
+  std::unique_ptr<PCU> Split(int color, int key) noexcept;
 
   /*lesser-used APIs*/
   int Packed(int to_rank, size_t *size) noexcept;

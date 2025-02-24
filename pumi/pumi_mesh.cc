@@ -193,13 +193,12 @@ pMesh pumi_mesh_loadSerial(pGeom g, const char* filename, const char* mesh_type)
   }
   bool isMaster = pumi::instance()->getPCU()->Self() == 0;
   pMesh m = 0;
-  pcu::PCU *split_comm = pumi::instance()->getPCU()->Split(
+  std::unique_ptr<pcu::PCU> split_comm = pumi::instance()->getPCU()->Split(
     pumi::instance()->getPCU()->Self(), 0
   );
   if (isMaster) 
-    m = apf::loadMdsMesh(g->getGmi(), filename, split_comm);
+    m = apf::loadMdsMesh(g->getGmi(), filename, split_comm.get());
   if (m != nullptr) m->switchPCU(pumi::instance()->getPCU());
-  delete split_comm;
   pumi::instance()->mesh = expandMdsMesh(m, g->getGmi(), 1, m->getPCU());
   return pumi::instance()->mesh;
 }
@@ -225,15 +224,14 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
     bool isMaster = ((pcu_obj->Self() % num_target_part) == 0);
     pMesh m = 0;
     apf::Migration* plan = 0;   
-    pcu::PCU *split_comm = pcu_obj->Split(
+    std::unique_ptr<pcu::PCU> split_comm = pcu_obj->Split(
       pcu_obj->Self() % num_target_part, pcu_obj->Self() / num_target_part
     );
     if (isMaster) {
-      m = apf::loadMdsMesh(g->getGmi(), filename, split_comm);
+      m = apf::loadMdsMesh(g->getGmi(), filename, split_comm.get());
       plan = getPlan(m, num_target_part);
     }
-    if (m != nullptr) m->switchPCU(split_comm);
-    delete split_comm;
+    if (m != nullptr) m->switchPCU(split_comm.get());
     pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part, pcu_obj);
   }
   else
@@ -273,13 +271,12 @@ pMesh pumi_mesh_loadAll(pGeom g, const char* filename, bool stitch_link)
   else
   {
     double t0 = pcu::Time();
-    pcu::PCU *split_comm = pumi::instance()->getPCU()->Split(
+    std::unique_ptr<pcu::PCU> split_comm = pumi::instance()->getPCU()->Split(
       pumi::instance()->getPCU()->Self(), 0
     );
     // no pmodel & remote links setup
-    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename, split_comm); 
+    pumi::instance()->mesh = apf::loadSerialMdsMesh(g->getGmi(), filename, split_comm.get()); 
     pumi::instance()->mesh->switchPCU(pumi::instance()->getPCU());
-    delete split_comm;
     if (!pumi::instance()->getPCU()->Self())
       lion_oprint(1,"serial mesh %s loaded in %f seconds\n", filename, pcu::Time() - t0);
   }

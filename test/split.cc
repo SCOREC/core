@@ -37,14 +37,6 @@ apf::Migration* getPlan(apf::Mesh* m)
   return plan;
 }
 
-pcu::PCU* getGroupedPCU(pcu::PCU *PCUObj)
-{
-  int self = PCUObj->Self();
-  int groupRank = self / partitionFactor;
-  int group = self % partitionFactor;
-  return PCUObj->Split(group, groupRank);
-}
-
 void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc != 5 ) {
@@ -82,15 +74,16 @@ int main(int argc, char** argv)
   g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  pcu::PCU *groupedPCUObj = getGroupedPCU(&PCUObj);
+  auto groupedPCUObj = PCUObj.Split(
+    PCUObj.Self() % partitionFactor, PCUObj.Self() / partitionFactor
+  );
   if (isOriginal) {
-    m = apf::loadMdsMesh(g, meshFile, groupedPCUObj);
+    m = apf::loadMdsMesh(g, meshFile, groupedPCUObj.get());
     plan = getPlan(m);
   }
   //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
   //on the globalPCU
   if(m != nullptr) m->switchPCU(&PCUObj);
-  delete groupedPCUObj;
   m = repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);

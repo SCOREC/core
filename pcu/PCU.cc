@@ -144,12 +144,12 @@ void PCU::Barrier() { pcu_barrier(mpi_, &(msg_->coll)); }
 int PCU::Or(int c) noexcept { return Max(c); }
 int PCU::And(int c) noexcept { return Min(c); }
 
-PCU* PCU::Split(int color, int key) noexcept {
+std::unique_ptr<PCU> PCU::Split(int color, int key) noexcept {
   PCU_Comm newcomm;
   pcu_mpi_split(mpi_, color, key, &newcomm);
   PCU* splitpcu = new PCU(newcomm);
   splitpcu->OwnsComm(true);
-  return splitpcu;
+  return std::unique_ptr<PCU>(splitpcu);
 }
 
 int PCU::Packed(int to_rank, size_t *size) noexcept {

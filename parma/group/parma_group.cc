@@ -48,9 +48,7 @@ static void runInGroups(
   int groupRank = inMap(self);
   int group = groupMap(self);
   
-  auto groupedPCU = std::unique_ptr<pcu::PCU>(
-    expandedPCU->Split(group, groupRank)
-  );
+  auto groupedPCU = expandedPCU->Split(group, groupRank);
   if (m){
     m->switchPCU(groupedPCU.get());
     apf::remapPartition(m, inMap);

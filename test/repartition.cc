@@ -19,7 +19,7 @@ int inputPartCount = 1;
 
 struct CreateGroupCommResult{
   bool isOriginal;
-  pcu::PCU *group_pcu_obj;
+  std::unique_ptr<pcu::PCU> group_pcu_obj;
 };
 
 void freeMesh(apf::Mesh* m)
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
   CreateGroupCommResult result = createGroupComm(&expanded_pcu_obj);
 
   if (result.isOriginal)
-    m = apf::loadMdsMesh(g, meshFile, result.group_pcu_obj);
+    m = apf::loadMdsMesh(g, meshFile, result.group_pcu_obj.get());
   
   m = apf::expandMdsMesh(m, g, inputPartCount, &expanded_pcu_obj);
   balance(m);

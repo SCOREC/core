@@ -18,14 +18,6 @@ apf::Migration* getPlan(apf::Mesh* m, const int partitionFactor)
   return plan;
 }
 
-pcu::PCU* getGroupedPCU(const int partitionFactor, pcu::PCU *PCUObj)
-{
-  int self = PCUObj->Self();
-  int groupRank = self / partitionFactor;
-  int group = self % partitionFactor;
-  return PCUObj->Split(group, groupRank);
-}
-
 int main(int argc, char** argv)
 {
   pcu::PCU_Init(&argc,&argv);
@@ -45,9 +37,11 @@ int main(int argc, char** argv)
   gmi_model* g = gmi_load(".null");
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  pcu::PCU *groupedPCUObj = getGroupedPCU(partitionFactor, &PCUObj);
+  auto groupedPCUObj = PCUObj.Split(
+    PCUObj.Self() % partitionFactor, PCUObj.Self() / partitionFactor
+  );
   if (isOriginal) {
-    m = apf::loadMdsFromUgrid(g, argv[1], groupedPCUObj);
+    m = apf::loadMdsFromUgrid(g, argv[1], groupedPCUObj.get());
     apf::deriveMdsModel(m);
     m->verify();
     plan = getPlan(m, partitionFactor);
@@ -55,7 +49,6 @@ int main(int argc, char** argv)
   //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
   //on the globalPCU
   if(m != nullptr) m->switchPCU(&PCUObj);
-  delete groupedPCUObj;
   m = repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   gmi_write_dmg(g,argv[2]);
