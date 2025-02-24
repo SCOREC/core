@@ -25,6 +25,7 @@ bool pcu_pmpi_receive(const pcu_mpi_t *, pcu_message *m, PCU_Comm comm);
 bool pcu_pmpi_done(const pcu_mpi_t *, pcu_message *m);
 
 int pcu_pmpi_split(const pcu_mpi_t *, int color, int key, PCU_Comm* newcomm);
+int pcu_pmpi_dup(const pcu_mpi_t *, PCU_Comm* newcomm);
 
 #ifdef __cplusplus
 }

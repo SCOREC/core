@@ -67,3 +67,7 @@ int pcu_mpi_split(const pcu_mpi_t* mpi, int color, int key,
                   PCU_Comm* newcomm) {
   return pcu_pmpi_split(mpi, color, key, newcomm);
 }
+
+int pcu_mpi_dup(const pcu_mpi_t* mpi, PCU_Comm* newcomm) {
+  return pcu_pmpi_dup(mpi, newcomm);
+}

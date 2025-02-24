@@ -46,6 +46,7 @@ bool pcu_mpi_receive(const pcu_mpi_t*, pcu_message* m, PCU_Comm comm);
 void pcu_mpi_init(PCU_Comm comm, pcu_mpi_t* mpi);
 void pcu_mpi_finalize(pcu_mpi_t* mpi);
 int  pcu_mpi_split(const pcu_mpi_t* mpi, int color, int key, PCU_Comm* newcomm);
+int  pcu_mpi_dup(const pcu_mpi_t* mpi, PCU_Comm* newcomm);
 
 #ifdef __cplusplus
 }

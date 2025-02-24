@@ -105,6 +105,20 @@ public:
    */
   std::unique_ptr<PCU> Split(int color, int key) noexcept;
 
+  /**
+   * @brief Duplicate the underlying communicator.
+   *
+   * It is the user's responsiblity to cleanup the returned communicator. This
+   * function may be used to initialize other libraries using the PCU-defined
+   * communication group.
+   *
+   * If SCOREC::core was compiled with the SCOREC_NO_MPI flag, the return value
+   * is not meaningful.
+   *
+   * @return The new duplicated communicator.
+   */
+  PCU_Comm DupComm() const noexcept;
+
   /*lesser-used APIs*/
   int Packed(int to_rank, size_t *size) noexcept;
   int From(int *from_rank) noexcept;

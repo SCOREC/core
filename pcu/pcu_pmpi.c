@@ -42,6 +42,11 @@ int pcu_pmpi_split(const pcu_mpi_t *mpi, int color, int key, MPI_Comm* newcomm)
   return MPI_Comm_split(mpi->original_comm,color,key,newcomm);
 }
 
+int pcu_pmpi_dup(const pcu_mpi_t *mpi, PCU_Comm* newcomm)
+{
+  return MPI_Comm_dup(mpi->user_comm, newcomm);
+}
+
 int pcu_pmpi_size(const pcu_mpi_t* self)
 {
   return self->size;

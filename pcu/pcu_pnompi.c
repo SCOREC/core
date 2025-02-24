@@ -119,7 +119,13 @@ void pcu_pmpi_finalize(pcu_mpi_t* self) {
 
 int pcu_pmpi_split(const pcu_mpi_t *mpi, int c, int k, PCU_Comm *cm2) {
   (void) mpi, (void) c, (void) k, (void) cm2;
-  return 1;
+  return 0;
+}
+
+int pcu_pmpi_dup(const pcu_mpi_t *mpi, PCU_Comm* newcomm) {
+  (void) mpi;
+  *newcomm = mpi->user_comm;
+  return 0;
 }
 
 int pcu_pmpi_size(const pcu_mpi_t *self) {

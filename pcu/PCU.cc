@@ -151,6 +151,11 @@ std::unique_ptr<PCU> PCU::Split(int color, int key) noexcept {
   splitpcu->OwnsComm(true);
   return std::unique_ptr<PCU>(splitpcu);
 }
+PCU_Comm PCU::DupComm() const noexcept {
+  PCU_Comm newcomm;
+  pcu_mpi_dup(mpi_, &newcomm);
+  return newcomm;
+}
 
 int PCU::Packed(int to_rank, size_t *size) noexcept {
   if ((to_rank < 0) || (to_rank >= Peers()))
