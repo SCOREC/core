@@ -28,10 +28,11 @@ void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface*
 int main(int argc, char** argv)
 {
   pcu::PCU_Init(&argc, &argv);
-  pcu::PCU *PCUobj = new pcu::PCU;
+  { // pcu object scope
+  pcu::PCU PCUobj;
 
   if (argc != 2) {
-    if (PCUobj->Self() == 0)
+    if (PCUobj.Self() == 0)
       std::cerr << "usage: " << argv[0] << " <cre file .cre>\n";
     return EXIT_FAILURE;
   }
@@ -111,7 +112,7 @@ int main(int argc, char** argv)
   // check parametrization using capstone apis
   checkParametrization(m, g);
 
-  delete PCUobj;
+  } // pcu object scope
   pcu::PCU_Finalize();
 }
 

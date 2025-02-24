@@ -13,18 +13,19 @@ void print_vector(const std::vector<T> &v);
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
-  pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  { // pcu object scope
+  pcu::PCU PCUObj;
   // Print rank info.
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   if (rank == 0)
     std::cout << "MPI size: " << size << "; PCU size: " <<
-      PCUObj->Peers() << std::endl;
+      PCUObj.Peers() << std::endl;
   for (int i = 0; i < size; ++i) {
     if (rank == i)
       std::cout << "Hello from MPI rank: " << rank << "; PCU rank: " <<
-        PCUObj->Self() << std::endl;
+        PCUObj.Self() << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
   }
   // Test SCOREC functions.
@@ -35,7 +36,7 @@ int main(int argc, char** argv) {
   int val = rank + 1, sum;
   MPI_Allreduce(&val, &sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   int pval = rank + 1, psum;
-  psum = PCUObj->Add(pval);
+  psum = PCUObj.Add(pval);
   for (int i = 0; i < size; ++i) {
     if (rank == i)
       std::cout << "MPI(" << rank << ") sum: " << sum <<
@@ -45,8 +46,8 @@ int main(int argc, char** argv) {
   // Test Allgather
   std::vector<int> vals1(size);
   MPI_Allgather(&val, 1, MPI_INT, vals1.data(), 1, MPI_INT, MPI_COMM_WORLD);
-  std::vector<int> pvals1(PCUObj->Peers());
-  PCUObj->Allgather(&val, pvals1.data(), 1);
+  std::vector<int> pvals1(PCUObj.Peers());
+  PCUObj.Allgather(&val, pvals1.data(), 1);
   for (int i = 0; i < size; ++i) {
     if (rank == i) {
       std::cout << "MPI(" << rank << ") gather: ";
@@ -60,8 +61,8 @@ int main(int argc, char** argv) {
   int val2[2] = {val, -val};
   std::vector<int> vals2(2 * size);
   MPI_Allgather(val2, 2, MPI_INT, vals2.data(), 2, MPI_INT, MPI_COMM_WORLD);
-  std::vector<int> pvals2(2 * PCUObj->Peers());
-  PCUObj->Allgather(val2, pvals2.data(), 2);
+  std::vector<int> pvals2(2 * PCUObj.Peers());
+  PCUObj.Allgather(val2, pvals2.data(), 2);
   for (int i = 0; i < size; ++i) {
     if (rank == i) {
       std::cout << "MPI(" << rank << ") gather2: ";
@@ -72,7 +73,7 @@ int main(int argc, char** argv) {
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
-  delete PCUObj;
+  } // pcu object scope
   MPI_Finalize();
   return 0;
 }
