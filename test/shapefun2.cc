@@ -169,11 +169,7 @@ static void checkFieldShape(apf::FieldShape* fs, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -187,8 +183,6 @@ int main(int argc, char** argv)
     test::checkFieldShape(fs[i], &PCUObj);
 
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 

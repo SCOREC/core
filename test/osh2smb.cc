@@ -14,11 +14,7 @@
 #include <Omega_h_file.hpp>
 
 int main(int argc, char** argv) {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -28,9 +24,7 @@ int main(int argc, char** argv) {
       std::cout << "usage: osh2smb in.osh in.dmg out.smb\n";
       std::cout << "   or: osh2smb               (usage)\n";
     }
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
@@ -47,7 +41,5 @@ int main(int argc, char** argv) {
     apf::destroyMesh(am);
   }
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

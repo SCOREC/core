@@ -137,11 +137,7 @@ static void globalCode(apf::Mesh2* m)
 
 int main( int argc, char* argv[])
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -154,7 +150,5 @@ int main( int argc, char* argv[])
   Parma_SplitPartition(code.mesh, groupSize, code, &PCUObj);
   globalCode(code.mesh);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

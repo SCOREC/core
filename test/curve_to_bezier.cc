@@ -14,11 +14,7 @@
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -29,18 +25,14 @@ int main(int argc, char** argv)
   if ( argc != 5 ) {
     if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <order> <out prefix>\n", argv[0]);
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
   int order = atoi(argv[3]);
   if(order < 1 || order > 6){
     if ( !pcu_obj.Self() )
       printf("Only 1st to 6th order supported\n");
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
@@ -63,7 +55,5 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

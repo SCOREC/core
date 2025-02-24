@@ -89,9 +89,7 @@ void testTetTri(pcu::PCU *PCUObj)
 }
 int main()
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(0,0);
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -100,7 +98,5 @@ int main()
   testTetEdge(&pcu_obj);
   testTetTri(&pcu_obj);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

@@ -30,9 +30,7 @@ namespace {
 
 void myExit(int exit_code = EXIT_SUCCESS) {
   gmi_cap_stop();
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
   exit(exit_code);
 }
 
@@ -77,11 +75,7 @@ void printUsage(char *argv0) {
 
 int main(int argc, char** argv) {
   // Initialize parallelism.
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
 
@@ -278,7 +272,5 @@ int main(int argc, char** argv) {
   // Exit calls.
   gmi_cap_stop();
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

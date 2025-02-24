@@ -48,11 +48,7 @@ void visualizeEdges(gmi_model* model, int n, const char* fileName, pcu::PCU *PCU
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   pcu::PCU *PCUObj = new pcu::PCU;
 
   gmi_register_mesh();
@@ -169,9 +165,7 @@ int main(int argc, char** argv)
   gmi_cap_stop();
 
   delete PCUObj;
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 
 void printInfo(gmi_model* model, int dim)

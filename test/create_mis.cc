@@ -9,20 +9,14 @@
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   if ( argc != 4 ) {
     if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
   
@@ -67,8 +61,6 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
 
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 

@@ -27,11 +27,7 @@ void testH1(
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
 
@@ -77,9 +73,7 @@ int main(int argc, char** argv)
 
   apf::destroyMesh(m);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 
 void E_exact(const apf::Vector3& x, apf::Vector3& value, int p)

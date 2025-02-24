@@ -17,11 +17,7 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   const char* outFile = argv[3];
   const int order = atoi(argv[4]);
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -41,8 +37,6 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 

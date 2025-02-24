@@ -42,11 +42,7 @@ void visualizeSizeField(
 int main(int argc, char** argv)
 {
 
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -57,9 +53,7 @@ int main(int argc, char** argv)
       printf("USAGE2: %s <mesh.sms> <output_prefix> <scale field name>"
           "<frames field name> <n_u> <n_v> <scale>\n", argv[0]);
     }
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
 
@@ -94,9 +88,7 @@ int main(int argc, char** argv)
 #endif
 
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 
 void safe_mkdir(const char* path)

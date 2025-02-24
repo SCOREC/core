@@ -433,11 +433,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -530,7 +526,5 @@ int main(int argc, char** argv)
   if( should_log )
     Sim_logOff();
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

@@ -92,11 +92,7 @@ int main(int argc, char* argv[])
     std::cerr<<"Usage: "<<argv[0]<<" model.dmg mesh.smb"<<std::endl;
     return 1;
   }
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -121,8 +117,6 @@ int main(int argc, char* argv[])
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
   return 0;
 }

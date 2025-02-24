@@ -480,11 +480,7 @@ void testTetSubdivision1(pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -493,7 +489,5 @@ int main(int argc, char** argv)
   testTriSubdivision4(&pcu_obj);
   testTetSubdivision1(&pcu_obj);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

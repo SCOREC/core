@@ -17,11 +17,7 @@ namespace {
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   pcu::Protect();
@@ -36,8 +32,6 @@ int main(int argc, char** argv)
   chef::preprocess(m,ctrl);
   freeMesh(m);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 

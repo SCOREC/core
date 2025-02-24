@@ -7,20 +7,14 @@
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <part id> <out mesh file>\n", argv[0]);
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
@@ -30,9 +24,7 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 
 

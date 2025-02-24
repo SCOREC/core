@@ -35,11 +35,7 @@ void testAdapt(
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -73,9 +69,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 
 void computeSizesFrames(

@@ -29,11 +29,7 @@ namespace {
 /** @brief run the operations requested in "adapt.inp" */
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   pcu::Protect();
@@ -73,8 +69,6 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 

@@ -22,11 +22,7 @@ void messageHandler(int type, const char *msg);
 
 int main(int argc, char **argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   SimPartitionedMesh_start(&argc, &argv);
   // Read in command line arguments
   if (argc == 5) {
@@ -111,9 +107,7 @@ int main(int argc, char **argv)
   SimParasolid_stop(1);
   Sim_unregisterAllKeys();
   SimPartitionedMesh_stop();
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
   return 0;
 }
 

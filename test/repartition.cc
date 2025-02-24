@@ -62,9 +62,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
              "Unlike the [z]split tool, outPartCount does not have to be an integer\n"
              "multiple of inPartCount.\n",
              argv[0]);
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -96,11 +94,7 @@ void balance(apf::Mesh2* m)
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU expanded_pcu_obj;
   lion_set_verbosity(1);
@@ -119,9 +113,7 @@ int main(int argc, char** argv)
   m->writeNative(outFile);
   freeMesh(m);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 
 

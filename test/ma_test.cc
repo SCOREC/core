@@ -43,11 +43,7 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   const char* layerTagString = (argc==4) ? argv[3] : "";
   const double adaptRefineFactor = (argc==5) ? atoi(argv[4]) : 3;
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -85,8 +81,6 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 

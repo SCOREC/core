@@ -22,11 +22,7 @@ class CountIntegrator : public apf::Integrator {
     }
 };
 int main(int argc, char ** argv) {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   // argument should be model, mesh
@@ -52,8 +48,6 @@ int main(int argc, char ** argv) {
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
   return 0;
 }

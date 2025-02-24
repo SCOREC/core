@@ -743,11 +743,7 @@ void readMesh(const char* meshfilename,
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -833,7 +829,5 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

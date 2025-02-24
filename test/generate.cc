@@ -66,9 +66,7 @@ void messageHandler(int type, const char* msg)
     case Sim_ErrorMsg:
       if(!globalPCU->Self()) 
         fprintf(stdout, "Error SimModeler %s ... exiting\n", msg);
-#ifndef SCOREC_NO_MPI
       MPI_Finalize();
-#endif
       exit(EXIT_SUCCESS); 
       break;
     default:
@@ -319,11 +317,7 @@ void simStop() {
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   globalPCU = &PCUObj;
@@ -365,7 +359,5 @@ int main(int argc, char** argv)
   simStop();
   Sim_logOff();
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

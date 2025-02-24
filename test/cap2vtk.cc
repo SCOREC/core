@@ -40,11 +40,7 @@ using namespace CreateMG::Geometry;
 
 int main(int argc, char** argv)
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc, &argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
 
@@ -143,7 +139,5 @@ int main(int argc, char** argv)
 
   gmi_cap_stop();
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

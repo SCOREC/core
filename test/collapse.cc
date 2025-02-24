@@ -32,9 +32,7 @@ namespace {
         printf("Usage: mpirun -np <inPartCount> %s <model> <mesh> <outMesh> <factor>\n"
                "Reduce the part count of mesh from inPartCount to inPartCount/factor.\n",
                argv[0]);
-#ifndef SCOREC_NO_MPI
       MPI_Finalize();
-#endif
       exit(EXIT_FAILURE);
     }
     modelFile = argv[1];
@@ -46,11 +44,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -73,7 +67,5 @@ int main(int argc, char** argv) {
   Sim_unregisterAllKeys();
 #endif
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }

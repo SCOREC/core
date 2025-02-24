@@ -41,9 +41,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
   if ( argc < 4 ) {
     if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh> <num_part_in_mesh> <do_distribution(0/1)>\n", argv[0]);
-#ifndef SCOREC_NO_MPI
     MPI_Finalize();
-#endif
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -87,11 +85,7 @@ void TEST_FIELD(pMesh m);
 int main(int argc, char** argv)
 //*********************************************************
 {
-#ifndef SCOREC_NO_MPI
   MPI_Init(&argc,&argv);
-#else
-  (void) argc, (void) argv;
-#endif
   {
   pcu::PCU PCUObj;
   pumi_load_pcu(&PCUObj);
@@ -257,9 +251,7 @@ int main(int argc, char** argv)
   pumi_printTimeMem("\n* [test_pumi] elapsed time and increased heap memory:", pumi_getTime()-begin_time, pumi_getMem()-begin_mem);
 
   }
-#ifndef SCOREC_NO_MPI
   MPI_Finalize();
-#endif
 }
 
 void TEST_MESH(pMesh m)
