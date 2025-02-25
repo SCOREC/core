@@ -9,6 +9,10 @@ xsdk_add_tpl(ZOLTAN)
 xsdk_add_tpl(PARMETIS)
 message(STATUS "ENABLE_ZOLTAN: " ${ENABLE_ZOLTAN})
 
+if(SCOREC_NO_MPI AND ENABLE_ZOLTAN)
+  message(FATAL_ERROR "SCOREC_NO_MPI is incompatible with Zoltan.")
+endif()
+
 # Let CMake know where to find custom find package implementations
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}

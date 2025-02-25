@@ -34,6 +34,9 @@ endif()
 #
 option(SCOREC_NO_MPI "Disable MPI support.  When enabled only serial execution is supported." OFF)
 message(STATUS "SCOREC_NO_MPI: ${SCOREC_NO_MPI}")
+if(SCOREC_NO_MPI AND ENABLE_CGNS)
+  message(FATAL_ERROR "SCOREC_NO_MPI is incompatible with CGNS.")
+endif()
 
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
