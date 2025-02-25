@@ -231,7 +231,7 @@ pMesh pumi_mesh_load(pGeom g, const char* filename, int num_in_part, const char*
       m = apf::loadMdsMesh(g->getGmi(), filename, split_comm.get());
       plan = getPlan(m, num_target_part);
     }
-    if (m != nullptr) m->switchPCU(split_comm.get());
+    if (m != nullptr) m->switchPCU(pcu_obj);
     pumi::instance()->mesh = apf::repeatMdsMesh(m, g->getGmi(), plan, num_target_part, pcu_obj);
   }
   else
