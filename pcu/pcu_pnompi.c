@@ -104,12 +104,10 @@ void free_nompi_msg(NoMpiMsg* msg)
 //
 
 void pcu_pmpi_init(PCU_Comm comm, pcu_mpi_t *self) {
-  self->original_comm = comm;
   self->user_comm = comm+1;
   self->coll_comm = comm+2;
   self->size = 1;
   self->rank = 0;
-  self->owned = 0;
 }
 
 void pcu_pmpi_finalize(pcu_mpi_t* self) {

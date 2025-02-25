@@ -29,12 +29,10 @@ void pcu_free_message(pcu_message* m);
 
 struct pcu_mpi_struct
 {
-  PCU_Comm original_comm;
   PCU_Comm user_comm;
   PCU_Comm coll_comm;
   int rank;
   int size;
-  int owned;
 };
 typedef struct pcu_mpi_struct pcu_mpi_t;
 

@@ -21,6 +21,9 @@ int PCU_Comm_Free(PCU_t* h);
 int PCU_Comm_Self(PCU_t h);
 int PCU_Comm_Peers(PCU_t h);
 
+int PCU_Comm_Dup(PCU_t h, PCU_Comm* newcomm);
+void PCU_Comm_Split(PCU_t h, int color, int key, PCU_t* newpcu);
+
 /*recommended message passing API*/
 void PCU_Comm_Begin(PCU_t h);
 int PCU_Comm_Pack(PCU_t h, int to_rank, const void* data, size_t size);
@@ -94,10 +97,6 @@ int PCU_Comm_Rank(PCU_t h, int* rank);
 int PCU_Comm_Size(PCU_t h, int* size);
 
 /*deprecated method enum*/
-
-/*special MPI_Comm replacement API*/
-void PCU_Switch_Comm(PCU_t h, PCU_Comm new_comm);
-PCU_Comm PCU_Get_Comm(PCU_t h);
 
 /*stack trace helpers using GNU/Linux*/
 void PCU_Protect(void);

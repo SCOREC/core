@@ -148,13 +148,10 @@ std::unique_ptr<PCU> PCU::Split(int color, int key) noexcept {
   PCU_Comm newcomm;
   pcu_mpi_split(mpi_, color, key, &newcomm);
   PCU* splitpcu = new PCU(newcomm);
-  splitpcu->OwnsComm(true);
   return std::unique_ptr<PCU>(splitpcu);
 }
-PCU_Comm PCU::DupComm() const noexcept {
-  PCU_Comm newcomm;
-  pcu_mpi_dup(mpi_, &newcomm);
-  return newcomm;
+int PCU::DupComm(PCU_Comm* newcomm) const noexcept {
+  return pcu_mpi_dup(mpi_, newcomm);
 }
 
 int PCU::Packed(int to_rank, size_t *size) noexcept {
@@ -279,23 +276,6 @@ PCU &PCU::operator=(PCU && other) noexcept {
   std::swap(mpi_, other.mpi_);
   std::swap(msg_, other.msg_);
   return *this;
-}
-PCU_Comm PCU::GetMPIComm() const noexcept { return GetComm(); }
-PCU_Comm PCU::GetComm() const noexcept { return mpi_->original_comm; }
-bool PCU::OwnsComm() const noexcept { return mpi_->owned; }
-void PCU::OwnsComm(bool on) const noexcept { mpi_->owned = on ? 1 : 0; }
-
-PCU_Comm PCU::SwitchMPIComm(PCU_Comm newcomm) noexcept {
-  return SwitchComm(newcomm);
-}
-PCU_Comm PCU::SwitchComm(PCU_Comm newcomm) noexcept {
-  if(newcomm == mpi_->original_comm) {
-    return mpi_->original_comm;
-  }
-  auto original_comm = mpi_->original_comm;
-  pcu_mpi_finalize(mpi_);
-  pcu_mpi_init(newcomm, mpi_);
-  return original_comm;
 }
 
 /* template implementations */

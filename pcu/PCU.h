@@ -27,23 +27,6 @@ public:
    *  @return The number of ranks in the communicator.
    */
   [[nodiscard]] int Peers() const noexcept;
-  [[deprecated("Use PCU::GetComm instead.")]]
-  [[nodiscard]] PCU_Comm GetMPIComm() const noexcept;
-  /**
-   * @brief Get the underlying communicator which may be an MPI_Comm.
-   */
-  [[nodiscard]] PCU_Comm GetComm() const noexcept;
-  /** @brief Check if the original PCU_Comm is owned by this object.
-   * If true, it will be freed during destruction. */
-  bool OwnsComm() const noexcept;
-  /** @brief Set ownership of the orignal PCU_Comm passed to the constructor.
-   *
-   * This function can enable or disable ownership. If a communicator created
-   * with PCU::Split() is disowned, it should be freed by the user.
-   *
-   * @param on true to enable ownership.
-   */
-  void OwnsComm(bool on) const noexcept;
 
   [[nodiscard]] PCU_t GetCHandle() {PCU_t h; h.ptr=this; return h;}
   /*recommended message passing API*/
@@ -115,9 +98,10 @@ public:
    * If SCOREC::core was compiled with the SCOREC_NO_MPI flag, the return value
    * is not meaningful.
    *
-   * @return The new duplicated communicator.
+   * @param[out] newcomm The output address for the new communicator copy.
+   * @return 0 on success.
    */
-  PCU_Comm DupComm() const noexcept;
+  int DupComm(PCU_Comm* newcomm) const noexcept;
 
   /*lesser-used APIs*/
   int Packed(int to_rank, size_t *size) noexcept;
@@ -129,17 +113,6 @@ public:
   void DebugPrint(const char* format, va_list args) noexcept;
   /* Debug functions */
   void DebugOpen() noexcept;
-
-  [[deprecated("Use PCU::SwitchComm instead.")]]
-#if __cplusplus >= 201703L
-  [[nodiscard]]
-#endif
-  PCU_Comm SwitchMPIComm(PCU_Comm) noexcept;
-
-#if __cplusplus >= 201703L
-  [[nodiscard]]
-#endif
-  PCU_Comm SwitchComm(PCU_Comm) noexcept;
 
 private:
   pcu_msg_struct *msg_;
