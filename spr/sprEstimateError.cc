@@ -309,6 +309,7 @@ void averageSizeField(Estimation* e)
 static void estimateError(Estimation* e)
 {
   e->eps_star = recoverField(e->eps);
+  e->mesh->writeNative("square_with_eps_star.smb");
   computeSizeFactor(e);
   getElementSizeField(e);
   apf::destroyField(e->eps_star);
