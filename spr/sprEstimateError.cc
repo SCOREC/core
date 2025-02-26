@@ -216,11 +216,13 @@ static void computeSizeFactor(Estimation* e)
   }
   Error errorIntegrator(e);
   errorIntegrator.process(e->mesh);
+  std::cout << "Error: " << errorIntegrator.r << "\n";
   double a = e->tolerance * e->tolerance * // (n^hat)^2
              epsStarNorm * epsStarNorm; // ||e*||^2
   double b = a / errorIntegrator.r; // term in parenthesis in section 4 of spr.tex
   double p = e->recovered_order;
   e->size_factor = pow(b, 1.0 / (2.0 * p));
+  std::cout << "size_factor: " << e->size_factor << "\n";
 }
 
 static double getCurrentSize(apf::Mesh* m, apf::MeshEntity* e)
