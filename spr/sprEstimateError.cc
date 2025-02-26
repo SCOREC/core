@@ -210,6 +210,10 @@ static void computeSizeFactor(Estimation* e)
   SelfProduct epsStarNormIntegrator(e);
   epsStarNormIntegrator.process(e->mesh);
   double epsStarNorm = sqrt(epsStarNormIntegrator.r); // ||e*||
+  auto pcu = e->mesh->getPCU();
+  if( pcu->Self() == 0 ) {
+    std::cerr << "epsStarNorm " << epsStarNorm << "\n";
+  }
   Error errorIntegrator(e);
   errorIntegrator.process(e->mesh);
   double a = e->tolerance * e->tolerance * // (n^hat)^2
