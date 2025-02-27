@@ -329,7 +329,7 @@ void pumi_mesh_setCount(pMesh m, pOwnership o)
       m->end(it);
       pumi::instance()->num_own_ent[dim] = n;
     }
-    pumi::instance()->num_global_ent = pumi::instance()->num_own_ent;
+    pumi::instance()->num_global_ent[dim] = pumi::instance()->num_own_ent[dim];
   }
   m->getPCU()->Add(pumi::instance()->num_global_ent, 4);
 #ifdef DEBUG
@@ -419,17 +419,12 @@ void pumi_mesh_print (pMesh m, bool print_ent)
   int* global_local_entity_count = new int[4*m->getPCU()->Peers()]; 
   int* global_own_entity_count = new int[4*m->getPCU()->Peers()]; 
 
-  memcpy(
-    global_local_entity_count, local_entity_count,
-    sizeof(int) * 4 * m->getPCU()->Peers()
-  );
-  m->getPCU()->Add(global_local_entity_count, 4);
-
-  memcpy(
-    global_own_entity_count, own_entity_count,
-    sizeof(int) * 4 * m->getPCU()->Peers()
-  );
-  m->getPCU()->Add(global_own_entity_count, 4);
+  for (int i = 0; i < 4 * m->getPCU()->Peers(); ++i) {
+    global_local_entity_count[i] = local_entity_count[i];
+    global_own_entity_count[i] = own_entity_count[i];
+  }
+  m->getPCU()->Add(global_local_entity_count, 4*m->getPCU()->Peers());
+  m->getPCU()->Add(global_own_entity_count, 4*m->getPCU()->Peers());
  
   if (!m->getPCU()->Self())
   {
