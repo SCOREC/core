@@ -316,6 +316,7 @@ static void estimateError(Estimation* e)
   getElementSizeField(e);
   apf::destroyField(e->eps_star);
   averageSizeField(e);
+  writeVtkFiles("pumiSprWithElmSize.vtk", e->mesh);
   apf::destroyField(e->element_size);
 }
 
