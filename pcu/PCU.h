@@ -144,8 +144,6 @@ int PCU_Init(int *argc, char ***argv);
  */
 int PCU_Finalize();
 
-PCU* PCU_GetGlobal();
-
 /* explicit instantiations of template functions */
 #define PCU_EXPL_INST_DECL(T)                                                  \
   extern template void PCU::Add<T>(T * p, size_t n) noexcept;                  \
