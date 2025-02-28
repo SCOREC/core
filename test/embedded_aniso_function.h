@@ -67,12 +67,13 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
 
 double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref) {
 
-    double h_tip = h_global/4;
-    //double h_tip = norm_size;
-    double h_tip_min = h_global/16;
+    //double h_tip = h_global/4;
+    double h_tip = norm_size;
+    double h_tip_min = norm_size;
     double h_upstream = 4 * h_global;
 
-    double sphere_size = 4*h_global;
+    //double sphere_size = 4*h_global;
+    double sphere_size = 8*h_tip;
     //apf::Vector3 sphere_cent(-h_global,0,0);
     apf::Vector3 sphere_cent(0,0,0);
 
@@ -99,7 +100,7 @@ double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 clos
     double fs_smooth_pos = std::sqrt(std::abs(vecToPos * vecToPos))-0.5*thickness;
     double fs_smooth_dist = 6*h_global;
     double fs_smooth_size = EXP_SMOOTH(sphere_smooth_size, sphere_fs_smooth_size, fs_smooth_pos, fs_smooth_dist);
-    if (!in_shock_band && vecToPos.x() > -1e-3) { // slight negative tolerance for outer outlet edge
+    if (!in_shock_band && vecToPos.x() > -1e-3 * h_global) { // slight negative tolerance for outer outlet edge
         return fs_smooth_size;
     }
     return sphere_smooth_size;
