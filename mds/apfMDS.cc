@@ -777,6 +777,23 @@ class MeshMDS : public Mesh2
     bool ownsModel;
 };
 
+void flipFaceDir(Mesh2* in, MeshEntity* face) {
+
+  MeshMDS* m = static_cast<MeshMDS*>(in);
+  struct mds* mdsData = &(m->mesh->mds);
+
+  int meshId = (reinterpret_cast<char*>(face) - ((char*)1));
+  int d = 1;
+  int t = meshId % MDS_TYPES;
+  int n = 3;
+  int i = meshId / MDS_TYPES;
+  mds_id* e = mdsData->down[d][t] + i * n;
+  mds_id temp = e[1];
+  e[1] = e[2];
+  e[2] = temp;
+  //std::swap(e[1], e[2]);
+}
+
 Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj)
 {
   Mesh2* m = new MeshMDS(model, dim, isMatched, PCUObj);

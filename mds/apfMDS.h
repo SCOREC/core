@@ -241,6 +241,8 @@ void setMdsMatching(Mesh2* in, bool has);
 Mesh2* loadMdsPart(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
 void writeMdsPart(Mesh2* m, const char* meshfile);
 
+void flipFaceDir(Mesh2* in, MeshEntity* face);
+
 }
 
 #endif
