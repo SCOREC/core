@@ -54,7 +54,12 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
 
     double h_global = 0.2113125;
     double norm_size = h_global/16;
-    double thickness = 0.721796;
+    double thickness = norm_size*2;
+
+    //double h_tip = h_global/4;
+    double h_tip = norm_size;
+    double h_tip_min = norm_size;
+    double h_upstream = 4 * h_global;
 
     bool test_iso;
     ma::Mesh* mesh;
@@ -63,43 +68,58 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
     std::list<gmi_ent*> shock_surfaces;
     int n_evals;
 
+    private:
+
+    double sizeLerp(double initial, double final, double x, double dist);
+
+    bool inSphere(double c_x, double c_y, double c_z, double radius, apf::Vector3 pos, double& sphere_dist_sqr);
+
+    bool inSphere(double c_x, double c_y, double c_z, double radius, apf::Vector3 pos);
+
 }; // class EmbeddedSizeFunction
 
+double EmbeddedShockFunction::sizeLerp(double initial, double final, double x, double dist) {
+    return std::min(std::max(initial, x*(final-initial)/dist), final);
+}
+
+bool EmbeddedShockFunction::inSphere(double c_x, double c_y, double c_z, double radius, apf::Vector3 pos, double& sphere_dist_sqr) {
+    sphere_dist_sqr = std::pow(pos.x()-c_x, 2) + std::pow(pos.y()-c_y, 2) + std::pow(pos.z()-c_z, 2);
+    return sphere_dist_sqr < radius * radius;
+}
+
+bool EmbeddedShockFunction::inSphere(double c_x, double c_y, double c_z, double radius, apf::Vector3 pos) {
+    double dummy = 0;
+    return inSphere(c_x, c_y, c_z, radius, pos, dummy);
+}
+
 double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref) {
-
-    //double h_tip = h_global/4;
-    double h_tip = norm_size;
-    double h_tip_min = norm_size;
-    double h_upstream = 4 * h_global;
-
-    //double sphere_size = 4*h_global;
     double sphere_size = 8*h_tip;
-    //apf::Vector3 sphere_cent(-h_global,0,0);
-    apf::Vector3 sphere_cent(0,0,0);
 
-    apf::Vector3 dist = pos - sphere_cent;
     apf::Vector3 vecToPos = pos - closest_pt;
 
-    double sphere_dist_sqr = std::abs(dist * dist);
-    if (test_iso || sphere_dist_sqr < sphere_size*sphere_size) {
+    double sphere_dist_sqr;
+    if (test_iso || inSphere(0, 0, 0, sphere_size, pos, sphere_dist_sqr)) {
         in_tip_ref = true;
         return std::min(h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size), h_global);
     }
 
     // (h_norm-h_global)*exp(-abs(testx)/smooth_dist) + h_global;
-    #define EXP_SMOOTH(initial, final, x, distance) ( initial - final )*exp(-abs(x)/ distance ) + final
+    //#define EXP_SMOOTH(initial, final, x, distance) ( initial - final )*exp(-abs(x)/ distance ) + final
 
     double sphere_smooth_pos = std::sqrt(sphere_dist_sqr)-sphere_size;
-    double sphere_smooth_dist = 4*h_global;
-    double sphere_smooth_size = EXP_SMOOTH(h_tip, h_global, sphere_smooth_pos, sphere_smooth_dist);
+    double sphere_smooth_dist = 8*h_global;
+    //double sphere_smooth_size = EXP_SMOOTH(h_tip, h_global, sphere_smooth_pos, sphere_smooth_dist);
+    double sphere_smooth_size = sizeLerp(h_tip, h_global, sphere_smooth_pos, sphere_smooth_dist);
 
     double sphere_fs_smooth_pos = std::sqrt(sphere_dist_sqr)-sphere_size;
-    double sphere_fs_smooth_dist = 6*h_global;
-    double sphere_fs_smooth_size = EXP_SMOOTH(h_tip, h_upstream, sphere_smooth_pos, sphere_smooth_dist);
+    double sphere_fs_smooth_dist = 12*h_global;
+    //double sphere_fs_smooth_size = EXP_SMOOTH(h_tip, h_upstream, sphere_smooth_pos, sphere_smooth_dist);
+    double sphere_fs_smooth_size = sizeLerp(h_tip, h_upstream, sphere_smooth_pos, sphere_smooth_dist);
 
     double fs_smooth_pos = std::sqrt(std::abs(vecToPos * vecToPos))-0.5*thickness;
-    double fs_smooth_dist = 6*h_global;
-    double fs_smooth_size = EXP_SMOOTH(sphere_smooth_size, sphere_fs_smooth_size, fs_smooth_pos, fs_smooth_dist);
+    double fs_smooth_dist = 12*h_global;
+    //double fs_smooth_size = EXP_SMOOTH(sphere_smooth_size, sphere_fs_smooth_size, fs_smooth_pos, fs_smooth_dist);
+    double fs_smooth_size = sizeLerp(sphere_smooth_size, sphere_fs_smooth_size, fs_smooth_pos, fs_smooth_dist);
     if (!in_shock_band && vecToPos.x() > -1e-3 * h_global) { // slight negative tolerance for outer outlet edge
         return fs_smooth_size;
     }
@@ -127,10 +147,17 @@ void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::V
     // Setting scale 
     double shockDist = std::sqrt(shock_dist_square);
     bool in_tip_ref = false;
-    #define LINE(mins, maxs, x, slope) std::min(std::max(slope*x,mins),maxs)
     double zoneIsoSize = getZoneIsoSize(pos, cls_vec, shock_dist_square < thickness_tol, in_tip_ref);
-    scale[0] = test_iso || in_tip_ref ? zoneIsoSize : LINE(norm_size, h_global, shockDist, 1);
-    //scale[0] = zoneIsoSize;
+
+    double h_n_max = h_global;
+    if (inSphere(-1.25*h_global, 0, 0, h_global*2, pos)) {
+        h_n_max = 2*h_tip;
+    }
+    if (inSphere(-2.75*h_global, 0, 0, h_global*4, pos)) {
+        h_n_max = 4*h_tip;
+    }
+
+    scale[0] = test_iso || in_tip_ref ? zoneIsoSize : std::min(std::max(norm_size, shockDist - thickness/2), h_n_max);
     scale[1] = std::max(zoneIsoSize, scale[0]);
     scale[2] = std::max(zoneIsoSize, scale[0]);
 
