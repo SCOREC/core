@@ -58,7 +58,6 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
 
     //double h_tip = h_global/4;
     double h_tip = norm_size;
-    double h_tip_min = norm_size;
     double h_upstream = 4 * h_global;
 
     bool test_iso;
@@ -98,9 +97,10 @@ double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 clos
     apf::Vector3 vecToPos = pos - closest_pt;
 
     double sphere_dist_sqr;
-    if (test_iso || inSphere(0, 0, 0, sphere_size, pos, sphere_dist_sqr)) {
-        in_tip_ref = true;
-        return std::min(h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size), h_global);
+    in_tip_ref = inSphere(0, 0, 0, sphere_size, pos, sphere_dist_sqr);
+    double h_tip_min = test_iso ? norm_size/2 : norm_size;
+    if (test_iso || in_tip_ref) {
+        return std::min(h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size), 4*h_global);
     }
 
     // (h_norm-h_global)*exp(-abs(testx)/smooth_dist) + h_global;
@@ -161,7 +161,7 @@ void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::V
     scale[1] = std::max(zoneIsoSize, scale[0]);
     scale[2] = std::max(zoneIsoSize, scale[0]);
 
-    if(in_tip_ref) {
+    if(test_iso || in_tip_ref) {
         frame[0][0] = 1; frame[0][1] = 0; frame[0][2] = 0;
         frame[1][0] = 0; frame[1][1] = 1; frame[1][2] = 0;
         frame[2][0] = 0; frame[2][1] = 0; frame[2][2] = 1;
