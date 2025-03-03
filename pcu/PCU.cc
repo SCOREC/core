@@ -52,20 +52,21 @@
 #include <time.h>
 namespace pcu {
 
-int PCU_Init(int *argc, char ***argv) {
+void PCU_Init(int *argc, char ***argv) {
 #ifndef SCOREC_NO_MPI
-  return MPI_Init(argc, argv);
+  int flag;
+  MPI_Initialized(&flag);
+  if (!flag) MPI_Init(argc, argv);
 #else
   (void) argc, (void) argv;
-  return 0;
 #endif
 }
 
-int PCU_Finalize() {
+void PCU_Finalize() {
 #ifndef SCOREC_NO_MPI
-  return MPI_Finalize();
-#else
-  return 0;
+  int flag;
+  MPI_Finalized(&flag);
+  if (!flag) MPI_Finalize();
 #endif
 }
 

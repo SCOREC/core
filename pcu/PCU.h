@@ -130,19 +130,15 @@ void Protect() noexcept;
  *
  * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
  * the difference.
- *
- * @return 0 on success, nonzero otherwise.
  */
-int PCU_Init(int *argc, char ***argv);
+void PCU_Init(int *argc, char ***argv);
 /**
  * @brief Finalize the underlying parallel library.
  *
  * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
  * the difference.
- *
- * @return 0 on success, nonzero otherwise.
  */
-int PCU_Finalize();
+void PCU_Finalize();
 
 /* explicit instantiations of template functions */
 #define PCU_EXPL_INST_DECL(T)                                                  \
