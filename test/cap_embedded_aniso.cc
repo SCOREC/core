@@ -42,6 +42,7 @@ namespace {
     ARGS_GETTER(input, const std::string&)
     ARGS_GETTER(output, const std::string&)
     ARGS_GETTER(isotropic, bool)
+    ARGS_GETTER(refine_only, bool)
     #undef ARGS_GETTER
 
     /** @brief Check for argument parse errors. */
@@ -51,7 +52,7 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool analytic_{false}, isotropic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
+    bool analytic_{false}, isotropic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false}, refine_only_{false};
     int maxiter_{-1}, uniform_{0}, verbosity_{0};
     double aniso_size_{-1}, thickness_{-1}, global_size_{-1};
     std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
@@ -221,6 +222,13 @@ int main(int argc, char* argv[]) {
   }
   if (args.maxiter() >= 0) in->maximumIterations = args.maxiter();
 
+  if(args.refine_only()) {
+    std::cout << "Doing refinement only (no coarsening, snapping, or shape fix)." << std::endl;
+    in->shouldCoarsen = false;
+    in->shouldSnap=false;
+    in->shouldFixShape=false;
+  }
+
   std::cout << ++stage << ". Run adapt." << std::endl;
   if (args.verbosity() > 1) {
     ma::adaptVerbose(in, args.verbosity() > 2);
@@ -336,7 +344,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "";
-    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvSIg:")) != -1) {
+    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvSIRg:")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -389,6 +397,9 @@ namespace {
       case 'I':
         isotropic_ = true;
         break;
+      case 'R':
+        refine_only_ = true;
+        break;
       case 'S':
         smoothing_ = true;
         break;
@@ -418,7 +429,7 @@ namespace {
   } 
 
   void Args::print_usage(std::ostream& str) const {
-    str << "USAGE: " << argv0 << " [-ahmuvSI] [-i MAXITER] [-B before.vtk] "
+    str << "USAGE: " << argv0 << " [-ahmuvSIR] [-i MAXITER] [-B before.vtk] "
       "[-A after.vtk] [-o OUTPUT.cre] [-G REF_GEOM.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
       << std::endl;
   }
@@ -447,7 +458,8 @@ namespace {
     "-g h_global     Override h_global."
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
-    "-I              Run completely isotropic adaptation for testing purposes.\n"
+    "-I              Run completely isotropic adaptation.\n"
+    "-R              Run refinement only (disable coarsening, snapping and shape fix)"
     "-v              Increase verbosity. Level 1 enables lionPrint. Level 2\n"
     "                enables verbose adaptation. Level 3 writes intermediate\n"
     "                VTK files.\n";

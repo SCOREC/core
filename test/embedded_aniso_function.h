@@ -107,17 +107,17 @@ double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 clos
     //#define EXP_SMOOTH(initial, final, x, distance) ( initial - final )*exp(-abs(x)/ distance ) + final
 
     double sphere_smooth_pos = std::sqrt(sphere_dist_sqr)-sphere_size;
-    double sphere_smooth_dist = 8*h_global;
+    double sphere_smooth_dist = 12*h_global;
     //double sphere_smooth_size = EXP_SMOOTH(h_tip, h_global, sphere_smooth_pos, sphere_smooth_dist);
     double sphere_smooth_size = sizeLerp(h_tip, h_global, sphere_smooth_pos, sphere_smooth_dist);
 
     double sphere_fs_smooth_pos = std::sqrt(sphere_dist_sqr)-sphere_size;
-    double sphere_fs_smooth_dist = 12*h_global;
+    double sphere_fs_smooth_dist = 6*h_global;
     //double sphere_fs_smooth_size = EXP_SMOOTH(h_tip, h_upstream, sphere_smooth_pos, sphere_smooth_dist);
     double sphere_fs_smooth_size = sizeLerp(h_tip, h_upstream, sphere_smooth_pos, sphere_smooth_dist);
 
     double fs_smooth_pos = std::sqrt(std::abs(vecToPos * vecToPos))-0.5*thickness;
-    double fs_smooth_dist = 12*h_global;
+    double fs_smooth_dist = 6*h_global;
     //double fs_smooth_size = EXP_SMOOTH(sphere_smooth_size, sphere_fs_smooth_size, fs_smooth_pos, fs_smooth_dist);
     double fs_smooth_size = sizeLerp(sphere_smooth_size, sphere_fs_smooth_size, fs_smooth_pos, fs_smooth_dist);
     if (!in_shock_band && vecToPos.x() > -1e-3 * h_global) { // slight negative tolerance for outer outlet edge
