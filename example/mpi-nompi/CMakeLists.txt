@@ -7,9 +7,9 @@ set(SCOREC_PREFIX "" CACHE STRING "Directory where SCOREC is installed")
 
 # If SCOREC_PREFIX was specified then use only that directory.
 if (SCOREC_PREFIX)
-  find_package(SCOREC 3 REQUIRED CONFIG PATHS ${SCOREC_PREFIX} NO_DEFAULT_PATH)
+  find_package(SCOREC 4 REQUIRED CONFIG PATHS ${SCOREC_PREFIX} NO_DEFAULT_PATH)
 else()
-  find_package(SCOREC 3 REQUIRED CONFIG)
+  find_package(SCOREC 4 REQUIRED CONFIG)
 endif()
 
 add_executable(hello hello.cc)
