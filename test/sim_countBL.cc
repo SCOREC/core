@@ -5,7 +5,7 @@
 #include "SimAdvMeshing.h"
 
 #include <pcu_util.h>
-#include <mpi.h>
+#include <PCU.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
@@ -22,7 +22,7 @@ void messageHandler(int type, const char *msg);
 
 int main(int argc, char **argv)
 {
-  pcu::Init(&argc, &argv);
+  MPI_Init(&argc, &argv);
   SimPartitionedMesh_start(&argc, &argv);
   // Read in command line arguments
   if (argc == 5) {
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
   SimParasolid_stop(1);
   Sim_unregisterAllKeys();
   SimPartitionedMesh_stop();
-  pcu::Finalize();
+  MPI_Finalize();
   return 0;
 }
 
