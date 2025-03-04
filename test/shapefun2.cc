@@ -169,7 +169,7 @@ static void checkFieldShape(apf::FieldShape* fs, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -183,6 +183,6 @@ int main(int argc, char** argv)
     test::checkFieldShape(fs[i], &PCUObj);
 
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 

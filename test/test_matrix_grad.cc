@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
     std::cerr<<"Usage: "<<argv[0]<<" model.dmg mesh.smb"<<std::endl;
     return 1;
   }
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -117,6 +117,6 @@ int main(int argc, char* argv[])
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
   return 0;
 }

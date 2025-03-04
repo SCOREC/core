@@ -9,14 +9,14 @@
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj =  pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 4 ) {
     if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
@@ -32,5 +32,5 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

@@ -44,7 +44,7 @@ void bCurver(const char* modelFile, const char* meshFile,
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
 
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     if (PCUObj.Self() == 0) {
       printf("USAGE: %s <model.x_t>\n", argv[0]);
     }
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   const char* modelFile   = argv[1];
@@ -359,5 +359,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

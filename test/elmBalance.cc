@@ -27,14 +27,14 @@ apf::MeshTag* setWeights(apf::Mesh* m) {
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 4);
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 4 ) {
     if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out mesh>\n", argv[0]);
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -68,5 +68,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

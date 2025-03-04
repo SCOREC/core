@@ -192,7 +192,7 @@ void test(apf::Mesh* m, int p_order) {
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -206,5 +206,5 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

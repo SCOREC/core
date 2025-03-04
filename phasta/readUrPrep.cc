@@ -17,7 +17,7 @@ namespace {
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   pcu::Protect();
@@ -32,6 +32,6 @@ int main(int argc, char** argv)
   chef::preprocess(m,ctrl);
   freeMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 

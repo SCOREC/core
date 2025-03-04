@@ -14,6 +14,9 @@ extern "C" {
 
 typedef struct PCU_t PCU_t;
 
+void PCU_Init(int *argc, char ***argv);
+void PCU_Finalize(void);
+
 int PCU_Comm_Init(PCU_t* h);
 int PCU_Comm_Free(PCU_t* h);
 

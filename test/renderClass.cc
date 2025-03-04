@@ -32,7 +32,7 @@ static void number_dim(apf::Mesh* m, apf::FieldShape* shape, int dim, std::strin
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
       printf("       %s <model> <mesh> <dim> <out prefix>\n", argv[0]);
     }
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 

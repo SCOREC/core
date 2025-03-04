@@ -137,7 +137,7 @@ static void globalCode(apf::Mesh2* m)
 
 int main( int argc, char* argv[])
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -150,5 +150,5 @@ int main( int argc, char* argv[])
   Parma_SplitPartition(code.mesh, groupSize, code, &PCUObj);
   globalCode(code.mesh);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

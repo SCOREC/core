@@ -27,7 +27,7 @@ void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface*
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   { // pcu object scope
   pcu::PCU PCUobj;
 
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
   checkParametrization(m, g);
 
   } // pcu object scope
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 void checkParametrization(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb)

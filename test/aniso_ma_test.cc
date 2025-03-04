@@ -44,7 +44,7 @@ int main(int argc, char** argv)
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   bool logInterpolation = atoi(argv[3]) > 0 ? true : false;
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -68,6 +68,6 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 

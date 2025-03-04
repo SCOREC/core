@@ -52,7 +52,7 @@
 #include <time.h>
 namespace pcu {
 
-void PCU_Init(int *argc, char ***argv) {
+void Init(int *argc, char ***argv) {
 #ifndef SCOREC_NO_MPI
   int flag;
   MPI_Initialized(&flag);
@@ -62,7 +62,7 @@ void PCU_Init(int *argc, char ***argv) {
 #endif
 }
 
-void PCU_Finalize() {
+void Finalize() {
 #ifndef SCOREC_NO_MPI
   int flag;
   MPI_Finalized(&flag);

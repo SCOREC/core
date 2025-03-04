@@ -18,7 +18,7 @@ const double weights[8] = {vtxw, edgew, triw, quadw, tetw, hexw, przw, pyrw};
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -30,5 +30,5 @@ int main(int argc, char** argv)
   gmi_model* g = gmi_load(".null");
   apf::printUgridPtnStats(g,ugridfile,ptnfile,weights,&PCUObj);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

@@ -20,14 +20,14 @@ apf::Migration* getPlan(apf::Mesh* m, const int partitionFactor)
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !PCUObj.Self() )
       printf("Usage: %s <in .[b8|lb8].ugrid> <out .dmg> <out .smb> <partition factor>\n", argv[0]);
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
@@ -56,6 +56,6 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 

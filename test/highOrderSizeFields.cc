@@ -35,7 +35,7 @@ void testAdapt(
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 void computeSizesFrames(

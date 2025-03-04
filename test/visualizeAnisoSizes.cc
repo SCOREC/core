@@ -42,7 +42,7 @@ void visualizeSizeField(
 int main(int argc, char** argv)
 {
 
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
       printf("USAGE2: %s <mesh.sms> <output_prefix> <scale field name>"
           "<frames field name> <n_u> <n_v> <scale>\n", argv[0]);
     }
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 #endif
 
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 void safe_mkdir(const char* path)

@@ -36,7 +36,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
   pcu::Protect();
@@ -71,5 +71,5 @@ int main(int argc, char** argv) {
   Sim_unregisterAllKeys();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

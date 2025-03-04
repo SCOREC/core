@@ -151,7 +151,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
   if ( argc != 3 ) {
     if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh>\n", argv[0]);
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -164,7 +164,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   bool failflag = false;
   {
   pcu::PCU PCUObj;
@@ -197,7 +197,7 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 
   return failflag;
   

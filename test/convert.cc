@@ -433,7 +433,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -526,5 +526,5 @@ int main(int argc, char** argv)
   if( should_log )
     Sim_logOff();
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

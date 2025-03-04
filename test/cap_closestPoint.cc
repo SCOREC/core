@@ -7,7 +7,7 @@
 #include <PCU.h>
 
 int main (int argc, char* argv[]) {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   { // pcu object scope
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -36,5 +36,5 @@ int main (int argc, char* argv[]) {
 
   apf::destroyMesh(m);
   } // pcu object scope
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

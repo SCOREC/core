@@ -242,7 +242,7 @@ void testPyramidVolume(pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -262,5 +262,5 @@ int main(int argc, char** argv)
   testPrismVolume(&PCUObj);
   testPyramidVolume(&PCUObj);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

@@ -14,7 +14,7 @@
 #include <Omega_h_file.hpp>
 
 int main(int argc, char** argv) {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
       std::cout << "usage: osh2smb in.osh in.dmg out.smb\n";
       std::cout << "   or: osh2smb               (usage)\n";
     }
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
@@ -41,5 +41,5 @@ int main(int argc, char** argv) {
     apf::destroyMesh(am);
   }
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

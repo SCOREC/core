@@ -14,7 +14,7 @@
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -37,7 +37,7 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 

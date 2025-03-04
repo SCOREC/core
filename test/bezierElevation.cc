@@ -397,7 +397,7 @@ void testTetElevation(pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
@@ -405,5 +405,5 @@ int main(int argc, char** argv)
   testTriElevation(&pcu_obj);
   testTetElevation(&pcu_obj);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

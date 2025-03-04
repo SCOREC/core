@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv)
 {
-	pcu::PCU_Init(&argc,&argv);
+	pcu::Init(&argc,&argv);
 
 	// Test determinant functions
 	double input[4][4] = {
@@ -58,5 +58,5 @@ int main(int argc, char** argv)
   apf::destroyMesh(mesh);
 
 	}
-	pcu::PCU_Finalize();
+	pcu::Finalize();
 }

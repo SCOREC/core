@@ -34,7 +34,7 @@ namespace {
 int main(int argc, char** argv)
 {
   int provided;
-  pcu::PCU_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
+  pcu::Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   PCU_ALWAYS_ASSERT(provided==MPI_THREAD_MULTIPLE);
   {
   pcu::PCU PCUObj;
@@ -106,5 +106,5 @@ int main(int argc, char** argv)
 
   freeMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

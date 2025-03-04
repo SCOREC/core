@@ -213,7 +213,7 @@ static void postConvert(apf::Mesh2* m)
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
   pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   MS_init();
@@ -290,5 +290,5 @@ int main(int argc, char** argv)
   if( should_log )
     Sim_logOff();
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

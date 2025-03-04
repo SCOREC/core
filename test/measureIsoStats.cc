@@ -42,7 +42,7 @@ void getStats(
 int main(int argc, char** argv)
 {
 
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
       printf("USAGE2: %s <mesh.sms> <output_prefix> <size name>"
           "\n", argv[0]);
     }
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 void safe_mkdir(const char* path)

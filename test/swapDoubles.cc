@@ -5,7 +5,7 @@
 #include <iostream> //cerr
 
 int main(int argc, char** argv) {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   const size_t n = 2;
@@ -27,6 +27,6 @@ int main(int argc, char** argv) {
   delete [] d_orig;
   delete [] d;
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
   return 0;
 }

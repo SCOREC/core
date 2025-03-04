@@ -8,6 +8,14 @@
 
 extern "C" {
 
+void PCU_Init(int *argc, char ***argv) {
+  pcu::Init(argc, argv);
+}
+
+void PCU_Finalize(void) {
+  pcu::Finalize();
+}
+
 int PCU_Comm_Init(PCU_t* h) {
   if (h->ptr != nullptr)
     reel_fail("nested calls to Comm_Init");

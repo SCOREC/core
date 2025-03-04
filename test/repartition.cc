@@ -62,7 +62,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
              "Unlike the [z]split tool, outPartCount does not have to be an integer\n"
              "multiple of inPartCount.\n",
              argv[0]);
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -94,7 +94,7 @@ void balance(apf::Mesh2* m)
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU expanded_pcu_obj;
   lion_set_verbosity(1);
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
   m->writeNative(outFile);
   freeMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 

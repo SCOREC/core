@@ -46,7 +46,7 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
@@ -102,6 +102,6 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 

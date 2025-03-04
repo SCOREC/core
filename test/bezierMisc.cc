@@ -165,13 +165,13 @@ void testMatrixInverse(){
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   testNodeIndexing();
   testMatrixInverse();
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 

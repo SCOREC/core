@@ -22,7 +22,7 @@ void messageHandler(int type, const char *msg);
 
 int main(int argc, char **argv)
 {
-  pcu::PCU_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   SimPartitionedMesh_start(&argc, &argv);
   // Read in command line arguments
   if (argc == 5) {
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
   SimParasolid_stop(1);
   Sim_unregisterAllKeys();
   SimPartitionedMesh_stop();
-  pcu::PCU_Finalize();
+  pcu::Finalize();
   return 0;
 }
 

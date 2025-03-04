@@ -12,7 +12,7 @@
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   pumi_load_pcu(&pcu_obj);
@@ -93,5 +93,5 @@ int main(int argc, char** argv)
   pumi_geom_delete(g);
   pumi_mesh_delete(pm);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }

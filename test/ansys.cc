@@ -7,14 +7,14 @@
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !pcu_obj.Self() )
       printf("Usage: %s <in .node> <in .elem> <out .dmg> <out .smb>\n", argv[0]);
-    pcu::PCU_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
@@ -25,7 +25,7 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 

@@ -30,7 +30,7 @@ void testL2writeNative(
 
 int main(int argc, char** argv)
 {
-  pcu::PCU_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
 
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 
   apf::destroyMesh(m);
   }
-  pcu::PCU_Finalize();
+  pcu::Finalize();
 }
 
 void E_exact(const apf::Vector3& x, apf::Vector3& value, int p)
