@@ -52,7 +52,11 @@ namespace {
     ARGS_GETTER(mesh_adapt, const std::string&)
     ARGS_GETTER(isotropic, bool)
     ARGS_GETTER(global_size, double)
+    ARGS_GETTER(norm_size, double)
+    ARGS_GETTER(ref_radius, double)
     ARGS_GETTER(verbosity, bool)
+    ARGS_GETTER(mds_maxiter, int)
+    ARGS_GETTER(refine_only, bool)
     #undef ARGS_GETTER
 
     /** @brief Check for argument parse errors. */
@@ -62,9 +66,9 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool isotropic_{false}, error_flag_{false}, help_{false};
-    int verbosity_{0};
-    double global_size_{-1};
+    bool isotropic_{false}, error_flag_{false}, help_{false}, refine_only_{false};
+    int verbosity_{0}, mds_maxiter_{-1};
+    double global_size_{-1}, norm_size_{-1}, ref_radius_{-1};
     std::string argv0, input_mesh_, input_model_, input_nmodel_, output_mesh_;
     std::string before_, after_;
     std::string mesh_adapt_;
@@ -159,7 +163,7 @@ int main(int argc, char *argv[])
   cout<<endl;
 
   // Setup and run size field
-  EmbeddedShockFunction sf(mesh_ref, args.isotropic(), args.global_size());
+  EmbeddedShockFunction sf(mesh_ref, args.isotropic(), args.global_size(), args.norm_size(), -1, args.ref_radius());
 
   if (!args.before().empty()) {
     std::cout << " writing size field to before vtk file" << std::endl;
@@ -187,8 +191,19 @@ int main(int argc, char *argv[])
     cout << " trying meshadapt" << endl;
 
     apf::Mesh2* mesh_mds = apf::createMdsMesh(mdl_ref, mesh_ref);
-    EmbeddedShockFunction sf_simx(mesh_mds, args.isotropic(), args.global_size());
+    EmbeddedShockFunction sf_simx(mesh_mds, args.isotropic(), args.global_size(), args.norm_size(), -1, args.ref_radius());
     ma::Input* in = ma::makeAdvanced(ma::configure(mesh_mds, &sf_simx));
+
+    if (args.mds_maxiter() >= 0) {
+      cout << " maximum mds adapt iterations set to " << args.mds_maxiter() << endl;
+      in->maximumIterations = args.mds_maxiter();
+    }
+    if(args.refine_only()) {
+      std::cout << "Doing refinement only (no coarsening, snapping, or shape fix)." << std::endl;
+      in->shouldCoarsen = false;
+      in->shouldSnap=false;
+      in->shouldFixShape=false;
+    }
 
     double t0 = PCU_Time();
     if (args.verbosity() > 1) {
@@ -205,34 +220,38 @@ int main(int argc, char *argv[])
     cout << " destroying meshdapt objects" << endl;
     apf::destroyMesh(mesh_mds);
   }
-  
-  pACase mesh_case = MS_newMeshCase(model);
-  MS_setAnisoSizeAttFunc(mesh_case, "anisoUDF", anisoUDF, &sf);
-  MS_setAnisoMeshSize(mesh_case, GM_domain(model), MS_userDefinedType | 1, 0, "anisoUDF");
-  pMSAdapt adapter = MSA_createFromCase(mesh_case, mesh);
 
-  double t1 = PCU_Time();
-  MSA_adapt(adapter, NULL);
-  cout << " Simmetrix adapt time (s): " << PCU_Time()-t1 << endl;
+  if (!args.output_mesh().empty() || !args.after().empty()) {
+    cout << " trying simmetrix adapt" << endl;
 
-  // Write adapted mesh
-  if (!args.output_mesh().empty()) {
-    pMesh mesh_write = PM_mesh(mesh,0); // no need to free this according to PM_mesh documentation? 
-    cout<<"Adapted mesh statistics (Simmetrix): Num. elements: "<<M_numRegions(mesh_write)<<", num. vertices: "<<M_numVertices(mesh_write)<<endl;
-    cout<<" start writing adapted mesh: "<<endl;
-    M_write(mesh_write,args.output_mesh().data(),0,NULL);
-    cout<<" done writing adapted mesh: "<<endl;
-  }
-  
-  if (!args.after().empty()) {
-    ma::Mesh* mesh_adapted = apf::createMesh(mesh);
-    cout << " writing adapted mesh to vtk file" << endl;
-    apf::writeVtkFiles(args.after().data(), mesh_adapted);
+    pACase mesh_case = MS_newMeshCase(model);
+    MS_setAnisoSizeAttFunc(mesh_case, "anisoUDF", anisoUDF, &sf);
+    MS_setAnisoMeshSize(mesh_case, GM_domain(model), MS_userDefinedType | 1, 0, "anisoUDF");
+    pMSAdapt adapter = MSA_createFromCase(mesh_case, mesh);
+
+    double t1 = PCU_Time();
+    MSA_adapt(adapter, NULL);
+    cout << " Simmetrix adapt time (s): " << PCU_Time()-t1 << endl;
+
+    if (!args.output_mesh().empty()) {
+      pMesh mesh_write = PM_mesh(mesh,0); // no need to free this according to PM_mesh documentation? 
+      cout<<"Adapted mesh statistics (Simmetrix): Num. elements: "<<M_numRegions(mesh_write)<<", num. vertices: "<<M_numVertices(mesh_write)<<endl;
+      cout<<" start writing adapted mesh: "<<endl;
+      M_write(mesh_write,args.output_mesh().data(),0,NULL);
+      cout<<" done writing adapted mesh: "<<endl;
+    }
+
+    if (!args.after().empty()) {
+      ma::Mesh* mesh_adapted = apf::createMesh(mesh);
+      cout << " writing adapted mesh to vtk file" << endl;
+      apf::writeVtkFiles(args.after().data(), mesh_adapted);
+    }
+
+    MS_deleteMeshCase(mesh_case);
+    MSA_delete(adapter);
   }
 
   // Release everything
-  MS_deleteMeshCase(mesh_case);
-  MSA_delete(adapter);
   M_release(mesh); 
   //GM_release(model);
 
@@ -265,7 +284,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "M";
-    while ((c = getopt(argc, argv, ":A:B:hM:G:o:vIm:g:")) != -1) {
+    while ((c = getopt(argc, argv, ":A:B:hM:G:o:vIm:i:g:n:r:R")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -298,6 +317,18 @@ namespace {
       case 'g':
         global_size_ = std::atof(optarg);
         break;
+      case 'n':
+        norm_size_ = std::atof(optarg);
+        break;
+      case 'r':
+        ref_radius_ = std::atof(optarg);
+        break;
+      case 'i':
+        mds_maxiter_ = std::atoi(optarg);
+        break;
+      case 'R':
+        refine_only_ = true;
+        break;
       case ':':
         std::cerr << "ERROR: Option -" << char(optopt) << " requires an "
           "argument." << std::endl;
@@ -324,8 +355,10 @@ namespace {
   } 
 
   void Args::print_usage(std::ostream& str) const {
-    str << "USAGE: " << argv0 << " [-hvI] [-B before.vtk] [-A after.vtk] "
-      "[-o OUTPUT.sms] [-M MODEL.smd] [-G MODEL_nat.x_t] INITIAL.sms"
+    str << "USAGE: " << argv0 << " [-hvIR] [-B before.vtk] [-A simxadapt.vtk] "
+      "[-o SIMX_OUTPUT.sms] [-M MODEL.smd] [-G MODEL_nat.x_t] "
+      "[-m meshadapt.vtk] [-i mds maxiter.] "
+      "[-g h_global] [-n h_norm] [-r tr_radius] INITIAL.sms"
       << std::endl;
   }
 
@@ -335,14 +368,17 @@ namespace {
     str << "OPTIONS:\n"
     "-M MODEL.smd       Set the simmetrix model file (required).\n"
     "-G MODEL_nat.x_t   Set a _nat file, model is discrete when not set.\n"
-    "-o OUTPUT.sms      Write final mesh to OUTPUT.sms.\n"
-    "-A after.vtk       Write adapted mesh to after.vtk.\n"
+    "-o SIMX_OUTPUT.sms Try Simmetrix adapt and write final mesh to OUTPUT.sms.\n"
+    "-A simxadapt.vtk   Write Simmetrix adapted mesh to simxadapt.vtk.\n"
     "-B before.vtk      Write initial mesh with size field to before.vtk.\n"
-    "-B before.vtk      Write initial mesh with size field to before.vtk.\n"\
-    "-m meshadapt.vtk   Also try SCOREC MeshAdapt and write to meshadapt.vtk"
+    "-m meshadapt.vtk   Try SCOREC MeshAdapt and write to meshadapt.vtk.\n"
+    "-i mds MAXITER     Maximum MDS adapt iterations.\n"
+    "-R                 Run refinement only (disable coarsening, snapping and shape fix)\n"
     "-h                 Display this help menu.\n"
     "-I                 Run completely isotropic adaptation for testing purposes.\n"
-    "-g h_global        Override h_global."
+    "-g h_global        Override h_global.\n"
+    "-n h_norm          Override h_norm.\n"
+    "-r tr_radius       Override tip refinement radius.\n"
     "-v                 Increase verbosity. \n";
   }
 } // namespace

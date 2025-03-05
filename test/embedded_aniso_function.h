@@ -17,8 +17,8 @@
 class EmbeddedShockFunction : public ma::AnisotropicFunction {
     public:
 
-    #define SIZING_PARAMS iso, global, anisosize, t
-    #define SIZING_DEFAULTS bool iso = false, double global = -1, double anisosize = -1, double t = -1
+    #define SIZING_PARAMS iso, global, anisosize, t, tr_radius
+    #define SIZING_DEFAULTS bool iso = false, double global = -1, double anisosize = -1, double t = -1, double tr_radius = -1
     EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, SIZING_DEFAULTS) 
         : mesh(m), ref(g), shock_surfaces(surfs), test_iso(iso) {
         if (global > 0) {
@@ -32,6 +32,10 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
         if(t > 0) {
             thickness = t;
             std::cout << "Overriding thickness with valid value " << thickness << std::endl;
+        }
+        if (tr_radius > 0) {
+            sphere_size = tr_radius;
+            std::cout << "Overriding tip refine radius with valid value " << tr_radius << std::endl;
         }
         thickness_tol = thickness * thickness / 4;
     }
@@ -59,6 +63,8 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
     //double h_tip = h_global/4;
     double h_tip = norm_size;
     double h_upstream = 4 * h_global;
+
+    double sphere_size = 8*h_tip;
 
     bool test_iso;
     ma::Mesh* mesh;
@@ -92,15 +98,19 @@ bool EmbeddedShockFunction::inSphere(double c_x, double c_y, double c_z, double 
 }
 
 double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref) {
-    double sphere_size = 8*h_tip;
-
     apf::Vector3 vecToPos = pos - closest_pt;
 
     double sphere_dist_sqr;
     in_tip_ref = inSphere(0, 0, 0, sphere_size, pos, sphere_dist_sqr);
-    double h_tip_min = test_iso ? norm_size/2 : norm_size;
-    if (test_iso || in_tip_ref) {
-        return std::min(h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size), 4*h_global);
+    if (test_iso) {
+        return in_tip_ref ? norm_size : h_global;
+    }
+
+    double h_tip_min = h_tip;
+    if (in_tip_ref) {
+        // to control isotropic size field can h_global and norm_size can be overriden
+        //return std::min(h_global, h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size));
+        return h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size);
     }
 
     // (h_norm-h_global)*exp(-abs(testx)/smooth_dist) + h_global;

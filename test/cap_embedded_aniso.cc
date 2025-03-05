@@ -459,7 +459,7 @@ namespace {
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
     "-I              Run completely isotropic adaptation.\n"
-    "-R              Run refinement only (disable coarsening, snapping and shape fix)"
+    "-R              Run refinement only (disable coarsening, snapping and shape fix)\n"
     "-v              Increase verbosity. Level 1 enables lionPrint. Level 2\n"
     "                enables verbose adaptation. Level 3 writes intermediate\n"
     "                VTK files.\n";
