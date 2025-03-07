@@ -69,7 +69,8 @@ public:
   template <typename T> [[nodiscard]] T Max(T p) noexcept;
   template <typename T> void Exscan(T *p, size_t n) noexcept;
   template <typename T> [[nodiscard]] T Exscan(T p) noexcept;
-  template <typename T> void Allgather(T *send, T *recv, size_t n) noexcept;
+  template <typename T>
+  void Allgather(const T *send, T *recv, size_t n) noexcept;
 
   /*bitwise operations*/
   [[nodiscard]] int Or(int c) noexcept;
@@ -150,7 +151,8 @@ void Finalize();
   extern template T PCU::Max<T>(T p) noexcept;                                 \
   extern template void PCU::Exscan<T>(T * p, size_t n) noexcept;               \
   extern template T PCU::Exscan<T>(T p) noexcept;                              \
-  extern template void PCU::Allgather<T>(T *send, T *recv, size_t n) noexcept;
+  extern template                                                              \
+  void PCU::Allgather<T>(const T *send, T *recv, size_t n) noexcept;
 PCU_EXPL_INST_DECL(int)
 PCU_EXPL_INST_DECL(size_t)
 PCU_EXPL_INST_DECL(long)

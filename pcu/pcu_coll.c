@@ -423,7 +423,7 @@ void pcu_merge_gather(int peers, int bit, void *local, void *incoming,
   memcpy(local + bit * block_size, incoming, bit * block_size);
 }
 
-void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,
+void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
                    void *recv_data, size_t size) {
   memcpy(recv_data, send_data, size);
   pcu_make_coll(mpi, c, &gather, pcu_merge_gather);
@@ -431,7 +431,7 @@ void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,
   while (pcu_progress_coll(mpi, c));
 }
 
-void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, void *send_data,
+void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
                    void *recv_data, size_t size) {
   pcu_gather(mpi, c, send_data, recv_data, size);
   pcu_bcast(mpi, c, recv_data, size * pcu_mpi_size(mpi));

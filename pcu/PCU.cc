@@ -352,7 +352,8 @@ template <typename T> T PCU::Exscan(T p) noexcept {
   return p;
 }
 
-template <typename T> void PCU::Allgather(T *send_data, T *recv_data, size_t n) noexcept {
+template <typename T>
+void PCU::Allgather(const T *send_data, T *recv_data, size_t n) noexcept {
   pcu_allgather(mpi_, &(msg_->coll), send_data, recv_data, n * sizeof(T));
 }
 
@@ -365,7 +366,7 @@ template <typename T> void PCU::Allgather(T *send_data, T *recv_data, size_t n) 
   template T PCU::Max<T>(T p) noexcept;                                        \
   template void PCU::Exscan<T>(T * p, size_t n) noexcept;                      \
   template T PCU::Exscan<T>(T p) noexcept;                                     \
-  template void PCU::Allgather<T>(T *in, T *out, size_t n) noexcept;
+  template void PCU::Allgather<T>(const T *in, T *out, size_t n) noexcept;
 PCU_EXPL_INST_DECL(int)
 PCU_EXPL_INST_DECL(size_t)
 PCU_EXPL_INST_DECL(long)
