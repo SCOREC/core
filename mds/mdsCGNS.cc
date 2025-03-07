@@ -1054,7 +1054,8 @@ apf::Mesh2 *DoIt(PCU_t h, gmi_model *g, const std::string &fname, apf::CGNSBCMap
   static_assert(std::is_same<cgsize_t, int>::value, "cgsize_t not compiled as int");
 
   int cgid = -1;
-  auto comm = PCU_Get_Comm(h);
+  PCU_Comm comm;
+  PCU_Comm_Dup(h, &comm);
   cgp_mpi_comm(comm);
   cgp_pio_mode(CGP_INDEPENDENT);
   cgp_open(fname.c_str(), CG_MODE_READ, &cgid);
@@ -1636,6 +1637,9 @@ apf::Mesh2 *DoIt(PCU_t h, gmi_model *g, const std::string &fname, apf::CGNSBCMap
     cgp_close(cgid);
   else
     cg_close(cgid);
+#ifndef SCOREC_NO_MPI
+  MPI_Comm_free(&comm);
+#endif
 
   {
     apf::MeshTag *tag = nullptr;
