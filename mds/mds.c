@@ -554,6 +554,17 @@ static mds_id alloc_ent(struct mds* m, int t)
   return id;
 }
 
+static void swap_down_verts(struct mds* m, int t, mds_id i, int vert1, int vert2) {
+  int d = 1;
+  int n = mds_degree[t][d];
+  PCU_ALWAYS_ASSERT(vert1 < n && vert2 < n);
+  PCU_ALWAYS_ASSERT(vert1 >= 0 && vert2 >= 0);
+  mds_id* e = m->down[d][t] + i * n;
+  mds_id temp = e[vert1];
+  e[vert1] = e[vert2];
+  e[vert2] = temp;
+}
+
 static void free_ent(struct mds* m, mds_id e)
 {
   mds_id *head;
@@ -836,4 +847,10 @@ void mds_change_dimension(struct mds* m, int d)
     increase_dimension(m);
   while (m->d > d)
     decrease_dimension(m);
+}
+
+void mds_down_vert_order_swap(struct mds* m, mds_id meshID, int v1, int v2) {
+  int t = TYPE(meshID);
+  mds_id i = INDEX(meshID);
+  swap_down_verts(m, t, i, v1, v2);
 }

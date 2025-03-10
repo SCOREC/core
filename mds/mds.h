@@ -72,4 +72,6 @@ void mds_change_dimension(struct mds* m, int d);
 
 void mds_hack_adjacent(struct mds* m, mds_id up, int i, mds_id down);
 
+void mds_down_vert_order_swap(struct mds* m, int meshID, int v1, int v2);
+
 #endif
