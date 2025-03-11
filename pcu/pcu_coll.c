@@ -417,10 +417,12 @@ void pcu_scan(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size
 
 void pcu_merge_gather(int peers, int bit, void *local, void *incoming,
                       size_t size) {
-  // bit is equal to the current number of items in local and incoming.
-  // Since all items incoming are from greater ranks, they got to the right.
   size_t block_size = size / peers;
-  memcpy(local + bit * block_size, incoming, bit * block_size);
+  // local has `bit` blocks.
+  // incoming may have `bit` (if peers is a power of 2) or `bit - 1` blocks.
+  // either way, writing `size - bit * block_size` prevents buffer overrun.
+  // Also, all incoming blocks are from greater ranks, so they go to the right.
+  memcpy(local + bit * block_size, incoming, size - bit * block_size);
 }
 
 void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
