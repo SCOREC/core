@@ -5,7 +5,7 @@
 #include "SimAdvMeshing.h"
 
 #include <pcu_util.h>
-#include <PCU.h>
+#include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <cstring>
