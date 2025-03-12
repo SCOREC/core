@@ -37,12 +37,16 @@ namespace {
     ARGS_GETTER(aniso_size, double) 
     ARGS_GETTER(thickness, double)
     ARGS_GETTER(global_size, double)
+    ARGS_GETTER(ref_radius, double)
     ARGS_GETTER(before, const std::string&)
     ARGS_GETTER(after, const std::string&)
     ARGS_GETTER(input, const std::string&)
     ARGS_GETTER(output, const std::string&)
     ARGS_GETTER(isotropic, bool)
     ARGS_GETTER(refine_only, bool)
+    ARGS_GETTER(no_collapse, bool)
+    ARGS_GETTER(no_snapping, bool)
+    ARGS_GETTER(no_shape_fix, bool)
     #undef ARGS_GETTER
 
     /** @brief Check for argument parse errors. */
@@ -52,9 +56,10 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool analytic_{false}, isotropic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false}, refine_only_{false};
+    bool analytic_{false}, isotropic_{false}, error_flag_{false}, help_{false}, mds_adapt_{false}, smoothing_{false};
+    bool refine_only_{false}, no_collapse_{false}, no_snapping_{false}, no_shape_fix_{false};
     int maxiter_{-1}, uniform_{0}, verbosity_{0};
-    double aniso_size_{-1}, thickness_{-1}, global_size_{-1};
+    double aniso_size_{-1}, thickness_{-1}, global_size_{-1}, ref_radius_{-1};
     std::string argv0, before_, after_, input_, output_, ref_shock_geom_;
     std::list<int> shock_surf_ids_{};
   }; // class Args
@@ -177,11 +182,11 @@ int main(int argc, char* argv[]) {
   ma::AnisotropicFunction* sf = nullptr;
   if(using_ref_geom) {
     sf = new EmbeddedShockFunction(adaptMesh,
-      geom_ref, shock_surfaces, args.isotropic(), args.global_size(), args.aniso_size(), args.thickness());
+      geom_ref, shock_surfaces, args.isotropic(), args.global_size(), args.aniso_size(), args.thickness(), args.ref_radius());
     //double h0_max_shock = reinterpret_cast<AnisotropicFunctionOnReference*>(sf)->getMaxEdgeLengthAcrossShock();
     //std::cout << "INFO: Maximum edge length crossing shock: " << h0_max_shock << std::endl;
   } else {
-    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.isotropic(), args.global_size(), args.aniso_size(), args.thickness());
+    sf = new EmbeddedShockFunction(adaptMesh, shock_surfaces, args.isotropic(), args.global_size(), args.aniso_size(), args.thickness(), args.ref_radius());
   }
   apf::Field *frameField = nullptr, *scaleField = nullptr;
   if (!args.before().empty() || !args.analytic()) {
@@ -227,6 +232,10 @@ int main(int argc, char* argv[]) {
     in->shouldCoarsen = false;
     in->shouldSnap=false;
     in->shouldFixShape=false;
+  } else {
+    in->shouldCoarsen = !args.no_collapse();
+    in->shouldSnap=!args.no_snapping();
+    in->shouldFixShape=!args.no_shape_fix();
   }
 
   std::cout << ++stage << ". Run adapt." << std::endl;
@@ -344,7 +353,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "";
-    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvSIRg:")) != -1) {
+    while ((c = getopt(argc, argv, ":A:aB:hi:mn:o:r:G:s:t:uvSIRCPFg:")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -375,8 +384,7 @@ namespace {
         output_ = optarg;
         break;
       case 'r':
-        std::cout << "INFO: Ratio argument is deprecated" << std::endl;
-        //ratio_ = std::atof(optarg);
+        ref_radius_ = std::atof(optarg);
         break;
       case 's':
         shock_surf_ids_.push_back(std::atoi(optarg));
@@ -399,6 +407,15 @@ namespace {
         break;
       case 'R':
         refine_only_ = true;
+        break;
+      case 'C':
+        no_collapse_ = true;
+        break;
+      case 'P':
+        no_snapping_  = true;
+        break;
+      case 'F':
+        no_shape_fix_ = true;
         break;
       case 'S':
         smoothing_ = true;
@@ -429,7 +446,7 @@ namespace {
   } 
 
   void Args::print_usage(std::ostream& str) const {
-    str << "USAGE: " << argv0 << " [-ahmuvSIR] [-i MAXITER] [-B before.vtk] "
+    str << "USAGE: " << argv0 << " [-ahmuvSIRCFP] [-i MAXITER] [-B before.vtk] "
       "[-A after.vtk] [-o OUTPUT.cre] [-G REF_GEOM.cre] -s ID -n NORM_SIZE -t THICKNESS INPUT.cre"
       << std::endl;
   }
@@ -456,10 +473,14 @@ namespace {
     "                Repeat flag multiple times to specify more tags.\n"
     "-t THICKNESS    Override thickness.\n"
     "-g h_global     Override h_global."
+    "-r tr_radius    Override radius of tip refinement zone.\n"
     "-u              Perform uniform adaptation. Specifying multiple times\n"
     "                runs that many rounds of adaptation.\n"
     "-I              Run completely isotropic adaptation.\n"
-    "-R              Run refinement only (disable coarsening, snapping and shape fix)\n"
+    "-R              Run refinement only (disable coarsening, snapping and shape fix, overrides C, P & F)\n"
+    "-C              Disable coarsening (edge collapse)\n"
+    "-P              Disable snapping\n"
+    "-F              Disable shape fix\n"
     "-v              Increase verbosity. Level 1 enables lionPrint. Level 2\n"
     "                enables verbose adaptation. Level 3 writes intermediate\n"
     "                VTK files.\n";
