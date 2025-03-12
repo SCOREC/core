@@ -1,7 +1,6 @@
 #ifndef PCU_C_H
 #define PCU_C_H
 #include "pcu_defines.h"
-#include <mpi.h>
 
 #ifdef __cplusplus
 #include <cstddef>
@@ -15,12 +14,18 @@ extern "C" {
 
 typedef struct PCU_t PCU_t;
 
+void PCU_Init(int *argc, char ***argv);
+void PCU_Finalize(void);
+
 int PCU_Comm_Init(PCU_t* h);
 int PCU_Comm_Free(PCU_t* h);
 
 /*rank/size functions*/
 int PCU_Comm_Self(PCU_t h);
 int PCU_Comm_Peers(PCU_t h);
+
+int PCU_Comm_Dup(PCU_t h, PCU_Comm* newcomm);
+void PCU_Comm_Split(PCU_t h, int color, int key, PCU_t* newpcu);
 
 /*recommended message passing API*/
 void PCU_Comm_Begin(PCU_t h);
@@ -96,10 +101,6 @@ int PCU_Comm_Size(PCU_t h, int* size);
 
 /*deprecated method enum*/
 
-/*special MPI_Comm replacement API*/
-void PCU_Switch_Comm(PCU_t h, MPI_Comm new_comm);
-MPI_Comm PCU_Get_Comm(PCU_t h);
-
 /*stack trace helpers using GNU/Linux*/
 void PCU_Protect(void);
 
@@ -108,10 +109,6 @@ double PCU_Time(void);
 
 /*Memory usage*/
 double PCU_GetMem(void);
-
-/*Access global variable*/
-PCU_t PCU_Get_Global_Handle(void);
-
 
 #ifdef __cplusplus
 } /* extern "C" */

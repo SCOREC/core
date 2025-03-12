@@ -49,9 +49,9 @@ namespace {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
@@ -60,5 +60,5 @@ int main(int argc, char** argv)
   m->writeNative(argv[3]);
   freeMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

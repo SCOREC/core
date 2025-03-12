@@ -480,14 +480,14 @@ void testTetSubdivision1(pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   testEdgeSubdivision(&pcu_obj);
   testTriSubdivision1(&pcu_obj);
   testTriSubdivision4(&pcu_obj);
   testTetSubdivision1(&pcu_obj);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

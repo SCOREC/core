@@ -165,13 +165,13 @@ void testMatrixInverse(){
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   testNodeIndexing();
   testMatrixInverse();
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

@@ -36,7 +36,7 @@ void verifyArgs(int argc, char** argv, pcu::PCU *PCUObj)
       printf(" <is> is simplical mesh\n");
       printf(" <model> .dmg model file name\n");
       printf(" <mesh> .smb mesh file name\n");
-      MPI_Finalize();
+      pcu::Finalize();
       exit(EXIT_FAILURE);
     }
   }
@@ -59,9 +59,9 @@ void getArgs(char** argv)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   verifyArgs(argc, argv, &pcu_obj);
   if(pcu_obj.Peers()>1) {
@@ -79,5 +79,5 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

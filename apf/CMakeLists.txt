@@ -93,7 +93,6 @@ add_library(apf ${SOURCES})
 # Include directories
 target_include_directories(apf PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 # Link this library to these others

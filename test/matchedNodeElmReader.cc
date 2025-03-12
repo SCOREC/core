@@ -611,7 +611,7 @@ fh = header file (there is only one for all processes), containing:
 **/
 std::vector<BlockInfo> readHeader(std::ifstream& fh, pcu::PCU *PCUObj) {
   rewindStream(fh);
-  const int self = PCUObj->Self();;
+  const int self = PCUObj->Self();
   bool ret = seekPart(fh, std::to_string(self));
   PCU_ALWAYS_ASSERT(ret);
   auto blockInfo = readTopoBlockInfo(fh);
@@ -743,9 +743,9 @@ void readMesh(const char* meshfilename,
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   int noVerify=0;    // maintain default of verifying if not explicitly requesting it off
   if( argc < 11 ) {
@@ -829,5 +829,5 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

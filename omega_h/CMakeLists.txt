@@ -21,7 +21,6 @@ add_library(apf_omega_h ${SOURCES})
 # Include directories
 target_include_directories(apf_omega_h INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 # Link this package to these libraries

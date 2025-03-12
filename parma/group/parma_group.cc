@@ -48,17 +48,13 @@ static void runInGroups(
   int groupRank = inMap(self);
   int group = groupMap(self);
   
-  MPI_Comm groupComm;
-  MPI_Comm_split(expandedPCU->GetMPIComm(), group, groupRank, &groupComm);
-  auto groupedPCU = std::unique_ptr<pcu::PCU>(new pcu::PCU(groupComm));
+  auto groupedPCU = expandedPCU->Split(group, groupRank);
   if (m){
     m->switchPCU(groupedPCU.get());
     apf::remapPartition(m, inMap);
   }
   code.PCUObj = std::move(groupedPCU);
   code.run(group);
-  
-  MPI_Comm_free(&groupComm);
   if (m){
     m->switchPCU(expandedPCU);
     apf::remapPartition(m, outMap);

@@ -281,9 +281,9 @@ class Vortex : public ma::AnisotropicFunction
 int main(int argc, char * argv[])
 {
   PCU_ALWAYS_ASSERT(argc==2);
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_model* model = makeModel();
   gmi_write_dmg(model, "made.dmg");
@@ -298,5 +298,5 @@ int main(int argc, char * argv[])
   // to do
   apf::destroyMesh(mesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

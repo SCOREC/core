@@ -46,14 +46,12 @@ static void print_stats(const char* name, double value, pcu::PCU *pcu_obj)
 
 namespace {
 
-pcu::PCU* createGroupComm(int splitFactor, pcu::PCU *PCUObj)
+std::unique_ptr<pcu::PCU> createGroupComm(int splitFactor, pcu::PCU *PCUObj)
 {
   int self = PCUObj->Self();
   int groupRank = self / splitFactor;
   int group = self % splitFactor;
-  MPI_Comm groupComm;
-  MPI_Comm_split(PCUObj->GetMPIComm(), group, groupRank, &groupComm);
-  return new pcu::PCU(groupComm);
+  return PCUObj->Split(group, groupRank);
 }
 
 void loadCommon(ph::Input& in, ph::BCs& bcs, gmi_model*& g, pcu::PCU *PCUObj)
@@ -270,11 +268,10 @@ namespace chef {
     ph::BCs bcs;
     loadCommon(in, bcs, g, expandedPCUObj);
     const int worldRank = expandedPCUObj->Self();
-    pcu::PCU *groupPCUObj = createGroupComm(in.splitFactor, expandedPCUObj);
+    auto groupPCUObj = createGroupComm(in.splitFactor, expandedPCUObj);
     if ((worldRank % in.splitFactor) == 0)
-      originalMain(m, in, g, plan, groupPCUObj);
+      originalMain(m, in, g, plan, groupPCUObj.get());
     if(m != nullptr) m->switchPCU(expandedPCUObj);
-    delete groupPCUObj;
     if (in.simmetrixMesh == 0)
       m = repeatMdsMesh(m, g, plan, in.splitFactor, expandedPCUObj);
     if (in.simmetrixMesh == 0 && shrinkFactor > 1){

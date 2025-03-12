@@ -174,7 +174,7 @@ static bool done_sending_peers(pcu_mpi_t* mpi, pcu_aa_tree t)
 
 static bool receive_global(pcu_mpi_t* mpi, pcu_msg* m)
 {
-  m->received.peer = MPI_ANY_SOURCE;
+  m->received.peer = PCU_ANY_SOURCE;
   while ( ! pcu_mpi_receive(mpi, &(m->received),mpi->user_comm))
   {
     if (m->state == send_recv_state)

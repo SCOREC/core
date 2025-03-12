@@ -271,9 +271,12 @@ ZoltanData::ZoltanData(ZoltanMesh* zb_) : zb(zb_)
   MPI_Comm comm;
   if (zb->isLocal)
     comm = MPI_COMM_SELF;
-  else
-    comm = zb->mesh->getPCU()->GetMPIComm();
+  else {
+    zb->mesh->getPCU()->DupComm(&comm);
+  }
   ztn =Zoltan_Create(comm);
+  if (!zb->isLocal)
+    MPI_Comm_free(&comm); // Zoltan duplicates too, so free our reference.
   import_gids = NULL;
   import_lids = NULL;
   import_procs = NULL;

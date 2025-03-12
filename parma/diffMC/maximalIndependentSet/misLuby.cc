@@ -1,4 +1,3 @@
-#include <mpi.h>
 #include <algorithm>
 #include <limits>
 #include <iostream>

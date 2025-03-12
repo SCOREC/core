@@ -20,7 +20,6 @@ add_library(spr ${SOURCES})
 # Include directories
 target_include_directories(spr INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 # Link this package to these libraries

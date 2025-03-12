@@ -42,9 +42,9 @@ class twox : public apf::Function {
 };
 int main(int argc, char* argv[])
 {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_null();
 
@@ -162,6 +162,6 @@ int main(int argc, char* argv[])
   apf::destroyMesh(m2);
   apf::destroyMesh(m3);
   }
-  MPI_Finalize();
+  pcu::Finalize();
   return 0;
 }

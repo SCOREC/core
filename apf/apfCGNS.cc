@@ -545,8 +545,9 @@ CellElementReturn WriteElements(const CGNS &cgns, apf::Mesh *m, apf::GlobalNumbe
         cgp_error_exit();
 
       std::vector<int> allNumbersForThisType(m->getPCU()->Peers(), 0);
-      MPI_Allgather(&numbersByElementType[o], 1, MPI_INT, allNumbersForThisType.data(), 1,
-                    MPI_INT, m->getPCU()->GetMPIComm());
+      m->getPCU()->Allgather(
+        &numbersByElementType[o], allNumbersForThisType.data(), 1
+      );
 
       cgsize_t num = 0;
       for (int i = 0; i < m->getPCU()->Self(); i++)
@@ -656,8 +657,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
         }
 
         std::vector<int> allNumbersForThisType(m->getPCU()->Peers(), 0);
-        MPI_Allgather(&number, 1, MPI_INT, allNumbersForThisType.data(), 1,
-                      MPI_INT, m->getPCU()->GetMPIComm());
+        m->getPCU()->Allgather(&number, allNumbersForThisType.data(), 1);
 
         cgsize_t num = 0;
         for (int i = 0; i < m->getPCU()->Self(); i++)
@@ -684,19 +684,16 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       }
     }
     std::vector<int> cacheStarts(m->getPCU()->Peers(), 0);
-    MPI_Allgather(&cacheStart, 1, MPI_INT, cacheStarts.data(), 1,
-                  MPI_INT, m->getPCU()->GetMPIComm());
+    m->getPCU()->Allgather(&cacheStart, cacheStarts.data(), 1);
     std::vector<int> cacheEnds(m->getPCU()->Peers(), 0);
-    MPI_Allgather(&cacheEnd, 1, MPI_INT, cacheEnds.data(), 1,
-                  MPI_INT, m->getPCU()->GetMPIComm());
+    m->getPCU()->Allgather(&cacheEnd, cacheEnds.data(), 1);
     return std::make_pair(cacheStarts, cacheEnds);
   };
 
   const auto globalElementList = [&m](const std::vector<cgsize_t> &bcList, std::vector<cgsize_t> &allElements) {
     std::vector<int> sizes(m->getPCU()->Peers(), 0); // important initialiser
     const int l = bcList.size();
-    MPI_Allgather(&l, 1, MPI_INT, sizes.data(), 1,
-                  MPI_INT, m->getPCU()->GetMPIComm());
+    m->getPCU()->Allgather(&l, sizes.data(), 1);
 
     int totalLength = 0;
     for (const auto &i : sizes)
@@ -708,9 +705,15 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       displacement[i] = displacement[i - 1] + sizes[i - 1];
 
     allElements.resize(totalLength);
+    #ifndef SCOREC_NO_MPI
+    PCU_Comm comm;
+    m->getPCU()->DupComm(&comm);
     MPI_Allgatherv(bcList.data(), bcList.size(), MPI_INT, allElements.data(),
-                   sizes.data(), displacement.data(), MPI_INT,
-                   m->getPCU()->GetMPIComm());
+                   sizes.data(), displacement.data(), MPI_INT, comm);
+    MPI_Comm_free(&comm);
+    #else
+    std::copy(bcList.begin(), bcList.end(), allElements.begin());
+    #endif
   };
 
   const auto doVertexBC = [&](const auto &iter) {
@@ -1046,7 +1049,8 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   sizes[2] = 0;                 // nodes are unsorted, as defined by api
 
   // Copy communicator
-  auto communicator = m->getPCU()->GetMPIComm();
+  PCU_Comm communicator;
+  m->getPCU()->DupComm(&communicator);
   cgp_mpi_comm(communicator);
   //
   cgp_pio_mode(CGP_INDEPENDENT);
@@ -1134,6 +1138,9 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   destroyGlobalNumbering(gcn);
   //
   cgp_close(cgns.index);
+  #ifndef SCOREC_NO_MPI
+  MPI_Comm_free(&communicator);
+  #endif
 }
 } // namespace
 

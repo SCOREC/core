@@ -2,7 +2,7 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <pcu_util.h>
-#include <mpi.h>
+#include <PCU.h>
 #include <iostream>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
@@ -22,9 +22,9 @@ class CountIntegrator : public apf::Integrator {
     }
 };
 int main(int argc, char ** argv) {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   // argument should be model, mesh
   PCU_ALWAYS_ASSERT(argc == 3);
 
@@ -48,6 +48,6 @@ int main(int argc, char ** argv) {
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
   return 0;
 }

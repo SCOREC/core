@@ -66,7 +66,7 @@ void messageHandler(int type, const char* msg)
     case Sim_ErrorMsg:
       if(!globalPCU->Self()) 
         fprintf(stdout, "Error SimModeler %s ... exiting\n", msg);
-      MPI_Finalize();
+      pcu::Finalize();
       exit(EXIT_SUCCESS); 
       break;
     default:
@@ -317,9 +317,9 @@ void simStop() {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   globalPCU = &PCUObj;
   lion_set_verbosity(1);
   pcu::Protect();
@@ -359,5 +359,5 @@ int main(int argc, char** argv)
   simStop();
   Sim_logOff();
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

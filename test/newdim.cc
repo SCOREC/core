@@ -6,9 +6,9 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_null();
   gmi_model* model = gmi_load(".null");
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 

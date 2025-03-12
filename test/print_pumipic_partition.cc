@@ -18,20 +18,20 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {  
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   if ( argc != 5 && argc != 6) {
     if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <number of output parts> <partition file prefix>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   if (pcu_obj.Peers() > 1) {
     if ( !pcu_obj.Self() )
       printf("This tool must be run in serial.\n");
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -81,5 +81,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

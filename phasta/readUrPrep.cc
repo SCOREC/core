@@ -17,9 +17,9 @@ namespace {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   pcu::Protect();
   gmi_register_mesh();
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2], &pcu_obj);
@@ -32,6 +32,6 @@ int main(int argc, char** argv)
   chef::preprocess(m,ctrl);
   freeMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
