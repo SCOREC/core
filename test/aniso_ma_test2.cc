@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdlib>
+#include <filesystem>
 
 #include <lionPrint.h>
 #include <pcu_util.h>
@@ -34,9 +35,9 @@ class AnIso : public ma::AnisotropicFunction
 };
 
 int main(int argc, char* argv[]) {
-  if (argc != 5) {
+  if (argc != 6) {
     std::cerr << "Usage: " << argv[0] <<
-      "<model> <mesh> <sizeFactor1> <sizeFactor2>" << std::endl;
+      "<model> <mesh> <sizeFactor1> <sizeFactor2> <outputMesh>" << std::endl;
       return 1;
   }
   const char* modelFile = argv[1];
@@ -51,9 +52,14 @@ int main(int argc, char* argv[]) {
   apf::writeVtkFiles("aniso_ma_test2_before",m);
   AnIso sf(m, sizeFactor1, sizeFactor2);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  // in->shouldFixShape = false;
+  // in->shouldCoarsen = false;
+  // in->shouldSnap = false;
+  // in->shouldCleanupLayer = false;
   ma::adapt(in);
   m->verify();
   apf::writeVtkFiles("aniso_ma_test2_after",m);
+  m->writeNative(argv[5]);
   m->destroyNative();
   apf::destroyMesh(m);
   delete PCUObj;
