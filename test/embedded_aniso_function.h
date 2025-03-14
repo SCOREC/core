@@ -21,19 +21,19 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
     #define SIZING_DEFAULTS bool iso = false, double global = -1, double anisosize = -1, double t = -1, double tr_radius = -1
     EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, SIZING_DEFAULTS) 
         : mesh(m), ref(g), shock_surfaces(surfs), test_iso(iso) {
-        if (global > 0) {
+        if (global >= 0) {
             h_global = global;
             std::cout << "Overriding h_global size with valid value " << global << std::endl;
         }
-        if(anisosize > 0) {
+        if(anisosize >= 0) {
             norm_size = anisosize;
             std::cout << "Overriding normal size with valid value " << norm_size << std::endl;
         }
-        if(t > 0) {
+        if(t >= 0) {
             thickness = t;
             std::cout << "Overriding thickness with valid value " << thickness << std::endl;
         }
-        if (tr_radius > 0) {
+        if (tr_radius >= 0) {
             sphere_size = tr_radius;
             std::cout << "Overriding tip refine radius with valid value " << tr_radius << std::endl;
         }

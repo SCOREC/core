@@ -65,6 +65,24 @@ namespace {
   }; // class Args
 } // namespace
 
+void write_info(std::string filename, int argc, char* argv[], apf::Mesh* mesh, double elapsed = -1) {
+  std::ofstream file;
+  file.open(filename);
+
+  for(int i = 0; i < argc; i++) {
+    file << *(argv+i) << " ";
+  }
+  file << std::endl;
+
+  file << "Number of points: " << mesh->count(0) << std::endl;
+  file << "Number of elements: " << mesh->count(3) << std::endl;
+
+  if (elapsed >= 0) {
+    file << elapsed << " seconds on " << std::getenv("HOSTNAME") << std::endl;
+  }
+  file.close();
+}
+
 int main(int argc, char* argv[]) {
   // Initalize parallelism.
   MPI_Init(&argc, &argv);
@@ -215,6 +233,7 @@ int main(int argc, char* argv[]) {
     if (!args.before().empty()) {
       std::cout << ++stage << ". Write before VTK." << std::endl;
       apf::writeVtkFiles(args.before().c_str(), adaptMesh);
+      write_info(args.before()+"/"+args.before()+(".txt"), argc, argv, adaptMesh);
     }
   }
 
@@ -239,15 +258,18 @@ int main(int argc, char* argv[]) {
   }
 
   std::cout << ++stage << ". Run adapt." << std::endl;
+  double adapt_elapse = MPI_Wtime();
   if (args.verbosity() > 1) {
     ma::adaptVerbose(in, args.verbosity() > 2);
   } else {
     ma::adapt(in);
   }
+  adapt_elapse = MPI_Wtime() - adapt_elapse;
 
   if (!args.after().empty()) {
     std::cout << ++stage << ". Write after VTK." << std::endl;
     apf::writeVtkFiles(args.after().c_str(), adaptMesh);
+    write_info(args.after()+"/"+args.after()+(".txt"), argc, argv, adaptMesh, adapt_elapse);
   }
 
   if (!args.output().empty()) {
@@ -349,7 +371,6 @@ int main(int argc, char* argv[]) {
 
 namespace {
   Args::Args(int argc, char* argv[]) {
-    argv0 = argv[0];
     int c;
     int given[256] = {0};
     const char* required = "";
