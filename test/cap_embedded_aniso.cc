@@ -124,6 +124,8 @@ int main(int argc, char* argv[]) {
   MG_API_CALL(mdi, set_adjacency_state(REGION2FACE|REGION2EDGE|REGION2VERTEX|
     FACE2EDGE|FACE2VERTEX));
   MG_API_CALL(mdi, set_reverse_states());
+  MG_API_CALL(mdi, set_adjacency_scope(TOPO_EDGE, SCOPE_FULL));
+  MG_API_CALL(mdi, set_adjacency_scope(TOPO_FACE, SCOPE_FULL));
   MG_API_CALL(mdi, compute_adjacency());
 
   std::cout << ++stage << ". Initalize gmi." << std::endl;
