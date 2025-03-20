@@ -8,6 +8,8 @@
 #include <apf.h>
 #include <apfMDS.h>
 #include <ma.h>
+#include "maCoarsen.h"
+#include "maAdapt.h"
 
 class AnIso : public ma::AnisotropicFunction
 {
@@ -40,6 +42,7 @@ int main(int argc, char* argv[]) {
       "<model> <mesh> <sizeFactor1> <sizeFactor2> <outputMesh>" << std::endl;
       return 1;
   }
+  //Load Mesh
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   double sizeFactor1 = std::atof(argv[3]), sizeFactor2 = std::atof(argv[4]);
@@ -50,6 +53,8 @@ int main(int argc, char* argv[]) {
   ma::Mesh* m = apf::loadMdsMesh(modelFile, meshFile, PCUObj);
   m->verify();
   apf::writeVtkFiles("aniso_ma_test2_before",m);
+
+  //Adapt
   AnIso sf(m, sizeFactor1, sizeFactor2);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   // in->shouldFixShape = false;
@@ -60,6 +65,8 @@ int main(int argc, char* argv[]) {
   m->verify();
   apf::writeVtkFiles("aniso_ma_test2_after",m);
   m->writeNative(argv[5]);
+
+  //Clean up
   m->destroyNative();
   apf::destroyMesh(m);
   delete PCUObj;

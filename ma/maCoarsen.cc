@@ -13,6 +13,7 @@
 #include "maMatchedCollapse.h"
 #include "maOperator.h"
 #include <pcu_util.h>
+#include "apfShape.h"
 
 namespace ma {
 
@@ -246,6 +247,71 @@ bool coarsen(Adapt* a)
       successCount += collapseMatchedEdges(a, modelDimension);
     else
       successCount += collapseAllEdges(a, modelDimension);
+  }
+  successCount = m->getPCU()->Add<long>(successCount);
+  double t1 = pcu::Time();
+  print(m->getPCU(), "coarsened %li edges in %f seconds", successCount,t1-t0);
+  return true;
+}
+
+void printFields(Adapt* a, Mesh* m, std::string name)
+{
+  apf::Field* f = m->findField("collapse_edges");
+  if (!f)
+    f = apf::createField(m, "collapse_edges", apf::SCALAR, apf::getConstant(1));
+  apf::MeshIterator* it = m->begin(1);
+  apf::MeshEntity* e;
+  while ((e = m->iterate(it))) {
+    if (getFlag(a, e, COLLAPSE))
+      apf::setScalar(f, e, 0, 1);
+    else
+      apf::setScalar(f, e, 0, 0);
+  }
+  m->end(it);
+
+  f = m->findField("collapse_verts");
+  if (!f)
+    f = apf::createFieldOn(m, "collapse_verts", apf::SCALAR);
+  it = m->begin(0);
+  while ((e = m->iterate(it))) {
+    if (getFlag(a, e, COLLAPSE))
+      apf::setScalar(f, e, 0, 1);
+    else
+      apf::setScalar(f, e, 0, 0);
+  }
+  m->end(it);
+
+  apf::writeVtkFiles(name.c_str(), m, 1);
+}
+
+bool coarsenAndPrint(Adapt* a)
+{
+  if (!a->input->shouldCoarsen)
+    return false;
+  double t0 = pcu::Time();
+  --(a->coarsensLeft);
+  long count = markEdgesToCollapse(a);
+  if ( ! count)
+    return false;
+  Mesh* m = a->mesh;
+  int maxDimension = m->getDimension();
+  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,COLLAPSE));
+  long successCount = 0;
+
+  printFields(a, m, "flag_edges");
+
+  for (int modelDimension=1; modelDimension <= maxDimension; ++modelDimension)
+  {
+    checkAllEdgeCollapses(a,modelDimension);
+    std::string dim = std::to_string(modelDimension);
+    printFields(a, m, "flag_verts"+dim);
+    findIndependentSet(a);
+    printFields(a, m, "independent_set"+dim);
+    if (m->hasMatching())
+      successCount += collapseMatchedEdges(a, modelDimension);
+    else
+      successCount += collapseAllEdges(a, modelDimension);
+    apf::writeVtkFiles(("after_collapse"+dim).c_str(), m, 1);
   }
   successCount = m->getPCU()->Add<long>(successCount);
   double t1 = pcu::Time();

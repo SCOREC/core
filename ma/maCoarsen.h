@@ -16,6 +16,7 @@ class Adapt;
 
 bool coarsen(Adapt* a);
 bool coarsenLayer(Adapt* a);
+bool coarsenAndPrint(Adapt* a);
 
 void checkAllEdgeCollapses(Adapt* a, int modelDimension);
 void findIndependentSet(Adapt* a);
