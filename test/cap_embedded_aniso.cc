@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
   ma::Mesh* adaptMesh = apfCapMesh;
   if (args.mds_adapt()) {
     std::cout << ++stage << ". Convert mesh to MDS." << std::endl;
-    adaptMesh = apf::createMdsMesh(apfCapMesh->getModel(), apfCapMesh);
+    adaptMesh = apf::createMdsMesh(apfCapMesh->getModel(), apfCapMesh, true);
     apf::disownMdsModel(adaptMesh);
     apf::printStats(adaptMesh);
   }
