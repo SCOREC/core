@@ -17,10 +17,13 @@
 class EmbeddedShockFunction : public ma::AnisotropicFunction {
     public:
 
-    #define SIZING_PARAMS iso, global, anisosize, t, tr_radius
-    #define SIZING_DEFAULTS bool iso = false, double global = -1, double anisosize = -1, double t = -1, double tr_radius = -1
+    #define SIZING_PARAMS iso, global, anisosize, t, tr_radius, tip, upstream, a_normals
+    #define SIZING_DEFAULTS bool iso = false, double global = -1, \
+        double anisosize = -1, double t = -1, double tr_radius = -1, \
+        double tip = -1, double upstream = -1, \
+        AnalyticClosestPoint a_normals = doubleConeClosestPointAnalytic
     EmbeddedShockFunction(ma::Mesh* m, gmi_model* g, std::list<gmi_ent*> surfs, SIZING_DEFAULTS) 
-        : mesh(m), ref(g), shock_surfaces(surfs), test_iso(iso) {
+        : mesh(m), ref(g), shock_surfaces(surfs), test_iso(iso), analytic_shock_surf(a_normals) {
         if (global >= 0) {
             h_global = global;
             std::cout << "Overriding h_global size with valid value " << global << std::endl;
@@ -36,6 +39,14 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
         if (tr_radius >= 0) {
             sphere_size = tr_radius;
             std::cout << "Overriding tip refine radius with valid value " << tr_radius << std::endl;
+        }
+        if (tip >= 0) {
+            h_tip = tip;
+            std::cout << "Overriding h_tip with valid value " << tip << std::endl;
+        }
+        if (upstream >= 0) {
+            h_upstream = upstream;
+            std::cout << "Overriding h_upstream with valid value " << upstream << std::endl;
         }
         thickness_tol = thickness * thickness / 4;
     }
@@ -67,6 +78,8 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
     double sphere_size = 8*h_tip;
 
     bool test_iso;
+    bool test_plane;
+    AnalyticClosestPoint analytic_shock_surf;
     ma::Mesh* mesh;
     gmi_model* ref;
     double thickness_tol;
@@ -202,7 +215,8 @@ void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::V
 
 double EmbeddedShockFunction::getClosestPointAndNormal(double pos_arr[3], double cls_arr[3], double nrm_arr[3]) {
     if (shock_surfaces.size() == 0) {
-        doubleConeClosestPointAnalytic(pos_arr, cls_arr, nrm_arr, h_global);
+        //doubleConeClosestPointAnalytic(pos_arr, cls_arr, nrm_arr, h_global);
+        analytic_shock_surf(pos_arr, cls_arr, nrm_arr, h_global);
         //return std::abs((pos-cls_vec)*(pos-cls_vec));
         return (pos_arr[0]-cls_arr[0])*(pos_arr[0]-cls_arr[0])+
             (pos_arr[1]-cls_arr[1])*(pos_arr[1]-cls_arr[1])+

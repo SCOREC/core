@@ -51,9 +51,13 @@ namespace {
     ARGS_GETTER(output_mesh, const std::string&)
     ARGS_GETTER(mesh_adapt, const std::string&)
     ARGS_GETTER(isotropic, bool)
+    ARGS_GETTER(planar, bool)
     ARGS_GETTER(global_size, double)
     ARGS_GETTER(norm_size, double)
     ARGS_GETTER(ref_radius, double)
+    ARGS_GETTER(shock_thickness, double)
+    ARGS_GETTER(tip, double)
+    ARGS_GETTER(upstream, double)
     ARGS_GETTER(verbosity, bool)
     ARGS_GETTER(mds_maxiter, int)
     ARGS_GETTER(refine_only, bool)
@@ -66,9 +70,9 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool isotropic_{false}, error_flag_{false}, help_{false}, refine_only_{false};
+    bool isotropic_{false}, error_flag_{false}, help_{false}, refine_only_{false}, planar_{false};
     int verbosity_{0}, mds_maxiter_{-1};
-    double global_size_{-1}, norm_size_{-1}, ref_radius_{-1};
+    double global_size_{-1}, norm_size_{-1}, ref_radius_{-1}, shock_thickness_{-1}, tip_{-1}, upstream_{-1};
     std::string argv0, input_mesh_, input_model_, input_nmodel_, output_mesh_;
     std::string before_, after_;
     std::string mesh_adapt_;
@@ -163,7 +167,13 @@ int main(int argc, char *argv[])
   cout<<endl;
 
   // Setup and run size field
-  EmbeddedShockFunction sf(mesh_ref, args.isotropic(), args.global_size(), args.norm_size(), -1, args.ref_radius());
+  AnalyticClosestPoint closestPointFunction = doubleConeClosestPointAnalytic;
+  if(args.planar()) {
+    std::cout << " trying planar shock" << std::endl;
+    closestPointFunction = planarClosestPointAnalytic;
+  }
+  EmbeddedShockFunction sf(mesh_ref, args.isotropic(), args.global_size(), args.norm_size(), args.shock_thickness(), args.ref_radius(), \
+    args.tip(), args.upstream(), closestPointFunction);
 
   if (!args.before().empty()) {
     std::cout << " writing size field to before vtk file" << std::endl;
@@ -191,7 +201,8 @@ int main(int argc, char *argv[])
     cout << " trying meshadapt" << endl;
 
     apf::Mesh2* mesh_mds = apf::createMdsMesh(mdl_ref, mesh_ref);
-    EmbeddedShockFunction sf_simx(mesh_mds, args.isotropic(), args.global_size(), args.norm_size(), -1, args.ref_radius());
+    EmbeddedShockFunction sf_simx(mesh_mds, args.isotropic(), args.global_size(), args.norm_size(), args.shock_thickness(), args.ref_radius(), \
+      args.tip(), args.upstream(), closestPointFunction);
     ma::Input* in = ma::makeAdvanced(ma::configure(mesh_mds, &sf_simx));
 
     if (args.mds_maxiter() >= 0) {
@@ -284,7 +295,7 @@ namespace {
     int c;
     int given[256] = {0};
     const char* required = "M";
-    while ((c = getopt(argc, argv, ":A:B:hM:G:o:vIm:i:g:n:r:R")) != -1) {
+    while ((c = getopt(argc, argv, ":A:B:hM:G:o:vIPm:i:g:n:r:t:Rp:u:")) != -1) {
       ++given[c];
       switch (c) {
       case 'A':
@@ -314,6 +325,9 @@ namespace {
       case 'I':
         isotropic_ = true;
         break;
+      case 'P':
+        planar_ = true;
+        break;
       case 'g':
         global_size_ = std::atof(optarg);
         break;
@@ -322,6 +336,15 @@ namespace {
         break;
       case 'r':
         ref_radius_ = std::atof(optarg);
+        break;
+      case 't':
+        shock_thickness_ = std::atof(optarg);
+        break;
+      case 'p':
+        tip_ = std::atof(optarg);
+        break;
+      case 'u':
+        upstream_ = std::atof(optarg);
         break;
       case 'i':
         mds_maxiter_ = std::atoi(optarg);
@@ -376,9 +399,13 @@ namespace {
     "-R                 Run refinement only (disable coarsening, snapping and shape fix)\n"
     "-h                 Display this help menu.\n"
     "-I                 Run completely isotropic adaptation for testing purposes.\n"
+    "-P                 Planar shock for testing."
     "-g h_global        Override h_global.\n"
     "-n h_norm          Override h_norm.\n"
     "-r tr_radius       Override tip refinement radius.\n"
+    "-t thickness       Override thickness.\n"
+    "-p h_tip           Override h_tip.\n"
+    "-u h_upstream      Override h_upstream.\n"
     "-v                 Increase verbosity. \n";
   }
 } // namespace

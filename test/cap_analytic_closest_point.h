@@ -1,3 +1,17 @@
+using AnalyticClosestPoint = void (*)(const double[3], double[3], double[3], double);
+
+//#define analytic_closest_point_func std::function<void(double[3], double to[3], double to_norm[3], double)>
+
+void planarClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double ref_length) {
+  to[0] = ref_length*2;
+  to[1] = from[1];
+  to[2] = from[2];
+
+  to_norm[0] = 1;
+  to_norm[1] = 0;
+  to_norm[2] = 0;
+}
+
 void doubleConeClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double ref_length) {
   double x0 = from[0];
   // x axis axisymmetry, y0 here is distance from x axis
