@@ -51,7 +51,7 @@ namespace {
     ARGS_GETTER(output_mesh, const std::string&)
     ARGS_GETTER(mesh_adapt, const std::string&)
     ARGS_GETTER(isotropic, bool)
-    ARGS_GETTER(planar, bool)
+    ARGS_GETTER(planar_opt, int)
     ARGS_GETTER(global_size, double)
     ARGS_GETTER(norm_size, double)
     ARGS_GETTER(ref_radius, double)
@@ -70,8 +70,8 @@ namespace {
     void print_help(std::ostream& str) const;
 
   private:
-    bool isotropic_{false}, error_flag_{false}, help_{false}, refine_only_{false}, planar_{false};
-    int verbosity_{0}, mds_maxiter_{-1};
+    bool isotropic_{false}, error_flag_{false}, help_{false}, refine_only_{false};
+    int verbosity_{0}, mds_maxiter_{-1}, planar_opt_{-1};
     double global_size_{-1}, norm_size_{-1}, ref_radius_{-1}, shock_thickness_{-1}, tip_{-1}, upstream_{-1};
     std::string argv0, input_mesh_, input_model_, input_nmodel_, output_mesh_;
     std::string before_, after_;
@@ -121,6 +121,8 @@ int main(int argc, char *argv[])
     return 1;
   }
 
+  lion_set_verbosity(args.verbosity());
+
   cout << endl;
   cout <<" Reading ... " << endl;
   cout <<"  Model from file : " << args.input_model() << endl;
@@ -168,9 +170,12 @@ int main(int argc, char *argv[])
 
   // Setup and run size field
   AnalyticClosestPoint closestPointFunction = doubleConeClosestPointAnalytic;
-  if(args.planar()) {
-    std::cout << " trying planar shock" << std::endl;
+  if(args.planar_opt() == 0) {
+    std::cout << " trying planar shock (option 0)" << std::endl;
     closestPointFunction = planarClosestPointAnalytic;
+  } else if (args.planar_opt() == 1) {
+    std::cout << " trying angled planar shock (option 1)" << std::endl;
+    closestPointFunction = planar30DegTowardsY;
   }
   EmbeddedShockFunction sf(mesh_ref, args.isotropic(), args.global_size(), args.norm_size(), args.shock_thickness(), args.ref_radius(), \
     args.tip(), args.upstream(), closestPointFunction);
@@ -326,7 +331,7 @@ namespace {
         isotropic_ = true;
         break;
       case 'P':
-        planar_ = true;
+        ++planar_opt_;
         break;
       case 'g':
         global_size_ = std::atof(optarg);

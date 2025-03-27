@@ -12,6 +12,27 @@ void planarClosestPointAnalytic(double const from[3], double to[3], double to_no
   to_norm[2] = 0;
 }
 
+void arbitraryPlaneClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], \
+  double const norm[3], double const pt[3]) {
+    // https://web.ma.utexas.edu/users/m408m/Display12-5-3.shtml
+    to_norm[0] = norm[0];
+    to_norm[1] = norm[1];
+    to_norm[2] = norm[2];
+
+    // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_plane
+    double D = norm[0]*(pt[0]-from[0]) + norm[1]*(pt[1]-from[1]) + norm[2]*(pt[2]-from[2]);
+    double denom = norm[0]*norm[0] + norm[1]*norm[1] + norm[2]*norm[2];
+    to[0] = norm[0]*D/denom+from[0];
+    to[1] = norm[1]*D/denom+from[1];
+    to[2] = norm[2]*D/denom+from[2];
+}
+
+void planar30DegTowardsY(double const from[3], double to[3], double to_norm[3], double ref_length) {
+  double norm[3] = {std::cos(M_PI/6), std::sin(M_PI/6), 0};
+  double pt[3] = {ref_length, 0, 0};
+  arbitraryPlaneClosestPointAnalytic(from, to, to_norm, norm, pt);
+}
+
 void doubleConeClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double ref_length) {
   double x0 = from[0];
   // x axis axisymmetry, y0 here is distance from x axis
