@@ -126,6 +126,17 @@ Refine::~Refine()
   m->destroyTag(numberTag);
 }
 
+void AddVertexToSnap(Refine* r, Entity* vert)
+{
+  Adapt* a = r->adapt;
+  Mesh* m = a->mesh;
+  int dim = m->getDimension();
+  int md = m->getModelType(m->toModel(vert));
+  if (dim == md) return;
+  r->vtxToSnap.push(vert);
+  setFlag(a, vert, SNAP);
+}
+
 Entity* makeSplitVert(Refine* r, Entity* edge)
 {
   Adapt* a = r->adapt;
@@ -144,6 +155,7 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
   if (a->input->shouldTransferToClosestPoint)
     transferToClosestPointOnEdgeSplit(m,edge,0.5,param);
   Entity* vert = buildVertex(a,c,point,param);
+  AddVertexToSnap(r, vert);
   st->onVertex(me,xi,vert);
   sf->interpolate(me,xi,vert);
   apf::destroyMeshElement(me);

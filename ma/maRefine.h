@@ -12,6 +12,7 @@
 
 #include "maMesh.h"
 #include "maTables.h"
+#include <queue>
 
 namespace ma {
 
@@ -26,6 +27,7 @@ class Refine
     Tag* numberTag;
     EntityArray toSplit[4];
     apf::DynamicArray<EntityArray> newEntities[4];
+    std::queue<Entity*> vtxToSnap;
     bool shouldCollect[4];
 };
 

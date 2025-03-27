@@ -11,6 +11,7 @@
 #include "maAdapt.h"
 #include "maOperator.h"
 #include "maSnapper.h"
+#include "maRefine.h"
 #include "maMatchedSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
@@ -903,7 +904,54 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
+void trySnapping(Adapt* a) {
+  Mesh* mesh = a->mesh;
+  Refine* refine = a->refine;
+  while (!refine->vtxToSnap.empty()) {
+    Entity* vertex = refine->vtxToSnap.front();
+    refine->vtxToSnap.pop();
+    Vector target;
+    Vector prev = getPosition(mesh, vertex);
+
+    getSnapPoint(mesh, vertex, target);
+
+    Upward adjacentElements;
+    mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+    mesh->setPoint(vertex, 0, target);
+
+    if(!areTetsValid(mesh, adjacentElements))
+      mesh->setPoint(vertex, 0, prev);
+  }
+}
+
+void printSnapFields(Adapt* a, Mesh* m, std::string name)
+{
+  apf::Field* f = m->findField("vtx_to_snap");
+  if (!f)
+    f = apf::createFieldOn(m, "vtx_to_snap", apf::SCALAR);
+  apf::MeshIterator* it = m->begin(0);
+  apf::MeshEntity* e;
+  while ((e = m->iterate(it))) {
+    if (getFlag(a, e, SNAP))
+      apf::setScalar(f, e, 0, 1);
+    else
+      apf::setScalar(f, e, 0, 0);
+  }
+  m->end(it);
+
+  apf::writeVtkFiles(name.c_str(), m, 1);
+}
+
 void snap(Adapt* a)
+{
+  if ( ! a->input->shouldSnap)
+    return;
+  printSnapFields(a, a->mesh, "snap_flag");
+  trySnapping(a);
+  clearFlagFromDimension(a, SNAP, 0);
+}
+
+void prevSnap(Adapt* a)
 {
   if ( ! a->input->shouldSnap)
     return;
