@@ -25,6 +25,7 @@
 #include "maCoarsen.h"
 #include "maRefine.h"
 #include "maSnap.h"
+#include "lionPrint.h"
 
 
 #include "CapstoneModule.h"
@@ -166,12 +167,15 @@ int main(int argc, char** argv)
   apf::writeVtkFiles("before_snap",mesh);
 
   //Adapt
+  lion_set_verbosity(1);
   AnIso sf(mesh, 2, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(mesh, &sf));
-  in->maximumIterations = 1;
   ma::Adapt* a = new ma::Adapt(in);
-  ma::refine(a);
-  ma::snap(a);
+  for (int i = 0; i < in->maximumIterations; ++i)
+  {
+    ma::refine(a);
+    ma::snap(a);
+  }
   mesh->verify();
   apf::writeVtkFiles("after_snap",mesh);
 
