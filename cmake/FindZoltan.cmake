@@ -10,14 +10,28 @@ if(ZOLTAN_PREFIX)
   message(STATUS "ZOLTAN_PREFIX ${ZOLTAN_PREFIX}")
 endif()
 
-find_path(ZOLTAN_INCLUDE_DIR zoltan.h PATHS "${ZOLTAN_PREFIX}/include")
-
-find_library(ZOLTAN_LIBRARY zoltan PATHS "${ZOLTAN_PREFIX}/lib")
+if(DEFINED ZOLTAN_PREFIX)
+  find_path(ZOLTAN_INCLUDE_DIR zoltan.h
+    PATHS "${ZOLTAN_PREFIX}/include"
+    NO_DEFAULT_PATH
+  )
+  find_library(ZOLTAN_LIBRARY zoltan
+    PATHS "${ZOLTAN_PREFIX}/lib"
+    NO_DEFAULT_PATH
+  )
+else()
+  find_path(ZOLTAN_INCLUDE_DIR zoltan.h)
+  find_library(ZOLTAN_LIBRARY zoltan)
+endif()
 
 set(ZOLTAN_LIBRARIES ${ZOLTAN_LIBRARY} )
 set(ZOLTAN_INCLUDE_DIRS ${ZOLTAN_INCLUDE_DIR} )
 
-find_package(Parmetis MODULE REQUIRED)
+if(ENABLE_PTSCOTCH)
+  find_package(SCOTCH CONFIG REQUIRED)
+elseif(ENABLE_PARMETIS)
+  find_package(Parmetis MODULE REQUIRED)
+endif()
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set ZOLTAN_FOUND to TRUE
