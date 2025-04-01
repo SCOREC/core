@@ -100,7 +100,7 @@ void anisoUDF(pSizeAttData sadata, void* userdata, double anisosize[3][3]) {
 
   anisosize[0][0] = frame[0][0]*scale[0]; anisosize[0][1] = frame[1][0]*scale[0]; anisosize[0][2] = frame[2][0]*scale[0]; // normal vector
   anisosize[1][0] = frame[0][1]*scale[1]; anisosize[1][1] = frame[1][1]*scale[1]; anisosize[1][2] = frame[2][1]*scale[1]; // tan1
-  anisosize[2][0] = frame[0][2]*scale[2]; anisosize[2][1] = frame[1][2]*scale[2]; anisosize[2][1] = frame[2][2]*scale[2]; // tan2
+  anisosize[2][0] = frame[0][2]*scale[2]; anisosize[2][1] = frame[1][2]*scale[2]; anisosize[2][2] = frame[2][2]*scale[2]; // tan2
 
 }
 
