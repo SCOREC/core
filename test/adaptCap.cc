@@ -26,8 +26,6 @@
 #include "maRefine.h"
 #include "maSnap.h"
 #include "lionPrint.h"
-#include <apfMDS.h>
-
 
 #include "CapstoneModule.h"
 #include "CreateMG_Framework_Core.h"
