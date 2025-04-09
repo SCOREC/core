@@ -132,6 +132,7 @@ int main(int argc, char** argv)
   gmi_register_cap();
 
   // convert the mesh to apf/mds mesh
+
   apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
 
   apf::writeVtkFiles(folderName, mesh);
