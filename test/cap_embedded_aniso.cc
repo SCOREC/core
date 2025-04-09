@@ -65,7 +65,7 @@ namespace {
   }; // class Args
 } // namespace
 
-void write_info(std::string filename, int argc, char* argv[], apf::Mesh* mesh, double elapsed = -1) {
+void write_info(std::string filename, int argc, char* argv[], ma::Mesh* mesh, double elapsed = -1, gmi_model* model = nullptr) {
   std::ofstream file;
   file.open(filename);
 
@@ -77,10 +77,39 @@ void write_info(std::string filename, int argc, char* argv[], apf::Mesh* mesh, d
   file << "Number of points: " << mesh->count(0) << std::endl;
   file << "Number of elements: " << mesh->count(3) << std::endl;
 
+  double h0 = ma::getAverageEdgeLength(mesh);
+  double h0_max = ma::getMaximumEdgeLength(mesh, nullptr);
+
+  file << "Average mesh edge length: " << h0 << std::endl;
+  file << "Maximum mesh edge length: " << h0_max << std::endl;
+
+  double h0_max_geom = 0;
+  if(model != nullptr) {
+    gmi_iter* giter = gmi_begin(model, 1);
+    while(gmi_ent* gent = gmi_next(model, giter)) {
+      double a[3], b[3];
+      // "p[0] should be the edge parametric coordinate"
+      double aP[2] = {0, 0};
+      double bP[2] = {1, 0};
+      gmi_eval(model, gent, aP, a);
+      gmi_eval(model, gent, bP, b);
+      h0_max_geom = std::max(h0_max_geom, \
+        std::sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1])+(a[2]-b[2])*(a[2]-b[2])));
+    }
+
+    file << "Maximum geometry edge length " << h0_max_geom << std::endl;
+
+    gmi_end(model, giter);
+  }
+
   if (elapsed >= 0) {
     file << elapsed << " seconds on " << std::getenv("HOSTNAME") << std::endl;
   }
   file.close();
+}
+
+void write_info(std::string filename, int argc, char* argv[], ma::Mesh* mesh, gmi_model* model) {
+  write_info(filename, argc, argv, mesh, -1, model);
 }
 
 int main(int argc, char* argv[]) {
@@ -235,7 +264,7 @@ int main(int argc, char* argv[]) {
     if (!args.before().empty()) {
       std::cout << ++stage << ". Write before VTK." << std::endl;
       apf::writeVtkFiles(args.before().c_str(), adaptMesh);
-      write_info(args.before()+"/"+args.before()+(".txt"), argc, argv, adaptMesh);
+      write_info(args.before()+"/"+args.before()+(".txt"), argc, argv, adaptMesh, gmodelGMI);
     }
   }
 
