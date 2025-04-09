@@ -19,6 +19,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <pcu_util.h>
+#include <apfGeometry.h>
 
 namespace ma {
 
@@ -149,6 +150,12 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
   apf::MeshElement* me = apf::createMeshElement(m,edge);
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
+
+  // Vector failed(-0.279880, -0.093306, 0.132892);
+  // if (apf::areClose(point, failed, 1e-5)){
+  //   printf("===FAILED FOUND\n");
+  // }
+
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
     transferParametricOnEdgeSplit(m,edge,0.5,param);

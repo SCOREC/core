@@ -197,6 +197,8 @@ static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
   /*     PARAM_COMPOSITE=4,    //!< parametrization of a composite edge or face */
   /*     PARAM_UNBOUNDED=8     //!< infinite parametrization */
   /* }; */
+  if (paramType & 1) return 0;
+
   return paramType & (1<<1);
 }
 
