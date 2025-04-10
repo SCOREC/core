@@ -38,14 +38,13 @@ class AnIso : public ma::AnisotropicFunction
     ma::Vector lower, upper;
 };
 
-void refineSnapTest(ma::Mesh* m)
+void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
 {
   m->verify();
   apf::writeVtkFiles("before_refine_snap_test",m);
-  AnIso sf(m, 2, 1);
+  AnIso sf(m, sizeFactor1, sizeFactor2);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
-  in->maximumIterations = 1;
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     ma::refine(a);

@@ -10,26 +10,58 @@
 #include <ma.h>
 #include "aniso_adapt.h"
 
+#include <gmi_sim.h>
+#include <apfSIM.h>
+#include <MeshSim.h>
+#include <SimUtil.h>
+#include <SimPartitionedMesh.h>
+#include <PCU.h>
+
+#include "SimParasolidKrnl.h"
+#include "MeshSimAdapt.h"
+#include "SimDiscrete.h"
+#include "SimAdvMeshing.h"
+#include "SimMeshTools.h"
+
 int main(int argc, char* argv[]) {
-  if (argc != 6) {
+  if (argc != 4) {
     std::cerr << "Usage: " << argv[0] <<
-      "<model> <mesh> <sizeFactor1> <sizeFactor2> <outputMesh>" << std::endl;
+      "<model.x_t> <model.smd> <mesh.sms>" << std::endl;
       return 1;
   }
   //Load Mesh
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
-  double sizeFactor1 = std::atof(argv[3]), sizeFactor2 = std::atof(argv[4]);
   MPI_Init(&argc, &argv);
   pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(modelFile, meshFile, PCUObj);
+
+  Sim_logOn("anisoadapt.log");
+  MS_init();
+  SimAdvMeshing_start();
+  SimModel_start();
+  Sim_readLicenseFile(NULL);
+  SimPartitionedMesh_start(&argc,&argv);
+
+  gmi_sim_start();
+  gmi_register_sim();
+  pProgress progress = Progress_new();
+  Progress_setDefaultCallback(progress);
+
+  pGModel model = 0;
+  pParMesh mesh = 0;
+  gmi_model* mdl_ref;
+  ma::Mesh* mesh_ref;
+  
+  mdl_ref = gmi_sim_load(argv[1], argv[2]);
+  model = gmi_export_sim(mdl_ref);
+  mesh = PM_load(argv[3], model, progress);
+  mesh_ref = apf::createMesh(mesh, PCUObj);
+  apf::Mesh2* m = apf::createMdsMesh(mdl_ref, mesh_ref);
 
   //Adapt
-  refineSnapTest(m);
- 
-  m->writeNative(argv[5]);
+  refineSnapTest(m, 3, 1);
 
   //Clean up
   m->destroyNative();
