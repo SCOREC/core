@@ -49,15 +49,10 @@ int main(int argc, char* argv[]) {
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
 
-  pGModel model = 0;
-  pParMesh mesh = 0;
-  gmi_model* mdl_ref;
-  ma::Mesh* mesh_ref;
-  
-  mdl_ref = gmi_sim_load(argv[1], argv[2]);
-  model = gmi_export_sim(mdl_ref);
-  mesh = PM_load(argv[3], model, progress);
-  mesh_ref = apf::createMesh(mesh, PCUObj);
+  gmi_model* mdl_ref = gmi_sim_load(argv[1], argv[2]);
+  pGModel model = gmi_export_sim(mdl_ref);
+  pParMesh mesh = PM_load(argv[3], model, progress);
+  ma::Mesh* mesh_ref = apf::createMesh(mesh, PCUObj);
   apf::Mesh2* m = apf::createMdsMesh(mdl_ref, mesh_ref);
 
   //Adapt
