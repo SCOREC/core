@@ -8,33 +8,7 @@
 #include <apf.h>
 #include <apfMDS.h>
 #include <ma.h>
-#include "maCoarsen.h"
-#include "maAdapt.h"
-
-class AnIso : public ma::AnisotropicFunction
-{
-  public:
-    AnIso(ma::Mesh* m, double sf1, double sf2) :
-      mesh(m), sizeFactor1(sf1), sizeFactor2(sf2)
-    {
-      average = ma::getAverageEdgeLength(m);
-      ma::getBoundingBox(m, lower, upper);
-    }
-    virtual void getValue(ma::Entity*, ma::Matrix& R, ma::Vector& H)
-    {
-      double h = average/sizeFactor1;
-      H = ma::Vector(h, h, h/sizeFactor2);
-      R = ma::Matrix(
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0
-      );
-    }
-  private:
-    ma::Mesh* mesh;
-    double sizeFactor1, sizeFactor2, average;
-    ma::Vector lower, upper;
-};
+#include "aniso_adapt.h"
 
 int main(int argc, char* argv[]) {
   if (argc != 6) {
@@ -51,19 +25,10 @@ int main(int argc, char* argv[]) {
   lion_set_verbosity(1);
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(modelFile, meshFile, PCUObj);
-  m->verify();
-  apf::writeVtkFiles("aniso_ma_test2_before",m);
 
   //Adapt
-  AnIso sf(m, sizeFactor1, sizeFactor2);
-  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
-  // in->shouldFixShape = false;
-  // in->shouldCoarsen = false;
-  // in->shouldSnap = false;
-  // in->shouldCleanupLayer = false;
-  ma::adapt(in);
-  m->verify();
-  apf::writeVtkFiles("aniso_ma_test2_after",m);
+  refineSnapTest(m);
+ 
   m->writeNative(argv[5]);
 
   //Clean up
