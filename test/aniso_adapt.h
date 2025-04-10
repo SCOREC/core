@@ -41,7 +41,7 @@ class AnIso : public ma::AnisotropicFunction
 void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
 {
   m->verify();
-  apf::writeVtkFiles("before_refine_snap_test",m);
+  apf::writeVtkFiles("before_refine_snap",m);
   AnIso sf(m, sizeFactor1, sizeFactor2);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
@@ -51,5 +51,5 @@ void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
     ma::snap(a);
   }
   m->verify();
-  apf::writeVtkFiles("after_refine_snap_test",m);
+  apf::writeVtkFiles("after_refine_snap",m);
 }
