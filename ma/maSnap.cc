@@ -904,7 +904,23 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
-void trySnapping(Adapt* a) 
+void tryCollapseToVtx(Adapt* a, Entity* vertex, Tag* snapTag, Upward& adjacentElements)
+{
+  FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
+  FPP->setVertex(vertex);
+  apf::Up bad;
+  bad.n = 0;
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    bad.e[bad.n++] = adjacentElements[i];
+  }
+
+  FPP->setBadElements(bad);
+  std::vector<Entity*> edgesFromFPP;
+  FPP->getCandidateEdges(edgesFromFPP);
+  printf("NUM EDGES FPP %d\n", edgesFromFPP.size());
+}
+
+void trySnapping(Adapt* a, Tag* snapTag) 
 {
   Mesh* mesh = a->mesh;
   Refine* refine = a->refine;
@@ -938,7 +954,10 @@ void trySnapping(Adapt* a)
     if (!areTetsValid(mesh, adjacentElements))
     {
       mesh->setPoint(vertex, 0, prev);
+      mesh->setDoubleTag(vertex, snapTag, &target[0]);
+      tryCollapseToVtx(a, vertex, snapTag, adjacentElements);
       refine->vtxToSnap.push(vertex);
+      mesh->removeTag(vertex,snapTag);
     }
     else
       clearFlag(a, vertex, SNAP);
@@ -968,12 +987,14 @@ void printSnapFields(Adapt* a, Mesh* m, std::string name)
 
 void snap(Adapt* a)
 {
-  if ( ! a->input->shouldSnap)
+  if (!a->input->shouldSnap)
     return;
   printSnapFields(a, a->mesh, "vtx_to_snap");
-  trySnapping(a);
+  Tag* snapTag = a->mesh->createDoubleTag("ma_snap", 3);
+  trySnapping(a, snapTag);
   printSnapFields(a, a->mesh, "vtx_snap_failed");
   clearFlagFromDimension(a, SNAP, 0);
+  a->mesh->destroyTag(snapTag);
   a->refine->vtxToSnap = {};
 }
 
