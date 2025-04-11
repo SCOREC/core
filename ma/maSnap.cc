@@ -908,14 +908,13 @@ void trySnapping(Adapt* a)
 {
   Mesh* mesh = a->mesh;
   Refine* refine = a->refine;
-  auto vtxToSnap = refine->vtxToSnap;
-  int notProcessed = vtxToSnap.size();
+  int notProcessed = refine->vtxToSnap.size();
   print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", notProcessed);
   while (notProcessed > 0)
   {
     notProcessed--;
-    Entity* vertex = vtxToSnap.front();
-    vtxToSnap.pop();
+    Entity* vertex = refine->vtxToSnap.front();
+    refine->vtxToSnap.pop();
 
     if (!getFlag(a, vertex, SNAP))
     {
@@ -939,13 +938,13 @@ void trySnapping(Adapt* a)
     if (!areTetsValid(mesh, adjacentElements))
     {
       mesh->setPoint(vertex, 0, prev);
-      vtxToSnap.push(vertex);
+      refine->vtxToSnap.push(vertex);
     }
     else
       clearFlag(a, vertex, SNAP);
   }
 
-  print(a->mesh->getPCU(), "Number of vertices failed %d\n", vtxToSnap.size());
+  print(a->mesh->getPCU(), "Number of vertices failed %d\n", refine->vtxToSnap.size());
 }
 
 void printSnapFields(Adapt* a, Mesh* m, std::string name)
