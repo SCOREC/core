@@ -26,6 +26,7 @@
 #include "maRefine.h"
 #include "maSnap.h"
 #include "lionPrint.h"
+#include "aniso_adapt.h"
 
 #include "CapstoneModule.h"
 #include "CreateMG_Framework_Core.h"
@@ -40,31 +41,6 @@ using namespace CreateMG;
 using namespace CreateMG::Attribution;
 using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
-
-class AnIso : public ma::AnisotropicFunction
-{
-  public:
-    AnIso(ma::Mesh* m, double sf1, double sf2) :
-      mesh(m), sizeFactor1(sf1), sizeFactor2(sf2)
-    {
-      average = ma::getAverageEdgeLength(m);
-      ma::getBoundingBox(m, lower, upper);
-    }
-    virtual void getValue(ma::Entity*, ma::Matrix& R, ma::Vector& H)
-    {
-      double h = average/sizeFactor1;
-      H = ma::Vector(h, h, h/sizeFactor2);
-      R = ma::Matrix(
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0
-      );
-    }
-  private:
-    ma::Mesh* mesh;
-    double sizeFactor1, sizeFactor2, average;
-    ma::Vector lower, upper;
-};
 
 int main(int argc, char** argv)
 {
@@ -159,22 +135,10 @@ int main(int argc, char** argv)
   // convert the mesh to apf/mds mesh
 
   apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
-  mesh->verify();
-  apf::writeVtkFiles("before_snap",mesh);
-
-  //Adapt
   lion_set_verbosity(1);
-  AnIso sf(mesh, 2, 1);
-  ma::Input* in = ma::makeAdvanced(ma::configure(mesh, &sf));
-  in->maximumIterations = 1;
-  ma::Adapt* a = new ma::Adapt(in);
-  for (int i = 0; i < in->maximumIterations; ++i)
-  {
-    ma::refine(a);
-    ma::snap(a);
-  }
-  mesh->verify();
-  apf::writeVtkFiles("after_snap",mesh);
+ 
+  //Adapt
+  refineSnapTest(mesh, 3, 1);
 
   gmi_cap_stop();
   }
