@@ -345,7 +345,7 @@ bool FirstProblemPlane::find()
         lion_oprint(1, "Info: Found Infinitely Many Intersection Points!\n");
       Vector newDirection = intersect - ray.start;
       if (newDirection.getLength() < minDist) {
-	dists.push_back(newDirection.getLength());
+	      dists.push_back(newDirection.getLength());
       	minDist = dists.back();
       	problemFace = face;
       	problemRegion = elem;
@@ -374,8 +374,8 @@ bool FirstProblemPlane::find()
     minDist += tol;
     for (int i = 0; i < n; i++) {
       if (dists[i] < minDist) {
-	coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions.e[i];
-	coplanarProblemRegions.n++;
+        coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions.e[i];
+        coplanarProblemRegions.n++;
       }
     }
   }
@@ -477,8 +477,8 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
     int nDownEdges = mesh->getDownward(cpRegions.e[0], 1, edges);
     for (int i = 0; i < nDownEdges; i++) {
       if (isLowInHigh(mesh, edges[i], vert)) {
-	commEdges.e[commEdges.n] = edges[i];
-	commEdges.n++;
+        commEdges.e[commEdges.n] = edges[i];
+        commEdges.n++;
       }
     }
     return;

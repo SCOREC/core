@@ -912,6 +912,7 @@ void tryCollapseToVtx(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
   std::vector<Entity*> edgesFromFPP;
   FPP->getCandidateEdges(edgesFromFPP);
   printf("INVALID %d FPP %d\n", invalid.n, edgesFromFPP.size());
+  delete FPP;
 }
 
 void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
