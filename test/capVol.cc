@@ -24,7 +24,7 @@ using namespace CreateMG::Attribution;
 using namespace CreateMG::Mesh;
 using namespace CreateMG::Geometry;
 
-#include "capStoneSizeFields.h"
+#include "capVolSizeFields.h"
 
 namespace {
 

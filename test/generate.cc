@@ -91,6 +91,7 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
   MeshingOptions meshingOptions;
   MS_processSimModelerMeshingAtts(mcaseFile, mcase, &meshingOptions);
   MS_processSimModelerAdvMeshingAtts(mcaseFile, mcase);
+  AttCase_unassociate(mcaseFile);
   AttCase_setModel(mcase, mdl);
 
   pParMesh pmesh;
@@ -132,7 +133,7 @@ pParMesh generate(pGModel mdl, std::string meshCaseName) {
     if(0==PCU_Comm_Self())
       printf(" %f seconds\n", MPI_Wtime()-vtime);
   }
-
+  MS_deleteMeshCase(mcase);
   return pmesh;
 }
 
@@ -284,7 +285,7 @@ void simStart() {
   SimPartitionedMesh_start(NULL,NULL);
   if(should_log)
     Sim_logOn("generate_sim.log");
-  MS_init();
+  SimAdvMeshing_start();
   SimModel_start();
 #ifdef SIM_PARASOLID
   SimParasolid_start(1);
@@ -294,17 +295,11 @@ void simStart() {
 #endif
   SimDiscrete_start(0);
   Sim_readLicenseFile(NULL);
-  MS_init();
-  SimAdvMeshing_start();
   Sim_setMessageHandler(messageHandler);
 }
 
 void simStop() {
-  SimAdvMeshing_stop();
-  SimModel_stop();
-  SimPartitionedMesh_stop();
   Sim_unregisterAllKeys();
-  SimModel_stop();
   SimDiscrete_stop(0);
 #ifdef SIM_ACIS
   SimAcis_stop(1);
@@ -312,7 +307,9 @@ void simStop() {
 #ifdef SIM_PARASOLID
   SimParasolid_stop(1);
 #endif
-  MS_exit();
+  SimModel_stop();
+  SimAdvMeshing_stop();
+  SimPartitionedMesh_stop();
 }
 
 } //end unnamed namespace
@@ -355,6 +352,7 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
 
+  GM_release(simModel);
   simStop();
   Sim_logOff();
   PCU_Comm_Free();
