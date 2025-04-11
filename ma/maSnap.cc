@@ -904,20 +904,25 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
-void tryCollapseToVtx(Adapt* a, Entity* vertex, Tag* snapTag, Upward& adjacentElements)
+void tryCollapseToVtx(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
 {
   FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
   FPP->setVertex(vertex);
-  apf::Up bad;
-  bad.n = 0;
-  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
-    bad.e[bad.n++] = adjacentElements[i];
-  }
-
-  FPP->setBadElements(bad);
+  FPP->setBadElements(invalid);
   std::vector<Entity*> edgesFromFPP;
   FPP->getCandidateEdges(edgesFromFPP);
-  printf("NUM EDGES FPP %d\n", edgesFromFPP.size());
+  printf("INVALID %d FPP %d\n", invalid.n, edgesFromFPP.size());
+}
+
+void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
+{
+  invalid.n = 0;
+  Vector v[4];
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    ma::getVertPoints(mesh,adjacentElements[i],v);
+    if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+      invalid.e[invalid.n++] = adjacentElements[i];
+  }
 }
 
 void trySnapping(Adapt* a, Tag* snapTag) 
@@ -951,11 +956,14 @@ void trySnapping(Adapt* a, Tag* snapTag)
     mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
     mesh->setPoint(vertex, 0, target);
 
-    if (!areTetsValid(mesh, adjacentElements))
+    apf::Up invalid;
+    getInvalidTets(mesh, adjacentElements, invalid);
+    
+    if (invalid.n > 0)
     {
       mesh->setPoint(vertex, 0, prev);
       mesh->setDoubleTag(vertex, snapTag, &target[0]);
-      tryCollapseToVtx(a, vertex, snapTag, adjacentElements);
+      tryCollapseToVtx(a, vertex, snapTag, invalid);
       refine->vtxToSnap.push(vertex);
       mesh->removeTag(vertex,snapTag);
     }
