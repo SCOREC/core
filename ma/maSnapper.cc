@@ -517,11 +517,11 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
       	if (!isLowInHigh(mesh, region, edges[i])) {
       	  flag = 0;
       	  break;
-	}
-	if (flag) {
-	  commEdges.e[commEdges.n] = edges[i];
-	  commEdges.n++;
-	}
+        }
+        if (flag) {
+          commEdges.e[commEdges.n] = edges[i];
+          commEdges.n++;
+        }
       }
     }
   }

@@ -841,29 +841,35 @@ bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
   return a->mesh->getPCU()->Or(op.didAnything);
 }
 
-long tagVertsToSnap(Adapt* a, Tag*& t)
+long tagVertsToSnap(Adapt* a, Tag*& tag)
 {
   Mesh* m = a->mesh;
+  Refine* refine = a->refine;
   int dim = m->getDimension();
-  t = m->createDoubleTag("ma_snap", 3);
-  Entity* v;
-  long n = 0;
-  Iterator* it = m->begin(0);
-  while ((v = m->iterate(it))) {
-    int md = m->getModelType(m->toModel(v));
-    if (dim == 3 && md == 3)
+  tag = m->createDoubleTag("ma_snap", 3);
+  int notProcessed = refine->vtxToSnap.size();
+  int owned = 0;
+  while (notProcessed > 0)
+  {
+    notProcessed--;
+    Entity* vertex = refine->vtxToSnap.front();
+    refine->vtxToSnap.pop();
+    PCU_ALWAYS_ASSERT(getFlag(a, vertex, SNAP));
+
+    Vector target;
+    getSnapPoint(m, vertex, target);
+    Vector prev = getPosition(m, vertex);
+    if (apf::areClose(prev, target, 1e-12))
+    {
+      clearFlag(a, vertex, SNAP);
       continue;
-    Vector s;
-    getSnapPoint(m, v, s);
-    Vector x = getPosition(m, v);
-    if (apf::areClose(s, x, 1e-12))
-      continue;
-    m->setDoubleTag(v, t, &s[0]);
-    if (m->isOwned(v))
-      ++n;
+    }
+    m->setDoubleTag(vertex, tag, &target[0]);
+    if (m->isOwned(vertex))
+      ++owned;
+    refine->vtxToSnap.push(vertex);
   }
-  m->end(it);
-  return m->getPCU()->Add<long>(n);
+  return m->getPCU()->Add<long>(owned);
 }
 
 static void markVertsToSnap(Adapt* a, Tag* t)
@@ -938,20 +944,9 @@ void trySnapping(Adapt* a, Tag* snapTag)
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
 
-    if (!getFlag(a, vertex, SNAP))
-    {
-      print(a->mesh->getPCU(), "Error: Vertex incorrectly flagged to snap\n");
-      continue;
-    }
-
     Vector prev = getPosition(mesh, vertex);
     Vector target;
-    getSnapPoint(mesh, vertex, target);
-    if (apf::areClose(prev, target, 1e-12))
-    {
-      clearFlag(a, vertex, SNAP);
-      continue;
-    }
+    mesh->getDoubleTag(vertex, snapTag, &target[0]);
 
     Upward adjacentElements;
     mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
@@ -963,7 +958,6 @@ void trySnapping(Adapt* a, Tag* snapTag)
     if (invalid.n > 0)
     {
       mesh->setPoint(vertex, 0, prev);
-      mesh->setDoubleTag(vertex, snapTag, &target[0]);
       tryCollapseToVtx(a, vertex, snapTag, invalid);
       refine->vtxToSnap.push(vertex);
       mesh->removeTag(vertex,snapTag);
@@ -999,7 +993,8 @@ void snap(Adapt* a)
   if (!a->input->shouldSnap)
     return;
   printSnapFields(a, a->mesh, "vtx_to_snap");
-  Tag* snapTag = a->mesh->createDoubleTag("ma_snap", 3);
+  Tag* snapTag;
+  tagVertsToSnap(a, snapTag);
   trySnapping(a, snapTag);
   printSnapFields(a, a->mesh, "vtx_snap_failed");
   clearFlagFromDimension(a, SNAP, 0);
