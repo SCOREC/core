@@ -910,14 +910,33 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
-bool tryCollapseToVertex(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, Tag* snapTag, apf::Up& invalid)
 {
   FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
   FPP->setVertex(vertex);
   FPP->setBadElements(invalid);
-  std::vector<Entity*> edgesFromFPP;
-  FPP->getCandidateEdges(edgesFromFPP);
-  printf("INVALID %d FPP %d\n", invalid.n, edgesFromFPP.size());
+  std::vector<Entity*> collapseOptions;
+  FPP->getCandidateEdges(collapseOptions);
+  setFlagMatched(a,vertex,DONT_COLLAPSE);
+  double q = a->input->validQuality;
+  for (size_t i = 0; i < collapseOptions.size(); ++i) {
+    Entity* edge = collapseOptions[i];
+    PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+    if (!collapse.setEdge(edge))
+      continue;
+    if (!collapse.checkClass())
+      continue;
+    if (!collapse.checkTopo())
+      continue;
+    bool oldForce = a->input->shouldForceAdaptation;
+    a->input->shouldForceAdaptation = true;
+    if (!collapse.tryBothDirections(q))
+      continue;
+    a->input->shouldForceAdaptation = oldForce;
+    collapse.destroyOldElements();
+    clearFlagMatched(a,vertex,DONT_COLLAPSE);
+    return true; //TODO: select from best quality instead of first
+  }
   delete FPP;
   return false;
 }
@@ -950,6 +969,8 @@ void trySnapping(Adapt* a, Tag* snapTag)
 {
   Mesh* mesh = a->mesh;
   Refine* refine = a->refine;
+  Collapse collapse;
+  collapse.Init(a);
   int notProcessed = refine->vtxToSnap.size();
   print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", notProcessed);
   while (notProcessed > 0)
@@ -962,7 +983,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
     bool success = tryReposition(mesh, vertex, snapTag, invalid);
 
     if (!success)
-      success = tryCollapseToVertex(a, vertex, snapTag, invalid);
+      success = tryCollapseToVertex(a, collapse, vertex, snapTag, invalid);
 
     if (success) {
       mesh->removeTag(vertex,snapTag);
