@@ -910,7 +910,7 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
-void tryCollapseToVtx(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+bool tryCollapseToVertex(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
 {
   FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
   FPP->setVertex(vertex);
@@ -919,6 +919,7 @@ void tryCollapseToVtx(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
   FPP->getCandidateEdges(edgesFromFPP);
   printf("INVALID %d FPP %d\n", invalid.n, edgesFromFPP.size());
   delete FPP;
+  return false;
 }
 
 void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
@@ -930,6 +931,19 @@ void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
     if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
       invalid.e[invalid.n++] = adjacentElements[i];
   }
+}
+
+bool tryReposition(Mesh* mesh, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
+{
+  Vector prev = getPosition(mesh, vertex);
+  Vector target;
+  mesh->getDoubleTag(vertex, snapTag, &target[0]);
+  Upward adjacentElements;
+  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  mesh->setPoint(vertex, 0, target);
+  getInvalidTets(mesh, adjacentElements, invalid);
+  if (invalid.n == 0) return true;
+  mesh->setPoint(vertex, 0, prev);
 }
 
 void trySnapping(Adapt* a, Tag* snapTag) 
@@ -944,26 +958,18 @@ void trySnapping(Adapt* a, Tag* snapTag)
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
 
-    Vector prev = getPosition(mesh, vertex);
-    Vector target;
-    mesh->getDoubleTag(vertex, snapTag, &target[0]);
-
-    Upward adjacentElements;
-    mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-    mesh->setPoint(vertex, 0, target);
-
     apf::Up invalid;
-    getInvalidTets(mesh, adjacentElements, invalid);
-    
-    if (invalid.n > 0)
-    {
-      mesh->setPoint(vertex, 0, prev);
-      tryCollapseToVtx(a, vertex, snapTag, invalid);
-      refine->vtxToSnap.push(vertex);
+    bool success = tryReposition(mesh, vertex, snapTag, invalid);
+
+    if (!success)
+      success = tryCollapseToVertex(a, vertex, snapTag, invalid);
+
+    if (success) {
       mesh->removeTag(vertex,snapTag);
+      clearFlag(a, vertex, SNAP);
     }
     else
-      clearFlag(a, vertex, SNAP);
+      refine->vtxToSnap.push(vertex);
   }
 
   print(a->mesh->getPCU(), "Number of vertices failed %d\n", refine->vtxToSnap.size());
