@@ -55,15 +55,15 @@ class FirstProblemPlane
     void setVertex(Entity* v);
     void setBadElements(apf::Up& badElements);
     void getCandidateEdges(std::vector<Entity*> &edges);
+    Entity* vert;
+    Entity* problemFace;
+    apf::Up commEdges;
   private:
     Adapt* adapter;
     Tag* snapTag;
-    Entity* vert;
     apf::Up problemRegions;
-    Entity* problemFace;
     Entity* problemRegion;
     Vector intersection;
-    apf::Up commEdges;
     double tol;
     bool find();
     void findCandidateEdges(std::vector<Entity*> &edges);

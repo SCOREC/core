@@ -910,13 +910,40 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
-bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityToBeat)
 {
-  FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
-  FPP->setVertex(vertex);
-  FPP->setBadElements(invalid);
-  std::vector<Entity*> commEdges;
-  FPP->getCandidateEdges(commEdges);
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  if (!collapse.setEdge(edge))
+    return false;
+  if (!collapse.checkClass())
+    return false;
+  if (!collapse.checkTopo())
+    return false;
+  if (!collapse.tryBothDirections(qualityToBeat))
+    return false;
+  collapse.destroyOldElements();
+  return true;
+}
+
+bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, Entity* vertex, std::vector<Entity*> &commEdges)
+{
+  //TODO: handle edge cases
+  for (int i=0; i<commEdges.size(); i++) {
+    Entity* edge = commEdges[i];
+    Entity* vertexFPP = getEdgeVertOppositeVert(a->mesh, edge, vertex);
+    apf::Up adjEdges;
+    a->mesh->getUp(vertexFPP, adjEdges);
+    for (int j=0; j<adjEdges.n; j++) {
+      Entity* edgeDel = adjEdges.e[j];
+      if (edgeDel==edge) continue;
+      if (tryCollapseEdge(a, edgeDel, collapse, a->input->validQuality)) return true;
+    }
+  }
+  return false;
+}
+
+bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, std::vector<Entity*> &commEdges)
+{
   setFlagMatched(a,vertex,DONT_COLLAPSE);
   double q = a->input->validQuality;
   for (size_t i = 0; i < commEdges.size(); ++i) {
@@ -937,8 +964,17 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, Tag* snap
     clearFlagMatched(a,vertex,DONT_COLLAPSE);
     return true; //TODO: select from best quality instead of first
   }
-  delete FPP;
   return false;
+}
+
+std::vector<Entity*> getCommEdgesFromFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+{
+  FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
+  FPP->setVertex(vertex);
+  FPP->setBadElements(invalid);
+  std::vector<Entity*> commEdges;
+  FPP->getCandidateEdges(commEdges);
+  return commEdges;
 }
 
 void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
@@ -984,8 +1020,10 @@ void trySnapping(Adapt* a, Tag* snapTag)
     apf::Up invalid;
     bool success = tryReposition(a, vertex, snapTag, invalid);
 
-    if (!success)
-      success = tryCollapseToVertex(a, collapse, vertex, snapTag, invalid);
+    std::vector<Entity*> commEdges;
+    if (!success) commEdges = getCommEdgesFromFPP(a, vertex, snapTag, invalid);
+    if (!success) success = tryCollapseToVertex(a, collapse, vertex, commEdges);
+    if (!success) success = tryCollapseTetEdges(a, collapse, vertex, commEdges);
 
     if (success) {
       mesh->removeTag(vertex,snapTag);
@@ -993,6 +1031,8 @@ void trySnapping(Adapt* a, Tag* snapTag)
     }
     else
       refine->vtxToSnap.push(vertex);
+    
+    // delete FPP;
   }
 
   print(a->mesh->getPCU(), "Number of vertices failed %d\n", refine->vtxToSnap.size());
