@@ -915,12 +915,12 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, Tag* snap
   FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
   FPP->setVertex(vertex);
   FPP->setBadElements(invalid);
-  std::vector<Entity*> collapseOptions;
-  FPP->getCandidateEdges(collapseOptions);
+  std::vector<Entity*> commEdges;
+  FPP->getCandidateEdges(commEdges);
   setFlagMatched(a,vertex,DONT_COLLAPSE);
   double q = a->input->validQuality;
-  for (size_t i = 0; i < collapseOptions.size(); ++i) {
-    Entity* edge = collapseOptions[i];
+  for (size_t i = 0; i < commEdges.size(); ++i) {
+    Entity* edge = commEdges[i];
     PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
     if (!collapse.setEdge(edge))
       continue;
@@ -952,8 +952,9 @@ void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
   }
 }
 
-bool tryReposition(Mesh* mesh, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
+bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
 {
+  Mesh* mesh = adapt->mesh;
   Vector prev = getPosition(mesh, vertex);
   Vector target;
   mesh->getDoubleTag(vertex, snapTag, &target[0]);
@@ -963,6 +964,7 @@ bool tryReposition(Mesh* mesh, Entity* vertex, Tag* snapTag, apf::Up& invalid)
   getInvalidTets(mesh, adjacentElements, invalid);
   if (invalid.n == 0) return true;
   mesh->setPoint(vertex, 0, prev);
+  return false;
 }
 
 void trySnapping(Adapt* a, Tag* snapTag) 
@@ -980,7 +982,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
     refine->vtxToSnap.pop();
 
     apf::Up invalid;
-    bool success = tryReposition(mesh, vertex, snapTag, invalid);
+    bool success = tryReposition(a, vertex, snapTag, invalid);
 
     if (!success)
       success = tryCollapseToVertex(a, collapse, vertex, snapTag, invalid);
@@ -998,32 +1000,20 @@ void trySnapping(Adapt* a, Tag* snapTag)
 
 void printSnapFields(Adapt* a, Mesh* m, std::string name)
 {
-  apf::Field* f = m->findField("SNAP");
-  if (!f)
-    f = apf::createFieldOn(m, "SNAP", apf::SCALAR);
-  apf::MeshIterator* it = m->begin(0);
-  apf::MeshEntity* e;
-  while ((e = m->iterate(it)))
-  {
-    if (getFlag(a, e, SNAP))
-      apf::setScalar(f, e, 0, 1);
-    else
-      apf::setScalar(f, e, 0, 0);
-  }
-  m->end(it);
-
-  apf::writeVtkFiles(name.c_str(), m, 1);
+  apf::writeVtkFiles(name.c_str(), m);
+  ma_dbg::addTargetLocation(a, "snap_target");
+  apf::writeVtkFiles((name+"_fields").c_str(), m, 1);
 }
 
 void snap(Adapt* a)
 {
   if (!a->input->shouldSnap)
     return;
-  printSnapFields(a, a->mesh, "vtx_to_snap");
   Tag* snapTag;
   tagVertsToSnap(a, snapTag);
+  printSnapFields(a, a->mesh, "before_last_snap");
   trySnapping(a, snapTag);
-  printSnapFields(a, a->mesh, "vtx_snap_failed");
+  printSnapFields(a, a->mesh, "after_last_snap");
   clearFlagFromDimension(a, SNAP, 0);
   a->mesh->destroyTag(snapTag);
   a->refine->vtxToSnap = {};
