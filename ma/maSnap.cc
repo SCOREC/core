@@ -946,9 +946,10 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, std::vect
 {
   bool flag = getFlag(a,vertex,DONT_COLLAPSE);
   if (!flag) setFlag(a,vertex,DONT_COLLAPSE);
-  bool oldForce = a->input->shouldForceAdaptation;
+  bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
   double q = a->input->validQuality;
+
   bool success = false;
   for (size_t i = 0; i < commEdges.size(); ++i) {
     Entity* edge = commEdges[i];
@@ -956,7 +957,7 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, std::vect
     if (success) break; //TODO: select from best quality instead of first
   }
 
-  a->input->shouldForceAdaptation = oldForce;
+  a->input->shouldForceAdaptation = shouldForce;
   if (!flag) clearFlag(a,vertex,DONT_COLLAPSE);
 
   return success;
