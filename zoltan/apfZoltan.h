@@ -42,6 +42,7 @@ enum ZoltanMethod {
   HYPERGRAPH,
   /** \brief Use ParMetis */
   PARMETIS,
+  PTSCOTCH, /**< Use PT-Scotch */
   /** \brief General graph partitionig */
   GRAPH
 };

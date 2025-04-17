@@ -6,7 +6,6 @@ endif()
 # Package options
 option(ENABLE_ZOLTAN "Enable Zoltan interface [ON|OFF]" OFF)
 xsdk_add_tpl(ZOLTAN)
-xsdk_add_tpl(PARMETIS)
 message(STATUS "ENABLE_ZOLTAN: " ${ENABLE_ZOLTAN})
 
 if(SCOREC_NO_MPI AND ENABLE_ZOLTAN)
@@ -58,15 +57,20 @@ target_link_libraries(apf_zoltan PUBLIC pcu apf)
 
 # Do extra work if zoltan is enabled
 if(ENABLE_ZOLTAN)
-  target_include_directories(apf_zoltan PRIVATE
-      ${ZOLTAN_INCLUDE_DIRS}
-      ${PARMETIS_INCLUDE_DIRS}
-      )
-  target_link_libraries(apf_zoltan PUBLIC
-    ${ZOLTAN_LIBRARIES}
-    ${PARMETIS_LIBRARIES}
-  )
+  target_include_directories(apf_zoltan PRIVATE ${ZOLTAN_INCLUDE_DIRS})
+  target_link_libraries(apf_zoltan PUBLIC ${ZOLTAN_LIBRARIES})
   target_compile_definitions(apf_zoltan PUBLIC PUMI_HAS_ZOLTAN)
+  if(PUMI_HAS_PTSCOTCH)
+    target_link_libraries(apf_zoltan PUBLIC
+      SCOTCH::ptscotch SCOTCH::ptscotcherr
+    )
+    target_compile_definitions(apf_zoltan PUBLIC PUMI_HAS_PTSCOTCH)
+  endif()
+  if(PUMI_HAS_PARMETIS)
+    target_include_directories(apf_zoltan PRIVATE ${PARMETIS_INCLUDE_DIRS})
+    target_link_libraries(apf_zoltan PUBLIC ${PARMETIS_LIBRARIES})
+    target_compile_definitions(apf_zoltan PUBLIC PUMI_HAS_PARMETIS)
+  endif()
 endif()
 
 scorec_export_library(apf_zoltan)

@@ -9,7 +9,9 @@
 #include "apfZoltanMesh.h"
 #include "apfZoltan.h"
 #include "apfShape.h"
+#ifdef PUMI_HAS_PARMETIS
 #include <metis.h>
+#endif
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <cstdlib>
@@ -29,9 +31,33 @@ static int setZoltanLbMethod(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
     case HYPERGRAPH:
       lbMethod = "HYPERGRAPH"; break;
     case PARMETIS: //fall into GRAPH settings
+      lbMethod = "GRAPH";
+#ifdef PUMI_HAS_PARMETIS
+      Zoltan_Set_Param(ztn, "GRAPH_PACKAGE", "PARMETIS");
+#else
+      lion_oprint(1, "WARNING: ParMETIS ZoltanMethod requested but ParMETIS"
+        " was not enabled at build time.\n");
+#endif
+      break;
+    case PTSCOTCH:
+      lbMethod = "GRAPH";
+#ifdef PUMI_HAS_PTSCOTCH
+      Zoltan_Set_Param(ztn, "GRAPH_PACKAGE", "Scotch");
+#else
+      lion_oprint(1, "WARNING: PT-Scotch ZoltanMethod requested but PT-Scotch"
+        " was not enabled at build time.\n");
+#endif
+      break;
     case GRAPH:
       lbMethod = "GRAPH";
-      Zoltan_Set_Param(ztn, "GRAPH_PACKAGE", "PARMETIS"); // instead of PHG
+      // Prefer ParMETIS, then PT-Scotch, then Zoltan-native PHG.
+#if defined(PUMI_HAS_PARMETIS)
+      Zoltan_Set_Param(ztn, "GRAPH_PACKAGE", "PARMETIS");
+#elif defined(PUMI_HAS_PTSCOTCH)
+      Zoltan_Set_Param(ztn, "GRAPH_PACKAGE", "Scotch");
+#else
+      // Zoltan_Set_Param(ztn, "HYPERGRAPH_PACKAGE", "PHG"); //FIXME: not required?
+#endif
       break;
     default:
       lion_oprint(1,"ERROR %s Invalid LB_METHOD %d\n",__func__, zb->method);
@@ -68,8 +94,14 @@ static int setZoltanLbApproach(struct Zoltan_Struct* ztn, ZoltanMesh* zb)
       return 1;
   }
   Zoltan_Set_Param(ztn, "LB_APPROACH", ptnAp.c_str());
-  if ( (3 == zb->method) || (4 == zb->method) )
+  if (zb->method == PARMETIS
+#ifdef PUMI_HAS_PARMETIS // in this case GRAPH implies PARMETIS.
+    || zb->method == GRAPH
+#endif
+  ) {
     Zoltan_Set_Param(ztn, "PARMETIS_METHOD", pMethod.c_str());
+  }
+  // No zb->method == PTSCOTCH because Zoltan only supports RBISECT.
   return 0;
 }
 
@@ -304,7 +336,9 @@ ZoltanData::~ZoltanData()
 void ZoltanData::run()
 {
 /* ensure Metis indices are the same size as Zoltan indices */
+#ifdef PUMI_HAS_PARMETIS
   PCU_ALWAYS_ASSERT(IDXTYPEWIDTH == sizeof(ZOLTAN_ID_TYPE)*8);
+#endif
   setup();
   ptn();
 }
@@ -331,7 +365,9 @@ void ZoltanData::setup()
   if ( zb->isLocal && 0 != m->getPCU()->Self() )
     snprintf(paramStr, 128, "%d", 0);  //if local silence all but rank 0
   Zoltan_Set_Param(ztn, "debug_level", paramStr);
+#ifdef PUMI_HAS_PARMETIS
   Zoltan_Set_Param(ztn, "PARMETIS_OUTPUT_LEVEL", paramStr);
+#endif
   Zoltan_Set_Param(ztn, "CHECK_GRAPH", "0");
   Zoltan_Set_Param(ztn, "CHECK_HYPERGRAPH", "0");
 
