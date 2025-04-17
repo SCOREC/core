@@ -942,35 +942,45 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, Entity* vertex, std::vect
   return false;
 }
 
-bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, std::vector<Entity*> &commEdges)
+bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProblemPlane* FPP)
 {
-  bool flag = getFlag(a,vertex,DONT_COLLAPSE);
-  if (!flag) setFlag(a,vertex,DONT_COLLAPSE);
+  bool flag = getFlag(a,FPP->vert,DONT_COLLAPSE);
+  if (!flag) setFlag(a,FPP->vert,DONT_COLLAPSE);
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
   double q = a->input->validQuality;
 
+  Vector position = getPosition(a->mesh, FPP->vert);
+  Vector target;
+  a->mesh->getDoubleTag(FPP->vert, snapTag, &target[0]);
+  double distTarget = (position - target).getLength();
+
   bool success = false;
-  for (size_t i = 0; i < commEdges.size(); ++i) {
-    Entity* edge = commEdges[i];
-    success = tryCollapseEdge(a, commEdges[i], collapse, q);
+  for (size_t i = 0; i < FPP->commEdges.n; ++i) {
+    Entity* edge = FPP->commEdges.e[i];
+    Entity* vertexOnFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
+    Vector vFPPCoord = getPosition(a->mesh, vertexOnFPP);
+    double vertFPPdist = (vFPPCoord - target).getLength();
+    if (vertFPPdist > distTarget) continue;
+
+    success = tryCollapseEdge(a, edge, collapse, q);
     if (success) break; //TODO: select from best quality instead of first
   }
 
   a->input->shouldForceAdaptation = shouldForce;
-  if (!flag) clearFlag(a,vertex,DONT_COLLAPSE);
+  if (!flag) clearFlag(a,FPP->vert,DONT_COLLAPSE);
 
   return success;
 }
 
-std::vector<Entity*> getCommEdgesFromFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
 {
   FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
   FPP->setVertex(vertex);
   FPP->setBadElements(invalid);
   std::vector<Entity*> commEdges;
   FPP->getCandidateEdges(commEdges);
-  return commEdges;
+  return FPP;
 }
 
 void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
@@ -1016,10 +1026,10 @@ void trySnapping(Adapt* a, Tag* snapTag)
     apf::Up invalid;
     bool success = tryReposition(a, vertex, snapTag, invalid);
 
-    std::vector<Entity*> commEdges;
-    if (!success) commEdges = getCommEdgesFromFPP(a, vertex, snapTag, invalid);
-    if (!success) success = tryCollapseToVertex(a, collapse, vertex, commEdges);
-    if (!success) success = tryCollapseTetEdges(a, collapse, vertex, commEdges);
+    FirstProblemPlane* FPP;
+    if (!success) FPP = getFPP(a, vertex, snapTag, invalid);
+    if (!success) success = tryCollapseToVertex(a, collapse, snapTag, FPP);
+    // if (!success) success = tryCollapseTetEdges(a, collapse, vertex, commEdges);
 
     if (success) {
       mesh->removeTag(vertex,snapTag);

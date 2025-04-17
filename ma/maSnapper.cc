@@ -171,7 +171,7 @@ static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
     nedges = m->getDownward(elem, 1, edges);
     for (int j = 0; j < nedges; ++j){
       if (tryDiggingEdge(a, c, edges[j]))
-	return true;
+	      return true;
     }
   }
   return false;
