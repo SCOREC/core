@@ -944,27 +944,22 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, Entity* vertex, std::vect
 
 bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Entity* vertex, std::vector<Entity*> &commEdges)
 {
-  setFlagMatched(a,vertex,DONT_COLLAPSE);
+  bool flag = getFlag(a,vertex,DONT_COLLAPSE);
+  if (!flag) setFlag(a,vertex,DONT_COLLAPSE);
+  bool oldForce = a->input->shouldForceAdaptation;
+  a->input->shouldForceAdaptation = true;
   double q = a->input->validQuality;
+  bool success = false;
   for (size_t i = 0; i < commEdges.size(); ++i) {
     Entity* edge = commEdges[i];
-    PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-    if (!collapse.setEdge(edge))
-      continue;
-    if (!collapse.checkClass())
-      continue;
-    if (!collapse.checkTopo())
-      continue;
-    bool oldForce = a->input->shouldForceAdaptation;
-    a->input->shouldForceAdaptation = true;
-    if (!collapse.tryBothDirections(q))
-      continue;
-    a->input->shouldForceAdaptation = oldForce;
-    collapse.destroyOldElements();
-    clearFlagMatched(a,vertex,DONT_COLLAPSE);
-    return true; //TODO: select from best quality instead of first
+    success = tryCollapseEdge(a, commEdges[i], collapse, q);
+    if (success) break; //TODO: select from best quality instead of first
   }
-  return false;
+
+  a->input->shouldForceAdaptation = oldForce;
+  if (!flag) clearFlag(a,vertex,DONT_COLLAPSE);
+
+  return success;
 }
 
 std::vector<Entity*> getCommEdgesFromFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
