@@ -925,20 +925,48 @@ bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityT
   return true;
 }
 
-bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, Entity* vertex, std::vector<Entity*> &commEdges)
+bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
-  //TODO: handle edge cases
-  for (int i=0; i<commEdges.size(); i++) {
-    Entity* edge = commEdges[i];
-    Entity* vertexFPP = getEdgeVertOppositeVert(a->mesh, edge, vertex);
-    apf::Up adjEdges;
-    a->mesh->getUp(vertexFPP, adjEdges);
-    for (int j=0; j<adjEdges.n; j++) {
-      Entity* edgeDel = adjEdges.e[j];
-      if (edgeDel==edge) continue;
-      if (tryCollapseEdge(a, edgeDel, collapse, a->input->validQuality)) return true;
+  apf::Up& commEdges = FPP->commEdges;
+  double qual = a->input->validQuality;
+
+  //Try to reduce num common edges to one
+  Entity* pbEdges[3];
+  a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
+
+  switch(commEdges.n) {
+    case 2: {
+      Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
+      Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
+      
+      for (int i=0; i<3; i++) {
+        Entity* pbVert[2];
+        a->mesh->getDownward(pbEdges[i], 0, pbVert);
+        if (pbVert[0] == v1 && pbVert[1] == v2) break;
+        if (pbVert[1] == v1 && pbVert[0] == v2) break;
+        if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
+      }
+      break;
     }
+    // case 3: {
+    //   for (int i=0; i<3; i++)
+    //     if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
+    //   break;
+    // }
   }
+
+  // for (int i=0; i<commEdges.n; i++) {
+  //   Entity* edge = commEdges.e[i];
+  //   Entity* vertexFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
+  //   apf::Up adjEdges;
+  //   a->mesh->getUp(vertexFPP, adjEdges);
+  //   for (int j=0; j<adjEdges.n; j++) {
+  //     Entity* edgeDel = adjEdges.e[j];
+  //     if (edgeDel==edge) continue;
+  //     if (isLowInHigh(a->mesh, FPP->problemFace, edgeDel)) continue;
+  //     if (tryCollapseEdge(a, edgeDel, collapse, qual)) return true;
+  //   }
+  // }
   return false;
 }
 
@@ -960,6 +988,7 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProble
     Entity* edge = FPP->commEdges.e[i];
     Entity* vertexOnFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
     Vector vFPPCoord = getPosition(a->mesh, vertexOnFPP);
+    //TODO: add logic for boundary layers
     double vertFPPdist = (vFPPCoord - target).getLength();
     if (vertFPPdist > distTarget) continue;
 
@@ -997,6 +1026,7 @@ void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
 bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
 {
   Mesh* mesh = adapt->mesh;
+  if (!mesh->hasTag(vertex, snapTag)) return true;
   Vector prev = getPosition(mesh, vertex);
   Vector target;
   mesh->getDoubleTag(vertex, snapTag, &target[0]);
@@ -1026,10 +1056,10 @@ void trySnapping(Adapt* a, Tag* snapTag)
     apf::Up invalid;
     bool success = tryReposition(a, vertex, snapTag, invalid);
 
-    FirstProblemPlane* FPP;
+    FirstProblemPlane* FPP = 0;
     if (!success) FPP = getFPP(a, vertex, snapTag, invalid);
     if (!success) success = tryCollapseToVertex(a, collapse, snapTag, FPP);
-    // if (!success) success = tryCollapseTetEdges(a, collapse, vertex, commEdges);
+    if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
 
     if (success) {
       mesh->removeTag(vertex,snapTag);
@@ -1038,7 +1068,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
     else
       refine->vtxToSnap.push(vertex);
     
-    // delete FPP;
+    if (FPP) delete FPP;
   }
 
   print(a->mesh->getPCU(), "Number of vertices failed %d\n", refine->vtxToSnap.size());
