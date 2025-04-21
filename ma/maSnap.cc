@@ -910,6 +910,30 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
+void printFPP(Adapt* a, FirstProblemPlane* FPP)
+{
+  ma_dbg::addTargetLocation(a, "snap_target");
+  EntityArray invalid;
+  for (int i=0; i<FPP->problemRegions.n; i++){
+    invalid.append(FPP->problemRegions.e[i]);
+  }
+  ma_dbg::createCavityMesh(a, invalid, "invalid");
+
+  EntityArray pbFace;
+  pbFace.append(FPP->problemFace);
+  ma_dbg::createCavityMesh(a, pbFace, "pbFace");
+
+  EntityArray pbRegion;
+  pbRegion.append(FPP->problemRegion);
+  ma_dbg::createCavityMesh(a, pbRegion, "pbRegion");
+
+  for (int i=0; i<FPP->commEdges.n; i++)
+    setFlag(a, FPP->commEdges.e[i], CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "commEdges", "commEdges");
+  for (int i=0; i<FPP->commEdges.n; i++)
+    clearFlag(a, FPP->commEdges.e[i], CHECKED);
+}
+
 bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityToBeat)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
@@ -927,6 +951,7 @@ bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityT
 
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
+  printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
   double qual = a->input->validQuality;
 
@@ -935,19 +960,19 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
   a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
 
   switch(commEdges.n) {
-    case 2: {
-      Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
-      Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
+    // case 2: {
+    //   Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
+    //   Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
       
-      for (int i=0; i<3; i++) {
-        Entity* pbVert[2];
-        a->mesh->getDownward(pbEdges[i], 0, pbVert);
-        if (pbVert[0] == v1 && pbVert[1] == v2) break;
-        if (pbVert[1] == v1 && pbVert[0] == v2) break;
-        if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
-      }
-      break;
-    }
+    //   for (int i=0; i<3; i++) {
+    //     Entity* pbVert[2];
+    //     a->mesh->getDownward(pbEdges[i], 0, pbVert);
+    //     if (pbVert[0] == v1 && pbVert[1] == v2) break;
+    //     if (pbVert[1] == v1 && pbVert[0] == v2) break;
+    //     if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
+    //   }
+    //   break;
+    // }
     // case 3: {
     //   for (int i=0; i<3; i++)
     //     if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
@@ -972,8 +997,6 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 
 bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProblemPlane* FPP)
 {
-  bool flag = getFlag(a,FPP->vert,DONT_COLLAPSE);
-  if (!flag) setFlag(a,FPP->vert,DONT_COLLAPSE);
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
   double q = a->input->validQuality;
@@ -997,7 +1020,6 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProble
   }
 
   a->input->shouldForceAdaptation = shouldForce;
-  if (!flag) clearFlag(a,FPP->vert,DONT_COLLAPSE);
 
   return success;
 }

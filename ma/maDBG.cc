@@ -33,7 +33,8 @@ namespace ma_dbg {
 
 void writeMesh(ma::Mesh* m,
     const char* prefix,
-    const char* suffix)
+    const char* suffix,
+    int dim=-1)
 {
   std::stringstream ss;
   if (std::string(suffix) != "")
@@ -42,7 +43,7 @@ void writeMesh(ma::Mesh* m,
     ss << prefix;
   std::string tmp = ss.str();
   const char* fileName = tmp.c_str();
-  apf::writeVtkFiles(fileName, m);
+  apf::writeVtkFiles(fileName, m, dim);
 }
 
 void addTargetLocation(ma::Adapt* a,
@@ -208,7 +209,7 @@ void dumpMeshWithFlag(ma::Adapt* a,
   }
   ss << prefix << "_" << std::setfill('0') << std::setw(3) << iter;
 
-  writeMesh(a->mesh, ss.str().c_str(), "");
+  writeMesh(a->mesh, ss.str().c_str(), "", dim);
 
   apf::Field* colorField;
   colorField = a->mesh->findField(flagName);
@@ -240,7 +241,9 @@ void createCavityMesh(ma::Adapt* a,
 
   cavityMesh->acceptChanges();
   std::stringstream ss;
-  ss << a->input->debugFolder << "/";
+  if (a->input->debugFolder) {
+    ss << a->input->debugFolder << "/";
+  }
   ss << prefix;
 
 
