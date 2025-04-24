@@ -354,7 +354,7 @@ bool FirstProblemPlane::find()
       	// ones should have been taken care of by this point
       }
       else
-      	dists.push_back(minDist + 1.0 + tol);
+      	dists.push_back(newDirection.getLength());
     }
   }
 
@@ -518,10 +518,10 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
       	  flag = 0;
       	  break;
         }
-        if (flag) {
-          commEdges.e[commEdges.n] = edges[i];
-          commEdges.n++;
-        }
+      }
+      if (flag) {
+        commEdges.e[commEdges.n] = edges[i];
+        commEdges.n++;
       }
     }
   }

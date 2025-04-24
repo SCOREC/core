@@ -960,7 +960,7 @@ static int numReached=1;
 
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
-  if (numReached++ != 1) return false;
+  if (numReached++ != 8) return false;
   printf("commEdges %d\n", FPP->commEdges.n);
   printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
@@ -1014,7 +1014,6 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProble
 {
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
-  double q = a->input->validQuality;
 
   Vector position = getPosition(a->mesh, FPP->vert);
   Vector target;
@@ -1030,7 +1029,7 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProble
     double vertFPPdist = (vFPPCoord - target).getLength();
     if (vertFPPdist > distTarget) continue;
 
-    success = tryCollapseEdge(a, edge, collapse, q);
+    success = tryCollapseEdge(a, edge, collapse, 0);
     if (success) break; //TODO: select from best quality instead of first
   }
 
