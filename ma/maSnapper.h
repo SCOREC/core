@@ -60,9 +60,9 @@ class FirstProblemPlane
     apf::Up commEdges;
     apf::Up problemRegions;
     Entity* problemRegion;
+    Tag* snapTag;
   private:
     Adapt* adapter;
-    Tag* snapTag;
     Vector intersection;
     double tol;
     bool find();

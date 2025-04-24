@@ -138,7 +138,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
  
   //Adapt
-  refineSnapTest(mesh, 3, 1);
+  refineSnapTest(mesh, 2, 1);
 
   gmi_cap_stop();
   }

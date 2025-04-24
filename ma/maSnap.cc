@@ -21,6 +21,8 @@
 #include <lionPrint.h>
 #include <iostream>
 #include <algorithm>
+#include <iostream>
+#include <fstream>
 
 namespace ma {
 
@@ -912,26 +914,31 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
 
 void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
-  ma_dbg::addTargetLocation(a, "snap_target");
+  apf::writeVtkFiles("FPP_mesh", a->mesh);
+  ma_dbg::addTargetLocation(a, "FPP_snap_target");
   EntityArray invalid;
   for (int i=0; i<FPP->problemRegions.n; i++){
     invalid.append(FPP->problemRegions.e[i]);
   }
-  ma_dbg::createCavityMesh(a, invalid, "invalid");
+  ma_dbg::createCavityMesh(a, invalid, "FPP_invalid");
 
   EntityArray pbFace;
   pbFace.append(FPP->problemFace);
-  ma_dbg::createCavityMesh(a, pbFace, "pbFace");
+  ma_dbg::createCavityMesh(a, pbFace, "FPP_pbFace");
 
   EntityArray pbRegion;
   pbRegion.append(FPP->problemRegion);
-  ma_dbg::createCavityMesh(a, pbRegion, "pbRegion");
+  ma_dbg::createCavityMesh(a, pbRegion, "FPP_pbRegion");
 
   for (int i=0; i<FPP->commEdges.n; i++)
     setFlag(a, FPP->commEdges.e[i], CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "commEdges", "commEdges");
+  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_commEdges", "FPP_commEdges");
   for (int i=0; i<FPP->commEdges.n; i++)
     clearFlag(a, FPP->commEdges.e[i], CHECKED);
+
+  setFlag(a, FPP->vert, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "FPP_vertex", "FPP_vertex");
+  clearFlag(a, FPP->vert, CHECKED);
 }
 
 bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityToBeat)
@@ -949,8 +956,12 @@ bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityT
   return true;
 }
 
+static int numReached=1;
+
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
+  if (numReached++ != 1) return false;
+  printf("commEdges %d\n", FPP->commEdges.n);
   printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
   double qual = a->input->validQuality;
@@ -959,26 +970,30 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
   Entity* pbEdges[3];
   a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
 
-  switch(commEdges.n) {
-    // case 2: {
-    //   Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
-    //   Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
+  // switch(commEdges.n) {
+  //   case 2: {
+  //     Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
+  //     Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
       
-    //   for (int i=0; i<3; i++) {
-    //     Entity* pbVert[2];
-    //     a->mesh->getDownward(pbEdges[i], 0, pbVert);
-    //     if (pbVert[0] == v1 && pbVert[1] == v2) break;
-    //     if (pbVert[1] == v1 && pbVert[0] == v2) break;
-    //     if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
-    //   }
-    //   break;
-    // }
-    // case 3: {
-    //   for (int i=0; i<3; i++)
-    //     if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
-    //   break;
-    // }
-  }
+  //     for (int i=0; i<3; i++) {
+  //       Entity* pbVert[2];
+  //       a->mesh->getDownward(pbEdges[i], 0, pbVert);
+  //       if (pbVert[0] == v1 && pbVert[1] == v2) break;
+  //       if (pbVert[1] == v1 && pbVert[0] == v2) break;
+  //       if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
+  //     }
+  //     break;
+  //   }
+  //   case 3: {
+  //     for (int i=0; i<3; i++)
+  //       if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
+  //     break;
+  //   }
+  // }
+
+  // for (int i=0; i<commEdges.n; i++) {
+  //   if (tryCollapseEdge(a, commEdges.e[i], collapse, qual)) return true;
+  // }
 
   // for (int i=0; i<commEdges.n; i++) {
   //   Entity* edge = commEdges.e[i];

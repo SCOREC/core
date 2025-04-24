@@ -169,7 +169,7 @@ void dumpMeshWithQualities(ma::Adapt* a,
   ss << std::setfill('0') << std::setw(3) << iter << "_";
   ss << prefix;
 
-  writeMesh(a->mesh, ss.str().c_str(), "");
+  writeMesh(a->mesh, ss.str().c_str(), "", -1);
 
   apf::Field* colorField;
   colorField = a->mesh->findField("qual_metric");
