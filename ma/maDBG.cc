@@ -46,6 +46,27 @@ void writeMesh(ma::Mesh* m,
   apf::writeVtkFiles(fileName, m, dim);
 }
 
+void addClassification(ma::Adapt* a,
+    const char* fieldName)
+{
+  ma::Mesh* m = a->mesh;
+  apf::Field* field;
+  field = m->findField(fieldName);
+  if (field)
+    apf::destroyField(field);
+
+  field = apf::createFieldOn(m, fieldName, apf::SCALAR);
+  ma::Entity* ent;
+  ma::Iterator* it;
+  it = m->begin(0);
+  while ( (ent = m->iterate(it)) ){
+    ma::Model* g = m->toModel(ent);
+    double modelDimension = (double)m->getModelType(g);
+    apf::setComponents(field, ent, 0, &modelDimension);
+  }
+  m->end(it);
+}
+
 void addTargetLocation(ma::Adapt* a,
     const char* fieldName)
 {

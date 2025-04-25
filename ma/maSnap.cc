@@ -914,30 +914,29 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
 
 void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
-  apf::writeVtkFiles("FPP_mesh", a->mesh);
-  ma_dbg::addTargetLocation(a, "FPP_snap_target");
+  apf::writeVtkFiles("FPP_Mesh", a->mesh);
   EntityArray invalid;
   for (int i=0; i<FPP->problemRegions.n; i++){
     invalid.append(FPP->problemRegions.e[i]);
   }
-  ma_dbg::createCavityMesh(a, invalid, "FPP_invalid");
+  ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
   EntityArray pbFace;
   pbFace.append(FPP->problemFace);
-  ma_dbg::createCavityMesh(a, pbFace, "FPP_pbFace");
+  ma_dbg::createCavityMesh(a, pbFace, "FPP_Face");
 
   EntityArray pbRegion;
   pbRegion.append(FPP->problemRegion);
-  ma_dbg::createCavityMesh(a, pbRegion, "FPP_pbRegion");
+  ma_dbg::createCavityMesh(a, pbRegion, "FPP_Region");
 
   for (int i=0; i<FPP->commEdges.n; i++)
     setFlag(a, FPP->commEdges.e[i], CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_commEdges", "FPP_commEdges");
+  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
   for (int i=0; i<FPP->commEdges.n; i++)
     clearFlag(a, FPP->commEdges.e[i], CHECKED);
 
   setFlag(a, FPP->vert, CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "FPP_vertex", "FPP_vertex");
+  ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "FPP_Vertex", "FPP_Vertex");
   clearFlag(a, FPP->vert, CHECKED);
 }
 
@@ -960,7 +959,7 @@ static int numReached=1;
 
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
-  if (numReached++ != 8) return false;
+  if (numReached++ != 1) return false;
   printf("commEdges %d\n", FPP->commEdges.n);
   printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
@@ -1114,6 +1113,7 @@ void printSnapFields(Adapt* a, Mesh* m, std::string name)
 {
   apf::writeVtkFiles(name.c_str(), m);
   ma_dbg::addTargetLocation(a, "snap_target");
+  ma_dbg::addClassification(a, "classification");
   apf::writeVtkFiles((name+"_fields").c_str(), m, 1);
 }
 
