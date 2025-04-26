@@ -921,23 +921,21 @@ void printFPP(Adapt* a, FirstProblemPlane* FPP)
   }
   ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
-  EntityArray pbFace;
-  pbFace.append(FPP->problemFace);
-  ma_dbg::createCavityMesh(a, pbFace, "FPP_Face");
-
-  EntityArray pbRegion;
-  pbRegion.append(FPP->problemRegion);
-  ma_dbg::createCavityMesh(a, pbRegion, "FPP_Region");
-
-  for (int i=0; i<FPP->commEdges.n; i++)
-    setFlag(a, FPP->commEdges.e[i], CHECKED);
+  for (int i=0; i<FPP->commEdges.n; i++) setFlag(a, FPP->commEdges.e[i], CHECKED);
   ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
-  for (int i=0; i<FPP->commEdges.n; i++)
-    clearFlag(a, FPP->commEdges.e[i], CHECKED);
+  for (int i=0; i<FPP->commEdges.n; i++) clearFlag(a, FPP->commEdges.e[i], CHECKED);
 
   setFlag(a, FPP->vert, CHECKED);
   ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "FPP_Vertex", "FPP_Vertex");
   clearFlag(a, FPP->vert, CHECKED);
+
+  setFlag(a, FPP->problemFace, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "FPP_Face", "FPP_Face");
+  clearFlag(a, FPP->problemFace, CHECKED);
+
+  setFlag(a, FPP->problemRegion, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "FPP_Region", "FPP_Region");
+  clearFlag(a, FPP->problemRegion, CHECKED);
 }
 
 bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityToBeat)
@@ -963,7 +961,7 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
   printf("commEdges %d\n", FPP->commEdges.n);
   printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
-  double qual = a->input->validQuality;
+  double qual = a->input->goodQuality;
 
   //Try to reduce num common edges to one
   Entity* pbEdges[3];
