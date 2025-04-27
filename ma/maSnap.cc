@@ -950,8 +950,8 @@ bool matchingClassification(Adapt* a, Entity* edge)
 bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-  // if (matchingClassification(a, edge))
-  //   return false;
+  if (matchingClassification(a, edge))
+    return false;
   if (!collapse.setEdge(edge))
     return false;
   if (!collapse.checkClass())
@@ -967,8 +967,8 @@ bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
 double getQualityFromCollapse(Adapt* a, Entity* edge, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-  // if (matchingClassification(a, edge))
-  //   return -1;
+  if (matchingClassification(a, edge))
+    return -1;
   if (!collapse.setEdge(edge))
     return -1;
   if (!collapse.checkClass())
@@ -982,11 +982,12 @@ static int numReached=1;
 
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
-  if (numReached++ != 1) return false;
-  printf("commEdges %d\n", FPP->commEdges.n);
-  printFPP(a, FPP);
+  // if (numReached++ != 1) return false;
+  // printf("commEdges %d\n", FPP->commEdges.n);
+  // printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
-  double qual = a->input->goodQuality;
+  bool shouldForce = a->input->shouldForceAdaptation;
+  a->input->shouldForceAdaptation = true;
 
   //Try to reduce num common edges to one
   Entity* pbEdges[3];
@@ -1013,23 +1014,40 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
   //   }
   // }
 
-  // for (int i=0; i<commEdges.n; i++) {
-  //   if (tryCollapseEdge(a, commEdges.e[i], collapse, qual)) return true;
-  // }
+  double bestQuality = -1;
+  Entity* bestEdge;
 
-  // for (int i=0; i<commEdges.n; i++) {
-  //   Entity* edge = commEdges.e[i];
-  //   Entity* vertexFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
-  //   apf::Up adjEdges;
-  //   a->mesh->getUp(vertexFPP, adjEdges);
-  //   for (int j=0; j<adjEdges.n; j++) {
-  //     Entity* edgeDel = adjEdges.e[j];
-  //     if (edgeDel==edge) continue;
-  //     if (isLowInHigh(a->mesh, FPP->problemFace, edgeDel)) continue;
-  //     if (tryCollapseEdge(a, edgeDel, collapse, qual)) return true;
-  //   }
-  // }
-  return false;
+  for (int i=0; i<commEdges.n; i++) {
+    double quality = getQualityFromCollapse(a, commEdges.e[i], collapse);
+    if (quality > bestQuality) {
+      bestQuality = quality;
+      bestEdge = commEdges.e[i];
+    }
+  }
+
+  for (int i=0; i<commEdges.n; i++) {
+    Entity* edge = commEdges.e[i];
+    Entity* vertexFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
+    apf::Up adjEdges;
+    a->mesh->getUp(vertexFPP, adjEdges);
+    for (int j=0; j<adjEdges.n; j++) {
+      Entity* edgeDel = adjEdges.e[j];
+      if (edgeDel==edge) continue;
+      if (isLowInHigh(a->mesh, FPP->problemFace, edgeDel)) continue;
+      double quality = getQualityFromCollapse(a, edgeDel, collapse);
+      if (quality > bestQuality) {
+        bestQuality = quality;
+        bestEdge = edgeDel;
+      }
+    }
+  }
+
+  bool success = false;
+  if (bestQuality > -1)
+    success = tryCollapseEdge(a, bestEdge, collapse);
+
+  a->input->shouldForceAdaptation = shouldForce;
+  return success;
 }
 
 bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProblemPlane* FPP)
