@@ -938,19 +938,44 @@ void printFPP(Adapt* a, FirstProblemPlane* FPP)
   clearFlag(a, FPP->problemRegion, CHECKED);
 }
 
-bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse, double qualityToBeat)
+bool matchingClassification(Adapt* a, Entity* edge)
+{
+  Entity* vertex[2];
+  a->mesh->getDownward(edge,0,vertex);
+  int md1 = a->mesh->getModelType(a->mesh->toModel(vertex[0]));
+  int md2 = a->mesh->getModelType(a->mesh->toModel(vertex[1]));
+  return md1 == md2;
+}
+
+bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  // if (matchingClassification(a, edge))
+  //   return false;
   if (!collapse.setEdge(edge))
     return false;
   if (!collapse.checkClass())
     return false;
   if (!collapse.checkTopo())
     return false;
-  if (!collapse.tryBothDirections(qualityToBeat))
+  if (!collapse.tryBothDirections(0))
     return false;
   collapse.destroyOldElements();
   return true;
+}
+
+double getQualityFromCollapse(Adapt* a, Entity* edge, Collapse& collapse)
+{
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  // if (matchingClassification(a, edge))
+  //   return -1;
+  if (!collapse.setEdge(edge))
+    return -1;
+  if (!collapse.checkClass())
+    return -1;
+  if (!collapse.checkTopo())
+    return -1;
+  return collapse.getQualityFromCollapse();
 }
 
 static int numReached=1;
@@ -1017,7 +1042,9 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProble
   a->mesh->getDoubleTag(FPP->vert, snapTag, &target[0]);
   double distTarget = (position - target).getLength();
 
-  bool success = false;
+  double bestQuality = -1;
+  Entity* bestEdge;
+
   for (size_t i = 0; i < FPP->commEdges.n; ++i) {
     Entity* edge = FPP->commEdges.e[i];
     Entity* vertexOnFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
@@ -1026,12 +1053,18 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProble
     double vertFPPdist = (vFPPCoord - target).getLength();
     if (vertFPPdist > distTarget) continue;
 
-    success = tryCollapseEdge(a, edge, collapse, 0);
-    if (success) break; //TODO: select from best quality instead of first
+    double quality = getQualityFromCollapse(a, edge, collapse);
+    if (quality > bestQuality) {
+      bestQuality = quality;
+      bestEdge = edge;
+    }
   }
 
-  a->input->shouldForceAdaptation = shouldForce;
+  bool success = false;
+  if (bestQuality > -1)
+    success = tryCollapseEdge(a, bestEdge, collapse);
 
+  a->input->shouldForceAdaptation = shouldForce;
   return success;
 }
 

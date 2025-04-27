@@ -55,6 +55,25 @@ bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
   return true;
 }
 
+double Collapse::getQualityThisDirection() {
+  PCU_ALWAYS_ASSERT( ! adapt->mesh->isShared(vertToCollapse));
+  rebuildElements();
+  // check quality of linear t before fitting
+  if ((adapt->mesh->getDimension()==2)
+    &&( ! isGood2DMesh()))
+    return -1;
+  // check the linear quality of tets before fitting
+  // reject if one is negative
+  if(adapt->mesh->getDimension()==3 && cavity.shouldFit
+      && !areTetsValid(adapt->mesh,newElements))
+    return -1;
+  // since they are okay in a linear sense, now fit and do a quality assessment
+  fitElements();
+  double q = getWorstQuality(adapt, newElements);
+  destroyNewElements();
+  return q;
+}
+
 bool Collapse::tryThisDirection(double qualityToBeat)
 {
   if (!tryThisDirectionNoCancel(qualityToBeat)) {
@@ -64,6 +83,7 @@ bool Collapse::tryThisDirection(double qualityToBeat)
   return true;
 }
 
+//TODO: Test this change
 bool Collapse::tryBothDirections(double qualityToBeat)
 {
   computeElementSets();
@@ -74,8 +94,11 @@ bool Collapse::tryBothDirections(double qualityToBeat)
     qualityToBeat = std::min(adapt->input->goodQuality,
         std::max(getOldQuality(),adapt->input->validQuality));
 
-  if (tryThisDirection(qualityToBeat))
+  if (tryThisDirectionNoCancel(qualityToBeat))
     return true;
+  else
+    destroyNewElements();
+
   if ( ! getFlag(adapt,vertToKeep,COLLAPSE))
     return false;
   std::swap(vertToKeep,vertToCollapse);
@@ -85,6 +108,20 @@ bool Collapse::tryBothDirections(double qualityToBeat)
         std::max(getOldQuality(),adapt->input->validQuality));
 
   return tryThisDirection(qualityToBeat);
+}
+
+double Collapse::getQualityFromCollapse() {
+  computeElementSets();
+  double q = getQualityThisDirection();
+  if (q == -1) {
+    if (!getFlag(adapt,vertToKeep,COLLAPSE))
+      return false;
+    std::swap(vertToKeep,vertToCollapse);
+    computeElementSets();
+    q = std::max(q, getQualityThisDirection());
+  }
+  unmark();
+  return q;
 }
 
 bool Collapse::setEdge(Entity* e)
