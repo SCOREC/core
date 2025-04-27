@@ -978,41 +978,14 @@ double getQualityFromCollapse(Adapt* a, Entity* edge, Collapse& collapse)
   return collapse.getQualityFromCollapse();
 }
 
+//TODO: remove
 static int numReached=1;
 
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
   // if (numReached++ != 1) return false;
-  // printf("commEdges %d\n", FPP->commEdges.n);
   // printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
-  bool shouldForce = a->input->shouldForceAdaptation;
-  a->input->shouldForceAdaptation = true;
-
-  //Try to reduce num common edges to one
-  Entity* pbEdges[3];
-  a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
-
-  // switch(commEdges.n) {
-  //   case 2: {
-  //     Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
-  //     Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
-      
-  //     for (int i=0; i<3; i++) {
-  //       Entity* pbVert[2];
-  //       a->mesh->getDownward(pbEdges[i], 0, pbVert);
-  //       if (pbVert[0] == v1 && pbVert[1] == v2) break;
-  //       if (pbVert[1] == v1 && pbVert[0] == v2) break;
-  //       if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
-  //     }
-  //     break;
-  //   }
-  //   case 3: {
-  //     for (int i=0; i<3; i++)
-  //       if (tryCollapseEdge(a, pbEdges[i], collapse, qual)) return true;
-  //     break;
-  //   }
-  // }
 
   double bestQuality = -1;
   Entity* bestEdge;
@@ -1042,19 +1015,44 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
     }
   }
 
-  bool success = false;
-  if (bestQuality > -1)
-    success = tryCollapseEdge(a, bestEdge, collapse);
+  if (bestQuality > -1) 
+    return tryCollapseEdge(a, bestEdge, collapse);
+  else return false;
+}
 
-  a->input->shouldForceAdaptation = shouldForce;
-  return success;
+bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
+{
+  apf::Up& commEdges = FPP->commEdges;
+  if (commEdges.n > 0)
+    printf("===MAKE SURE TO TEST===\n");
+
+  Entity* pbEdges[3];
+  a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
+  switch(commEdges.n) {
+    case 2: {
+      Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
+      Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
+      
+      for (int i=0; i<3; i++) {
+        Entity* pbVert[2];
+        a->mesh->getDownward(pbEdges[i], 0, pbVert);
+        if (pbVert[0] == v1 && pbVert[1] == v2) break;
+        if (pbVert[1] == v1 && pbVert[0] == v2) break;
+        if (tryCollapseEdge(a, pbEdges[i], collapse)) return true;
+      }
+      break;
+    }
+    case 3: {
+      for (int i=0; i<3; i++)
+        if (tryCollapseEdge(a, pbEdges[i], collapse)) return true;
+      break;
+    }
+  }
+  return false;
 }
 
 bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProblemPlane* FPP)
 {
-  bool shouldForce = a->input->shouldForceAdaptation;
-  a->input->shouldForceAdaptation = true;
-
   Vector position = getPosition(a->mesh, FPP->vert);
   Vector target;
   a->mesh->getDoubleTag(FPP->vert, snapTag, &target[0]);
@@ -1078,12 +1076,9 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, Tag* snapTag, FirstProble
     }
   }
 
-  bool success = false;
-  if (bestQuality > -1)
-    success = tryCollapseEdge(a, bestEdge, collapse);
-
-  a->input->shouldForceAdaptation = shouldForce;
-  return success;
+  if (bestQuality > -1) 
+    return tryCollapseEdge(a, bestEdge, collapse);
+  else return false;
 }
 
 FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
@@ -1131,6 +1126,9 @@ void trySnapping(Adapt* a, Tag* snapTag)
   collapse.Init(a);
   int notProcessed = refine->vtxToSnap.size();
   print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", notProcessed);
+  bool shouldForce = a->input->shouldForceAdaptation;
+  a->input->shouldForceAdaptation = true;
+
   while (notProcessed > 0)
   {
     notProcessed--;
@@ -1143,6 +1141,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
     FirstProblemPlane* FPP = 0;
     if (!success) FPP = getFPP(a, vertex, snapTag, invalid);
     if (!success) success = tryCollapseToVertex(a, collapse, snapTag, FPP);
+    if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
     if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
 
     if (success) {
@@ -1155,6 +1154,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
     if (FPP) delete FPP;
   }
 
+  a->input->shouldForceAdaptation = shouldForce;
   print(a->mesh->getPCU(), "Number of vertices failed %d\n", refine->vtxToSnap.size());
 }
 
