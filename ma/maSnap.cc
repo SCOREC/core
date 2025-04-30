@@ -1024,8 +1024,7 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
   apf::Up& commEdges = FPP->commEdges;
-  if (commEdges.n > 0)
-    printf("===MAKE SURE TO TEST===\n");
+  BestCollapse best;
 
   Entity* pbEdges[3];
   a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
@@ -1039,17 +1038,19 @@ bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
         a->mesh->getDownward(pbEdges[i], 0, pbVert);
         if (pbVert[0] == v1 && pbVert[1] == v2) break;
         if (pbVert[1] == v1 && pbVert[0] == v2) break;
-        if (tryCollapseEdge(a, pbEdges[i], collapse)) return true;
+        getBestQualityCollapse(a, pbEdges[i], collapse, best);
       }
       break;
     }
     case 3: {
       for (int i=0; i<3; i++)
-        if (tryCollapseEdge(a, pbEdges[i], collapse)) return true;
+        getBestQualityCollapse(a, pbEdges[i], collapse, best);
       break;
     }
   }
-  return false;
+  if (best.quality > -1) 
+    return tryCollapseEdge(a, best.edge, collapse);
+  else return false;
 }
 
 bool tryCollapseToVertex(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
@@ -1136,7 +1137,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
     FirstProblemPlane* FPP = 0;
     if (!success) FPP = getFPP(a, vertex, snapTag, invalid);
     if (!success) success = tryCollapseToVertex(a, collapse, FPP);
-    // if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
+    if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
     if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
 
     if (success) {
