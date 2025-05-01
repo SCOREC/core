@@ -987,15 +987,9 @@ void getBestQualityCollapse(Adapt* a, Entity* edge, Collapse& collapse, BestColl
   best.edge = edge;
 }
 
-//TODO: remove
-static int numReached=1;
-
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
 {
-  // if (numReached++ != 1) return false;
-  // printFPP(a, FPP);
   apf::Up& commEdges = FPP->commEdges;
-
   BestCollapse best;
 
   for (int i=0; i<commEdges.n; i++) {
@@ -1114,6 +1108,9 @@ bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid)
   return false;
 }
 
+//TODO: remove
+static int numReached=1;
+
 void trySnapping(Adapt* a, Tag* snapTag) 
 {
   Mesh* mesh = a->mesh;
@@ -1139,6 +1136,8 @@ void trySnapping(Adapt* a, Tag* snapTag)
     if (!success) success = tryCollapseToVertex(a, collapse, FPP);
     if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
     if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
+
+    if (!success && numReached++ == 1) printFPP(a, FPP);
 
     if (success) {
       mesh->removeTag(vertex,snapTag);
