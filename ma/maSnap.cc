@@ -950,6 +950,10 @@ bool matchingClassification(Adapt* a, Entity* edge)
 bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+
+  Entity* vertex[2];
+  a->mesh->getDownward(edge,0,vertex);
+
   if (matchingClassification(a, edge))
     return false;
   if (!collapse.setEdge(edge))
@@ -961,6 +965,13 @@ bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
   if (!collapse.tryBothDirections(0))
     return false;
   collapse.destroyOldElements();
+
+  Entity* collapsed = vertex[0];
+  Entity* kept = vertex[1];
+  if (a->mesh->hasUp(collapsed))
+    std::swap(collapsed, kept);
+  PCU_ALWAYS_ASSERT(a->mesh->hasUp(kept));
+  PCU_ALWAYS_ASSERT(!getFlag(a, collapsed, SNAP)); //TODO REMOVE
   return true;
 }
 
@@ -1108,9 +1119,6 @@ bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid)
   return false;
 }
 
-//TODO: remove
-static int numReached=1;
-
 void trySnapping(Adapt* a, Tag* snapTag) 
 {
   Mesh* mesh = a->mesh;
@@ -1121,6 +1129,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
   print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", notProcessed);
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
+  int numFailed = 0;
 
   while (notProcessed > 0)
   {
@@ -1137,7 +1146,8 @@ void trySnapping(Adapt* a, Tag* snapTag)
     if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
     if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
 
-    if (!success && numReached++ == 1) printFPP(a, FPP);
+    if (!success) numFailed++;
+    if (numFailed == 1) printFPP(a, FPP);
 
     if (success) {
       mesh->removeTag(vertex,snapTag);
