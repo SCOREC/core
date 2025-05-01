@@ -934,7 +934,7 @@ void printFPP(Adapt* a, FirstProblemPlane* FPP)
   clearFlag(a, FPP->problemFace, CHECKED);
 
   setFlag(a, FPP->problemRegion, CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "FPP_Region", "FPP_Region");
+  ma_dbg::dumpMeshWithFlag(a, 0, 3, CHECKED, "FPP_Region", "FPP_Region");
   clearFlag(a, FPP->problemRegion, CHECKED);
 }
 
@@ -951,10 +951,8 @@ bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
 
-  Entity* vertex[2];
-  a->mesh->getDownward(edge,0,vertex);
-
-  if (matchingClassification(a, edge))
+  int md = a->mesh->getModelType(a->mesh->toModel(edge));
+  if (md < 3)
     return false;
   if (!collapse.setEdge(edge))
     return false;
@@ -965,13 +963,6 @@ bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
   if (!collapse.tryBothDirections(0))
     return false;
   collapse.destroyOldElements();
-
-  Entity* collapsed = vertex[0];
-  Entity* kept = vertex[1];
-  if (a->mesh->hasUp(collapsed))
-    std::swap(collapsed, kept);
-  PCU_ALWAYS_ASSERT(a->mesh->hasUp(kept));
-  PCU_ALWAYS_ASSERT(!getFlag(a, collapsed, SNAP)); //TODO REMOVE
   return true;
 }
 
@@ -984,7 +975,9 @@ struct BestCollapse
 void getBestQualityCollapse(Adapt* a, Entity* edge, Collapse& collapse, BestCollapse& best)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-  if (matchingClassification(a, edge))
+
+  int md = a->mesh->getModelType(a->mesh->toModel(edge));
+  if (md < 3)
     return;
   if (!collapse.setEdge(edge))
     return;
@@ -1121,27 +1114,30 @@ bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid)
 
 void trySnapping(Adapt* a, Tag* snapTag) 
 {
-  Mesh* mesh = a->mesh;
   Refine* refine = a->refine;
   Collapse collapse;
   collapse.Init(a);
-  int notProcessed = refine->vtxToSnap.size();
-  print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", notProcessed);
+  print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", refine->vtxToSnap.size());
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
   int numFailed = 0;
 
-  while (notProcessed > 0)
+  while (refine->vtxToSnap.size() > 0)
   {
-    notProcessed--;
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
 
     apf::Up invalid;
     bool success = tryReposition(a, vertex, snapTag, invalid);
 
-    FirstProblemPlane* FPP = 0;
-    if (!success) FPP = getFPP(a, vertex, snapTag, invalid);
+    if (success) {
+      a->mesh->removeTag(vertex,snapTag);
+      clearFlag(a, vertex, SNAP);
+      continue;
+    }
+
+    FirstProblemPlane* FPP = getFPP(a, vertex, snapTag, invalid);
+
     if (!success) success = tryCollapseToVertex(a, collapse, FPP);
     if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
     if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
@@ -1149,18 +1145,13 @@ void trySnapping(Adapt* a, Tag* snapTag)
     if (!success) numFailed++;
     if (numFailed == 1) printFPP(a, FPP);
 
-    if (success) {
-      mesh->removeTag(vertex,snapTag);
-      clearFlag(a, vertex, SNAP);
-    }
-    else
-      refine->vtxToSnap.push(vertex);
+    if (success) refine->vtxToSnap.push(vertex);
     
     if (FPP) delete FPP;
   }
 
   a->input->shouldForceAdaptation = shouldForce;
-  print(a->mesh->getPCU(), "Number of vertices failed %d\n", refine->vtxToSnap.size());
+  print(a->mesh->getPCU(), "Number of vertices failed %d\n", numFailed);
 }
 
 void printSnapFields(Adapt* a, Mesh* m, std::string name)
