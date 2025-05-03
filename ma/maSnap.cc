@@ -938,22 +938,10 @@ void printFPP(Adapt* a, FirstProblemPlane* FPP)
   clearFlag(a, FPP->problemRegion, CHECKED);
 }
 
-bool matchingClassification(Adapt* a, Entity* edge)
-{
-  Entity* vertex[2];
-  a->mesh->getDownward(edge,0,vertex);
-  int md1 = a->mesh->getModelType(a->mesh->toModel(vertex[0]));
-  int md2 = a->mesh->getModelType(a->mesh->toModel(vertex[1]));
-  return md1 == md2;
-}
-
 bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
 
-  int md = a->mesh->getModelType(a->mesh->toModel(edge));
-  if (md < 3)
-    return false;
   if (!collapse.setEdge(edge))
     return false;
   if (!collapse.checkClass())
@@ -976,8 +964,7 @@ void getBestQualityCollapse(Adapt* a, Entity* edge, Collapse& collapse, BestColl
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
 
-  int md = a->mesh->getModelType(a->mesh->toModel(edge));
-  if (md < 3)
+  if (!a->sizeField->shouldCollapse(edge))
     return;
   if (!collapse.setEdge(edge))
     return;
@@ -989,6 +976,26 @@ void getBestQualityCollapse(Adapt* a, Entity* edge, Collapse& collapse, BestColl
   if (quality < best.quality) return;
   best.quality = quality;
   best.edge = edge;
+}
+
+bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
+{
+  Entity* faceVert[3];
+  a->mesh->getDownward(face, 0, faceVert);
+  Vector facePos[3];
+  for (int i=0; i < 3; ++i)
+    facePos[i] = getPosition(a->mesh,faceVert[i]);
+  
+  Vector normal = apf::cross((facePos[1]-facePos[0]),(facePos[2]-facePos[0]));
+  Vector testPos = getPosition(a->mesh, testVert);
+  Vector refPos = getPosition(a->mesh, refVert);
+  const double tol=1e-12;
+
+  double dr = (testPos - facePos[0]) * normal;
+  if (dr*dr < tol) return false; //testVert is on the face
+  double ds = (refPos - facePos[0]) * normal;
+  if (dr*ds < 0.0) return false; //different sides of face
+  return true; //same side of face
 }
 
 bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
@@ -1009,7 +1016,8 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
       Entity* edgeDel = adjEdges.e[j];
       if (edgeDel==edge) continue;
       if (isLowInHigh(a->mesh, FPP->problemFace, edgeDel)) continue;
-      //TODO: MISSING CONDITION FROM OLD CODE
+      Entity* vertDel = getEdgeVertOppositeVert(a->mesh, edgeDel, vertexFPP);
+      if (sameSide(a, vertDel, FPP->vert, FPP->problemFace)) continue;
       getBestQualityCollapse(a, edgeDel, collapse, best);
     }
   }
@@ -1121,9 +1129,11 @@ void trySnapping(Adapt* a, Tag* snapTag)
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
   int numFailed = 0;
+  int startSize = refine->vtxToSnap.size();
 
   while (refine->vtxToSnap.size() > 0)
   {
+    if (startSize-- == 0) break; //Stop after one move
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
 
