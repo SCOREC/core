@@ -1,3 +1,6 @@
+#include <apfMesh.h>
+#include <apfShape.h>
+#include <lionPrint.h>
 #include "maBalance.h"
 #include "maAdapt.h"
 #include <parma.h>
@@ -6,6 +9,8 @@
 #define MAX_ZOLTAN_GRAPH_RANKS 16*1024
 
 namespace ma {
+
+namespace {
 
 static double clamp(double x, double max, double min)
 {
@@ -132,10 +137,158 @@ double estimateWeightedImbalance(Adapt* a)
   return imb[a->mesh->getDimension()];
 }
 
+#ifdef APW_LGMETIS
+#include <numeric>
+#include <mpi.h>
+#include <metis.h>
+
+void runLocalizedGraphMetis(Adapt* a) {
+  auto t0 = pcu::Time();
+  MPI_Comm comm;
+  a->mesh->getPCU()->DupComm(&comm);
+  int elm_dim = a->mesh->getDimension();
+  // FIXME: confirm sizeof(idx_t) >= sizeof(mds_id_type)
+  int nelm = apf::countOwned(a->mesh, elm_dim);
+  std::vector<int> nelms(a->mesh->getPCU()->Peers());
+  a->mesh->getPCU()->Allgather(&nelm, nelms.data(), 1);
+  std::vector<int> nelm_sums(nelms.size() + 1);
+  nelm_sums[0] = 0;
+  std::partial_sum(nelms.begin(), nelms.end(), nelm_sums.begin() + 1);
+  idx_t nvtxs = nelm_sums.back(), ncon = 1;
+  // Create global element numbering.
+  auto numbering = apf::numberOwnedDimension(
+    a->mesh, "maBalance__runLGM_nb", elm_dim
+  );
+  // Don't use apf::makeGlobal because it will recalculate nelm_sums.
+  auto gn = apf::createGlobalNumbering(
+    a->mesh, "maBalance_runLGM_gnb", apf::getConstant(elm_dim)
+  );
+  int gn_offset = nelm_sums[a->mesh->getPCU()->Self()];
+  apf::MeshIterator *it = a->mesh->begin(elm_dim);
+  for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
+    if (a->mesh->isOwned(e)) {
+      apf::number(gn, e, 0, gn_offset + apf::getNumber(numbering, e, 0, 0));
+    }
+  }
+  a->mesh->end(it);
+  apf::synchronize(gn);
+  auto opposites = apf::tagOpposites(gn, "maBalance__run_LGM_opp");
+  // Build local adj_cts, adjncy.
+  std::vector<idx_t> owned_adj_cts, owned_adjncy;
+  it = a->mesh->begin(elm_dim);
+  for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
+    apf::Downward graph_edges;
+    int ne = a->mesh->getDownward(e, elm_dim - 1, graph_edges);
+    int nedges = 0;
+    for (int i = 0; i < ne; ++i) {
+      if (a->mesh->isShared(graph_edges[i])) {
+        long opp_num;
+        a->mesh->getLongTag(graph_edges[i], opposites, &opp_num);
+        owned_adjncy.push_back(opp_num);
+        ++nedges;
+      } else {
+        for (int j = 0; j < a->mesh->countUpward(graph_edges[i]); ++j) {
+          apf::MeshEntity *up = a->mesh->getUpward(graph_edges[i], j);
+          if (up != e) {
+            owned_adjncy.push_back(apf::getNumber(gn, up, 0));
+            ++nedges;
+          }
+        }
+      }
+    }
+    owned_adj_cts.push_back(nedges);
+  }
+  a->mesh->end(it);
+  // Build xadj.
+  idx_t owned_adjncy_size = owned_adjncy.size();
+  std::vector<idx_t> owned_adjncy_sizes(a->mesh->getPCU()->Peers());
+  a->mesh->getPCU()->Allgather(
+    &owned_adjncy_size, owned_adjncy_sizes.data(), 1
+  );
+  std::vector<idx_t> adj_cts(nvtxs);
+  MPI_Gatherv(
+    owned_adj_cts.data(), owned_adj_cts.size(), MPI_INT,
+    adj_cts.data(), nelms.data(), nelm_sums.data(), MPI_INT,
+    0, comm
+  );
+  std::vector<idx_t> xadj(nvtxs + 1);
+  std::partial_sum(adj_cts.begin(), adj_cts.end(), xadj.begin() + 1);
+  std::vector<idx_t> adjncy(xadj.back());
+  MPI_Gatherv(
+    owned_adjncy.data(), owned_adjncy.size(), MPI_INT,
+    adjncy.data(), owned_adjncy_sizes.data(), xadj.data(), MPI_INT,
+    0, comm
+  );
+  auto t_localize = pcu::Time();
+  if (a->mesh->getPCU()->Self() == 0)
+    lion_oprint(1, "METIS: localized graph in %f seconds\n", t_localize - t0);
+  std::vector<idx_t> part(nvtxs);
+  if (a->mesh->getPCU()->Self() == 0) {
+    idx_t nparts = a->mesh->getPCU()->Peers();
+    std::vector<real_t> imb(nparts, a->input->maximumImbalance);
+    idx_t objval;
+    int r = METIS_PartGraphKway(
+      &nvtxs, &ncon, xadj.data(), adjncy.data(), // Graph
+      NULL, NULL, NULL, // No sizing
+      &nparts,
+      NULL, imb.data(), NULL, &objval, part.data()
+    );
+    if (r != METIS_OK) {
+      const char *metis_err = "";
+      if (r == METIS_ERROR_INPUT) metis_err = "METIS: input error";
+      else if (r == METIS_ERROR_MEMORY) metis_err = "METIS: memory error";
+      else metis_err = "METIS: error";
+      lion_eprint(1, "ERROR: balancing failed: %s\n", metis_err);
+      return;
+    }
+  }
+  auto t_part = pcu::Time();
+  if (a->mesh->getPCU()->Self() == 0)
+    lion_oprint(1, "METIS: partitioned in %f seconds\n", t_part - t_localize);
+  std::vector<idx_t> owned_part(nelm);
+  MPI_Scatterv(
+    part.data(), nelms.data(), nelm_sums.data(), MPI_INT,
+    owned_part.data(), nelm, MPI_INT, 0, comm
+  );
+  auto t_scatter = pcu::Time();
+  if (a->mesh->getPCU()->Self() == 0)
+    lion_oprint(1, "METIS: scattered in %f seconds\n", t_scatter - t_part);
+  apf::Migration *plan = new apf::Migration(a->mesh);
+  it = a->mesh->begin(elm_dim);
+  for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
+    int dest = owned_part[apf::getNumber(gn, e, 0) - gn_offset];
+    if (dest != a->mesh->getPCU()->Self()) plan->send(e, dest);
+  }
+  auto t_plan = pcu::Time();
+  if (a->mesh->getPCU()->Self() == 0)
+    lion_oprint(1, "METIS: planned in %f seconds\n", t_plan - t_scatter);
+  auto t0migrate = pcu::Time();
+  a->mesh->migrate(plan);
+  auto t1migrate = pcu::Time();
+  if (a->mesh->getPCU()->Self() == 0)
+    lion_oprint(1, "METIS: migrated in %f seconds\n", t1migrate - t0migrate);
+  plan = nullptr;
+  apf::removeTagFromDimension(a->mesh, opposites, elm_dim - 1);
+  a->mesh->destroyTag(opposites);
+  apf::destroyGlobalNumbering(gn);
+  apf::destroyNumbering(numbering);
+  MPI_Comm_free(&comm);
+  auto t1 = pcu::Time();
+  if (a->mesh->getPCU()->Self() == 0)
+    lion_oprint(1, "METIS: balanced in %f seconds\n", t1 - t0);
+}
+#endif
+
+} // namespace
+
 void preBalance(Adapt* a)
 {
   if (a->mesh->getPCU()->Peers()==1)
     return;
+#ifdef APW_LGMETIS
+  runLocalizedGraphMetis(a);
+  return;
+#endif
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
@@ -182,6 +335,10 @@ void midBalance(Adapt* a)
 {
   if (a->mesh->getPCU()->Peers()==1)
     return;
+#ifdef APW_LGMETIS
+  runLocalizedGraphMetis(a);
+  return;
+#else
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
@@ -216,12 +373,17 @@ void midBalance(Adapt* a)
     return;
 #endif
   }
+#endif
 }
 
 void postBalance(Adapt* a)
 {
   if (a->mesh->getPCU()->Peers()==1)
     return;
+#ifdef APW_LGMETIS
+  runLocalizedGraphMetis(a);
+  return;
+#endif
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
