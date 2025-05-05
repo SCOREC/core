@@ -1,0 +1,42 @@
+name: Doxygen GitHub Pages Deploy Action
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: install dependencies
+        run: |
+              sudo apt update
+              sudo apt install gcc-10 g++-10 mpich doxygen
+
+      - name: Configure CMake
+        env:
+          MPICH_CXX: g++-10
+          MPICH_CC: gcc-10
+        run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install -DSCOREC_NO_MPI=ON
+
+      - name: Build CMake
+        env:
+          MPICH_CXX: g++-10
+          MPICH_CC: gcc-10
+        run: cmake --build ${{github.workspace}}/build --config Release -j --target install
+      
+      - name: Generate Doc
+        run: doxygen ${{github.workspace}}/build/Doxyfile
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./doc/html
