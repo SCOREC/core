@@ -55,6 +55,32 @@ bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
   return true;
 }
 
+bool Collapse::edgesGoodSize() {
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+  PCU_ALWAYS_ASSERT(elementsToKeep.size() == newElements.size());
+  size_t i=0;
+  double maxSize=0;
+  double ratioAtMaxSize=0;
+  APF_ITERATE(EntitySet,elementsToKeep,it) {
+    Entity* edgesBefore[6];
+    adapt->mesh->getDownward(*it,1,edgesBefore);
+    Entity* edgesAfter[6];
+    adapt->mesh->getDownward(newElements[i++],1,edgesAfter);
+    for (int j=0; j<6; j++) {
+      double sizeBefore = adapt->sizeField->measure(edgesBefore[j]);
+      double sizeAfter = adapt->sizeField->measure(edgesAfter[j]);
+      double ratio = sizeAfter/sizeBefore;
+      if (sizeAfter > maxSize) {
+        maxSize = sizeAfter;
+        ratioAtMaxSize = ratio;
+      }
+    }
+  }
+  // printf("maxSize %f Ratio %f\n", maxSize, ratioAtMaxSize);
+  if (maxSize > 1.5 && ratioAtMaxSize > 1.44 ) return false;
+  return true;
+}
+
 double Collapse::getQualityThisDirection() {
   PCU_ALWAYS_ASSERT( ! adapt->mesh->isShared(vertToCollapse));
   rebuildElements();
@@ -69,9 +95,7 @@ double Collapse::getQualityThisDirection() {
     return -1;
   // since they are okay in a linear sense, now fit and do a quality assessment
   fitElements();
-  double q = getWorstQuality(adapt, newElements);
-  destroyNewElements();
-  return q;
+  return getWorstQuality(adapt, newElements);
 }
 
 bool Collapse::tryThisDirection(double qualityToBeat)
@@ -113,12 +137,14 @@ bool Collapse::tryBothDirections(double qualityToBeat)
 double Collapse::getQualityFromCollapse() {
   computeElementSets();
   double q = getQualityThisDirection();
+  destroyNewElements();
   if (q == -1) {
     if (!getFlag(adapt,vertToKeep,COLLAPSE))
       return false;
     std::swap(vertToKeep,vertToCollapse);
     computeElementSets();
     q = std::max(q, getQualityThisDirection());
+    destroyNewElements();
   }
   unmark();
   return q;

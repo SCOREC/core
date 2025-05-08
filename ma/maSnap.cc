@@ -964,8 +964,6 @@ void getBestQualityCollapse(Adapt* a, Entity* edge, Collapse& collapse, BestColl
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
 
-  if (!a->sizeField->shouldCollapse(edge))
-    return;
   if (!collapse.setEdge(edge))
     return;
   if (!collapse.checkClass())
@@ -1149,11 +1147,11 @@ void trySnapping(Adapt* a, Tag* snapTag)
     FirstProblemPlane* FPP = getFPP(a, vertex, snapTag, invalid);
 
     if (!success) success = tryCollapseToVertex(a, collapse, FPP);
-    if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
-    if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
+    // if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
+    // if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
 
     if (!success) numFailed++;
-    if (numFailed == 1) printFPP(a, FPP);
+    if (!success && numFailed == 1) printFPP(a, FPP);
 
     if (success) refine->vtxToSnap.push(vertex);
     

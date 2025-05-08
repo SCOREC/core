@@ -41,6 +41,7 @@ class Collapse
     bool tryThisDirectionNoCancel(double qualityToBeat);
     bool tryBothDirections(double qualityToBeat);
     void getOldElements(EntityArray& oldElements);
+    bool edgesGoodSize();
     double getQualityThisDirection();
     double getQualityFromCollapse();
     double getOldQuality();
