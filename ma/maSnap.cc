@@ -938,42 +938,49 @@ void printFPP(Adapt* a, FirstProblemPlane* FPP)
   clearFlag(a, FPP->problemRegion, CHECKED);
 }
 
-bool tryCollapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
+bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
 
-  if (!collapse.setEdge(edge))
-    return false;
-  if (!collapse.checkClass())
-    return false;
-  if (!collapse.checkTopo())
-    return false;
-  if (!collapse.tryBothDirections(0))
-    return false;
-  collapse.destroyOldElements();
-  return true;
+  bool result = false;
+  if (collapse.setEdge(edge) && 
+      collapse.checkClass() &&
+      collapse.checkTopo() &&
+      collapse.tryBothDirections(0)) {
+    collapse.destroyOldElements();
+    result = true;
+  }  
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+  return result;
 }
 
 struct BestCollapse
 {
   double quality=-1;
   Entity* edge;
+  Entity* keep;
 };
 
-void getBestQualityCollapse(Adapt* a, Entity* edge, Collapse& collapse, BestCollapse& best)
+void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, BestCollapse& best)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-
-  if (!collapse.setEdge(edge))
-    return;
-  if (!collapse.checkClass())
-    return;
-  if (!collapse.checkTopo())
-    return;
-  double quality = collapse.getQualityFromCollapse();
-  if (quality < best.quality) return;
-  best.quality = quality;
-  best.edge = edge;
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
+  if (collapse.setEdge(edge) &&
+      collapse.checkClass() &&
+      collapse.checkTopo()) {
+    double quality = collapse.getQualityFromCollapse();
+    if (quality > 0 && quality > best.quality) {
+      best.quality = quality;
+      best.edge = edge;
+      best.keep = keep;
+    }
+  }
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
 }
 
 bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
@@ -1002,7 +1009,7 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
   BestCollapse best;
 
   for (int i=0; i<commEdges.n; i++) {
-    getBestQualityCollapse(a, commEdges.e[i], collapse, best);
+    getBestQualityCollapse(a, commEdges.e[i], 0, collapse, best);
   }
 
   for (int i=0; i<commEdges.n; i++) {
@@ -1014,14 +1021,14 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
       Entity* edgeDel = adjEdges.e[j];
       if (edgeDel==edge) continue;
       if (isLowInHigh(a->mesh, FPP->problemFace, edgeDel)) continue;
-      Entity* vertDel = getEdgeVertOppositeVert(a->mesh, edgeDel, vertexFPP);
-      if (sameSide(a, vertDel, FPP->vert, FPP->problemFace)) continue;
-      getBestQualityCollapse(a, edgeDel, collapse, best);
+      Entity* vertKeep = getEdgeVertOppositeVert(a->mesh, edgeDel, vertexFPP);
+      if (sameSide(a, vertKeep, FPP->vert, FPP->problemFace)) continue;
+      getBestQualityCollapse(a, edgeDel, vertKeep, collapse, best);
     }
   }
 
   if (best.quality > -1) 
-    return tryCollapseEdge(a, best.edge, collapse);
+    return tryCollapseEdge(a, best.edge, best.keep, collapse);
   else return false;
 }
 
@@ -1042,18 +1049,18 @@ bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
         a->mesh->getDownward(pbEdges[i], 0, pbVert);
         if (pbVert[0] == v1 && pbVert[1] == v2) break;
         if (pbVert[1] == v1 && pbVert[0] == v2) break;
-        getBestQualityCollapse(a, pbEdges[i], collapse, best);
+        getBestQualityCollapse(a, pbEdges[i], 0, collapse, best);
       }
       break;
     }
     case 3: {
       for (int i=0; i<3; i++)
-        getBestQualityCollapse(a, pbEdges[i], collapse, best);
+        getBestQualityCollapse(a, pbEdges[i], 0, collapse, best);
       break;
     }
   }
   if (best.quality > -1) 
-    return tryCollapseEdge(a, best.edge, collapse);
+    return tryCollapseEdge(a, best.edge, best.keep, collapse);
   else return false;
 }
 
@@ -1071,13 +1078,13 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
     Entity* vertexOnFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
     Vector vFPPCoord = getPosition(a->mesh, vertexOnFPP);
     //TODO: add logic for boundary layers
-    double vertFPPdist = (vFPPCoord - target).getLength();
-    if (vertFPPdist > distTarget) continue;
-    getBestQualityCollapse(a, edge, collapse, best);
+    double distToFPPVert = (vFPPCoord - target).getLength();
+    if (distToFPPVert > distTarget) continue;
+    getBestQualityCollapse(a, edge, FPP->vert, collapse, best);
   }
 
   if (best.quality > -1) 
-  return tryCollapseEdge(a, best.edge, collapse);
+    return tryCollapseEdge(a, best.edge, best.keep, collapse);
   else return false;
 }
 
@@ -1131,7 +1138,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
 
   while (refine->vtxToSnap.size() > 0)
   {
-    if (startSize-- == 0) break; //Stop after one move
+    if (startSize-- == 0) break; //TEMP: Stop after one move
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
 
@@ -1148,7 +1155,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
 
     if (!success) success = tryCollapseToVertex(a, collapse, FPP);
     // if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
-    // if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
+    if (!success) success = tryCollapseTetEdges(a, collapse, FPP);
 
     if (!success) numFailed++;
     if (!success && numFailed == 1) printFPP(a, FPP);
