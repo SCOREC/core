@@ -974,7 +974,7 @@ void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
       collapse.checkClass() &&
       collapse.checkTopo()) {
     double quality = collapse.getQualityFromCollapse();
-    if (quality > 0 && quality > best.quality) {
+    if (quality > best.quality) {
       best.quality = quality;
       best.edge = edge;
       best.keep = keep;
@@ -1027,7 +1027,7 @@ bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
     }
   }
 
-  if (best.quality > -1) 
+  if (best.quality > 0) 
     return tryCollapseEdge(a, best.edge, best.keep, collapse);
   else return false;
 }
@@ -1059,7 +1059,7 @@ bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
       break;
     }
   }
-  if (best.quality > -1) 
+  if (best.quality > 0) 
     return tryCollapseEdge(a, best.edge, best.keep, collapse);
   else return false;
 }
@@ -1083,7 +1083,7 @@ bool tryCollapseToVertex(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
     getBestQualityCollapse(a, edge, FPP->vert, collapse, best);
   }
 
-  if (best.quality > -1) 
+  if (best.quality > 0) 
     return tryCollapseEdge(a, best.edge, best.keep, collapse);
   else return false;
 }
