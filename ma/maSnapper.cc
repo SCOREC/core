@@ -11,6 +11,7 @@
 #include "maAdapt.h"
 #include "maShapeHandler.h"
 #include "maSnap.h"
+#include "maDBG.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -42,8 +43,6 @@ bool Snapper::requestLocality(apf::CavityOp* o)
 {
   if (!o->requestLocality(&vert, 1))
     return false;
-  if (isSimple)
-    return true;
 /* in order to try an edge collapse (we don't yet know
    which edge), bring in a cavity such that all adjacent
    edges have both vertices local.
@@ -69,112 +68,6 @@ static void computeNormals(Mesh* m, Upward& es, apf::NewArray<Vector>& normals)
 static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
 {
   return (oldNormal * getTriNormal(m, tri)) < 0;
-}
-
-static void collectBadElements(Adapt* a, Upward& es,
-    apf::NewArray<Vector>& normals, apf::Up& bad)
-{
-  Mesh* m = a->mesh;
-  bad.n = 0;
-  for (size_t i = 0; i < es.getSize(); ++i) {
-/* for now, when snapping a vertex on the boundary
-   layer, ignore the quality of layer elements.
-   not only do we not have metrics for this, but the
-   algorithm that moves curves would need to change */
-    if (getFlag(a, es[i], LAYER))
-      continue;
-    double quality = a->shape->getQuality(es[i]);
-    if (quality < a->input->validQuality)
-      bad.e[bad.n++] = es[i];
-/* check for triangles whose normals have changed by
-   more than 90 degrees when the vertex was snapped */
-    else if ((m->getDimension() == 2) &&
-             didInvert(m, normals[i], es[i]))
-      bad.e[bad.n++] = es[i];
-  }
-  PCU_ALWAYS_ASSERT(bad.n < (int)(sizeof(bad.e) / sizeof(Entity*)));
-}
-
-static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
-    apf::Up& badElements)
-{
-  Mesh* mesh = adapter->mesh;
-  Vector x = getPosition(mesh, vert);
-  Vector s;
-  mesh->getDoubleTag(vert, tag, &s[0]);
-/* gather the adjacent elements */
-  Upward elements;
-  mesh->getAdjacent(vert, mesh->getDimension(), elements);
-/* in 2D, get the old triangle normals */
-  apf::NewArray<Vector> normals;
-  computeNormals(mesh, elements, normals);
-/* move the vertex to the desired point */
-  mesh->setPoint(vert, 0, s);
-/* check resulting cavity */
-  collectBadElements(adapter, elements, normals, badElements);
-  if (badElements.n) {
-    /* not ok, put the vertex back where it was */
-    mesh->setPoint(vert, 0, x);
-    return false;
-  } else {
-    /* ok, take off the snap tag */
-    mesh->removeTag(vert, tag);
-    return true;
-  }
-}
-
-static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
-{
-  Mesh* mesh = adapter->mesh;
-  PCU_ALWAYS_ASSERT(mesh->getType(e) == apf::Mesh::EDGE);
-  if ( ! collapse.setEdge(e))
-    return false;
-  if ( ! collapse.checkClass())
-    return false;
-  if ( ! collapse.checkTopo())
-    return false;
-  double q = adapter->input->validQuality;
-  bool oldShouldForce = adapter->input->shouldForceAdaptation;
-  adapter->input->shouldForceAdaptation = true;
-  if ( ! collapse.tryBothDirections(q))
-    return false;
-  adapter->input->shouldForceAdaptation = oldShouldForce;
-  collapse.destroyOldElements();
-  return true;
-}
-
-static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
-    FirstProblemPlane* FPP)
-{
-
-  Mesh* m = a->mesh;
-  int dim = m->getDimension();
-
-  // first go through the candidate edges found by the first problem plane
-  // (if any)
-  std::vector<Entity*> edgesFromFPP;
-  edgesFromFPP.clear();
-  if (FPP && dim == 3) {
-    FPP->setBadElements(badElements);
-    FPP->getCandidateEdges(edgesFromFPP);
-  }
-  for (size_t i = 0; i < edgesFromFPP.size(); ++i) {
-    if (tryDiggingEdge(a, c, edgesFromFPP[i]))
-      return true;
-  }
-
-  // next try all the edges
-  for (int i = 0; i < badElements.n; ++i) {
-    Entity* elem = badElements.e[i];
-    Downward edges;
-    int nedges;
-    nedges = m->getDownward(elem, 1, edges);
-    for (int j = 0; j < nedges; ++j){
-      if (tryDiggingEdge(a, c, edges[j]))
-	      return true;
-    }
-  }
-  return false;
 }
 
 static void updateVertexParametricCoords(
@@ -219,64 +112,249 @@ static void updateVertexParametricCoords(
   m->setParam(vert, pBar);
 }
 
-static bool tryMoving(Adapt* adapter, Entity* v, Tag* tag)
+static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
-  Mesh* m = adapter->mesh;
-  PCU_ALWAYS_ASSERT_VERBOSE(m->hasTag(v, tag),
-      "expecting the vertex to have a tag!");
-  bool hadItBefore = getFlag(adapter, v, DONT_MOVE);
-  setFlag(adapter, v, DONT_MOVE);
-  Vector newTarget;
-  m->getDoubleTag(v, tag, &newTarget[0]); // default
-  updateVertexParametricCoords(m, v, newTarget);
-  m->setDoubleTag(v, tag, &newTarget[0]);
-  if (!hadItBefore)
-    clearFlag(adapter, v, DONT_MOVE);
-  return true;
+  apf::writeVtkFiles("FPP_Mesh", a->mesh);
+  EntityArray invalid;
+  for (int i=0; i<FPP->problemRegions.n; i++){
+    invalid.append(FPP->problemRegions.e[i]);
+  }
+  ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
+
+  for (int i=0; i<FPP->commEdges.n; i++) setFlag(a, FPP->commEdges.e[i], CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
+  for (int i=0; i<FPP->commEdges.n; i++) clearFlag(a, FPP->commEdges.e[i], CHECKED);
+
+  setFlag(a, FPP->vert, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "FPP_Vertex", "FPP_Vertex");
+  clearFlag(a, FPP->vert, CHECKED);
+
+  setFlag(a, FPP->problemFace, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "FPP_Face", "FPP_Face");
+  clearFlag(a, FPP->problemFace, CHECKED);
+
+  setFlag(a, FPP->problemRegion, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 3, CHECKED, "FPP_Region", "FPP_Region");
+  clearFlag(a, FPP->problemRegion, CHECKED);
 }
 
-static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
-    apf::Up& badElements, FirstProblemPlane* FPP = 0)
+static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
 {
-  bool hadItBefore = getFlag(a, v, DONT_COLLAPSE);
-  setFlag(a, v, DONT_COLLAPSE);
-  bool ok = tryDigging2(a, c, badElements, FPP);
-  if (!hadItBefore)
-    clearFlag(a, v, DONT_COLLAPSE);
-  return ok;
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
+
+  bool result = false;
+  if (collapse.setEdge(edge) && 
+      collapse.checkClass() &&
+      collapse.checkTopo() &&
+      collapse.tryBothDirections(0)) {
+    collapse.destroyOldElements();
+    result = true;
+  }  
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+  return result;
+}
+
+struct BestCollapse
+{
+  double quality=-1;
+  Entity* edge;
+  Entity* keep;
+};
+
+static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, BestCollapse& best)
+{
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
+  if (collapse.setEdge(edge) &&
+      collapse.checkClass() &&
+      collapse.checkTopo()) {
+    double quality = collapse.getQualityFromCollapse();
+    if (quality > best.quality) {
+      best.quality = quality;
+      best.edge = edge;
+      best.keep = keep;
+    }
+  }
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+}
+
+static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
+{
+  Entity* faceVert[3];
+  a->mesh->getDownward(face, 0, faceVert);
+  Vector facePos[3];
+  for (int i=0; i < 3; ++i)
+    facePos[i] = getPosition(a->mesh,faceVert[i]);
+  
+  Vector normal = apf::cross((facePos[1]-facePos[0]),(facePos[2]-facePos[0]));
+  Vector testPos = getPosition(a->mesh, testVert);
+  Vector refPos = getPosition(a->mesh, refVert);
+  const double tol=1e-12;
+
+  double dr = (testPos - facePos[0]) * normal;
+  if (dr*dr < tol) return false; //testVert is on the face
+  double ds = (refPos - facePos[0]) * normal;
+  if (dr*ds < 0.0) return false; //different sides of face
+  return true; //same side of face
+}
+
+static bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
+{
+  apf::Up& commEdges = FPP->commEdges;
+  BestCollapse best;
+
+  for (int i=0; i<commEdges.n; i++) {
+    getBestQualityCollapse(a, commEdges.e[i], 0, collapse, best);
+  }
+
+  for (int i=0; i<commEdges.n; i++) {
+    Entity* edge = commEdges.e[i];
+    Entity* vertexFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
+    apf::Up adjEdges;
+    a->mesh->getUp(vertexFPP, adjEdges);
+    for (int j=0; j<adjEdges.n; j++) {
+      Entity* edgeDel = adjEdges.e[j];
+      if (edgeDel==edge) continue;
+      if (isLowInHigh(a->mesh, FPP->problemFace, edgeDel)) continue;
+      Entity* vertKeep = getEdgeVertOppositeVert(a->mesh, edgeDel, vertexFPP);
+      if (sameSide(a, vertKeep, FPP->vert, FPP->problemFace)) continue;
+      getBestQualityCollapse(a, edgeDel, vertKeep, collapse, best);
+    }
+  }
+
+  if (best.quality > 0) 
+    return tryCollapseEdge(a, best.edge, best.keep, collapse);
+  else return false;
+}
+
+static bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
+{
+  apf::Up& commEdges = FPP->commEdges;
+  BestCollapse best;
+
+  Entity* pbEdges[3];
+  a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
+  switch(commEdges.n) {
+    case 2: {
+      Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
+      Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
+      
+      for (int i=0; i<3; i++) {
+        Entity* pbVert[2];
+        a->mesh->getDownward(pbEdges[i], 0, pbVert);
+        if (pbVert[0] == v1 && pbVert[1] == v2) break;
+        if (pbVert[1] == v1 && pbVert[0] == v2) break;
+        getBestQualityCollapse(a, pbEdges[i], 0, collapse, best);
+      }
+      break;
+    }
+    case 3: {
+      for (int i=0; i<3; i++)
+        getBestQualityCollapse(a, pbEdges[i], 0, collapse, best);
+      break;
+    }
+  }
+  if (best.quality > 0) 
+    return tryCollapseEdge(a, best.edge, best.keep, collapse);
+  else return false;
+}
+
+static bool tryCollapseToVertex(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
+{
+  Vector position = getPosition(a->mesh, FPP->vert);
+  Vector target;
+  a->mesh->getDoubleTag(FPP->vert, FPP->snapTag, &target[0]);
+  double distTarget = (position - target).getLength();
+
+  BestCollapse best;
+
+  for (size_t i = 0; i < FPP->commEdges.n; ++i) {
+    Entity* edge = FPP->commEdges.e[i];
+    Entity* vertexOnFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
+    Vector vFPPCoord = getPosition(a->mesh, vertexOnFPP);
+    //TODO: add logic for boundary layers
+    double distToFPPVert = (vFPPCoord - target).getLength();
+    if (distToFPPVert > distTarget) continue;
+    getBestQualityCollapse(a, edge, FPP->vert, collapse, best);
+  }
+
+  if (best.quality > 0) 
+    return tryCollapseEdge(a, best.edge, best.keep, collapse);
+  else return false;
+}
+
+static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+{
+  FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
+  FPP->setVertex(vertex);
+  FPP->setBadElements(invalid);
+  std::vector<Entity*> commEdges;
+  FPP->getCandidateEdges(commEdges);
+  return FPP;
+}
+
+static void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
+{
+  invalid.n = 0;
+  Vector v[4];
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    ma::getVertPoints(mesh,adjacentElements[i],v);
+    if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+      invalid.e[invalid.n++] = adjacentElements[i];
+  }
+}
+
+static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
+{
+  Mesh* mesh = adapt->mesh;
+  if (!mesh->hasTag(vertex, snapTag)) return true;
+  Vector prev = getPosition(mesh, vertex);
+  Vector target;
+  mesh->getDoubleTag(vertex, snapTag, &target[0]);
+  Upward adjacentElements;
+  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  mesh->setPoint(vertex, 0, target);
+  getInvalidTets(mesh, adjacentElements, invalid);
+  if (invalid.n == 0) return true;
+  mesh->setPoint(vertex, 0, prev);
+  return false;
 }
 
 bool Snapper::trySimpleSnap()
 {
-  apf::Up badElements;
-  return trySnapping(adapter, snapTag, vert, badElements);
+  apf::Up invalid;
+  return tryReposition(adapter, vert, snapTag, invalid);
 }
+
+static int numFailed = 0;
 
 bool Snapper::run()
 {
-  dug = false;
-  moved = false;
-  apf::Up badElements;
-  bool ok = trySnapping(adapter, snapTag, vert, badElements);
-  if (isSimple)
-    return ok;
-  // there is no need for the following if there exists no bad elements
-  if (badElements.n == 0) return true;
-  FirstProblemPlane* FPP;
-#ifdef DO_FPP
-  FPP = new FirstProblemPlane(adapter, snapTag);
-  FPP->setVertex(vert);
-#else
-  FPP = 0;
-#endif
-  if (adapter->mesh->getDimension() == 2)
-    moved = tryMoving(adapter, vert, snapTag);
-  else
-    dug = tryDigging(adapter, collapse, vert, badElements, FPP);
-  delete FPP;
-  if (!dug && !moved)
-    return false;
-  return trySnapping(adapter, snapTag, vert, badElements);
+  apf::Up invalid;
+  bool success = tryReposition(adapter, vert, snapTag, invalid);
+
+  if (success) {
+    adapter->mesh->removeTag(vert,snapTag);
+    clearFlag(adapter, vert, SNAP);
+    return true;
+  }
+
+  FirstProblemPlane* FPP = getFPP(adapter, vert, snapTag, invalid);
+
+  if (!success) success = tryCollapseToVertex(adapter, collapse, FPP);
+  // if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
+  // if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
+
+  if (!success) numFailed++;
+  if (!success && numFailed == 1) printFPP(adapter, FPP);
+  
+  if (FPP) delete FPP;
+  return !success;
 }
 
 FirstProblemPlane::FirstProblemPlane(Adapt* a, Tag* st)
