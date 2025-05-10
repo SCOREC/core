@@ -93,6 +93,9 @@ double Collapse::getQualityThisDirection() {
   if(adapt->mesh->getDimension()==3 && cavity.shouldFit
       && !areTetsValid(adapt->mesh,newElements))
     return -1;
+  // make sure we aren't undoing refinement
+  if(!edgesGoodSize())
+    return -1;
   // since they are okay in a linear sense, now fit and do a quality assessment
   fitElements();
   return getWorstQuality(adapt, newElements);

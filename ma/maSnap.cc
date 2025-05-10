@@ -930,10 +930,10 @@ void trySnapping(Adapt* a, Tag* snapTag)
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
     snapper.setVert(vertex);
-    if (!snapper.run()) {
-      refine->vtxToSnap.push(vertex);
+    if (!snapper.run())
       numFailed++;
-    }
+    else if (getFlag(a, vertex, SNAP))
+      refine->vtxToSnap.push(vertex);
   }
 
   a->input->shouldForceAdaptation = shouldForce;

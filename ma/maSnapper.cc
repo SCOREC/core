@@ -354,7 +354,7 @@ bool Snapper::run()
   if (!success && numFailed == 1) printFPP(adapter, FPP);
   
   if (FPP) delete FPP;
-  return !success;
+  return success;
 }
 
 FirstProblemPlane::FirstProblemPlane(Adapt* a, Tag* st)
