@@ -347,11 +347,10 @@ bool Snapper::run()
   FirstProblemPlane* FPP = getFPP(adapter, vert, snapTag, invalid);
 
   if (!success) success = tryCollapseToVertex(adapter, collapse, FPP);
-  // if (!success) success = tryReduceCommonEdges(a, collapse, FPP);
+  // if (!success) success = tryReduceCommonEdges(adapter, collapse, FPP);
   // if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
 
-  if (!success) numFailed++;
-  if (!success && numFailed == 1) printFPP(adapter, FPP);
+  if (!success && numFailed++ == 1) printFPP(adapter, FPP);
   
   if (FPP) delete FPP;
   return success;

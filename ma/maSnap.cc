@@ -916,8 +916,6 @@ void trySnapping(Adapt* a, Tag* snapTag)
 {
   Snapper snapper(a, snapTag, false);
   Refine* refine = a->refine;
-  Collapse collapse;
-  collapse.Init(a);
   print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", refine->vtxToSnap.size());
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
@@ -940,23 +938,22 @@ void trySnapping(Adapt* a, Tag* snapTag)
   print(a->mesh->getPCU(), "Number of vertices failed %d\n", numFailed);
 }
 
-void printSnapFields(Adapt* a, Mesh* m, std::string name)
-{
-  apf::writeVtkFiles(name.c_str(), m);
-  ma_dbg::addTargetLocation(a, "snap_target");
-  ma_dbg::addClassification(a, "classification");
-  apf::writeVtkFiles((name+"_fields").c_str(), m, 1);
-}
-
 void snap(Adapt* a)
 {
   if (!a->input->shouldSnap)
     return;
   Tag* snapTag;
   tagVertsToSnap(a, snapTag);
-  printSnapFields(a, a->mesh, "before_last_snap");
+
+  ma_dbg::addTargetLocation(a, "snap_target");
+  ma_dbg::addClassification(a, "classification");
+  apf::writeVtkFiles("before_last_snap", a->mesh);
+
   trySnapping(a, snapTag);
-  printSnapFields(a, a->mesh, "after_last_snap");
+
+  apf::writeVtkFiles("after_last_snap", a->mesh);
+  ma_dbg::dumpMeshWithFlag(a, 0, 0, SNAP, "snap_tag", "after_last_snap_tag");
+
   clearFlagFromDimension(a, SNAP, 0);
   a->mesh->destroyTag(snapTag);
   a->refine->vtxToSnap = {};
@@ -983,49 +980,4 @@ void prevSnap(Adapt* a)
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after snapping");
 }
-
-void visualizeGeometricInfo(Mesh* m, const char* name)
-{
-  Tag* dimensionTag = m->createIntTag("ma_geom_dim",1);
-  Tag* idTag = m->createIntTag("ma_geom_id",1);
-  apf::Field* field = apf::createLagrangeField(m,"ma_param",apf::VECTOR,1);
-  apf::Field* targetField = apf::createLagrangeField(m,"ma_target",apf::VECTOR,1);
-  Iterator* it = m->begin(0);
-  Entity* v;
-  while ((v = m->iterate(it)))
-  {
-    Model* c = m->toModel(v);
-    int dimension = m->getModelType(c);
-    m->setIntTag(v,dimensionTag,&dimension);
-    int id = m->getModelTag(c);
-    m->setIntTag(v,idTag,&id);
-    Vector p;
-    Vector xp = getPosition(m, v);
-    m->getParam(v,p);
-    if (dimension == 2 || dimension == 1) {
-      Vector x;
-      m->isParamPointInsideModel(c, &p[0], x);
-      apf::setVector(targetField, v, 0, x - xp);
-    }
-    else {
-      Vector x(0., 0., 0.);
-      apf::setVector(targetField, v, 0, x);
-    }
-    apf::setVector(field,v,0,p);
-  }
-  m->end(it);
-  apf::writeVtkFiles(name,m);
-  it = m->begin(0);
-  while ((v = m->iterate(it)))
-  {
-    m->removeTag(v,dimensionTag);
-    m->removeTag(v,idTag);
-  }
-  m->end(it);
-  m->destroyTag(dimensionTag);
-  m->destroyTag(idTag);
-  apf::destroyField(field);
-  apf::destroyField(targetField);
-}
-
 }
