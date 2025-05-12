@@ -121,6 +121,9 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
   }
   ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
+  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_Collapse", "FPP_Collapse");
+  clearFlagFromDimension(a, CHECKED, 1);
+
   for (int i=0; i<FPP->commEdges.n; i++) setFlag(a, FPP->commEdges.e[i], CHECKED);
   ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
   for (int i=0; i<FPP->commEdges.n; i++) clearFlag(a, FPP->commEdges.e[i], CHECKED);
@@ -209,7 +212,10 @@ static bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane*
   BestCollapse best;
 
   for (int i=0; i<commEdges.n; i++) {
-    getBestQualityCollapse(a, commEdges.e[i], 0, collapse, best);
+    Entity* vertex[2];
+    a->mesh->getDownward(commEdges.e[i], 0, vertex);
+    for (int j=0; j<2; j++)
+      getBestQualityCollapse(a, commEdges.e[i], vertex[j], collapse, best);
   }
 
   for (int i=0; i<commEdges.n; i++) {
@@ -249,13 +255,18 @@ static bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane
         a->mesh->getDownward(pbEdges[i], 0, pbVert);
         if (pbVert[0] == v1 && pbVert[1] == v2) break;
         if (pbVert[1] == v1 && pbVert[0] == v2) break;
-        getBestQualityCollapse(a, pbEdges[i], 0, collapse, best);
+        for (int j=0; j<2; j++)
+          getBestQualityCollapse(a, pbEdges[i], pbVert[j], collapse, best);
       }
       break;
     }
     case 3: {
-      for (int i=0; i<3; i++)
-        getBestQualityCollapse(a, pbEdges[i], 0, collapse, best);
+      for (int i=0; i<3; i++) {
+        Entity* pbVert[2];
+        a->mesh->getDownward(pbEdges[i], 0, pbVert);
+        for (int j=0; j<2; j++)
+          getBestQualityCollapse(a, pbEdges[i], pbVert[j], collapse, best);
+      }
       break;
     }
   }
@@ -331,7 +342,7 @@ bool Snapper::trySimpleSnap()
   return tryReposition(adapter, vert, snapTag, invalid);
 }
 
-static int numFailed = 0;
+static int numFailed = 0; //TODO: REMOVE
 
 bool Snapper::run()
 {
@@ -348,9 +359,9 @@ bool Snapper::run()
 
   if (!success) success = tryCollapseToVertex(adapter, collapse, FPP);
   // if (!success) success = tryReduceCommonEdges(adapter, collapse, FPP);
-  // if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
+  if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
 
-  if (!success && numFailed++ == 1) printFPP(adapter, FPP);
+  if (!success && ++numFailed == 1) printFPP(adapter, FPP);
   
   if (FPP) delete FPP;
   return success;

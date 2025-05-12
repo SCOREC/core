@@ -924,7 +924,7 @@ void trySnapping(Adapt* a, Tag* snapTag)
 
   while (refine->vtxToSnap.size() > 0)
   {
-    if (startSize-- == 0) break; //TEMP: Stop after one move
+    // if (startSize-- == 0) break; //TEMP: Stop after one move
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
     snapper.setVert(vertex);
