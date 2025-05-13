@@ -84,6 +84,13 @@ target_link_libraries(ma
      pcu
    )
 
+set(METIS_PREFIX "" CACHE PATH "Prefix for METIS")
+if(METIS_PREFIX)
+  target_include_directories(ma PUBLIC "${METIS_PREFIX}/include")
+  target_link_directories(ma INTERFACE "${METIS_PREFIX}/lib")
+  target_link_libraries(ma INTERFACE metis)
+endif()
+
 scorec_export_library(ma)
 
 bob_end_subdir()

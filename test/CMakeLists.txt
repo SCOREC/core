@@ -88,6 +88,7 @@ endif()
 # Mesh partitioning utilities
 util_exe_func(split split.cc)
 util_exe_func(zsplit zsplit.cc)
+util_exe_func(lgmsplit lgmsplit.cc)
 util_exe_func(collapse collapse.cc)
 util_exe_func(repartition repartition.cc)
 util_exe_func(balance balance.cc)
