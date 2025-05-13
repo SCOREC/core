@@ -5,12 +5,14 @@
 #include "maAdapt.h"
 #include <parma.h>
 #include <apfZoltan.h>
+#if defined(APW_LGMETIS)
+#include <numeric>
+#include "maDBG.h"
+#endif
 
 #define MAX_ZOLTAN_GRAPH_RANKS 16*1024
 
 namespace ma {
-
-namespace {
 
 static double clamp(double x, double max, double min)
 {
@@ -138,8 +140,6 @@ double estimateWeightedImbalance(Adapt* a)
 }
 
 #ifdef APW_LGMETIS
-#include <numeric>
-#include <mpi.h>
 #include <metis.h>
 
 void runLocalizedGraphMetis(Adapt* a) {
@@ -173,30 +173,54 @@ void runLocalizedGraphMetis(Adapt* a) {
   a->mesh->end(it);
   apf::synchronize(gn);
   auto opposites = apf::tagOpposites(gn, "maBalance__run_LGM_opp");
-  // Build local adj_cts, adjncy.
-  std::vector<idx_t> owned_adj_cts, owned_adjncy;
+  // Build local adj_cts.
+  std::vector<idx_t> owned_adj_cts(nelm);
   it = a->mesh->begin(elm_dim);
   for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
+    int e_num = apf::getNumber(numbering, e, 0, 0);
     apf::Downward graph_edges;
-    int ne = a->mesh->getDownward(e, elm_dim - 1, graph_edges);
-    int nedges = 0;
-    for (int i = 0; i < ne; ++i) {
-      if (a->mesh->isShared(graph_edges[i])) {
+    int nd = a->mesh->getDownward(e, elm_dim - 1, graph_edges);
+    int nd_own = 0;
+    for (int i = 0; i < nd; ++i) {
+      // If mesh face (3d)/edge (2d) is shared or has 2 upward adjacencies,
+      // then add a graph edge slot.
+      if (a->mesh->isShared(graph_edges[i])) ++nd_own;
+      else if (a->mesh->countUpward(graph_edges[i]) == 2) ++nd_own;
+    }
+    owned_adj_cts[e_num] = nd_own;
+  }
+  a->mesh->end(it);
+  // Build local xadj FIXME: inefficient
+  std::vector<idx_t> owned_xadj(1 + owned_adj_cts.size());
+  std::partial_sum(
+    owned_adj_cts.begin(), owned_adj_cts.end(), owned_xadj.begin() + 1
+  );
+  // Build local adjncy.
+  std::vector<idx_t> owned_adjncy(owned_xadj.back());
+  it = a->mesh->begin(elm_dim);
+  for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
+    int e_num = apf::getNumber(numbering, e, 0, 0);
+    int e_xadj = owned_xadj[e_num];
+    apf::Downward graph_edges;
+    int nd = a->mesh->getDownward(e, elm_dim - 1, graph_edges);
+    int adj_i = 0;
+    for (int j = 0; j < nd; ++j) {
+      if (a->mesh->isShared(graph_edges[j])) {
         long opp_num;
-        a->mesh->getLongTag(graph_edges[i], opposites, &opp_num);
-        owned_adjncy.push_back(opp_num);
-        ++nedges;
+        a->mesh->getLongTag(graph_edges[j], opposites, &opp_num);
+        owned_adjncy[e_xadj + adj_i] = opp_num;
+        ++adj_i;
       } else {
-        for (int j = 0; j < a->mesh->countUpward(graph_edges[i]); ++j) {
-          apf::MeshEntity *up = a->mesh->getUpward(graph_edges[i], j);
+        PCU_DEBUG_ASSERT(a->mesh->countUpward(graph_edges[j]) <= 2);
+        for (int k = 0; k < a->mesh->countUpward(graph_edges[j]); ++k) {
+          apf::MeshEntity *up = a->mesh->getUpward(graph_edges[j], k);
           if (up != e) {
-            owned_adjncy.push_back(apf::getNumber(gn, up, 0));
-            ++nedges;
+            owned_adjncy[e_xadj + adj_i] = apf::getNumber(gn, up, 0);
+            ++adj_i;
           }
         }
       }
     }
-    owned_adj_cts.push_back(nedges);
   }
   a->mesh->end(it);
   // Build xadj.
@@ -224,7 +248,11 @@ void runLocalizedGraphMetis(Adapt* a) {
     lion_oprint(1, "METIS: localized graph in %f seconds\n", t_localize - t0);
   std::vector<idx_t> part(nvtxs);
   if (a->mesh->getPCU()->Self() == 0) {
+#ifdef APW_LGMETIS_SER
+    idx_t nparts = 4; // a->mesh->getPCU()->Peers();
+#else
     idx_t nparts = a->mesh->getPCU()->Peers();
+#endif
     std::vector<real_t> imb(nparts, a->input->maximumImbalance);
     idx_t objval;
     int r = METIS_PartGraphKway(
@@ -253,17 +281,33 @@ void runLocalizedGraphMetis(Adapt* a) {
   auto t_scatter = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: scattered in %f seconds\n", t_scatter - t_part);
+#if defined(APW_LGMETIS_VIZ)
+  apf::Field* dst_part = apf::createStepField(a->mesh, "dst_part", apf::SCALAR);
+#endif
   apf::Migration *plan = new apf::Migration(a->mesh);
   it = a->mesh->begin(elm_dim);
   for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
     int dest = owned_part[apf::getNumber(gn, e, 0) - gn_offset];
     if (dest != a->mesh->getPCU()->Self()) plan->send(e, dest);
+#if defined(APW_LGMETIS_VIZ)
+    apf::setScalar(dst_part, e, 0, dest);
+#endif
   }
   auto t_plan = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: planned in %f seconds\n", t_plan - t_scatter);
+#if defined(APW_LGMETIS_VIZ)
+  static int num_vtk = 0;
+  ma_dbg::dumpMeshWithQualities(a, num_vtk, "migrate");
+  ++num_vtk;
+  apf::destroyField(dst_part);
+#endif
   auto t0migrate = pcu::Time();
+#ifdef APW_LGMETIS_SER
+  delete plan;
+#else
   a->mesh->migrate(plan);
+#endif
   auto t1migrate = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: migrated in %f seconds\n", t1migrate - t0migrate);
@@ -276,15 +320,26 @@ void runLocalizedGraphMetis(Adapt* a) {
   auto t1 = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: balanced in %f seconds\n", t1 - t0);
+#if defined(APW_LGMETIS_VIZ)
+  it = a->mesh->begin(elm_dim - 1);
+  int shared = 0;
+  for (apf::MeshEntity* e; (e = a->mesh->iterate(it));) {
+    if (a->mesh->isShared(e)) ++shared;
+  }
+  a->mesh->end(it);
+  lion_oprint(1, "METIS: rank %d has %d shared faces\n",
+    a->mesh->getPCU()->Self(), shared
+  );
+#endif
 }
 #endif
 
-} // namespace
-
 void preBalance(Adapt* a)
 {
+#ifndef APW_LGMETIS_SER
   if (a->mesh->getPCU()->Peers()==1)
     return;
+#endif
 #ifdef APW_LGMETIS
   runLocalizedGraphMetis(a);
   return;
