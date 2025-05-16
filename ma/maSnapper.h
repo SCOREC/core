@@ -43,7 +43,7 @@ class Snapper
     Entity* vert;
     Collapse collapse;
     SingleSplitCollapse splitCollapse;
-    EdgeSwap edgeSwap;
+    // EdgeSwap edgeSwap;
     bool isSimple;
 
     bool trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP);
