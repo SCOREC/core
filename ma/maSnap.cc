@@ -954,7 +954,7 @@ void snap(Adapt* a)
   apf::writeVtkFiles("after_last_snap", a->mesh);
   ma_dbg::dumpMeshWithFlag(a, 0, 0, SNAP, "snap_tag", "after_last_snap_tag");
   
-  clearFlagFromDimension(a, COLLAPSE, 1); //TODO: Figure out what is making this neccessary
+  // clearFlagFromDimension(a, COLLAPSE, 1); //TODO: Figure out what is making this neccessary
   clearFlagFromDimension(a, SNAP, 0);
   a->mesh->destroyTag(snapTag);
   a->refine->vtxToSnap = {};

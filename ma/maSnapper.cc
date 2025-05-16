@@ -24,9 +24,15 @@ Snapper::Snapper(Adapt* a, Tag* st, bool is) : splitCollapse(a)
   adapter = a;
   snapTag = st;
   collapse.Init(a);
+  edgeSwap = makeEdgeSwap(a);
   isSimple = is;
   dug = false;
   vert = 0;
+}
+
+Snapper::~Snapper()
+{
+  delete edgeSwap;
 }
 
 void Snapper::setVert(Entity* v)
@@ -141,6 +147,17 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
   clearFlag(a, FPP->problemRegion, CHECKED);
 }
 
+static int indexOfMin(double a0, double a1, double a2)
+{
+  int k;
+  double buf;
+  if( a0<a1 )
+    { buf=a0; k=0; }
+  else
+    { buf=a1; k=1; }
+  return (buf<a2) ? k:2;
+}
+
 static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert)
 {
   Entity* faceVert[3];
@@ -162,7 +179,17 @@ static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert)
   return result;
 }
 
-static void GetTetStats(Adapt* a, FirstProblemPlane* FPP) 
+/*
+  Given a poorly-shaped tetrahedron, a base triangle and the opposite vertex of the base,
+  determine the following information:
+  1. the key mesh entities to apply local mesh modification
+  2. area of the four faces
+  3. the intersection of two intersected opposite edges in case two large dihedral angles
+  
+  return 0   : if an edge is degenerated
+          1-7 : the index indicating the location of projection point
+*/
+static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double area[4]) 
 {
   Entity* faceEdges[3];
   a->mesh->getDownward(FPP->problemFace, 1, faceEdges);
@@ -199,24 +226,174 @@ static void GetTetStats(Adapt* a, FirstProblemPlane* FPP)
       else if (isLowInHigh(a->mesh, problemEdges[j], verts[2])) edges[5] = problemEdges[j];
     }
   }
+
+  Vector projection = projOnTriPlane(a, FPP->problemFace, FPP->vert);
+  //TODO: ERROR if projection = any point on problem face
+
+  /* find normal to the plane */
+  Vector v01 = facePos[1] - facePos[0];
+  Vector v02 = facePos[2] - facePos[0];
+  Vector norm = apf::cross(v01, v02);
+
+  Vector ri = projection - facePos[0];
+  Vector rj = projection - facePos[1];
+  Vector rk = projection - facePos[2];
+
+  /* determine which side of the edges does the point R lie.
+      First get normal vectors */
+  Vector normi = apf::cross(v01, ri);
+  Vector normj = apf::cross(facePos[2]-facePos[1], rj);
+  Vector normk = apf::cross(facePos[0]-facePos[2], rk);
+
+  Vector mag;
+  mag[0]=normi*norm;
+  mag[1]=normj*norm;
+  mag[2]=normk*norm;
+
+  area[0]=norm*norm;
+  area[1]=normi*normi;
+  area[2]=normj*normj;
+  area[3]=normk*normk;
+
+  int filter[]={1,2,4};
+  int bit=0;
+  /* examine signs of mag[0], mag[1] and mag[2] */
+  for(int i=0; i<3; i++)
+    if(mag[i]>0.0)
+      bit = bit | filter[i];
+
+  /*  
+           010=2   | 011=3  /  001=1
+                   |       /
+       ------------+--e2--+-----------
+                 v0|     /v2
+                   | 7  /
+           110=6   e0  e1
+                   |  /
+                   | /    101=5
+                   |/
+                 v1+
+                  /|
+                 / |
+                  4
+  */
+
+ switch( bit ) {
+    case 1:{
+      int Emap[]={0,4,3};
+      int Fmap[]={0,2,3};
+      ents[0]=faces[1];
+      int i=indexOfMin(area[0],area[2],area[3]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;
+    }
+    case 2: {
+      int Emap[]={1,4,5};
+      int Fmap[]={0,1,3};
+      ents[0]=faces[2];
+      int i=indexOfMin(area[0],area[1],area[3]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;   
+    }
+    case 3: {
+      // double L1_xyz[2][3], L2_xyz[2][3];
+      ents[0]=edges[2];
+      ents[1]=edges[4];
+      ents[2]=((area[0]<area[3]) ? faces[0] : faces[3]);
+      ents[3]=((area[1]<area[2]) ? faces[1] : faces[2]);
+      // L1_xyz[0][0]=fxyz[0][0];    L1_xyz[1][0]=fxyz[2][0]; 
+      // L1_xyz[0][1]=fxyz[0][1];    L1_xyz[1][1]=fxyz[2][1];
+      // L1_xyz[0][2]=fxyz[0][2];    L1_xyz[1][2]=fxyz[2][2];
+      // L2_xyz[0][0]=fxyz[1][0];    L2_xyz[1][0]=pxyz[0]; 
+      // L2_xyz[0][1]=fxyz[1][1];    L2_xyz[1][1]=pxyz[1];
+      // L2_xyz[0][2]=fxyz[1][2];    L2_xyz[1][2]=pxyz[2];
+      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ);
+      break;
+    }
+    case 4: {
+      int Emap[]={2,3,5};
+      int Fmap[]={0,1,2};
+      ents[0]=faces[3];
+      int i=indexOfMin(area[0],area[1],area[2]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;
+    }
+    case 5: {
+      // double L1_xyz[2][3], L2_xyz[2][3];
+      ents[0]=edges[1];
+      ents[1]=edges[3];
+      ents[2]=((area[0]<area[2]) ? faces[0] : faces[2]);
+      ents[3]=((area[1]<area[3]) ? faces[1] : faces[3]);
+      // L1_xyz[0][0]=fxyz[1][0];    L1_xyz[1][0]=fxyz[2][0]; 
+      // L1_xyz[0][1]=fxyz[1][1];    L1_xyz[1][1]=fxyz[2][1];
+      // L1_xyz[0][2]=fxyz[1][2];    L1_xyz[1][2]=fxyz[2][2];
+      // L2_xyz[0][0]=fxyz[0][0];    L2_xyz[1][0]=pxyz[0]; 
+      // L2_xyz[0][1]=fxyz[0][1];    L2_xyz[1][1]=pxyz[1];
+      // L2_xyz[0][2]=fxyz[0][2];    L2_xyz[1][2]=pxyz[2];
+      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ);
+      break;
+    }
+    case 6: {
+      // double L1_xyz[2][3], L2_xyz[2][3];
+      ents[0]=edges[0];
+      ents[1]=edges[5];
+      ents[2]=((area[0]<area[1]) ? faces[0]:faces[1]);
+      ents[3]=((area[2]<area[3]) ? faces[2]:faces[3]);
+      // L1_xyz[0][0]=fxyz[0][0];    L1_xyz[1][0]=fxyz[1][0]; 
+      // L1_xyz[0][1]=fxyz[0][1];    L1_xyz[1][1]=fxyz[1][1];
+      // L1_xyz[0][2]=fxyz[0][2];    L1_xyz[1][2]=fxyz[1][2];
+      // L2_xyz[0][0]=fxyz[2][0];    L2_xyz[1][0]=pxyz[0]; 
+      // L2_xyz[0][1]=fxyz[2][1];    L2_xyz[1][1]=pxyz[1];
+      // L2_xyz[0][2]=fxyz[2][2];    L2_xyz[1][2]=pxyz[2];
+      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ);
+      break;
+    }
+    case 7: {
+      int Emap[]={0,1,2};
+      int Fmap[]={1,2,3};
+      ents[0]=faces[0];
+      int i=indexOfMin(area[1],area[2],area[3]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;
+    }
+    default:
+      PCU_ALWAYS_ASSERT(false); //TODO: ADD ERROR
+  }
+  return bit;
 }
 
 bool Snapper::trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP)
 {
   if (FPP->commEdges.n < 2) return false;
   printf("SPLIT\n");
-  double baseArea = apf::measure(a->mesh, FPP->problemFace);
-  double smallest = baseArea;
-  Entity* faces[4];
-  a->mesh->getDownward(FPP->problemRegion, 2, faces);
-  for (int i=0; i<4; i++) {
-    double area = apf::measure(a->mesh, faces[i]);
-    if (area < smallest)
-      smallest = area;
+  Entity* ents[4];
+  double area[4];
+  int bit = getTetStats(a, FPP, ents, area);
+
+  double min=area[0];
+  for(int i=1; i<4; i++) 
+    if( area[i]<min ) min=area[i]; 
+
+  if (area[0]==min) {
+    PCU_ALWAYS_ASSERT(false);
   }
 
-  if (smallest == baseArea) {
-    PCU_ALWAYS_ASSERT(false);
+  printf("BIT %d\n", bit);
+  // two large dihedral angles -> key problem: two mesh edges
+  if (bit==3 || bit==5 || bit==6) {
+    // // check edge swapping
+    // for (int i=0; i<2; i++)
+    //   if (edgeSwap->run(ents[i])) //TODO: Select best
+    //     return true;
+
+    // // check split+collapse
+    // for (int i=0; i<2; i++)
+    //   if (splitCollapse.run(ents[i], ents[i+2])) //TODO: Select best
+    //     return true;
   }
 
 

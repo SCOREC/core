@@ -30,6 +30,7 @@ class Snapper
 {
   public:
     Snapper(Adapt* a, Tag* st, bool is);
+    ~Snapper();
     void setVert(Entity* v);
     Entity* getVert();
     bool requestLocality(apf::CavityOp* o);
@@ -43,7 +44,7 @@ class Snapper
     Entity* vert;
     Collapse collapse;
     SingleSplitCollapse splitCollapse;
-    // EdgeSwap edgeSwap;
+    EdgeSwap* edgeSwap;
     bool isSimple;
 
     bool trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP);
