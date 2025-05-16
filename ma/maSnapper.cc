@@ -19,7 +19,7 @@
 
 namespace ma {
 
-Snapper::Snapper(Adapt* a, Tag* st, bool is)
+Snapper::Snapper(Adapt* a, Tag* st, bool is) : splitCollapse(a)
 {
   adapter = a;
   snapTag = st;
@@ -139,6 +139,88 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
   setFlag(a, FPP->problemRegion, CHECKED);
   ma_dbg::dumpMeshWithFlag(a, 0, 3, CHECKED, "FPP_Region", "FPP_Region");
   clearFlag(a, FPP->problemRegion, CHECKED);
+}
+
+static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert)
+{
+  Entity* faceVert[3];
+  a->mesh->getDownward(face, 0, faceVert);
+  Vector facePos[3];
+  for (int i=0; i < 3; ++i)
+    facePos[i] = getPosition(a->mesh,faceVert[i]);
+  
+  Vector normal = apf::cross((facePos[1]-facePos[0]),(facePos[2]-facePos[0]));
+  double magN = normal*normal;
+  Vector vertPos = getPosition(a->mesh, vert);
+  double magCP = (vertPos-facePos[0]) * normal;
+  double ratio=magCP/magN;
+
+  Vector result;
+  for (int i=0; i<3; ++i)
+    result[i]=vertPos[i]-ratio*normal[i];
+  
+  return result;
+}
+
+static void GetTetStats(Adapt* a, FirstProblemPlane* FPP) 
+{
+  Entity* faceEdges[3];
+  a->mesh->getDownward(FPP->problemFace, 1, faceEdges);
+
+  Entity* verts[3];
+  a->mesh->getDownward(FPP->problemFace, 0, verts);
+
+  Vector facePos[3];
+  Entity* edges[6];
+  for (int i=0; i<3; i++) {
+    edges[i]=faceEdges[i];
+    facePos[i]=getPosition(a->mesh, verts[i]);
+  }
+
+  Entity* faces[4];
+  faces[0]=FPP->problemFace;
+
+  Entity* problemFaces[4];
+  a->mesh->getDownward(FPP->problemRegion, 2, problemFaces);
+  for (int i=0; i<4; i++) {
+    if (problemFaces[i] == FPP->problemFace ) continue;
+    else if (isLowInHigh(a->mesh, problemFaces[i], edges[0])) faces[1] = problemFaces[i];
+    else if (isLowInHigh(a->mesh, problemFaces[i], edges[1])) faces[2] = problemFaces[i];
+    else if (isLowInHigh(a->mesh, problemFaces[i], edges[2])) faces[3] = problemFaces[i];
+  }
+
+  for (int i=1; i<3; i++) {
+    Entity* problemEdges[3];
+    a->mesh->getDownward(faces[i], 1, problemEdges);
+    for (int j=0; j<3; j++) {
+      if (problemEdges[j]==edges[i-1] ) continue;
+      else if (isLowInHigh(a->mesh, problemEdges[j], verts[0])) edges[3] = problemEdges[j];
+      else if (isLowInHigh(a->mesh, problemEdges[j], verts[1])) edges[4] = problemEdges[j];
+      else if (isLowInHigh(a->mesh, problemEdges[j], verts[2])) edges[5] = problemEdges[j];
+    }
+  }
+}
+
+bool Snapper::trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP)
+{
+  if (FPP->commEdges.n < 2) return false;
+  printf("SPLIT\n");
+  double baseArea = apf::measure(a->mesh, FPP->problemFace);
+  double smallest = baseArea;
+  Entity* faces[4];
+  a->mesh->getDownward(FPP->problemRegion, 2, faces);
+  for (int i=0; i<4; i++) {
+    double area = apf::measure(a->mesh, faces[i]);
+    if (area < smallest)
+      smallest = area;
+  }
+
+  if (smallest == baseArea) {
+    PCU_ALWAYS_ASSERT(false);
+  }
+
+
+  return false;
 }
 
 static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
@@ -360,6 +442,7 @@ bool Snapper::run()
   if (!success) success = tryCollapseToVertex(adapter, collapse, FPP);
   // if (!success) success = tryReduceCommonEdges(adapter, collapse, FPP);
   if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
+  // if (!success) success = trySwapOrSplit(adapter, FPP);
 
   if (!success && ++numFailed == 1) printFPP(adapter, FPP);
   

@@ -11,6 +11,8 @@
 #define MA_SNAPPER_H
 
 #include "maCollapse.h"
+#include "maSingleSplitCollapse.h"
+#include "maEdgeSwap.h"
 
 namespace apf {
 class CavityOp;
@@ -40,7 +42,11 @@ class Snapper
     Tag* snapTag;
     Entity* vert;
     Collapse collapse;
+    SingleSplitCollapse splitCollapse;
+    EdgeSwap edgeSwap;
     bool isSimple;
+
+    bool trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP);
 };
 
 struct Ray{
