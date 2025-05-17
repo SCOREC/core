@@ -1,3 +1,6 @@
+#ifdef APW_LGMETIS_DUMP
+#include <fstream>
+#endif
 #include <apfMesh.h>
 #include <apfShape.h>
 #include <lionPrint.h>
@@ -143,27 +146,22 @@ double estimateWeightedImbalance(Adapt* a)
 #include <metis.h>
 
 void runLocalizedGraphMetis(Adapt* a) {
+  // FIXME PCU_DEBUG_ASSERT(sizeof(idx_t) >= sizeof(mds_id_type));
+  int elm_dim = a->mesh->getDimension();
+  PCU_ALWAYS_ASSERT(elm_dim == 3); // FIXME: update code to allow 2d
   auto t0 = pcu::Time();
   MPI_Comm comm;
   a->mesh->getPCU()->DupComm(&comm);
-  int elm_dim = a->mesh->getDimension();
-  // FIXME: confirm sizeof(idx_t) >= sizeof(mds_id_type)
-  int nelm = apf::countOwned(a->mesh, elm_dim);
-  std::vector<int> nelms(a->mesh->getPCU()->Peers());
-  a->mesh->getPCU()->Allgather(&nelm, nelms.data(), 1);
-  std::vector<int> nelm_sums(nelms.size() + 1);
-  nelm_sums[0] = 0;
-  std::partial_sum(nelms.begin(), nelms.end(), nelm_sums.begin() + 1);
-  idx_t nvtxs = nelm_sums.back(), ncon = 1;
+  int n_owned_elm = apf::countOwned(a->mesh, elm_dim);
   // Create global element numbering.
   auto numbering = apf::numberOwnedDimension(
     a->mesh, "maBalance__runLGM_nb", elm_dim
   );
-  // Don't use apf::makeGlobal because it will recalculate nelm_sums.
+  // Don't use apf::makeGlobal because numbering may not be rank order.
   auto gn = apf::createGlobalNumbering(
     a->mesh, "maBalance_runLGM_gnb", apf::getConstant(elm_dim)
   );
-  int gn_offset = nelm_sums[a->mesh->getPCU()->Self()];
+  int gn_offset = a->mesh->getPCU()->Exscan(n_owned_elm);
   apf::MeshIterator *it = a->mesh->begin(elm_dim);
   for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
     if (a->mesh->isOwned(e)) {
@@ -172,9 +170,9 @@ void runLocalizedGraphMetis(Adapt* a) {
   }
   a->mesh->end(it);
   apf::synchronize(gn);
-  auto opposites = apf::tagOpposites(gn, "maBalance__run_LGM_opp");
+  auto opp_tag = apf::tagOpposites(gn, "maBalance__run_LGM_opp");
   // Build local adj_cts.
-  std::vector<idx_t> owned_adj_cts(nelm);
+  std::vector<idx_t> owned_adj_cts(n_owned_elm);
   it = a->mesh->begin(elm_dim);
   for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
     int e_num = apf::getNumber(numbering, e, 0, 0);
@@ -190,8 +188,8 @@ void runLocalizedGraphMetis(Adapt* a) {
     owned_adj_cts[e_num] = nd_own;
   }
   a->mesh->end(it);
-  // Build local xadj FIXME: inefficient
-  std::vector<idx_t> owned_xadj(1 + owned_adj_cts.size());
+  // Build local xadj.
+  std::vector<idx_t> owned_xadj(1 + n_owned_elm);
   std::partial_sum(
     owned_adj_cts.begin(), owned_adj_cts.end(), owned_xadj.begin() + 1
   );
@@ -199,18 +197,20 @@ void runLocalizedGraphMetis(Adapt* a) {
   std::vector<idx_t> owned_adjncy(owned_xadj.back());
   it = a->mesh->begin(elm_dim);
   for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
-    int e_num = apf::getNumber(numbering, e, 0, 0);
-    int e_xadj = owned_xadj[e_num];
+    int local_num = apf::getNumber(numbering, e, 0, 0);
+    int e_xadj = owned_xadj[local_num]; // FIXME: double check.
     apf::Downward graph_edges;
     int nd = a->mesh->getDownward(e, elm_dim - 1, graph_edges);
     int adj_i = 0;
     for (int j = 0; j < nd; ++j) {
       if (a->mesh->isShared(graph_edges[j])) {
         long opp_num;
-        a->mesh->getLongTag(graph_edges[j], opposites, &opp_num);
+        a->mesh->getLongTag(graph_edges[j], opp_tag, &opp_num);
         owned_adjncy[e_xadj + adj_i] = opp_num;
         ++adj_i;
       } else {
+        // FIXME: assert may not be true in non-manifold 2d cases.
+        //        the loop may still make sense.
         PCU_DEBUG_ASSERT(a->mesh->countUpward(graph_edges[j]) <= 2);
         for (int k = 0; k < a->mesh->countUpward(graph_edges[j]); ++k) {
           apf::MeshEntity *up = a->mesh->getUpward(graph_edges[j], k);
@@ -223,30 +223,102 @@ void runLocalizedGraphMetis(Adapt* a) {
     }
   }
   a->mesh->end(it);
-  // Build xadj.
-  idx_t owned_adjncy_size = owned_adjncy.size();
-  std::vector<idx_t> owned_adjncy_sizes(a->mesh->getPCU()->Peers());
-  a->mesh->getPCU()->Allgather(
-    &owned_adjncy_size, owned_adjncy_sizes.data(), 1
+  // Localize n_owned_elms for Gatherv on xadj.
+  std::vector<int> xadj_cts(
+    a->mesh->getPCU()->Self() == 0 ? a->mesh->getPCU()->Peers() : 0
   );
-  std::vector<idx_t> adj_cts(nvtxs);
-  MPI_Gatherv(
-    owned_adj_cts.data(), owned_adj_cts.size(), MPI_INT,
-    adj_cts.data(), nelms.data(), nelm_sums.data(), MPI_INT,
+  MPI_Gather(
+    &n_owned_elm, 1, MPI_INT,
+    xadj_cts.data(), 1, MPI_INT,
     0, comm
   );
-  std::vector<idx_t> xadj(nvtxs + 1);
-  std::partial_sum(adj_cts.begin(), adj_cts.end(), xadj.begin() + 1);
-  std::vector<idx_t> adjncy(xadj.back());
+  if (a->mesh->getPCU()->Self() == 0)
+    xadj_cts.back() += 1; // Add space for final entry.
+  std::vector<int> xadj_displs(
+    a->mesh->getPCU()->Self() == 0 ? a->mesh->getPCU()->Peers() + 1 : 0
+  );
+  if (a->mesh->getPCU()->Self() == 0) {
+    std::partial_sum(
+      xadj_cts.begin(), xadj_cts.end(), xadj_displs.begin() + 1
+    );
+  }
+  int metis_nvtxs = a->mesh->getPCU()->Self() == 0 ? xadj_displs.back()-1 : 0;
+  // Increment owned_xadj.
+  int xadj_offset = a->mesh->getPCU()->Exscan(owned_xadj.back());
+  for (int i = 0; i < n_owned_elm + 1; ++i) owned_xadj[i] += xadj_offset;
+  // Gather xadj.
+  std::vector<idx_t> xadj(
+    a->mesh->getPCU()->Self() == 0 ? xadj_displs.back() : 0
+  );
+  int xadj_sendct = owned_xadj.size() - 1 + ( // send extra final entry.
+    a->mesh->getPCU()->Self() == a->mesh->getPCU()->Peers() - 1 ? 1 : 0
+  );
+  MPI_Gatherv(
+    owned_xadj.data(), xadj_sendct, MPI_INT,
+    xadj.data(), xadj_cts.data(), xadj_displs.data(), MPI_INT,
+    0, comm
+  );
+  // Gather adjncy.
+  int owned_adjncy_ct = owned_adjncy.size();
+  std::vector<int> adjncy_cts(
+    a->mesh->getPCU()->Self() == 0 ? a->mesh->getPCU()->Peers() : 0
+  );
+  MPI_Gather(
+    &owned_adjncy_ct, 1, MPI_INT,
+    adjncy_cts.data(), 1, MPI_INT,
+    0, comm
+  );
+  std::vector<int> adjncy_displs(
+    a->mesh->getPCU()->Self() == 0 ? a->mesh->getPCU()->Peers() + 1 : 0
+  );
+  if (a->mesh->getPCU()->Self() == 0) {
+    std::partial_sum(
+      adjncy_cts.begin(), adjncy_cts.end(), adjncy_displs.begin() + 1
+    );
+  }
+  std::vector<idx_t> adjncy(a->mesh->getPCU()->Self() == 0 ? xadj.back() : 0);
   MPI_Gatherv(
     owned_adjncy.data(), owned_adjncy.size(), MPI_INT,
-    adjncy.data(), owned_adjncy_sizes.data(), xadj.data(), MPI_INT,
+    adjncy.data(), adjncy_cts.data(), adjncy_displs.data(), MPI_INT,
     0, comm
   );
   auto t_localize = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: localized graph in %f seconds\n", t_localize - t0);
-  std::vector<idx_t> part(nvtxs);
+#ifdef APW_LGMETIS_DUMP
+  std::vector<apf::Vector3> ctrs(metis_nvtxs);
+  a->mesh->getPCU()->Begin();
+  it = a->mesh->begin(elm_dim);
+  for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
+    long e_num = apf::getNumber(gn, e, 0);
+    apf::Vector3 lc = apf::getLinearCentroid(a->mesh, e);
+    if (a->mesh->getPCU()->Self() == 0) {
+      ctrs[e_num] = lc;
+    } else {
+      a->mesh->getPCU()->Pack(0, e_num);
+      a->mesh->getPCU()->Pack(0, &lc[0], lc.size() * sizeof(lc[0]));
+    }
+  }
+  a->mesh->end(it);
+  a->mesh->getPCU()->Send();
+  while (a->mesh->getPCU()->Receive()) {
+    long e_num;
+    a->mesh->getPCU()->Unpack(e_num);
+    apf::Vector3 lc;
+    a->mesh->getPCU()->Unpack(&lc[0], lc.size() * sizeof(lc[0]));
+    ctrs[e_num] = lc;
+  }
+  if (a->mesh->getPCU()->Self() == 0) {
+    std::ofstream f_xadj("apw_lgmetis_dump_xadj.csv");
+    for (size_t i = 0; i < metis_nvtxs; ++i) {
+      f_xadj << ctrs[i] << ',' << xadj[i] << '\n';
+    }
+    f_xadj << xadj.back() << '\n';
+    std::ofstream f_adjncy("apw_lgmetis_dump_adjncy.csv");
+    for (auto adj : adjncy) f_adjncy << adj << '\n';
+  }
+#endif
+  std::vector<idx_t> part(a->mesh->getPCU()->Self() == 0 ? metis_nvtxs : 0);
   if (a->mesh->getPCU()->Self() == 0) {
 #ifdef APW_LGMETIS_SER
     idx_t nparts = 4; // a->mesh->getPCU()->Peers();
@@ -254,9 +326,9 @@ void runLocalizedGraphMetis(Adapt* a) {
     idx_t nparts = a->mesh->getPCU()->Peers();
 #endif
     std::vector<real_t> imb(nparts, a->input->maximumImbalance);
-    idx_t objval;
+    idx_t objval, ncon = 1;
     int r = METIS_PartGraphKway(
-      &nvtxs, &ncon, xadj.data(), adjncy.data(), // Graph
+      &metis_nvtxs, &ncon, xadj.data(), adjncy.data(), // Graph
       NULL, NULL, NULL, // No sizing
       &nparts,
       NULL, imb.data(), NULL, &objval, part.data()
@@ -273,10 +345,15 @@ void runLocalizedGraphMetis(Adapt* a) {
   auto t_part = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: partitioned in %f seconds\n", t_part - t_localize);
-  std::vector<idx_t> owned_part(nelm);
+  std::vector<idx_t> owned_part(n_owned_elm);
+  // Reuse xadj_cts, xadj_displs.
+  if (a->mesh->getPCU()->Self() == 0) {
+    // Undo "create the final xadj slot" from above.
+    xadj_cts.back() -= 1;
+  }
   MPI_Scatterv(
-    part.data(), nelms.data(), nelm_sums.data(), MPI_INT,
-    owned_part.data(), nelm, MPI_INT, 0, comm
+    part.data(), xadj_cts.data(), xadj_displs.data(), MPI_INT,
+    owned_part.data(), n_owned_elm, MPI_INT, 0, comm
   );
   auto t_scatter = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
@@ -312,8 +389,8 @@ void runLocalizedGraphMetis(Adapt* a) {
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: migrated in %f seconds\n", t1migrate - t0migrate);
   plan = nullptr;
-  apf::removeTagFromDimension(a->mesh, opposites, elm_dim - 1);
-  a->mesh->destroyTag(opposites);
+  apf::removeTagFromDimension(a->mesh, opp_tag, elm_dim - 1);
+  a->mesh->destroyTag(opp_tag);
   apf::destroyGlobalNumbering(gn);
   apf::destroyNumbering(numbering);
   MPI_Comm_free(&comm);
