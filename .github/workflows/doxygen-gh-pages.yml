@@ -9,7 +9,9 @@ jobs:
   deploy:
     runs-on: ubuntu-22.04
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,8 +31,11 @@ jobs:
       - name: Generate Doc
         run: doxygen ${{github.workspace}}/build/Doxyfile
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./doc/html
+          path: ./doc/html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
