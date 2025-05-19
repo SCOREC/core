@@ -34,9 +34,14 @@ class ListMember
 };
 
 template <class T>
-class ListIterator : public std::iterator<std::forward_iterator_tag,T*>
+class ListIterator
 {
   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = T*;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T**;
+    using reference = T*&;
     ListIterator():current(0) {}
     ListIterator(ListMember* p):current(p) {}
     bool operator==(ListIterator<T> const& other) const
