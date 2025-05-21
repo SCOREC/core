@@ -118,6 +118,13 @@ static void updateVertexParametricCoords(
   m->setParam(vert, pBar);
 }
 
+static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
+{
+  setFlag(a, ent, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, dim, CHECKED, name, name);
+  clearFlag(a, ent, CHECKED);
+}
+
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
   apf::writeVtkFiles("FPP_Mesh", a->mesh);
@@ -127,24 +134,13 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
   }
   ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
-  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_Collapse", "FPP_Collapse");
-  clearFlagFromDimension(a, CHECKED, 1);
-
   for (int i=0; i<FPP->commEdges.n; i++) setFlag(a, FPP->commEdges.e[i], CHECKED);
   ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
   for (int i=0; i<FPP->commEdges.n; i++) clearFlag(a, FPP->commEdges.e[i], CHECKED);
 
-  setFlag(a, FPP->vert, CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "FPP_Vertex", "FPP_Vertex");
-  clearFlag(a, FPP->vert, CHECKED);
-
-  setFlag(a, FPP->problemFace, CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "FPP_Face", "FPP_Face");
-  clearFlag(a, FPP->problemFace, CHECKED);
-
-  setFlag(a, FPP->problemRegion, CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 3, CHECKED, "FPP_Region", "FPP_Region");
-  clearFlag(a, FPP->problemRegion, CHECKED);
+  flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
+  flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
+  flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
 }
 
 static int indexOfMin(double a0, double a1, double a2)
@@ -369,7 +365,6 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
 bool Snapper::trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP)
 {
   if (FPP->commEdges.n < 2) return false;
-  printf("SPLIT\n");
   Entity* ents[4];
   double area[4];
   int bit = getTetStats(a, FPP, ents, area);
@@ -382,18 +377,38 @@ bool Snapper::trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP)
     PCU_ALWAYS_ASSERT(false);
   }
 
-  printf("BIT %d\n", bit);
   // two large dihedral angles -> key problem: two mesh edges
   if (bit==3 || bit==5 || bit==6) {
-    // // check edge swapping
-    // for (int i=0; i<2; i++)
-    //   if (edgeSwap->run(ents[i])) //TODO: Select best
-    //     return true;
+    // if (++reachedSwap == 1) {
+    //   flagAndPrint(a, ents[2], 2, "FPP_SwapFace");
+    // }
+    // check edge swapping
+    for (int i=0; i<2; i++)
+      if (edgeSwap->run(ents[i])) //TODO: Select best
+        return true;
 
-    // // check split+collapse
-    // for (int i=0; i<2; i++)
-    //   if (splitCollapse.run(ents[i], ents[i+2])) //TODO: Select best
-    //     return true;
+    // check split+collapse
+    for (int i=0; i<2; i++)
+      if (splitCollapse.run(ents[i], FPP->vert)) //TODO: Select best
+        return true;
+  }
+  // three large dihedral angles -> key entity: a mesh face 
+  else {
+
+    // check edge swaps
+    Entity* edges[3];
+    a->mesh->getDownward(ents[0], 1, edges);
+    for (int i=0; i<3; i++) {
+      if (edgeSwap->run(edges[i])) //TODO: Select best
+        return true;
+    }
+
+    //TODO: IMPLEMENT FACE SWAP
+
+    if (splitCollapse.run(ents[1], FPP->vert));
+      return true;
+
+    //TODO: USE DOUBLE SPLIT COLLAPSE
   }
 
 
@@ -619,7 +634,7 @@ bool Snapper::run()
   if (!success) success = tryCollapseToVertex(adapter, collapse, FPP);
   // if (!success) success = tryReduceCommonEdges(adapter, collapse, FPP);
   if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
-  // if (!success) success = trySwapOrSplit(adapter, FPP);
+  if (!success) success = trySwapOrSplit(adapter, FPP);
 
   if (!success && ++numFailed == 1) printFPP(adapter, FPP);
   

@@ -45,9 +45,9 @@ void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
   AnIso sf(m, sizeFactor1, sizeFactor2);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
-  for (int i = 0; i < 2; ++i)
+  for (int i = 0; i < in->maximumIterations; ++i)
   {
-    // ma::coarsen(a);
+    ma::coarsen(a);
     ma::refine(a);
     ma::snap(a);
   }

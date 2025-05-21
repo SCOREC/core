@@ -77,7 +77,7 @@ bool Collapse::edgesGoodSize() {
     }
   }
   // printf("maxSize %f Ratio %f\n", maxSize, ratioAtMaxSize);
-  if (maxSize > 1.6 && ratioAtMaxSize > 1.44 ) return false;
+  if (maxSize > 1.52 && ratioAtMaxSize > 1.2 ) return false;
   return true;
 }
 
