@@ -32,7 +32,7 @@ namespace {
         printf("Usage: mpirun -np <inPartCount> %s <model> <mesh> <outMesh> <factor>\n"
                "Reduce the part count of mesh from inPartCount to inPartCount/factor.\n",
                argv[0]);
-      MPI_Finalize();
+      pcu::Finalize();
       exit(EXIT_FAILURE);
     }
     modelFile = argv[1];
@@ -44,9 +44,9 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   pcu::Protect();
 #ifdef HAVE_SIMMETRIX
@@ -67,5 +67,5 @@ int main(int argc, char** argv) {
   Sim_unregisterAllKeys();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

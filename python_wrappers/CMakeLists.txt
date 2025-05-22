@@ -21,7 +21,6 @@ if(ENABLE_SIMMETRIX)
   target_include_directories(simhelper PUBLIC ${SIMMODSUITE_INCLUDE_DIR})
   target_include_directories(simhelper PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
   target_link_libraries(simhelper ${SIMMODSUITE_LIBS})
   install(TARGETS simhelper

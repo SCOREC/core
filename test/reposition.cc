@@ -7,9 +7,9 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
 #if 0
   gmi_register_null();
@@ -44,5 +44,5 @@ int main(int argc, char** argv)
   ma::repositionVertex(m, v, 20, 1.0);
   apf::writeVtkFiles("after", m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

@@ -30,7 +30,7 @@ namespace {
 
 void myExit(int exit_code = EXIT_SUCCESS) {
   gmi_cap_stop();
-  MPI_Finalize();
+  pcu::Finalize();
   exit(exit_code);
 }
 
@@ -75,9 +75,9 @@ void printUsage(char *argv0) {
 
 int main(int argc, char** argv) {
   // Initialize parallelism.
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
 
   // Initialize logging.
   lion_set_stdout(stdout);
@@ -272,5 +272,5 @@ int main(int argc, char** argv) {
   // Exit calls.
   gmi_cap_stop();
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

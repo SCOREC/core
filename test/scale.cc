@@ -18,7 +18,7 @@ struct Scale {
 static void print_usage(char** argv, pcu::PCU *PCUObj) {
   if (! PCUObj->Self())
     printf("Usage: %s <model> <mesh> <out> <x> <y> <z> <scale>\n", argv[0]);
-  MPI_Finalize();
+  pcu::Finalize();
   exit(EXIT_FAILURE);
 }
 
@@ -53,9 +53,9 @@ static void scale_mesh(apf::Mesh2* m, Scale const& s) {
 }
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   if (argc != 8) print_usage(argv, &PCUObj);
@@ -75,5 +75,5 @@ int main(int argc, char** argv) {
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

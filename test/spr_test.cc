@@ -17,9 +17,9 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   const char* outFile = argv[3];
   const int order = atoi(argv[4]);
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   apf::Mesh2* mesh = apf::loadMdsMesh(modelFile, meshFile, &PCUObj);
@@ -37,6 +37,6 @@ int main(int argc, char** argv)
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

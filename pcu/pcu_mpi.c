@@ -38,7 +38,7 @@ static void check_rank(const pcu_mpi_t* self, int rank)
   PCU_ALWAYS_ASSERT(rank < pcu_mpi_size(self));
 }
 
-void pcu_mpi_send(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
+void pcu_mpi_send(const pcu_mpi_t* self, pcu_message* m, PCU_Comm comm)
 {
   check_rank(self, m->peer);
   PCU_ALWAYS_ASSERT(comm == self->user_comm || comm == self->coll_comm);
@@ -50,15 +50,24 @@ bool pcu_mpi_done(const pcu_mpi_t* self, pcu_message* m)
   return pcu_pmpi_done(self, m);
 }
 
-bool pcu_mpi_receive(const pcu_mpi_t* self, pcu_message* m, MPI_Comm comm)
+bool pcu_mpi_receive(const pcu_mpi_t* self, pcu_message* m, PCU_Comm comm)
 {
-  if (m->peer != MPI_ANY_SOURCE)
+  if (m->peer != PCU_ANY_SOURCE)
     check_rank(self, m->peer);
   return pcu_pmpi_receive(self, m, comm);
 }
-void pcu_mpi_init(MPI_Comm comm, pcu_mpi_t* mpi) {
+void pcu_mpi_init(PCU_Comm comm, pcu_mpi_t* mpi) {
   pcu_pmpi_init(comm, mpi);
 }
 void pcu_mpi_finalize(pcu_mpi_t* mpi) {
   pcu_pmpi_finalize(mpi);
+}
+
+int pcu_mpi_split(const pcu_mpi_t* mpi, int color, int key,
+                  PCU_Comm* newcomm) {
+  return pcu_pmpi_split(mpi, color, key, newcomm);
+}
+
+int pcu_mpi_dup(const pcu_mpi_t* mpi, PCU_Comm* newcomm) {
+  return pcu_pmpi_dup(mpi, newcomm);
 }

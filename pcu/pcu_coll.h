@@ -29,8 +29,10 @@ extern "C" {
    arguments are usually arrays of some type,
    and the operations is sum, min, max, etc. */
 
-typedef void pcu_merge(void* local, void* incoming, size_t size);
-void pcu_merge_assign(void* local, void* incoming, size_t size);
+typedef void pcu_merge(int peers, int bit, void* local, void* incoming,
+                       size_t size);
+void pcu_merge_assign(int peers, int bit, void* local, void* incoming,
+                      size_t size);
 
 /* Enumerated actions that a rank takes during one
    step of the communication pattern */
@@ -76,6 +78,8 @@ void pcu_reduce(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
 void pcu_bcast(pcu_mpi_t*, pcu_coll* c, void* data, size_t size);
 void pcu_allreduce(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
 void pcu_scan(pcu_mpi_t*, pcu_coll* c, pcu_merge* m, void* data, size_t size);
+void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
+                   void *recv_data, size_t size);
 
 void pcu_begin_barrier(pcu_mpi_t*,pcu_coll* c);
 bool pcu_barrier_done(pcu_mpi_t*, pcu_coll* c);

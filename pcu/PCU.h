@@ -1,9 +1,9 @@
 #ifndef SCOREC_PCU_H
 #define SCOREC_PCU_H
 
+#include <memory>
 #include <cstdlib>
 #include <cstdarg> //va_list
-#include <mpi.h>
 #include "pcu_defines.h"
 
 struct pcu_msg_struct;
@@ -12,7 +12,8 @@ struct pcu_mpi_struct;
 namespace pcu {
 class PCU {
 public:
-  explicit PCU(MPI_Comm comm);
+  PCU();
+  explicit PCU(PCU_Comm comm);
   ~PCU() noexcept;
   PCU(PCU const &) = delete;
   PCU(PCU &&) noexcept;
@@ -26,7 +27,6 @@ public:
    *  @return The number of ranks in the communicator.
    */
   [[nodiscard]] int Peers() const noexcept;
-  [[nodiscard]] MPI_Comm GetMPIComm() const noexcept;
 
   [[nodiscard]] PCU_t GetCHandle() {PCU_t h; h.ptr=this; return h;}
   /*recommended message passing API*/
@@ -69,10 +69,40 @@ public:
   template <typename T> [[nodiscard]] T Max(T p) noexcept;
   template <typename T> void Exscan(T *p, size_t n) noexcept;
   template <typename T> [[nodiscard]] T Exscan(T p) noexcept;
+  template <typename T>
+  void Allgather(const T *send, T *recv, size_t n) noexcept;
 
   /*bitwise operations*/
   [[nodiscard]] int Or(int c) noexcept;
   [[nodiscard]] int And(int c) noexcept;
+
+  /**
+   * @brief Split a communicator into distinct subgroups.
+   *
+   * The resulting communicator is marked owned and automatically free the
+   * underlying communicator. This can be disabled with PCU::OwnsComm(bool). In
+   * that case, the user is responsible for cleanup.
+   *
+   * @param color subgroup indicator.
+   * @param key used for subgroup ordering; specify 0 if you don't care.
+   * @return a new communicator defined on the resulting subgroup.
+   */
+  std::unique_ptr<PCU> Split(int color, int key) noexcept;
+
+  /**
+   * @brief Duplicate the underlying communicator.
+   *
+   * It is the user's responsiblity to cleanup the returned communicator. This
+   * function may be used to initialize other libraries using the PCU-defined
+   * communication group.
+   *
+   * If SCOREC::core was compiled with the SCOREC_NO_MPI flag, the return value
+   * is not meaningful.
+   *
+   * @param[out] newcomm The output address for the new communicator copy.
+   * @return 0 on success.
+   */
+  int DupComm(PCU_Comm* newcomm) const noexcept;
 
   /*lesser-used APIs*/
   int Packed(int to_rank, size_t *size) noexcept;
@@ -85,17 +115,6 @@ public:
   /* Debug functions */
   void DebugOpen() noexcept;
 
-  MPI_Comm SwitchMPIComm(MPI_Comm) noexcept;
-
-  //struct MPIComms {
-  //  MPI_Comm original;
-  //  MPI_Comm user;
-  //  MPI_Comm coll;
-  //};
-  // takes ownership of newcomms.user & newcomms.coll
-  // user responsibility to free returned user/coll comm
-  //MPIComms SwitchMPIComms(MPIComms& newcomms) noexcept;
-
 private:
   pcu_msg_struct *msg_;
   pcu_mpi_struct *mpi_;
@@ -107,7 +126,20 @@ void Protect() noexcept;
 /*MPI_Wtime() equivalent*/
 [[nodiscard]] double Time() noexcept;
 
-PCU* PCU_GetGlobal();
+/**
+ * @brief Initialize the underlying parallel library.
+ *
+ * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * the difference.
+ */
+void Init(int *argc, char ***argv);
+/**
+ * @brief Finalize the underlying parallel library.
+ *
+ * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * the difference.
+ */
+void Finalize();
 
 /* explicit instantiations of template functions */
 #define PCU_EXPL_INST_DECL(T)                                                  \
@@ -118,7 +150,9 @@ PCU* PCU_GetGlobal();
   extern template void PCU::Max<T>(T * p, size_t n) noexcept;                  \
   extern template T PCU::Max<T>(T p) noexcept;                                 \
   extern template void PCU::Exscan<T>(T * p, size_t n) noexcept;               \
-  extern template T PCU::Exscan<T>(T p) noexcept;
+  extern template T PCU::Exscan<T>(T p) noexcept;                              \
+  extern template                                                              \
+  void PCU::Allgather<T>(const T *send, T *recv, size_t n) noexcept;
 PCU_EXPL_INST_DECL(int)
 PCU_EXPL_INST_DECL(size_t)
 PCU_EXPL_INST_DECL(long)

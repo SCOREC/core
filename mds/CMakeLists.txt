@@ -47,7 +47,6 @@ add_library(mds ${SOURCES})
 # Include directories
 target_include_directories(mds INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 # for the generated mds_config.h
 # private because no one outside MDS needs it

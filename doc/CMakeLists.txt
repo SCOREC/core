@@ -3,7 +3,7 @@
 #it represents a simple 'CMakeLists.txt'
 #file for a new project
 
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.5)
 
 project(myproject VERSION 1.0.0 LANGUAGES CXX)
 
@@ -16,13 +16,13 @@ set(SCOREC_PREFIX "" CACHE STRING "Directory where SCOREC is installed")
 # If SCOREC_PREFIX was specified, only link to that directory,
 # i.e. don't link to another installation in /usr/lib by mistake
 if (SCOREC_PREFIX)
-  find_package(SCOREC 3.0.0 REQUIRED CONFIG PATHS ${SCOREC_PREFIX} NO_DEFAULT_PATH)
+  find_package(SCOREC 4 REQUIRED CONFIG PATHS ${SCOREC_PREFIX} NO_DEFAULT_PATH)
 else()
 # IF SCOREC_PREFIX was not specified, look in typical system directories,
 # and also in CMAKE_PREFIX_PATH (environment variable)
   find_package(
       SCOREC #package name, has to be SCOREC
-      3.0.0  #version. can be omitted, and will match any installed version
+      4      #version. can be omitted, and will match any installed version
              #greater than or equal to this one, as long as the major number
              #is the same
       REQUIRED #indicate that SCOREC is really needed to compile

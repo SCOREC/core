@@ -10,9 +10,9 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(PCUObj.Peers() == 1);
   if ( argc != 4 ) {
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
       printf("Load a single part from a partitioned mesh and "
              "write it as a serial part.\n"
              "Usage: %s <in part file> <out mesh file> <out model file (.dmg)>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
@@ -33,7 +33,7 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 

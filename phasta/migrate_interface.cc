@@ -38,7 +38,7 @@ void getConfig(int argc, char** argv, pcu::PCU *pcu_obj)
       lion_eprint(1,"       to take model and attributes in separate files\n");
       lion_eprint(1,"Usage: %s <model+attributes .smd> <in mesh> <out mesh>\n", argv[0]);
       lion_eprint(1,"       to take combined model and attributes file (by simTranslate)\n");}
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   if (argc == 5) {
@@ -56,7 +56,7 @@ void getConfig(int argc, char** argv, pcu::PCU *pcu_obj)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
   pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -90,5 +90,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

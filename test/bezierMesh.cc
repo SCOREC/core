@@ -583,13 +583,13 @@ void test3DFull(pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   test2D(&pcu_obj);
   test3DBlended(&pcu_obj);
   test3DFull(&pcu_obj);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

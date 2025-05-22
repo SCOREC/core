@@ -42,9 +42,9 @@ void getStats(
 int main(int argc, char** argv)
 {
 
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if (argc < 4) {
     if (PCUObj.Self() == 0) {
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
       printf("USAGE2: %s <mesh.sms> <output_prefix> <size name>"
           "\n", argv[0]);
     }
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 void safe_mkdir(const char* path)

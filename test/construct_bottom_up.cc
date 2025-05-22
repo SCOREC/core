@@ -137,9 +137,9 @@ const int tet_info[11][6] = {
 int main(int argc, char** argv)
 {
 
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
 
   PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.Peers() == 1, "Not implemented in parallel!");
@@ -249,6 +249,6 @@ int main(int argc, char** argv)
   outMesh->destroyNative();
   apf::destroyMesh(outMesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

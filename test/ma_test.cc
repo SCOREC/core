@@ -43,9 +43,9 @@ int main(int argc, char** argv)
   const char* meshFile = argv[2];
   const char* layerTagString = (argc==4) ? argv[3] : "";
   const double adaptRefineFactor = (argc==5) ? atoi(argv[4]) : 3;
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -81,6 +81,6 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

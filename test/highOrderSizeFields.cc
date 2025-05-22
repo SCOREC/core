@@ -35,9 +35,9 @@ void testAdapt(
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
 
 #ifdef HAVE_SIMMETRIX
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 void computeSizesFrames(

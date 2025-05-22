@@ -28,8 +28,10 @@ static int ceil_log2(int n)
   return r;
 }
 
-void pcu_merge_assign(void* local, void* incoming, size_t size)
+void pcu_merge_assign(int peers, int bit, void* local, void* incoming,
+                      size_t size)
 {
+  (void) peers, (void) bit;
   memcpy(local,incoming,size);
 }
 
@@ -64,7 +66,8 @@ static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
   if (c->message.buffer.size != incoming.buffer.size)
     reel_fail("PCU unexpected incoming message.\n"
               "Most likely a PCU collective was not called by all ranks.");
-  c->merge(c->message.buffer.start,incoming.buffer.start,incoming.buffer.size);
+  c->merge(pcu_mpi_size(mpi), c->bit, c->message.buffer.start,
+           incoming.buffer.start, incoming.buffer.size);
   pcu_free_message(&incoming);
   return true;
 }
@@ -373,6 +376,15 @@ static pcu_pattern scan_down =
   .shift = scan_down_shift,
 };
 
+static pcu_pattern gather =
+{
+  .begin_bit = reduce_begin_bit,
+  .end_bit = reduce_end_bit,
+  .action = reduce_action,
+  .peer = reduce_peer,
+  .shift = reduce_shift,
+};
+
 void pcu_reduce(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size)
 {
   pcu_make_coll(mpi, c,&reduce,m);
@@ -401,6 +413,30 @@ void pcu_scan(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size
   pcu_make_coll(mpi, c,&scan_down,m);
   pcu_begin_coll(mpi, c,data,size);
   while(pcu_progress_coll(mpi, c));
+}
+
+void pcu_merge_gather(int peers, int bit, void *local, void *incoming,
+                      size_t size) {
+  size_t block_size = size / peers;
+  // local has `bit` blocks.
+  // incoming may have `bit` (if peers is a power of 2) or `bit - 1` blocks.
+  // either way, writing `size - bit * block_size` prevents buffer overrun.
+  // Also, all incoming blocks are from greater ranks, so they go to the right.
+  memcpy(local + bit * block_size, incoming, size - bit * block_size);
+}
+
+void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
+                   void *recv_data, size_t size) {
+  memcpy(recv_data, send_data, size);
+  pcu_make_coll(mpi, c, &gather, pcu_merge_gather);
+  pcu_begin_coll(mpi, c, recv_data, size * pcu_mpi_size(mpi));
+  while (pcu_progress_coll(mpi, c));
+}
+
+void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
+                   void *recv_data, size_t size) {
+  pcu_gather(mpi, c, send_data, recv_data, size);
+  pcu_bcast(mpi, c, recv_data, size * pcu_mpi_size(mpi));
 }
 
 /* a barrier is just an allreduce of nothing in particular */

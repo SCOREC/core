@@ -91,9 +91,9 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj) {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   MS_init();
   SimAdvMeshing_start();
@@ -145,5 +145,5 @@ int main(int argc, char** argv)
   if( should_log )
     Sim_logOff();
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

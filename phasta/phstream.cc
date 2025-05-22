@@ -3,7 +3,7 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include "phstream.h"
-#include <mpi.h>
+#include <PCU.h>
 
 #ifndef PHSTREAM_TIMERS_ON
 #define PHSTREAM_TIMERS_ON 0
@@ -11,12 +11,11 @@
 
 namespace {
   inline double getTime() {
-    return MPI_Wtime();
+    return pcu::Time();
   }
 #if PHSTREAM_TIMERS_ON==1
   inline bool isRankZero(pcu::PCU *pcu_obj) {
-    int rank = 0;
-    MPI_Comm_rank(pcu_obj->GetMPIComm(), &rank);
+    int rank = pcu_obj->Self();
     return !rank;
   }
 #endif

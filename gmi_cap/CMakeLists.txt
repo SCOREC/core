@@ -18,7 +18,6 @@ target_link_libraries(gmi_cap PUBLIC gmi pcu lion capstone_module framework_test
 # Include directories
 target_include_directories(gmi_cap PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 # make sure the compiler can find the config header
 target_include_directories(gmi_cap PRIVATE

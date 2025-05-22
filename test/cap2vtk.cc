@@ -40,9 +40,9 @@ using namespace CreateMG::Geometry;
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
 
   if (argc != 3) {
     if(0==PCUObj.Self())
@@ -139,5 +139,5 @@ int main(int argc, char** argv)
 
   gmi_cap_stop();
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

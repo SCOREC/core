@@ -1,5 +1,6 @@
 #include "PCU_C.h"
 #include "PCU.h"
+#include "pcu_pmpi.h"
 #include "reel.h"
 #include <cstdarg>
 
@@ -7,10 +8,18 @@
 
 extern "C" {
 
+void PCU_Init(int *argc, char ***argv) {
+  pcu::Init(argc, argv);
+}
+
+void PCU_Finalize(void) {
+  pcu::Finalize();
+}
+
 int PCU_Comm_Init(PCU_t* h) {
   if (h->ptr != nullptr)
     reel_fail("nested calls to Comm_Init");
-  pcu::PCU* pcu_object = new pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU* pcu_object = new pcu::PCU();
   h->ptr = static_cast<void*>(pcu_object);
   return PCU_SUCCESS;
 }
@@ -33,6 +42,23 @@ int PCU_Comm_Peers(PCU_t h) {
   if (h.ptr == nullptr)
     reel_fail("Comm_Peers called before Comm_Init");
   return static_cast<pcu::PCU*>(h.ptr)->Peers();
+}
+
+int PCU_Comm_Dup(PCU_t h, PCU_Comm* newcomm) {
+  if (h.ptr == nullptr)
+    reel_fail("PCU_Comm_Dup called before PCU_Comm_Init");
+  return static_cast<pcu::PCU*>(h.ptr)->DupComm(newcomm);
+}
+
+void PCU_Comm_Split(PCU_t h, int color, int key, PCU_t* newpcu) {
+  if (h.ptr == nullptr)
+    reel_fail("PCU_Comm_Split called before PCU_Comm_Init");
+  if (newpcu == nullptr)
+    reel_fail("PCU_Comm_Split received NULL newpcu.");
+  if (newpcu->ptr != nullptr)
+    reel_fail("PCU_Comm_Split received an initialized newpcu.");
+  auto newpcu_ptr = static_cast<pcu::PCU*>(h.ptr)->Split(color, key);
+  newpcu->ptr = newpcu_ptr.release();
 }
 
 void PCU_Comm_Begin(PCU_t h) {
@@ -368,7 +394,6 @@ int PCU_Comm_Size(PCU_t h, int *size) {
 bool PCU_Comm_Initialized(PCU_t h) { return h.ptr != nullptr; }
 
 
-
 /** \brief Returns in * \a size the number of bytes being sent to \a to_rank.
   \details Returns the size of the buffer being sent to \a to_rank.
   This function should be called after PCU_Comm_Start and before
@@ -466,30 +491,6 @@ void *PCU_Comm_Extract(PCU_t h, size_t size) {
   return static_cast<pcu::PCU*>(h.ptr)->Extract(size);
 }
 
-/** \brief Reinitializes PCU with a new MPI communicator.
- \details All of PCU's logic is based off two duplicates
- of this communicator, so you can safely get PCU to act
- on sub-groups of processes using this function.
- This call should be collective over all processes
- in the previous communicator. This is a very heavy weight function
- and should be used sparingly.
- */
-void PCU_Switch_Comm(PCU_t h, MPI_Comm new_comm) {
-  if (h.ptr == nullptr)
-    reel_fail("Switch_Comm called before Comm_Init");
-  static_cast<pcu::PCU*>(h.ptr)->SwitchMPIComm(new_comm);
-}
-
-/** \brief Return the current MPI communicator
-  \details Returns the communicator given to the
-  most recent PCU_Switch_Comm call, or MPI_COMM_WORLD
-  otherwise.
- */
-MPI_Comm PCU_Get_Comm(PCU_t h) {
-  if (h.ptr == nullptr)
-    reel_fail("Get_Comm called before Comm_Init");
-  return static_cast<pcu::PCU*>(h.ptr)->GetMPIComm();
-}
 
 /** \brief Return the time in seconds since some time in the past
  */

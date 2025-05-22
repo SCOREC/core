@@ -5,9 +5,9 @@
 #include <iostream> //cerr
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   const size_t n = 2;
   double *d_orig = new double[n];
   std::iota(d_orig,d_orig+n,0);
@@ -27,6 +27,6 @@ int main(int argc, char** argv) {
   delete [] d_orig;
   delete [] d;
   }
-  MPI_Finalize();
+  pcu::Finalize();
   return 0;
 }

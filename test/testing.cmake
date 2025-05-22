@@ -2,11 +2,40 @@ set(MESHES ""
     CACHE STRING
     "Extracted http://scorec.rpi.edu/pumi/pumi_test_meshes.tar.gz")
 function(mpi_test TESTNAME PROCS EXE)
-  add_test(
-    NAME ${TESTNAME}
-    COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS} ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
-  )
+  if(SCOREC_NO_MPI)
+    if(${PROCS} EQUAL "1")
+      add_test(
+        NAME ${TESTNAME}
+        COMMAND ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
+      )
+    endif()
+  else()
+    add_test(
+      NAME ${TESTNAME}
+      COMMAND ${MPIRUN} ${MPIRUN_PROCFLAG} ${PROCS}
+        ${VALGRIND} ${VALGRIND_ARGS} ${EXE} ${ARGN}
+    )
+    set_tests_properties(${TESTNAME} PROPERTIES PROCESSORS ${PROCS})
+  endif()
 endfunction(mpi_test)
+
+function(mpi_test_depends)
+  cmake_parse_arguments(MPI_TEST_DEPENDS "" "" "TESTS;DEPENDS" ${ARGN})
+  if (NOT DEFINED MPI_TEST_DEPENDS_TESTS OR NOT DEFINED MPI_TEST_DEPENDS_DEPENDS)
+    return()
+  endif()
+  if(SCOREC_NO_MPI)
+    # Check for test existence as it may be a multiproc test.
+    if(TEST "${TESTNAME}")
+      set_tests_properties(${MPI_TEST_DEPENDS_TESTS} PROPERTIES
+        DEPENDS "${MPI_TEST_DEPENDS_DEPENDS}")
+    endif()
+  else()
+    # Don't check if test exists because it's more likely a typo.
+    set_tests_properties(${MPI_TEST_DEPENDS_TESTS} PROPERTIES
+      DEPENDS "${MPI_TEST_DEPENDS_DEPENDS}")
+  endif()
+endfunction()
 
 mpi_test(shapefun 1 ./shapefun)
 mpi_test(shapefun2 1 ./shapefun2)
@@ -134,7 +163,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
        "${MDIR}/outmesh_4_parts.sms"
        3504
        WORKING_DIRECTORY ${MDIR})
-      set_tests_properties(countBL_part_mesh PROPERTIES DEPENDS partition_sim)
+      mpi_test_depends(TESTS countBL_part_mesh DEPENDS partition_sim)
     endif()
   endif()
 endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
@@ -265,7 +294,7 @@ mpi_test(inviscid_ghost 4
   "${MDIR}/inviscid_egg.dmg"
   "${MDIR}/4/"
   "${MDIR}/vis")
-set_tests_properties(inviscid_ghost PROPERTIES DEPENDS inviscid_ugrid)
+mpi_test_depends(TESTS inviscid_ghost DEPENDS inviscid_ugrid)
 
 set(MDIR ${SMOKE_TEST_MESHES}/pipe)
 if(ENABLE_SIMMETRIX)
@@ -394,7 +423,7 @@ else()
     "pipe_4_.smb"
     2)
 endif()
-set_tests_properties(split_4 PROPERTIES DEPENDS split_2)
+mpi_test_depends(TESTS split_4 DEPENDS split_2)
 mpi_test(pipe_condense 4
   ./serialize
   "${MDIR}/pipe.${GXT}"
@@ -419,16 +448,15 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/pipe.${GXT}"
     "pipe_4_.smb"
     "tet.smb")
-  set_tests_properties(ma_parallel tet_parallel
-    PROPERTIES DEPENDS split_4)
+  mpi_test_depends(TESTS ma_parallel DEPENDS split_4)
+  mpi_test_depends(TESTS tet_parallel DEPENDS split_4)
 endif()
 mpi_test(fieldReduce 4
   ./fieldReduce
   "${MDIR}/pipe.${GXT}"
   "pipe_4_.smb")
-set_tests_properties(pipe_condense verify_parallel fieldReduce verify_parallel
-  vtxElmMixedBalance
-  PROPERTIES DEPENDS split_4)
+mpi_test_depends(TESTS pipe_condense verify_parallel fieldReduce
+  verify_parallel vtxElmMixedBalance DEPENDS split_4)
 
 set(MDIR ${MESHES}/torus)
 mpi_test(reorder 4
@@ -447,7 +475,7 @@ mpi_test(gap 4
   "${MDIR}/torusBal4p/"
   "1.08"
   "${MDIR}/torusOpt4p/")
-set_tests_properties(gap PROPERTIES DEPENDS balance)
+mpi_test_depends(TESTS gap DEPENDS balance)
 mpi_test(applyMatrixFunc 1
   ./applyMatrixFunc)
 if(ENABLE_ZOLTAN)
@@ -695,8 +723,8 @@ mpi_test(test_verify 4
   ./test_verify
   "${MDIR}/cube.dmg"
   "${MDIR}/pumi7k/4/cube.smb")
-set_tests_properties(l2_shape_tet_parallel h1_shape_parallel test_verify
-  PROPERTIES DEPENDS "construct;constructThenGhost")
+mpi_test_depends(TESTS l2_shape_tet_parallel h1_shape_parallel test_verify
+  DEPENDS "construct;constructThenGhost")
 set(MDIR ${MESHES}/nonmanifold)
 mpi_test(nonmanif_verify 1
   ./verify
@@ -712,7 +740,7 @@ mpi_test(nonmanif_verify2 2
   ./verify
   "${MDIR}/nonmanifold.dmg"
   "nonmanifold_2_.smb")
-set_tests_properties(nonmanif_verify2 PROPERTIES DEPENDS nonmanif_split2)
+mpi_test_depends(TESTS nonmanif_verify2 DEPENDS nonmanif_split2)
 set(MDIR ${MESHES}/fusion)
 mpi_test(mkmodel_fusion 1
   ./mkmodel
@@ -773,7 +801,7 @@ if(ENABLE_SIMMETRIX)
         ./ma_test
         "${MDIR}/upright.smd"
         "67k/")
-      set_tests_properties(adapt_meshgen PROPERTIES DEPENDS parallel_meshgen)
+      mpi_test_depends(TESTS adapt_meshgen DEPENDS parallel_meshgen)
     endif()
   endif()
   if(SIM_PARASOLID)

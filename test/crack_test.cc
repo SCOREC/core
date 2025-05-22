@@ -44,15 +44,15 @@ void bCurver(const char* modelFile, const char* meshFile,
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
 
   if (argc < 2) {
     if (PCUObj.Self() == 0) {
       printf("USAGE: %s <model.x_t>\n", argv[0]);
     }
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   const char* modelFile   = argv[1];
@@ -359,5 +359,5 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
