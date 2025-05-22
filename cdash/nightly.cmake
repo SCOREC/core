@@ -95,7 +95,7 @@ endfunction(git_exec)
 function(remove_branch_if_exists BRANCH_NAME)
   message("Attempting to delete ${BRANCH_NAME} if it exists")
   execute_process(COMMAND "${CTEST_GIT_COMMAND}" branch --list ${BRANCH_NAME}
-      WORKING_DIRECTORY"${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
+      WORKING_DIRECTORY "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
       RESULT_VARIABLE BRANCH_RET)
   message("git branch --list returned: ${BRANCH_RET})!")
   if(BRANCH_RET)
