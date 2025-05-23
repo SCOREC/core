@@ -21,7 +21,8 @@ namespace ma {
 
 Snapper::Snapper(Adapt* a, Tag* st, bool is) : splitCollapse(a)
 {
-  adapter = a;
+  adapt = a;
+  mesh = a->mesh;
   snapTag = st;
   collapse.Init(a);
   edgeSwap = makeEdgeSwap(a);
@@ -54,11 +55,11 @@ bool Snapper::requestLocality(apf::CavityOp* o)
    edges have both vertices local.
    This is basically two layers of elements around the vertex */
   apf::Up edges;
-  adapter->mesh->getUp(vert,edges);
+  mesh->getUp(vert,edges);
   apf::Up ovs;
   ovs.n = edges.n;
   for (int i = 0; i < edges.n; ++i)
-    ovs.e[i] = apf::getEdgeVertOppositeVert(adapter->mesh, edges.e[i], vert);
+    ovs.e[i] = apf::getEdgeVertOppositeVert(mesh, edges.e[i], vert);
   return o->requestLocality(&ovs.e[0], ovs.n);
 }
 
@@ -362,12 +363,12 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
   return bit;
 }
 
-bool Snapper::trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP)
+bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 {
   if (FPP->commEdges.n < 2) return false;
   Entity* ents[4];
   double area[4];
-  int bit = getTetStats(a, FPP, ents, area);
+  int bit = getTetStats(adapt, FPP, ents, area);
 
   double min=area[0];
   for(int i=1; i<4; i++) 
@@ -394,7 +395,7 @@ bool Snapper::trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP)
 
     // check edge swaps
     Entity* edges[3];
-    a->mesh->getDownward(ents[0], 1, edges);
+    mesh->getDownward(ents[0], 1, edges);
     for (int i=0; i<3; i++) {
       if (edgeSwap->run(edges[i])) //TODO: Select best
         return true;
@@ -610,7 +611,7 @@ static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& i
 bool Snapper::trySimpleSnap()
 {
   apf::Up invalid;
-  return tryReposition(adapter, vert, snapTag, invalid);
+  return tryReposition(adapt, vert, snapTag, invalid);
 }
 
 static int numFailed = 0; //TODO: REMOVE
@@ -618,22 +619,22 @@ static int numFailed = 0; //TODO: REMOVE
 bool Snapper::run()
 {
   apf::Up invalid;
-  bool success = tryReposition(adapter, vert, snapTag, invalid);
+  bool success = tryReposition(adapt, vert, snapTag, invalid);
 
   if (success) {
-    adapter->mesh->removeTag(vert,snapTag);
-    clearFlag(adapter, vert, SNAP);
+    mesh->removeTag(vert,snapTag);
+    clearFlag(adapt, vert, SNAP);
     return true;
   }
 
-  FirstProblemPlane* FPP = getFPP(adapter, vert, snapTag, invalid);
+  FirstProblemPlane* FPP = getFPP(adapt, vert, snapTag, invalid);
 
-  if (!success) success = tryCollapseToVertex(adapter, collapse, FPP);
-  // if (!success) success = tryReduceCommonEdges(adapter, collapse, FPP);
-  if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
-  if (!success) success = trySwapOrSplit(adapter, FPP);
+  if (!success) success = tryCollapseToVertex(adapt, collapse, FPP);
+  // if (!success) success = tryReduceCommonEdges(adapt, collapse, FPP);
+  if (!success) success = tryCollapseTetEdges(adapt, collapse, FPP);
+  if (!success) success = trySwapOrSplit(FPP);
 
-  // if (!success && ++numFailed == 1) printFPP(adapter, FPP);
+  // if (!success && ++numFailed == 1) printFPP(adapt, FPP);
   
   if (FPP) delete FPP;
   return success;

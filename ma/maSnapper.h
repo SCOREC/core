@@ -39,7 +39,8 @@ class Snapper
     bool dug;
     bool moved;
   private:
-    Adapt* adapter;
+    Adapt* adapt;
+    Mesh* mesh;
     Tag* snapTag;
     Entity* vert;
     Collapse collapse;
@@ -47,7 +48,7 @@ class Snapper
     EdgeSwap* edgeSwap;
     bool isSimple;
 
-    bool trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP);
+    bool trySwapOrSplit(FirstProblemPlane* FPP);
 };
 
 struct Ray{
