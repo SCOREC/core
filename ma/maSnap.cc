@@ -920,11 +920,9 @@ void trySnapping(Adapt* a, Tag* snapTag)
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
   int numFailed = 0;
-  int startSize = refine->vtxToSnap.size();
 
   while (refine->vtxToSnap.size() > 0)
   {
-    // if (startSize-- == 0) break; //TEMP: Stop after one move
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
     snapper.setVert(vertex);
@@ -942,22 +940,29 @@ void snap(Adapt* a)
 {
   if (!a->input->shouldSnap)
     return;
+  double t0 = pcu::Time();
   Tag* snapTag;
+  // preventMatchedCavityMods(a);
   tagVertsToSnap(a, snapTag);
 
-  ma_dbg::addTargetLocation(a, "snap_target");
-  ma_dbg::addClassification(a, "classification");
-  apf::writeVtkFiles("before_last_snap", a->mesh);
+  // ma_dbg::addTargetLocation(a, "snap_target");
+  // ma_dbg::addClassification(a, "classification");
+  // apf::writeVtkFiles("before_last_snap", a->mesh);
 
   trySnapping(a, snapTag);
+  // snapLayer(a, tag);
 
-  apf::writeVtkFiles("after_last_snap", a->mesh);
-  ma_dbg::dumpMeshWithFlag(a, 0, 0, SNAP, "snap_tag", "after_last_snap_tag");
+  // apf::writeVtkFiles("after_last_snap", a->mesh);
   
   // clearFlagFromDimension(a, COLLAPSE, 1); //TODO: Figure out what is making this neccessary
-  clearFlagFromDimension(a, SNAP, 0);
+  clearFlagFromDimension(a, SNAP, 0); //TODO: should not be neccessary
   a->mesh->destroyTag(snapTag);
   a->refine->vtxToSnap = {};
+
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "snapped in %f seconds\n", t1 - t0);
+  // if (a->hasLayer)
+  //   checkLayerShape(a->mesh, "after snapping");
 }
 
 void prevSnap(Adapt* a)

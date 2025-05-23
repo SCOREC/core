@@ -305,7 +305,7 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
       // L2_xyz[0][0]=fxyz[1][0];    L2_xyz[1][0]=pxyz[0]; 
       // L2_xyz[0][1]=fxyz[1][1];    L2_xyz[1][1]=pxyz[1];
       // L2_xyz[0][2]=fxyz[1][2];    L2_xyz[1][2]=pxyz[2];
-      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ);
+      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ); //TODO: This logic is used for double split collapse
       break;
     }
     case 4: {
@@ -329,7 +329,7 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
       // L2_xyz[0][0]=fxyz[0][0];    L2_xyz[1][0]=pxyz[0]; 
       // L2_xyz[0][1]=fxyz[0][1];    L2_xyz[1][1]=pxyz[1];
       // L2_xyz[0][2]=fxyz[0][2];    L2_xyz[1][2]=pxyz[2];
-      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ);
+      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ); //TODO: This logic is used for double split collapse
       break;
     }
     case 6: {
@@ -344,7 +344,7 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
       // L2_xyz[0][0]=fxyz[2][0];    L2_xyz[1][0]=pxyz[0]; 
       // L2_xyz[0][1]=fxyz[2][1];    L2_xyz[1][1]=pxyz[1];
       // L2_xyz[0][2]=fxyz[2][2];    L2_xyz[1][2]=pxyz[2];
-      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ);
+      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ); //TODO: This logic is used for double split collapse
       break;
     }
     case 7: {
@@ -379,9 +379,6 @@ bool Snapper::trySwapOrSplit(Adapt* a, FirstProblemPlane* FPP)
 
   // two large dihedral angles -> key problem: two mesh edges
   if (bit==3 || bit==5 || bit==6) {
-    // if (++reachedSwap == 1) {
-    //   flagAndPrint(a, ents[2], 2, "FPP_SwapFace");
-    // }
     // check edge swapping
     for (int i=0; i<2; i++)
       if (edgeSwap->run(ents[i])) //TODO: Select best
@@ -636,7 +633,7 @@ bool Snapper::run()
   if (!success) success = tryCollapseTetEdges(adapter, collapse, FPP);
   if (!success) success = trySwapOrSplit(adapter, FPP);
 
-  if (!success && ++numFailed == 1) printFPP(adapter, FPP);
+  // if (!success && ++numFailed == 1) printFPP(adapter, FPP);
   
   if (FPP) delete FPP;
   return success;
