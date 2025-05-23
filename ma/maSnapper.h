@@ -48,6 +48,9 @@ class Snapper
     EdgeSwap* edgeSwap;
     bool isSimple;
 
+    bool tryCollapseToVertex(FirstProblemPlane* FPP);
+    bool tryCollapseTetEdges(FirstProblemPlane* FPP);
+    bool tryReduceCommonEdges(FirstProblemPlane* FPP);
     bool trySwapOrSplit(FirstProblemPlane* FPP);
 };
 

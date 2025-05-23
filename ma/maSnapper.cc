@@ -478,96 +478,96 @@ static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
   return true; //same side of face
 }
 
-static bool tryCollapseTetEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
+bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
 {
   apf::Up& commEdges = FPP->commEdges;
   BestCollapse best;
 
   for (int i=0; i<commEdges.n; i++) {
     Entity* vertex[2];
-    a->mesh->getDownward(commEdges.e[i], 0, vertex);
+    mesh->getDownward(commEdges.e[i], 0, vertex);
     for (int j=0; j<2; j++)
-      getBestQualityCollapse(a, commEdges.e[i], vertex[j], collapse, best);
+      getBestQualityCollapse(adapt, commEdges.e[i], vertex[j], collapse, best);
   }
 
   for (int i=0; i<commEdges.n; i++) {
     Entity* edge = commEdges.e[i];
-    Entity* vertexFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
+    Entity* vertexFPP = getEdgeVertOppositeVert(mesh, edge, vert);
     apf::Up adjEdges;
-    a->mesh->getUp(vertexFPP, adjEdges);
+    mesh->getUp(vertexFPP, adjEdges);
     for (int j=0; j<adjEdges.n; j++) {
       Entity* edgeDel = adjEdges.e[j];
       if (edgeDel==edge) continue;
-      if (isLowInHigh(a->mesh, FPP->problemFace, edgeDel)) continue;
-      Entity* vertKeep = getEdgeVertOppositeVert(a->mesh, edgeDel, vertexFPP);
-      if (sameSide(a, vertKeep, FPP->vert, FPP->problemFace)) continue;
-      getBestQualityCollapse(a, edgeDel, vertKeep, collapse, best);
+      if (isLowInHigh(mesh, FPP->problemFace, edgeDel)) continue;
+      Entity* vertKeep = getEdgeVertOppositeVert(mesh, edgeDel, vertexFPP);
+      if (sameSide(adapt, vertKeep, vert, FPP->problemFace)) continue;
+      getBestQualityCollapse(adapt, edgeDel, vertKeep, collapse, best);
     }
   }
 
   if (best.quality > 0) 
-    return tryCollapseEdge(a, best.edge, best.keep, collapse);
+    return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
   else return false;
 }
 
-static bool tryReduceCommonEdges(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
+bool Snapper::tryReduceCommonEdges(FirstProblemPlane* FPP)
 {
   apf::Up& commEdges = FPP->commEdges;
   BestCollapse best;
 
   Entity* pbEdges[3];
-  a->mesh->getDownward(FPP->problemFace, 1, pbEdges);
+  mesh->getDownward(FPP->problemFace, 1, pbEdges);
   switch(commEdges.n) {
     case 2: {
-      Entity* v1 = getEdgeVertOppositeVert(a->mesh, commEdges.e[0], FPP->vert);
-      Entity* v2 = getEdgeVertOppositeVert(a->mesh, commEdges.e[1], FPP->vert);
+      Entity* v1 = getEdgeVertOppositeVert(mesh, commEdges.e[0], vert);
+      Entity* v2 = getEdgeVertOppositeVert(mesh, commEdges.e[1], vert);
       
       for (int i=0; i<3; i++) {
         Entity* pbVert[2];
-        a->mesh->getDownward(pbEdges[i], 0, pbVert);
+        mesh->getDownward(pbEdges[i], 0, pbVert);
         if (pbVert[0] == v1 && pbVert[1] == v2) break;
         if (pbVert[1] == v1 && pbVert[0] == v2) break;
         for (int j=0; j<2; j++)
-          getBestQualityCollapse(a, pbEdges[i], pbVert[j], collapse, best);
+          getBestQualityCollapse(adapt, pbEdges[i], pbVert[j], collapse, best);
       }
       break;
     }
     case 3: {
       for (int i=0; i<3; i++) {
         Entity* pbVert[2];
-        a->mesh->getDownward(pbEdges[i], 0, pbVert);
+        mesh->getDownward(pbEdges[i], 0, pbVert);
         for (int j=0; j<2; j++)
-          getBestQualityCollapse(a, pbEdges[i], pbVert[j], collapse, best);
+          getBestQualityCollapse(adapt, pbEdges[i], pbVert[j], collapse, best);
       }
       break;
     }
   }
   if (best.quality > 0) 
-    return tryCollapseEdge(a, best.edge, best.keep, collapse);
+    return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
   else return false;
 }
 
-static bool tryCollapseToVertex(Adapt* a, Collapse& collapse, FirstProblemPlane* FPP)
+bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
 {
-  Vector position = getPosition(a->mesh, FPP->vert);
+  Vector position = getPosition(mesh, vert);
   Vector target;
-  a->mesh->getDoubleTag(FPP->vert, FPP->snapTag, &target[0]);
+  mesh->getDoubleTag(vert, snapTag, &target[0]);
   double distTarget = (position - target).getLength();
 
   BestCollapse best;
 
   for (size_t i = 0; i < FPP->commEdges.n; ++i) {
     Entity* edge = FPP->commEdges.e[i];
-    Entity* vertexOnFPP = getEdgeVertOppositeVert(a->mesh, edge, FPP->vert);
-    Vector vFPPCoord = getPosition(a->mesh, vertexOnFPP);
+    Entity* vertexOnFPP = getEdgeVertOppositeVert(mesh, edge, vert);
+    Vector vFPPCoord = getPosition(mesh, vertexOnFPP);
     //TODO: add logic for boundary layers
     double distToFPPVert = (vFPPCoord - target).getLength();
     if (distToFPPVert > distTarget) continue;
-    getBestQualityCollapse(a, edge, FPP->vert, collapse, best);
+    getBestQualityCollapse(adapt, edge, vert, collapse, best);
   }
 
   if (best.quality > 0) 
-    return tryCollapseEdge(a, best.edge, best.keep, collapse);
+    return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
   else return false;
 }
 
@@ -629,9 +629,9 @@ bool Snapper::run()
 
   FirstProblemPlane* FPP = getFPP(adapt, vert, snapTag, invalid);
 
-  if (!success) success = tryCollapseToVertex(adapt, collapse, FPP);
-  // if (!success) success = tryReduceCommonEdges(adapt, collapse, FPP);
-  if (!success) success = tryCollapseTetEdges(adapt, collapse, FPP);
+  if (!success) success = tryCollapseToVertex(FPP);
+  // if (!success) success = tryReduceCommonEdges(FPP);
+  if (!success) success = tryCollapseTetEdges(FPP);
   if (!success) success = trySwapOrSplit(FPP);
 
   // if (!success && ++numFailed == 1) printFPP(adapt, FPP);
