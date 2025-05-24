@@ -380,13 +380,17 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
   if (bit==3 || bit==5 || bit==6) {
     // check edge swapping
     for (int i=0; i<2; i++)
-      if (edgeSwap->run(ents[i])) //TODO: Select best
+      if (edgeSwap->run(ents[i])) { //TODO: Select best
+        numSwap++;
         return true;
+      }
 
     // check split+collapse
     for (int i=0; i<2; i++)
-      if (splitCollapse.run(ents[i], FPP->vert)) //TODO: Select best
+      if (splitCollapse.run(ents[i], FPP->vert)) { //TODO: Select best
+        numSplitCollapse++;
         return true;
+      }
   }
   // three large dihedral angles -> key entity: a mesh face 
   else {
@@ -395,14 +399,18 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
     Entity* edges[3];
     mesh->getDownward(ents[0], 1, edges);
     for (int i=0; i<3; i++) {
-      if (edgeSwap->run(edges[i])) //TODO: Select best
+      if (edgeSwap->run(edges[i])) { //TODO: Select best
+        numSwap++;
         return true;
+      }
     }
 
     //TODO: IMPLEMENT FACE SWAP
 
-    if (splitCollapse.run(ents[1], FPP->vert));
+    if (splitCollapse.run(ents[1], FPP->vert)) {
+      numSplitCollapse++;
       return true;
+    }
 
     //TODO: USE DOUBLE SPLIT COLLAPSE
   }
@@ -503,8 +511,10 @@ bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
     }
   }
 
-  if (best.quality > 0) 
+  if (best.quality > 0) {
+    numCollapse++;
     return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
+  }
   else return false;
 }
 
@@ -564,8 +574,10 @@ bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
     getBestQualityCollapse(adapt, edge, vert, collapse, best);
   }
 
-  if (best.quality > 0) 
+  if (best.quality > 0) {
+    numCollapseToVtx++;
     return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
+  }
   else return false;
 }
 
@@ -612,14 +624,13 @@ bool Snapper::trySimpleSnap()
   return tryReposition(adapt, vert, snapTag, invalid);
 }
 
-static int numFailed = 0; //TODO: REMOVE
-
 bool Snapper::run()
 {
   apf::Up invalid;
   bool success = tryReposition(adapt, vert, snapTag, invalid);
 
   if (success) {
+    numSnapped++;
     mesh->removeTag(vert,snapTag);
     clearFlag(adapt, vert, SNAP);
     return true;
@@ -632,7 +643,8 @@ bool Snapper::run()
   if (!success) success = tryCollapseTetEdges(FPP);
   if (!success) success = trySwapOrSplit(FPP);
 
-  // if (!success && ++numFailed == 1) printFPP(adapt, FPP);
+  if (!success) numFailed++;
+  // if (!success && numFailed == 1) printFPP(adapt, FPP);
   
   if (FPP) delete FPP;
   return success;

@@ -29,6 +29,13 @@ class FirstProblemPlane;
 class Snapper
 {
   public:
+    int numFailed = 0;
+    int numSnapped = 0;
+    int numCollapseToVtx = 0;
+    int numCollapse = 0;
+    int numSwap = 0;
+    int numSplitCollapse = 0;
+
     Snapper(Adapt* a, Tag* st, bool is);
     ~Snapper();
     void setVert(Entity* v);

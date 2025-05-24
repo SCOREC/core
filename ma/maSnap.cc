@@ -912,28 +912,22 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
   return successCount;
 }
 
-void trySnapping(Adapt* a, Tag* snapTag) 
+void trySnapping(Adapt* a, Snapper& snapper) 
 {
-  Snapper snapper(a, snapTag, false);
   Refine* refine = a->refine;
-  print(a->mesh->getPCU(), "Number of vertices be snapped %d\n", refine->vtxToSnap.size());
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true;
-  int numFailed = 0;
 
   while (refine->vtxToSnap.size() > 0)
   {
     Entity* vertex = refine->vtxToSnap.front();
     refine->vtxToSnap.pop();
     snapper.setVert(vertex);
-    if (!snapper.run())
-      numFailed++;
-    else if (getFlag(a, vertex, SNAP))
+    if (snapper.run() && getFlag(a, vertex, SNAP))
       refine->vtxToSnap.push(vertex);
   }
 
   a->input->shouldForceAdaptation = shouldForce;
-  print(a->mesh->getPCU(), "Number of vertices failed %d\n", numFailed);
 }
 
 void snap(Adapt* a)
@@ -943,13 +937,14 @@ void snap(Adapt* a)
   double t0 = pcu::Time();
   Tag* snapTag;
   // preventMatchedCavityMods(a);
-  tagVertsToSnap(a, snapTag);
+  int toSnap = tagVertsToSnap(a, snapTag);
 
   // ma_dbg::addTargetLocation(a, "snap_target");
   // ma_dbg::addClassification(a, "classification");
   // apf::writeVtkFiles("before_last_snap", a->mesh);
 
-  trySnapping(a, snapTag);
+  Snapper snapper(a, snapTag, false);
+  trySnapping(a, snapper);
   // snapLayer(a, tag);
 
   // apf::writeVtkFiles("after_last_snap", a->mesh);
@@ -960,7 +955,8 @@ void snap(Adapt* a)
   a->refine->vtxToSnap = {};
 
   double t1 = pcu::Time();
-  print(a->mesh->getPCU(), "snapped in %f seconds\n", t1 - t0);
+  print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d - Collapse %d - Swap %d - SplitCollapse %d - completed in %f seconds\n",
+            toSnap, snapper.numSnapped, snapper.numFailed, snapper.numCollapseToVtx, snapper.numCollapse, snapper.numSwap, snapper.numSplitCollapse, t1 - t0);
   // if (a->hasLayer)
   //   checkLayerShape(a->mesh, "after snapping");
 }
