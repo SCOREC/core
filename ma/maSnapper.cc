@@ -26,8 +26,6 @@ Snapper::Snapper(Adapt* a, Tag* st, bool is) : splitCollapse(a)
   snapTag = st;
   collapse.Init(a);
   edgeSwap = makeEdgeSwap(a);
-  isSimple = is;
-  dug = false;
   vert = 0;
 }
 

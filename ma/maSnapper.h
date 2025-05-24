@@ -36,8 +36,6 @@ class Snapper
     bool requestLocality(apf::CavityOp* o);
     bool trySimpleSnap();
     bool run();
-    bool dug;
-    bool moved;
   private:
     Adapt* adapt;
     Mesh* mesh;
@@ -46,7 +44,6 @@ class Snapper
     Collapse collapse;
     SingleSplitCollapse splitCollapse;
     EdgeSwap* edgeSwap;
-    bool isSimple;
 
     bool tryCollapseToVertex(FirstProblemPlane* FPP);
     bool tryCollapseTetEdges(FirstProblemPlane* FPP);

@@ -770,7 +770,7 @@ class SnapAll : public Operator
     void apply()
     {
       bool snapped = snapper.run();
-      didAnything = didAnything || snapped || snapper.dug;
+      didAnything = didAnything || snapped;
       if (snapped)
         ++successCount;
       clearFlag(adapter, vert, SNAP);
