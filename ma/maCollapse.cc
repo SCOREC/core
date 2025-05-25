@@ -77,28 +77,8 @@ bool Collapse::edgesGoodSize() {
     }
   }
   // printf("maxSize %f Ratio %f\n", maxSize, ratioAtMaxSize);
-  if (maxSize > 1.52 && ratioAtMaxSize > 1.2 ) return false;
+  if (maxSize > 1.5 && ratioAtMaxSize > 1.2 ) return false;
   return true;
-}
-
-double Collapse::getQualityThisDirection() {
-  PCU_ALWAYS_ASSERT( ! adapt->mesh->isShared(vertToCollapse));
-  rebuildElements();
-  // check quality of linear t before fitting
-  if ((adapt->mesh->getDimension()==2)
-    &&( ! isGood2DMesh()))
-    return -1;
-  // check the linear quality of tets before fitting
-  // reject if one is negative
-  if(adapt->mesh->getDimension()==3 && cavity.shouldFit
-      && !areTetsValid(adapt->mesh,newElements))
-    return -1;
-  // make sure we aren't undoing refinement
-  if(!edgesGoodSize())
-    return -1;
-  // since they are okay in a linear sense, now fit and do a quality assessment
-  fitElements();
-  return getWorstQuality(adapt, newElements);
 }
 
 bool Collapse::tryThisDirection(double qualityToBeat)
@@ -123,34 +103,19 @@ bool Collapse::tryBothDirections(double qualityToBeat)
 
   if (tryThisDirectionNoCancel(qualityToBeat))
     return true;
-  else
-    destroyNewElements();
-
-  if ( ! getFlag(adapt,vertToKeep,COLLAPSE))
-    return false;
-  std::swap(vertToKeep,vertToCollapse);
-  computeElementSets();
-  if (!adapt->input->shouldForceAdaptation)
-    qualityToBeat = std::min(adapt->input->goodQuality,
-        std::max(getOldQuality(),adapt->input->validQuality));
-
-  return tryThisDirection(qualityToBeat);
-}
-
-double Collapse::getQualityFromCollapse() {
-  computeElementSets();
-  double q = getQualityThisDirection();
+  
   destroyNewElements();
-  if (q == -1) {
-    if (!getFlag(adapt,vertToKeep,COLLAPSE))
-      return false;
+
+  if (getFlag(adapt,vertToKeep,COLLAPSE)) {
     std::swap(vertToKeep,vertToCollapse);
     computeElementSets();
-    q = std::max(q, getQualityThisDirection());
-    destroyNewElements();
+    if (tryThisDirectionNoCancel(qualityToBeat))
+      return true;
   }
+
+  destroyNewElements();
   unmark();
-  return q;
+  return false;
 }
 
 bool Collapse::setEdge(Entity* e)

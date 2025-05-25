@@ -372,7 +372,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
   for(int i=1; i<4; i++) 
     if( area[i]<min ) min=area[i]; 
 
-  if (area[0]==min) {
+  if (area[0]==min) { //TODO: implement
     PCU_ALWAYS_ASSERT(false);
   }
 
@@ -451,15 +451,17 @@ static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collaps
   bool alreadyFlagged = true;
   if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
   if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
-  if (collapse.setEdge(edge) &&
-      collapse.checkClass() &&
-      collapse.checkTopo()) {
-    double quality = collapse.getQualityFromCollapse();
-    if (quality > best.quality) {
-      best.quality = quality;
-      best.edge = edge;
-      best.keep = keep;
-    }
+  if (collapse.setEdge(edge) && collapse.checkClass() && collapse.checkTopo()) {
+      collapse.computeElementSets();
+      if (collapse.tryThisDirectionNoCancel(0) && collapse.edgesGoodSize()) {
+        double quality = getWorstQuality(a, collapse.newElements);
+        if (quality > best.quality) {
+          best.quality = quality;
+          best.edge = edge;
+          best.keep = keep;
+        }
+      }
+      collapse.cancel();
   }
   if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
 }

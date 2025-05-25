@@ -941,15 +941,11 @@ void snap(Adapt* a)
 
   // ma_dbg::addTargetLocation(a, "snap_target");
   // ma_dbg::addClassification(a, "classification");
-  // apf::writeVtkFiles("before_last_snap", a->mesh);
 
   Snapper snapper(a, snapTag, false);
   trySnapping(a, snapper);
   // snapLayer(a, tag);
 
-  // apf::writeVtkFiles("after_last_snap", a->mesh);
-  
-  // clearFlagFromDimension(a, COLLAPSE, 1); //TODO: Figure out what is making this neccessary
   clearFlagFromDimension(a, SNAP, 0); //TODO: should not be neccessary
   a->mesh->destroyTag(snapTag);
   a->refine->vtxToSnap = {};
