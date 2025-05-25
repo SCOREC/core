@@ -89,7 +89,6 @@ bool Collapse::tryThisDirection(double qualityToBeat)
   return true;
 }
 
-//TODO: Test this change
 bool Collapse::tryBothDirections(double qualityToBeat)
 {
   computeElementSets();

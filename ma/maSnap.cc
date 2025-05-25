@@ -848,7 +848,6 @@ long tagVertsToSnap(Adapt* a, Tag*& tag)
   Mesh* m = a->mesh;
   Refine* refine = a->refine;
   int dim = m->getDimension();
-  tag = m->createDoubleTag("ma_snap", 3);
   int notProcessed = refine->vtxToSnap.size();
   int owned = 0;
   while (notProcessed > 0)
@@ -928,6 +927,7 @@ void trySnapping(Adapt* a, Snapper& snapper)
   }
 
   a->input->shouldForceAdaptation = shouldForce;
+  a->refine->vtxToSnap = {};
 }
 
 void snap(Adapt* a)
@@ -935,7 +935,7 @@ void snap(Adapt* a)
   if (!a->input->shouldSnap)
     return;
   double t0 = pcu::Time();
-  Tag* snapTag;
+  Tag* snapTag = a->mesh->createDoubleTag("ma_snap", 3);
   // preventMatchedCavityMods(a);
   int toSnap = tagVertsToSnap(a, snapTag);
 
@@ -946,15 +946,12 @@ void snap(Adapt* a)
   trySnapping(a, snapper);
   // snapLayer(a, tag);
 
-  clearFlagFromDimension(a, SNAP, 0); //TODO: should not be neccessary
-  a->mesh->destroyTag(snapTag);
-  a->refine->vtxToSnap = {};
-
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d - Collapse %d - Swap %d - SplitCollapse %d - completed in %f seconds\n",
             toSnap, snapper.numSnapped, snapper.numFailed, snapper.numCollapseToVtx, snapper.numCollapse, snapper.numSwap, snapper.numSplitCollapse, t1 - t0);
   // if (a->hasLayer)
   //   checkLayerShape(a->mesh, "after snapping");
+  a->mesh->destroyTag(snapTag);
 }
 
 void prevSnap(Adapt* a)

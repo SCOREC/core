@@ -645,7 +645,11 @@ bool Snapper::run()
   if (!success) success = tryCollapseTetEdges(FPP);
   if (!success) success = trySwapOrSplit(FPP);
 
-  if (!success) numFailed++;
+  if (!success) {
+    numFailed++;
+    mesh->removeTag(vert,snapTag);
+    clearFlag(adapt, vert, SNAP);
+  }
   // if (!success && numFailed == 1) printFPP(adapt, FPP);
   
   if (FPP) delete FPP;
