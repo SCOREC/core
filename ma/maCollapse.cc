@@ -76,8 +76,7 @@ bool Collapse::edgesGoodSize() {
       }
     }
   }
-  // printf("maxSize %f Ratio %f\n", maxSize, ratioAtMaxSize);
-  if (maxSize > 1.5 && ratioAtMaxSize > 1.2 ) return false;
+  if (maxSize > MAXLENGTH && ratioAtMaxSize > 1.2 ) return false;
   return true;
 }
 
@@ -103,17 +102,16 @@ bool Collapse::tryBothDirections(double qualityToBeat)
 
   if (tryThisDirectionNoCancel(qualityToBeat))
     return true;
-  
-  destroyNewElements();
+  else destroyNewElements();
 
   if (getFlag(adapt,vertToKeep,COLLAPSE)) {
     std::swap(vertToKeep,vertToCollapse);
     computeElementSets();
     if (tryThisDirectionNoCancel(qualityToBeat))
       return true;
+    else destroyNewElements();
   }
 
-  destroyNewElements();
   unmark();
   return false;
 }

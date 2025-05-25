@@ -914,17 +914,17 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
 
 void trySnapping(Adapt* a, Snapper& snapper) 
 {
-  Refine* refine = a->refine;
+  std::queue<Entity*>* vtxToSnap = &a->refine->vtxToSnap;
   bool shouldForce = a->input->shouldForceAdaptation;
-  a->input->shouldForceAdaptation = true;
+  a->input->shouldForceAdaptation = true; //Allows quality to decrease from snapping
 
-  while (refine->vtxToSnap.size() > 0)
+  while (vtxToSnap->size() > 0)
   {
-    Entity* vertex = refine->vtxToSnap.front();
-    refine->vtxToSnap.pop();
+    Entity* vertex = vtxToSnap->front();
+    vtxToSnap->pop();
     snapper.setVert(vertex);
     if (snapper.run() && getFlag(a, vertex, SNAP))
-      refine->vtxToSnap.push(vertex);
+      vtxToSnap->push(vertex);
   }
 
   a->input->shouldForceAdaptation = shouldForce;
