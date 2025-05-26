@@ -1,4 +1,4 @@
-#ifdef APW_LGMETIS_DUMP
+#if defined(APW_LGMETIS_VIZ)
 #include <fstream>
 #endif
 #include <apfMesh.h>
@@ -11,6 +11,10 @@
 #if defined(APW_LGMETIS)
 #include <numeric>
 #include "maDBG.h"
+#endif
+#ifdef APW_LGMETIS_REMAP
+#include <algorithm>
+#include <map>
 #endif
 
 #define MAX_ZOLTAN_GRAPH_RANKS 16*1024
@@ -258,6 +262,11 @@ void runLocalizedGraphMetis(Adapt* a) {
     xadj.data(), xadj_cts.data(), xadj_displs.data(), MPI_INT,
     0, comm
   );
+  // I reuse xadj_cts, xadj_displs below.
+  if (a->mesh->getPCU()->Self() == 0) {
+    // Undo "create the final xadj slot" from above.
+    xadj_cts.back() -= 1;
+  }
   // Gather adjncy.
   int owned_adjncy_ct = owned_adjncy.size();
   std::vector<int> adjncy_cts(
@@ -285,39 +294,6 @@ void runLocalizedGraphMetis(Adapt* a) {
   auto t_localize = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: localized graph in %f seconds\n", t_localize - t0);
-#ifdef APW_LGMETIS_DUMP
-  std::vector<apf::Vector3> ctrs(metis_nvtxs);
-  a->mesh->getPCU()->Begin();
-  it = a->mesh->begin(elm_dim);
-  for (apf::MeshEntity *e; (e = a->mesh->iterate(it));) {
-    long e_num = apf::getNumber(gn, e, 0);
-    apf::Vector3 lc = apf::getLinearCentroid(a->mesh, e);
-    if (a->mesh->getPCU()->Self() == 0) {
-      ctrs[e_num] = lc;
-    } else {
-      a->mesh->getPCU()->Pack(0, e_num);
-      a->mesh->getPCU()->Pack(0, &lc[0], lc.size() * sizeof(lc[0]));
-    }
-  }
-  a->mesh->end(it);
-  a->mesh->getPCU()->Send();
-  while (a->mesh->getPCU()->Receive()) {
-    long e_num;
-    a->mesh->getPCU()->Unpack(e_num);
-    apf::Vector3 lc;
-    a->mesh->getPCU()->Unpack(&lc[0], lc.size() * sizeof(lc[0]));
-    ctrs[e_num] = lc;
-  }
-  if (a->mesh->getPCU()->Self() == 0) {
-    std::ofstream f_xadj("apw_lgmetis_dump_xadj.csv");
-    for (size_t i = 0; i < metis_nvtxs; ++i) {
-      f_xadj << ctrs[i] << ',' << xadj[i] << '\n';
-    }
-    f_xadj << xadj.back() << '\n';
-    std::ofstream f_adjncy("apw_lgmetis_dump_adjncy.csv");
-    for (auto adj : adjncy) f_adjncy << adj << '\n';
-  }
-#endif
   std::vector<idx_t> part(a->mesh->getPCU()->Self() == 0 ? metis_nvtxs : 0);
   if (a->mesh->getPCU()->Self() == 0) {
 #ifdef APW_LGMETIS_SER
@@ -341,16 +317,68 @@ void runLocalizedGraphMetis(Adapt* a) {
       lion_eprint(1, "ERROR: balancing failed: %s\n", metis_err);
       return;
     }
+#ifdef APW_LGMETIS_REMAP
+    std::map<int,int> dest_map; // map from metis_part to dst_part.
+    // Loop through each part (maybe randomize order)
+    for (int p = 0, i = 0; p < nparts; ++p) {
+      // Count elements for each destination part.
+      std::map<int,int> dest_counts;
+      for (int j = 0; j < xadj_cts[p]; ++i, ++j) {
+        int dest = part[i];
+        ++dest_counts[dest];
+      }
+      // Remap max not in dest_map to original part.
+      while (!dest_counts.empty()) {
+        auto max_it = std::max_element(dest_counts.begin(), dest_counts.end(),
+          [](const auto& a, const auto& b) { return a.second < b.second; }
+        );
+        int dest = max_it->first;
+        if (dest_map.count(dest)) dest_counts.erase(max_it);
+        else {
+          // Update set mapped.
+          dest_map[dest] = p;
+          dest_counts.clear();
+        }
+      }
+    }
+#ifdef APW_LGMETIS_VIZ
+    static int num_remap = 0;
+    // Write dest_map.
+    std::ofstream dest_map_file(std::to_string(num_remap) + "_dest_map.txt");
+    for (auto p : dest_map)
+      dest_map_file << p.first << ' ' << p.second << '\n';
+    dest_map_file.close();
+    ++num_remap;
+#endif
+    // Confirm remap is valid.
+    bool valid_map = true;
+    for (int p = 0; p < nparts && valid_map; ++p) {
+      if (dest_map.count(p) != 1) valid_map = false;
+    }
+    if (!valid_map) {
+      lion_oprint(1, "METIS: fixing up mapping\n");
+      // Collect parts not mapped TO.
+      std::set<int> unmapped;
+      for (int p = 0; p < nparts; ++p) unmapped.insert(p);
+      for (auto p : dest_map) unmapped.erase(p.second);
+      // Iterate through parts not mapped FROM and assign mapping.
+      for (int p = 0; p < nparts; ++p) {
+        if (dest_map.count(p) != 1) {
+          dest_map[p] = *unmapped.begin();
+          unmapped.erase(unmapped.begin());
+        }
+      }
+    }
+    // Remap destination parts.
+    for (int p = 0, i = 0; p < nparts; ++p) {
+      for (int j = 0; j < xadj_cts[p]; ++i, ++j) part[i] = dest_map[part[i]];
+    }
+#endif
   }
   auto t_part = pcu::Time();
   if (a->mesh->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: partitioned in %f seconds\n", t_part - t_localize);
   std::vector<idx_t> owned_part(n_owned_elm);
-  // Reuse xadj_cts, xadj_displs.
-  if (a->mesh->getPCU()->Self() == 0) {
-    // Undo "create the final xadj slot" from above.
-    xadj_cts.back() -= 1;
-  }
   MPI_Scatterv(
     part.data(), xadj_cts.data(), xadj_displs.data(), MPI_INT,
     owned_part.data(), n_owned_elm, MPI_INT, 0, comm
