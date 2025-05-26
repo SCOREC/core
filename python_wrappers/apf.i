@@ -2,6 +2,8 @@
 %{
 #include <mpi.h>
 #include <vector>
+#include <pcu_defines.h>
+#include <PCU.h>
 #include <PCU_C.h>
 #include <pcu_util.h>
 #include <gmi.h>
@@ -40,14 +42,15 @@
 
 /* PCU RELATED WRAPPERS */
 /* ==== FROM PCU.h ====*/
-MPI_Comm PCU_Get_Comm(void);
-int PCU_Comm_Init(void);
-int PCU_Comm_Free(void);
+int PCU_Comm_Init(PCU_t* h);
+int PCU_Comm_Free(PCU_t* h);
 
-int PCU_Comm_Self(void);
-int PCU_Comm_Peers(void);
+int PCU_Comm_Self(PCU_t h);
+int PCU_Comm_Peers(PCU_t h);
 double PCU_Time(void);
-bool PCU_Comm_Initialized(void);
+bool PCU_Comm_Initialized(PCU_t h);
+%include<pcu_defines.h>
+%include<PCU.h>
 
 /* ==== FROM pcu_util.h ====*/
 void PCU_Assert_Fail(const char* msg);
@@ -221,7 +224,7 @@ void lion_set_verbosity(int lvl);
         local_min = val;
     }
     self->end(it);
-    PCU_Min_Doubles(&local_min, 1);
+    self->getPCU()->Min(&local_min, 1);
     return local_min;
   }
   double getMaxOfScalarField(apf::Field* field)
@@ -238,7 +241,7 @@ void lion_set_verbosity(int lvl);
         local_max = val;
     }
     self->end(it);
-    PCU_Max_Doubles(&local_max, 1);
+    self->getPCU()->Max(&local_max, 1);
     return local_max;
   }
   bool isBoundingModelRegion(int rtag, int dim, int tag)
@@ -262,6 +265,7 @@ void lion_set_verbosity(int lvl);
 
 #define __attribute__(x)
 %ignore apf::fail;
+%ignore apf::writeCGNS;
 %include<apf.h>
 %include<apfNumbering.h>
 %include<apfShape.h>
@@ -269,9 +273,9 @@ void lion_set_verbosity(int lvl);
 
 
 namespace apf {
-  apf::Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
-  apf::Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
-  apf::Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
+  apf::Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj);
+  apf::Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj);
+  apf::Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
   void writeASCIIVtkFiles(const char* prefix, apf::Mesh2* m);
   /* void writeVtkFiles(const char* prefix, apf::Mesh* m, int cellDim = -1); */
   /* void writeVtkFiles(const char* prefix, apf::Mesh* m, */
