@@ -271,6 +271,8 @@ int main(int argc, char** argv) {
     }
 
     PCU.Barrier();
+
+    auto t_mds0 = pcu::Time();
     
     apf::Migration* plan = nullptr;
 
@@ -334,8 +336,14 @@ int main(int argc, char** argv) {
       migrateHome(apfMesh);
       auto t1 = pcu::Time();
       if (original)
-        std::cout << "Migrating back to rank original took: "
-          << t1 - t0 << std::endl;
+        std::cout << "Migrated back to original rank in " << t1 - t0
+          << " seconds" << std::endl;
+    }
+
+    if (original) {
+      auto t_mds1 = pcu::Time();
+      std::cout << "MDS end-to-end time: " << t_mds1 - t_mds0
+        << " seconds" << std::endl;
     }
 
     apfMesh->switchPCU(soloPCU.get());
