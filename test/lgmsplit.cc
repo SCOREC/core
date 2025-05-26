@@ -61,6 +61,9 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
+#ifndef APW_LGMETIS
+  return 0;
+#else
   pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
@@ -105,5 +108,6 @@ int main(int argc, char** argv)
 #endif
   }
   pcu::Finalize();
+#endif
 }
 
