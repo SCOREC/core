@@ -98,8 +98,17 @@ void convertMetric6toAnisoFields(
 /** \brief Print edge cuts. */
 void printEdgeCuts(apf::Mesh2 *m);
 
+/** \brief Create an apf::Mesh2* from CapstoneModule and bulk sizing file. */
+ma::Mesh* makeApfInterfaceWithSizing(
+  CapstoneModule& cs, std::unique_ptr<pcu::PCU>& pcu, bool original,
+  const std::string& vmapFile, const std::string& sizingFile, bool smooth
+);
+
 /** \brief Migrate all elements back to rank 0. */
 void migrateHome(apf::Mesh2* mesh);
+
+/** \brief Take a serial MDS mesh, partition, adapt, then localize. */
+void parallelAdapt(ma::Mesh* mesh, gmi_model* mod, pcu::PCU& PCU, int maxiter);
 
 /** \brief Command line argument processing class. */
 class Args {
@@ -154,27 +163,20 @@ int main(int argc, char** argv) {
   gmi_register_cap();
 
   try {
-    int stage=0;
-    
     /* LOAD CAPSTONE MESH */
     if (PCU.Self() == 0)
-      std::cout << ++stage << ". Init Capstone" << std::endl;
+      std::cout << "STATUS: Init Capstone" << std::endl;
     const std::string analysis("Kestrel");
-    const std::string exporter("Kestrel Exporter (avm)");
     CapstoneModule cs("capAdapt",
       "Geometry Database : SMLIB",
       "Mesh Database : Create",
       "Attribution Database : Create"
     );
-    GeometryDatabaseInterface *g = cs.get_geometry();
     MeshDatabaseInterface     *m = cs.get_mesh();
-    AppContext                *c = cs.get_context();
-    PCU_ALWAYS_ASSERT(g);
     PCU_ALWAYS_ASSERT(m);
-    PCU_ALWAYS_ASSERT(c);
 
     if (PCU.Self() == 0)
-      std::cout << ++stage << ". Loading CRE file : " << args.creFilename()
+      std::cout << "STATUS: Loading CRE file : " << args.creFilename()
         << std::endl;
     M_GModel gmodel;
     // Load CRE file sequentially to avoid NFS errors.
@@ -196,7 +198,7 @@ int main(int argc, char** argv) {
 
     /* SET THE ADJACENCIES */
     if (PCU.Self() == 0) {
-      std::cout << ++stage << ". Compute required adjacencies" << std::endl;
+      std::cout << "STATUS: Compute required adjacencies" << std::endl;
       MG_API_CALL(m, set_adjacency_state(REGION2FACE | REGION2EDGE |
         REGION2VERTEX | FACE2EDGE | FACE2VERTEX));
       MG_API_CALL(m, set_reverse_states());
@@ -205,65 +207,25 @@ int main(int argc, char** argv) {
 
     // Create apf::Mesh2 wrapper.
     if (PCU.Self() == 0)
-      std::cout << ++stage << ". Create apf::Mesh interface" << std::endl;
+      std::cout << "STATUS: Create apf::Mesh interface" << std::endl;
 
     ma::Mesh* apfCapMesh = nullptr, *apfMesh = nullptr;
     bool original = PCU.Self() == 0;
     int parts = PCU.Peers();
     auto soloPCU = PCU.Split(PCU.Self(), 0);
 
-    // All ranks need apfCapMesh->getModel().
-    apfCapMesh = apf::createMesh(m, g, soloPCU.get());
-
-    auto mapFileName = get_no_extension(args.creFilename()) + ".avm.vmap";
-
+    apfCapMesh = makeApfInterfaceWithSizing(
+      cs, soloPCU, original,
+      get_no_extension(args.creFilename()) + ".avm.vmap",
+      args.sizingFilename(), args.smooth()
+    );
     if (original) {
-      /* LOAD THE SIZING FILE AND VMAP FILE                        */
-      /* CHECK VALIDITY OF THE SIZING FIELD AGAINST THE MESH MODEL */
-      std::cout << ++stage << ". Load sizing" << std::endl;
-      std::vector<Metric6> sizing6 = loadSizing(
-        m, mapFileName, args.sizingFilename()
-      );
-
-      if (args.smooth()) {
-        /* SMOOTH SIZING FIELD */
-        std::cout << ++stage << ". Smooth sizing field." << std::endl;
-        auto smooth_tool = get_sizing_metric_tool(c, "CreateSmoothingBase");
-        if (smooth_tool == nullptr) {
-          throw std::runtime_error("unable to find \"CreateSmoothingBase\"");
-        } else {
-          smooth_tool->set_context(c);
-          smooth_tool->set_metric(mmodel, "sizing6", sizing6);
-          std::vector<Metric6> ometric;
-          smooth_tool->smooth_metric(mmodel, analysis, "sizing6", ometric);
-          sizing6 = ometric;
-        }
-      } else {
-        std::cout << "INFO: not smoothing sizing field." << std::endl;
-      }
-
-      /* CREATE THE ANISOTROPIC FIELD */
-      std::cout << ++stage
-        << ". Create the Anisotropic sizing field from the file : "
-        << args.sizingFilename() << std::endl;
-      apf::Field* frameField = apf::createFieldOn(
-        apfCapMesh, "adapt_frames", apf::MATRIX
-      );
-      apf::Field* scaleField = apf::createFieldOn(
-        apfCapMesh, "adapt_scales", apf::VECTOR
-      );
-      convertMetric6toAnisoFields(m, sizing6, frameField, scaleField);
-    
-      /* WRITE THE BEFORE ADAPT MESH TO VTK USING APF VTK WRITER */
-      std::cout << ++stage << ". Write VTK file (before)" << std::endl;
-      apf::writeVtkFiles("before", apfCapMesh);
-
       /* CONVERT TO APF MDS MESH AND WRITE VTK */
-      std::cout << ++stage << ". Convert to APF MDS Mesh" << std::endl;
+      std::cout << "STATUS: Convert to APF MDS Mesh" << std::endl;
       double t_start = pcu::Time();
       apfMesh = apf::createMdsMesh(apfCapMesh->getModel(), apfCapMesh, true);
       double t_end = pcu::Time();
-      std::cout << "Mesh converted in " << t_end - t_start << " seconds."
+      std::cout << "INFO: Mesh converted in " << t_end - t_start << " seconds."
         << std::endl;
       apfMesh->verify();
       apf::printStats(apfMesh);
@@ -272,81 +234,7 @@ int main(int argc, char** argv) {
 
     PCU.Barrier();
 
-    auto t_mds0 = pcu::Time();
-    
-    apf::Migration* plan = nullptr;
-
-    if (original && parts > 1) {
-      std::cout << ++stage << ". Partitioning the mesh." << std::endl;
-      #ifdef PUMI_HAS_ZOLTAN
-      apf::Splitter* splitter = apf::makeZoltanSplitter(
-        apfMesh, apf::GRAPH, apf::PARTITION
-      );
-      #else
-      apf::Splitter* splitter = Parma_MakeRibSplitter(apfMesh);
-      #endif
-      apf::MeshTag* weights = Parma_WeighByMemory(apfMesh);
-      // Split into 2 pieces with 10% imbalance.
-      plan = splitter->split(weights, 1.10, parts);
-      apf::removeTagFromDimension(apfMesh, weights,
-        apfMesh->getDimension());
-      apfMesh->destroyTag(weights);
-      delete splitter;
-      apfMesh->switchPCU(&PCU);
-    }
-
-    PCU.Barrier();
-    if (parts > 1) {
-      apfMesh =  apf::repeatMdsMesh(
-        apfMesh, apfCapMesh->getModel(), plan, parts, &PCU
-      );
-      plan = nullptr; // plan is freed by apf::repeatMdsMesh.
-      apf::printStats(apfMesh);
-      apf::writeVtkFiles("before-mds-split", apfMesh);
-    }
-    apf::disownMdsModel(apfMesh);
-    printEdgeCuts(apfMesh);
-
-    apf::Field* mdsScaleField = apfMesh->findField("adapt_scales");
-    apf::Field* mdsFrameField = apfMesh->findField("adapt_frames");
-    PCU_ALWAYS_ASSERT(mdsScaleField);
-    PCU_ALWAYS_ASSERT(mdsFrameField);
-
-    /* SETUP AND CALL ADAPT */
-    if (original)
-      std::cout << ++stage << ". Adaptation setup" << std::endl;
-    // adapt setup
-    ma::Input* in = ma::makeAdvanced(
-      ma::configure(apfMesh, mdsScaleField, mdsFrameField)
-    );
-    in->shouldForceAdaptation = true;
-    if (args.maxiter() != -1) in->maximumIterations = args.maxiter();
-    
-    if (original)
-      std::cout << ++stage << ". Adaptation" << std::endl;
-    ma::adapt(in);
-    
-    /* WRITE THE AFTER ADAPT MESH TO VTK USING APF VTK WRITER */
-    if (original)
-      std::cout << ++stage << ". Write VTK file (after)" << std::endl;
-    apf::writeVtkFiles("after-mds", apfMesh);
-
-    if (parts > 1) {
-      auto t0 = pcu::Time();
-      migrateHome(apfMesh);
-      auto t1 = pcu::Time();
-      if (original)
-        std::cout << "Migrated back to original rank in " << t1 - t0
-          << " seconds" << std::endl;
-    }
-
-    if (original) {
-      auto t_mds1 = pcu::Time();
-      std::cout << "MDS end-to-end time: " << t_mds1 - t_mds0
-        << " seconds" << std::endl;
-    }
-
-    apfMesh->switchPCU(soloPCU.get());
+    parallelAdapt(apfMesh, apfCapMesh->getModel(), PCU, args.maxiter());
 
     if (original) {
       /* COPY THE MESH MODEL TO KEEP */
@@ -381,9 +269,8 @@ int main(int argc, char** argv) {
       std::cout << info << std::endl;
 
       apf::destroyMesh(apfCapMesh);
+      apf::destroyMesh(apfMesh);
     }
-    apf::destroyMesh(apfMesh);
-
     PCU.Barrier();
   } catch (const std::exception& e) {
     std::cerr << "FATAL: ";
@@ -414,14 +301,14 @@ std::vector<Metric6> loadSizing(
 ) {
   std::vector<std::size_t> vmap;
   std::vector<double>      sizing;
-  std::cout << "- Loading VMap file : " << mapFileName << std::endl;
+  std::cout << "STATUS: Loading VMap file: " << mapFileName << std::endl;
   load_file<std::size_t>(mapFileName, vmap);
-  std::cout << "  VMap number of vertices = " << vmap.size() - 1
+  std::cout << "INFO: VMap number of vertices = " << vmap.size() - 1
     << "    vmap[0] = " << vmap[0]  << std::endl;
-  std::cout << "- Loading Sizing File : " << sizFileName
+  std::cout << "STATUS: Loading Sizing File: " << sizFileName
     << std::endl;
   load_file<double>(sizFileName, sizing);
-  std::cout << "  Sizing File number of vertices = "
+  std::cout << "INFO: Sizing File number of vertices = "
     << sizing.size()/6 << std::endl;
   std::size_t numVertices;
   MG_API_CALL(m, get_num_topos(Mesh::TOPO_VERTEX, numVertices));
@@ -469,7 +356,67 @@ void convertMetric6toAnisoFields(
   }
 }
 
+ma::Mesh* makeApfInterfaceWithSizing(
+  CapstoneModule& cs, std::unique_ptr<pcu::PCU>& pcu, bool original,
+  const std::string& vmapFile, const std::string& sizingFile, bool smooth
+) {
+  // All ranks need apfCapMesh->getModel().
+  ma::Mesh* apfCapMesh = apf::createMesh(
+    cs.get_mesh(), cs.get_geometry(), pcu.get()
+  );
+
+  if (original) {
+    /* LOAD THE SIZING FILE AND VMAP FILE                        */
+    /* CHECK VALIDITY OF THE SIZING FIELD AGAINST THE MESH MODEL */
+    std::cout << "STATUS: Loading sizing" << std::endl;
+    std::vector<Metric6> sizing6 = loadSizing(
+      cs.get_mesh(), vmapFile, sizingFile
+    );
+
+    if (smooth) {
+      /* SMOOTH SIZING FIELD */
+      std::cout << "STATUS: Smoothing sizing field." << std::endl;
+      auto smooth_tool = get_sizing_metric_tool(
+        cs.get_context(), "CreateSmoothingBase"
+      );
+      if (smooth_tool == nullptr) {
+        throw std::runtime_error("unable to find \"CreateSmoothingBase\"");
+      } else {
+        smooth_tool->set_context(cs.get_context());
+        M_MModel mmodel;
+        MG_API_CALL(cs.get_mesh(), get_current_model(mmodel));
+        smooth_tool->set_metric(mmodel, "sizing6", sizing6);
+        std::vector<Metric6> ometric;
+        auto analysis = cs.get_analysis_name();
+        smooth_tool->smooth_metric(mmodel, analysis, "sizing6", ometric);
+        sizing6 = ometric;
+      }
+    } else {
+      std::cout << "INFO: not smoothing sizing field." << std::endl;
+    }
+
+    /* CREATE THE ANISOTROPIC FIELD */
+    std::cout << "STATUS: Creating Anisotropic size-field from the file: "
+      << sizingFile << std::endl;
+    apf::Field* frameField = apf::createFieldOn(
+      apfCapMesh, "adapt_frames", apf::MATRIX
+    );
+    apf::Field* scaleField = apf::createFieldOn(
+      apfCapMesh, "adapt_scales", apf::VECTOR
+    );
+    convertMetric6toAnisoFields(
+      cs.get_mesh(), sizing6, frameField, scaleField
+    );
+
+    /* WRITE THE BEFORE ADAPT MESH TO VTK USING APF VTK WRITER */
+    std::cout << "STATUS: Writing VTK file (before)" << std::endl;
+    apf::writeVtkFiles("before", apfCapMesh);
+  }
+  return apfCapMesh;
+}
+
 void migrateHome(apf::Mesh2* mesh) {
+  auto t0 = pcu::Time();
   apf::Migration* plan = new apf::Migration(mesh);
   apf::MeshIterator* it = mesh->begin(mesh->getDimension());
   for (apf::MeshEntity* e = mesh->iterate(it); e;
@@ -482,6 +429,83 @@ void migrateHome(apf::Mesh2* mesh) {
     virtual int operator()(int) { return 0; }
   } map0;
   apf::remapPartition(mesh, map0);
+  auto t1 = pcu::Time();
+  if (mesh->getPCU()->Self() == 0)
+    std::cout << "INFO:Migrated back to original rank in " << t1 - t0
+      << " seconds" << std::endl;
+}
+
+void parallelAdapt(ma::Mesh* mesh, gmi_model* model, pcu::PCU& PCU, int maxiter) {
+  auto t0 = pcu::Time();
+  bool original = false;
+  pcu::PCU* oldPCU = nullptr;
+  if (mesh) {
+    original = true;
+    oldPCU = mesh->getPCU();
+  }
+  int parts = PCU.Peers();
+  apf::Migration* plan = nullptr;
+
+  if (original && parts > 1) {
+    std::cout << "STATUS: Partitioning the mesh." << std::endl;
+    #if defined(PUMI_HAS_ZOLTAN)
+    apf::Splitter* splitter = apf::makeZoltanSplitter(
+      mesh, apf::GRAPH, apf::PARTITION
+    );
+    #else
+    apf::Splitter* splitter = Parma_MakeRibSplitter(mesh);
+    #endif
+    apf::MeshTag* weights = Parma_WeighByMemory(mesh);
+    // Split into pieces with 10% imbalance.
+    plan = splitter->split(weights, 1.10, parts);
+    apf::removeTagFromDimension(mesh, weights,
+      mesh->getDimension());
+    mesh->destroyTag(weights);
+    delete splitter;
+    mesh->switchPCU(&PCU);
+  }
+  PCU.Barrier();
+  if (parts > 1) {
+    mesh = apf::repeatMdsMesh(
+      mesh, model, plan, parts, &PCU
+    );
+    plan = nullptr; // plan is freed by apf::repeatMdsMesh.
+    apf::printStats(mesh);
+    apf::writeVtkFiles("before-mds-split", mesh);
+  }
+  apf::disownMdsModel(mesh);
+  printEdgeCuts(mesh);
+
+  apf::Field* mdsScaleField = mesh->findField("adapt_scales");
+  apf::Field* mdsFrameField = mesh->findField("adapt_frames");
+  PCU_ALWAYS_ASSERT(mdsScaleField);
+  PCU_ALWAYS_ASSERT(mdsFrameField);
+
+  /* SETUP AND CALL ADAPT */
+  if (original) std::cout << "STATUS: Adaptation setup" << std::endl;
+  // adapt setup
+  ma::Input* in = ma::makeAdvanced(
+    ma::configure(mesh, mdsScaleField, mdsFrameField)
+  );
+  in->shouldForceAdaptation = true;
+  if (maxiter != -1) in->maximumIterations = maxiter;
+
+  if (original) std::cout << "STATUS: Adapting" << std::endl;
+  ma::adapt(in);
+
+  /* WRITE THE AFTER ADAPT MESH TO VTK USING APF VTK WRITER */
+  if (original) std::cout << "STATUS: Writing VTK file (after)" << std::endl;
+  apf::writeVtkFiles("after-mds", mesh);
+
+  if (parts > 1) migrateHome(mesh);
+  if (original) {
+    auto t1 = pcu::Time();
+    std::cout << "INFO: MDS end-to-end time: " << t1 - t0 << " seconds"
+      << std::endl;
+    mesh->switchPCU(oldPCU);
+  } else {
+    apf::destroyMesh(mesh);
+  }
 }
 
 void printEdgeCuts(apf::Mesh2 *m) {
