@@ -9,9 +9,9 @@
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 3);
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   {
@@ -47,5 +47,5 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
   }
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

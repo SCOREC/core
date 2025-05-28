@@ -36,9 +36,9 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   pcu::Protect();
 #ifdef HAVE_SIMMETRIX
   Sim_readLicenseFile(0);
@@ -71,5 +71,5 @@ int main(int argc, char** argv) {
   Sim_unregisterAllKeys();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

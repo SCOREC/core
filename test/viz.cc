@@ -34,10 +34,10 @@ namespace {
 int main(int argc, char** argv)
 {
   int provided;
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
+  pcu::Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   PCU_ALWAYS_ASSERT(provided==MPI_THREAD_MULTIPLE);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
@@ -106,5 +106,5 @@ int main(int argc, char** argv)
 
   freeMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

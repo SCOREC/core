@@ -19,7 +19,7 @@ int inputPartCount = 1;
 
 struct CreateGroupCommResult{
   bool isOriginal;
-  pcu::PCU *group_pcu_obj;
+  std::unique_ptr<pcu::PCU> group_pcu_obj;
 };
 
 void freeMesh(apf::Mesh* m)
@@ -45,11 +45,9 @@ CreateGroupCommResult createGroupComm(pcu::PCU *PCUObj)
        no need to spend time computing a good contiguous number */
     groupRank = 0;
   }
-  MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
   CreateGroupCommResult result;
   result.isOriginal = isOriginal;
-  result.group_pcu_obj = new pcu::PCU(groupComm);
+  result.group_pcu_obj = PCUObj->Split(group, groupRank);
   return result;
 }
 
@@ -64,7 +62,7 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
              "Unlike the [z]split tool, outPartCount does not have to be an integer\n"
              "multiple of inPartCount.\n",
              argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -96,9 +94,9 @@ void balance(apf::Mesh2* m)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU expanded_pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU expanded_pcu_obj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv,&expanded_pcu_obj);
@@ -107,7 +105,7 @@ int main(int argc, char** argv)
   CreateGroupCommResult result = createGroupComm(&expanded_pcu_obj);
 
   if (result.isOriginal)
-    m = apf::loadMdsMesh(g, meshFile, result.group_pcu_obj);
+    m = apf::loadMdsMesh(g, meshFile, result.group_pcu_obj.get());
   
   m = apf::expandMdsMesh(m, g, inputPartCount, &expanded_pcu_obj);
   balance(m);
@@ -115,7 +113,7 @@ int main(int argc, char** argv)
   m->writeNative(outFile);
   freeMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 

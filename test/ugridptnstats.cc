@@ -18,9 +18,9 @@ const double weights[8] = {vtxw, edgew, triw, quadw, tetw, hexw, przw, pyrw};
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_null();
   PCU_ALWAYS_ASSERT( 3 == argc );
@@ -30,5 +30,5 @@ int main(int argc, char** argv)
   gmi_model* g = gmi_load(".null");
   apf::printUgridPtnStats(g,ugridfile,ptnfile,weights,&PCUObj);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

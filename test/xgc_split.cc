@@ -2,7 +2,6 @@
 
 #include <apf.h>
 #include <cstring>
-#include <mpi.h>
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
@@ -19,7 +18,7 @@ void getConfig(int argc, char** argv, pcu::PCU* PCUObj)
   if (argc < 4) {
     if (!PCUObj->Self())
       printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -54,9 +53,9 @@ Migration* get_xgc_plan(pGeom g, pMesh m)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   pumi_load_pcu(&PCUObj);
   getConfig(argc,argv,&PCUObj);
 
@@ -95,6 +94,6 @@ int main(int argc, char** argv)
   pumi_mesh_delete(m);
 
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

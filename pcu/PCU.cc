@@ -49,7 +49,26 @@
 #include <cstring>
 #include <cerrno>
 #include <cstdarg>
+#include <time.h>
 namespace pcu {
+
+void Init(int *argc, char ***argv) {
+#ifndef SCOREC_NO_MPI
+  int flag;
+  MPI_Initialized(&flag);
+  if (!flag) MPI_Init(argc, argv);
+#else
+  (void) argc, (void) argv;
+#endif
+}
+
+void Finalize() {
+#ifndef SCOREC_NO_MPI
+  int flag;
+  MPI_Finalized(&flag);
+  if (!flag) MPI_Finalize();
+#endif
+}
 
 int PCU::Peers() const noexcept { return pcu_mpi_size(mpi_); }
 int PCU::Self() const noexcept { return pcu_mpi_rank(mpi_); }
@@ -125,6 +144,17 @@ void PCU::Order(bool on) {
 void PCU::Barrier() { pcu_barrier(mpi_, &(msg_->coll)); }
 int PCU::Or(int c) noexcept { return Max(c); }
 int PCU::And(int c) noexcept { return Min(c); }
+
+std::unique_ptr<PCU> PCU::Split(int color, int key) noexcept {
+  PCU_Comm newcomm;
+  pcu_mpi_split(mpi_, color, key, &newcomm);
+  PCU* splitpcu = new PCU(newcomm);
+  return std::unique_ptr<PCU>(splitpcu);
+}
+int PCU::DupComm(PCU_Comm* newcomm) const noexcept {
+  return pcu_mpi_dup(mpi_, newcomm);
+}
+
 int PCU::Packed(int to_rank, size_t *size) noexcept {
   if ((to_rank < 0) || (to_rank >= Peers()))
     reel_fail("Invalid rank in Comm_Packed");
@@ -193,7 +223,15 @@ void PCU::DebugOpen() noexcept {
 
 double GetMem() noexcept { return pcu_get_mem(); }
 void Protect() noexcept { reel_protect(); }
-double Time() noexcept { return MPI_Wtime(); }
+double Time() noexcept {
+#ifndef SCOREC_NO_MPI
+  return MPI_Wtime();
+#else
+  struct timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
+  return (double)now.tv_sec + now.tv_nsec * 1.0e-9;
+#endif
+}
 
 void PCU::DebugPrint(const char *format, ...) noexcept {
   va_list args;
@@ -207,7 +245,14 @@ void PCU::DebugPrint(const char *format, va_list args) noexcept {
   vfprintf(msg_->file, format, args);
   fflush(msg_->file);
 }
-PCU::PCU(MPI_Comm comm) {
+PCU::PCU() :
+#ifndef SCOREC_NO_MPI
+PCU(MPI_COMM_WORLD)
+#else
+PCU(0)
+#endif
+{}
+PCU::PCU(PCU_Comm comm) {
   mpi_ = new pcu_mpi_t;
   msg_ = new pcu_msg;
   pcu_mpi_init(comm, mpi_);
@@ -220,6 +265,7 @@ PCU::PCU(MPI_Comm comm) {
 PCU::~PCU() noexcept {
   pcu_mpi_finalize(mpi_);
   delete mpi_;
+  if (msg_->order) pcu_order_free(msg_->order);
   pcu_free_msg(msg_);
   delete msg_;
 }
@@ -232,23 +278,12 @@ PCU &PCU::operator=(PCU && other) noexcept {
   std::swap(msg_, other.msg_);
   return *this;
 }
-MPI_Comm PCU::GetMPIComm() const noexcept { return mpi_->original_comm; }
-
-MPI_Comm PCU::SwitchMPIComm(MPI_Comm newcomm) noexcept {
-  if(newcomm == mpi_->original_comm) {
-    return mpi_->original_comm;
-  }
-  auto original_comm = mpi_->original_comm;
-  pcu_mpi_finalize(mpi_);
-  pcu_mpi_init(newcomm, mpi_);
-  return original_comm;
-}
 
 /* template implementations */
 template <typename T> void PCU::Add(T *p, size_t n) noexcept {
   pcu_allreduce(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
@@ -264,7 +299,7 @@ template <typename T> T PCU::Add(T p) noexcept {
 template <typename T> void PCU::Min(T *p, size_t n) noexcept {
   pcu_allreduce(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
@@ -280,7 +315,7 @@ template <typename T> T PCU::Min(T p) noexcept {
 template <typename T> void PCU::Max(T *p, size_t n) noexcept {
   pcu_allreduce(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
@@ -299,7 +334,7 @@ template <typename T> void PCU::Exscan(T *p, size_t n) noexcept {
     originals[i] = p[i];
   pcu_scan(
       mpi_, &(msg_->coll),
-      [](void *local, void *incoming, size_t size) {
+      [](int, int, void *local, void *incoming, size_t size) {
         auto *a = static_cast<T *>(local);
         auto *b = static_cast<T *>(incoming);
         size_t n = size / sizeof(T);
@@ -316,6 +351,12 @@ template <typename T> T PCU::Exscan(T p) noexcept {
   Exscan(&p, 1);
   return p;
 }
+
+template <typename T>
+void PCU::Allgather(const T *send_data, T *recv_data, size_t n) noexcept {
+  pcu_allgather(mpi_, &(msg_->coll), send_data, recv_data, n * sizeof(T));
+}
+
 #define PCU_EXPL_INST_DECL(T)                                                  \
   template void PCU::Add<T>(T * p, size_t n) noexcept;                         \
   template T PCU::Add<T>(T p) noexcept;                                        \
@@ -324,7 +365,8 @@ template <typename T> T PCU::Exscan(T p) noexcept {
   template void PCU::Max<T>(T * p, size_t n) noexcept;                         \
   template T PCU::Max<T>(T p) noexcept;                                        \
   template void PCU::Exscan<T>(T * p, size_t n) noexcept;                      \
-  template T PCU::Exscan<T>(T p) noexcept;
+  template T PCU::Exscan<T>(T p) noexcept;                                     \
+  template void PCU::Allgather<T>(const T *in, T *out, size_t n) noexcept;
 PCU_EXPL_INST_DECL(int)
 PCU_EXPL_INST_DECL(size_t)
 PCU_EXPL_INST_DECL(long)

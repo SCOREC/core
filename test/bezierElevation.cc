@@ -397,13 +397,13 @@ void testTetElevation(pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   testEdgeElevation(&pcu_obj);
   testTriElevation(&pcu_obj);
   testTetElevation(&pcu_obj);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

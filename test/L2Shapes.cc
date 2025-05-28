@@ -30,9 +30,9 @@ void testL2writeNative(
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
 
   lion_set_verbosity(1);
 
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 void E_exact(const apf::Vector3& x, apf::Vector3& value, int p)

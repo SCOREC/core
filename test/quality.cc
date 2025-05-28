@@ -22,7 +22,7 @@ static void fail(char** argv, pcu::PCU *PCUObj)
 {
   if (!PCUObj->Self())
     printf("Usage: %s <model> <mesh> <quality tolerance>\n", argv[0]);
-  MPI_Finalize();
+  pcu::Finalize();
   exit(EXIT_FAILURE);
 }
 
@@ -89,9 +89,9 @@ void printDiagnostics(pcu::PCU *PCUObj)
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv,&PCUObj);
@@ -101,5 +101,5 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

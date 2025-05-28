@@ -7,8 +7,9 @@
 #include <PCU.h>
 
 int main (int argc, char* argv[]) {
-  MPI_Init(&argc, &argv);
-  pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
+  pcu::Init(&argc, &argv);
+  { // pcu object scope
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_cap();
 
@@ -19,7 +20,7 @@ int main (int argc, char* argv[]) {
     "Mesh Database : Create", "Attribution Database : Create");
   cs.load_files(v_string(1, creFile));
   // 2. CreateMesh.
-  apf::Mesh2* m = apf::createMesh(cs.get_mesh(), cs.get_geometry(), PCUObj);
+  apf::Mesh2* m = apf::createMesh(cs.get_mesh(), cs.get_geometry(), &PCUObj);
   // 3. Get region 1 ModelEntity*.
   apf::ModelEntity* rgn = m->findModelEntity(3, 1);
   PCU_ALWAYS_ASSERT(rgn);
@@ -44,6 +45,6 @@ int main (int argc, char* argv[]) {
   PCU_ALWAYS_ASSERT(m->isInClosureOf(m->findModelEntity(0, 8), f1));
 
   apf::destroyMesh(m);
-  delete PCUObj;
-  MPI_Finalize();
+  } // pcu object scope
+  pcu::Finalize();
 }

@@ -30,7 +30,7 @@ namespace {
     if ( argc != 3 ) {
       if ( !pcu_obj->Self() )
         lion_oprint(1,"Usage: %s <control .inp> <reduction-factor>\n", argv[0]);
-      MPI_Finalize();
+      pcu::Finalize();
       exit(EXIT_FAILURE);
     }
     if ( !pcu_obj->Self() )
@@ -39,9 +39,9 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   pcu::Protect();
   lion_set_verbosity(1);
   checkInputs(argc,argv,&pcu_obj);
@@ -65,5 +65,5 @@ int main(int argc, char** argv) {
   Sim_unregisterAllKeys();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

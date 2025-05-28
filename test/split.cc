@@ -37,22 +37,12 @@ apf::Migration* getPlan(apf::Mesh* m)
   return plan;
 }
 
-pcu::PCU* getGroupedPCU(pcu::PCU *PCUObj)
-{
-  int self = PCUObj->Self();
-  int groupRank = self / partitionFactor;
-  int group = self % partitionFactor;
-  MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
-  return new pcu::PCU(groupComm);
-}
-
 void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc != 5 ) {
     if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh> <outMesh> <factor>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -66,9 +56,9 @@ void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -84,15 +74,16 @@ int main(int argc, char** argv)
   g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  pcu::PCU *groupedPCUObj = getGroupedPCU(&PCUObj);
+  auto groupedPCUObj = PCUObj.Split(
+    PCUObj.Self() % partitionFactor, PCUObj.Self() / partitionFactor
+  );
   if (isOriginal) {
-    m = apf::loadMdsMesh(g, meshFile, groupedPCUObj);
+    m = apf::loadMdsMesh(g, meshFile, groupedPCUObj.get());
     plan = getPlan(m);
   }
   //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
   //on the globalPCU
   if(m != nullptr) m->switchPCU(&PCUObj);
-  delete groupedPCUObj;
   m = repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
@@ -104,6 +95,6 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

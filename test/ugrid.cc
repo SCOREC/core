@@ -18,26 +18,16 @@ apf::Migration* getPlan(apf::Mesh* m, const int partitionFactor)
   return plan;
 }
 
-pcu::PCU* getGroupedPCU(const int partitionFactor, pcu::PCU *PCUObj)
-{
-  int self = PCUObj->Self();
-  int groupRank = self / partitionFactor;
-  int group = self % partitionFactor;
-  MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
-  return new pcu::PCU(groupComm);
-}
-
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 5 ) {
     if ( !PCUObj.Self() )
       printf("Usage: %s <in .[b8|lb8].ugrid> <out .dmg> <out .smb> <partition factor>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_null();
@@ -47,9 +37,11 @@ int main(int argc, char** argv)
   gmi_model* g = gmi_load(".null");
   apf::Mesh2* m = 0;
   apf::Migration* plan = 0;
-  pcu::PCU *groupedPCUObj = getGroupedPCU(partitionFactor, &PCUObj);
+  auto groupedPCUObj = PCUObj.Split(
+    PCUObj.Self() % partitionFactor, PCUObj.Self() / partitionFactor
+  );
   if (isOriginal) {
-    m = apf::loadMdsFromUgrid(g, argv[1], groupedPCUObj);
+    m = apf::loadMdsFromUgrid(g, argv[1], groupedPCUObj.get());
     apf::deriveMdsModel(m);
     m->verify();
     plan = getPlan(m, partitionFactor);
@@ -57,7 +49,6 @@ int main(int argc, char** argv)
   //used switchPCU here to load the mesh on the groupedPCU, perform tasks and then call repeatMdsMesh
   //on the globalPCU
   if(m != nullptr) m->switchPCU(&PCUObj);
-  delete groupedPCUObj;
   m = repeatMdsMesh(m, g, plan, partitionFactor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   gmi_write_dmg(g,argv[2]);
@@ -65,6 +56,6 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

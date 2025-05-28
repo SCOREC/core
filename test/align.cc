@@ -89,14 +89,14 @@ void testTetTri(pcu::PCU *PCUObj)
 }
 int main()
 {
-  MPI_Init(0,0);
+  pcu::Init(0,0);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   gmi_register_null();
   testTriEdge(&pcu_obj);
   testTetEdge(&pcu_obj);
   testTetTri(&pcu_obj);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

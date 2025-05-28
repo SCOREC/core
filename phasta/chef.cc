@@ -29,9 +29,9 @@ namespace {
 /** @brief run the operations requested in "adapt.inp" */
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   pcu::Protect();
   lion_set_verbosity(1);
   if( !PCUObj.Self() ) {
@@ -69,6 +69,6 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 

@@ -74,9 +74,9 @@ apf::Mesh2* convertToPumi(
     const char* sizeName, const char* frameName, pcu::PCU *PCUObj);
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   MS_init(); // Call before calling Sim_readLicenseFile
   Sim_readLicenseFile(0);
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
       printf("USAGE: %s <model.dmg> <mesh.smb> <prefix>"
       	  "<scale field name> <frame field name> <min_quality>\n", argv[0]);
     }
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 
@@ -229,7 +229,7 @@ int main(int argc, char** argv)
   Sim_unregisterAllKeys();
   MS_exit();
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 void printModelStats(pGModel model)
@@ -599,7 +599,7 @@ apf::Mesh2* convertToPumi(
   gmi_model* nullModel = gmi_load(".null");
   apf::Mesh2* m2 = apf::makeEmptyMdsMesh(nullModel, dim, false, PCUObj);
   apf::GlobalToVert outMap;
-  apf::construct(m2, adaptedConns, adaptedNumElems, apf::Mesh::TET, outMap);;
+  apf::construct(m2, adaptedConns, adaptedNumElems, apf::Mesh::TET, outMap);
   apf::alignMdsRemotes(m2);
   apf::deriveMdsModel(m2);
   apf::setCoords(m2, adaptedCoords, adaptedNumVerts, outMap);

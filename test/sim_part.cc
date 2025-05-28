@@ -66,9 +66,9 @@ void messageHandler(int type, const char *msg);
 
 int main(int argc, char **argv)
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   pcu::Protect();
   // Initialize PartitionedMesh - this should be the first Simmetrix call
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
   SimDiscrete_stop(0);
   SimPartitionedMesh_stop();
   }
-  MPI_Finalize();
+  pcu::Finalize();
   return 0;
 }
 

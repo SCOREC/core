@@ -137,9 +137,9 @@ static void globalCode(apf::Mesh2* m)
 
 int main( int argc, char* argv[])
 {
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   PCU_ALWAYS_ASSERT(PCUObj.Peers() == 2);
   gmi_register_null();
@@ -150,5 +150,5 @@ int main( int argc, char* argv[])
   Parma_SplitPartition(code.mesh, groupSize, code, &PCUObj);
   globalCode(code.mesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

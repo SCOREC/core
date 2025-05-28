@@ -1,7 +1,7 @@
 #include <iostream>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <mpi.h>
+#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfShape.h>
@@ -92,9 +92,9 @@ int main(int argc, char* argv[])
     std::cerr<<"Usage: "<<argv[0]<<" model.dmg mesh.smb"<<std::endl;
     return 1;
   }
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   apf::Mesh2* mesh = apf::loadMdsMesh(argv[1], argv[2], &pcu_obj);
@@ -117,6 +117,6 @@ int main(int argc, char* argv[])
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
   return 0;
 }

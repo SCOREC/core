@@ -19,7 +19,6 @@ target_link_libraries(apf_sim PUBLIC ${SIMMODSUITE_LIBS})
 target_include_directories(gmi_sim PUBLIC ${SIMMODSUITE_INCLUDE_DIR})
 target_include_directories(apf_sim PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 option(ENABLE_FIELDSIM "Enable use of FieldSim from Simmetrix SimModSuite" FALSE)

@@ -43,6 +43,9 @@ find_program(CTEST_GIT_COMMAND NAMES git)
 set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
 function(setup_repo)
+  if(EXISTS "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}")
+    cleanup_merge(develop master)
+  endif()
   if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}")
     message("Running \"git clone ${REPO_URL_BASE}.git ${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}\"")
     execute_process(COMMAND "${CTEST_GIT_COMMAND}" clone ${REPO_URL_BASE}.git
@@ -88,6 +91,18 @@ function(git_exec CMD ACTION)
     message("${ACTION} succeeded")
   endif()
 endfunction(git_exec)
+
+function(remove_branch_if_exists BRANCH_NAME)
+  message("Attempting to delete ${BRANCH_NAME} if it exists")
+  execute_process(COMMAND "${CTEST_GIT_COMMAND}" branch --list ${BRANCH_NAME}
+      WORKING_DIRECTORY "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
+      RESULT_VARIABLE BRANCH_RET)
+  message("git branch --list returned: ${BRANCH_RET})!")
+  if(BRANCH_RET)
+    message("${BRANCH_NAME} exists.  Attempting to delete it.")
+    git_exec("branch -D ${BRANCH_NAME}" "Deleted ${BRANCH_NAME}.")
+  endif()
+endfunction()
 
 function(create_branch BRANCH_NAME TRACKING_NAME)
   git_exec("branch --track ${BRANCH_NAME} ${TRACKING_NAME}"
@@ -224,6 +239,7 @@ function(start_merge FIRST_BRANCH SECOND_BRANCH NEXT_ACTION)
   update_branch(${FIRST_BRANCH})
   update_branch(${SECOND_BRANCH})
   set(NEW_BRANCH "${SECOND_BRANCH}-into-${FIRST_BRANCH}")
+  remove_branch_if_exists(${NEW_BRANCH})
   create_branch(${NEW_BRANCH} origin/${FIRST_BRANCH})
   checkout_branch(${NEW_BRANCH})
   message("Running \"git merge --no-ff --no-commit ${SECOND_BRANCH}\"")

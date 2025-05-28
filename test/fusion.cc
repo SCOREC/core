@@ -154,9 +154,9 @@ struct GroupCode : public Parma_GroupCode
 int main( int argc, char* argv[])
 {
   PCU_ALWAYS_ASSERT(argc==2);
-  MPI_Init(&argc,&argv);
+  pcu::Init(&argc,&argv);
   {
-  pcu::PCU pcu_obj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   GroupCode code;
   code.model = makeModel();
@@ -171,5 +171,5 @@ int main( int argc, char* argv[])
   code.mesh->destroyNative();
   apf::destroyMesh(code.mesh);
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

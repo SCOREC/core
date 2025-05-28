@@ -24,9 +24,9 @@ static void load_balance(apf::Mesh2* m) {
 }
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   {
-  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   Sim_readLicenseFile(NULL);
   gmi_sim_start();
@@ -52,5 +52,5 @@ int main(int argc, char** argv) {
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   }
-  MPI_Finalize();
+  pcu::Finalize();
 }

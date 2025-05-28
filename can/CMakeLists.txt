@@ -11,7 +11,6 @@ add_library(can INTERFACE)
 # Include directories
 target_include_directories(can INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 scorec_export_library(can)
