@@ -223,6 +223,8 @@ if(ENABLE_CAPSTONE)
   util_exe_func(cap2vtk cap2vtk.cc)
   util_exe_func(capGeomTest capGeomTest.cc)
   util_exe_func(capCheckParam capCheckParam.cc)
+  util_exe_func(capAdapt capAdapt.cc)
+  target_link_libraries(capAdapt framework_meshing)
 endif()
 
 # send all the newly added utility executable targets
