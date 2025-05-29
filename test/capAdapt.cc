@@ -431,7 +431,7 @@ void migrateHome(apf::Mesh2* mesh) {
   apf::remapPartition(mesh, map0);
   auto t1 = pcu::Time();
   if (mesh->getPCU()->Self() == 0)
-    std::cout << "INFO:Migrated back to original rank in " << t1 - t0
+    std::cout << "INFO: Migrated back to original rank in " << t1 - t0
       << " seconds" << std::endl;
 }
 
