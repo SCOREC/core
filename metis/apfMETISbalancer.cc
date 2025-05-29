@@ -104,7 +104,7 @@ void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   mesh_->end(it);
   apf::synchronize(gn);
   std::vector<idx_t> owned_xadj, owned_adjncy;
-  getOwnedAdjacencies(gn, owned_xadj, owned_adjncy, gn_offset);
+  getOwnedAdjacencies(gn, owned_xadj, owned_adjncy, gn_offset, true);
   // Localize n_owned_elms for Gatherv on xadj.
   std::vector<int> xadj_cts(
     mesh_->getPCU()->Self() == 0 ? mesh_->getPCU()->Peers() : 0

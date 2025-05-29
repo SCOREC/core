@@ -4,6 +4,8 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
+#ifndef APF_METIS_BALANCER_H
+#define APF_METIS_BALANCER_H
 
 #include <apfPartition.h>
 
@@ -24,3 +26,4 @@ private:
 
 } // namespace apf
 
+#endif // APF_METIS_BALANCER_H

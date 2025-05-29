@@ -21,12 +21,15 @@ namespace metis {
 
 void getOwnedAdjacencies(
   GlobalNumbering* gn, std::vector<idx_t>& xadj,
-  std::vector<idx_t>& adjncy, long gn_offset
+  std::vector<idx_t>& adjncy, long gn_offset, bool remoteEdges
 ) {
   Mesh* mesh = apf::getMesh(gn);
   int elm_dim = mesh->getDimension();
   int n_owned_elm = apf::countOwned(mesh, elm_dim);
-  auto opp_tag = apf::tagOpposites(gn, "maBalance__run_LGM_opp");
+  MeshTag* opp_tag = nullptr;
+  if (remoteEdges) {
+    opp_tag = apf::tagOpposites(gn, "maBalance__run_LGM_opp");
+  }
   // Build local adj_cts.
   std::vector<idx_t> adj_cts(n_owned_elm);
   MeshIterator* it = mesh->begin(elm_dim);
@@ -38,8 +41,9 @@ void getOwnedAdjacencies(
     for (int i = 0; i < nd; ++i) {
       // If mesh face (3d)/edge (2d) is shared or has 2 upward adjacencies,
       // then add a graph edge slot.
-      if (mesh->isShared(graph_edges[i])) ++nd_own;
-      else if (mesh->countUpward(graph_edges[i]) == 2) ++nd_own;
+      if (mesh->isShared(graph_edges[i])) {
+        if (remoteEdges) ++nd_own;
+      } else if (mesh->countUpward(graph_edges[i]) == 2) ++nd_own;
     }
     PCU_DEBUG_ASSERT(e_num < adj_cts.size());
     adj_cts[e_num] = nd_own;
@@ -62,11 +66,13 @@ void getOwnedAdjacencies(
     int adj_i = 0;
     for (int j = 0; j < nd; ++j) {
       if (mesh->isShared(graph_edges[j])) {
-        long opp_num;
-        mesh->getLongTag(graph_edges[j], opp_tag, &opp_num);
-        PCU_DEBUG_ASSERT(e_xadj + adj_i < adjncy.size());
-        adjncy[e_xadj + adj_i] = opp_num;
-        ++adj_i;
+        if (remoteEdges) {
+          long opp_num;
+          mesh->getLongTag(graph_edges[j], opp_tag, &opp_num);
+          PCU_DEBUG_ASSERT(e_xadj + adj_i < adjncy.size());
+          adjncy[e_xadj + adj_i] = opp_num;
+          ++adj_i;
+        }
       } else {
         // FIXME: assert may not be true in non-manifold 2d cases.
         //        the loop may still make sense.
@@ -83,8 +89,10 @@ void getOwnedAdjacencies(
     }
   }
   mesh->end(it);
-  apf::removeTagFromDimension(mesh, opp_tag, elm_dim - 1);
-  mesh->destroyTag(opp_tag);
+  if (remoteEdges) {
+    apf::removeTagFromDimension(mesh, opp_tag, elm_dim - 1);
+    mesh->destroyTag(opp_tag);
+  }
 }
 
 apf::Migration* makePlan(
