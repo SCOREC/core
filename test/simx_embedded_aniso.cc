@@ -87,21 +87,7 @@ void anisoUDF(pSizeAttData sadata, void* userdata, double anisosize[3][3]) {
   
   apf::Vector3 pos; 
   pos.fromArray(pt);
-  ma::Matrix frame;
-  ma::Vector scale;
-  sf->getValue(pos, frame, scale);
-
-  // correct size setting (from another working code)
-  /*
-    anisosize[0][0] = norm[0]*nsize; anisosize[0][1] = norm[1]*nsize; anisosize[0][2] = norm[2]*nsize;
-    anisosize[1][0] = tan1[0]*tsize; anisosize[1][1] = tan1[1]*tsize; anisosize[1][2] = tan1[2]*tsize;
-    anisosize[2][0] = tan2[0]*tsize; anisosize[2][1] = tan2[1]*tsize; anisosize[2][1] = tan2[2]*tsize; 
-  */
-
-  anisosize[0][0] = frame[0][0]*scale[0]; anisosize[0][1] = frame[1][0]*scale[0]; anisosize[0][2] = frame[2][0]*scale[0]; // normal vector
-  anisosize[1][0] = frame[0][1]*scale[1]; anisosize[1][1] = frame[1][1]*scale[1]; anisosize[1][2] = frame[2][1]*scale[1]; // tan1
-  anisosize[2][0] = frame[0][2]*scale[2]; anisosize[2][1] = frame[1][2]*scale[2]; anisosize[2][2] = frame[2][2]*scale[2]; // tan2
-
+  sf->getSimValue(pos, anisosize);
 }
 
 int main(int argc, char *argv[])
@@ -244,6 +230,27 @@ int main(int argc, char *argv[])
     MS_setAnisoSizeAttFunc(mesh_case, "anisoUDF", anisoUDF, &sf);
     MS_setAnisoMeshSize(mesh_case, GM_domain(model), MS_userDefinedType | 1, 0, "anisoUDF");
     pMSAdapt adapter = MSA_createFromCase(mesh_case, mesh);
+    MSA_setNewVertexSizeMode(adapter, 1);
+
+    // Try setting size for each vertex before adapts
+    /*
+    pAllEntProcIter eit = PM_allEntProcIter(mesh, 0);
+    pEntity ent;
+    pVertex vtx;
+    while(ent = AllEntProcIter_next(eit)) {
+      vtx = static_cast<pVertex>(ent);
+      double anisosize[3][3];
+
+      double pt[3];
+      V_coord(vtx, pt);
+      apf::Vector3 pos; 
+      pos.fromArray(pt);
+
+      sf.getSimValue(pos, anisosize);
+      MSA_setAnisoVertexSize(adapter, vtx, anisosize);
+    }
+    AllEntProcIter_delete(eit);
+    */
 
     double t1 = PCU_Time();
     MSA_adapt(adapter, NULL);

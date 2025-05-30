@@ -59,6 +59,7 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
 
     void getValue(ma::Entity* vtx, ma::Matrix& frame, ma::Vector& scale);
     void getValue(apf::Vector3& pos, ma::Matrix& frame, ma::Vector& scale);
+    void getSimValue(apf::Vector3& pos, double anisosize[3][3]);
     double getMaxEdgeLengthAcrossShock();
 
     protected:
@@ -180,7 +181,15 @@ void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::V
         h_n_max = 4*h_tip;
     }
 
-    scale[0] = test_iso || in_tip_ref ? zoneIsoSize : std::min(std::max(norm_size, shockDist - thickness/2), h_n_max);
+    double norm_scale;
+    double half_shock_band = thickness/2;
+    if (shockDist <= half_shock_band) {
+        norm_scale = norm_size;
+    } else {
+        norm_scale = std::max(std::min(shockDist - half_shock_band, h_n_max), norm_size);
+    }
+
+    scale[0] = test_iso || in_tip_ref ? zoneIsoSize : norm_scale;
     scale[1] = std::max(zoneIsoSize, scale[0]);
     scale[2] = std::max(zoneIsoSize, scale[0]);
 
@@ -211,6 +220,23 @@ void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::V
         std::cout << frame[0][1] << " " << frame[1][1] << " " << frame[2][1] << " ";
         std::cout << frame[0][2] << " " << frame[1][2] << " " << frame[2][2] << std::endl;
     }
+}
+
+void EmbeddedShockFunction::getSimValue(apf::Vector3& pos, double anisosize[3][3]) {
+  ma::Matrix frame;
+  ma::Vector scale;
+  getValue(pos, frame, scale);
+
+  // correct size setting (from another working code)
+  /*
+    anisosize[0][0] = norm[0]*nsize; anisosize[0][1] = norm[1]*nsize; anisosize[0][2] = norm[2]*nsize;
+    anisosize[1][0] = tan1[0]*tsize; anisosize[1][1] = tan1[1]*tsize; anisosize[1][2] = tan1[2]*tsize;
+    anisosize[2][0] = tan2[0]*tsize; anisosize[2][1] = tan2[1]*tsize; anisosize[2][2] = tan2[2]*tsize; 
+  */
+
+  anisosize[0][0] = frame[0][0]*scale[0]; anisosize[0][1] = frame[1][0]*scale[0]; anisosize[0][2] = frame[2][0]*scale[0]; // normal vector
+  anisosize[1][0] = frame[0][1]*scale[1]; anisosize[1][1] = frame[1][1]*scale[1]; anisosize[1][2] = frame[2][1]*scale[1]; // tan1
+  anisosize[2][0] = frame[0][2]*scale[2]; anisosize[2][1] = frame[1][2]*scale[2]; anisosize[2][2] = frame[2][2]*scale[2]; // tan2
 }
 
 double EmbeddedShockFunction::getClosestPointAndNormal(double pos_arr[3], double cls_arr[3], double nrm_arr[3]) {
