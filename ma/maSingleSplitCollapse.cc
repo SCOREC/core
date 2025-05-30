@@ -59,7 +59,7 @@ void SingleSplitCollapse::accept()
   collapse.destroyOldElements();
 }
 
-bool SingleSplitCollapse::run(Entity* edge, Entity* vert)
+bool SingleSplitCollapse::run(Entity* edge, Entity* vert, double quality)
 {
   oldEdge = edge;
   oldVert = vert;
@@ -67,7 +67,7 @@ bool SingleSplitCollapse::run(Entity* edge, Entity* vert)
   Mesh* m = a->mesh;
   if ( ! splits.setEdges(&edge,1))
     return false;
-  oldQuality = getWorstQuality(a,splits.getTets());
+  oldQuality = (quality == -1) ? getWorstQuality(a,splits.getTets()) : 0;
   splits.makeNewElements();
   splits.transfer();
   Entity* collVerts[2];

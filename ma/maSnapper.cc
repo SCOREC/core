@@ -19,7 +19,7 @@
 
 namespace ma {
 
-Snapper::Snapper(Adapt* a, Tag* st, bool is) : splitCollapse(a)
+Snapper::Snapper(Adapt* a, Tag* st, bool is) : splitCollapse(a), doubleSplitCollapse(a)
 {
   adapt = a;
   mesh = a->mesh;
@@ -363,7 +363,10 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
 
 bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 {
-  if (FPP->commEdges.n < 2) return false;
+  if (FPP->commEdges.n < 2) {
+    print(mesh->getPCU(), "Swap failed: consider more collapses before swap");
+    return false;
+  }
   Entity* ents[4];
   double area[4];
   int bit = getTetStats(adapt, FPP, ents, area);
@@ -373,7 +376,8 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
     if( area[i]<min ) min=area[i]; 
 
   if (area[0]==min) { //TODO: implement
-    PCU_ALWAYS_ASSERT(false);
+    print(mesh->getPCU(), "Swap failed: small base area case not implemented");
+    return false;
   }
 
   // two large dihedral angles -> key problem: two mesh edges
@@ -407,15 +411,18 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 
     //TODO: IMPLEMENT FACE SWAP
 
-    if (splitCollapse.run(ents[1], FPP->vert)) {
+    if (splitCollapse.run(ents[1], FPP->vert, 0)) {
       numSplitCollapse++;
       return true;
     }
 
-    //TODO: USE DOUBLE SPLIT COLLAPSE
+    // if (doubleSplitCollapse.run(ents)) { //TODO: TEST DOUBLE SPLIT COLLAPSE
+    //   numSplitCollapse++;
+    //   return true;
+    // }
   }
 
-
+  print(mesh->getPCU(), "Swap failed: face swap and double split collapse not implemented");
   return false;
 }
 
@@ -552,8 +559,10 @@ bool Snapper::tryReduceCommonEdges(FirstProblemPlane* FPP)
       break;
     }
   }
-  if (best.quality > 0) 
+  if (best.quality > 0) {
+    numCollapse++;
     return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
+  }
   else return false;
 }
 

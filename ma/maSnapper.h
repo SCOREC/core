@@ -12,6 +12,7 @@
 
 #include "maCollapse.h"
 #include "maSingleSplitCollapse.h"
+#include "maDoubleSplitCollapse.h"
 #include "maEdgeSwap.h"
 
 namespace apf {
@@ -50,6 +51,7 @@ class Snapper
     Entity* vert;
     Collapse collapse;
     SingleSplitCollapse splitCollapse;
+    DoubleSplitCollapse doubleSplitCollapse;
     EdgeSwap* edgeSwap;
 
     bool tryCollapseToVertex(FirstProblemPlane* FPP);

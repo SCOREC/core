@@ -90,7 +90,7 @@ int main(int argc, char** argv)
   in->shouldCoarsen = true;
   validateInput(in);
   ma::Adapt* a = new ma::Adapt(in);
-  coarsenAndPrint(a);
+  coarsen(a);
   m->verify();
 
   apf::writeVtkFiles("after_coarsen", m, 1);
