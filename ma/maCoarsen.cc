@@ -12,6 +12,7 @@
 #include "maCollapse.h"
 #include "maMatchedCollapse.h"
 #include "maOperator.h"
+#include "maDBG.h"
 #include <pcu_util.h>
 #include "apfShape.h"
 #include <queue>
@@ -255,6 +256,11 @@ bool oldCoarsen(Adapt* a)
   return true;
 }
 
+void printIndependentSet(Adapt* a) {
+  apf::writeVtkFiles("independentMesh", a->mesh);
+  ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "independentVerts", "independentVerts");
+  exit(0);
+}
 
 static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
 {
@@ -275,10 +281,8 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
 }
 
 
-Entity* getAdjacentShortestEdge(Adapt* a, Entity* vertex)
+Entity* getAdjacentShortestEdge(Adapt* a, apf::Up& edges)
 {
-  apf::Up edges;
-  a->mesh->getUp(vertex,edges);
   double minLength = 999999;
   Entity* minEdge;
   for (int i=0; i < edges.n; i++) {
@@ -291,13 +295,13 @@ Entity* getAdjacentShortestEdge(Adapt* a, Entity* vertex)
   return minEdge;
 }
 
-void markAdjacentVerts(Adapt* a, Entity* vertex)
+void markDependent(Adapt* a, apf::Up& edges)
 {
-  apf::Up edges;
-  a->mesh->getUp(vertex,edges);
   for (int i=0; i < edges.n; i++) {
-    Entity* opposite = getEdgeVertOppositeVert(a->mesh, edges.e[i], vertex);
-    setFlag(a, opposite, CHECKED);
+    Entity* vertices[2];
+    a->mesh->getDownward(edges.e[i],0, vertices);
+    setFlag(a, vertices[0], CHECKED);
+    setFlag(a, vertices[1], CHECKED);
   }
 }
 
@@ -305,14 +309,13 @@ bool isIndependent(Adapt* a, Entity* vertex)
 {
   if (getFlag(a, vertex, CHECKED)) return false;
   apf::Up edges;
-  a->mesh->getUp(vertex,edges);
+  a->mesh->getUp(vertex, edges);
   for (int i=0; i < edges.n; i++) {
     Entity* opposite = getEdgeVertOppositeVert(a->mesh, edges.e[i], vertex);
     if (getFlag(a, opposite, CHECKED)) return true;
   }
   return false;
 }
-
 
 bool coarsen(Adapt* a)
 {
@@ -333,7 +336,6 @@ bool coarsen(Adapt* a)
   Collapse collapse;
   collapse.Init(a);
   int success = 0;
-  int failed = 0;
   bool independentSetStarted = false;
   int proccessed = 0;
   while (shortEdgeVerts.size() > 0)
@@ -348,16 +350,17 @@ bool coarsen(Adapt* a)
       continue;
     }
 
-    Entity* shortEdge = getAdjacentShortestEdge(a, vertex);
+    apf::Up edges;
+    a->mesh->getUp(vertex, edges);
+    Entity* shortEdge = getAdjacentShortestEdge(a, edges);
     if (!a->sizeField->shouldCollapse(shortEdge)) continue;
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
     if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
-      markAdjacentVerts(a, vertex);
+      markDependent(a, edges);
       collapse.destroyOldElements();
       independentSetStarted = true;
       success++;
     }
-    else failed++;
   }
 
   return true;
