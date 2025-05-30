@@ -24,7 +24,7 @@ class DoubleSplitCollapse
     bool tryThisCollapse();
     bool tryBothCollapses(Entity* e);
     void accept();
-    bool run(Entity** edges);
+    bool run(Entity** edges, double quality = -1);
     Adapt* getAdapt();
   private:
     Splits splits;

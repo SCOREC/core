@@ -14,6 +14,7 @@
 #include "maOperator.h"
 #include <pcu_util.h>
 #include "apfShape.h"
+#include <queue>
 
 namespace ma {
 
@@ -254,6 +255,113 @@ bool coarsen(Adapt* a)
   return true;
 }
 
+
+static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
+{
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
+
+  bool result = false;
+  if (collapse.setEdge(edge) && 
+      collapse.checkClass() &&
+      collapse.checkTopo() &&
+      collapse.tryBothDirections(0)) {
+    result = true;
+  }  
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+  return result;
+}
+
+
+Entity* getAdjacentShortestEdge(Adapt* a, Entity* vertex)
+{
+  apf::Up edges;
+  a->mesh->getUp(vertex,edges);
+  double minLength = 999999;
+  Entity* minEdge;
+  for (int i=0; i < edges.n; i++) {
+    double length = a->sizeField->measure(edges.e[i]);
+    if (length < minLength) {
+      minLength = length;
+      minEdge = edges.e[i];
+    }
+  }
+  return minEdge;
+}
+
+void markAdjacentVerts(Adapt* a, Entity* vertex)
+{
+  apf::Up edges;
+  a->mesh->getUp(vertex,edges);
+  for (int i=0; i < edges.n; i++) {
+    Entity* opposite = getEdgeVertOppositeVert(a->mesh, edges.e[i], vertex);
+    setFlag(a, opposite, CHECKED);
+  }
+}
+
+bool isIndependent(Adapt* a, Entity* vertex)
+{
+  if (getFlag(a, vertex, CHECKED)) return false;
+  apf::Up edges;
+  a->mesh->getUp(vertex,edges);
+  for (int i=0; i < edges.n; i++) {
+    Entity* opposite = getEdgeVertOppositeVert(a->mesh, edges.e[i], vertex);
+    if (getFlag(a, opposite, CHECKED)) return true;
+  }
+  return false;
+}
+
+
+bool newCoarsen(Adapt* a)
+{
+  std::queue<Entity*> shortEdgeVerts;
+  Iterator* it = a->mesh->begin(1);
+  Entity* edge;
+  while ((edge = a->mesh->iterate(it))) 
+  {
+    if (!a->sizeField->shouldCollapse(edge)) continue;
+    Entity* vertices[2];
+    a->mesh->getDownward(edge,0,vertices);
+    for (int i = 0; i < 2; i++) {
+      setFlag(a, vertices[i], COLLAPSE);
+      shortEdgeVerts.push(vertices[i]);
+    }
+  }
+
+  Collapse collapse;
+  collapse.Init(a);
+  int success = 0;
+  int failed = 0;
+  bool independentSetStarted = false;
+  int proccessed = 0;
+  while (shortEdgeVerts.size() > 0)
+  {
+    Entity* vertex = shortEdgeVerts.front();
+    shortEdgeVerts.pop();
+
+    if (independentSetStarted && !isIndependent(a, vertex)) {
+      shortEdgeVerts.push(vertex);
+      if (++processed == shortEdgeVerts.size())
+        ma::clearFlagFromDimension(a, CHECKED, 0);
+      continue;
+    }
+
+    Entity* shortEdge = getAdjacentShortestEdge(a, vertex);
+    if (!a->sizeField->shouldCollapse(shortEdge)) continue;
+    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
+    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
+      markAdjacentVerts(a, vertex);
+      collapse.destroyOldElements();
+      independentSetStarted = true;
+      success++;
+    }
+    else failed++;
+  }
+
+  return true;
+}
 
 
 }

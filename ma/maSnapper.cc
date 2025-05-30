@@ -391,7 +391,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 
     // check split+collapse
     for (int i=0; i<2; i++)
-      if (splitCollapse.run(ents[i], FPP->vert)) { //TODO: Select best
+      if (splitCollapse.run(ents[i], FPP->vert, 0)) { //TODO: Select best
         numSplitCollapse++;
         return true;
       }
@@ -416,7 +416,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       return true;
     }
 
-    // if (doubleSplitCollapse.run(ents)) { //TODO: TEST DOUBLE SPLIT COLLAPSE
+    // if (doubleSplitCollapse.run(ents, 0)) { //TODO: TEST DOUBLE SPLIT COLLAPSE
     //   numSplitCollapse++;
     //   return true;
     // }
