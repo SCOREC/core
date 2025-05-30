@@ -319,6 +319,8 @@ bool isIndependent(Adapt* a, Entity* vertex)
 
 bool coarsen(Adapt* a)
 {
+  //Assert that there arent any vertices marked CHECKED
+  ma::clearFlagFromDimension(a, CHECKED, 0);
   std::queue<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
   Entity* edge;
@@ -328,25 +330,32 @@ bool coarsen(Adapt* a)
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
-      setFlag(a, vertices[i], COLLAPSE);
+      if (getFlag(a, vertices[i], CHECKED)) continue;
+      setFlag(a, vertices[i], CHECKED);
       shortEdgeVerts.push(vertices[i]);
     }
   }
+  ma::clearFlagFromDimension(a, CHECKED, 0);
 
   Collapse collapse;
   collapse.Init(a);
   int success = 0;
   bool independentSetStarted = false;
-  int proccessed = 0;
+  int numChecked = 0;
   while (shortEdgeVerts.size() > 0)
   {
     Entity* vertex = shortEdgeVerts.front();
     shortEdgeVerts.pop();
 
+    if (getFlag(a, vertex, CHECKED)) ++numChecked;
+    if (numChecked == shortEdgeVerts.size()) {
+      numChecked = 0;
+      independentSetStarted = false;
+      ma::clearFlagFromDimension(a, CHECKED, 0); //TODO: maybe only has to be cleared from list
+    }
+
     if (independentSetStarted && !isIndependent(a, vertex)) {
       shortEdgeVerts.push(vertex);
-      if (++proccessed == shortEdgeVerts.size())
-        ma::clearFlagFromDimension(a, CHECKED, 0);
       continue;
     }
 
