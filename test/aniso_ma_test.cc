@@ -5,12 +5,12 @@
 #include <apfShape.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-
 #include <stdlib.h>
+#include "aniso_adapt.h"
 
 int main(int argc, char** argv)
 {
-  PCU_ALWAYS_ASSERT(argc==4);
+  PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
   pcu::Init(&argc,&argv);
@@ -19,17 +19,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
-  m->verify();
-  apf::writeVtkFiles("aniso_before",m);
-  AnIso sf(m);
-  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf, 0, logInterpolation));
-  in->goodQuality = 0.2;
-  ma::adapt(in);
-  m->verify();
-  if (logInterpolation)
-    apf::writeVtkFiles("aniso_log_interpolation_after",m);
-  else
-    apf::writeVtkFiles("aniso_after",m);
+  refineSnapTest(m, 0.5, 1);
   m->destroyNative();
   apf::destroyMesh(m);
   }

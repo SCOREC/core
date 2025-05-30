@@ -227,7 +227,7 @@ long markEdgesToCollapse(Adapt* a)
                       DONT_COLLAPSE | NEED_NOT_COLLAPSE);
 }
 
-bool coarsen(Adapt* a)
+bool oldCoarsen(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
     return false;
@@ -314,7 +314,7 @@ bool isIndependent(Adapt* a, Entity* vertex)
 }
 
 
-bool newCoarsen(Adapt* a)
+bool coarsen(Adapt* a)
 {
   std::queue<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
@@ -343,7 +343,7 @@ bool newCoarsen(Adapt* a)
 
     if (independentSetStarted && !isIndependent(a, vertex)) {
       shortEdgeVerts.push(vertex);
-      if (++processed == shortEdgeVerts.size())
+      if (++proccessed == shortEdgeVerts.size())
         ma::clearFlagFromDimension(a, CHECKED, 0);
       continue;
     }
