@@ -15,7 +15,7 @@
 #include "maDBG.h"
 #include <pcu_util.h>
 #include "apfShape.h"
-#include <queue>
+#include <list>
 
 namespace ma {
 
@@ -273,7 +273,7 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   if (collapse.setEdge(edge) && 
       collapse.checkClass() &&
       collapse.checkTopo() &&
-      collapse.tryBothDirections(0)) {
+      collapse.tryBothDirections(a->input->validQuality)) {
     result = true;
   }  
   if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
@@ -319,9 +319,8 @@ bool isIndependent(Adapt* a, Entity* vertex)
 
 bool coarsen(Adapt* a)
 {
-  //Assert that there arent any vertices marked CHECKED
   ma::clearFlagFromDimension(a, CHECKED, 0);
-  std::queue<Entity*> shortEdgeVerts;
+  std::list<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
   Entity* edge;
   while ((edge = a->mesh->iterate(it))) 
@@ -332,43 +331,38 @@ bool coarsen(Adapt* a)
     for (int i = 0; i < 2; i++) {
       if (getFlag(a, vertices[i], CHECKED)) continue;
       setFlag(a, vertices[i], CHECKED);
-      shortEdgeVerts.push(vertices[i]);
+      shortEdgeVerts.push_back(vertices[i]);
     }
   }
-  ma::clearFlagFromDimension(a, CHECKED, 0);
 
   Collapse collapse;
   collapse.Init(a);
   int success = 0;
-  bool independentSetStarted = false;
-  int numChecked = 0;
   while (shortEdgeVerts.size() > 0)
   {
-    Entity* vertex = shortEdgeVerts.front();
-    shortEdgeVerts.pop();
+    ma::clearFlagFromDimension(a, CHECKED, 0); //TODO: maybe only has to be cleared from list
+    std::list<Entity*>::iterator i = shortEdgeVerts.begin();
+    bool independentSetStarted = false;
+    while (i != shortEdgeVerts.end())
+    {
+      Entity* vertex = *i++;
+      if (independentSetStarted && !isIndependent(a, vertex))
+        continue;
 
-    if (getFlag(a, vertex, CHECKED)) ++numChecked;
-    if (numChecked == shortEdgeVerts.size()) {
-      numChecked = 0;
-      independentSetStarted = false;
-      ma::clearFlagFromDimension(a, CHECKED, 0); //TODO: maybe only has to be cleared from list
-    }
+      apf::Up edges;
+      a->mesh->getUp(vertex, edges);
+      Entity* shortEdge = getAdjacentShortestEdge(a, edges);
+      Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
 
-    if (independentSetStarted && !isIndependent(a, vertex)) {
-      shortEdgeVerts.push(vertex);
-      continue;
-    }
-
-    apf::Up edges;
-    a->mesh->getUp(vertex, edges);
-    Entity* shortEdge = getAdjacentShortestEdge(a, edges);
-    if (!a->sizeField->shouldCollapse(shortEdge)) continue;
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
-    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
-      markDependent(a, edges);
-      collapse.destroyOldElements();
-      independentSetStarted = true;
-      success++;
+      if (a->sizeField->shouldCollapse(shortEdge) && 
+        tryCollapseEdge(a, shortEdge, keepVertex, collapse)) //add short edge check
+      {
+        markDependent(a, edges);
+        collapse.destroyOldElements();
+        independentSetStarted = true;
+        success++;
+      }
+      i = shortEdgeVerts.erase(--i);
     }
   }
 
