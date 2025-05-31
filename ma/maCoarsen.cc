@@ -317,8 +317,18 @@ bool isIndependent(Adapt* a, Entity* vertex)
   return false;
 }
 
+void clearListFlag(Adapt* a, std::list<Entity*> list, int flag) 
+{
+  auto i = list.begin();
+  while (i != list.end())
+    clearFlag(a, *i++, flag);
+}
+
 bool coarsen(Adapt* a)
 {
+  if (!a->input->shouldCoarsen)
+    return false;
+  double t0 = pcu::Time();
   ma::clearFlagFromDimension(a, CHECKED, 0);
   std::list<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
@@ -340,7 +350,7 @@ bool coarsen(Adapt* a)
   int success = 0;
   while (shortEdgeVerts.size() > 0)
   {
-    ma::clearFlagFromDimension(a, CHECKED, 0); //TODO: maybe only has to be cleared from list
+    clearListFlag(a, shortEdgeVerts, CHECKED);
     std::list<Entity*>::iterator i = shortEdgeVerts.begin();
     bool independentSetStarted = false;
     while (i != shortEdgeVerts.end())
@@ -365,7 +375,9 @@ bool coarsen(Adapt* a)
       i = shortEdgeVerts.erase(--i);
     }
   }
-
+  ma::clearFlagFromDimension(a, CHECKED, 0);
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
   return true;
 }
 
