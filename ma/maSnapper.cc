@@ -293,18 +293,10 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
       break;   
     }
     case 3: {
-      // double L1_xyz[2][3], L2_xyz[2][3];
       ents[0]=edges[2];
       ents[1]=edges[4];
       ents[2]=((area[0]<area[3]) ? faces[0] : faces[3]);
       ents[3]=((area[1]<area[2]) ? faces[1] : faces[2]);
-      // L1_xyz[0][0]=fxyz[0][0];    L1_xyz[1][0]=fxyz[2][0]; 
-      // L1_xyz[0][1]=fxyz[0][1];    L1_xyz[1][1]=fxyz[2][1];
-      // L1_xyz[0][2]=fxyz[0][2];    L1_xyz[1][2]=fxyz[2][2];
-      // L2_xyz[0][0]=fxyz[1][0];    L2_xyz[1][0]=pxyz[0]; 
-      // L2_xyz[0][1]=fxyz[1][1];    L2_xyz[1][1]=pxyz[1];
-      // L2_xyz[0][2]=fxyz[1][2];    L2_xyz[1][2]=pxyz[2];
-      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ); //TODO: This logic is used for double split collapse
       break;
     }
     case 4: {
@@ -317,33 +309,17 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
       break;
     }
     case 5: {
-      // double L1_xyz[2][3], L2_xyz[2][3];
       ents[0]=edges[1];
       ents[1]=edges[3];
       ents[2]=((area[0]<area[2]) ? faces[0] : faces[2]);
       ents[3]=((area[1]<area[3]) ? faces[1] : faces[3]);
-      // L1_xyz[0][0]=fxyz[1][0];    L1_xyz[1][0]=fxyz[2][0]; 
-      // L1_xyz[0][1]=fxyz[1][1];    L1_xyz[1][1]=fxyz[2][1];
-      // L1_xyz[0][2]=fxyz[1][2];    L1_xyz[1][2]=fxyz[2][2];
-      // L2_xyz[0][0]=fxyz[0][0];    L2_xyz[1][0]=pxyz[0]; 
-      // L2_xyz[0][1]=fxyz[0][1];    L2_xyz[1][1]=pxyz[1];
-      // L2_xyz[0][2]=fxyz[0][2];    L2_xyz[1][2]=pxyz[2];
-      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ); //TODO: This logic is used for double split collapse
       break;
     }
     case 6: {
-      // double L1_xyz[2][3], L2_xyz[2][3];
       ents[0]=edges[0];
       ents[1]=edges[5];
       ents[2]=((area[0]<area[1]) ? faces[0]:faces[1]);
       ents[3]=((area[2]<area[3]) ? faces[2]:faces[3]);
-      // L1_xyz[0][0]=fxyz[0][0];    L1_xyz[1][0]=fxyz[1][0]; 
-      // L1_xyz[0][1]=fxyz[0][1];    L1_xyz[1][1]=fxyz[1][1];
-      // L1_xyz[0][2]=fxyz[0][2];    L1_xyz[1][2]=fxyz[1][2];
-      // L2_xyz[0][0]=fxyz[2][0];    L2_xyz[1][0]=pxyz[0]; 
-      // L2_xyz[0][1]=fxyz[2][1];    L2_xyz[1][1]=pxyz[1];
-      // L2_xyz[0][2]=fxyz[2][2];    L2_xyz[1][2]=pxyz[2];
-      // fromMeshTools::MT_intLineLine2(L1_xyz,L2_xyz,&i,intXYZ); //TODO: This logic is used for double split collapse
       break;
     }
     case 7: {
@@ -382,24 +358,20 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 
   // two large dihedral angles -> key problem: two mesh edges
   if (bit==3 || bit==5 || bit==6) {
-    // check edge swapping
     for (int i=0; i<2; i++)
       if (edgeSwap->run(ents[i])) { //TODO: Select best
         numSwap++;
         return true;
       }
 
-    // check split+collapse
     for (int i=0; i<2; i++)
       if (splitCollapse.run(ents[i], FPP->vert, 0)) { //TODO: Select best
         numSplitCollapse++;
         return true;
       }
   }
-  // three large dihedral angles -> key entity: a mesh face 
+  // three large dihedral angles -> key entity: a mesh face
   else {
-
-    // check edge swaps
     Entity* edges[3];
     mesh->getDownward(ents[0], 1, edges);
     for (int i=0; i<3; i++) {

@@ -284,8 +284,9 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
 Entity* getAdjacentShortestEdge(Adapt* a, apf::Up& edges)
 {
   double minLength = 999999;
-  Entity* minEdge;
+  Entity* minEdge = 0;
   for (int i=0; i < edges.n; i++) {
+    if (!getFlag(a, edges.e[i], CHECKED)) continue; //Used to reduce calls to measure
     double length = a->sizeField->measure(edges.e[i]);
     if (length < minLength) {
       minLength = length;
@@ -335,7 +336,8 @@ bool coarsen(Adapt* a)
   Entity* edge;
   while ((edge = a->mesh->iterate(it))) 
   {
-    if (!a->sizeField->shouldCollapse(edge)) continue;
+    if (!a->sizeField->shouldCollapse(edge)) continue; //TODO: speedup
+    setFlag(a, edge, CHECKED); //Used to reduce measure calls
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
@@ -362,10 +364,14 @@ bool coarsen(Adapt* a)
       apf::Up edges;
       a->mesh->getUp(vertex, edges);
       Entity* shortEdge = getAdjacentShortestEdge(a, edges);
-      Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
+      if (shortEdge == 0) {
+        i = shortEdgeVerts.erase(--i);
+        continue;
+      }
 
+      Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
       if (a->sizeField->shouldCollapse(shortEdge) && 
-        tryCollapseEdge(a, shortEdge, keepVertex, collapse)) //add short edge check
+        tryCollapseEdge(a, shortEdge, keepVertex, collapse)) //TODO: add short edge check
       {
         markDependent(a, edges);
         collapse.destroyOldElements();
@@ -376,6 +382,7 @@ bool coarsen(Adapt* a)
     }
   }
   ma::clearFlagFromDimension(a, CHECKED, 0);
+  ma::clearFlagFromDimension(a, CHECKED, 1);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
   return true;
