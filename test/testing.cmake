@@ -424,10 +424,14 @@ if(ENABLE_SIMMETRIX)
 endif()
 mpi_test(msplit_2 2
   ./msplit
-  "${MDIR}/pipe.${GXT}"
-  "pipe.smb"
-  pipe_m2_.smb
-  2)
+  "${MDIR}/pipe.${GXT}" "pipe.smb"
+  "pipe_m2_.smb"
+)
+mpi_test(msplit_3 3
+  ./msplit
+  "${MDIR}/pipe.${GXT}" "pipe.smb"
+  "pipe_m3_.smb"
+)
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x

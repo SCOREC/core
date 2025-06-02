@@ -14,6 +14,12 @@
 #include <cstdlib>
 #include <apfMETIS.h>
 
+/**
+ * \file msplit.cc
+ *
+ * Test utility for METIS apf::Splitter. Partition serial mesh to each rank.
+ */
+
 namespace {
 
 apf::Migration* getPlan(apf::Mesh* m, int factor) {
@@ -28,14 +34,13 @@ apf::Migration* getPlan(apf::Mesh* m, int factor) {
 
 struct Args {
   const char *modelFile = nullptr, *meshFile = nullptr, *outFile = nullptr;
-  int partitionFactor = 1;
 };
 
 Args getConfig(int argc, char* argv[], pcu::PCU &PCUObj)
 {
-  if ( argc != 5 ) {
+  if ( argc != 4 ) {
     if (PCUObj.Self() == 0)
-      printf("Usage: %s <model> <mesh> <outMesh> <factor>\n", argv[0]);
+      printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
     pcu::Finalize();
     exit(EXIT_FAILURE);
   }
@@ -43,7 +48,6 @@ Args getConfig(int argc, char* argv[], pcu::PCU &PCUObj)
   args.modelFile = argv[1];
   args.meshFile = argv[2];
   args.outFile = argv[3];
-  args.partitionFactor = std::atoi(argv[4]);
   PCU_ALWAYS_ASSERT(args.partitionFactor <= PCUObj.Peers());
   return args;
 }
@@ -55,6 +59,9 @@ int main(int argc, char* argv[]) {
   pcu::Init(&argc,&argv);
   {
   pcu::PCU PCUObj;
+  bool isOriginal = (PCUObj.Self() == 0);
+  int factor = PCUObj.Peers();
+  Args args = getConfig(argc, argv, PCUObj);
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
@@ -63,8 +70,6 @@ int main(int argc, char* argv[]) {
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  Args args = getConfig(argc, argv, PCUObj);
-  bool isOriginal = ((PCUObj.Self() % args.partitionFactor) == 0);
   gmi_model* g = 0;
   g = gmi_load(args.modelFile);
   apf::Mesh2* m = 0;
@@ -72,10 +77,10 @@ int main(int argc, char* argv[]) {
   auto singlePCU = PCUObj.Split(PCUObj.Self(), 0);
   if (isOriginal) {
     m = apf::loadMdsMesh(g, args.meshFile, singlePCU.get());
-    plan = getPlan(m, args.partitionFactor);
+    plan = getPlan(m, factor);
     m->switchPCU(&PCUObj);
   }
-  m = repeatMdsMesh(m, g, plan, args.partitionFactor, &PCUObj);
+  m = repeatMdsMesh(m, g, plan, factor, &PCUObj);
   Parma_PrintPtnStats(m, "");
   m->writeNative(args.outFile);
   m->destroyNative();
