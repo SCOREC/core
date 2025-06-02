@@ -118,6 +118,10 @@ void runParma(Adapt* a)
   runBalancer(a, Parma_MakeElmBalancer(a->mesh));
 }
 
+void runMETIS(Adapt* a) {
+  runBalancer(a, apf::makeMETISbalancer(a->mesh));
+}
+
 void printEntityImbalance(Mesh* m)
 {
   double imbalance[4];
@@ -136,27 +140,10 @@ double estimateWeightedImbalance(Adapt* a)
   return imb[a->mesh->getDimension()];
 }
 
-#ifdef APW_LGMETIS
-void runLocalizedGraphMetis(Adapt* a) {
-  // FIXME: runBalancer(a, apf::makeMETISbalancer(a->mesh);
-  Mesh* m = a->mesh;
-  apf::Balancer* b = apf::makeMETISbalancer(m);
-  Input* in = a->input;
-  b->balance(nullptr, in->maximumImbalance);
-  delete b;
-}
-#endif
-
 void preBalance(Adapt* a)
 {
-#ifndef APW_LGMETIS_SER
   if (a->mesh->getPCU()->Peers()==1)
     return;
-#endif
-#ifdef APW_LGMETIS
-  runLocalizedGraphMetis(a);
-  return;
-#endif
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
@@ -203,10 +190,6 @@ void midBalance(Adapt* a)
 {
   if (a->mesh->getPCU()->Peers()==1)
     return;
-#ifdef APW_LGMETIS
-  runLocalizedGraphMetis(a);
-  return;
-#else
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
@@ -241,17 +224,12 @@ void midBalance(Adapt* a)
     return;
 #endif
   }
-#endif
 }
 
 void postBalance(Adapt* a)
 {
   if (a->mesh->getPCU()->Peers()==1)
     return;
-#ifdef APW_LGMETIS
-  runLocalizedGraphMetis(a);
-  return;
-#endif
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
