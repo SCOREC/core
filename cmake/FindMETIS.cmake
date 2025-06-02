@@ -16,7 +16,7 @@ Once done this will define:
 
 cmake_policy(PUSH)
 
-set(METIS_PREFIX "" CACHE STRING "METIS install directory")
+set(METIS_PREFIX "${Trilinos_PREFIX}" CACHE STRING "METIS install directory")
 find_path(METIS_INCLUDE_DIR metis.h HINTS "${METIS_PREFIX}/include")
 file(STRINGS "${METIS_INCLUDE_DIR}/metis.h" _METIS_VERSION_STRS
   REGEX "#define METIS_VER_(MAJOR|(SUB)?MINOR)"

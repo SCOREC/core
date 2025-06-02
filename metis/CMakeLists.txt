@@ -3,7 +3,12 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-find_package(METIS)
+option(ENABLE_METIS "Enable METIS interface" OFF)
+message(VERBOSE "ENABLE_METIS: ${ENABLE_METIS}")
+xsdk_add_tpl(METIS)
+if(ENABLE_METIS)
+  find_package(METIS MODULE REQUIRED)
+endif()
 
 # Package sources
 set(SOURCES
@@ -14,12 +19,7 @@ set(SOURCES
 )
 
 # Package headers
-set(HEADERS
-  apfMETIS.h
-  apfMETIScommon.h
-  apfMETISsplitter.h
-  apfMETISbalancer.h
-)
+set(HEADERS apfMETIS.h)
 
 # Add the apf_metis library
 add_library(apf_metis ${SOURCES})
@@ -29,7 +29,7 @@ target_include_directories(apf_metis INTERFACE
 )
 target_link_libraries(apf_metis PUBLIC apf)
 target_link_libraries(apf_metis PRIVATE apf_zoltan) # FIXME: tagOpposites
-if(METIS_FOUND)
+if(ENABLE_METIS)
   target_compile_definitions(apf_metis PUBLIC PUMI_HAS_METIS)
   target_link_libraries(apf_metis PRIVATE METIS::METIS)
 endif()
