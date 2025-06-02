@@ -422,6 +422,12 @@ mpi_test(collapse_2 2
 if(ENABLE_SIMMETRIX)
   set_test_depends(TESTS split_2 collapse_2 tet_serial DEPENDS convert)
 endif()
+mpi_test(msplit_2 2
+  ./msplit
+  "${MDIR}/pipe.${GXT}"
+  "pipe.smb"
+  pipe_m2_.smb
+  2)
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x

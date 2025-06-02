@@ -45,7 +45,7 @@ void getOwnedAdjacencies(
         if (remoteEdges) ++nd_own;
       } else if (mesh->countUpward(graph_edges[i]) == 2) ++nd_own;
     }
-    PCU_DEBUG_ASSERT(e_num < adj_cts.size());
+    PCU_DEBUG_ASSERT((size_t) e_num < adj_cts.size());
     adj_cts[e_num] = nd_own;
   }
   mesh->end(it);
@@ -59,7 +59,7 @@ void getOwnedAdjacencies(
   it = mesh->begin(elm_dim);
   for (apf::MeshEntity *e; (e = mesh->iterate(it));) {
     int local_num = apf::getNumber(gn, e, 0) - gn_offset;
-    PCU_DEBUG_ASSERT(local_num < xadj.size());
+    PCU_DEBUG_ASSERT((size_t) local_num < xadj.size());
     int e_xadj = xadj[local_num]; // FIXME: double check.
     apf::Downward graph_edges;
     int nd = mesh->getDownward(e, elm_dim - 1, graph_edges);
@@ -69,7 +69,7 @@ void getOwnedAdjacencies(
         if (remoteEdges) {
           long opp_num;
           mesh->getLongTag(graph_edges[j], opp_tag, &opp_num);
-          PCU_DEBUG_ASSERT(e_xadj + adj_i < adjncy.size());
+          PCU_DEBUG_ASSERT((size_t) (e_xadj + adj_i) < adjncy.size());
           adjncy[e_xadj + adj_i] = opp_num;
           ++adj_i;
         }
@@ -80,7 +80,7 @@ void getOwnedAdjacencies(
         for (int k = 0; k < mesh->countUpward(graph_edges[j]); ++k) {
           apf::MeshEntity *up = mesh->getUpward(graph_edges[j], k);
           if (up != e) {
-            PCU_DEBUG_ASSERT(e_xadj + adj_i < adjncy.size());
+            PCU_DEBUG_ASSERT((size_t) (e_xadj + adj_i) < adjncy.size());
             adjncy[e_xadj + adj_i] = apf::getNumber(gn, up, 0);
             ++adj_i;
           }
@@ -105,7 +105,7 @@ apf::Migration* makePlan(
   MeshIterator* it = mesh->begin(elm_dim);
   for (apf::MeshEntity *e; (e = mesh->iterate(it));) {
     long local_num = apf::getNumber(gn, e, 0) - gn_offset;
-    PCU_DEBUG_ASSERT(local_num < owned_part.size());
+    PCU_DEBUG_ASSERT((size_t) local_num < owned_part.size());
     int dest = owned_part[local_num];
     if (dest != mesh->getPCU()->Self()) plan->send(e, dest);
   }
