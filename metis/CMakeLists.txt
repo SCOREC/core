@@ -27,7 +27,6 @@ set(HEADERS apfMETIS.h)
 
 # Add the apf_metis library
 add_library(apf_metis ${SOURCES})
-target_compile_features(apf_metis PRIVATE cxx_std_14)
 target_include_directories(apf_metis INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )

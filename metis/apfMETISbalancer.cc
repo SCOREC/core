@@ -38,8 +38,11 @@ static void remapPart(int nparts, std::vector<idx_t>& part, const std::vector<in
     }
     // Remap max not in dest_map to original part.
     while (!dest_counts.empty()) {
-      auto max_it = std::max_element(dest_counts.begin(), dest_counts.end(),
-        [](const auto& a, const auto& b) { return a.second < b.second; }
+      using dest_counts_v = decltype(dest_counts)::value_type;
+      auto max_it = std::max_element(dest_counts.cbegin(), dest_counts.cend(),
+        [](const dest_counts_v& a, const dest_counts_v& b) {
+          return a.second < b.second;
+        }
       );
       int dest = max_it->first;
       if (dest_map.count(dest)) dest_counts.erase(max_it);
