@@ -11,12 +11,16 @@ if(ENABLE_METIS)
 endif()
 
 # Package sources
-set(SOURCES
-  apfMETIS.cc
-  apfMETIScommon.cc
-  apfMETISsplitter.cc
-  apfMETISbalancer.cc
-)
+if(ENABLE_METIS)
+  set(SOURCES
+    apfMETIS.cc
+    apfMETIScommon.cc
+    apfMETISsplitter.cc
+    apfMETISbalancer.cc
+  )
+else()
+  set(SOURCES apfMETISempty.cc)
+endif()
 
 # Package headers
 set(HEADERS apfMETIS.h)

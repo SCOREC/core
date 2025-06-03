@@ -32,6 +32,7 @@ class Balancer;
 
 Splitter* makeMETISsplitter(Mesh* mesh);
 Balancer* makeMETISbalancer(Mesh* mesh);
+bool hasMETIS();
 
 } // namespace apf
 

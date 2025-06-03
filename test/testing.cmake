@@ -422,16 +422,18 @@ mpi_test(collapse_2 2
 if(ENABLE_SIMMETRIX)
   set_test_depends(TESTS split_2 collapse_2 tet_serial DEPENDS convert)
 endif()
-mpi_test(msplit_2 2
-  ./msplit
-  "${MDIR}/pipe.${GXT}" "pipe.smb"
-  "pipe_m2_.smb"
-)
-mpi_test(msplit_3 3
-  ./msplit
-  "${MDIR}/pipe.${GXT}" "pipe.smb"
-  "pipe_m3_.smb"
-)
+if(ENABLE_METIS)
+  mpi_test(msplit_2 2
+    ./msplit
+    "${MDIR}/pipe.${GXT}" "pipe.smb"
+    "pipe_m2_.smb"
+  )
+  mpi_test(msplit_3 3
+    ./msplit
+    "${MDIR}/pipe.${GXT}" "pipe.smb"
+    "pipe_m3_.smb"
+  )
+endif()
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x

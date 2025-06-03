@@ -4,22 +4,21 @@
  * This work is open source software, licensed under the terms of the
  * BSD license as described in the LICENSE file in the top-level directory.
  */
-
+#include <apf.h>
 #include "apfMETIS.h"
-#include "apfMETISbalancer.h"
-#include "apfMETISsplitter.h"
 
 namespace apf {
 
-Splitter* makeMETISsplitter(Mesh* mesh) {
-  return new metis::MetisSplitter(mesh);
+Splitter* makeMETISsplitter(Mesh*) {
+  fail("apf_metis compiled without METIS support!");
+  return 0;
 }
 
-Balancer* makeMETISbalancer(Mesh* mesh) {
-  return new metis::MetisBalancer(mesh);
+Balancer* makeMETISbalancer(Mesh*) {
+  fail("apf_metis compiled without METIS support!");
+  return 0;
 }
 
-bool hasMETIS() { return true; }
+bool hasMETIS() { return false; }
 
 } // namespace apf
-

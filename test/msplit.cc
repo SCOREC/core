@@ -48,7 +48,6 @@ Args getConfig(int argc, char* argv[], pcu::PCU &PCUObj)
   args.modelFile = argv[1];
   args.meshFile = argv[2];
   args.outFile = argv[3];
-  PCU_ALWAYS_ASSERT(args.partitionFactor <= PCUObj.Peers());
   return args;
 }
 
