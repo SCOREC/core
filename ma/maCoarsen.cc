@@ -325,12 +325,8 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
     clearFlag(a, *i++, flag);
 }
 
-bool coarsen(Adapt* a)
+std::list<Entity*> getShortEdgeVerts(Adapt* a)
 {
-  if (!a->input->shouldCoarsen)
-    return false;
-  double t0 = pcu::Time();
-  ma::clearFlagFromDimension(a, CHECKED, 0);
   std::list<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
   Entity* edge;
@@ -346,6 +342,15 @@ bool coarsen(Adapt* a)
       shortEdgeVerts.push_back(vertices[i]);
     }
   }
+  return shortEdgeVerts;
+}
+
+bool coarsen(Adapt* a)
+{
+  if (!a->input->shouldCoarsen)
+    return false;
+  double t0 = pcu::Time();
+  std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a);
 
   Collapse collapse;
   collapse.Init(a);
