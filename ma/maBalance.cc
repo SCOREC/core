@@ -155,6 +155,10 @@ void preBalance(Adapt* a)
     runZoltan(a,apf::RIB);
     return;
   }
+  if (in->shouldRunPreMetis) {
+    runMETIS(a);
+    return;
+  }
   if (in->shouldRunPreParma) {
     runParma(a);
     return;
@@ -179,6 +183,8 @@ void preBalance(Adapt* a)
       runZoltan(a, apf::RIB);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    runMETIS(a);
 #else
     runParma(a);
     return;
@@ -195,6 +201,10 @@ void midBalance(Adapt* a)
   // is true, apply that balancer and return.
   if (in->shouldRunMidZoltan) {
     runZoltan(a);
+    return;
+  }
+  if (in->shouldRunMidMetis) {
+    runMETIS(a);
     return;
   }
   if (in->shouldRunMidParma) {
@@ -219,6 +229,9 @@ void midBalance(Adapt* a)
       runZoltan(a, apf::RIB);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    runMETIS(a);
+    return;
 #else
     runParma(a);
     return;
@@ -240,6 +253,11 @@ void postBalance(Adapt* a)
   }
   if (in->shouldRunPostZoltanRib) {
     runZoltan(a,apf::RIB);
+    printEntityImbalance(a->mesh);
+    return;
+  }
+  if (in->shouldRunPostMetis) {
+    runMETIS(a);
     printEntityImbalance(a->mesh);
     return;
   }
@@ -269,6 +287,9 @@ void postBalance(Adapt* a)
       printEntityImbalance(a->mesh);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    runMETIS(a);
+    printEntityImbalance(a->mesh);
 #else
     runParma(a);
     printEntityImbalance(a->mesh);
