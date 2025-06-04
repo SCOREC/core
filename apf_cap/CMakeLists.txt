@@ -31,8 +31,8 @@ set(CMAKE_CXX_STANDARD "${CMAKE_CXX_OLD_STANDARD}")
 
 if(HAVE_CAPSTONE_SIZINGMETRICTOOL)
 target_compile_definitions(apf_cap PRIVATE HAVE_CAPSTONE_SIZINGMETRICTOOL)
+target_compile_features(framework_meshing INTERFACE cxx_std_14)
 target_link_libraries(apf_cap PRIVATE framework_meshing)
-target_compile_features(apf_cap PRIVATE cxx_std_14)
 endif()
 
 include(GNUInstallDirs)
