@@ -286,7 +286,7 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
 }
 
 
-Entity* getAdjacentShortestEdge(Adapt* a, apf::Up& edges)
+Entity* getShortestEdge(Adapt* a, apf::Up& edges)
 {
   double minLength = 999999;
   Entity* minEdge = edges.e[0];
@@ -301,7 +301,7 @@ Entity* getAdjacentShortestEdge(Adapt* a, apf::Up& edges)
   return minEdge;
 }
 
-void flagAdjacent(Adapt* a, apf::Up& edges, int& checked)
+void flagIndependent(Adapt* a, apf::Up& edges, int& checked)
 {
   for (int i=0; i < edges.n; i++) {
     Entity* vertices[2];
@@ -399,9 +399,9 @@ bool coarsen(Adapt* a)
     // assertChecked(a, shortEdgeVerts, checked);
     Entity* vertex = getNextIndependentVert(a, shortEdgeVerts, i, independentSetStarted);
     if (vertex == 0) continue;
-    apf::Up edges;
-    a->mesh->getUp(vertex, edges);
-    Entity* shortEdge = getAdjacentShortestEdge(a, edges);
+    apf::Up adjacent;
+    a->mesh->getUp(vertex, adjacent);
+    Entity* shortEdge = getShortestEdge(a, adjacent);
     if (!a->sizeField->shouldCollapse(shortEdge)) {
       if (getFlag(a, vertex, CHECKED)) checked--;
       i = shortEdgeVerts.erase(i);
@@ -409,7 +409,7 @@ bool coarsen(Adapt* a)
     }
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
     if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
-      flagAdjacent(a, edges, checked);
+      flagIndependent(a, adjacent, checked);
       i = shortEdgeVerts.erase(i);
       independentSetStarted = true;
       success++;
