@@ -256,7 +256,8 @@ bool oldCoarsen(Adapt* a)
   return true;
 }
 
-void printIndependentSet(Adapt* a) {
+void printIndependentSet(Adapt* a)
+{
   apf::writeVtkFiles("independentMesh", a->mesh);
   ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "independentVerts", "independentVerts");
   exit(0);
@@ -284,9 +285,9 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
 Entity* getAdjacentShortestEdge(Adapt* a, apf::Up& edges)
 {
   double minLength = 999999;
-  Entity* minEdge = 0;
+  Entity* minEdge = edges.e[0];
   for (int i=0; i < edges.n; i++) {
-    if (!getFlag(a, edges.e[i], CHECKED)) continue; //Used to reduce calls to measure
+    if (!getFlag(a, edges.e[i], COARSEN)) continue;
     double length = a->sizeField->measure(edges.e[i]);
     if (length < minLength) {
       minLength = length;
@@ -296,26 +297,19 @@ Entity* getAdjacentShortestEdge(Adapt* a, apf::Up& edges)
   return minEdge;
 }
 
-void markDependent(Adapt* a, apf::Up& edges)
+void flagAdjacent(Adapt* a, apf::Up& edges, int& checked)
 {
   for (int i=0; i < edges.n; i++) {
     Entity* vertices[2];
     a->mesh->getDownward(edges.e[i],0, vertices);
-    setFlag(a, vertices[0], CHECKED);
-    setFlag(a, vertices[1], CHECKED);
+    for (int i = 0; i < 2; i++) {
+      setFlag(a, vertices[i], NEED_NOT_COLLAPSE);
+      if (getFlag(a, vertices[i], COARSEN) && getFlag(a, vertices[i], CHECKED)){
+        clearFlag(a, vertices[i], CHECKED);
+        checked--;
+      }
+    }
   }
-}
-
-bool isIndependent(Adapt* a, Entity* vertex)
-{
-  if (getFlag(a, vertex, CHECKED)) return false;
-  apf::Up edges;
-  a->mesh->getUp(vertex, edges);
-  for (int i=0; i < edges.n; i++) {
-    Entity* opposite = getEdgeVertOppositeVert(a->mesh, edges.e[i], vertex);
-    if (getFlag(a, opposite, CHECKED)) return true;
-  }
-  return false;
 }
 
 void clearListFlag(Adapt* a, std::list<Entity*> list, int flag) 
@@ -323,6 +317,34 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
   auto i = list.begin();
   while (i != list.end())
     clearFlag(a, *i++, flag);
+}
+
+bool isIndependent(Adapt* a, Entity* vertex)
+{
+  if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) return false;
+  apf::Up edges;
+  a->mesh->getUp(vertex, edges);
+  for (int i=0; i < edges.n; i++) {
+    Entity* opposite = getEdgeVertOppositeVert(a->mesh, edges.e[i], vertex);
+    if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return true;
+  }
+  return false;
+}
+
+Entity* getNextIndependentVert(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted)
+{
+  while (i != shortEdgeVerts.end())
+  {
+    Entity* vertex = *i;
+    if (getFlag(a, vertex, CHECKED)) {i++; continue;}
+    if (!independentSetStarted || isIndependent(a, vertex))
+      return vertex;
+    i++;
+  }
+  clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
+  independentSetStarted = false;
+  i = shortEdgeVerts.begin();
+  return 0;
 }
 
 std::list<Entity*> getShortEdgeVerts(Adapt* a)
@@ -333,15 +355,16 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
   while ((edge = a->mesh->iterate(it))) 
   {
     if (!a->sizeField->shouldCollapse(edge)) continue; //TODO: speedup
-    setFlag(a, edge, CHECKED); //Used to reduce measure calls
+    setFlag(a, edge, COARSEN);
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
-      if (getFlag(a, vertices[i], CHECKED)) continue;
-      setFlag(a, vertices[i], CHECKED);
+      if (getFlag(a, vertices[i], COARSEN)) continue;
+      setFlag(a, vertices[i], COARSEN);
       shortEdgeVerts.push_back(vertices[i]);
     }
   }
+  // ma_dbg::dumpMeshWithFlag(a, 0, 1, COARSEN, "shortEdges", "shortEdges");
   return shortEdgeVerts;
 }
 
@@ -355,39 +378,39 @@ bool coarsen(Adapt* a)
   Collapse collapse;
   collapse.Init(a);
   int success = 0;
-  while (shortEdgeVerts.size() > 0)
+  int checked = 0;
+  bool independentSetStarted = false;
+  std::list<Entity*>::iterator i = shortEdgeVerts.begin();
+  while (checked < shortEdgeVerts.size())
   {
-    clearListFlag(a, shortEdgeVerts, CHECKED);
-    std::list<Entity*>::iterator i = shortEdgeVerts.begin();
-    bool independentSetStarted = false;
-    while (i != shortEdgeVerts.end())
-    {
-      Entity* vertex = *i++;
-      if (independentSetStarted && !isIndependent(a, vertex))
-        continue;
-
-      apf::Up edges;
-      a->mesh->getUp(vertex, edges);
-      Entity* shortEdge = getAdjacentShortestEdge(a, edges);
-      if (shortEdge == 0) {
-        i = shortEdgeVerts.erase(--i);
-        continue;
-      }
-
-      Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
-      if (a->sizeField->shouldCollapse(shortEdge) && 
-        tryCollapseEdge(a, shortEdge, keepVertex, collapse)) //TODO: add short edge check
-      {
-        markDependent(a, edges);
-        collapse.destroyOldElements();
-        independentSetStarted = true;
-        success++;
-      }
-      i = shortEdgeVerts.erase(--i);
+    Entity* vertex = getNextIndependentVert(a, shortEdgeVerts, i, independentSetStarted);
+    if (vertex == 0) continue;
+    // printf("%d of %d\n", std::distance(shortEdgeVerts.begin(), i), shortEdgeVerts.size());
+    apf::Up edges;
+    a->mesh->getUp(vertex, edges);
+    Entity* shortEdge = getAdjacentShortestEdge(a, edges);
+    if (!a->sizeField->shouldCollapse(shortEdge)) {
+      if (getFlag(a, vertex, CHECKED)) checked--;
+      i = shortEdgeVerts.erase(i);
+      continue;
+    }
+    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
+    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) { //TODO: add short edge check
+      flagAdjacent(a, edges, checked);
+      i = shortEdgeVerts.erase(i);
+      if (getFlag(a, vertex, CHECKED)) checked--;
+      independentSetStarted = true;
+      success++;
+      collapse.destroyOldElements();
+    }
+    else {
+      setFlag(a, vertex, CHECKED);
+      checked++;
     }
   }
-  ma::clearFlagFromDimension(a, CHECKED, 0);
-  ma::clearFlagFromDimension(a, CHECKED, 1);
+  // printIndependentSet(a);
+  // ma::clearFlagFromDimension(a, CHECKED, 0);
+  // ma::clearFlagFromDimension(a, COARSEN, 1);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
   return true;
