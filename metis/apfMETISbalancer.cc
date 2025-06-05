@@ -26,6 +26,99 @@ namespace apf {
 
 namespace metis {
 
+static void gatherGraph(
+  pcu::PCU& PCU, MPI_Comm comm,
+  const std::vector<idx_t>& owned_xadj, const std::vector<idx_t>& owned_adjncy,
+  std::vector<idx_t>& xadj, std::vector<idx_t>& adjncy,
+  std::vector<int>& vtx_cts, std::vector<int>& vtx_displs
+) {
+  auto t0 = pcu::Time();
+  // Localize n_owned_elms for Gatherv on xadj.
+  vtx_cts.resize(PCU.Self() == 0 ? PCU.Peers() : 0);
+  int n_owned_elm = owned_xadj.size() - 1;
+  MPI_Gather(
+    &n_owned_elm, 1, MPI_INT,
+    vtx_cts.data(), 1, MPI_INT,
+    0, comm
+  );
+  if (PCU.Self() == 0) vtx_cts.back() += 1; // Add space for final xadj entry.
+  vtx_displs.resize(PCU.Self() == 0 ? PCU.Peers() + 1 : 0);
+  if (PCU.Self() == 0) {
+    std::partial_sum(
+      vtx_cts.begin(), vtx_cts.end(), vtx_displs.begin() + 1
+    );
+  }
+  // Increment owned_xadj.
+  int owned_adj_ct = owned_xadj.back();
+  int xadj_offset = PCU.Exscan(owned_adj_ct);
+  std::vector<idx_t> send_xadj(owned_xadj.size());
+  for (size_t i = 0; i < owned_xadj.size(); ++i)
+    send_xadj[i] = owned_xadj[i] + xadj_offset;
+  // Gather xadj.
+  xadj.resize(PCU.Self() == 0 ? vtx_displs.back() : 0);
+  int xadj_sendct = send_xadj.size() - 1;
+  // Final entry is equal to first of next rank, so only send on last rank.
+  if (PCU.Self() == PCU.Peers() - 1) ++xadj_sendct;
+  /* FIXME: use Pack/Unpack instead of direct MPI_Gatherv.
+  PCU.Begin();
+  PCU.Pack(0, xadj_sendct);
+  PCU.Pack(0,
+    owned_xadj.data(), xadj_sendct * sizeof(*owned_xadj.data())
+  );
+  PCU.Send();
+  while (m->getPCU()->Receive()) {
+    // Unpack...
+  }
+  */
+  MPI_Gatherv(
+    send_xadj.data(), xadj_sendct, MPI_INT,
+    xadj.data(), vtx_cts.data(), vtx_displs.data(), MPI_INT,
+    0, comm
+  );
+  // Undo "create the final xadj slot" from above.
+  if (PCU.Self() == 0) vtx_cts.back() -= 1;
+  // Gather adjncy.
+  int owned_adjncy_ct = owned_adjncy.size();
+  std::vector<int> adjncy_cts(PCU.Self() == 0 ? PCU.Peers() : 0);
+  MPI_Gather(
+    &owned_adjncy_ct, 1, MPI_INT,
+    adjncy_cts.data(), 1, MPI_INT,
+    0, comm
+  );
+  std::vector<int> adjncy_displs(PCU.Self() == 0 ? PCU.Peers() + 1 : 0);
+  if (PCU.Self() == 0) {
+    std::partial_sum(
+      adjncy_cts.begin(), adjncy_cts.end(), adjncy_displs.begin() + 1
+    );
+  }
+  adjncy.resize(PCU.Self() == 0 ? xadj.back() : 0);
+  MPI_Gatherv(
+    owned_adjncy.data(), owned_adjncy.size(), MPI_INT,
+    adjncy.data(), adjncy_cts.data(), adjncy_displs.data(), MPI_INT,
+    0, comm
+  );
+  auto t1 = pcu::Time();
+  if (PCU.Self() == 0)
+    lion_oprint(1, "METIS: localized graph in %f seconds\n", t1 - t0);
+}
+
+static void scatterPart(
+  pcu::PCU& PCU, MPI_Comm comm,
+  const std::vector<idx_t>& part,
+  const std::vector<int>& vtx_cts, const std::vector<int>& vtx_displs,
+  std::vector<idx_t>& owned_part, int n_owned
+) {
+  auto t0 = pcu::Time();
+  owned_part.resize(n_owned);
+  MPI_Scatterv(
+    part.data(), vtx_cts.data(), vtx_displs.data(), MPI_INT,
+    owned_part.data(), n_owned, MPI_INT, 0, comm
+  );
+  auto t1 = pcu::Time();
+  if (PCU.Self() == 0)
+    lion_oprint(1, "METIS: scattered in %f seconds\n", t1 - t0);
+}
+
 static void remapPart(int nparts, std::vector<idx_t>& part, const std::vector<int>& owned_cts) {
   std::map<int,int> dest_map; // map from metis_part to dst_part.
   // Loop through each part (maybe randomize order)
@@ -80,7 +173,8 @@ static void remapPart(int nparts, std::vector<idx_t>& part, const std::vector<in
 
 void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   if (weights != nullptr) {
-    lion_oprint(1, "METIS: ignoring weights\n");
+    if (mesh_->getPCU()->Self() == 0)
+      lion_oprint(1, "METIS: ignoring weights\n");
   }
   // FIXME PCU_DEBUG_ASSERT(sizeof(idx_t) >= sizeof(mds_id_type));
   int elm_dim = mesh_->getDimension();
@@ -108,75 +202,16 @@ void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   apf::synchronize(gn);
   std::vector<idx_t> owned_xadj, owned_adjncy;
   getOwnedAdjacencies(gn, owned_xadj, owned_adjncy, gn_offset, true);
-  // Localize n_owned_elms for Gatherv on xadj.
-  std::vector<int> xadj_cts(
-    mesh_->getPCU()->Self() == 0 ? mesh_->getPCU()->Peers() : 0
+  std::vector<idx_t> xadj, adjncy;
+  std::vector<int> vtx_cts, vtx_displs;
+  gatherGraph(
+    *mesh_->getPCU(), comm, owned_xadj, owned_adjncy, xadj, adjncy,
+    vtx_cts, vtx_displs
   );
-  MPI_Gather(
-    &n_owned_elm, 1, MPI_INT,
-    xadj_cts.data(), 1, MPI_INT,
-    0, comm
-  );
-  if (mesh_->getPCU()->Self() == 0)
-    xadj_cts.back() += 1; // Add space for final entry.
-  std::vector<int> xadj_displs(
-    mesh_->getPCU()->Self() == 0 ? mesh_->getPCU()->Peers() + 1 : 0
-  );
-  if (mesh_->getPCU()->Self() == 0) {
-    std::partial_sum(
-      xadj_cts.begin(), xadj_cts.end(), xadj_displs.begin() + 1
-    );
-  }
-  int metis_nvtxs = mesh_->getPCU()->Self() == 0 ? xadj_displs.back()-1 : 0;
-  // Increment owned_xadj.
-  int xadj_offset = mesh_->getPCU()->Exscan(owned_xadj.back());
-  for (int i = 0; i < n_owned_elm + 1; ++i) owned_xadj[i] += xadj_offset;
-  // Gather xadj.
-  std::vector<idx_t> xadj(
-    mesh_->getPCU()->Self() == 0 ? xadj_displs.back() : 0
-  );
-  int xadj_sendct = owned_xadj.size() - 1 + ( // send extra final entry.
-    mesh_->getPCU()->Self() == mesh_->getPCU()->Peers() - 1 ? 1 : 0
-  );
-  MPI_Gatherv(
-    owned_xadj.data(), xadj_sendct, MPI_INT,
-    xadj.data(), xadj_cts.data(), xadj_displs.data(), MPI_INT,
-    0, comm
-  );
-  // I reuse xadj_cts, xadj_displs below.
-  if (mesh_->getPCU()->Self() == 0) {
-    // Undo "create the final xadj slot" from above.
-    xadj_cts.back() -= 1;
-  }
-  // Gather adjncy.
-  int owned_adjncy_ct = owned_adjncy.size();
-  std::vector<int> adjncy_cts(
-    mesh_->getPCU()->Self() == 0 ? mesh_->getPCU()->Peers() : 0
-  );
-  MPI_Gather(
-    &owned_adjncy_ct, 1, MPI_INT,
-    adjncy_cts.data(), 1, MPI_INT,
-    0, comm
-  );
-  std::vector<int> adjncy_displs(
-    mesh_->getPCU()->Self() == 0 ? mesh_->getPCU()->Peers() + 1 : 0
-  );
-  if (mesh_->getPCU()->Self() == 0) {
-    std::partial_sum(
-      adjncy_cts.begin(), adjncy_cts.end(), adjncy_displs.begin() + 1
-    );
-  }
-  std::vector<idx_t> adjncy(mesh_->getPCU()->Self() == 0 ? xadj.back() : 0);
-  MPI_Gatherv(
-    owned_adjncy.data(), owned_adjncy.size(), MPI_INT,
-    adjncy.data(), adjncy_cts.data(), adjncy_displs.data(), MPI_INT,
-    0, comm
-  );
-  auto t_localize = pcu::Time();
-  if (mesh_->getPCU()->Self() == 0)
-    lion_oprint(1, "METIS: localized graph in %f seconds\n", t_localize - t0);
+  int metis_nvtxs = mesh_->getPCU()->Self() == 0 ? vtx_displs.back() - 1 : 0;
   std::vector<idx_t> part(mesh_->getPCU()->Self() == 0 ? metis_nvtxs : 0);
   if (mesh_->getPCU()->Self() == 0) {
+    auto t0_part = pcu::Time();
     idx_t nparts = mesh_->getPCU()->Peers();
     std::vector<real_t> imb(nparts, tolerance);
     idx_t objval, ncon = 1;
@@ -194,19 +229,14 @@ void MetisBalancer::balance(MeshTag* weights, double tolerance) {
       lion_eprint(1, "ERROR: balancing failed: %s\n", metis_err);
       return;
     }
-    remapPart(nparts, part, xadj_cts);
+    remapPart(nparts, part, vtx_cts);
+    auto t1_part = pcu::Time();
+    lion_oprint(1, "METIS: partitioned in %f seconds\n", t1_part - t0_part);
   }
-  auto t_part = pcu::Time();
-  if (mesh_->getPCU()->Self() == 0)
-    lion_oprint(1, "METIS: partitioned in %f seconds\n", t_part - t_localize);
-  std::vector<idx_t> owned_part(n_owned_elm);
-  MPI_Scatterv(
-    part.data(), xadj_cts.data(), xadj_displs.data(), MPI_INT,
-    owned_part.data(), n_owned_elm, MPI_INT, 0, comm
+  std::vector<idx_t> owned_part;
+  scatterPart(
+    *mesh_->getPCU(), comm, part, vtx_cts, vtx_displs, owned_part, n_owned_elm
   );
-  auto t_scatter = pcu::Time();
-  if (mesh_->getPCU()->Self() == 0)
-    lion_oprint(1, "METIS: scattered in %f seconds\n", t_scatter - t_part);
   apf::Migration *plan = makePlan(gn, owned_part, gn_offset);
   auto t0migrate = pcu::Time();
   mesh_->migrate(plan);
