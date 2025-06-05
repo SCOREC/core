@@ -301,7 +301,7 @@ Entity* getShortestEdge(Adapt* a, apf::Up& edges)
   return minEdge;
 }
 
-void flagIndependent(Adapt* a, apf::Up& edges, int& checked)
+void flagIndependentSet(Adapt* a, apf::Up& edges, int& checked)
 {
   for (int i=0; i < edges.n; i++) {
     Entity* vertices[2];
@@ -407,7 +407,7 @@ bool coarsen(Adapt* a)
       i = shortEdgeVerts.erase(i);
     }
     else if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
-      flagIndependent(a, adjacent, checked);
+      flagIndependentSet(a, adjacent, checked);
       i = shortEdgeVerts.erase(i);
       independentSetStarted = true;
       success++;
