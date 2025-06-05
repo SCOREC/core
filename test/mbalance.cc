@@ -11,14 +11,13 @@
 int main(int argc, char** argv)
 {
   pcu::Init(&argc, &argv);
-  {
+  try {
   pcu::PCU pcu_obj;
   if (argc != 4) {
     if (pcu_obj.Self() == 0) {
       std::cerr << "USAGE: <model.dmg> <mesh.smd> <out.smd>" << std::endl;
     }
-    pcu::Finalize();
-    return 1;
+    throw 1;
   }
   lion_set_verbosity(1);
   gmi_register_mesh();
@@ -32,6 +31,9 @@ int main(int argc, char** argv)
   // destroy mds
   m->destroyNative();
   apf::destroyMesh(m);
+  } catch (...) {
+    pcu::Finalize();
+    return 1;
   }
   pcu::Finalize();
   return 0;
