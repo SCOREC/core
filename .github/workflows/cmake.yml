@@ -17,6 +17,7 @@ jobs:
         build_type: [Debug, Release]
         no_mpi: [OFF, ON]
         cxx_standard: [11, 20]
+        metis: [OFF, ON]
 
     steps:
     - uses: actions/checkout@v4
@@ -27,12 +28,15 @@ jobs:
       run: |
            sudo apt update
            sudo apt install gcc-10 g++-10 mpich
+    - name: install metis
+      if: matrix.metis == 'ON'
+      run: sudo apt install libmetis-dev
 
     - name: Configure CMake
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install -DSCOREC_NO_MPI=${{matrix.no_mpi}}
+      run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install -DSCOREC_NO_MPI=${{matrix.no_mpi}} -DENABLE_METIS=${{matrix.metis}}
 
     - name: Build
       env:
