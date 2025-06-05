@@ -48,7 +48,7 @@ void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
   for (int i = 0; i < 2; ++i)
   {
     ma::coarsen(a);
-    // ma::refine(a);
+    ma::refine(a);
     // ma::snap(a);
   }
   m->verify();

@@ -274,8 +274,12 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   if (collapse.setEdge(edge) && 
       collapse.checkClass() &&
       collapse.checkTopo() &&
-      collapse.tryBothDirections(a->input->validQuality)) {
-    result = true;
+      collapse.tryBothDirections(a->input->goodQuality)) {
+    if (collapse.edgeGrewPastMaxLength()) {
+      result = false;
+      collapse.cancel();
+    }
+    else result = true;
   }  
   if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
   return result;
@@ -404,10 +408,9 @@ bool coarsen(Adapt* a)
       continue;
     }
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
-    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) { //TODO: add short edge check
+    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
       flagAdjacent(a, edges, checked);
       i = shortEdgeVerts.erase(i);
-      if (getFlag(a, vertex, CHECKED)) checked--;
       independentSetStarted = true;
       success++;
       collapse.destroyOldElements();
