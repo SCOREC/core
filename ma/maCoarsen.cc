@@ -335,7 +335,7 @@ bool isIndependent(Adapt* a, Entity* vertex)
   return false;
 }
 
-Entity* getNextIndependentVert(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted)
+Entity* getClosestIndependentVert(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted)
 {
   while (i != shortEdgeVerts.end())
   {
@@ -397,18 +397,16 @@ bool coarsen(Adapt* a)
   while (checked < shortEdgeVerts.size())
   {
     // assertChecked(a, shortEdgeVerts, checked);
-    Entity* vertex = getNextIndependentVert(a, shortEdgeVerts, i, independentSetStarted);
+    Entity* vertex = getClosestIndependentVert(a, shortEdgeVerts, i, independentSetStarted);
     if (vertex == 0) continue;
     apf::Up adjacent;
     a->mesh->getUp(vertex, adjacent);
     Entity* shortEdge = getShortestEdge(a, adjacent);
-    if (!a->sizeField->shouldCollapse(shortEdge)) {
-      if (getFlag(a, vertex, CHECKED)) checked--;
-      i = shortEdgeVerts.erase(i);
-      continue;
-    }
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
-    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
+    if (!a->sizeField->shouldCollapse(shortEdge)) {
+      i = shortEdgeVerts.erase(i);
+    }
+    else if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
       flagIndependent(a, adjacent, checked);
       i = shortEdgeVerts.erase(i);
       independentSetStarted = true;
