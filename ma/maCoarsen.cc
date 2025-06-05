@@ -304,7 +304,7 @@ void flagAdjacent(Adapt* a, apf::Up& edges, int& checked)
     a->mesh->getDownward(edges.e[i],0, vertices);
     for (int i = 0; i < 2; i++) {
       setFlag(a, vertices[i], NEED_NOT_COLLAPSE);
-      if (getFlag(a, vertices[i], COARSEN) && getFlag(a, vertices[i], CHECKED)){
+      if (getFlag(a, vertices[i], CHECKED)){
         clearFlag(a, vertices[i], CHECKED);
         checked--;
       }
@@ -365,7 +365,17 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
     }
   }
   // ma_dbg::dumpMeshWithFlag(a, 0, 1, COARSEN, "shortEdges", "shortEdges");
+  clearListFlag(a, shortEdgeVerts, COARSEN);
   return shortEdgeVerts;
+}
+
+void assertChecked(Adapt* a, std::list<Entity*>& shortEdgeVerts, const int currChecked)
+{
+  int realChecked = 0;
+  std::list<Entity*>::iterator i = shortEdgeVerts.begin();
+  while (i != shortEdgeVerts.end())
+    if (getFlag(a, *i++, CHECKED)) realChecked++;
+  PCU_ALWAYS_ASSERT(realChecked == currChecked);
 }
 
 bool coarsen(Adapt* a)
@@ -374,7 +384,6 @@ bool coarsen(Adapt* a)
     return false;
   double t0 = pcu::Time();
   std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a);
-
   Collapse collapse;
   collapse.Init(a);
   int success = 0;
@@ -383,9 +392,9 @@ bool coarsen(Adapt* a)
   std::list<Entity*>::iterator i = shortEdgeVerts.begin();
   while (checked < shortEdgeVerts.size())
   {
+    // assertChecked(a, shortEdgeVerts, checked);
     Entity* vertex = getNextIndependentVert(a, shortEdgeVerts, i, independentSetStarted);
     if (vertex == 0) continue;
-    // printf("%d of %d\n", std::distance(shortEdgeVerts.begin(), i), shortEdgeVerts.size());
     apf::Up edges;
     a->mesh->getUp(vertex, edges);
     Entity* shortEdge = getAdjacentShortestEdge(a, edges);
@@ -408,9 +417,9 @@ bool coarsen(Adapt* a)
       checked++;
     }
   }
-  // printIndependentSet(a);
-  // ma::clearFlagFromDimension(a, CHECKED, 0);
-  // ma::clearFlagFromDimension(a, COARSEN, 1);
+  clearListFlag(a, shortEdgeVerts, CHECKED);
+  ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
+  ma::clearFlagFromDimension(a, COARSEN, 1);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
   return true;
