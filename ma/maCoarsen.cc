@@ -228,7 +228,7 @@ long markEdgesToCollapse(Adapt* a)
                       DONT_COLLAPSE | NEED_NOT_COLLAPSE);
 }
 
-bool oldCoarsen(Adapt* a)
+bool oldcoarsen(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
     return false;
@@ -335,19 +335,22 @@ bool isIndependent(Adapt* a, Entity* vertex)
   return false;
 }
 
-Entity* getClosestIndependentVert(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted)
+Entity* getClosestIndependentVert(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked)
 {
-  while (i != shortEdgeVerts.end())
+  while (checked < shortEdgeVerts.size())
   {
-    Entity* vertex = *i;
-    if (getFlag(a, vertex, CHECKED)) {i++; continue;}
-    if (!independentSetStarted || isIndependent(a, vertex))
-      return vertex;
-    i++;
+    i = shortEdgeVerts.begin();
+    while (i != shortEdgeVerts.end())
+    {
+      Entity* vertex = *i;
+      if (getFlag(a, vertex, CHECKED)) {i++; continue;}
+      if (!independentSetStarted || isIndependent(a, vertex))
+        return vertex;
+      i++;
+    }
+    clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
+    independentSetStarted = false;
   }
-  clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
-  independentSetStarted = false;
-  i = shortEdgeVerts.begin();
   return 0;
 }
 
@@ -397,7 +400,7 @@ bool coarsen(Adapt* a)
   while (checked < shortEdgeVerts.size())
   {
     // assertChecked(a, shortEdgeVerts, checked);
-    Entity* vertex = getClosestIndependentVert(a, shortEdgeVerts, i, independentSetStarted);
+    Entity* vertex = getClosestIndependentVert(a, shortEdgeVerts, i, independentSetStarted, checked);
     if (vertex == 0) continue;
     apf::Up adjacent;
     a->mesh->getUp(vertex, adjacent);
