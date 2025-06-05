@@ -517,6 +517,13 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/4imb/torus.smb"
     "torusZbal4p/")
 endif()
+if(ENABLE_METIS)
+  mpi_test(mbalance 4
+    ./mbalance
+    "${MDIR}/torus.dmg"
+    "${MDIR}/4imb/torus.smb"
+    "torusMbal4p/")
+endif()
 mpi_test(ghostMPAS 4
   ./ghostMPAS
   "${MDIR}/torus.dmg"

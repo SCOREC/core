@@ -110,6 +110,9 @@ if(ENABLE_ZOLTAN)
   util_exe_func(zbalance zbalance.cc)
   util_exe_func(ptnParma ptnParma.cc)
 endif()
+if(ENABLE_METIS)
+  util_exe_func(mbalance mbalance.cc)
+endif()
 
 # Mesh improvement utilities
 util_exe_func(reorder reorder.cc)
