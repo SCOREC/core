@@ -291,8 +291,11 @@ Entity* getShortestEdge(Adapt* a, apf::Up& edges)
   double minLength = 999999;
   Entity* minEdge = edges.e[0];
   for (int i=0; i < edges.n; i++) {
-    if (!getFlag(a, edges.e[i], COARSEN)) continue;
-    double length = a->sizeField->measure(edges.e[i]);
+    Entity* vertices[2];
+    a->mesh->getDownward(edges.e[i], 0, vertices);
+    Vector x = getPosition(a->mesh, vertices[0]);
+    Vector y = getPosition(a->mesh, vertices[1]);
+    double length = (x-y).getLength();
     if (length < minLength) {
       minLength = length;
       minEdge = edges.e[i];
@@ -356,17 +359,16 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
   while ((edge = a->mesh->iterate(it))) 
   {
     if (!a->sizeField->shouldCollapse(edge)) continue; //TODO: speedup
-    setFlag(a, edge, COARSEN);
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
-      if (getFlag(a, vertices[i], COARSEN)) continue;
-      setFlag(a, vertices[i], COARSEN);
+      if (getFlag(a, vertices[i], CHECKED)) continue;
+      setFlag(a, vertices[i], CHECKED);
       shortEdgeVerts.push_back(vertices[i]);
     }
   }
-  // ma_dbg::dumpMeshWithFlag(a, 0, 1, COARSEN, "shortEdges", "shortEdges");
-  clearListFlag(a, shortEdgeVerts, COARSEN);
+  // ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "shortEdges", "shortEdges");
+  clearListFlag(a, shortEdgeVerts, CHECKED);
   return shortEdgeVerts;
 }
 
@@ -416,7 +418,6 @@ bool coarsen(Adapt* a)
   }
   clearListFlag(a, shortEdgeVerts, CHECKED);
   ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
-  ma::clearFlagFromDimension(a, COARSEN, 1);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
   return true;
