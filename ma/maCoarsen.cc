@@ -323,19 +323,7 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
     clearFlag(a, *i++, flag);
 }
 
-bool isIndependent(Adapt* a, Entity* vertex)
-{
-  if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) return false;
-  apf::Up edges;
-  a->mesh->getUp(vertex, edges);
-  for (int i=0; i < edges.n; i++) {
-    Entity* opposite = getEdgeVertOppositeVert(a->mesh, edges.e[i], vertex);
-    if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return true;
-  }
-  return false;
-}
-
-Entity* getTouchingIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked)
+Entity* getTouchingIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked, apf::Up& adjacent)
 {
   while (checked < shortEdgeVerts.size())
   {
@@ -343,9 +331,15 @@ Entity* getTouchingIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, 
     while (i != shortEdgeVerts.end())
     {
       Entity* vertex = *i;
-      if (getFlag(a, vertex, CHECKED)) {i++; continue;}
-      if (!independentSetStarted || isIndependent(a, vertex))
-        return vertex;
+      if (getFlag(a, vertex, CHECKED)) {i++; continue;} //Already tried to collapse
+      a->mesh->getUp(vertex, adjacent);
+      if (!independentSetStarted) return vertex;
+      if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {i++; continue;} //Too close to last collapse
+      for (int i=0; i < adjacent.n; i++)
+      {
+        Entity* opposite = getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vertex);
+        if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return vertex; //Touching independent set
+      }
       i++;
     }
     clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
@@ -400,10 +394,9 @@ bool coarsen(Adapt* a)
   while (checked < shortEdgeVerts.size())
   {
     // assertChecked(a, shortEdgeVerts, checked);
-    Entity* vertex = getTouchingIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked);
-    if (vertex == 0) continue;
     apf::Up adjacent;
-    a->mesh->getUp(vertex, adjacent);
+    Entity* vertex = getTouchingIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked, adjacent);
+    if (vertex == 0) continue;
     Entity* shortEdge = getShortestEdge(a, adjacent);
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
     if (!a->sizeField->shouldCollapse(shortEdge)) {
