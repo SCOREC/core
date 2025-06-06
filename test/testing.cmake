@@ -19,6 +19,7 @@ function(mpi_test TESTNAME PROCS EXE)
   endif()
 endfunction(mpi_test)
 
+# USAGE: mpi_test_depends(TESTS test1 [test2...] DEPENDS test3 [test4...])
 function(mpi_test_depends)
   cmake_parse_arguments(MPI_TEST_DEPENDS "" "" "TESTS;DEPENDS" ${ARGN})
   if (NOT DEFINED MPI_TEST_DEPENDS_TESTS OR NOT DEFINED MPI_TEST_DEPENDS_DEPENDS)
@@ -107,6 +108,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   add_test(NAME chef-BL_query-diff
     COMMAND diff -r run_case/4-procs_case/ good_case/4-procs_case
     WORKING_DIRECTORY ${MDIR})
+  mpi_test_depends(TESTS chef-BL_query-diff DEPENDS chef-BL_query)
   set(MDIR ${MESHES}/simExtrusionInfo)
   mpi_test(convertExtrudedRoots 1 ${CMAKE_CURRENT_BINARY_DIR}/convert
     --model-face-root=${MDIR}/ExtruRootID.txt
@@ -119,6 +121,10 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   add_test(NAME convertExtrudedRoots_diff_crd
     COMMAND diff -r geom.crd geom_expected.crd
     WORKING_DIRECTORY ${MDIR})
+  mpi_test_depends(TESTS
+    convertExtrudedRoots_diff_cnn convertExtrudedRoots_diff_crd
+    DEPENDS convertExtrudedRoots
+  )
 endif()
 
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
@@ -146,6 +152,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
      "${MDIR}/mesh_cut.sms"
      4
      WORKING_DIRECTORY ${MDIR})
+    mpi_test_depends(TESTS partition_sim DEPENDS cut_interface_sim)
   endif()
   if(SIMMODSUITE_SimAdvMeshing_FOUND)
     add_test(NAME countBL_cut_mesh
@@ -155,6 +162,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
      "${MDIR}/mesh_cut.sms"
      3504
      WORKING_DIRECTORY ${MDIR})
+    mpi_test_depends(TESTS countBL_cut_mesh DEPENDS cut_interface_sim)
     if(SIM_DOT_VERSION VERSION_GREATER 11.0.170826)
       mpi_test(countBL_part_mesh 4
        ${CMAKE_CURRENT_BINARY_DIR}/sim_countBL
@@ -275,6 +283,7 @@ mpi_test(gmshV4AirFoil 1
 add_test(NAME gmshV4AirFoil_dmgDiff
   COMMAND diff -r ${MDIR}/AirfoilDemo.dmg AirfoilDemo_gold.dmg
   WORKING_DIRECTORY ${MDIR})
+mpi_test_depends(TESTS gmshV4AirFoil_dmgDiff DEPENDS gmshV4AirFoil)
 
 set(MDIR ${MESHES}/ugrid)
 mpi_test(naca_ugrid 2
@@ -310,30 +319,37 @@ mpi_test(verify_serial 1
   ./verify
   "${MDIR}/pipe.${GXT}"
   "pipe.smb")
+if(ENABLE_SIMMETRIX)
+  mpi_test_depends(TESTS verify_serial DEPENDS convert)
+endif()
 if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(convert_2d_quads 1
     ./convert
     "${MESHES}/disk/disk.smd"
     "${MESHES}/disk/disk_quad_mesh.sms"
     "disk_quad_mesh.smb")
-else()
-  file(COPY "${MESHES}/disk/disk_quad_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endif()
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(convert_2d_tris 1
     ./convert
     "${MESHES}/disk/disk.smd"
     "${MESHES}/disk/disk_tri_mesh.sms"
     "disk_tri_mesh.smb")
-else()
-  file(COPY "${MESHES}/disk/disk_tri_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 mpi_test(verify_2nd_order_shape_quads 1
   ./verify_2nd_order_shapes
   "disk_quad_mesh.smb")
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+  mpi_test_depends(TESTS verify_2nd_order_shape_quads DEPENDS convert_2d_quads)
+else()
+  file(COPY "${MESHES}/disk/disk_quad_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 mpi_test(verify_2nd_order_shape_tris 1
   ./verify_2nd_order_shapes
   "disk_tri_mesh.smb")
+if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+  mpi_test_depends(TESTS verify_2nd_order_shape_tris DEPENDS convert_2d_tris)
+else()
+  file(COPY "${MESHES}/disk/disk_tri_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 mpi_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.${GXT}"
@@ -346,6 +362,7 @@ if(ENABLE_SIMMETRIX)
     "${MDIR}/pipe.${GXT}"
     "pipe_unif.smb"
     "pipe.smb")
+  mpi_test_depends(TESTS snap_serial DEPENDS uniform_serial)
 endif()
 if(ENABLE_ZOLTAN)
   mpi_test(ma_serial 1
@@ -402,6 +419,9 @@ mpi_test(collapse_2 2
   ${MESHFILE}
   pipe_p1_.smb
   2)
+if(ENABLE_SIMMETRIX)
+  mpi_test_depends(TESTS split_2 collapse_2 tet_serial DEPENDS convert)
+endif()
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x
@@ -409,6 +429,7 @@ if(ENABLE_ZOLTAN)
     ${MESHFILE}
     0
     "refXpipe/")
+  mpi_test_depends(TESTS refineX DEPENDS split_2)
   mpi_test(split_4 4
     ./zsplit
     "${MDIR}/pipe.${GXT}"
@@ -448,8 +469,7 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/pipe.${GXT}"
     "pipe_4_.smb"
     "tet.smb")
-  mpi_test_depends(TESTS ma_parallel DEPENDS split_4)
-  mpi_test_depends(TESTS tet_parallel DEPENDS split_4)
+  mpi_test_depends(TESTS ma_parallel tet_parallel DEPENDS split_4)
 endif()
 mpi_test(fieldReduce 4
   ./fieldReduce
@@ -756,12 +776,14 @@ mpi_test(split_fusion 2
   "${MDIR}/fusion.smb"
   "fusion_2_.smb"
   2)
+mpi_test_depends(TESTS split_fusion DEPENDS mktopomodel_fusion)
 # the part count mismatch is intentional,
 # this test runs on half its procs
 if(ENABLE_ZOLTAN)
   mpi_test(adapt_fusion 4
     ./fusion
     "fusion_2_.smb")
+  mpi_test_depends(TESTS adapt_fusion DEPENDS split_fusion)
 endif()
 mpi_test(fusion_field 2
   ./fusion2)
@@ -874,6 +896,7 @@ if (PCU_COMPRESS)
     add_test(NAME chef1
       COMMAND diff -r ${RUNDIR}/1-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
+    mpi_test_depends(TESTS chef1 DEPENDS chef0)
   endif()
   add_test(NAME chef2
     COMMAND diff -r out_mesh/ good_mesh/
@@ -893,10 +916,12 @@ if (PCU_COMPRESS)
     add_test(NAME chef7
       COMMAND diff -r ${RUNDIR}/4-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
+    mpi_test_depends(TESTS chef7 DEPENDS chef6)
   endif()
   add_test(NAME chef8
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
+  mpi_test_depends(TESTS chef8 DEPENDS chef6)
   if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
