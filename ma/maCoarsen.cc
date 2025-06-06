@@ -335,7 +335,7 @@ bool isIndependent(Adapt* a, Entity* vertex)
   return false;
 }
 
-Entity* getClosestIndependentVert(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked)
+Entity* getTouchingIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked)
 {
   while (checked < shortEdgeVerts.size())
   {
@@ -400,7 +400,7 @@ bool coarsen(Adapt* a)
   while (checked < shortEdgeVerts.size())
   {
     // assertChecked(a, shortEdgeVerts, checked);
-    Entity* vertex = getClosestIndependentVert(a, shortEdgeVerts, i, independentSetStarted, checked);
+    Entity* vertex = getTouchingIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked);
     if (vertex == 0) continue;
     apf::Up adjacent;
     a->mesh->getUp(vertex, adjacent);
