@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   //load model and mesh
   apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   apf::Balancer* balancer = apf::makeMETISbalancer(m);
-  int imbalance = 1.1;
+  double imbalance = 1.1;
   balancer->balance(nullptr, imbalance);
   delete balancer;
   m->writeNative(argv[3]);
