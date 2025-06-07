@@ -5,5 +5,8 @@
   </SubProject>
   <SubProject name="develop-into-master">
   </SubProject>
+  <SubProject name="omega_h">
+  </SubProject>
+  <SubProject name="pumi-pic">
+  </SubProject>
 </Project>
-
