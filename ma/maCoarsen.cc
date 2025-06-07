@@ -304,15 +304,16 @@ Entity* getShortestEdge(Adapt* a, apf::Up& edges)
   return minEdge;
 }
 
-void flagIndependentSet(Adapt* a, apf::Up& edges, int& checked)
+//Prevent adjacent vertices from collapsing to create indepedent set
+void flagIndependentSet(Adapt* a, apf::Up& adjacent, int& checked)
 {
-  for (int i=0; i < edges.n; i++) {
+  for (int a=0; a < adjacent.n; a++) {
     Entity* vertices[2];
-    a->mesh->getDownward(edges.e[i],0, vertices);
-    for (int k = 0; k < 2; k++) {
-      setFlag(a, vertices[k], NEED_NOT_COLLAPSE);
-      if (getFlag(a, vertices[k], CHECKED)){
-        clearFlag(a, vertices[k], CHECKED);
+    a->mesh->getDownward(adjacent.e[a],0, vertices);
+    for (int v = 0; v < 2; v++) {
+      setFlag(a, vertices[v], NEED_NOT_COLLAPSE);
+      if (getFlag(a, vertices[v], CHECKED)){
+        clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
         checked--;
       }
     }
