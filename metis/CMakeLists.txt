@@ -7,7 +7,7 @@ option(ENABLE_METIS "Enable METIS interface" OFF)
 message(VERBOSE "ENABLE_METIS: ${ENABLE_METIS}")
 xsdk_add_tpl(METIS)
 if(ENABLE_METIS)
-  find_package(METIS MODULE REQUIRED)
+  find_package(METIS REQUIRED)
 endif()
 
 # Package sources
@@ -34,7 +34,8 @@ target_link_libraries(apf_metis PUBLIC apf)
 target_link_libraries(apf_metis PRIVATE apf_zoltan) # FIXME: tagOpposites
 if(ENABLE_METIS)
   target_compile_definitions(apf_metis PUBLIC PUMI_HAS_METIS)
-  target_link_libraries(apf_metis PRIVATE METIS::METIS)
+  target_link_libraries(apf_metis PRIVATE "${METIS_LIBRARIES}")
+  target_include_directories(apf_metis PRIVATE "${METIS_INCLUDE_DIRS}")
 endif()
 
 scorec_export_library(apf_metis)
