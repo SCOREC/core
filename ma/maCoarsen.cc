@@ -309,10 +309,10 @@ void flagIndependentSet(Adapt* a, apf::Up& edges, int& checked)
   for (int i=0; i < edges.n; i++) {
     Entity* vertices[2];
     a->mesh->getDownward(edges.e[i],0, vertices);
-    for (int i = 0; i < 2; i++) {
-      setFlag(a, vertices[i], NEED_NOT_COLLAPSE);
-      if (getFlag(a, vertices[i], CHECKED)){
-        clearFlag(a, vertices[i], CHECKED);
+    for (int k = 0; k < 2; k++) {
+      setFlag(a, vertices[k], NEED_NOT_COLLAPSE);
+      if (getFlag(a, vertices[k], CHECKED)){
+        clearFlag(a, vertices[k], CHECKED);
         checked--;
       }
     }
