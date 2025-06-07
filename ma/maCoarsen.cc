@@ -285,17 +285,21 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   return result;
 }
 
+double calcLength(Adapt* a, Entity* edge)
+{
+  Entity* vertices[2];
+  a->mesh->getDownward(edge, 0, vertices);
+  Vector x = getPosition(a->mesh, vertices[0]);
+  Vector y = getPosition(a->mesh, vertices[1]);
+  return (x - y).getLength();
+}
 
 Entity* getShortestEdge(Adapt* a, apf::Up& edges)
 {
-  double minLength = 999999;
   Entity* minEdge = edges.e[0];
+  double minLength = calcLength(a, minEdge);
   for (int i=0; i < edges.n; i++) {
-    Entity* vertices[2];
-    a->mesh->getDownward(edges.e[i], 0, vertices);
-    Vector x = getPosition(a->mesh, vertices[0]);
-    Vector y = getPosition(a->mesh, vertices[1]);
-    double length = (x-y).getLength();
+    double length = calcLength(a, edges.e[i]);
     if (length < minLength) {
       minLength = length;
       minEdge = edges.e[i];
@@ -307,9 +311,9 @@ Entity* getShortestEdge(Adapt* a, apf::Up& edges)
 //Prevent adjacent vertices from collapsing to create indepedent set
 void flagIndependentSet(Adapt* a, apf::Up& adjacent, int& checked)
 {
-  for (int a=0; a < adjacent.n; a++) {
+  for (int adj=0; adj < adjacent.n; adj++) {
     Entity* vertices[2];
-    a->mesh->getDownward(adjacent.e[a],0, vertices);
+    a->mesh->getDownward(adjacent.e[adj],0, vertices);
     for (int v = 0; v < 2; v++) {
       setFlag(a, vertices[v], NEED_NOT_COLLAPSE);
       if (getFlag(a, vertices[v], CHECKED)){
