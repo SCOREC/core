@@ -19,7 +19,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
-  refineSnapTest(m, 0.4, 1);
+  refineSnapTest(m, 0.5, 1);
   m->destroyNative();
   apf::destroyMesh(m);
   }
