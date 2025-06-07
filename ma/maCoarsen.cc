@@ -294,16 +294,19 @@ double calcLength(Adapt* a, Entity* edge)
   return (x - y).getLength();
 }
 
-Entity* getShortestEdge(Adapt* a, apf::Up& edges)
+Entity* getShortestCollapsable(Adapt* a, Collapse& collapse, apf::Up& adjacent, Entity* vertex)
 {
-  Entity* minEdge = edges.e[0];
-  double minLength = calcLength(a, minEdge);
-  for (int i=0; i < edges.n; i++) {
-    double length = calcLength(a, edges.e[i]);
-    if (length < minLength) {
-      minLength = length;
-      minEdge = edges.e[i];
-    }
+  Entity* minEdge = 0;
+  double minLength = 99999;
+  for (int i=0; i < adjacent.n; i++) {
+    Entity* edge = adjacent.e[i];
+    double length = calcLength(a, edge);
+    if (length >= minLength) continue;
+    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, edge, vertex);
+    if (!tryCollapseEdge(a, edge, keepVertex, collapse)) continue;
+    minLength = length;
+    minEdge = adjacent.e[i];
+    collapse.cancel();//TODO: reuse collapse
   }
   return minEdge;
 }
@@ -401,12 +404,14 @@ bool coarsen(Adapt* a)
     apf::Up adjacent;
     Entity* vertex = getTouchingIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked, adjacent);
     if (vertex == 0) continue;
-    Entity* shortEdge = getShortestEdge(a, adjacent);
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
-    if (!a->sizeField->shouldCollapse(shortEdge)) {
-      i = shortEdgeVerts.erase(i);
+    Entity* shortEdge = getShortestCollapsable(a, collapse, adjacent, vertex);
+    if (shortEdge == 0) {
+      setFlag(a, vertex, CHECKED);
+      checked++;
+      continue;
     }
-    else if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
+    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
+    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
       flagIndependentSet(a, adjacent, checked);
       i = shortEdgeVerts.erase(i);
       independentSetStarted = true;
