@@ -328,26 +328,23 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
 
 Entity* getTouchingIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked, apf::Up& adjacent)
 {
-  while (checked < shortEdgeVerts.size())
+  i = shortEdgeVerts.begin();
+  while (i != shortEdgeVerts.end())
   {
-    i = shortEdgeVerts.begin();
-    while (i != shortEdgeVerts.end())
+    Entity* vertex = *i;
+    if (getFlag(a, vertex, CHECKED)) {i++; continue;} //Already tried to collapse
+    a->mesh->getUp(vertex, adjacent);
+    if (!independentSetStarted) return vertex;
+    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {i++; continue;} //Too close to last collapse
+    for (int i=0; i < adjacent.n; i++)
     {
-      Entity* vertex = *i;
-      if (getFlag(a, vertex, CHECKED)) {i++; continue;} //Already tried to collapse
-      a->mesh->getUp(vertex, adjacent);
-      if (!independentSetStarted) return vertex;
-      if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {i++; continue;} //Too close to last collapse
-      for (int i=0; i < adjacent.n; i++)
-      {
-        Entity* opposite = getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vertex);
-        if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return vertex; //Touching independent set
-      }
-      i++;
+      Entity* opposite = getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vertex);
+      if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return vertex; //Touching independent set
     }
-    clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
-    independentSetStarted = false;
+    i++;
   }
+  clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
+  independentSetStarted = false;
   return 0;
 }
 
