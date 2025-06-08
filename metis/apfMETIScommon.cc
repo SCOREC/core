@@ -9,7 +9,6 @@
 
 #include <apfMesh.h>
 #include <apfNumbering.h>
-#include <apfZoltan.h> // FIXME: tagOpposites
 #include <lionPrint.h>
 #include <pcu_util.h>
 

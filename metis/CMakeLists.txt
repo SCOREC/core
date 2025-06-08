@@ -31,7 +31,6 @@ target_include_directories(apf_metis INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 target_link_libraries(apf_metis PUBLIC apf)
-target_link_libraries(apf_metis PRIVATE apf_zoltan) # FIXME: tagOpposites
 if(ENABLE_METIS)
   target_compile_definitions(apf_metis PUBLIC PUMI_HAS_METIS)
   target_link_libraries(apf_metis PRIVATE "${METIS_LIBRARIES}")
