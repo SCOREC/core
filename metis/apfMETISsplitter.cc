@@ -57,7 +57,7 @@ Migration* MetisSplitter::split(
     else if (r == METIS_ERROR_MEMORY) metis_err = "METIS: memory error";
     else metis_err = "METIS: error";
     lion_eprint(1, "ERROR: splitting failed: %s\n", metis_err);
-    return nullptr;
+    fail("metis splitting failed");
   }
   apf::Migration *plan = makePlan(gn, part, 0);
   apf::destroyGlobalNumbering(gn);
