@@ -815,6 +815,8 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.h \
+@CMAKE_CURRENT_SOURCE_DIR@/metis/metis.dox \
+@CMAKE_CURRENT_SOURCE_DIR@/metis/apfMETIS.h \
 @CMAKE_CURRENT_SOURCE_DIR@/phasta/phasta.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/phasta/chef.h \
 @CMAKE_CURRENT_SOURCE_DIR@/phasta/chef.cc \

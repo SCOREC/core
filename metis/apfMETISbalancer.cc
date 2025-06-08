@@ -162,7 +162,7 @@ static void remapPart(int nparts, std::vector<idx_t>& part, const std::vector<in
 void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   if (weights != nullptr) {
     if (mesh_->getPCU()->Self() == 0)
-      lion_oprint(1, "METIS: ignoring weights\n");
+      lion_oprint(1, "METIS: weights are not supported\n");
   }
   // FIXME PCU_DEBUG_ASSERT(sizeof(idx_t) >= sizeof(mds_id_type));
   int elm_dim = mesh_->getDimension();

@@ -18,7 +18,7 @@ Migration* MetisSplitter::split(
 ) {
   auto t0 = pcu::Time();
   if (weights != nullptr) {
-    lion_oprint(1, "METIS: ignoring weights\n");
+    lion_oprint(1, "METIS: weights are not supported\n");
   }
   // FIXME PCU_DEBUG_ASSERT(sizeof(idx_t) >= sizeof(mds_id_type));
   int elm_dim = mesh_->getDimension();
