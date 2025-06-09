@@ -16,11 +16,12 @@ namespace metis {
 Migration* MetisSplitter::split(
   MeshTag* weights, double tolerance, int multiple
 ) {
+  PCU_ALWAYS_ASSERT(tolerance > 1.0);
+  PCU_ALWAYS_ASSERT(multiple > 1);
   auto t0 = pcu::Time();
   if (weights != nullptr) {
     lion_oprint(1, "METIS: weights are not supported\n");
   }
-  // FIXME PCU_DEBUG_ASSERT(sizeof(idx_t) >= sizeof(mds_id_type));
   int elm_dim = mesh_->getDimension();
   PCU_ALWAYS_ASSERT(elm_dim == 3); // FIXME: update code to allow 2d
   int metis_nvtxs = apf::countOwned(mesh_, elm_dim);

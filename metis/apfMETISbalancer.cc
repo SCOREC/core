@@ -32,6 +32,9 @@ static void gatherGraph(
   std::vector<idx_t>& xadj, std::vector<idx_t>& adjncy,
   std::vector<int>& vtx_cts
 ) {
+  PCU_ALWAYS_ASSERT(PCU.Peers() > 1);
+  PCU_ALWAYS_ASSERT(owned_xadj.size() > 1);
+  PCU_ALWAYS_ASSERT(owned_adjncy.size() == size_t(owned_xadj.back()));
   auto t0 = pcu::Time();
   int owned_vtx_ct = owned_xadj.size() - 1;
   int xadj_size = PCU.Add(owned_vtx_ct) + 1;
@@ -88,6 +91,12 @@ static void scatterPart(
   const std::vector<int>& vtx_cts,
   std::vector<idx_t>& owned_part, int n_owned
 ) {
+  PCU_ALWAYS_ASSERT(PCU.Peers() > 1);
+  PCU_ALWAYS_ASSERT(PCU.Self() != 0 || vtx_cts.size() == size_t(PCU.Peers()));
+  PCU_ALWAYS_ASSERT(
+    std::accumulate(vtx_cts.begin(), vtx_cts.end(), 0UL) == part.size()
+  );
+  PCU_ALWAYS_ASSERT(n_owned > 0);
   auto t0 = pcu::Time();
   owned_part.resize(n_owned);
   PCU.Begin();
@@ -160,11 +169,11 @@ static void remapPart(int nparts, std::vector<idx_t>& part, const std::vector<in
 }
 
 void MetisBalancer::balance(MeshTag* weights, double tolerance) {
+  PCU_ALWAYS_ASSERT(tolerance > 1.0);
   if (weights != nullptr) {
     if (mesh_->getPCU()->Self() == 0)
       lion_oprint(1, "METIS: weights are not supported\n");
   }
-  // FIXME PCU_DEBUG_ASSERT(sizeof(idx_t) >= sizeof(mds_id_type));
   int elm_dim = mesh_->getDimension();
   PCU_ALWAYS_ASSERT(elm_dim == 3); // FIXME: update code to allow 2d
   auto t0 = pcu::Time();
