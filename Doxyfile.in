@@ -793,7 +793,12 @@ INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_mesh.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_analytic.h \
 @CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_null.h \
-@CMAKE_CURRENT_SOURCE_DIR@/pcu/PCU.cc \
+@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu.dox \
+@CMAKE_CURRENT_SOURCE_DIR@/pcu/PCU.h \
+@CMAKE_CURRENT_SOURCE_DIR@/pcu/PCU_C.h \
+@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu_io.h \
+@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu_util.h \
+@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu_defines.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mth.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mth.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mthVector.h \
