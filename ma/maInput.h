@@ -93,6 +93,10 @@ class Input
      *
      * If all pre-balance options are false, pre-balancing only occurs if the
      * estimated imbalance is greater than in->maximumImbalance.
+     *
+     * \note This option collects necessary mesh topology information on rank
+     * 0, runs METIS serially, then sends the migration plan to the remaining
+     * processes. It is only intended to be used on a single node.
      */
     bool shouldRunPreMetis;
 /** \brief whether to run parma predictive load balancing (default false)
@@ -108,6 +112,10 @@ class Input
      *
      * If all mid-balance options are false, mid-balancing only occurs if the
      * estimated imbalance is greater than in->maximumImbalance.
+     *
+     * \note This option collects necessary mesh topology information on rank
+     * 0, runs METIS serially, then sends the migration plan to the remaining
+     * processes. It is only intended to be used on a single node.
      */
     bool shouldRunMidMetis;
 /** \brief whether to run parma during adaptation (default false)
@@ -127,6 +135,10 @@ class Input
      *
      * If all post-balance options are false, post-balancing only occurs if the
      * estimated imbalance is greater than in->maximumImbalance.
+     *
+     * \note This option collects necessary mesh topology information on rank
+     * 0, runs METIS serially, then sends the migration plan to the remaining
+     * processes. It is only intended to be used on a single node.
      */
     bool shouldRunPostMetis;
 /** \brief whether to run parma after adapting (default false)
