@@ -21,13 +21,13 @@ smoke_test(uniform_serial 1
   ./uniform
   "${MDIR}/pipe.dmg"
   "${MDIR}/pipe.smb"
-  "pipe_unif.smb")
+  "smoke_pipe_unif.smb")
 
 smoke_test(split_2 2
   ./split
   "${MDIR}/pipe.dmg"
   "${MDIR}/pipe.smb"
-  "pipe_2_.smb"
+  "smoke_pipe_2_.smb"
   2)
 
 include(GNUInstallDirs)
