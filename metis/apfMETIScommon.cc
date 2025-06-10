@@ -113,6 +113,31 @@ void getOwnedAdjacencies(
   }
 }
 
+bool runMETIS(
+  idx_t nvtxs, std::vector<idx_t>& xadj, std::vector<idx_t>& adjncy,
+  idx_t nparts, double imbalance, std::vector<idx_t>& part
+) {
+  auto t0 = pcu::Time();
+  std::vector<real_t> imb(nparts, imbalance);
+  idx_t objval, ncon = 1;
+  part.resize(nvtxs);
+  int r = METIS_PartGraphKway(
+    &nvtxs, &ncon, xadj.data(), adjncy.data(), // Graph
+    NULL, NULL, NULL, // No sizing
+    &nparts,
+    NULL, imb.data(), NULL, &objval, part.data()
+  );
+  if (r != METIS_OK) {
+    if (r == METIS_ERROR_INPUT) lion_eprint(1, "METIS: input error\n");
+    else if (r == METIS_ERROR_MEMORY) lion_eprint(1, "METIS: memory error\n");
+    else lion_eprint(1, "METIS: error\n");
+    return false;
+  }
+  auto t1 = pcu::Time();
+  lion_oprint(1, "METIS: partitioned in %f seconds\n", t1 - t0);
+  return true;
+}
+
 apf::Migration* makePlan(
   GlobalNumbering* gn, const std::vector<idx_t>& owned_part, long gn_offset
 ) {

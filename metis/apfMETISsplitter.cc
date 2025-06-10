@@ -28,26 +28,9 @@ Migration* MetisSplitter::split(
   auto gn = makeNumbering(mesh_, "apfMETISsplitter_gnb");
   std::vector<idx_t> xadj, adjncy;
   getOwnedAdjacencies(gn, xadj, adjncy, 0, false);
-  // Localize n_owned_elms for Gatherv on xadj.
-  // I reuse xadj_cts, xadj_displs below.
-  std::vector<idx_t> part(mesh_->getPCU()->Self() == 0 ? metis_nvtxs : 0);
-  idx_t nparts = multiple;
-  std::vector<real_t> imb(nparts, tolerance);
-  idx_t objval, ncon = 1;
-  int r = METIS_PartGraphKway(
-    &metis_nvtxs, &ncon, xadj.data(), adjncy.data(), // Graph
-    NULL, NULL, NULL, // No sizing
-    &nparts,
-    NULL, imb.data(), NULL, &objval, part.data()
-  );
-  if (r != METIS_OK) {
-    const char *metis_err = "";
-    if (r == METIS_ERROR_INPUT) metis_err = "METIS: input error";
-    else if (r == METIS_ERROR_MEMORY) metis_err = "METIS: memory error";
-    else metis_err = "METIS: error";
-    lion_eprint(1, "ERROR: splitting failed: %s\n", metis_err);
-    fail("metis splitting failed");
-  }
+  std::vector<idx_t> part;
+  bool r = runMETIS(metis_nvtxs, xadj, adjncy, multiple, tolerance, part);
+  if (!r) fail("METIS splitting failed");
   apf::Migration *plan = makePlan(gn, part, 0);
   apf::destroyGlobalNumbering(gn);
   auto t1 = pcu::Time();

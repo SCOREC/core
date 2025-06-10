@@ -25,6 +25,11 @@ void getOwnedAdjacencies(
   std::vector<idx_t>& adjncy, long gn_offset, bool remoteEdges
 );
 
+bool runMETIS(
+  idx_t metis_nvtxs, std::vector<idx_t>& xadj, std::vector<idx_t>& adjncy,
+  idx_t nparts, double imbalance, std::vector<idx_t>& part
+);
+
 apf::Migration* makePlan(
   GlobalNumbering* gn, const std::vector<idx_t>& owned_part, long gn_offset
 );

@@ -188,29 +188,18 @@ void MetisBalancer::balance(MeshTag* weights, double tolerance) {
     *mesh_->getPCU(), owned_xadj, owned_adjncy, xadj, adjncy, vtx_cts
   );
   int metis_nvtxs = std::accumulate(vtx_cts.begin(), vtx_cts.end(), 0);
-  std::vector<idx_t> part(mesh_->getPCU()->Self() == 0 ? metis_nvtxs : 0);
+  std::vector<idx_t> part;
   if (mesh_->getPCU()->Self() == 0) {
-    auto t0_part = pcu::Time();
     idx_t nparts = mesh_->getPCU()->Peers();
-    std::vector<real_t> imb(nparts, tolerance);
-    idx_t objval, ncon = 1;
-    int r = METIS_PartGraphKway(
-      &metis_nvtxs, &ncon, xadj.data(), adjncy.data(), // Graph
-      NULL, NULL, NULL, // No sizing
-      &nparts,
-      NULL, imb.data(), NULL, &objval, part.data()
-    );
-    if (r != METIS_OK) {
-      const char *metis_err = "";
-      if (r == METIS_ERROR_INPUT) metis_err = "METIS: input error";
-      else if (r == METIS_ERROR_MEMORY) metis_err = "METIS: memory error";
-      else metis_err = "METIS: error";
-      lion_eprint(1, "ERROR: balancing failed: %s\n", metis_err);
+    bool r = runMETIS(metis_nvtxs, xadj, adjncy, nparts, tolerance, part);
+    if (!r) {
+      lion_eprint(1, "ERROR: balancing failed. continuning...\n");
       return;
     }
+    auto t0_remap = pcu::Time();
     remapPart(nparts, part, vtx_cts);
-    auto t1_part = pcu::Time();
-    lion_oprint(1, "METIS: partitioned in %f seconds\n", t1_part - t0_part);
+    auto t1_remap = pcu::Time();
+    lion_oprint(1, "METIS: remapped in %f seconds\n", t1_remap - t0_remap);
   }
   std::vector<idx_t> owned_part;
   scatterPart(
