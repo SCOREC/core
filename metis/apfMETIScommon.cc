@@ -9,6 +9,7 @@
 
 #include <apfMesh.h>
 #include <apfNumbering.h>
+#include <apfShape.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -17,6 +18,24 @@
 namespace apf {
 
 namespace metis {
+
+GlobalNumbering* makeNumbering(Mesh* m, const char* name, long start) {
+  int elm_dim = m->getDimension();
+  // Create global element numbering.
+  auto gn = apf::createGlobalNumbering(
+    m, name, apf::getConstant(elm_dim)
+  );
+  long n = start;
+  apf::MeshIterator *it = m->begin(elm_dim);
+  for (apf::MeshEntity *e; (e = m->iterate(it));) {
+    if (m->isOwned(e)) {
+      apf::number(gn, e, 0, n);
+      ++n;
+    }
+  }
+  m->end(it);
+  return gn;
+}
 
 void getOwnedAdjacencies(
   GlobalNumbering* gn, std::vector<idx_t>& xadj,

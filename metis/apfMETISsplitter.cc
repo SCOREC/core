@@ -25,19 +25,7 @@ Migration* MetisSplitter::split(
   int elm_dim = mesh_->getDimension();
   PCU_ALWAYS_ASSERT(elm_dim == 3); // FIXME: update code to allow 2d
   int metis_nvtxs = apf::countOwned(mesh_, elm_dim);
-  // Create global element numbering.
-  auto gn = apf::createGlobalNumbering(
-    mesh_, "apfMETISbalancer_gnb", apf::getConstant(elm_dim)
-  );
-  long n = 0;
-  apf::MeshIterator *it = mesh_->begin(elm_dim);
-  for (apf::MeshEntity *e; (e = mesh_->iterate(it));) {
-    if (mesh_->isOwned(e)) {
-      apf::number(gn, e, 0, n);
-      ++n;
-    }
-  }
-  mesh_->end(it);
+  auto gn = makeNumbering(mesh_, "apfMETISsplitter_gnb");
   std::vector<idx_t> xadj, adjncy;
   getOwnedAdjacencies(gn, xadj, adjncy, 0, false);
   // Localize n_owned_elms for Gatherv on xadj.

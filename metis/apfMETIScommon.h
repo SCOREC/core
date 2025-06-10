@@ -18,6 +18,8 @@ class Migration;
 
 namespace metis {
 
+GlobalNumbering* makeNumbering(Mesh* m, const char* name, long start = 0);
+
 void getOwnedAdjacencies(
   apf::GlobalNumbering* gn, std::vector<idx_t>& xadj,
   std::vector<idx_t>& adjncy, long gn_offset, bool remoteEdges

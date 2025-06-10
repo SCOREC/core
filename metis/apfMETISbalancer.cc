@@ -178,23 +178,8 @@ void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   PCU_ALWAYS_ASSERT(elm_dim == 3); // FIXME: update code to allow 2d
   auto t0 = pcu::Time();
   int n_owned_elm = apf::countOwned(mesh_, elm_dim);
-  // Create global element numbering.
-  auto numbering = apf::numberOwnedDimension(
-    mesh_, "apfMETISbalancer_nb", elm_dim
-  );
-  // Don't use apf::makeGlobal because numbering may not be rank order.
-  auto gn = apf::createGlobalNumbering(
-    mesh_, "apfMETISbalancer_gnb", apf::getConstant(elm_dim)
-  );
-  int gn_offset = mesh_->getPCU()->Exscan(n_owned_elm);
-  apf::MeshIterator *it = mesh_->begin(elm_dim);
-  for (apf::MeshEntity *e; (e = mesh_->iterate(it));) {
-    if (mesh_->isOwned(e)) {
-      apf::number(gn, e, 0, gn_offset + apf::getNumber(numbering, e, 0, 0));
-    }
-  }
-  mesh_->end(it);
-  apf::synchronize(gn);
+  long gn_offset = mesh_->getPCU()->Exscan(long(n_owned_elm));
+  auto gn = makeNumbering(mesh_, "apfMETISbalancer_gnb", gn_offset);
   std::vector<idx_t> owned_xadj, owned_adjncy;
   getOwnedAdjacencies(gn, owned_xadj, owned_adjncy, gn_offset, true);
   std::vector<idx_t> xadj, adjncy;
@@ -239,7 +224,6 @@ void MetisBalancer::balance(MeshTag* weights, double tolerance) {
     lion_oprint(1, "METIS: migrated in %f seconds\n", t1migrate - t0migrate);
   plan = nullptr;
   apf::destroyGlobalNumbering(gn);
-  apf::destroyNumbering(numbering);
   auto t1 = pcu::Time();
   if (mesh_->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: balanced in %f seconds\n", t1 - t0);
