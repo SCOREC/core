@@ -3,6 +3,7 @@
 #include <apfShape.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
+#include "apfMETIS.h"
 
 #include <metis.h>
 
@@ -18,6 +19,12 @@ Migration* MetisSplitter::split(
 ) {
   PCU_ALWAYS_ASSERT(tolerance > 1.0);
   PCU_ALWAYS_ASSERT(multiple > 1);
+  if (mesh_->getPCU()->Peers() > APF_METIS_MAXRANKS) {
+    fail(
+      "METIS called with > " STRINGIFY(APF_METIS_MAXRANKS)
+      " procs, which is unsupported due to memory requirements\n"
+    );
+  }
   auto t0 = pcu::Time();
   if (weights != nullptr) {
     lion_oprint(1, "METIS: weights are not supported\n");

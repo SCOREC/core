@@ -8,6 +8,8 @@
 #ifndef APF_METIS_COMMON_H
 #define APF_METIS_COMMON_H
 
+#define STRINGIFY(arg) #arg
+
 #include <vector>
 
 namespace apf {

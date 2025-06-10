@@ -16,6 +16,7 @@
 #include <apfShape.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
+#include "apfMETIS.h"
 
 #include <metis.h>
 
@@ -170,6 +171,12 @@ static void remapPart(int nparts, std::vector<idx_t>& part, const std::vector<in
 
 void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   PCU_ALWAYS_ASSERT(tolerance > 1.0);
+  if (mesh_->getPCU()->Peers() > APF_METIS_MAXRANKS) {
+    fail(
+      "METIS called with > " STRINGIFY(APF_METIS_MAXRANKS)
+      " procs, which is unsupported due to memory requirements\n"
+    );
+  }
   if (weights != nullptr) {
     if (mesh_->getPCU()->Self() == 0)
       lion_oprint(1, "METIS: weights are not supported\n");

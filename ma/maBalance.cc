@@ -184,7 +184,9 @@ void preBalance(Adapt* a)
       return;
     }
 #elif defined(PUMI_HAS_METIS)
-    runMETIS(a);
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
+    return;
 #else
     runParma(a);
     return;
@@ -230,7 +232,8 @@ void midBalance(Adapt* a)
       return;
     }
 #elif defined(PUMI_HAS_METIS)
-    runMETIS(a);
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
     return;
 #else
     runParma(a);
@@ -288,7 +291,8 @@ void postBalance(Adapt* a)
       return;
     }
 #elif defined(PUMI_HAS_METIS)
-    runMETIS(a);
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
     printEntityImbalance(a->mesh);
 #else
     runParma(a);

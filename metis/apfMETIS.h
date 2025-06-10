@@ -7,6 +7,8 @@
 #ifndef APF_METIS_H
 #define APF_METIS_H
 
+#define APF_METIS_MAXRANKS 256
+
 /**
  * \file apfMETIS.h
  * \brief METIS partitioning for apf::Mesh objects.
