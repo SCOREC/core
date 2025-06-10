@@ -1,8 +1,11 @@
-using AnalyticClosestPoint = void (*)(const double[3], double[3], double[3], double);
+#include <cfloat>
+
+using AnalyticClosestPoint = void (*)(const double[3], double[3], double[3], double&, double);
 
 //#define analytic_closest_point_func std::function<void(double[3], double to[3], double to_norm[3], double)>
 
-void planarClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double ref_length) {
+void planarClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double &int_dist_sqr, double ref_length) {
+  int_dist_sqr = DBL_MAX;
   to[0] = ref_length*2;
   to[1] = from[1];
   to[2] = from[2];
@@ -27,13 +30,14 @@ void arbitraryPlaneClosestPointAnalytic(double const from[3], double to[3], doub
     to[2] = norm[2]*D/denom+from[2];
 }
 
-void planar30DegTowardsY(double const from[3], double to[3], double to_norm[3], double ref_length) {
+void planar30DegTowardsY(double const from[3], double to[3], double to_norm[3], double &int_dist_sqr, double ref_length) {
+  int_dist_sqr = DBL_MAX;
   double norm[3] = {std::cos(M_PI/6), std::sin(M_PI/6), 0};
   double pt[3] = {ref_length, 0, 0};
   arbitraryPlaneClosestPointAnalytic(from, to, to_norm, norm, pt);
 }
 
-void doubleConeClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double ref_length) {
+void doubleConeClosestPointAnalytic(double const from[3], double to[3], double to_norm[3], double &int_dist_sqr, double ref_length) {
   double x0 = from[0];
   // x axis axisymmetry, y0 here is distance from x axis
   double y0 = std::sqrt(from[1]*from[1] + from[2]*from[2]);
@@ -63,6 +67,9 @@ void doubleConeClosestPointAnalytic(double const from[3], double to[3], double t
   l_y = std::max(0.0d, l_y);
   double l_x = -(B*l_y + C)/A;
   double l_d2 = std::pow(l_x-x0,2) + std::pow(l_y-y0,2);
+
+  double intersection_x = -(B*intersection_y + C)/A;
+  int_dist_sqr = Power(x0 - intersection_x, 2) + Power(y0 - intersection_y, 2);
 
   // Convert to x y z
   // Normals

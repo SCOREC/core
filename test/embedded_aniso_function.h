@@ -64,9 +64,9 @@ class EmbeddedShockFunction : public ma::AnisotropicFunction {
 
     protected:
 
-    double getZoneIsoSize(apf::Vector3 vtx, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref);
+    double getZoneIsoSize(apf::Vector3 vtx, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref, double int_dist_sqr);
 
-    double getClosestPointAndNormal(double pos_arr[3], double cls_arr[3], double nrm_arr[3]);
+    double getClosestPointAndNormal(double pos_arr[3], double cls_arr[3], double nrm_arr[3], double &int_dist_sqr);
 
     double h_global = 0.2113125;
     double norm_size = h_global/16;
@@ -111,7 +111,7 @@ bool EmbeddedShockFunction::inSphere(double c_x, double c_y, double c_z, double 
     return inSphere(c_x, c_y, c_z, radius, pos, dummy);
 }
 
-double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref) {
+double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 closest_pt, bool in_shock_band, bool& in_tip_ref, double int_dist_sqr) {
     apf::Vector3 vecToPos = pos - closest_pt;
 
     double sphere_dist_sqr;
@@ -125,6 +125,16 @@ double EmbeddedShockFunction::getZoneIsoSize(apf::Vector3 pos, apf::Vector3 clos
         // to control isotropic size field can h_global and norm_size can be overriden
         //return std::min(h_global, h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size));
         return h_tip_min + (h_tip-h_tip_min)*(std::sqrt(sphere_dist_sqr)/sphere_size);
+    }
+
+    if (int_dist_sqr < h_global*h_global) {
+        return h_tip;
+    }
+    if (int_dist_sqr < 2*h_global*2*h_global) {
+        return 2*h_tip;
+    }
+    if (int_dist_sqr < 3*h_global*3*h_global) {
+        return h_global/2;
     }
 
     // (h_norm-h_global)*exp(-abs(testx)/smooth_dist) + h_global;
@@ -164,14 +174,15 @@ void EmbeddedShockFunction::getValue(apf::Vector3& pos, ma::Matrix& frame, ma::V
     double nrm_arr[3];
     apf::Vector3 cls_vec;
     apf::Vector3 norm;
-    double shock_dist_square = getClosestPointAndNormal(pos_arr, cls_arr, nrm_arr);
+    double int_dist_sqr;
+    double shock_dist_square = getClosestPointAndNormal(pos_arr, cls_arr, nrm_arr, int_dist_sqr);
     cls_vec.fromArray(cls_arr);
     norm.fromArray(nrm_arr);
 
     // Setting scale 
     double shockDist = std::sqrt(shock_dist_square);
     bool in_tip_ref = false;
-    double zoneIsoSize = getZoneIsoSize(pos, cls_vec, shock_dist_square < thickness_tol, in_tip_ref);
+    double zoneIsoSize = getZoneIsoSize(pos, cls_vec, shock_dist_square < thickness_tol, in_tip_ref, int_dist_sqr);
 
     double h_n_max = h_global;
     if (inSphere(-1.25*h_global, 0, 0, h_global*2, pos)) {
@@ -239,16 +250,17 @@ void EmbeddedShockFunction::getSimValue(apf::Vector3& pos, double anisosize[3][3
   anisosize[2][0] = frame[0][2]*scale[2]; anisosize[2][1] = frame[1][2]*scale[2]; anisosize[2][2] = frame[2][2]*scale[2]; // tan2
 }
 
-double EmbeddedShockFunction::getClosestPointAndNormal(double pos_arr[3], double cls_arr[3], double nrm_arr[3]) {
+double EmbeddedShockFunction::getClosestPointAndNormal(double pos_arr[3], double cls_arr[3], double nrm_arr[3], double &int_dist_sqr) {
     if (shock_surfaces.size() == 0) {
         //doubleConeClosestPointAnalytic(pos_arr, cls_arr, nrm_arr, h_global);
-        analytic_shock_surf(pos_arr, cls_arr, nrm_arr, h_global);
+        analytic_shock_surf(pos_arr, cls_arr, nrm_arr, int_dist_sqr, h_global);
         //return std::abs((pos-cls_vec)*(pos-cls_vec));
         return (pos_arr[0]-cls_arr[0])*(pos_arr[0]-cls_arr[0])+
             (pos_arr[1]-cls_arr[1])*(pos_arr[1]-cls_arr[1])+
             (pos_arr[2]-cls_arr[2])*(pos_arr[2]-cls_arr[2]);
     }
     
+    int_dist_sqr = DBL_MAX;
     double shock_dist_square = DBL_MAX;
     double cls_par_arr[2];
     PCU_ALWAYS_ASSERT(gmi_can_get_closest_point(ref));

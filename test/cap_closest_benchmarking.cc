@@ -164,9 +164,10 @@ int main(int argc, char** argv) {
 
   // analytic methods
   t0_a = MPI_Wtime();
+  double int_dist_sqr;
   for(int i=0; i<npts; i++) {
     //double clsArr[3], nrmArr[3];
-    doubleConeClosestPointAnalytic(random[i], closestPts[i], normalVecs[i], 0.2111);
+    doubleConeClosestPointAnalytic(random[i], closestPts[i], normalVecs[i], int_dist_sqr, 0.2111);
   }
   t1_a = MPI_Wtime();
   lion_oprint(0, "analytic: Total runtime %.12f s, average runtime %.12f s \n", t1_a-t0_a, (t1_a-t0_a)/npts);
