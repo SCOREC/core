@@ -422,6 +422,27 @@ mpi_test(collapse_2 2
 if(ENABLE_SIMMETRIX)
   set_test_depends(TESTS split_2 collapse_2 tet_serial DEPENDS convert)
 endif()
+if(ENABLE_METIS)
+  mpi_test(msplit_2 2
+    ./msplit
+    "${MDIR}/pipe.${GXT}" "pipe.smb"
+    "pipe_m2_.smb"
+    2
+  )
+  mpi_test(msplit_3 3
+    ./msplit
+    "${MDIR}/pipe.${GXT}" "pipe.smb"
+    "pipe_m3_.smb"
+    3
+  )
+  mpi_test(msplit_6 6
+    ./msplit
+    "${MDIR}/pipe.${GXT}" "pipe_m2_.smb"
+    "pipe_m6_.smb"
+    3
+  )
+  set_test_depends(TESTS msplit_6 DEPENDS msplit_2)
+endif()
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x
@@ -504,6 +525,13 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/torus.dmg"
     "${MDIR}/4imb/torus.smb"
     "torusZbal4p/")
+endif()
+if(ENABLE_METIS)
+  mpi_test(mbalance 4
+    ./mbalance
+    "${MDIR}/torus.dmg"
+    "${MDIR}/4imb/torus.smb"
+    "torusMbal4p/")
 endif()
 mpi_test(ghostMPAS 4
   ./ghostMPAS

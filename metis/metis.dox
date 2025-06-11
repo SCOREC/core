@@ -1,0 +1,13 @@
+/**
+ * \page metis APF-METIS
+ *
+ * METIS is a set of serial programs for partitioning graphs. More information
+ * is available at https://github.com/KarypisLab/METIS.
+ *
+ * This module implements a PUMI interface to use METIS as an apf::Splitter or
+ * as an apf::Balancer. The Balancer localizes (to rank 0) necessary graph
+ * information from the mesh topology and tries to minimize the amount of data
+ * sent between processes.
+ *
+ * The interface is in apfMETIS.h
+ */

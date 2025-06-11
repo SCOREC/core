@@ -49,11 +49,14 @@ void setDefaultValues(Input* in)
   in->maximumImbalance = 1.10;
   in->shouldRunPreZoltan = false;
   in->shouldRunPreZoltanRib = false;
+  in->shouldRunPreMetis = false;
   in->shouldRunPreParma = false;
   in->shouldRunMidZoltan = false;
+  in->shouldRunMidMetis = false;
   in->shouldRunMidParma = false;
   in->shouldRunPostZoltan = false;
   in->shouldRunPostZoltanRib = false;
+  in->shouldRunPostMetis = false;
   in->shouldRunPostParma = false;
   in->shouldTurnLayerToTets = false;
   in->shouldCleanupLayer = false;
@@ -75,15 +78,11 @@ void rejectInput(const char* str, pcu::PCU *PCUObj)
 }
 
 // if more than 1 option is true return true
-static bool moreThanOneOptionIsTrue(bool op1, bool op2, bool op3)
+static bool moreThanOneOptionIsTrue(const std::initializer_list<bool>& ops)
 {
   int cnt = 0;
-  if (op1) cnt++;
-  if (op2) cnt++;
-  if (op3) cnt++;
-  if (cnt > 1)
-    return true;
-  return false;
+  for (bool op : ops) if (op) ++cnt;
+  return cnt > 1;
 }
 
 void validateInput(Input* in)
@@ -128,23 +127,47 @@ void validateInput(Input* in)
     rejectInput("maximum imbalance less than 1.0", in->mesh->getPCU());
   if (in->maximumEdgeRatio < 1.0)
     rejectInput("maximum tet edge ratio less than one", in->mesh->getPCU());
-  if (moreThanOneOptionIsTrue(
-  	in->shouldRunPreZoltan,
-  	in->shouldRunPreZoltanRib,
-  	in->shouldRunPreParma))
-    rejectInput("only one of Zoltan, ZoltanRib, and Parma PreBalance options can be set to true!", in->mesh->getPCU());
-  if (moreThanOneOptionIsTrue(
-  	in->shouldRunPostZoltan,
-  	in->shouldRunPostZoltanRib,
-  	in->shouldRunPostParma))
-    rejectInput("only one of Zoltan, ZoltanRib, and Parma PostBalance options can be set to true!", in->mesh->getPCU());
-  if (in->shouldRunMidZoltan && in->shouldRunMidParma)
-    rejectInput("only one of Zoltan and Parma MidBalance options can be set to true!", in->mesh->getPCU());
+  if (moreThanOneOptionIsTrue({
+  	in->shouldRunPreZoltan, in->shouldRunPreZoltanRib,
+    in->shouldRunPreMetis, in->shouldRunPreParma
+  })) {
+    rejectInput(
+      "only one of Zoltan, ZoltanRib, Metis, and Parma PreBalance options can "
+      "be set to true!", in->mesh->getPCU()
+    );
+  }
+  if (moreThanOneOptionIsTrue({
+  	in->shouldRunPostZoltan, in->shouldRunPostZoltanRib,
+    in->shouldRunPostMetis, in->shouldRunPostParma
+  })) {
+    rejectInput(
+      "only one of Zoltan, ZoltanRib, Metis, and Parma PostBalance options "
+      "can be set to true!", in->mesh->getPCU()
+    );
+  }
+  if (moreThanOneOptionIsTrue({
+    in->shouldRunMidZoltan, in->shouldRunMidMetis, in->shouldRunMidParma
+  })) {
+    rejectInput(
+      "only one of Zoltan, Metis, and Parma MidBalance options can be set to "
+      "true!", in->mesh->getPCU()
+    );
+  }
 #ifndef PUMI_HAS_ZOLTAN
   if (in->shouldRunPreZoltan ||
       in->shouldRunPreZoltanRib ||
       in->shouldRunMidZoltan)
     rejectInput("core is not compiled with Zoltan. Use a different balancer or compile core with ENABLE_ZOLTAN=ON!", in->mesh->getPCU());
+#endif
+#ifndef PUMI_HAS_METIS
+  if (
+    in->shouldRunPreMetis || in->shouldRunMidMetis || in->shouldRunPostMetis
+  ) {
+    rejectInput(
+      "PUMI was not compiled with METIS. Use a different balancer or compile "
+      "PUMI with ENABLE_METIS=ON!", in->mesh->getPCU()
+    );
+  }
 #endif
 }
 
