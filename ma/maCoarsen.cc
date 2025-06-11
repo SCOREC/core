@@ -328,11 +328,12 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
     clearFlag(a, *i++, flag);
 }
 
-Entity* getTouchingIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked, apf::Up& adjacent)
+//Iterates through shortEdgeVerts until it finds a vertex that is adjacent to an independent set
+Entity* getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked, apf::Up& adjacent)
 {
-  i = shortEdgeVerts.begin();
-  while (i != shortEdgeVerts.end())
-  {
+  auto start = i;
+  do {
+    if (i == shortEdgeVerts.end()) i = shortEdgeVerts.begin();
     Entity* vertex = *i;
     if (getFlag(a, vertex, CHECKED)) {i++; continue;} //Already tried to collapse
     a->mesh->getUp(vertex, adjacent);
@@ -344,7 +345,7 @@ Entity* getTouchingIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, 
       if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return vertex; //Touching independent set
     }
     i++;
-  }
+  } while (i != start);
   clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
   independentSetStarted = false;
   return 0;
@@ -357,7 +358,7 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
   Entity* edge;
   while ((edge = a->mesh->iterate(it))) 
   {
-    if (!a->sizeField->shouldCollapse(edge)) continue; //TODO: speedup
+    if (!a->sizeField->shouldCollapse(edge)) continue;
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
@@ -366,7 +367,6 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
       shortEdgeVerts.push_back(vertices[i]);
     }
   }
-  // ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "shortEdges", "shortEdges");
   clearListFlag(a, shortEdgeVerts, CHECKED);
   return shortEdgeVerts;
 }
@@ -386,7 +386,7 @@ bool coarsen(Adapt* a)
   while (checked < shortEdgeVerts.size())
   {
     apf::Up adjacent;
-    Entity* vertex = getTouchingIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked, adjacent);
+    Entity* vertex = getAdjIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked, adjacent);
     if (vertex == 0) continue;
     if (collapseShortest(a, collapse, adjacent, vertex)) {
       flagIndependentSet(a, adjacent, checked);
