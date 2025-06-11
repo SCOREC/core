@@ -43,6 +43,15 @@ Migration* MetisSplitter::split(
   auto t1 = pcu::Time();
   if (mesh_->getPCU()->Self() == 0)
     lion_oprint(1, "METIS: split in %f seconds\n", t1 - t0);
+  // Spread parts over PCU::Peers() * factor parts.
+  if (mesh_->getPCU()->Self() != 0) {
+    for (int i = 0; i < plan->count(); ++i) {
+      apf::MeshEntity *e = plan->get(i);
+      int dest = plan->sending(e);
+      dest += mesh_->getPCU()->Self() * multiple;
+      plan->send(e, dest);
+    }
+  }
   return plan;
 }
 

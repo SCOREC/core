@@ -150,7 +150,7 @@ apf::Migration* makePlan(
     long local_num = apf::getNumber(gn, e, 0) - gn_offset;
     PCU_DEBUG_ASSERT((size_t) local_num < owned_part.size());
     int dest = owned_part[local_num];
-    if (dest != mesh->getPCU()->Self()) plan->send(e, dest);
+    plan->send(e, dest);
   }
   auto t1 = pcu::Time();
   if (mesh->getPCU()->Self() == 0)

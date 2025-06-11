@@ -427,11 +427,19 @@ if(ENABLE_METIS)
     ./msplit
     "${MDIR}/pipe.${GXT}" "pipe.smb"
     "pipe_m2_.smb"
+    2
   )
   mpi_test(msplit_3 3
     ./msplit
     "${MDIR}/pipe.${GXT}" "pipe.smb"
     "pipe_m3_.smb"
+    3
+  )
+  mpi_test(msplit_6 6
+    ./msplit
+    "${MDIR}/pipe.${GXT}" "pipe_m2_.smb"
+    "pipe_m6_.smb"
+    3
   )
 endif()
 if(ENABLE_ZOLTAN)
