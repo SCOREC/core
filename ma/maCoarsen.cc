@@ -298,6 +298,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, apf::Up& adjacent, Entity* v
   }
   for (int i=0; i < sorted.size(); i++) {
     Entity* edge = sorted[i].edge;
+    if (!a->sizeField->shouldCollapse(edge)) return false;
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, edge, vertex);
     if (tryCollapseEdge(a, edge, keepVertex, collapse)) return true;
   }
