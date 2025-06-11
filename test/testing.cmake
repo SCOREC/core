@@ -441,6 +441,7 @@ if(ENABLE_METIS)
     "pipe_m6_.smb"
     3
   )
+  set_test_depends(TESTS msplit_6 DEPENDS msplit_2)
 endif()
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2
