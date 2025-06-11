@@ -15,6 +15,7 @@
 #include "maDBG.h"
 #include <pcu_util.h>
 #include "apfShape.h"
+#include <vector>
 #include <list>
 
 namespace ma {
@@ -294,21 +295,37 @@ double calcLength(Adapt* a, Entity* edge)
   return (x - y).getLength();
 }
 
+struct EdgeLength
+{
+  Entity* edge;
+  double length;
+
+  bool operator<(const EdgeLength& other) const {
+      return length < other.length; // Descending order
+  }
+};
+
+bool compareLength(const EdgeLength& a, const EdgeLength& b) 
+{
+  return a.length > b.length;
+}
+
 Entity* getShortestCollapsable(Adapt* a, Collapse& collapse, apf::Up& adjacent, Entity* vertex)
 {
-  Entity* minEdge = 0;
-  double minLength = 99999;
+  std::vector<EdgeLength> sorted;
   for (int i=0; i < adjacent.n; i++) {
-    Entity* edge = adjacent.e[i];
-    double length = calcLength(a, edge);
-    if (length >= minLength) continue;
+    EdgeLength measured{adjacent.e[i], a->sizeField->measure(adjacent.e[i])};
+    auto pos = std::lower_bound(sorted.begin(), sorted.end(), measured);
+    sorted.insert(pos, measured);
+  }
+  for (int i=0; i < sorted.size(); i++) {
+    Entity* edge = sorted[i].edge;
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, edge, vertex);
     if (!tryCollapseEdge(a, edge, keepVertex, collapse)) continue;
-    minLength = length;
-    minEdge = adjacent.e[i];
-    collapse.cancel();//TODO: reuse collapse
+    collapse.cancel();
+    return edge;
   }
-  return minEdge;
+  return 0;
 }
 
 //Prevent adjacent vertices from collapsing to create indepedent set
