@@ -257,13 +257,6 @@ bool oldcoarsen(Adapt* a)
   return true;
 }
 
-void printIndependentSet(Adapt* a)
-{
-  apf::writeVtkFiles("independentMesh", a->mesh);
-  ma_dbg::dumpMeshWithFlag(a, 0, 0, CHECKED, "independentVerts", "independentVerts");
-  exit(0);
-}
-
 static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
@@ -286,31 +279,16 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   return result;
 }
 
-double calcLength(Adapt* a, Entity* edge)
-{
-  Entity* vertices[2];
-  a->mesh->getDownward(edge, 0, vertices);
-  Vector x = getPosition(a->mesh, vertices[0]);
-  Vector y = getPosition(a->mesh, vertices[1]);
-  return (x - y).getLength();
-}
-
 struct EdgeLength
 {
   Entity* edge;
   double length;
-
   bool operator<(const EdgeLength& other) const {
-      return length < other.length; // Descending order
+    return length < other.length;
   }
 };
 
-bool compareLength(const EdgeLength& a, const EdgeLength& b) 
-{
-  return a.length > b.length;
-}
-
-Entity* getShortestCollapsable(Adapt* a, Collapse& collapse, apf::Up& adjacent, Entity* vertex)
+bool collapseShortest(Adapt* a, Collapse& collapse, apf::Up& adjacent, Entity* vertex)
 {
   std::vector<EdgeLength> sorted;
   for (int i=0; i < adjacent.n; i++) {
@@ -321,11 +299,9 @@ Entity* getShortestCollapsable(Adapt* a, Collapse& collapse, apf::Up& adjacent, 
   for (int i=0; i < sorted.size(); i++) {
     Entity* edge = sorted[i].edge;
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, edge, vertex);
-    if (!tryCollapseEdge(a, edge, keepVertex, collapse)) continue;
-    collapse.cancel();
-    return edge;
+    if (tryCollapseEdge(a, edge, keepVertex, collapse)) return true;
   }
-  return 0;
+  return false;
 }
 
 //Prevent adjacent vertices from collapsing to create indepedent set
@@ -394,15 +370,6 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
   return shortEdgeVerts;
 }
 
-void assertChecked(Adapt* a, std::list<Entity*>& shortEdgeVerts, const int currChecked)
-{
-  int realChecked = 0;
-  std::list<Entity*>::iterator i = shortEdgeVerts.begin();
-  while (i != shortEdgeVerts.end())
-    if (getFlag(a, *i++, CHECKED)) realChecked++;
-  PCU_ALWAYS_ASSERT(realChecked == currChecked);
-}
-
 bool coarsen(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
@@ -417,23 +384,15 @@ bool coarsen(Adapt* a)
   std::list<Entity*>::iterator i = shortEdgeVerts.begin();
   while (checked < shortEdgeVerts.size())
   {
-    // assertChecked(a, shortEdgeVerts, checked);
     apf::Up adjacent;
     Entity* vertex = getTouchingIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked, adjacent);
     if (vertex == 0) continue;
-    Entity* shortEdge = getShortestCollapsable(a, collapse, adjacent, vertex);
-    if (shortEdge == 0) {
-      setFlag(a, vertex, CHECKED);
-      checked++;
-      continue;
-    }
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, shortEdge, vertex);
-    if (tryCollapseEdge(a, shortEdge, keepVertex, collapse)) {
+    if (collapseShortest(a, collapse, adjacent, vertex)) {
       flagIndependentSet(a, adjacent, checked);
       i = shortEdgeVerts.erase(i);
       independentSetStarted = true;
-      success++;
       collapse.destroyOldElements();
+      success++;
     }
     else {
       setFlag(a, vertex, CHECKED);
