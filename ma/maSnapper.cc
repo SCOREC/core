@@ -339,10 +339,6 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
 
 bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 {
-  if (FPP->commEdges.n < 2) {
-    print(mesh->getPCU(), "Swap failed: consider more collapses before swap");
-    return false;
-  }
   Entity* ents[4];
   double area[4];
   int bit = getTetStats(adapt, FPP, ents, area);
@@ -351,9 +347,23 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
   for(int i=1; i<4; i++) 
     if( area[i]<min ) min=area[i]; 
 
-  if (area[0]==min) { //TODO: implement
-    print(mesh->getPCU(), "Swap failed: small base area case not implemented");
-    return false;
+  if (area[0]==min) {
+    Entity* edges[3];
+    mesh->getDownward(FPP->problemFace, 1, edges);
+    Entity* longest = edges[0];
+    for (int i=1; i<3; i++)
+      if (adapt->sizeField->measure(edges[i]) > adapt->sizeField->measure(longest))
+        longest = edges[i];
+    
+    if (edgeSwap->run(longest)) {
+      numSwap++;
+      return true;
+    }
+
+    if (splitCollapse.run(longest, FPP->vert, 0)) {
+      numSplitCollapse++;
+      return true;
+    }
   }
 
   // two large dihedral angles -> key problem: two mesh edges
