@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
                  FACE2EDGE|FACE2VERTEX));
       MG_API_CALL(m, set_reverse_states());
       // MG_API_CALL(m, compute_adjacency()); // unnecessary because no elements?
-      ma::Mesh* newCapMesh = apf::createMesh(m, g);
+      ma::Mesh* newCapMesh = apf::createMesh(m, g, &PCUObj);
       apf::convert(adaptMesh, newCapMesh);
       apf::writeVtkFiles("core_capVol_after_cap.vtk", newCapMesh);
       apf::destroyMesh(newCapMesh);
