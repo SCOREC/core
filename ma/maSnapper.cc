@@ -398,10 +398,10 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       return true;
     }
 
-    // if (doubleSplitCollapse.run(ents, 0)) { //TODO: TEST DOUBLE SPLIT COLLAPSE
-    //   numSplitCollapse++;
-    //   return true;
-    // }
+    if (doubleSplitCollapse.run(ents, 0)) {
+      numSplitCollapse++;
+      return true;
+    }
   }
 
   print(mesh->getPCU(), "Swap failed: face swap and double split collapse not implemented");
