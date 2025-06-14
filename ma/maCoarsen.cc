@@ -329,26 +329,27 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
 }
 
 //Iterates through shortEdgeVerts until it finds a vertex that is adjacent to an independent set
-Entity* getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& i, bool& independentSetStarted, const int checked, apf::Up& adjacent)
+bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, bool& independentSetStarted, const int checked, apf::Up& adjacent)
 {
-  auto start = i;
+  int numItr=0;
   do {
-    if (i == shortEdgeVerts.end()) i = shortEdgeVerts.begin();
-    Entity* vertex = *i;
-    if (getFlag(a, vertex, CHECKED)) {i++; continue;} //Already tried to collapse
+    numItr++;
+    if (itr == shortEdgeVerts.end()) itr = shortEdgeVerts.begin();
+    Entity* vertex = *itr;
+    if (getFlag(a, vertex, CHECKED)) {itr++; continue;} //Already tried to collapse
     a->mesh->getUp(vertex, adjacent);
-    if (!independentSetStarted) return vertex;
-    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {i++; continue;} //Too close to last collapse
+    if (!independentSetStarted) return true;
+    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {itr++; continue;} //Too close to last collapse
     for (int i=0; i < adjacent.n; i++)
     {
       Entity* opposite = getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vertex);
-      if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return vertex; //Touching independent set
+      if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return true; //Touching independent set
     }
-    i++;
-  } while (i != start);
+    itr++;
+  } while (numItr < shortEdgeVerts.size());
   clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
   independentSetStarted = false;
-  return 0;
+  return false;
 }
 
 std::list<Entity*> getShortEdgeVerts(Adapt* a)
@@ -386,21 +387,20 @@ bool coarsen(Adapt* a, bool aggressive)
   int success = 0;
   int checked = 0;
   bool independentSetStarted = false;
-  std::list<Entity*>::iterator i = shortEdgeVerts.begin();
+  std::list<Entity*>::iterator itr = shortEdgeVerts.begin();
   while (checked < shortEdgeVerts.size())
   {
     apf::Up adjacent;
-    Entity* vertex = getAdjIndependentSet(a, shortEdgeVerts, i, independentSetStarted, checked, adjacent);
-    if (vertex == 0) continue;
-    if (collapseShortest(a, collapse, adjacent, vertex)) {
+    if (!getAdjIndependentSet(a, shortEdgeVerts, itr, independentSetStarted, checked, adjacent)) continue;
+    if (collapseShortest(a, collapse, adjacent, *itr)) {
       flagIndependentSet(a, adjacent, checked);
-      i = shortEdgeVerts.erase(i);
+      itr = shortEdgeVerts.erase(itr);
       independentSetStarted = true;
       collapse.destroyOldElements();
       success++;
     }
     else {
-      setFlag(a, vertex, CHECKED);
+      setFlag(a, *itr, CHECKED);
       checked++;
     }
   }
