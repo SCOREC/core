@@ -11,6 +11,7 @@
 #define MA_ADAPT_H
 
 #include "maInput.h"
+#include <queue>
 
 namespace ma {
 
@@ -54,6 +55,7 @@ class Adapt
     apf::BuildCallback* buildCallback;
     SizeField* sizeField;
     SolutionTransfer* solutionTransfer;
+    std::queue<Entity*> vtxToSnap;
     Refine* refine;
     ShapeHandler* shape;
     int coarsensLeft;

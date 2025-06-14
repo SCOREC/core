@@ -381,6 +381,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       numSplitCollapse++;
       return true;
     }
+    print(mesh->getPCU(), "Swap failed: Consider better swap/spltClps");
   }
   // three large dihedral angles -> key entity: a mesh face
   else {
@@ -397,9 +398,8 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       numSplitCollapse++;
       return true;
     }
+    print(mesh->getPCU(), "Swap failed: face swap not implemented");
   }
-
-  print(mesh->getPCU(), "Swap failed: face swap and double split collapse not implemented");
   return false;
 }
 
@@ -627,7 +627,7 @@ bool Snapper::run()
   FirstProblemPlane* FPP = getFPP(adapt, vert, snapTag, invalid);
 
   if (!success) success = tryCollapseToVertex(FPP);
-  // if (!success) success = tryReduceCommonEdges(FPP);
+  if (!success) success = tryReduceCommonEdges(FPP);
   if (!success) success = tryCollapseTetEdges(FPP);
   if (!success) success = trySwapOrSplit(FPP);
 

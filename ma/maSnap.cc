@@ -846,15 +846,15 @@ bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
 long tagVertsToSnap(Adapt* a, Tag*& tag)
 {
   Mesh* m = a->mesh;
-  Refine* refine = a->refine;
   int dim = m->getDimension();
-  int notProcessed = refine->vtxToSnap.size();
+  int notProcessed = a->vtxToSnap.size();
   int owned = 0;
+  printf("size %d\n", notProcessed);
   while (notProcessed > 0)
   {
     notProcessed--;
-    Entity* vertex = refine->vtxToSnap.front();
-    refine->vtxToSnap.pop();
+    Entity* vertex = a->vtxToSnap.front();
+    a->vtxToSnap.pop();
     PCU_ALWAYS_ASSERT(getFlag(a, vertex, SNAP));
 
     Vector target;
@@ -868,7 +868,7 @@ long tagVertsToSnap(Adapt* a, Tag*& tag)
     m->setDoubleTag(vertex, tag, &target[0]);
     if (m->isOwned(vertex))
       ++owned;
-    refine->vtxToSnap.push(vertex);
+    a->vtxToSnap.push(vertex);
   }
   return m->getPCU()->Add<long>(owned);
 }
@@ -913,21 +913,20 @@ long snapTaggedVerts(Adapt* a, Tag* tag)
 
 void trySnapping(Adapt* a, Snapper& snapper) 
 {
-  std::queue<Entity*>* vtxToSnap = &a->refine->vtxToSnap;
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true; //Allows quality to decrease from snapping
 
-  while (vtxToSnap->size() > 0)
+  while (a->vtxToSnap.size() > 0)
   {
-    Entity* vertex = vtxToSnap->front();
-    vtxToSnap->pop();
+    Entity* vertex = a->vtxToSnap.front();
+    a->vtxToSnap.pop();
     snapper.setVert(vertex);
     if (snapper.run() && getFlag(a, vertex, SNAP))
-      vtxToSnap->push(vertex);
+      a->vtxToSnap.push(vertex);
   }
 
   a->input->shouldForceAdaptation = shouldForce;
-  a->refine->vtxToSnap = {};
+  a->vtxToSnap = {};
 }
 
 void snap(Adapt* a)

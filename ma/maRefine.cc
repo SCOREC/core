@@ -134,7 +134,7 @@ void AddVertexToSnap(Refine* r, Entity* vert)
   int dim = m->getDimension();
   int md = m->getModelType(m->toModel(vert));
   if (dim == md) return;
-  r->vtxToSnap.push(vert);
+  a->vtxToSnap.push(vert);
   setFlag(a, vert, SNAP);
 }
 
