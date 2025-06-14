@@ -354,12 +354,11 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
     for (int i=1; i<3; i++)
       if (adapt->sizeField->measure(edges[i]) > adapt->sizeField->measure(longest))
         longest = edges[i];
-    
+
     if (edgeSwap->run(longest)) {
       numSwap++;
       return true;
     }
-
     if (splitCollapse.run(longest, FPP->vert, 0)) {
       numSplitCollapse++;
       return true;
@@ -373,12 +372,15 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
         numSwap++;
         return true;
       }
-
     for (int i=0; i<2; i++)
       if (splitCollapse.run(ents[i], FPP->vert, 0)) { //TODO: Select best
         numSplitCollapse++;
         return true;
       }
+    if (doubleSplitCollapse.run(ents, 0)) {
+      numSplitCollapse++;
+      return true;
+    }
   }
   // three large dihedral angles -> key entity: a mesh face
   else {
@@ -390,15 +392,8 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
         return true;
       }
     }
-
     //TODO: IMPLEMENT FACE SWAP
-
     if (splitCollapse.run(ents[1], FPP->vert, 0)) {
-      numSplitCollapse++;
-      return true;
-    }
-
-    if (doubleSplitCollapse.run(ents, 0)) {
       numSplitCollapse++;
       return true;
     }
@@ -524,8 +519,8 @@ bool Snapper::tryReduceCommonEdges(FirstProblemPlane* FPP)
       for (int i=0; i<3; i++) {
         Entity* pbVert[2];
         mesh->getDownward(pbEdges[i], 0, pbVert);
-        if (pbVert[0] == v1 && pbVert[1] == v2) break;
-        if (pbVert[1] == v1 && pbVert[0] == v2) break;
+        if (pbVert[0] == v1 && pbVert[1] == v2) continue;
+        if (pbVert[1] == v1 && pbVert[0] == v2) continue;
         for (int j=0; j<2; j++)
           getBestQualityCollapse(adapt, pbEdges[i], pbVert[j], collapse, best);
       }
