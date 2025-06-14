@@ -849,19 +849,17 @@ long tagVertsToSnap(Adapt* a, Tag*& tag)
   int dim = m->getDimension();
   int notProcessed = a->vtxToSnap.size();
   int owned = 0;
-  printf("size %d\n", notProcessed);
   while (notProcessed > 0)
   {
     notProcessed--;
     Entity* vertex = a->vtxToSnap.front();
     a->vtxToSnap.pop();
-    PCU_ALWAYS_ASSERT(getFlag(a, vertex, SNAP));
-
+    if (!getFlag(a, vertex, SNAP)) //This means the vertex was deleted
+      continue;
     Vector target;
     getSnapPoint(m, vertex, target);
     Vector prev = getPosition(m, vertex);
-    if (apf::areClose(prev, target, 1e-12))
-    {
+    if (apf::areClose(prev, target, 1e-12)) {
       clearFlag(a, vertex, SNAP);
       continue;
     }

@@ -129,13 +129,12 @@ Refine::~Refine()
 
 void AddVertexToSnap(Refine* r, Entity* vert)
 {
-  Adapt* a = r->adapt;
-  Mesh* m = a->mesh;
+  Mesh* m = r->adapt->mesh;
   int dim = m->getDimension();
   int md = m->getModelType(m->toModel(vert));
   if (dim == md) return;
-  a->vtxToSnap.push(vert);
-  setFlag(a, vert, SNAP);
+  r->adapt->vtxToSnap.push(vert);
+  setFlag(r->adapt, vert, SNAP);
 }
 
 Entity* makeSplitVert(Refine* r, Entity* edge)
@@ -150,12 +149,6 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
   apf::MeshElement* me = apf::createMeshElement(m,edge);
   Vector point;
   apf::mapLocalToGlobal(me,xi,point);
-
-  // Vector failed(-0.279880, -0.093306, 0.132892);
-  // if (apf::areClose(point, failed, 1e-5)){
-  //   printf("===FAILED FOUND\n");
-  // }
-
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
     transferParametricOnEdgeSplit(m,edge,0.5,param);
