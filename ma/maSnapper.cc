@@ -332,14 +332,14 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
       break;
     }
     default:
-      PCU_ALWAYS_ASSERT(false); //TODO: ADD ERROR
+      print(a->mesh->getPCU(), "Swap warning: This swap/splt may not work consider more collapses");
   }
   return bit;
 }
 
 bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 {
-  Entity* ents[4];
+  Entity* ents[4] = {0};
   double area[4];
   int bit = getTetStats(adapt, FPP, ents, area);
 
@@ -365,15 +365,18 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
     }
   }
 
+  if (ents[0] == 0)
+    return false;
+
   // two large dihedral angles -> key problem: two mesh edges
   if (bit==3 || bit==5 || bit==6) {
     for (int i=0; i<2; i++)
-      if (edgeSwap->run(ents[i])) { //TODO: Select best
+      if (edgeSwap->run(ents[i])) {
         numSwap++;
         return true;
       }
     for (int i=0; i<2; i++)
-      if (splitCollapse.run(ents[i], FPP->vert, 0)) { //TODO: Select best
+      if (splitCollapse.run(ents[i], FPP->vert, 0)) {
         numSplitCollapse++;
         return true;
       }
@@ -381,19 +384,19 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       numSplitCollapse++;
       return true;
     }
-    print(mesh->getPCU(), "Swap failed: Consider better swap/spltClps");
+    print(mesh->getPCU(), "Swap failed: Consider more collapses");
   }
   // three large dihedral angles -> key entity: a mesh face
   else {
     Entity* edges[3];
     mesh->getDownward(ents[0], 1, edges);
     for (int i=0; i<3; i++) {
-      if (edgeSwap->run(edges[i])) { //TODO: Select best
+      if (edgeSwap->run(edges[i])) {
         numSwap++;
         return true;
       }
     }
-    //TODO: IMPLEMENT FACE SWAP
+    //TODO: RUN FACE SWAP HERE
     if (splitCollapse.run(ents[1], FPP->vert, 0)) {
       numSplitCollapse++;
       return true;
@@ -414,7 +417,7 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   if (collapse.setEdge(edge) && 
       collapse.checkClass() &&
       collapse.checkTopo() &&
-      collapse.tryBothDirections(0)) {
+      collapse.tryBothDirections(a->input->validQuality)) {
     collapse.destroyOldElements();
     result = true;
   }  
@@ -437,7 +440,7 @@ static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collaps
   if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
   if (collapse.setEdge(edge) && collapse.checkClass() && collapse.checkTopo()) {
       collapse.computeElementSets();
-      if (collapse.tryThisDirectionNoCancel(0) && collapse.edgesGoodSize()) {
+      if (collapse.tryThisDirectionNoCancel(a->input->validQuality) && collapse.edgesGoodSize()) {
         double quality = getWorstQuality(a, collapse.newElements);
         if (quality > best.quality) {
           best.quality = quality;
