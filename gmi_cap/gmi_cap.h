@@ -12,26 +12,45 @@
 
 
 #include "gmi.h"
-#include "CapstoneModule.h"
+#ifdef __cplusplus
+#include <string>
+#include <vector>
 #include "CreateMG_Framework_Geometry.h"
-#include "CreateMG_Framework_Mesh.h" 
-
-using namespace CreateMG;
-using namespace CreateMG::Attribution;
-using namespace CreateMG::Mesh;
-using namespace CreateMG::Geometry;
-
-gmi_ent* toGmiEntity(M_GTopo topo);
-M_GTopo fromGmiEntity(gmi_ent* g);
+#else
+extern "C" {
+#endif
 
 void gmi_cap_start(void);
 void gmi_cap_stop(void);
 void gmi_register_cap(void);
-
 struct gmi_model* gmi_cap_load(const char* creFileName);
-struct gmi_model* gmi_import_cap(GeometryDatabaseInterface* gi);
-GeometryDatabaseInterface* gmi_export_cap(struct gmi_model* m);
 
+#ifdef __cplusplus
+
+void gmi_cap_probe(
+  const char* creFileName, std::vector<std::string>& mesh_names
+);
+void gmi_cap_probe(
+  const char* creFileName, std::string& model_content,
+  std::vector<std::string>& mesh_names, std::vector<std::string>& mesh_contents
+);
+struct gmi_model* gmi_cap_load_some(
+  const char* creFileName, const std::vector<std::string>& mesh_names
+);
+
+gmi_ent* toGmiEntity(CreateMG::M_GTopo topo);
+CreateMG::M_GTopo fromGmiEntity(gmi_ent* g);
+
+struct gmi_model* gmi_import_cap(CreateMG::GDBI* gi);
+struct gmi_model* gmi_import_cap(CreateMG::GDBI* gi, CreateMG::M_GModel);
+CreateMG::GDBI* gmi_export_cap(struct gmi_model* m);
+
+#endif // __cplusplus
+
+
+#ifndef __cplusplus
+} // extern "C"
 #endif
 
+#endif // GMI_CAP_H
 

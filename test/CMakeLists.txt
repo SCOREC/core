@@ -229,6 +229,8 @@ if(ENABLE_CAPSTONE)
   util_exe_func(capCheckParam capCheckParam.cc)
   util_exe_func(capAdapt capAdapt.cc)
   target_link_libraries(capAdapt framework_meshing)
+  util_exe_func(capProbe capProbe.cc)
+  util_exe_func(capLoadSome capLoadSome.cc)
 endif()
 
 # send all the newly added utility executable targets
