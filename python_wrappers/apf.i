@@ -51,6 +51,26 @@ double PCU_Time(void);
 bool PCU_Comm_Initialized(PCU_t h);
 %include<pcu_defines.h>
 %include<PCU.h>
+%template(Add_int) pcu::PCU::Add<int>;
+%template(Min_int) pcu::PCU::Min<int>;
+%template(Max_int) pcu::PCU::Max<int>;
+%template(Exscan_int) pcu::PCU::Exscan<int>;
+%template(ALLgather_int) pcu::PCU::Allgather<int>;
+%template(Add_size_t) pcu::PCU::Add<size_t>;
+%template(Min_size_t) pcu::PCU::Min<size_t>;
+%template(Max_size_t) pcu::PCU::Max<size_t>;
+%template(Exscan_size_t) pcu::PCU::Exscan<size_t>;
+%template(ALLgather_size_t) pcu::PCU::Allgather<size_t>;
+%template(Add_long) pcu::PCU::Add<long>;
+%template(Min_long) pcu::PCU::Min<long>;
+%template(Max_long) pcu::PCU::Max<long>;
+%template(Exscan_long) pcu::PCU::Exscan<long>;
+%template(ALLgather_long) pcu::PCU::Allgather<long>;
+%template(Add_double) pcu::PCU::Add<double>;
+%template(Min_double) pcu::PCU::Min<double>;
+%template(Max_double) pcu::PCU::Max<double>;
+%template(Exscan_double) pcu::PCU::Exscan<double>;
+%template(ALLgather_double) pcu::PCU::Allgather<double>;
 
 /* ==== FROM pcu_util.h ====*/
 void PCU_Assert_Fail(const char* msg);
