@@ -140,7 +140,7 @@ INLINE_INHERITED_MEMB  = NO
 # shortest path that makes the file name unique will be used
 # The default value is: YES.
 
-FULL_PATH_NAMES        = NO
+FULL_PATH_NAMES        = YES
 
 # The STRIP_FROM_PATH tag can be used to strip a user-defined part of the path.
 # Stripping is only done if one of the specified strings matches the left-hand
@@ -152,7 +152,7 @@ FULL_PATH_NAMES        = NO
 # will be relative from the directory where doxygen is started.
 # This tag requires that the tag FULL_PATH_NAMES is set to YES.
 
-STRIP_FROM_PATH        =
+STRIP_FROM_PATH        = @CMAKE_CURRENT_SOURCE_DIR@
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
 # path mentioned in the documentation of a class, which tells the reader which
@@ -757,68 +757,14 @@ WARN_LOGFILE           =
 INPUT                  = \
 @CMAKE_CURRENT_SOURCE_DIR@/scorec.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfMesh.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfMesh2.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apf.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfNumbering.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfShape.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfConvert.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfVector.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfMatrix.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicVector.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfDynamicMatrix.h \
-@CMAKE_CURRENT_SOURCE_DIR@/can/canArray.h \
-@CMAKE_CURRENT_SOURCE_DIR@/can/canNewArray.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfCavityOp.h \
-@CMAKE_CURRENT_SOURCE_DIR@/apf/apfPartition.h \
-@CMAKE_CURRENT_SOURCE_DIR@/mds/apfMDS.h \
-@CMAKE_CURRENT_SOURCE_DIR@/ma/ma.h \
-@CMAKE_CURRENT_SOURCE_DIR@/ma/maInput.h \
-@CMAKE_CURRENT_SOURCE_DIR@/ma/maMesh.h \
-@CMAKE_CURRENT_SOURCE_DIR@/ma/maSolutionTransfer.h \
-@CMAKE_CURRENT_SOURCE_DIR@/ma/maSize.h \
-@CMAKE_CURRENT_SOURCE_DIR@/zoltan/apfZoltan.h \
 @CMAKE_CURRENT_SOURCE_DIR@/spr/spr.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/spr/spr.h \
 @CMAKE_CURRENT_SOURCE_DIR@/parma/parma.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/parma/parma.h \
 @CMAKE_CURRENT_SOURCE_DIR@/metis/metis.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/metis/apfMETIS.h \
 @CMAKE_CURRENT_SOURCE_DIR@/phasta/phasta.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/chef.h \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/chef.cc \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/chefStream.cc \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/phstream.h \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInput.h \
-@CMAKE_CURRENT_SOURCE_DIR@/phasta/phInput.cc \
-@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi.h \
-@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_mesh.h \
-@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_analytic.h \
-@CMAKE_CURRENT_SOURCE_DIR@/gmi/gmi_null.h \
 @CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/pcu/PCU.h \
-@CMAKE_CURRENT_SOURCE_DIR@/pcu/PCU_C.h \
-@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu_io.h \
-@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu_util.h \
-@CMAKE_CURRENT_SOURCE_DIR@/pcu/pcu_defines.h \
 @CMAKE_CURRENT_SOURCE_DIR@/mth/mth.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/mth/mth.h \
-@CMAKE_CURRENT_SOURCE_DIR@/mth/mthVector.h \
-@CMAKE_CURRENT_SOURCE_DIR@/mth/mthMatrix.h \
-@CMAKE_CURRENT_SOURCE_DIR@/mth/mthQR.h \
-@CMAKE_CURRENT_SOURCE_DIR@/mth/mthAD.h \
 @CMAKE_CURRENT_SOURCE_DIR@/crv/crv.dox \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crv.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvAdapt.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvBezier.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvBezierShapes.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvMath.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvQuality.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvShape.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvSnap.h \
-@CMAKE_CURRENT_SOURCE_DIR@/crv/crvTables.h
-
-
+@DOXYGEN_INPUT@
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -2009,7 +1955,8 @@ INCLUDE_FILE_PATTERNS  =
 # This is a little hack to prevent protected class members from
 # showing up in the documentation
 # http://osdir.com/ml/text.doxygen.general/2004-12/msg00047.html
-PREDEFINED             = protected=private
+PREDEFINED             = protected=private \
+__cplusplus
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

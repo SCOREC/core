@@ -58,7 +58,7 @@ PROJECT_LOGO           = @CMAKE_CURRENT_SOURCE_DIR@/scorec.png
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = doc
+OUTPUT_DIRECTORY       = docInternal
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create 4096 sub-
 # directories (in 2 levels) under the output directory of each output format and
@@ -755,6 +755,7 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
+@DOXYGEN_INPUT@ \
 @CMAKE_CURRENT_SOURCE_DIR@/scorec.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf.dox \
 @CMAKE_CURRENT_SOURCE_DIR@/apf/apf2mth.h \
