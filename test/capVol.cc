@@ -10,6 +10,7 @@
 
 // Mesh interfaces
 #include <apf.h>
+#include <apfMesh2.h>
 #include <apfCAP.h>
 #include <apfMDS.h>
 #include <apfConvert.h>
@@ -21,10 +22,10 @@
 // Mesh adapt
 #include <ma.h>
 
+#include <CapstoneModule.h>
+#include <CreateMG_Framework_Mesh.h>
+
 using namespace CreateMG;
-using namespace CreateMG::Attribution;
-using namespace CreateMG::Mesh;
-using namespace CreateMG::Geometry;
 
 #include "capVolSizeFields.h"
 
@@ -118,9 +119,9 @@ int main(int argc, char** argv) {
 
   CapstoneModule  cs("capVol", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
 
-  GeometryDatabaseInterface     *g = cs.get_geometry();
-  MeshDatabaseInterface         *m = cs.get_mesh();
-  AppContext                    *c = cs.get_context();
+  GDBI *g = cs.get_geometry();
+  MDBI *m = cs.get_mesh();
+  AppContext *c = cs.get_context();
 
   PCU_ALWAYS_ASSERT(g);
   PCU_ALWAYS_ASSERT(m);
@@ -159,7 +160,7 @@ int main(int argc, char** argv) {
   MG_API_CALL(m, compute_adjacency());
 
   // Make APF adapter over Capstone mesh.
-  ma::Mesh* apfCapMesh = apf::createMesh(m, g, &PCUObj);
+  ma::Mesh* apfCapMesh = apf::createCapMesh(m, g, &PCUObj);
   apf::writeVtkFiles("core_capVol_cap.vtk", apfCapMesh);
 
   ma::Mesh* adaptMesh = apfCapMesh;
@@ -243,7 +244,7 @@ int main(int argc, char** argv) {
                  FACE2EDGE|FACE2VERTEX));
       MG_API_CALL(m, set_reverse_states());
       // MG_API_CALL(m, compute_adjacency()); // unnecessary because no elements?
-      ma::Mesh* newCapMesh = apf::createMesh(m, g, &PCUObj);
+      ma::Mesh* newCapMesh = apf::createCapMesh(m, g, &PCUObj);
       apf::convert(adaptMesh, newCapMesh);
       apf::writeVtkFiles("core_capVol_after_cap.vtk", newCapMesh);
       apf::destroyMesh(newCapMesh);

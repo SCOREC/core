@@ -133,7 +133,7 @@ int main(int argc, char** argv)
 
   // convert the mesh to apf/mds mesh
 
-  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
+  apf::Mesh2* mesh = apf::createCapMesh(m,g,&PCUObj);
 
   apf::writeVtkFiles(folderName, mesh);
 

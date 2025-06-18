@@ -1,187 +1,77 @@
-#ifndef APFCAP
-#define APFCAP
+/****************************************************************************** 
 
-#include <apfMesh2.h>
-#include <PCU.h>
+  Copyright 2025 Scientific Computation Research Center,
+      Rensselaer Polytechnic Institute. All rights reserved.
 
-#include "CapstoneModule.h"
-#include "CreateMG_Framework_Geometry.h"
-#include "CreateMG_Framework_Mesh.h"
+  This work is open source software, licensed under the terms of the
+  BSD license as described in the LICENSE file in the top-level directory.
 
-using namespace CreateMG;
-using namespace CreateMG::Attribution;
-using namespace CreateMG::Mesh;
-using namespace CreateMG::Geometry;
+******************************************************************************/
+#ifndef APF_CAP_H
+#define APF_CAP_H
 
+#include <string>
 
-
-class capEntity;
-class capMesh;
+// Forward declarations
+struct gmi_model;
+namespace pcu {
+  class PCU;
+}
+namespace CreateMG {
+  namespace Geometry { class GeometryDatabaseInterface; }
+  namespace Mesh { class MeshDatabaseInterface; }
+  typedef Geometry::GeometryDatabaseInterface GDBI;
+  typedef Mesh::MeshDatabaseInterface MDBI;
+}
 
 namespace apf {
 
+class Mesh2;
+class Field;
+
 /**
- * \brief Creates an apf::Mesh from a CapStone mesh.
- *
- * \details This object should be destroyed by apf::destroyMesh.
+ * \brief Test for compiled Capstone library support.
+ * \return true if apf_cap was compiled with Capstone. otherwise all routines
+ *         will call apf::fail.
  */
-Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb, pcu::PCU *PCUObj);
+bool hasCAP() noexcept;
 
 /**
-  * \brief Casts a CapStone entity to an apf::MeshEntity.
-  *
-  * \details This does not create any objects, use freely.
-  */
-MeshEntity* castEntity(capEntity* entity);
+ * \brief Create an apf::Mesh2 object from a Capstone mesh database.
+ *
+ * This object should be destroyed by apf::destroyMesh. Since Capstone meshes
+ * are serial only right now, PCUObj will not be directly used, but may have an
+ * impact on collective calls involving the mesh (e.g. a PCU::Add which uses
+ * Mesh::getPCU()).
+ *
+ * \param mdb A Capstone MeshDatabaseInterface with a current M_MModel.
+ * \param gdb A Capstone GeometryDatabaseInterface with a current M_GModel.
+ * \param PCUObj The PCU communicator to define the mesh over.
+ */
+Mesh2* createCapMesh(
+  CreateMG::MDBI* mdb, CreateMG::GDBI* gdb, pcu::PCU *PCUObj
+);
 
-class TagCAP;
+/**
+ * \brief Create an apf::Mesh2 object from a mesh linked to a loaded 
+ * geometry model.
+ *
+ * The gmi_model should be loaded previously by gmi_load (on a .cre file),
+ * gmi_cap_load, or gmi_cap_load_some. The list of acceptable values for
+ * meshname can be found by using gmi_cap_probe or direct Capstone interfaces.
+ *
+ * \param model A gmi_model associated with a Capstone geometry.
+ * \param meshname The name of a mesh associated with 
+ * \return an apf::Mesh2 interface to the Capstone mesh.
+ */
+Mesh2* createCapMesh(gmi_model* model, const char* meshname, pcu::PCU* PCUObj);
 
-class MeshCAP : public Mesh2
-{
-  public:
-    MeshCAP(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
-    virtual ~MeshCAP();
-    /* --------------------------------------------------------------------- */
-    /* Category 00: General Mesh APIs */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    int getDimension();
-    std::size_t count(int dimension);
-    Type getType(MeshEntity* e);
-    void verify();
-    // OPTIONAL Member Functions //
-    void writeNative(const char* fileName);
-    void destroyNative();
-
-    /* --------------------------------------------------------------------- */
-    /* Category 01: General Getters and Setters for vertex coordinates */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    void getPoint_(MeshEntity* e, int, Vector3& point);
-    void setPoint_(MeshEntity* e, int, Vector3 const& p);
-    void getParam(MeshEntity* e, Vector3& p);
-    void setParam(MeshEntity* e, Vector3 const& point);
-
-    /* --------------------------------------------------------------------- */
-    /* Category 02: Iterators */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    MeshIterator* begin(int dimension);
-    MeshEntity* iterate(MeshIterator* it);
-    void end(MeshIterator* it);
-    void increment(MeshIterator* it);
-    bool isDone(MeshIterator* it);
-    MeshEntity* deref(MeshIterator* it);
-
-    /* --------------------------------------------------------------------- */
-    /* Category 03: Adjacencies */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent);
-    int getDownward(MeshEntity* e, int dimension, MeshEntity** adjacent);
-    MeshEntity* getUpward(MeshEntity* e, int i);
-    bool hasUp(MeshEntity* e);
-    // OPTIONAL Member Functions //
-    bool hasAdjacency(int from_dim, int to_dim);
-    void createAdjacency(int from_dim, int to_dim);
-    void deleteAdjacency(int from_dim, int to_dim);
-    void getUp(MeshEntity* e, Up& up);
-    int countUpward(MeshEntity* e);
-
-    /* --------------------------------------------------------------------- */
-    /* Category 04: CAD model inquires */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    ModelEntity* toModel(MeshEntity* e);
-    // OPTIONAL Member Functions //
-    gmi_model* getModel();
-    void setModel(gmi_model* newModel);
-    void setModelEntity(MeshEntity* e, ModelEntity* me);
-
-    /* --------------------------------------------------------------------- */
-    /* Category 05: Entity Creation/Deletion */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    MeshEntity* createVert_(ModelEntity* me);
-    MeshEntity* createEntity_(int type, ModelEntity* me, MeshEntity** down);
-    void destroy_(MeshEntity* e);
-
-    /* --------------------------------------------------------------------- */
-    /* Category 06: Attachable Data Functionality */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    MeshTag* createDoubleTag(const char* name, int size);
-    MeshTag* createIntTag(const char* name, int size);
-    MeshTag* createLongTag(const char* name, int size);
-    MeshTag* findTag(const char* name);
-    void destroyTag(MeshTag* t);
-    void renameTag(MeshTag* t, const char* name);
-    void getTags(DynamicArray<MeshTag*>& tags);
-    /* void getTag(MeshEntity* e, MeshTag* t, void* data); */
-    /* void setTag(MeshEntity* e, MeshTag* t, void const* data); */
-    void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data);
-    void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data);
-    void getIntTag(MeshEntity* e, MeshTag* tag, int* data);
-    void setIntTag(MeshEntity* e, MeshTag* tag, int const* data);
-    void getLongTag(MeshEntity* e, MeshTag* tag, long* data);
-    void setLongTag(MeshEntity* e, MeshTag* tag, long const* data);
-    void removeTag(MeshEntity* e, MeshTag* t);
-    bool hasTag(MeshEntity* e, MeshTag* t);
-    int getTagType(MeshTag* t);
-    int getTagSize(MeshTag* t);
-    const char* getTagName(MeshTag* t);
-    unsigned getTagChecksum(MeshTag*,int);
-
-
-    /* --------------------------------------------------------------------- */
-    /* Category 07: Distributed Meshes */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    bool isShared(MeshEntity* e);
-    bool isGhost(MeshEntity*) { return false; }
-    bool isGhosted(MeshEntity*) { return false; }
-    bool isOwned(MeshEntity* e);
-    int getOwner(MeshEntity* e);
-    void getRemotes(MeshEntity* e, Copies& remotes);
-    void getResidence(MeshEntity* e, Parts& residence);
-    int getId();
-    void setResidence(MeshEntity*, Parts&) {}
-    void acceptChanges() {}
-    // OPTIONAL Member Functions //
-    void deleteGhost(MeshEntity*) {}
-    void addGhost(MeshEntity*, int, MeshEntity*) {}
-    int getGhosts(MeshEntity*, Copies&) { return 0; }
-    void migrate(Migration* plan);
-    void setRemotes(MeshEntity*, Copies&) {}
-    void addRemote(MeshEntity*, int, MeshEntity*) {}
-    void clearRemotes(MeshEntity*) {}
-
-
-    /* --------------------------------------------------------------------- */
-    /* Category 08: Periodic Meshes */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    bool hasMatching() { return false; }
-    void getMatches(MeshEntity* e, Matches& m);
-    // OPTIONAL Member Functions //
-    void addMatch(MeshEntity*, int, MeshEntity*) {}
-    void clearMatches(MeshEntity*) {}
-    void clear_() {}
-    void getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me);
-
-
-
-    MeshDatabaseInterface* getMesh() { return meshInterface; }
-  protected:
-    /* CapstoneModule capModule; */
-    MeshDatabaseInterface* meshInterface;
-    GeometryDatabaseInterface  *geomInterface;
-    /* AppContext                 *c; */
-    int iterDim;
-    int d;
-    gmi_model* model;
-    std::vector<TagCAP*> tags;
-};
+/**
+ * \brief Get native Capstone mesh database interface.
+ * \param capMesh Previously loaded capstone mesh.
+ * \return Underlying Capstone mesh database interface from capMesh.
+ */
+CreateMG::MDBI* getCapNative(Mesh2* capMesh);
 
 /**
  * \brief Test for smoothCAPAnisoSizes support.
@@ -204,11 +94,12 @@ bool has_smoothCAPAnisoSizes(void) noexcept;
  * \param frames An apf::Field of apf::Matrix3x3 with orthogonal basis frames.
  * \param scales An apf::Field of apf::Vector3 with frame scales (eigenvalues).
  * \return A boolean indicating success.
- * \pre m must be an apf::MeshCAP.
+ * \pre m must be a Capstone mesh.
  */
-bool smoothCAPAnisoSizes(apf::Mesh2* m, std::string analysis,
-  apf::Field* scales, apf::Field* frames);
+bool smoothCAPAnisoSizes(
+  apf::Mesh2* m, std::string analysis, apf::Field* scales, apf::Field* frames
+);
 
 }//namespace apf
 
-#endif
+#endif // APF_CAP_H

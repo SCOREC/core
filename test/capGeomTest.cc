@@ -118,7 +118,7 @@ int main(int argc, char** argv)
   gmi_register_cap();
 
 
-  apf::Mesh2* mesh0 = apf::createMesh(m,g,&PCUObj);
+  apf::Mesh2* mesh0 = apf::createCapMesh(m,g,&PCUObj);
   apf::writeVtkFiles("mesh_no_param", mesh0);
 
   gmi_model* model = gmi_import_cap(g);
@@ -147,7 +147,7 @@ int main(int argc, char** argv)
   printf("creating mesh with param field\n");
 
 
-  apf::Mesh2* mesh = apf::createMesh(m,g,&PCUObj);
+  apf::Mesh2* mesh = apf::createCapMesh(m,g,&PCUObj);
   apf::Field* pf  = apf::createFieldOn(mesh, "param_field", apf::VECTOR);
   apf::Field* idf  = apf::createFieldOn(mesh, "id", apf::SCALAR);
   apf::MeshEntity* e;

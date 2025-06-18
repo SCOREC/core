@@ -17,9 +17,7 @@ set(HEADERS apfCAP.h)
 
 #Library
 add_library(apf_cap ${SOURCES})
-target_link_libraries(apf_cap PUBLIC apf gmi_cap)
-target_link_libraries(apf_cap PUBLIC capstone_module
-				     framework_testing)
+target_link_libraries(apf_cap PUBLIC apf gmi_cap capstone_module)
 
 set(CMAKE_CXX_OLD_STANDARD "${CMAKE_CXX_STANDARD}")
 cmake_push_check_state(RESET)

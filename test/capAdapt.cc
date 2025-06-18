@@ -34,12 +34,10 @@
 #include <apfZoltan.h>
 
 #include "CapstoneModule.h"
+#include "CreateMG_Framework_Mesh.h"
 #include "CreateMG_SizingMetricTool.h"
 
 using namespace CreateMG;
-using namespace CreateMG::Attribution;
-using namespace CreateMG::Mesh;
-using namespace CreateMG::Geometry;
 
 namespace {
 
@@ -87,12 +85,12 @@ void decompose_metric(const v_double& metric, apf::Matrix3x3& frame,
  * \param sizFielName path to bulk sizing file.
  * */
 std::vector<Metric6> loadSizing(
-  MeshDatabaseInterface *m, std::string mapFileName, std::string sizFileName
+  MDBI *m, std::string mapFileName, std::string sizFileName
 );
 
 /** \brief Load Metric6 vector into APF frame and scale fields. */
 void convertMetric6toAnisoFields(
-  MeshDatabaseInterface *m, const std::vector<Metric6>& sizing6,
+  MDBI *m, const std::vector<Metric6>& sizing6,
   apf::Field* frameField, apf::Field* scaleField
 );
 
@@ -173,7 +171,7 @@ int main(int argc, char** argv) {
       "Mesh Database : Create",
       "Attribution Database : Create"
     );
-    MeshDatabaseInterface     *m = cs.get_mesh();
+    MDBI *m = cs.get_mesh();
     PCU_ALWAYS_ASSERT(m);
 
     if (PCU.Self() == 0)
@@ -298,7 +296,7 @@ void print_exception(const std::exception& e, int level) {
 }
 
 std::vector<Metric6> loadSizing(
-  MeshDatabaseInterface *m, std::string mapFileName, std::string sizFileName
+  MDBI *m, std::string mapFileName, std::string sizFileName
 ) {
   std::vector<std::size_t> vmap;
   std::vector<double>      sizing;
@@ -334,14 +332,14 @@ std::vector<Metric6> loadSizing(
 }
 
 void convertMetric6toAnisoFields(
-  MeshDatabaseInterface *m, const std::vector<Metric6>& sizing6,
+  MDBI *m, const std::vector<Metric6>& sizing6,
   apf::Field* frameField, apf::Field* scaleField
 ) {
   v_double       sz(6);
   apf::Vector3   scalar;
   apf::Matrix3x3 frame;
   for (std::size_t i=0; i<sizing6.size(); i++) {
-    M_MTopo mtopo = m->get_topo_by_id(Mesh::TOPO_VERTEX,i + 1);
+    M_MTopo mtopo = m->get_topo_by_id(CreateMG::Mesh::TOPO_VERTEX,i + 1);
     for (std::size_t j=0; j<6; j++) sz[j] = sizing6[i][j];
     
     // field eigen values
@@ -362,7 +360,7 @@ ma::Mesh* makeApfInterfaceWithSizing(
   const std::string& vmapFile, const std::string& sizingFile, bool smooth
 ) {
   // All ranks need apfCapMesh->getModel().
-  ma::Mesh* apfCapMesh = apf::createMesh(
+  ma::Mesh* apfCapMesh = apf::createCapMesh(
     cs.get_mesh(), cs.get_geometry(), pcu.get()
   );
 

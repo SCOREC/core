@@ -1,4 +1,5 @@
 #include <apf.h>
+#include <apfMesh2.h>
 #include <apfCAP.h>
 #include <gmi_cap.h>
 #include <lionPrint.h>
@@ -20,7 +21,9 @@ int main (int argc, char* argv[]) {
     "Mesh Database : Create", "Attribution Database : Create");
   cs.load_files(v_string(1, creFile));
   // 2. CreateMesh.
-  apf::Mesh2* m = apf::createMesh(cs.get_mesh(), cs.get_geometry(), &PCUObj);
+  apf::Mesh2* m = apf::createCapMesh(
+    cs.get_mesh(), cs.get_geometry(), &PCUObj
+  );
   // 3. Get region 1 ModelEntity*.
   apf::ModelEntity* rgn = m->findModelEntity(3, 1);
   PCU_ALWAYS_ASSERT(rgn);
