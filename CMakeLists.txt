@@ -122,20 +122,22 @@ if(ENABLE_FPP)
 endif()
 
 macro(scorec_export_library target)
-bob_export_target(${target})
-install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-target_include_directories(${target} INTERFACE
-  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
-# Collect HEADERS for Doxygen
-list(TRANSFORM HEADERS
-  PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/"
-  OUTPUT_VARIABLE ${target}_HEADERS
-)
-list(APPEND DOXYGEN_INPUTS ${${target}_HEADERS})
-if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
-  set(DOXYGEN_INPUTS "${DOXYGEN_INPUTS}" PARENT_SCOPE)
-endif()
+  bob_export_target(${target})
+  install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+  target_include_directories(${target} INTERFACE
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+  )
+  # Collect HEADERS for Doxygen
+  list(TRANSFORM HEADERS
+    PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/"
+    OUTPUT_VARIABLE ${target}_HEADERS
+  )
+  list(APPEND DOXYGEN_INPUTS ${${target}_HEADERS})
+  if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+    set(DOXYGEN_INPUTS "${DOXYGEN_INPUTS}" PARENT_SCOPE)
+    list(APPEND DOXYGEN_INTERNAL_INPUTS "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(DOXYGEN_INTERNAL_INPUTS "${DOXYGEN_INTERNAL_INPUTS}" PARENT_SCOPE)
+  endif()
 endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
@@ -225,6 +227,7 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating API documentation with Doxygen" VERBATIM
   )
+  list(JOIN DOXYGEN_INTERNAL_INPUTS " \\\n" DOXYGEN_INTERNAL_INPUT)
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile_internal.in
     ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal @ONLY
