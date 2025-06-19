@@ -229,7 +229,7 @@ long markEdgesToCollapse(Adapt* a)
                       DONT_COLLAPSE | NEED_NOT_COLLAPSE);
 }
 
-bool coarsen(Adapt* a, bool aggressive)
+bool oldcoarsen(Adapt* a, bool aggressive)
 {
   if (!a->input->shouldCoarsen)
     return false;
@@ -264,11 +264,14 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
   if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
 
+  double quality = a->input->shouldForceAdaptation ? a->input->validQuality 
+                                                  : a->input->goodQuality;
+
   bool result = false;
   if (collapse.setEdge(edge) && 
       collapse.checkClass() &&
       collapse.checkTopo() &&
-      collapse.tryBothDirections(a->input->goodQuality)) {
+      collapse.tryBothDirections(quality)) {
     if (collapse.edgeGrewPastMaxLength()) {
       result = false;
       collapse.cancel();
@@ -372,7 +375,7 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
   return shortEdgeVerts;
 }
 
-bool newcoarsen(Adapt* a, bool aggressive)
+bool coarsen(Adapt* a, bool aggressive)
 {
   if (!a->input->shouldCoarsen)
     return false;
