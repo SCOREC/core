@@ -282,32 +282,6 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   return result;
 }
 
-struct EdgeLength
-{
-  Entity* edge;
-  double length;
-  bool operator<(const EdgeLength& other) const {
-    return length < other.length;
-  }
-};
-
-bool collapseShortest(Adapt* a, Collapse& collapse, apf::Up& adjacent, Entity* vertex)
-{
-  std::vector<EdgeLength> sorted;
-  for (int i=0; i < adjacent.n; i++) {
-    EdgeLength measured{adjacent.e[i], a->sizeField->measure(adjacent.e[i])};
-    auto pos = std::lower_bound(sorted.begin(), sorted.end(), measured);
-    sorted.insert(pos, measured);
-  }
-  for (int i=0; i < sorted.size(); i++) {
-    Entity* edge = sorted[i].edge;
-    if (!a->sizeField->shouldCollapse(edge)) return false;
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, edge, vertex);
-    if (tryCollapseEdge(a, edge, keepVertex, collapse)) return true;
-  }
-  return false;
-}
-
 //Prevent adjacent vertices from collapsing to create indepedent set
 void flagIndependentSet(Adapt* a, apf::Up& adjacent, int& checked)
 {
@@ -322,6 +296,39 @@ void flagIndependentSet(Adapt* a, apf::Up& adjacent, int& checked)
       }
     }
   }
+}
+
+struct EdgeLength
+{
+  Entity* edge;
+  double length;
+  bool operator<(const EdgeLength& other) const {
+    return length < other.length;
+  }
+};
+
+bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, int& checked, apf::Up& adjacent)
+{
+  Entity* vertex = *itr;
+  std::vector<EdgeLength> sorted;
+  for (int i=0; i < adjacent.n; i++) {
+    EdgeLength measured{adjacent.e[i], a->sizeField->measure(adjacent.e[i])};
+    auto pos = std::lower_bound(sorted.begin(), sorted.end(), measured);
+    sorted.insert(pos, measured);
+  }
+  bool collapsed = false;
+  for (int i=0; i < sorted.size(); i++) {
+    Entity* edge = sorted[i].edge;
+    if (!a->sizeField->shouldCollapse(edge)) break;
+    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, edge, vertex);
+    if (tryCollapseEdge(a, edge, keepVertex, collapse)) { collapsed = true; break; }
+  }
+  if (collapsed) {
+    flagIndependentSet(a, adjacent, checked);
+    itr = shortEdgeVerts.erase(itr);
+    collapse.destroyOldElements();
+  }
+  return collapsed;
 }
 
 void clearListFlag(Adapt* a, std::list<Entity*> list, int flag) 
@@ -395,11 +402,8 @@ bool coarsen(Adapt* a, bool aggressive)
   {
     apf::Up adjacent;
     if (!getAdjIndependentSet(a, shortEdgeVerts, itr, independentSetStarted, checked, adjacent)) continue;
-    if (collapseShortest(a, collapse, adjacent, *itr)) {
-      flagIndependentSet(a, adjacent, checked);
-      itr = shortEdgeVerts.erase(itr);
-      independentSetStarted = true;
-      collapse.destroyOldElements();
+    if (collapseShortest(a, collapse, shortEdgeVerts, itr, checked, adjacent)) {
+      independentSetStarted=true;
       success++;
     }
     else {
@@ -407,8 +411,7 @@ bool coarsen(Adapt* a, bool aggressive)
       checked++;
     }
   }
-  clearListFlag(a, shortEdgeVerts, CHECKED);
-  ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
+  ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE | CHECKED, 0);
   a->input->shouldForceAdaptation = oldShouldForce;
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
