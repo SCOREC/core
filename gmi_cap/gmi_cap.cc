@@ -494,6 +494,17 @@ struct gmi_model* gmi_cap_load_some(
   return owned_import(cs_module->get_geometry(), gmodel);
 }
 
+void gmi_cap_write(struct gmi_model* model, const char* creFileName) {
+  cap_model* cm = reinterpret_cast<cap_model*>(model);
+  auto ctx = cm->geomInterface->get_context();
+  FunctionPtr fn(get_function(ctx, "SaveCreateData"));
+  set_input(fn, "Model", cm->gmodel);
+  set_input(fn, "FileName", creFileName);
+  auto proc = get_context_processor(ctx);
+  if (proc->execute(fn) != STATUS_OK)
+    gmi_fail("gmi_cap_write: failed to write the model");
+}
+
 gmi_model* gmi_import_cap(GDBI* gi) {
   M_GModel gmodel;
   MG_API_CALL(gi, get_current_model(gmodel));

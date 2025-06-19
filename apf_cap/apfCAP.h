@@ -53,7 +53,19 @@ Mesh2* createCapMesh(
 );
 
 /**
- * \brief Create an apf::Mesh2 object from a mesh linked to a loaded 
+ * \brief Create an apf::Mesh2 object from the first mesh linked to a loaded
+ * geometry model.
+ *
+ * The gmi_model should be loaded previously by gmi_load (on a .cre file),
+ * gmi_cap_load, or gmi_cap_load_some. Try to load the first mesh (by index).
+ *
+ * \param model A gmi_model associated with a Capstone geometry.
+ * \return an apf::Mesh2 interface to the Capstone mesh.
+ */
+Mesh2* createCapMesh(gmi_model* model, pcu::PCU* PCUObj);
+
+/**
+ * \brief Create an apf::Mesh2 object from a mesh linked to a loaded
  * geometry model.
  *
  * The gmi_model should be loaded previously by gmi_load (on a .cre file),
@@ -61,10 +73,45 @@ Mesh2* createCapMesh(
  * meshname can be found by using gmi_cap_probe or direct Capstone interfaces.
  *
  * \param model A gmi_model associated with a Capstone geometry.
- * \param meshname The name of a mesh associated with 
+ * \param meshname The name of a mesh associated with
  * \return an apf::Mesh2 interface to the Capstone mesh.
  */
 Mesh2* createCapMesh(gmi_model* model, const char* meshname, pcu::PCU* PCUObj);
+
+/**
+ * \brief Generate Capstone mesh object on a model linked to a Capstone model.
+ *
+ * \param model A Capstone GMI model to generate a mesh on.
+ * \param meshname Name for the new generated mesh.
+ * \param PCUObj The PCU object to link to the mesh.
+ * \return An apf::Mesh2 object with the mesh.
+ * \bug dimension != 3 is not supported.
+ */
+Mesh2* generateCapMesh(
+  gmi_model* model, int dimension, pcu::PCU* PCUObj
+);
+
+/**
+ * \brief Make an empty Capstone M_MModel associated with the model.
+ *
+ * \param model Previously loaded Capstone gmi_model.
+ * \param meshname Name for new mesh in the Capstone database.
+ * \param PCUObj The PCU object to associate the new apf::Mesh2 with.
+ * \return a new apf::Mesh2 object.
+ */
+Mesh2* makeEmptyCapMesh(
+  gmi_model* model, const char* meshname, pcu::PCU* PCUObj
+);
+
+/**
+ * Disown capMesh's gmi_model.
+ *
+ * Mark the gmi_model as non-owned so that the destructor does not call
+ * gmi_destroy.
+ *
+ * \param capMesh A Capstone mesh wrapper.
+ */
+void disownCapModel(Mesh2* capMesh);
 
 /**
  * \brief Get native Capstone mesh database interface.

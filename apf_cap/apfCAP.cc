@@ -13,6 +13,8 @@
 #include <pcu_util.h>
 #include <PCU.h>
 
+#include <CreateMG_AppProcessor.h>
+#include <CreateMG_Function.h>
 #include <CreateMG_Framework_Mesh.h>
 #ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
 #include <CreateMG_SizingMetricTool.h>
@@ -226,19 +228,31 @@ class MeshCAP : public Mesh2
     void clear_() {}
     void getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me);
 
-    MDBI* getMesh() { return meshInterface; }
-  protected:
-    gmi_model* model;
+    MDBI* getMesh() noexcept { return meshInterface; }
+    void disownModel() noexcept { ownsModel = false; }
+  private:
+    void setupAdjacencies();
+    gmi_model* model{nullptr};
     MDBIP meshOwner;
     MDBI* meshInterface;
     int d;
+    bool ownsModel{true};
     std::vector<TagCAP*> tags;
 };
 
+void MeshCAP::setupAdjacencies() {
+  PCU_ALWAYS_ASSERT(meshInterface);
+  MG_API_CALL(meshInterface, get_dimension(d));
+  MG_API_CALL(meshInterface, set_adjacency_state(
+    REGION2FACE|REGION2EDGE|REGION2VERTEX| FACE2EDGE|FACE2VERTEX
+  ));
+  MG_API_CALL(meshInterface, set_reverse_states());
+  MG_API_CALL(meshInterface, compute_adjacency());
+}
+
 MeshCAP::MeshCAP(MDBI* mdb, GDBI* gdb): meshInterface(mdb) {
   model = gmi_import_cap(gdb);
-  PCU_ALWAYS_ASSERT(mdb);
-  MG_API_CALL(mdb, get_dimension(d));
+  setupAdjacencies();
 }
 
 MeshCAP::MeshCAP(gmi_model* mdl, MDBIP mdb):
@@ -246,12 +260,12 @@ MeshCAP::MeshCAP(gmi_model* mdl, MDBIP mdb):
 {
   PCU_ALWAYS_ASSERT(mdl);
   PCU_ALWAYS_ASSERT(mdb.is_valid());
-  MG_API_CALL(mdb.get(), get_dimension(d));
+  setupAdjacencies();
 }
 
 MeshCAP::~MeshCAP()
 {
-  if (model) gmi_destroy(model);
+  if (ownsModel && model) gmi_destroy(model);
   model = nullptr;
   meshInterface = nullptr;
 }
@@ -1090,6 +1104,77 @@ Mesh2* createCapMesh(
   MeshCAP* m = new MeshCAP(model, mdp);
   m->init(getLagrange(1), PCUObj);
   return m;
+}
+
+Mesh2* createCapMesh(gmi_model* model, pcu::PCU* PCUObj) {
+  GDBI* gdb = gmi_export_cap(model);
+  AppContext* ctx = gdb->get_context();
+  MDBIP mdp = get_context_mesh_database_interface(ctx);
+  M_MModel mmodel;
+  MG_API_CALL(mdp.get(), get_model_by_index(0, mmodel));
+  MG_API_CALL(mdp.get(), set_current_model(mmodel));
+  MeshCAP* m = new MeshCAP(model, mdp);
+  m->init(getLagrange(1), PCUObj);
+  return m;
+}
+
+Mesh2* makeEmptyCapMesh(
+  gmi_model* model, const char* meshname, pcu::PCU* PCUObj
+) {
+  PCU_ALWAYS_ASSERT(model);
+  GDBI* gdb = gmi_export_cap(model);
+  M_GModel gmodel;
+  MG_API_CALL(gdb, get_current_model(gmodel));
+  AppContext* ctx = gdb->get_context();
+  MDBIP mdp = get_context_mesh_database_interface(ctx);
+  M_MModel mmodel;
+  MG_API_CALL(mdp.get(), create_associated_model(mmodel, gmodel, meshname));
+  MeshCAP* m = new MeshCAP(model, mdp);
+  m->init(getLagrange(1), PCUObj);
+  return m;
+}
+
+Mesh2* generateCapMesh(
+  gmi_model* model, int dimension, pcu::PCU* PCUObj
+) {
+  PCU_ALWAYS_ASSERT(model);
+  PCU_ALWAYS_ASSERT(0 <= dimension && dimension <= 3);
+  auto gdb = gmi_export_cap(model);
+  auto ctx = gdb->get_context();
+  FunctionPtr fn;
+  switch (dimension) {
+  case 0:
+    fn = FunctionPtr(get_function(ctx, "GenerateVertexMesh"));
+    break;
+  case 1:
+    fn = FunctionPtr(get_function(ctx, "GenerateEdgeMesh"));
+    break;
+  case 2:
+    fn = FunctionPtr(get_function(ctx, "GenerateFaceMesh"));
+    break;
+  case 3:
+    fn = FunctionPtr(get_function(ctx, "GenerateRegionMesh"));
+    break;
+  }
+  M_GModel gmodel;
+  MG_API_CALL(gdb, get_current_model(gmodel));
+  set_input(fn, "Model", gmodel);
+  auto proc = get_context_processor(ctx);
+  if (proc->execute(fn) != STATUS_OK) {
+    fail("gmi_cap_gen_mesh: failed to mesh the model");
+  }
+  M_MModel mmodel;
+  get_output(fn, "MeshModel", mmodel);
+  auto mdp = get_context_mesh_database_interface(ctx, mmodel);
+  MeshCAP* m = new MeshCAP(model, mdp);
+  m->init(getLagrange(1), PCUObj);
+  return m;
+}
+
+void disownCapModel(Mesh2* capMesh) {
+  auto m = dynamic_cast<MeshCAP*>(capMesh);
+  if (!m) fail("disownCapModel: not a Capstone mesh");
+  m->disownModel();
 }
 
 bool has_smoothCAPAnisoSizes(void) noexcept {

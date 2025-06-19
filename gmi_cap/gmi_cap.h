@@ -80,6 +80,8 @@ void gmi_register_cap(void);
  */
 struct gmi_model* gmi_cap_load(const char* creFileName);
 
+void gmi_cap_write(struct gmi_model* model, const char* creFileName);
+
 #ifdef __cplusplus
 
 void gmi_cap_probe(
