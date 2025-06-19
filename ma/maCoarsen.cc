@@ -313,22 +313,25 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
   std::vector<EdgeLength> sorted;
   for (int i=0; i < adjacent.n; i++) {
     EdgeLength measured{adjacent.e[i], a->sizeField->measure(adjacent.e[i])};
+    if (measured.length > MINLENGTH) continue;
     auto pos = std::lower_bound(sorted.begin(), sorted.end(), measured);
     sorted.insert(pos, measured);
   }
-  bool collapsed = false;
-  for (int i=0; i < sorted.size(); i++) {
-    Entity* edge = sorted[i].edge;
-    if (!a->sizeField->shouldCollapse(edge)) break;
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, edge, vertex);
-    if (tryCollapseEdge(a, edge, keepVertex, collapse)) { collapsed = true; break; }
+  if (sorted.size() == 0) { //performance optimization, will rarely result in a missed edge
+    itr = shortEdgeVerts.erase(itr);
+    return false;
   }
-  if (collapsed) {
+  for (int i=0; i < sorted.size(); i++) {
+    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
+    if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse)) continue;
     flagIndependentSet(a, adjacent, checked);
     itr = shortEdgeVerts.erase(itr);
     collapse.destroyOldElements();
+    return true;
   }
-  return collapsed;
+  setFlag(a, vertex, CHECKED);
+  checked++;
+  return false;
 }
 
 void clearListFlag(Adapt* a, std::list<Entity*> list, int flag) 
@@ -405,10 +408,6 @@ bool coarsen(Adapt* a, bool aggressive)
     if (collapseShortest(a, collapse, shortEdgeVerts, itr, checked, adjacent)) {
       independentSetStarted=true;
       success++;
-    }
-    else {
-      setFlag(a, *itr, CHECKED);
-      checked++;
     }
   }
   ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE | CHECKED, 0);
