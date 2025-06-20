@@ -110,6 +110,11 @@ public:
   int Received(size_t *size) noexcept;
   void *Extract(size_t size) noexcept;
 
+  /*
+   * Debug print function with printf-style formatting
+   * This function is excluded from SWIG parsing due to complex macro usage
+   * with variadic argument. Also, such functionalities is not needed for the Python API.
+   */
   #ifndef SWIG
   void DebugPrint(const char* format, ...) noexcept PCU_FORMAT_ATTRIBUTE(2, 3)
   void DebugPrint(const char* format, va_list args) noexcept;
@@ -143,8 +148,12 @@ void Init(int *argc, char ***argv);
  */
 void Finalize();
 
+/*
+ * Explicit instantiations of template functions,
+ * ignored by SWIG to avoid difficulties when parsing macros involving
+ * template functions. Templates are initialized manually in the interface file.
+ */
 #ifndef SWIG
-/* explicit instantiations of template functions */
 #define PCU_EXPL_INST_DECL(T)                                                  \
   extern template void PCU::Add<T>(T * p, size_t n) noexcept;                  \
   extern template T PCU::Add<T>(T p) noexcept;                                 \
