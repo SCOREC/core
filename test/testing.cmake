@@ -442,6 +442,17 @@ if(ENABLE_METIS)
     3
   )
   set_test_depends(TESTS msplit_6 DEPENDS msplit_2)
+  mpi_test(mbalanceEmpty 4
+    ./mbalanceEmpty
+    "${MDIR}/pipe.dmg" "pipe.smb" 1
+    "pipe_mbe_.smb"
+  )
+  if(ENABLE_SIMMETRIX)
+    set_test_depends(
+      TESTS msplit_2 msplit_3 msplit_6 mBalanceEmpty
+      DEPENDS convert
+    )
+  endif()
 endif()
 if(ENABLE_ZOLTAN)
   mpi_test(refineX 2

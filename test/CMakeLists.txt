@@ -112,6 +112,7 @@ if(ENABLE_ZOLTAN)
 endif()
 if(ENABLE_METIS)
   util_exe_func(mbalance mbalance.cc)
+  test_exe_func(mbalanceEmpty mbalanceEmpty.cc)
 endif()
 
 # Mesh improvement utilities
