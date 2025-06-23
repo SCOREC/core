@@ -40,7 +40,7 @@ jobs:
     - name: setup ccache
       id: setup-ccache
       run: |
-        sudo apt install ccache
+        sudo apt-get install ccache
         ccache -p # Print ccache config
         ccache -z # Zero ccache statistics
         echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
