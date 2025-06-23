@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
     } catch (...) {
       std::throw_with_nested(std::runtime_error("balancing failed"));
     }
+    m->verify();
     m->writeNative(argv[4]);
     // destroy mds
     m->destroyNative();
