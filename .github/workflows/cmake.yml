@@ -22,7 +22,7 @@ jobs:
       CCACHE_DIR: ${{github.workspace}}/.ccache
       CCACHE_BASEDIR: ${{github.workspace}}
       CCACHE_COMPRESS: true
-      CCACHE_MAXSIZE: 200M
+      CCACHE_MAXSIZE: 100M
 
     steps:
     - uses: actions/checkout@v4
@@ -49,8 +49,14 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{github.workspace}}/.ccache
-        key: ${{matrix.compiler.name}}-ccache-${{steps.setup-ccache.outputs.timestamp}}
-        restore-keys: ${{matrix.compiler.name}}-ccache-
+        key: "${{matrix.compiler.name}}-\
+          ${{matrix.cxx_standard}}-\
+          ${{matrix.build_type}}-\
+          ccache-${{steps.setup-ccache.outputs.timestamp}}"
+        restore-keys: "${{matrix.compiler.name}}-\
+          ${{matrix.cxx_standard}}-\
+          ${{matrix.build_type}}-\
+          ccache-"
 
     - name: Configure CMake
       env:
