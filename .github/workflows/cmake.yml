@@ -125,4 +125,4 @@ jobs:
         --output-on-failure
 
     - name: CCache statistics
-      run: cmake -sv
+      run: ccache -sv
