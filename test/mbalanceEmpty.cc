@@ -11,13 +11,20 @@
 #include <lionPrint.h>
 #include <pcu_util.h>
 
+namespace {
+void print_exception(const std::exception& e, int level = 0);
+}
+
 int main(int argc, char* argv[]) {
+  int retval = 0;
   pcu::Init(&argc, &argv);
+  {
+  pcu::PCU PCU;
   try {
-    pcu::PCU PCU;
     if (argc != 5) {
       if (PCU.Self() == 0)
-        std::cerr << "USAGE: <model.dmg> <mesh.smb> <inParts> <outMesh.smb>"
+        std::cerr << "USAGE: <model.dmg> <mesh.smb> <inParts> <outMesh.smb>\n"
+          "\nwhere inParts < PCU.Peers()"
           << std::endl;
       throw std::runtime_error("invalid arguments");
     }
@@ -25,6 +32,9 @@ int main(int argc, char* argv[]) {
     gmi_register_mesh();
     // load model and mesh
     int inParts = std::stoi(argv[3]);
+    if (inParts >= PCU.Peers()) {
+      throw std::runtime_error("inParts >= PCU.Peers()");
+    }
     int group = PCU.Self() / inParts;
     auto loadPCU = PCU.Split(group, 0);
     gmi_model* model = gmi_load(argv[1]);
@@ -46,10 +56,31 @@ int main(int argc, char* argv[]) {
     // destroy mds
     m->destroyNative();
     apf::destroyMesh(m);
+  } catch (const std::exception& e) {
+    if (PCU.Self() == 0) {
+      std::cerr << "ERROR: ";
+      print_exception(e);
+    }
+    retval = 1;
   } catch (...) {
-    pcu::Finalize();
-    return 1;
+    if (PCU.Self() == 0)
+      std::cerr << "Unknown exception occurred." << std::endl;
+    retval = 1;
   }
+  } // PCU object scope
   pcu::Finalize();
-  return 0;
+  return retval;
 }
+
+namespace {
+
+void print_exception(const std::exception& e, int level) {
+  std::cerr << std::string(level * 2, ' ') << e.what() << '\n';
+  try {
+    std::rethrow_if_nested(e);
+  } catch (const std::exception& nestedE) {
+    print_exception(nestedE, level + 1);
+  } catch (...) {}
+}
+
+} // namespace
