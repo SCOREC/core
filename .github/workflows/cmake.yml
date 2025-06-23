@@ -125,5 +125,8 @@ jobs:
         ctest --test-dir ${{github.workspace}}/example/mpi-nompi/build
         --output-on-failure
 
-    - name: CCache statistics
-      run: ccache -sv
+    - name: CCache statistics and recompression
+      run: |
+        ccache -sv
+        CCACHE_COMPRESSLEVEL=5 ccache -X
+
