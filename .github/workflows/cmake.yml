@@ -55,11 +55,7 @@ jobs:
           nompi:${{matrix.no_mpi}}-\
           ccache-${{steps.setup-ccache.outputs.timestamp}}"
         restore-keys: "${{matrix.compiler.name}}-\
-          ${{matrix.cxx_standard}}-\
-          ${{matrix.build_type}}-\
-          ccache-\n\
-          cxx:${{matrix.compiler.name}}-\
-          ${{matrix.cxx_standard}}-\
+          cxx:${{matrix.cxx_standard}}-\
           ${{matrix.build_type}}-\
           nompi:${{matrix.no_mpi}}-\
           ccache-"
@@ -94,7 +90,7 @@ jobs:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
       working-directory: ${{github.workspace}}/build
-      run: ctest --output-on-failure -C ${{matrix.build_type}}
+      run: ctest --output-on-failure -j $(nprocs)
 
     - name: Build User Project
       # only need to test with a single build config if the installed cmake config files work
