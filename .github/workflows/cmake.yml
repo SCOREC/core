@@ -19,8 +19,8 @@ jobs:
         cxx_standard: [11, 20]
         metis: [OFF, ON]
     env:
-      CCACHE_DIR: ${{github.workspace}}
-      CCACHE_BASEDIR: ${{github.workspace}}/.ccache
+      CCACHE_DIR: ${{github.workspace}}/.ccache
+      CCACHE_BASEDIR: ${{github.workspace}}
       CCACHE_COMPRESS: true
       CCACHE_MAXSIZE: 200M
 
@@ -92,14 +92,10 @@ jobs:
         MPICH_CC: ${{matrix.compiler.CC}}
       run: >
         cmake
-          -S ${{github.workspace}}/doc
-          -B ${{github.workspace}}/buildExample
-          -DCMAKE_C_COMPILER_LAUNCHER=ccache
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          -DCMAKE_C_COMPILER=mpicc
-          -DCMAKE_CXX_COMPILER=mpicxx
-          -DSCOREC_PREFIX=${{github.workspace}}/build/install
-        ;
+        -S ${{github.workspace}}/doc -B ${{github.workspace}}/buildExample
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx
+        -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/buildExample
 
     - name: Build MPI-NoMPI Example
@@ -112,14 +108,11 @@ jobs:
         MPICH_CC: ${{matrix.compiler.CC}}
       run: >
         cmake
-          -S ${{github.workspace}}/example/mpi-nompi
-          -B ${{github.workspace}}/example/mpi-nompi/build
-          -DCMAKE_C_COMPILER_LAUNCHER=ccache
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          -DCMAKE_C_COMPILER=mpicxx
-          -DCMAKE_CXX_COMPILER=mpicxx
-          -DSCOREC_PREFIX=${{github.workspace}}/build/install
-        ;
+        -S ${{github.workspace}}/example/mpi-nompi
+        -B ${{github.workspace}}/example/mpi-nompi/build
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        -DCMAKE_C_COMPILER=mpicxx -DCMAKE_CXX_COMPILER=mpicxx
+        -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/example/mpi-nompi/build ;
         ctest --test-dir ${{github.workspace}}/example/mpi-nompi/build
         --output-on-failure
