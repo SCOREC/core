@@ -13,6 +13,10 @@ jobs:
     env:
       PYTHONPATH: ${{ github.workspace }}/build/python_wrappers
       LD_LIBRARY_PATH: ${{ github.workspace }}/libs/install/lib:${LD_LIBRARY_PATH}
+      CCACHE_DIR: ${{github.workspace}}/.ccache
+      CCACHE_BASEDIR: ${{github.workspace}}
+      CCACHE_COMPRESS: true
+      CCACHE_MAXSIZE: 100M
 
     steps:
       - name: Checkout repository
@@ -21,9 +25,23 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake mpich build-essential libbz2-dev
+          sudo apt-get install -y cmake mpich build-essential libbz2-dev ccache
           pip3 install mpi4py
-      
+
+      - name: setup ccache
+        id: setup-ccache
+        run: |
+          ccache -p # Print ccache config
+          echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{github.workspace}}/.ccache
+          key: "pyapi-ccache-${{steps.setup-ccache.outputs.timestamp}}"
+          restore-keys: "pyapi-ccache-"
+      - name: Clear ccache statistics
+        run: ccache -z
+
       - name: Build SWIG
         run: |
           git clone https://github.com/swig/swig.git
@@ -62,6 +80,8 @@ jobs:
           cmake ../Trilinos \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/libs/install \
             -DTPL_ENABLE_MPI:BOOL=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_C_FLAGS="-O3 -fPIC" \
             -DCMAKE_CXX_FLAGS="-O3 -fPIC" \
             -DTrilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
@@ -77,7 +97,10 @@ jobs:
       - name: Configure PUMI
         run: |
           cmake -S . -B build \
+            -GNinja \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/build/install \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_C_COMPILER=mpicc \
             -DCMAKE_CXX_COMPILER=mpicxx \
             -DSCOREC_CXX_OPTIMIZE=ON \
@@ -93,11 +116,16 @@ jobs:
             -DPARMETIS_PREFIX=${{ github.workspace }}/libs/install \
             -DENABLE_SIMMETRIX=OFF
 
-      - name: Build and install
+      - name: Build and install PUMI
         run: |
-          cmake --build build -j 4 --target install
+          cmake --build build --target install
 
       - name: Run Python test
         working-directory: ${{github.workspace}}/python_wrappers
         run: |
           python3 test_pyCore.py -g input/cube.dmg -m input/cube.smb
+
+      - name: Ccache statistics and recompression
+        run: |
+          ccache -sv
+          ccache -X 5
