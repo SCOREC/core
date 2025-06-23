@@ -4,6 +4,17 @@ on:
     branches: [ develop ]
   pull_request:
     branches: [ develop ]
+    paths:
+      - .github/workflows/cmake.yml
+      - .gitmodules
+      - '**/CMakeLists.txt'
+      - '**/*.cmake'
+      - '**/*.in'
+      - '**/*.h'
+      - '**/*.c'
+      - '**/*.cc'
+      - '**/*.cpp'
+      - '**/*.f'
 jobs:
   build:
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
@@ -128,5 +139,5 @@ jobs:
     - name: CCache statistics and recompression
       run: |
         ccache -sv
-        CCACHE_COMPRESSLEVEL=5 ccache -X
+        ccache -X 5
 

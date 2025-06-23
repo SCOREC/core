@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
-		steps:
+    steps:
       - name: Cleanup
         run: |
           echo "Fetching list of cache keys"
