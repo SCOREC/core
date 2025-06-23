@@ -50,14 +50,8 @@ jobs:
 
     - name: setup ccache
       id: setup-ccache
-      env:
-        CCACHE_VERSION: 4.11.3
-      # Download latest version as of 2025-06-23
       run: |
-        wget https://github.com/ccache/ccache/releases/download/v${CCACHE_VERSION}/ccache-${CCACHE_VERSION}-linux-x86_64.tar.xz
-        tar xf ccache-${CCACHE_VERSION}-linux-x86_64.tar.xz
-        cd ccache-${CCACHE_VERSION}-linux-x86_64
-        sudo make install
+        sudo apt-get install ccache
         ccache -p # Print ccache config
         echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
 
