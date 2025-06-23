@@ -18,6 +18,11 @@ jobs:
         no_mpi: [OFF, ON]
         cxx_standard: [11, 20]
         metis: [OFF, ON]
+    env:
+      CCACHE_DIR: ${{github.workspace}}
+      CCACHE_BASEDIR: ${{github.workspace}}/.ccache
+      CCACHE_COMPRESS: true
+      CCACHE_MAXSIZE: 200M
 
     steps:
     - uses: actions/checkout@v4
@@ -32,6 +37,21 @@ jobs:
       if: matrix.metis == 'ON'
       run: sudo apt install libmetis-dev
 
+    - name: setup ccache
+      id: setup-ccache
+      run: |
+        sudo apt install ccache
+        ccache -p # Print ccache config
+        ccache -z # Zero ccache statistics
+        echo ::set-output name=key::$(date -u '+%Y-%m-%dT%T')
+
+    - name: ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{github.workspace}}/.ccache
+        key: ${{matrix.compiler.name}}-ccache-${{steps.setup-ccache.outputs.timestamp}}
+        restore-keys: ${{matrix.compiler.name}}-ccache-
+
     - name: Configure CMake
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
@@ -41,6 +61,8 @@ jobs:
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install
         -GNinja -DCMAKE_VERBOSE_MAKEFILE=ON
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache
+        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc
         -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}}
         -DSCOREC_CXX_WARNINGS=ON
@@ -53,7 +75,10 @@ jobs:
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j --target install
+      run: |
+        cmake
+          --build ${{github.workspace}}/build
+          --target install
 
     - name: Test
       env:
@@ -68,8 +93,16 @@ jobs:
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: |
-        cmake -S ${{github.workspace}}/doc -B ${{github.workspace}}/buildExample -DCMAKE_CXX_COMPILER=mpicxx -DSCOREC_PREFIX=${{github.workspace}}/build/install
+      run: >
+        cmake
+          -S ${{github.workspace}}/doc
+          -B ${{github.workspace}}/buildExample
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_C_COMPILER=mpicc
+          -DCMAKE_CXX_COMPILER=mpicxx
+          -DSCOREC_PREFIX=${{github.workspace}}/build/install
+        ;
         cmake --build ${{github.workspace}}/buildExample
 
     - name: Build MPI-NoMPI Example
@@ -81,10 +114,18 @@ jobs:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
       run: >
-        cmake -S ${{github.workspace}}/example/mpi-nompi
-        -B ${{github.workspace}}/example/mpi-nompi/build
-        -DCMAKE_CXX_COMPILER=mpicxx
-        -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
+        cmake
+          -S ${{github.workspace}}/example/mpi-nompi
+          -B ${{github.workspace}}/example/mpi-nompi/build
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_C_COMPILER=mpicxx
+          -DCMAKE_CXX_COMPILER=mpicxx
+          -DSCOREC_PREFIX=${{github.workspace}}/build/install
+        ;
         cmake --build ${{github.workspace}}/example/mpi-nompi/build ;
         ctest --test-dir ${{github.workspace}}/example/mpi-nompi/build
         --output-on-failure
+
+    - name: CCache statistics
+      run: cmake -sv
