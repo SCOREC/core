@@ -116,20 +116,7 @@ public:
   CylBoundaryLayer(ma::Mesh* mesh): m(mesh) {
     ma::Vector bmin(HUGE_VAL, HUGE_VAL, HUGE_VAL),
                bmax(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
-    ma::Iterator *it = m->begin(0);
-    ma::Entity *e;
-    while ((e = m->iterate(it))) {
-      ma::Vector p = ma::getPosition(m, e);
-
-      if (p.x() < bmin.x()) bmin.x() = p.x();
-      if (p.x() > bmax.x()) bmax.x() = p.x();
-      if (p.y() < bmin.y()) bmin.y() = p.y();
-      if (p.y() > bmax.y()) bmax.y() = p.y();
-      if (p.z() < bmin.z()) bmin.z() = p.z();
-      if (p.z() > bmax.z()) bmax.z() = p.z();
-    }
-    m->end(it);
-
+    ma::getBoundingBox(mesh, bmin, bmax);
     ma::Vector len = bmax - bmin;
     if (len.x() > len.y() && len.x() > len.z()) {
       lion_oprint(1, "Shock2 along X axis.\n");
