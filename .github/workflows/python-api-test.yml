@@ -74,10 +74,9 @@ jobs:
 
       - name: Build Zoltan from Trilinos (minimal)
         run: |
-          git clone https://github.com/trilinos/Trilinos.git
-          mkdir build-zoltan
-          cd build-zoltan
-          cmake ../Trilinos \
+          git clone --depth 1 https://github.com/trilinos/Trilinos.git
+          cmake -S Trilinos -b build-zoltan \
+            -GNinja \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/libs/install \
             -DTPL_ENABLE_MPI:BOOL=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -91,8 +90,7 @@ jobs:
             -DZoltan_ENABLE_ParMETIS:BOOL=ON \
             -DParMETIS_INCLUDE_DIRS=${{ github.workspace }}/libs/install \
             -DParMETIS_LIBRARY_DIRS=${{ github.workspace }}/libs/install
-          make
-          make install
+          cmake --build build-zoltan -t install
 
       - name: Configure PUMI
         run: |
