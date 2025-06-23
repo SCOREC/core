@@ -17,6 +17,8 @@ jobs:
       CCACHE_BASEDIR: ${{github.workspace}}
       CCACHE_COMPRESS: true
       CCACHE_MAXSIZE: 100M
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
     steps:
       - name: Checkout repository
@@ -95,8 +97,6 @@ jobs:
             -GNinja \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/libs/install \
             -DTPL_ENABLE_MPI:BOOL=ON \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_C_FLAGS="-O3 -fPIC" \
             -DCMAKE_CXX_FLAGS="-O3 -fPIC" \
             -DTrilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
@@ -113,8 +113,6 @@ jobs:
           cmake -S . -B build \
             -GNinja \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/build/install \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_C_COMPILER=mpicc \
             -DCMAKE_CXX_COMPILER=mpicxx \
             -DSCOREC_CXX_OPTIMIZE=ON \
