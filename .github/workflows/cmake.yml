@@ -43,7 +43,7 @@ jobs:
         sudo apt install ccache
         ccache -p # Print ccache config
         ccache -z # Zero ccache statistics
-        echo ::set-output name=key::$(date -u '+%Y-%m-%dT%T')
+        echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
 
     - name: ccache
       uses: actions/cache@v4
@@ -75,10 +75,7 @@ jobs:
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: |
-        cmake
-          --build ${{github.workspace}}/build
-          --target install
+      run: cmake --build ${{github.workspace}}/build --target install
 
     - name: Test
       env:
