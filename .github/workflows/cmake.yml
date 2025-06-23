@@ -50,12 +50,18 @@ jobs:
       with:
         path: ${{github.workspace}}/.ccache
         key: "${{matrix.compiler.name}}-\
-          ${{matrix.cxx_standard}}-\
+          cxx:${{matrix.cxx_standard}}-\
           ${{matrix.build_type}}-\
+          nompi:${{matrix.no_mpi}}-\
           ccache-${{steps.setup-ccache.outputs.timestamp}}"
         restore-keys: "${{matrix.compiler.name}}-\
           ${{matrix.cxx_standard}}-\
           ${{matrix.build_type}}-\
+          ccache-\n\
+          cxx:${{matrix.compiler.name}}-\
+          ${{matrix.cxx_standard}}-\
+          ${{matrix.build_type}}-\
+          nompi:${{matrix.no_mpi}}-\
           ccache-"
 
     - name: Configure CMake
