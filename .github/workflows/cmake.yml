@@ -90,7 +90,7 @@ jobs:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
       working-directory: ${{github.workspace}}/build
-      run: ctest --output-on-failure -j $(nprocs)
+      run: ctest --output-on-failure
 
     - name: Build User Project
       # only need to test with a single build config if the installed cmake config files work
