@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     pcu::PCU PCU;
     if (argc != 5) {
       if (PCU.Self() == 0)
-        std::cerr << "USAGE: <model.dmg> <mesh.smb> <inParts> <out.smd>"
+        std::cerr << "USAGE: <model.dmg> <mesh.smb> <inParts> <outMesh.smb>"
           << std::endl;
       throw std::runtime_error("invalid arguments");
     }
