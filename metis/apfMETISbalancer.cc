@@ -33,9 +33,9 @@ static void gatherGraph(
   std::vector<idx_t>& xadj, std::vector<idx_t>& adjncy,
   std::vector<int>& vtx_cts
 ) {
-  PCU_ALWAYS_ASSERT(PCU.Peers() > 1);
-  PCU_ALWAYS_ASSERT(owned_xadj.size() > 1);
-  PCU_ALWAYS_ASSERT(owned_adjncy.size() == size_t(owned_xadj.back()));
+  PCU_DEBUG_ASSERT(PCU.Peers() > 1);
+  PCU_DEBUG_ASSERT(!owned_xadj.empty());
+  PCU_DEBUG_ASSERT(owned_adjncy.size() == size_t(owned_xadj.back()));
   auto t0 = pcu::Time();
   int owned_vtx_ct = owned_xadj.size() - 1;
   int xadj_size = PCU.Add(owned_vtx_ct) + 1;
@@ -92,12 +92,11 @@ static void scatterPart(
   const std::vector<int>& vtx_cts,
   std::vector<idx_t>& owned_part, int n_owned
 ) {
-  PCU_ALWAYS_ASSERT(PCU.Peers() > 1);
-  PCU_ALWAYS_ASSERT(PCU.Self() != 0 || vtx_cts.size() == size_t(PCU.Peers()));
-  PCU_ALWAYS_ASSERT(
+  PCU_DEBUG_ASSERT(PCU.Peers() > 1);
+  PCU_DEBUG_ASSERT(PCU.Self() != 0 || vtx_cts.size() == size_t(PCU.Peers()));
+  PCU_DEBUG_ASSERT(
     std::accumulate(vtx_cts.begin(), vtx_cts.end(), 0UL) == part.size()
   );
-  PCU_ALWAYS_ASSERT(n_owned > 0);
   auto t0 = pcu::Time();
   owned_part.resize(n_owned);
   PCU.Begin();
@@ -171,7 +170,8 @@ static void remapPart(int nparts, std::vector<idx_t>& part, const std::vector<in
 
 void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   PCU_ALWAYS_ASSERT(tolerance > 1.0);
-  if (mesh_->getPCU()->Peers() > APF_METIS_MAXRANKS) {
+  if (mesh_->getPCU()->Peers() == 1) return; // no work to be done.
+  else if (mesh_->getPCU()->Peers() > APF_METIS_MAXRANKS) {
     fail(
       "METIS called with > " STRINGIFY(APF_METIS_MAXRANKS)
       " procs, which is unsupported due to memory requirements\n"
