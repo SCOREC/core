@@ -59,7 +59,6 @@ jobs:
         cd ccache-${CCACHE_VERSION}-linux-x86_64
         sudo make install
         ccache -p # Print ccache config
-        ccache -z # Zero ccache statistics
         echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
 
     - name: ccache
@@ -76,6 +75,9 @@ jobs:
           ${{matrix.build_type}}-\
           nompi:${{matrix.no_mpi}}-\
           ccache-"
+
+    - name: Clear ccache statistics
+      run: ccache -z
 
     - name: Configure CMake
       env:
