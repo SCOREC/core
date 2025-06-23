@@ -22,25 +22,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: setup cache timestamp
+        id: setup-cache
+        run: |
+          echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: "pyapi-pip-${{steps.setup-cache.outputs.timestamp}}"
+          restore-keys: pyapi-pip-
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y mpich libbz2-dev ccache
           pip3 install mpi4py
 
-      - name: setup ccache
-        id: setup-ccache
-        run: |
-          ccache -p # Print ccache config
-          echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
       - name: ccache
         uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.ccache
-          key: "pyapi-ccache-${{steps.setup-ccache.outputs.timestamp}}"
+          key: "pyapi-ccache-${{steps.setup-cache.outputs.timestamp}}"
           restore-keys: "pyapi-ccache-"
       - name: Clear ccache statistics
-        run: ccache -z
+        run: |
+          ccache -p # Print ccache config
+          ccache -z
 
       - name: Build SWIG
         run: |
