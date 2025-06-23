@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake mpich build-essential libbz2-dev ccache
+          sudo apt-get install -y mpich libbz2-dev ccache
           pip3 install mpi4py
 
       - name: setup ccache
@@ -75,7 +75,7 @@ jobs:
       - name: Build Zoltan from Trilinos (minimal)
         run: |
           git clone --depth 1 https://github.com/trilinos/Trilinos.git
-          cmake -S Trilinos -b build-zoltan \
+          cmake -S Trilinos -B build-zoltan \
             -GNinja \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/libs/install \
             -DTPL_ENABLE_MPI:BOOL=ON \
