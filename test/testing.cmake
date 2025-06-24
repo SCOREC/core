@@ -449,7 +449,7 @@ if(ENABLE_METIS)
   )
   if(ENABLE_SIMMETRIX)
     set_test_depends(
-      TESTS msplit_2 msplit_3 msplit_6 mBalanceEmpty
+      TESTS msplit_2 msplit_3 msplit_6 mbalanceEmpty
       DEPENDS convert
     )
   endif()
