@@ -40,11 +40,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mpich libbz2-dev ccache
-          sudo mkdir -p /usr/local/opt/ccache/libexec
-          sudo ln -s $(which ccache) /usr/local/opt/ccache/libexec/gcc
-          sudo ln -s $(which ccache) /usr/local/opt/ccache/libexec/g++
-          sudo ln -s $(which ccache) /usr/local/opt/ccache/libexec/cc
-          sudo ln -s $(which ccache) /usr/local/opt/ccache/libexec/c++
+          mkdir -p /opt/ccache/libexec
+          ln -s $(which ccache) /opt/ccache/libexec/gcc
+          ln -s $(which ccache) /opt/ccache/libexec/g++
+          ln -s $(which ccache) /opt/ccache/libexec/cc
+          ln -s $(which ccache) /opt/ccache/libexec/c++
           pip3 install mpi4py
 
       - name: ccache
@@ -63,7 +63,7 @@ jobs:
         run: |
           git clone https://github.com/swig/swig.git
           cd swig
-          export PATH=/usr/local/opt/ccache/libexec:$PATH
+          export PATH=/opt/ccache/libexec:$PATH
           ./autogen.sh
           ./configure --prefix=${{ github.workspace }}/libs/install
           make
