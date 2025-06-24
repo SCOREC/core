@@ -13,21 +13,57 @@ jobs:
     env:
       PYTHONPATH: ${{ github.workspace }}/build/python_wrappers
       LD_LIBRARY_PATH: ${{ github.workspace }}/libs/install/lib:${LD_LIBRARY_PATH}
+      CCACHE_DIR: ${{github.workspace}}/.ccache
+      CCACHE_BASEDIR: ${{github.workspace}}
+      CCACHE_COMPRESS: true
+      CCACHE_MAXSIZE: 100M
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: setup cache timestamp
+        id: setup-cache
+        run: |
+          echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: "pyapi-pip-${{steps.setup-cache.outputs.timestamp}}"
+          restore-keys: pyapi-pip-
+
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake mpich build-essential libbz2-dev
+          sudo apt-get install -y mpich libbz2-dev ccache
+          mkdir -p /opt/ccache/libexec
+          ln -s $(which ccache) /opt/ccache/libexec/gcc
+          ln -s $(which ccache) /opt/ccache/libexec/g++
+          ln -s $(which ccache) /opt/ccache/libexec/cc
+          ln -s $(which ccache) /opt/ccache/libexec/c++
           pip3 install mpi4py
-      
+
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{github.workspace}}/.ccache
+          key: "pyapi-ccache-${{steps.setup-cache.outputs.timestamp}}"
+          restore-keys: "pyapi-ccache-"
+
+      - name: Clear ccache statistics
+        run: |
+          ccache -p # Print ccache config
+          ccache -z
+
       - name: Build SWIG
         run: |
           git clone https://github.com/swig/swig.git
           cd swig
+          export PATH=/opt/ccache/libexec:$PATH
           ./autogen.sh
           ./configure --prefix=${{ github.workspace }}/libs/install
           make
@@ -56,10 +92,9 @@ jobs:
 
       - name: Build Zoltan from Trilinos (minimal)
         run: |
-          git clone https://github.com/trilinos/Trilinos.git
-          mkdir build-zoltan
-          cd build-zoltan
-          cmake ../Trilinos \
+          git clone --depth 1 https://github.com/trilinos/Trilinos.git
+          cmake -S Trilinos -B build-zoltan \
+            -GNinja \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/libs/install \
             -DTPL_ENABLE_MPI:BOOL=ON \
             -DCMAKE_C_FLAGS="-O3 -fPIC" \
@@ -71,12 +106,12 @@ jobs:
             -DZoltan_ENABLE_ParMETIS:BOOL=ON \
             -DParMETIS_INCLUDE_DIRS=${{ github.workspace }}/libs/install \
             -DParMETIS_LIBRARY_DIRS=${{ github.workspace }}/libs/install
-          make
-          make install
+          cmake --build build-zoltan -t install
 
       - name: Configure PUMI
         run: |
           cmake -S . -B build \
+            -GNinja \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/build/install \
             -DCMAKE_C_COMPILER=mpicc \
             -DCMAKE_CXX_COMPILER=mpicxx \
@@ -93,11 +128,16 @@ jobs:
             -DPARMETIS_PREFIX=${{ github.workspace }}/libs/install \
             -DENABLE_SIMMETRIX=OFF
 
-      - name: Build and install
+      - name: Build and install PUMI
         run: |
-          cmake --build build -j 4 --target install
+          cmake --build build --target install
 
       - name: Run Python test
         working-directory: ${{github.workspace}}/python_wrappers
         run: |
           python3 test_pyCore.py -g input/cube.dmg -m input/cube.smb
+
+      - name: Ccache statistics and recompression
+        run: |
+          ccache -sv
+          ccache -X 5
