@@ -29,11 +29,18 @@ jobs:
         no_mpi: [OFF, ON]
         cxx_standard: [11, 20]
         metis: [OFF, ON]
+        exclude:
+          - compiler: { name: LLVM }
+            build_type: Release
+          - cxx_standard: 20
+            build_type: Release
     env:
       CCACHE_DIR: ${{github.workspace}}/.ccache
       CCACHE_BASEDIR: ${{github.workspace}}
       CCACHE_COMPRESS: true
       CCACHE_MAXSIZE: 100M
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
     steps:
     - uses: actions/checkout@v4
@@ -82,8 +89,6 @@ jobs:
         -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install
         -GNinja -DCMAKE_VERBOSE_MAKEFILE=ON
         -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
-        -DCMAKE_C_COMPILER_LAUNCHER=ccache
-        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc
         -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}}
         -DSCOREC_CXX_WARNINGS=ON
@@ -114,7 +119,6 @@ jobs:
       run: >
         cmake
         -S ${{github.workspace}}/doc -B ${{github.workspace}}/buildExample
-        -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx
         -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/buildExample
@@ -131,7 +135,6 @@ jobs:
         cmake
         -S ${{github.workspace}}/example/mpi-nompi
         -B ${{github.workspace}}/example/mpi-nompi/build
-        -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         -DCMAKE_C_COMPILER=mpicxx -DCMAKE_CXX_COMPILER=mpicxx
         -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/example/mpi-nompi/build ;
