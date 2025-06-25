@@ -47,12 +47,12 @@ void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
 
-  ma::coarsen(a, true);
+  ma::coarsenMultiple(a, true);
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     ma::refine(a);
     ma::snap(a);
-    ma::coarsen(a);
+    ma::coarsenMultiple(a);
   }
   // ma::fixElementShapes(a);
   m->verify();

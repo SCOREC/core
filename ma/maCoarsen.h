@@ -14,6 +14,7 @@ namespace ma {
 
 class Adapt;
 
+bool coarsenMultiple(Adapt* a, bool aggressive=false);
 bool coarsen(Adapt* a, bool aggressive=false);
 bool coarsenLayer(Adapt* a);
 bool coarsenAndPrint(Adapt* a);

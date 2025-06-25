@@ -229,7 +229,7 @@ long markEdgesToCollapse(Adapt* a)
                       DONT_COLLAPSE | NEED_NOT_COLLAPSE);
 }
 
-bool oldcoarsen(Adapt* a, bool aggressive)
+bool coarsen(Adapt* a, bool aggressive)
 {
   if (!a->input->shouldCoarsen)
     return false;
@@ -385,7 +385,7 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
   return shortEdgeVerts;
 }
 
-bool coarsen(Adapt* a, bool aggressive)
+bool coarsenMultiple(Adapt* a, bool aggressive)
 {
   if (!a->input->shouldCoarsen)
     return false;
