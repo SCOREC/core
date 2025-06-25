@@ -26,7 +26,6 @@
  * gmi_cap_start (if desired) before gmi_register_cap.
  */
 
-#include "gmi.h"
 #ifdef __cplusplus
 #include <string>
 #include <vector>
@@ -34,6 +33,9 @@
 #else
 extern "C" {
 #endif
+
+struct gmi_model;
+struct gmi_ent;
 
 /**
  * \defgroup gmi_cap Capstone geometric model interface
@@ -72,26 +74,73 @@ void gmi_register_cap(void);
  *
  * This method is called by gmi_load when the input file has a ".cre"
  * extension. It loads the file with all associated mesh models. Use
- * gmi_cap_load_some to only load certain meshes.
+ * gmi_cap_load_selective to only load certain meshes.
  *
  * \param creFileName the name of the CRE file
  * \pre gmi_cap_stop must be called before this method.
  * \pre creFileName ends in ".cre"
  */
 struct gmi_model* gmi_cap_load(const char* creFileName);
-
+/**
+ * \brief Write a Capstone gmi_model and associated mesh to a CRE file.
+ *
+ * \param model A previously loaded gmi_model from gmi_cap.
+ * \param creFileName filename for the new CRE file.
+ */
 void gmi_cap_write(struct gmi_model* model, const char* creFileName);
 
 #ifdef __cplusplus
 
+/**
+ * \brief Probe a CRE file for associated mesh names.
+ *
+ * This function calls Capstone APIs to probe the CRE file header for meshes.
+ * It is intended to be used in conjunction with gmi_cap_load_selective.
+ *
+ * \param[in]  creFileName CRE file to probe
+ * \param[out] mesh_names A vector to be filled with mesh names
+ */
 void gmi_cap_probe(
   const char* creFileName, std::vector<std::string>& mesh_names
 );
+/**
+ * \brief Probe a CRE file for associated mesh names and contents.
+ *
+ * This function calls Capstone APIs to probe the CRE file header for model
+ * contents, mesh names, and mesh contents. It is intended to be used in
+ * conjunction with gmi_cap_load_selective, and/or to assist when there are
+ * multiple loadable meshes (i.e. by examining contents or displaying an
+ * interactive menu).
+ *
+ * \warning The format of model_content and mesh_contents is governed by the
+ * Capstone library and we cannot make any claims about its stability.
+ *
+ * \param[in]  creFileName CRE file to probe
+ * \param[out] model_content A string indicating mesh contents
+ * \param[out] mesh_names A vector to be filled with mesh names
+ * \param[out] mesh_contents A vector to be filled with strings indicating mesh
+ *                           contents
+ */
 void gmi_cap_probe(
   const char* creFileName, std::string& model_content,
   std::vector<std::string>& mesh_names, std::vector<std::string>& mesh_contents
 );
-struct gmi_model* gmi_cap_load_some(
+/**
+ * \brief Load a gmi_model from a CRE file and select the associated loaded
+ * meshes.
+ *
+ * Unlike other data formats, CRE files contain both geometries and meshes. As
+ * such, the meshes must be selected at load time. The normal gmi_cap_load
+ * (which is registered to gmi_load with the ".cre" extension) loads all
+ * meshes by default. In certain scenarios this is undesirable (e.g. when you
+ * only want the first mesh in a CRE file multiple meshes, or when you only
+ * want to load the mesh on one rank but need the geometry on all ranks).
+ *
+ * \param creFileName The CRE file to load
+ * \param mesh_names A vector of mesh names to load, which may be empty.
+ * \return A new gmi_model linked to a Capstone geometry model
+ */
+struct gmi_model* gmi_cap_load_selective(
   const char* creFileName, const std::vector<std::string>& mesh_names
 );
 

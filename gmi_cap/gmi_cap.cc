@@ -464,20 +464,20 @@ struct gmi_model* gmi_cap_load(const char* creFileName) {
 
   std::vector<std::string> mesh_names;
   gmi_cap_probe(creFileName, mesh_names);
-  return gmi_cap_load_some(creFileName, mesh_names);
+  return gmi_cap_load_selective(creFileName, mesh_names);
 }
 
-struct gmi_model* gmi_cap_load_some(
+struct gmi_model* gmi_cap_load_selective(
   const char* creFileName, const std::vector<std::string>& mesh_names
 ) {
   if (!gmi_has_ext(creFileName, "cre"))
-    gmi_fail("gmi_cap_load_some: CRE file must have .cre extension");
-  if (!cs_module) gmi_fail("gmi_cap_load_some: called before gmi_cap_start");
+    gmi_fail("gmi_cap_load_selective: CRE file must have .cre extension");
+  if (!cs_module) gmi_fail("gmi_cap_load_selective: called before gmi_cap_start");
   static bool called = false;
   if (!called) called = true;
   else {
     lion_eprint(1,
-      "WARNING: gmi_cap_load_some called more than once. gmi_cap operations"
+      "WARNING: gmi_cap_load_selective called more than once. gmi_cap operations"
       " may fail.\n"
     );
   }
@@ -487,7 +487,7 @@ struct gmi_model* gmi_cap_load_some(
   set_input(fn, "Meshes", mesh_names);
   auto proc = get_context_processor(ctx);
   if (proc->execute(fn) != STATUS_OK)
-    gmi_fail("gmi_cap_load_some: failed to read CRE file");
+    gmi_fail("gmi_cap_load_selective: failed to read CRE file");
   M_GModel gmodel;
   get_output(fn, "Model", gmodel);
   MG_API_CALL(cs_module->get_geometry(), set_current_model(gmodel));

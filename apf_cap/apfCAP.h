@@ -9,10 +9,27 @@
 ******************************************************************************/
 #ifndef APF_CAP_H
 #define APF_CAP_H
+/**
+ * \file apfCAP.h
+ * \brief Capstone apf::Mesh2 implementation and interface.
+ *
+ * Like gmi_cap, the interface is used in two ways:
+ *
+ * 1. to import an existing Capstone mesh; and
+ * 2. to load or generate a mesh associated with a model which was previously
+ *    loaded by gmi_cap.
+ *
+ * \note Files which `#include` apfCAP.h should also `#include`
+ * CreateMG_Framework_Mesh.h (or another Capstone header with the full
+ * MeshDatabaseInterface definition) to import meshes or use getCapNative.
+ */
 
 #include <string>
 
-// Forward declarations
+/**
+ * \cond
+ * Forward declarations
+ */
 struct gmi_model;
 namespace pcu {
   class PCU;
@@ -23,11 +40,22 @@ namespace CreateMG {
   typedef Geometry::GeometryDatabaseInterface GDBI;
   typedef Mesh::MeshDatabaseInterface MDBI;
 }
+/** \endcond */
 
 namespace apf {
 
 class Mesh2;
 class Field;
+
+/**
+ * \defgroup apf_cap Capstone APF mesh interface
+ *
+ * apf_cap provides access to an implementation of apf::Mesh2. The model must
+ * be loaded by gmi_cap. The interface in apfCAP.h provides additional
+ * functions to simplify loading and interacting with the underlying mesh.
+ *
+ * \{
+ */
 
 /**
  * \brief Test for compiled Capstone library support.
@@ -57,9 +85,11 @@ Mesh2* createCapMesh(
  * geometry model.
  *
  * The gmi_model should be loaded previously by gmi_load (on a .cre file),
- * gmi_cap_load, or gmi_cap_load_some. Try to load the first mesh (by index).
+ * gmi_cap_load, or gmi_cap_load_selective. Try to load the first mesh (by
+ * index).
  *
  * \param model A gmi_model associated with a Capstone geometry.
+ * \param PCUObj The PCU communicator to define the mesh over
  * \return an apf::Mesh2 interface to the Capstone mesh.
  */
 Mesh2* createCapMesh(gmi_model* model, pcu::PCU* PCUObj);
@@ -69,11 +99,12 @@ Mesh2* createCapMesh(gmi_model* model, pcu::PCU* PCUObj);
  * geometry model.
  *
  * The gmi_model should be loaded previously by gmi_load (on a .cre file),
- * gmi_cap_load, or gmi_cap_load_some. The list of acceptable values for
+ * gmi_cap_load, or gmi_cap_load_selective. The list of acceptable values for
  * meshname can be found by using gmi_cap_probe or direct Capstone interfaces.
  *
  * \param model A gmi_model associated with a Capstone geometry.
  * \param meshname The name of a mesh associated with
+ * \param PCUObj The PCU communicator to define the mesh over
  * \return an apf::Mesh2 interface to the Capstone mesh.
  */
 Mesh2* createCapMesh(gmi_model* model, const char* meshname, pcu::PCU* PCUObj);
@@ -82,10 +113,9 @@ Mesh2* createCapMesh(gmi_model* model, const char* meshname, pcu::PCU* PCUObj);
  * \brief Generate Capstone mesh object on a model linked to a Capstone model.
  *
  * \param model A Capstone GMI model to generate a mesh on.
- * \param meshname Name for the new generated mesh.
+ * \param dimension The dimension of mesh to generate
  * \param PCUObj The PCU object to link to the mesh.
  * \return An apf::Mesh2 object with the mesh.
- * \bug dimension != 3 is not supported.
  */
 Mesh2* generateCapMesh(
   gmi_model* model, int dimension, pcu::PCU* PCUObj
@@ -147,6 +177,8 @@ bool smoothCAPAnisoSizes(
   apf::Mesh2* m, std::string analysis, apf::Field* scales, apf::Field* frames
 );
 
-}//namespace apf
+/** \} */
+
+} // namespace apf
 
 #endif // APF_CAP_H

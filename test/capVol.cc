@@ -17,11 +17,6 @@
 #include <parma.h>
 #include <pcu_util.h>
 
-#include <CapstoneModule.h>
-#include <CreateMG_Framework_Mesh.h>
-
-using namespace CreateMG;
-
 #include "capVolSizeFields.h"
 
 namespace {
@@ -111,7 +106,7 @@ int main(int argc, char** argv) {
     try {
       gmi_model* capGeomModel = nullptr;
       if (PCUObj.Self() == 0) capGeomModel = gmi_cap_load(args.in.c_str());
-      else capGeomModel = gmi_cap_load_some(args.in.c_str(), {});
+      else capGeomModel = gmi_cap_load_selective(args.in.c_str(), {});
       auto soloPCU = PCUObj.Split(PCUObj.Self(), 0);
       ma::Mesh* mesh = nullptr;
       if (PCUObj.Self() == 0) {

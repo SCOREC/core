@@ -2,12 +2,9 @@
 #include <string>
 #include <vector>
 
-#include <apf.h>
-#include <apfMesh.h>
-#include <apfCAP.h>
+#include <PCU.h>
 #include <gmi.h>
 #include <gmi_cap.h>
-#include <PCU.h>
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
@@ -21,7 +18,7 @@ int main(int argc, char* argv[]) {
   std::string model_content;
   std::vector<std::string> mesh_names;
   for (int i = 2; i < argc; ++i) mesh_names.push_back(argv[i]);
-  gmi_model* model = gmi_cap_load_some(argv[1], mesh_names);
+  gmi_model* model = gmi_cap_load_selective(argv[1], mesh_names);
   gmi_destroy(model);
   gmi_cap_stop();
   pcu::Finalize();
