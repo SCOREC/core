@@ -985,25 +985,27 @@ if(ENABLE_CAPSTONE)
   mpi_test(capVol_WingMds 1
     ./capVol -m 2 ${MDIR}/wing_surf_only.cre capVol_WingMds.cre
   )
-  mpi_test(capVol_Cube3D 1
-    ./capVol -g 3 ${MDIR}/cube_surf_only.cre capVol_Cube3D.cre
-  )
-  mpi_test(capVol_BLCyl3D 1
-    ./capVol -g 4 ${MDIR}/cyl_surf_only.cre capVol_BLCyl3D.cre
-  )
-  mpi_test(capVol_CubeMds3D 1
-    ./capVol -gm 3 ${MDIR}/cube_surf_only.cre capVol_CubeMds3D.cre
-  )
   mpi_test(capVol_BLCylMds3D 1
     ./capVol -gm 4 ${MDIR}/cyl_surf_only.cre capVol_BLCylMds3D.cre
-  )
-  mpi_test(capVol_CubeMds3D-4 4
-    ./capVol -gm 3 ${MDIR}/cube_surf_only.cre capVol_CubeMds3D.cre
   )
   mpi_test(capVol_BLCylMds3D-4 4
     ./capVol -gm 4 ${MDIR}/cyl_surf_only.cre capVol_BLCylMds3D.cre
   )
-  if(PUMI_TEST_CAPVOL_FULLMATRIX)
+  if(PUMI_TEST_CAPVOL_FULL)
+    mpi_test(capVol_BLCyl3D 1
+      ./capVol -g 4 ${MDIR}/cyl_surf_only.cre capVol_BLCyl3D.cre
+    )
+    mpi_test(capVol_Cube3D 1
+      ./capVol -g 3 ${MDIR}/cube_surf_only.cre capVol_Cube3D.cre
+    )
+    mpi_test(capVol_CubeMds3D 1
+      ./capVol -gm 3 ${MDIR}/cube_surf_only.cre capVol_CubeMds3D.cre
+    )
+    mpi_test(capVol_CubeMds3D-4 4
+      ./capVol -gm 3 ${MDIR}/cube_surf_only.cre capVol_CubeMds3D.cre
+    )
+  endif()
+  if(PUMI_TEST_CAPVOL_EXTRA)
     mpi_test(capVol_Cyl3D 1 ./capVol -g 1 ${MDIR}/cyl_surf_only.cre out.cre)
     mpi_test(capVol_Cube3D 1 ./capVol -g 3 ${MDIR}/cube_surf_only.cre out.cre)
     mpi_test(capVol_BLCyl3D 1 ./capVol -g 4 ${MDIR}/cyl_surf_only.cre out.cre)
