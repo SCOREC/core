@@ -29,7 +29,7 @@
 #ifdef __cplusplus
 #include <string>
 #include <vector>
-#include "CreateMG_Framework_Geometry.h"
+#include <CreateMG_Framework_Geometry.h>
 #else
 extern "C" {
 #endif
