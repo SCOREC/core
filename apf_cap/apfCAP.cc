@@ -1177,6 +1177,12 @@ void disownCapModel(Mesh2* capMesh) {
   m->disownModel();
 }
 
+CreateMG::MDBI* getCapNative(Mesh2* capMesh) {
+  auto m = dynamic_cast<MeshCAP*>(capMesh);
+  if (!m) fail("disownCapModel: not a Capstone mesh");
+  return m->getMesh();
+}
+
 bool has_smoothCAPAnisoSizes(void) noexcept {
 #ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
   return true;
