@@ -1,29 +1,26 @@
+#include <PCU.h>
 #include <apf.h>
-#include <apfMesh2.h>
 #include <apfCAP.h>
+#include <apfMesh2.h>
+#include <gmi.h>
 #include <gmi_cap.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <CapstoneModule.h>
-#include <PCU.h>
 
 int main (int argc, char* argv[]) {
   pcu::Init(&argc, &argv);
   { // pcu object scope
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
+  gmi_cap_start();
   gmi_register_cap();
 
   PCU_ALWAYS_ASSERT(argc == 2);
-  std::string creFile(argv[1]);
+  const char* creFile(argv[1]);
   // 1. Load model.
-  CapstoneModule cs("cap_inClosureOf", "Geometry Database : SMLIB",
-    "Mesh Database : Create", "Attribution Database : Create");
-  cs.load_files(v_string(1, creFile));
+  gmi_model* model = gmi_load(creFile);
   // 2. CreateMesh.
-  apf::Mesh2* m = apf::createCapMesh(
-    cs.get_mesh(), cs.get_geometry(), &PCUObj
-  );
+  apf::Mesh2* m = apf::createCapMesh(model, &PCUObj);
   // 3. Get region 1 ModelEntity*.
   apf::ModelEntity* rgn = m->findModelEntity(3, 1);
   PCU_ALWAYS_ASSERT(rgn);
@@ -48,6 +45,7 @@ int main (int argc, char* argv[]) {
   PCU_ALWAYS_ASSERT(m->isInClosureOf(m->findModelEntity(0, 8), f1));
 
   apf::destroyMesh(m);
+  gmi_cap_stop();
   } // pcu object scope
   pcu::Finalize();
 }
