@@ -385,7 +385,8 @@ void gmi_cap_probe(
     cs_module->get_context(), "Create Native Reader"
   );
   DataFileInfo info;
-  reader->probe(creFileName, info);
+  if (!reader->probe(creFileName, info))
+    gmi_fail("gmi_cap_probe: failed to read file");
   for (std::size_t i = 0; i < info.get_num_sections(); i++) {
     std::string secType, secName;
     info.get_section(i, secType, secName);
@@ -414,7 +415,8 @@ void gmi_cap_probe(
     cs_module->get_context(), "Create Native Reader"
   );
   DataFileInfo info;
-  reader->probe(creFileName, info);
+  if (!reader->probe(creFileName, info))
+    gmi_fail("gmi_cap_probe: failed to read file");
   for (std::size_t i = 0; i < info.get_num_sections(); i++) {
     std::string secType, secName;
     info.get_section(i, secType, secName);
