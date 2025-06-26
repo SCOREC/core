@@ -255,7 +255,7 @@ ma::AnisotropicFunction* makeUDF(int mode, ma::Mesh* mesh) {
   switch (mode) {
     case 1: return new UniformAniso(mesh);
     case 2: return new WingShock(mesh, 50);
-    case 3: return new Shock(mesh);
+    case 3: return new Shock2(mesh);
     case 4: return new CylBoundaryLayer(mesh);
     default: throw std::runtime_error("invalid size-field");
   }

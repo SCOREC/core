@@ -105,6 +105,41 @@ class Shock : public ma::AnisotropicFunction
     ma::Mesh* mesh;
 };
 
+/**
+ * \brief Cube shock version 2.
+ */
+class Shock2 : public ma::AnisotropicFunction
+{
+  public:
+    Shock2(ma::Mesh* m) {
+      mesh = m;
+      ma::Vector bmin, bmax;
+      ma::getBoundingBox(mesh, bmin, bmax);
+      x0 = (bmax.x() + bmin.x()) / 2;
+      double apothem = (bmax.x() - bmin.x()) / 2;
+      hmin = apothem / 128, hmax = apothem / 2;
+    }
+    virtual void getValue(ma::Entity* v, ma::Matrix& R, ma::Vector& H)
+    {
+      ma::Vector p = ma::getPosition(mesh, v);
+      double x = p[0];
+      double s = hmax * (1 - exp(-4*std::abs(x - x0)));
+      double hx = std::max(hmin, s);
+      double hy = hmax;
+      double hz = hmax;
+      /* // principal directions */
+      R = ma::Matrix(
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+		    0.0, 0.0, 1.0
+      );
+      H = ma::Vector(hx, hy, hz);
+    }
+  private:
+    ma::Mesh* mesh;
+    double x0, hmin, hmax;
+};
+
 // Shock along a cylinder like the one in
 // https://www.scorec.rpi.edu/~cwsmith/SCOREC//SimModSuite_2023.1-230428dev/MeshSimAdapt/group__MSAEx__GenAnisoMesh.html
 class CylBoundaryLayer : public ma::AnisotropicFunction {
@@ -119,19 +154,19 @@ public:
     ma::getBoundingBox(mesh, bmin, bmax);
     ma::Vector len = bmax - bmin;
     if (len.x() > len.y() && len.x() > len.z()) {
-      lion_oprint(1, "Shock2 along X axis.\n");
+      lion_oprint(1, "CylBoundaryLayer along X axis.\n");
       length = len.x();
       axis = Axis::X;
       // Radial lengths should be the same, but we find average diameter and
       // then halve that.
       radius = (len.y() / 2 + len.z() / 2) / 2;
     } else if (len.y() > len.x() && len.y() > len.z()) {
-      lion_oprint(1, "Shock2 along Y axis.\n");
+      lion_oprint(1, "CylBoundaryLayer along Y axis.\n");
       length = len.y();
       axis = Axis::Y;
       radius = (len.x() / 2 + len.z() / 2) / 2;
     } else {
-      lion_oprint(1, "Shock2 along Z axis.\n");
+      lion_oprint(1, "CylBoundaryLayer along Z axis.\n");
       length = len.z();
       axis = Axis::Z;
       radius = (len.x() / 2 + len.y() / 2) / 2;
