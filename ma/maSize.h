@@ -20,7 +20,7 @@ namespace ma {
 
 typedef apf::Matrix3x3 Matrix;
 const double MAXLENGTH = 1.5;
-const double MINLENGTH = .75;
+const double MINLENGTH = .5;
 
 class SizeField
 {
