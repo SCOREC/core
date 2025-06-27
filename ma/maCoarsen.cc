@@ -257,6 +257,20 @@ bool coarsen(Adapt* a, bool aggressive)
   return true;
 }
 
+static double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
+{
+  double length = 0;
+  length = a->sizeField->measure(edge);
+  if (a->mesh->hasTag(edge, lengthTag))
+    a->mesh->getDoubleTag(edge, lengthTag, &length);
+  else {
+    length = a->sizeField->measure(edge);
+    a->mesh->setDoubleTag(edge, lengthTag, &length);
+  }
+  return length;
+  
+}
+
 static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
@@ -307,12 +321,13 @@ struct EdgeLength
   }
 };
 
-bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, int& checked, apf::Up& adjacent)
+bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, int& checked, apf::Up& adjacent, Tag* lengthTag)
 {
   Entity* vertex = *itr;
   std::vector<EdgeLength> sorted;
   for (int i=0; i < adjacent.n; i++) {
-    EdgeLength measured{adjacent.e[i], a->sizeField->measure(adjacent.e[i])};
+    double length = getLength(a, lengthTag, adjacent.e[i]);
+    EdgeLength measured{adjacent.e[i], length};
     if (measured.length > MINLENGTH) continue;
     auto pos = std::lower_bound(sorted.begin(), sorted.end(), measured);
     sorted.insert(pos, measured);
@@ -365,14 +380,15 @@ bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::lis
   return false;
 }
 
-std::list<Entity*> getShortEdgeVerts(Adapt* a)
+std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
 {
   std::list<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
   Entity* edge;
   while ((edge = a->mesh->iterate(it))) 
   {
-    if (!a->sizeField->shouldCollapse(edge)) continue;
+    double length = getLength(a, lengthTag, edge);
+    if (length > MINLENGTH) continue;
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
@@ -390,7 +406,8 @@ bool coarsenMultiple(Adapt* a, bool aggressive)
   if (!a->input->shouldCoarsen)
     return false;
   double t0 = pcu::Time();
-  std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a);
+  Tag* lengthTag = a->mesh->createDoubleTag("edge_length", 1);
+  std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
   bool oldShouldForce = a->input->shouldForceAdaptation;
   if (aggressive)
     a->input->shouldForceAdaptation = true;
@@ -405,13 +422,14 @@ bool coarsenMultiple(Adapt* a, bool aggressive)
   {
     apf::Up adjacent;
     if (!getAdjIndependentSet(a, shortEdgeVerts, itr, independentSetStarted, checked, adjacent)) continue;
-    if (collapseShortest(a, collapse, shortEdgeVerts, itr, checked, adjacent)) {
+    if (collapseShortest(a, collapse, shortEdgeVerts, itr, checked, adjacent, lengthTag)) {
       independentSetStarted=true;
       success++;
     }
   }
   ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE | CHECKED, 0);
   a->input->shouldForceAdaptation = oldShouldForce;
+  a->mesh->destroyTag(lengthTag);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
   return true;
