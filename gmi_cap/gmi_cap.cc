@@ -9,16 +9,17 @@
 *******************************************************************************/
 #include "gmi_cap.h"
 
-#include <stdlib.h>
 #include <memory>
+#include <stdlib.h>
 #include <vector>
 
-#include <pcu_util.h>
 #include <gmi.h>
 #include <lionPrint.h>
+#include <pcu_util.h>
 
 #include <CapstoneModule.h>
 #include <CreateMG_AppProcessor.h>
+#include <CreateMG_Framework_Geometry.h>
 #include <CreateMG_Function.h>
 #include <CreateMG_Reader.h>
 

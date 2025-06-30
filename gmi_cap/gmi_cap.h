@@ -29,11 +29,16 @@
 #ifdef __cplusplus
 #include <string>
 #include <vector>
-#include <CreateMG_Framework_Geometry.h>
+#include <CreateMG_CoreDefs.h>
+// Forward declaration
+namespace CreateMG {
+  namespace Geometry { class GeometryDatabaseInterface; }
+  typedef Geometry::GeometryDatabaseInterface GDBI;
+}
 #else
 extern "C" {
 #endif
-
+// Forward declarations
 struct gmi_model;
 struct gmi_ent;
 

@@ -21,10 +21,11 @@
  *
  * \note Files which `#include` apfCAP.h should also `#include`
  * CreateMG_Framework_Mesh.h (or another Capstone header with the full
- * MeshDatabaseInterface definition) to import meshes or use getCapNative.
+ * MeshDatabaseInterface definition) to import meshes or use exportCapNative.
  */
 
 #include <string>
+#include <vector>
 
 /**
  * \cond
@@ -39,13 +40,15 @@ namespace CreateMG {
   namespace Mesh { class MeshDatabaseInterface; }
   typedef Geometry::GeometryDatabaseInterface GDBI;
   typedef Mesh::MeshDatabaseInterface MDBI;
+  class Metric6;
 }
 /** \endcond */
 
 namespace apf {
 
-class Mesh2;
 class Field;
+class Mesh2;
+class MeshEntity;
 
 /**
  * \defgroup apf_cap Capstone APF mesh interface
@@ -134,7 +137,7 @@ Mesh2* makeEmptyCapMesh(
 );
 
 /**
- * Disown capMesh's gmi_model.
+ * \brief Disown capMesh's gmi_model.
  *
  * Mark the gmi_model as non-owned so that the destructor does not call
  * gmi_destroy.
@@ -144,11 +147,52 @@ Mesh2* makeEmptyCapMesh(
 void disownCapModel(Mesh2* capMesh);
 
 /**
+ * \brief Get the native Capstone id of an APF entity.
+ *
+ * \param m A Capstone mesh
+ * \param e A MeshEntity on m
+ * \return Unique id associated with the underlying Capstone Topo.
+ */
+size_t getCapId(Mesh2* m, MeshEntity* e);
+
+/**
+ * \brief Get an entity from a Capstone mesh by dimension and native id.
+ *
+ * \param m A Capstone mesh
+ * \param dimension The dimension of the entity to retrieve
+ * \param id The native Capstone id
+ * \return The corresponding MeshEntity or nullptr if no such entity exists
+ */
+MeshEntity* getCapEntity(Mesh2* m, int dimension, size_t id);
+
+/**
  * \brief Get native Capstone mesh database interface.
  * \param capMesh Previously loaded capstone mesh.
  * \return Underlying Capstone mesh database interface from capMesh.
  */
-CreateMG::MDBI* getCapNative(Mesh2* capMesh);
+CreateMG::MDBI* exportCapNative(Mesh2* capMesh);
+
+bool loadCapSizing(
+  apf::Mesh2* m, const std::vector<CreateMG::Metric6>& sizing,
+  apf::Field* scales, apf::Field* frames
+);
+
+bool loadCapSizing(
+  apf::Mesh2* m, const std::vector<CreateMG::Metric6>& sizing,
+  const char* scales, const char* frames
+);
+
+bool loadCapSizingFile(
+  apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
+  apf::Field* scales, apf::Field* frames,
+  bool smooth = false, const std::string& analysis = ""
+);
+
+bool loadCapSizingFile(
+  apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
+  const char* scales, const char* frames,
+  bool smooth = false, const std::string& analysis = ""
+);
 
 /**
  * \brief Test for smoothCAPAnisoSizes support.
@@ -161,7 +205,7 @@ CreateMG::MDBI* getCapNative(Mesh2* capMesh);
  *          against. Otherwise the call will always apf::fail. Use this
  *          function to programmatically test for the capability.
  */
-bool has_smoothCAPAnisoSizes(void) noexcept;
+bool has_smoothCapAnisoSizes(void) noexcept;
 
 /**
  * \brief Use the SizingMetricTool to smooth a size field on a Capstone mesh.
@@ -173,7 +217,7 @@ bool has_smoothCAPAnisoSizes(void) noexcept;
  * \return A boolean indicating success.
  * \pre m must be a Capstone mesh.
  */
-bool smoothCAPAnisoSizes(
+bool smoothCapAnisoSizes(
   apf::Mesh2* m, std::string analysis, apf::Field* scales, apf::Field* frames
 );
 

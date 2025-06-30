@@ -13,7 +13,7 @@ set(HEADERS gmi_cap.h)
 
 add_library(gmi_cap ${SOURCES})
 
-target_link_libraries(gmi_cap PUBLIC gmi framework_geometry)
+target_link_libraries(gmi_cap PUBLIC gmi framework_core)
 target_link_libraries(gmi_cap PRIVATE pcu lion capstone_module)
 
 # Include directories

@@ -33,7 +33,7 @@ int main(int argc, char** argv)
   apf::Mesh2* mesh = apf::createCapMesh(model, &PCUobj);
 
   // check parametrization using capstone apis
-  checkParametrization(apf::getCapNative(mesh), gmi_export_cap(model));
+  checkParametrization(apf::exportCapNative(mesh), gmi_export_cap(model));
   apf::destroyMesh(mesh);
   gmi_cap_stop();
   } // pcu object scope

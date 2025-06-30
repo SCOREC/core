@@ -14,11 +14,9 @@
 #include <PCU.h>
 
 #include <CreateMG_AppProcessor.h>
-#include <CreateMG_Function.h>
+#include <CreateMG_Framework_Geometry.h>
 #include <CreateMG_Framework_Mesh.h>
-#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
-#include <CreateMG_SizingMetricTool.h>
-#endif
+#include <CreateMG_Function.h>
 
 using namespace CreateMG;
 namespace MeshMG = CreateMG::Mesh;
@@ -1177,94 +1175,38 @@ void disownCapModel(Mesh2* capMesh) {
   m->disownModel();
 }
 
-CreateMG::MDBI* getCapNative(Mesh2* capMesh) {
+
+size_t getCapId(Mesh2* capMesh, MeshEntity* e) {
   auto m = dynamic_cast<MeshCAP*>(capMesh);
-  if (!m) fail("disownCapModel: not a Capstone mesh");
+  if (!m) fail("getCapId: not a Capstone mesh");
+  MDBI* mdbi = m->getMesh();
+  auto mtopo = fromEntity(e);
+  size_t id;
+  MG_API_CALL(mdbi, get_id(mtopo, id));
+  return id;
+}
+
+MeshEntity* getCapEntity(Mesh2* capMesh, int dimension, size_t id) {
+  auto m = dynamic_cast<MeshCAP*>(capMesh);
+  if (!m) fail("getCapEntity: not a Capstone mesh");
+  MDBI* mdbi = m->getMesh();
+  MeshMG::MeshTopo topo = MeshMG::TOPO_UNKNOWN;
+  switch (dimension) {
+    case 0: topo = MeshMG::TOPO_VERTEX; break;
+    case 1: topo = MeshMG::TOPO_EDGE; break;
+    case 2: topo = MeshMG::TOPO_FACE; break;
+    case 3: topo = MeshMG::TOPO_REGION; break;
+    default: return nullptr;
+  }
+  auto mtopo = mdbi->get_topo_by_id(topo, id);
+  return mtopo.is_valid() ? toEntity(mtopo) : nullptr;
+}
+
+
+CreateMG::MDBI* exportCapNative(Mesh2* capMesh) {
+  auto m = dynamic_cast<MeshCAP*>(capMesh);
+  if (!m) fail("exportCapNative: not a Capstone mesh");
   return m->getMesh();
 }
 
-bool has_smoothCAPAnisoSizes(void) noexcept {
-#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool smoothCAPAnisoSizes(apf::Mesh2* mesh, std::string analysis,
-  apf::Field* scales, apf::Field* frames) {
-#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
-  // Ensure input is a MeshCAP.
-  apf::MeshCAP* m = dynamic_cast<apf::MeshCAP*>(mesh);
-  if (!m) {
-    lion_eprint(1, "ERROR: smoothCAPAnisoSizes: mesh is not an apf::MeshCAP*\n");
-    return false;
-  }
-
-  // Extract metric tensors from MeshAdapt frames and scales.
-  std::vector<Metric6> sizing6(m->count(0));
-  apf::Matrix3x3 Q;
-  apf::Vector3 H;
-  apf::MeshIterator* it = m->begin(0);
-  for (apf::MeshEntity* e = m->iterate(it); e; e = m->iterate(it)) {
-    apf::getVector(scales, e, 0, H); // Desired element lengths.
-    apf::getMatrix(frames, e, 0, Q); // MeshAdapt uses column vectors.
-    apf::Matrix3x3 L(1.0/(H[0]*H[0]), 0, 0,
-      0, 1.0/(H[1]*H[1]), 0,
-      0, 0, 1.0/(H[2]*H[2]));
-    apf::Matrix3x3 t = Q * L * apf::transpose(Q); // Invert orthogonal frames.
-    size_t id;
-    MG_API_CALL(m->getMesh(), get_id(fromEntity(e), id));
-    PCU_DEBUG_ASSERT(id != 0);
-    --id;
-    sizing6[id][0] = t[0][0];
-    sizing6[id][1] = t[0][1];
-    sizing6[id][2] = t[0][2];
-    sizing6[id][3] = t[1][1];
-    sizing6[id][4] = t[1][2];
-    sizing6[id][5] = t[2][2];
-  }
-  m->end(it);
-  auto smooth_tool = get_sizing_metric_tool(m->getMesh()->get_context(),
-    "CreateSmoothingBase");
-  if (smooth_tool == nullptr) {
-    lion_eprint(1, "ERROR: Unable to find \"CreateSmoothingBase\"\n");
-    return false;
-  }
-  smooth_tool->set_context(m->getMesh()->get_context());
-  M_MModel mmodel;
-  MG_API_CALL(m->getMesh(), get_current_model(mmodel));
-  smooth_tool->set_metric(mmodel, "sizing6", sizing6);
-  std::vector<Metric6> ometric;
-  smooth_tool->smooth_metric(mmodel, analysis, "sizing6", ometric);
-  it = m->begin(0);
-  for (apf::MeshEntity* e = m->iterate(it); e; e = m->iterate(it)) {
-    size_t id;
-    MG_API_CALL(m->getMesh(), get_id(fromEntity(e), id));
-    PCU_DEBUG_ASSERT(id != 0);
-    --id;
-    const Metric6& m = ometric[id];
-    apf::Matrix3x3 t(m[0], m[1], m[2],
-      m[1], m[3], m[4],
-      m[2], m[4], m[5]);
-    int n = apf::eigen(t, &Q[0], &H[0]); // Eigenvectors in rows of Q.
-    PCU_DEBUG_ASSERT(n == 3);
-    Q = apf::transpose(Q); // Put eigenvectors back into columns for MeshAdapt.
-    for (int i = 0; i < 3; ++i) {
-      H[i] = 1.0/sqrt(H[i]);
-    }
-    apf::setMatrix(frames, e, 0, Q);
-    apf::setVector(scales, e, 0, H);
-  }
-  m->end(it);
-  return true;
-#else
-  (void) mesh;
-  (void) analysis;
-  (void) scales;
-  (void) frames;
-  apf::fail("smoothCAPAnisoSizes: Capstone does not have SizingMetricTool.");
-#endif
-}
-
-}//namespace apf
+} // namespace apf
