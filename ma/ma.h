@@ -54,13 +54,15 @@ void adapt(Input* in);
   note that this function will delete the Input object. */
 void adapt(const Input* in);
 /** \brief adapt verbose for debugging with mutable configuration Input
-  \details see maInput.h for details. The mesh will be
-  written (vtk-format) at each operation stage */
-void adaptVerbose(Input* in, bool verbosef = false);
+  \details see maInput.h for details. Additional iteration(s) of refine, snap,
+  and fixElementShapes are called which can lead to a different mesh than 'adapt'.
+  The mesh for visualization will be written (vtk-format) at each operation stage.  */
+void adaptVerbose(Input* in, bool verbosef = false) __attribute__((deprecated));
 /** \brief adapt verbose for debugging with unmutable configuration Input
-  \details see maInput.h for details. The mesh will be
-  written (vtk-format) at each operation stage */
-void adaptVerbose(const Input* in, bool verbosef = false);
+  \details see maInput.h for details. Additional iteration(s) of refine, snap,
+  and fixElementShapes are called which can lead to a different mesh than 'adapt'.
+  The mesh for visualization will be written (vtk-format) at each operation stage.  */
+void adaptVerbose(const Input* in, bool verbosef = false) __attribute__((deprecated));
 /** \brief run uniform refinement, plus snapping and shape correction */
 void runUniformRefinement(Mesh* m, int n=1, SolutionTransfer* s=0);
 /** \brief run uniform refinement with matched entity support
