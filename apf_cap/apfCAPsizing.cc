@@ -8,7 +8,7 @@
 #include <pcu_util.h>
 
 #include <CreateMG_Framework_Mesh.h>
-#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
+#ifdef PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
 #include <CreateMG_SizingMetricTool.h>
 #endif
 
@@ -154,7 +154,7 @@ bool loadCapSizingFile(
 }
 
 bool has_smoothCapAnisoSizes(void) noexcept {
-#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
+#ifdef PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
   return true;
 #else
   return false;
@@ -163,7 +163,7 @@ bool has_smoothCapAnisoSizes(void) noexcept {
 
 bool smoothCapAnisoSizes(apf::Mesh2* mesh, std::string analysis,
   apf::Field* scales, apf::Field* frames) {
-#ifdef HAVE_CAPSTONE_SIZINGMETRICTOOL
+#ifdef PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
   // Extract metric tensors from MeshAdapt frames and scales.
   std::vector<CreateMG::Metric6> sizing6(mesh->count(0));
   apf::Matrix3x3 Q;

@@ -33,12 +33,14 @@ else()
 endif()
 
 set(CMAKE_REQUIRED_LIBRARIES "framework_meshing")
-check_include_file_cxx("CreateMG_SizingMetricTool.h" HAVE_CAPSTONE_SIZINGMETRICTOOL)
+check_include_file_cxx(
+  "CreateMG_SizingMetricTool.h" PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
+)
 cmake_pop_check_state()
 set(CMAKE_CXX_STANDARD "${CMAKE_CXX_OLD_STANDARD}")
 
 if(HAVE_CAPSTONE_SIZINGMETRICTOOL)
-target_compile_definitions(apf_cap PRIVATE HAVE_CAPSTONE_SIZINGMETRICTOOL)
+target_compile_definitions(apf_cap PRIVATE PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL)
 target_compile_features(framework_meshing INTERFACE cxx_std_14)
 target_link_libraries(apf_cap PRIVATE framework_meshing)
 endif()
