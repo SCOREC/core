@@ -153,21 +153,13 @@ bool loadCapSizingFile(
   );
 }
 
-bool has_smoothCapAnisoSizes(void) noexcept {
-#ifdef PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool smoothCapAnisoSizes(apf::Mesh2* mesh, std::string analysis,
-  apf::Field* scales, apf::Field* frames) {
-#ifdef PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
-  // Extract metric tensors from MeshAdapt frames and scales.
-  std::vector<CreateMG::Metric6> sizing6(mesh->count(0));
+void extractCapSizing(
+  apf::Mesh2* mesh, apf::Field* scales, apf::Field* frames,
+  std::vector<CreateMG::Metric6>& sizing
+) {
   apf::Matrix3x3 Q;
   apf::Vector3 H;
+  sizing.resize(mesh->count(0));
   apf::MeshIterator* it = mesh->begin(0);
   for (apf::MeshEntity* e = mesh->iterate(it); e; e = mesh->iterate(it)) {
     apf::getVector(scales, e, 0, H); // Desired element lengths.
@@ -181,15 +173,29 @@ bool smoothCapAnisoSizes(apf::Mesh2* mesh, std::string analysis,
     size_t id = getCapId(mesh, e);
     PCU_DEBUG_ASSERT(id != 0);
     --id;
-    sizing6[id][0] = t[0][0];
-    sizing6[id][1] = t[0][1];
-    sizing6[id][2] = t[0][2];
-    sizing6[id][3] = t[1][1];
-    sizing6[id][4] = t[1][2];
-    sizing6[id][5] = t[2][2];
+    sizing[id][0] = t[0][0];
+    sizing[id][1] = t[0][1];
+    sizing[id][2] = t[0][2];
+    sizing[id][3] = t[1][1];
+    sizing[id][4] = t[1][2];
+    sizing[id][5] = t[2][2];
   }
   mesh->end(it);
-  std::vector<CreateMG::Metric6> ometric;
+}
+
+bool has_smoothCapAnisoSizes(void) noexcept {
+#ifdef PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool smoothCapAnisoSizes(apf::Mesh2* mesh, std::string analysis,
+  apf::Field* scales, apf::Field* frames) {
+#ifdef PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL
+  std::vector<CreateMG::Metric6> sizing6, ometric;
+  extractCapSizing(mesh, scales, frames, sizing6);
   if (!doSmoothing(mesh, analysis, sizing6, ometric)) return false;
   return loadCapSizing(mesh, ometric, frames, scales);
 #else

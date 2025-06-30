@@ -194,6 +194,12 @@ bool loadCapSizingFile(
   bool smooth = false, const std::string& analysis = ""
 );
 
+// Extract metric tensors from MeshAdapt frames and scales.
+void extractCapSizing(
+  apf::Mesh2* m, apf::Field* scales, apf::Field* frames,
+  std::vector<CreateMG::Metric6>& sizing
+);
+
 /**
  * \brief Test for smoothCAPAnisoSizes support.
  *
