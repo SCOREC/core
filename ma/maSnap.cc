@@ -68,7 +68,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
-#ifdef HAVE_CAPSTONE
+#ifdef PUMI_HAS_CAPSTONE
     uTanSize = uTan * uTan;
     vTanSize = vTan * vTan;
 #endif
@@ -150,7 +150,7 @@ static void interpolateParametricCoordinateOnEdge(
   p[1] = 0.0;
   p[2] = 0.0;
 
-#ifdef HAVE_CAPSTONE
+#ifdef PUMI_HAS_CAPSTONE
   // account for non-uniform parameterization of model-edge
   Vector X[3];
   Vector para[2] = {a, b};
@@ -491,7 +491,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 2) we only check for faces that are periodic
    */
 
-#ifndef HAVE_CAPSTONE
+#ifndef PUMI_HAS_CAPSTONE
   // this need to be done for faces, only
   if (dim != 2)
     return;
@@ -526,7 +526,7 @@ static void interpolateParametricCoordinatesOnFace(
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
 
   if (num > 0) { // the underlying surface is degenerate
-#ifndef HAVE_CAPSTONE
+#ifndef PUMI_HAS_CAPSTONE
     interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
 #else
     // account for non-uniform parameterization of model-edge

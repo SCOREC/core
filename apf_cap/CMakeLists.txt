@@ -3,7 +3,7 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-if(NOT ENABLE_CAPSTONE)
+if(NOT PUMI_ENABLE_CAPSTONE)
   return()
 endif()
 
@@ -39,7 +39,7 @@ check_include_file_cxx(
 cmake_pop_check_state()
 set(CMAKE_CXX_STANDARD "${CMAKE_CXX_OLD_STANDARD}")
 
-if(HAVE_CAPSTONE_SIZINGMETRICTOOL)
+if(PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL)
 target_compile_definitions(apf_cap PRIVATE PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL)
 target_compile_features(framework_meshing INTERFACE cxx_std_14)
 target_link_libraries(apf_cap PRIVATE framework_meshing)

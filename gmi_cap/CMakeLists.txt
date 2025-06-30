@@ -3,7 +3,7 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-if(NOT ENABLE_CAPSTONE)
+if(NOT PUMI_ENABLE_CAPSTONE)
   return()
 endif()
 
