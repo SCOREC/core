@@ -172,29 +172,108 @@ MeshEntity* getCapEntity(Mesh2* m, int dimension, size_t id);
  */
 CreateMG::MDBI* exportCapNative(Mesh2* capMesh);
 
+/**
+ * \defgroup apf_cap_sizing Capstone APF mesh sizing utilities
+ * \{
+ */
+
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizing A bulk sizing vector of Metric6 from Capstone
+ * \param[out] scales An apf::Field of apf::Vector3's on vertices for
+ *                    anisotropic sizing scales
+ * \param[out] frames An apf::Field of apf::Matrix3x3's on vertices for
+ *                    anisotropic sizing frames
+ * \return true on success, false otherwise
+ */
 bool loadCapSizing(
   apf::Mesh2* m, const std::vector<CreateMG::Metric6>& sizing,
   apf::Field* scales, apf::Field* frames
 );
 
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields.
+ *
+ * This overload is a convenience wrapper to simplify Field creation.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizing A bulk sizing vector of Metric6 from Capstone
+ * \param[out] scales The name of a new apf::Field to create with anisotropic
+ *                    sizing scales
+ * \param[out] frames The name of a new apf::Field to create with anisotropic
+ *                    sizing frames
+ * \return true on success, false otherwise
+ */
 bool loadCapSizing(
   apf::Mesh2* m, const std::vector<CreateMG::Metric6>& sizing,
   const char* scales, const char* frames
 );
 
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields from a sizing file.
+ *
+ * The bulk sizing file contains 6 doubles for each vertex. The vmap file
+ * contains 1 size_t for each vertex, plus an extra one with vertex count
+ * information. The vmap contains the info to convert solver ids to mesh ids.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizingFile The name of the bulk sizing file.
+ * \param[in] vmapFile The name of the vmap file.
+ * \param[out] scales An apf::Field of apf::Vector3's on vertices with
+ *                    anisotropic sizing scales
+ * \param[out] frames An apf::Field of apf::Matrix3x3's on vertices with
+ *                    anisotropic sizing frames
+ * \param[in] smooth A boolean to request smoothing before loading to
+ *                   apf::Fields
+ * \param[in] analysis The analysis which may contain additional sizing
+ *                     information (passed to Capstone smoothing routine)
+ * \return true on success, false on failure or if smoothing is requested but
+ *         not supported
+ */
 bool loadCapSizingFile(
   apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
   apf::Field* scales, apf::Field* frames,
   bool smooth = false, const std::string& analysis = ""
 );
 
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields from a sizing file.
+ *
+ * The bulk sizing file contains 6 doubles for each vertex. The vmap file
+ * contains 1 size_t for each vertex, plus an extra one with vertex count
+ * information. The vmap contains the info to convert solver ids to mesh ids.
+ *
+ * This overload is a convenience wrapper to simplify Field creation.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizingFile The name of the bulk sizing file.
+ * \param[in] vmapFile The name of the vmap file.
+ * \param[out] scales The name of a new apf::Field to create with anisotropic
+ *                    sizing scales
+ * \param[out] frames The name of a new apf::Field to create with anisotropic
+ *                    sizing frames
+ * \param[in] smooth Whether to request smoothing before loading to apf::Fields
+ * \param[in] analysis The analysis which may contain additional sizing
+ *                     information (passed to Capstone smoothing routine)
+ * \return true on success, false on failure or if smoothing is requested but
+ *         not supported
+ */
 bool loadCapSizingFile(
   apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
   const char* scales, const char* frames,
   bool smooth = false, const std::string& analysis = ""
 );
 
-// Extract metric tensors from MeshAdapt frames and scales.
+/**
+ * \brief Extract Capstone metric tensors from MeshAdapt frames and scales.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] scales An apf::Field with anisotropic sizing scales
+ * \param[in] frames An apf::Field with anisotropic sizing frames
+ * \param[out] sizing A vector to output metric tensors to
+ */
 void extractCapSizing(
   apf::Mesh2* m, apf::Field* scales, apf::Field* frames,
   std::vector<CreateMG::Metric6>& sizing
@@ -227,7 +306,9 @@ bool smoothCapAnisoSizes(
   apf::Mesh2* m, std::string analysis, apf::Field* scales, apf::Field* frames
 );
 
-/** \} */
+/** \} apf_cap_sizing */
+
+/** \} apf_cap */
 
 } // namespace apf
 
