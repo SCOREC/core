@@ -46,37 +46,30 @@ void printEdgeCuts(apf::Mesh2 *m);
 /** \brief Migrate all elements back to rank 0. */
 void migrateHome(apf::Mesh2* mesh);
 
-/** \brief Take a serial MDS mesh, partition, adapt, then localize. */
-void parallelAdapt(ma::Mesh* mesh, gmi_model* mod, pcu::PCU& PCU, int maxiter);
-
 /** \brief Command line argument processing class. */
-class Args {
+struct Args {
 public:
   Args() {}
   Args(int argc, char* argv[]) { parse(argc, argv); }
   void parse(int argc, char* argv[]);
   void print_usage(const char* argv0) const;
   /**
-   * \brief Get maximum iterations argument.
+   * \brief maximum iterations argument.
    *
    * Pass -1 to trust MeshAdapt or a number <= 10 to specify max iterations.
    */
-  int maxiter() const noexcept { return maxiter_; }
+  int maxiter{-1};
   /**
    * \brief Get smoothing argument. If true, request smoothing if supported.
    */
-  bool smooth() const noexcept { return smooth_; }
-
-  const std::string& creFilename() const noexcept { return creFilename_; }
-  const std::string& sizingFilename() const noexcept {
-    return sizingFilename_;
-  }
-private:
-  int maxiter_{-1};
-  bool smooth_{false};
-  std::string creFilename_;
-  std::string sizingFilename_;
+  bool smooth{false};
+  std::string creFilename, sizingFilename, before, after;
 };
+
+/** \brief Take a serial MDS mesh, partition, adapt, then localize. */
+void parallelAdapt(
+  ma::Mesh* mesh, gmi_model* mod, pcu::PCU& PCU, const Args& args
+);
 
 } // namespace
 
@@ -107,13 +100,13 @@ int main(int argc, char** argv) {
       std::cout << "STATUS: Init Capstone" << std::endl;
 
     if (PCU.Self() == 0)
-      std::cout << "STATUS: Loading CRE file : " << args.creFilename();
+      std::cout << "STATUS: Loading CRE file : " << args.creFilename;
     gmi_model* model = nullptr;
     // Load CRE file sequentially to avoid NFS errors.
     for (int i = 0; i < PCU.Peers(); ++i) {
       if (PCU.Self() == i) {
-        if (PCU.Self() == 0) model = gmi_load(args.creFilename().c_str());
-        else model = gmi_cap_load_selective(args.creFilename().c_str(), {});
+        if (PCU.Self() == 0) model = gmi_load(args.creFilename.c_str());
+        else model = gmi_cap_load_selective(args.creFilename.c_str(), {});
       }
       PCU.Barrier();
     }
@@ -130,13 +123,12 @@ int main(int argc, char** argv) {
       ma::Mesh* apfCapMesh = apf::createCapMesh(model, soloPCU.get());
       apf::disownCapModel(apfCapMesh);
       if (!apf::loadCapSizingFile(
-        apfCapMesh, args.sizingFilename(),
-        get_no_extension(args.creFilename()) + ".avm.vmap",
+        apfCapMesh, args.sizingFilename,
+        get_no_extension(args.creFilename) + ".avm.vmap",
         "adapt_scales", "adapt_frames", true, "Kestrel"
       )) {
         throw std::runtime_error("failed to load sizing file");
       }
-      apf::writeVtkFiles("before", apfCapMesh);
       /* CONVERT TO APF MDS MESH AND WRITE VTK */
       std::cout << "STATUS: Convert to APF MDS Mesh" << std::endl;
       double t_start = pcu::Time();
@@ -148,12 +140,11 @@ int main(int argc, char** argv) {
       apf::destroyMesh(apfCapMesh);
       apfMesh->verify();
       apf::printStats(apfMesh);
-      apf::writeVtkFiles("before-mds", apfMesh);
     }
 
     PCU.Barrier();
 
-    parallelAdapt(apfMesh, model, PCU, args.maxiter());
+    parallelAdapt(apfMesh, model, PCU, args);
 
     if (original) {
       apf::Mesh2* mdsMesh = apfMesh;
@@ -168,7 +159,7 @@ int main(int argc, char** argv) {
       apf::destroyMesh(mdsMesh);
       
       /* SAVE FINAL CRE FILE */
-      auto creOFileName = get_no_extension(args.creFilename())
+      auto creOFileName = get_no_extension(args.creFilename)
         + "_adapted.cre";
       gmi_cap_write(model, creOFileName.c_str());
       apf::destroyMesh(apfMesh);
@@ -218,7 +209,9 @@ void migrateHome(apf::Mesh2* mesh) {
       << " seconds" << std::endl;
 }
 
-void parallelAdapt(ma::Mesh* mesh, gmi_model* model, pcu::PCU& PCU, int maxiter) {
+void parallelAdapt(
+  ma::Mesh* mesh, gmi_model* model, pcu::PCU& PCU, const Args& args
+) {
   auto t0 = pcu::Time();
   bool original = false;
   pcu::PCU* oldPCU = nullptr;
@@ -256,10 +249,12 @@ void parallelAdapt(ma::Mesh* mesh, gmi_model* model, pcu::PCU& PCU, int maxiter)
     );
     plan = nullptr; // plan is freed by apf::repeatMdsMesh.
     apf::printStats(mesh);
-    apf::writeVtkFiles("before-mds-split", mesh);
   }
   apf::disownMdsModel(mesh);
   printEdgeCuts(mesh);
+  if (!args.before.empty()) {
+    apf::writeVtkFiles(args.before.c_str(), mesh);
+  }
 
   apf::Field* mdsScaleField = mesh->findField("adapt_scales");
   apf::Field* mdsFrameField = mesh->findField("adapt_frames");
@@ -273,14 +268,16 @@ void parallelAdapt(ma::Mesh* mesh, gmi_model* model, pcu::PCU& PCU, int maxiter)
     ma::configure(mesh, mdsScaleField, mdsFrameField)
   );
   in->shouldForceAdaptation = true;
-  if (maxiter != -1) in->maximumIterations = maxiter;
+  if (args.maxiter != -1) in->maximumIterations = args.maxiter;
 
   if (original) std::cout << "STATUS: Adapting" << std::endl;
   ma::adapt(in);
 
   /* WRITE THE AFTER ADAPT MESH TO VTK USING APF VTK WRITER */
-  if (original) std::cout << "STATUS: Writing VTK file (after)" << std::endl;
-  apf::writeVtkFiles("after-mds", mesh);
+  if (!args.after.empty()) {
+    if (original) std::cout << "STATUS: Writing VTK file (after)" << std::endl;
+    apf::writeVtkFiles(args.after.c_str(), mesh);
+  }
 
   if (parts > 1) migrateHome(mesh);
   if (original) {
@@ -324,20 +321,30 @@ void Args::parse(int argc, char* argv[]) {
   for (int i = 1; i < argc; ++i) {
     if (argv[i][0] == '-') {
       switch (argv[i][1]) {
+      case 'B':
+        if (argv[i][2]) before = &argv[i][2];
+        else if (++i < argc) before = argv[i];
+        else throw std::invalid_argument("missing argument to -B");
+        break;
+      case 'A':
+        if (argv[i][2]) after = &argv[i][2];
+        else if (++i < argc) after = argv[i];
+        else throw std::invalid_argument("missing argument to -A");
+        break;
       case 'i':
-        if (argv[i][2]) maxiter_ = std::stoi(&argv[i][2]);
-        else if (++i < argc) maxiter_ = std::stoi(argv[i]);
+        if (argv[i][2]) maxiter = std::stoi(&argv[i][2]);
+        else if (++i < argc) maxiter = std::stoi(argv[i]);
         else throw std::invalid_argument("missing argument to -i");
         break;
       case 's':
-        smooth_ = true;
+        smooth = true;
         break;
       default:
         throw std::invalid_argument("invalid option -" + argv[i][1]);
       }
     } else {
-      if (creFilename_.empty()) creFilename_ = argv[i];
-      else if (sizingFilename_.empty()) sizingFilename_ = argv[i];
+      if (creFilename.empty()) creFilename = argv[i];
+      else if (sizingFilename.empty()) sizingFilename = argv[i];
       else {
         throw std::invalid_argument(
           std::string("invalid argument `") + argv[i] + "`"
@@ -348,8 +355,8 @@ void Args::parse(int argc, char* argv[]) {
 }
 
 void Args::print_usage(const char* argv0) const {
-  std::cout << "USAGE: " << argv0 << " [-i MAXITER] [-s] INPUT.CRE SIZING.DAT"
-    << std::endl;
+  std::cout << "USAGE: " << argv0 << " [-B BEFORE.VTK] [-A AFTER.VTK]"
+    " [-i MAXITER] [-s] INPUT.CRE SIZING.DAT" << std::endl;
 }
 
 } // namsepace
