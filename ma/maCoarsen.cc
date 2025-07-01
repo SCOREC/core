@@ -271,7 +271,20 @@ static double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
   
 }
 
-static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
+bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent)
+{
+  Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vertex);
+  for (int i=0; i<adjacent.n; i++) {
+    Entity* newEdgeVerts[2]{vertex, getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vCollapse)};
+    Entity* newEdge = a->mesh->createEntity(apf::Mesh::EDGE, 0, newEdgeVerts);
+    double length = a->sizeField->measure(newEdge);
+    destroyElement(a, newEdge);
+    if (length > MAXLENGTH) return false;
+  }
+  return true;
+}
+
+static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
   bool alreadyFlagged = true;
@@ -285,12 +298,9 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   if (collapse.setEdge(edge) && 
       collapse.checkClass() &&
       collapse.checkTopo() &&
+      collapseSizeCheck(a, keep, edge, adjacent) &&
       collapse.tryBothDirections(quality)) {
-    if (collapse.edgeGrewPastMaxLength()) {
-      result = false;
-      collapse.cancel();
-    }
-    else result = true;
+    result = true;
   }  
   if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
   return result;
@@ -338,7 +348,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
   }
   for (int i=0; i < sorted.size(); i++) {
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
-    if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse)) continue;
+    if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
     flagIndependentSet(a, adjacent, checked);
     itr = shortEdgeVerts.erase(itr);
     collapse.destroyOldElements();
