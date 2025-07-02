@@ -1,7 +1,11 @@
+#include <apfMesh.h>
+#include <apfShape.h>
+#include <lionPrint.h>
 #include "maBalance.h"
 #include "maAdapt.h"
 #include <parma.h>
 #include <apfZoltan.h>
+#include <apfMETIS.h>
 
 #define MAX_ZOLTAN_GRAPH_RANKS 16*1024
 
@@ -114,6 +118,10 @@ void runParma(Adapt* a)
   runBalancer(a, Parma_MakeElmBalancer(a->mesh));
 }
 
+void runMETIS(Adapt* a) {
+  runBalancer(a, apf::makeMETISbalancer(a->mesh));
+}
+
 void printEntityImbalance(Mesh* m)
 {
   double imbalance[4];
@@ -147,6 +155,10 @@ void preBalance(Adapt* a)
     runZoltan(a,apf::RIB);
     return;
   }
+  if (in->shouldRunPreMetis) {
+    runMETIS(a);
+    return;
+  }
   if (in->shouldRunPreParma) {
     runParma(a);
     return;
@@ -171,6 +183,10 @@ void preBalance(Adapt* a)
       runZoltan(a, apf::RIB);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
+    return;
 #else
     runParma(a);
     return;
@@ -187,6 +203,10 @@ void midBalance(Adapt* a)
   // is true, apply that balancer and return.
   if (in->shouldRunMidZoltan) {
     runZoltan(a);
+    return;
+  }
+  if (in->shouldRunMidMetis) {
+    runMETIS(a);
     return;
   }
   if (in->shouldRunMidParma) {
@@ -211,6 +231,10 @@ void midBalance(Adapt* a)
       runZoltan(a, apf::RIB);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
+    return;
 #else
     runParma(a);
     return;
@@ -232,6 +256,11 @@ void postBalance(Adapt* a)
   }
   if (in->shouldRunPostZoltanRib) {
     runZoltan(a,apf::RIB);
+    printEntityImbalance(a->mesh);
+    return;
+  }
+  if (in->shouldRunPostMetis) {
+    runMETIS(a);
     printEntityImbalance(a->mesh);
     return;
   }
@@ -261,6 +290,10 @@ void postBalance(Adapt* a)
       printEntityImbalance(a->mesh);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
+    printEntityImbalance(a->mesh);
 #else
     runParma(a);
     printEntityImbalance(a->mesh);

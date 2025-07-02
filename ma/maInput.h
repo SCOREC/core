@@ -88,6 +88,17 @@ class Input
     \details if this and all the other PreBalance options are false, pre-balancing
     occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPreZoltanRib;
+    /**
+     * \brief Whether to run METIS before adaptation (default false)
+     *
+     * If all pre-balance options are false, pre-balancing only occurs if the
+     * estimated imbalance is greater than in->maximumImbalance.
+     *
+     * \note This option collects necessary mesh topology information on rank
+     * 0, runs METIS serially, then sends the migration plan to the remaining
+     * processes. It is only intended to be used on a single node.
+     */
+    bool shouldRunPreMetis;
 /** \brief whether to run parma predictive load balancing (default false)
     \details if this and all the other PreBalance options are false, pre-balancing
     occurs only if the imbalance is greater than in->maximumImbalance */
@@ -96,6 +107,17 @@ class Input
     \details if this and all the other MidBalance options are false, mid-balancing
     occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunMidZoltan;
+    /**
+     * \brief Whether to run METIS during adaptation (default false)
+     *
+     * If all mid-balance options are false, mid-balancing only occurs if the
+     * estimated imbalance is greater than in->maximumImbalance.
+     *
+     * \note This option collects necessary mesh topology information on rank
+     * 0, runs METIS serially, then sends the migration plan to the remaining
+     * processes. It is only intended to be used on a single node.
+     */
+    bool shouldRunMidMetis;
 /** \brief whether to run parma during adaptation (default false)
     \details if this and all the other MidBalance options are false, mid-balancing
     occurs only if the imbalance is greater than in->maximumImbalance */
@@ -108,6 +130,17 @@ class Input
     \details if this and all the other PostBalance options are false, post-balancing
     occurs only if the imbalance is greater than in->maximumImbalance */
     bool shouldRunPostZoltanRib;
+    /**
+     * \brief Whether to run METIS after adaptation (default false)
+     *
+     * If all post-balance options are false, post-balancing only occurs if the
+     * estimated imbalance is greater than in->maximumImbalance.
+     *
+     * \note This option collects necessary mesh topology information on rank
+     * 0, runs METIS serially, then sends the migration plan to the remaining
+     * processes. It is only intended to be used on a single node.
+     */
+    bool shouldRunPostMetis;
 /** \brief whether to run parma after adapting (default false)
     \details if this and all the other PostBalance options are false, post-balancing
     occurs only if the imbalance is greater than in->maximumImbalance */

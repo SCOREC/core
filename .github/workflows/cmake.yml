@@ -4,6 +4,17 @@ on:
     branches: [ develop ]
   pull_request:
     branches: [ develop ]
+    paths:
+      - .github/workflows/cmake.yml
+      - .gitmodules
+      - '**/CMakeLists.txt'
+      - '**/*.cmake'
+      - '**/*.in'
+      - '**/*.h'
+      - '**/*.c'
+      - '**/*.cc'
+      - '**/*.cpp'
+      - '**/*.f'
 jobs:
   build:
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
@@ -16,6 +27,20 @@ jobs:
           - { name: LLVM, CC: clang, CXX: clang++ }
         build_type: [Debug, Release]
         no_mpi: [OFF, ON]
+        cxx_standard: [11, 20]
+        metis: [OFF, ON]
+        exclude:
+          - compiler: { name: LLVM }
+            build_type: Release
+          - cxx_standard: 20
+            build_type: Release
+    env:
+      CCACHE_DIR: ${{github.workspace}}/.ccache
+      CCACHE_BASEDIR: ${{github.workspace}}
+      CCACHE_COMPRESS: true
+      CCACHE_MAXSIZE: 100M
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
     steps:
     - uses: actions/checkout@v4
@@ -26,25 +51,64 @@ jobs:
       run: |
            sudo apt update
            sudo apt install gcc-10 g++-10 mpich
+    - name: install metis
+      if: matrix.metis == 'ON'
+      run: sudo apt install libmetis-dev
+
+    - name: setup ccache
+      id: setup-ccache
+      run: |
+        sudo apt-get install ccache
+        ccache -p # Print ccache config
+        echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
+
+    - name: ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{github.workspace}}/.ccache
+        key: "${{matrix.compiler.name}}-\
+          cxx:${{matrix.cxx_standard}}-\
+          ${{matrix.build_type}}-\
+          nompi:${{matrix.no_mpi}}-\
+          ccache-${{steps.setup-ccache.outputs.timestamp}}"
+        restore-keys: "${{matrix.compiler.name}}-\
+          cxx:${{matrix.cxx_standard}}-\
+          ${{matrix.build_type}}-\
+          nompi:${{matrix.no_mpi}}-\
+          ccache-"
+
+    - name: Clear ccache statistics
+      run: ccache -z
 
     - name: Configure CMake
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install -DSCOREC_NO_MPI=${{matrix.no_mpi}}
+      run: >
+        cmake -S ${{github.workspace}} -B ${{github.workspace}}/build
+        -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install
+        -GNinja -DCMAKE_VERBOSE_MAKEFILE=ON
+        -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+        -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc
+        -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}}
+        -DSCOREC_CXX_WARNINGS=ON
+        -DIS_TESTING=ON
+        -DMESHES=${{github.workspace}}/pumi-meshes
+        -DSCOREC_NO_MPI=${{matrix.no_mpi}}
+        -DENABLE_METIS=${{matrix.metis}}
 
     - name: Build
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -j --target install
+      run: cmake --build ${{github.workspace}}/build --target install
 
     - name: Test
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
       working-directory: ${{github.workspace}}/build
-      run: ctest --output-on-failure -C ${{matrix.build_type}}
+      run: ctest --output-on-failure
 
     - name: Build User Project
       # only need to test with a single build config if the installed cmake config files work
@@ -52,8 +116,11 @@ jobs:
       env:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
-      run: |
-        cmake -S ${{github.workspace}}/doc -B ${{github.workspace}}/buildExample -DCMAKE_CXX_COMPILER=mpicxx -DSCOREC_PREFIX=${{github.workspace}}/build/install
+      run: >
+        cmake
+        -S ${{github.workspace}}/doc -B ${{github.workspace}}/buildExample
+        -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx
+        -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/buildExample
 
     - name: Build MPI-NoMPI Example
@@ -65,10 +132,17 @@ jobs:
         MPICH_CXX: ${{matrix.compiler.CXX}}
         MPICH_CC: ${{matrix.compiler.CC}}
       run: >
-        cmake -S ${{github.workspace}}/example/mpi-nompi
+        cmake
+        -S ${{github.workspace}}/example/mpi-nompi
         -B ${{github.workspace}}/example/mpi-nompi/build
-        -DCMAKE_CXX_COMPILER=mpicxx
+        -DCMAKE_C_COMPILER=mpicxx -DCMAKE_CXX_COMPILER=mpicxx
         -DSCOREC_PREFIX=${{github.workspace}}/build/install ;
         cmake --build ${{github.workspace}}/example/mpi-nompi/build ;
         ctest --test-dir ${{github.workspace}}/example/mpi-nompi/build
         --output-on-failure
+
+    - name: CCache statistics and recompression
+      run: |
+        ccache -sv
+        ccache -X 5
+

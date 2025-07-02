@@ -25,7 +25,7 @@ def main(argv):
    pyCore.lion_set_verbosity(1)
 
    # PCU initialization
-   pyCore.PCU_Comm_Init()
+   PCUObj = pyCore.PCU(MPI.COMM_WORLD)
 
    # SIMX initialization
    pyCore.start_sim('simlog.txt')
@@ -38,7 +38,7 @@ def main(argv):
    pyCore.gmi_register_sim()
 
    # load the mesh and model and write the initial mesh to vtk
-   mesh = pyCore.loadMdsMesh(model, mesh)
+   mesh = pyCore.loadMdsMesh(model, mesh, PCUObj)
    print("num verts in the mesh is ", mesh.count(0))
 
    it = mesh.begin(0)
@@ -85,7 +85,7 @@ def main(argv):
    pyCore.stop_sim()
 
    # gmi finalization
-   pyCore.PCU_Comm_Free()
+   del PCUObj
 
 if __name__ == "__main__":
    main(sys.argv[1:])

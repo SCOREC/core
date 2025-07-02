@@ -30,6 +30,7 @@
 #include <ma.h>
 #include <pcu_util.h>
 #include <parma.h>
+#include <apfMETIS.h>
 #include <apfZoltan.h>
 
 #include "CapstoneModule.h"
@@ -452,6 +453,8 @@ void parallelAdapt(ma::Mesh* mesh, gmi_model* model, pcu::PCU& PCU, int maxiter)
     apf::Splitter* splitter = apf::makeZoltanSplitter(
       mesh, apf::GRAPH, apf::PARTITION
     );
+    #elif defined(PUMI_HAS_METIS)
+    apf::Splitter* splitter = apf::makeMETISsplitter(mesh);
     #else
     apf::Splitter* splitter = Parma_MakeRibSplitter(mesh);
     #endif

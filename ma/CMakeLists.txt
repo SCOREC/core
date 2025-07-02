@@ -81,6 +81,7 @@ target_link_libraries(ma
      mds
      parma
      apf_zoltan
+     apf_metis
      pcu
    )
 
