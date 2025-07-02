@@ -212,6 +212,19 @@ bool loadCapSizing(
 );
 
 /**
+ * \brief Load metrics from a sizing file and vmap file.
+ *
+ * \param m An apf Capstone mesh
+ * \param sizingFile The name of the bulk sizing file
+ * \param vmapFile The name of the vmap file
+ * \param sizing6 A vector to fill with bulk sizing metrics
+ */
+void loadCapSizingFileMetrics(
+  apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
+  std::vector<CreateMG::Metric6>& sizing6
+);
+
+/**
  * \brief Load Capstone bulk sizing into apf::Fields from a sizing file.
  *
  * The bulk sizing file contains 6 doubles for each vertex. The vmap file

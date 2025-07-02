@@ -229,6 +229,12 @@ if(PUMI_ENABLE_CAPSTONE)
   util_exe_func(capAdapt capAdapt.cc)
   util_exe_func(capProbe capProbe.cc)
   util_exe_func(capLoadSome capLoadSome.cc)
+  if(PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL)
+    util_exe_func(capNativeAdapt capNativeAdapt.cc)
+    target_link_libraries(capNativeAdapt
+      framework_application framework_mesh framework_meshing
+    )
+  endif()
 endif()
 
 # send all the newly added utility executable targets

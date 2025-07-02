@@ -1,6 +1,8 @@
 #include "apfCAP.h"
 
+#include <exception>
 #include <fstream>
+#include <stdexcept>
 
 #include <apf.h>
 #include <apfMesh2.h>
@@ -20,6 +22,9 @@ typename std::enable_if<std::is_trivially_copyable<T>::value, void>::type
 load_file(const std::string& fname, std::vector<T>& data) {
   try {
     std::ifstream file(fname, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+      throw std::runtime_error("failed to open file `" + fname + "`");
+    }
     T val;
     while (file) {
       file.read(reinterpret_cast<char*>(std::addressof(val)), sizeof(T));
@@ -96,17 +101,10 @@ bool loadCapSizing(
   return loadCapSizing(m, sizing, scalesField, framesField);
 }
 
-bool loadCapSizingFile(
+void loadCapSizingFileMetrics(
   apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
-  apf::Field* scales, apf::Field* frames,
-  bool smooth, const std::string& analysis
+  std::vector<CreateMG::Metric6>& sizing6
 ) {
-  if (smooth && !has_smoothCapAnisoSizes()) {
-    lion_eprint(1,
-      "WARNING: loadCapSizingFile: smoothing requested but apf_cap was"
-      " compiled without support for smoothing\n");
-    return false;
-  }
   std::vector<size_t> vmap;
   std::vector<double> sizing;
   load_file(vmapFile, vmap);
@@ -125,7 +123,7 @@ bool loadCapSizingFile(
     fail("loadCapSizingFile: loaded invalid vmap");
   }
   // Copy sizefield to Metric6
-  std::vector<CreateMG::Metric6> sizing6(vmap[0]);
+  sizing6.resize(vmap[0]);
   for (size_t si = 0, vi = 1; vi < vmap.size(); ++vi) {
     size_t tid = vmap[vi];
     PCU_DEBUG_ASSERT(tid != 0);
@@ -133,6 +131,21 @@ bool loadCapSizingFile(
       sizing6[tid - 1][j] = sizing[si];
     }
   }
+}
+
+bool loadCapSizingFile(
+  apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
+  apf::Field* scales, apf::Field* frames,
+  bool smooth, const std::string& analysis
+) {
+  if (smooth && !has_smoothCapAnisoSizes()) {
+    lion_eprint(1,
+      "WARNING: loadCapSizingFile: smoothing requested but apf_cap was"
+      " compiled without support for smoothing\n");
+    return false;
+  }
+  std::vector<CreateMG::Metric6> sizing6;
+  loadCapSizingFileMetrics(m, sizingFile, vmapFile, sizing6);
   if (smooth) {
     std::vector<CreateMG::Metric6> ometric;
     if (!doSmoothing(m, analysis, sizing6, ometric)) return false;
