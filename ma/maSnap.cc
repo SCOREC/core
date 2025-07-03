@@ -745,12 +745,11 @@ static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
 class SnapAll : public Operator
 {
   public:
-    SnapAll(Adapt* a, Tag* t, bool simple):
-      snapper(a, t, simple)
+    SnapAll(Adapt* a, Tag* t, Snapper& snapperIn)
     {
       adapter = a;
       tag = t;
-      successCount = 0;
+      snapper = &snapperIn;
       didAnything = false;
       vert = 0;
     }
@@ -760,20 +759,17 @@ class SnapAll : public Operator
       if ( ! getFlag(adapter, e, SNAP))
         return false;
       vert = e;
-      snapper.setVert(e);
+      snapper->setVert(e);
       return true;
     }
     bool requestLocality(apf::CavityOp* o)
     {
-      return snapper.requestLocality(o);
+      return snapper->requestLocality(o);
     }
     void apply()
     {
-      bool snapped = snapper.run();
+      bool snapped = snapper->run();
       didAnything = didAnything || snapped;
-      if (snapped)
-        ++successCount;
-      clearFlag(adapter, vert, SNAP);
     }
     int successCount;
     bool didAnything;
@@ -781,14 +777,13 @@ class SnapAll : public Operator
     Adapt* adapter;
     Tag* tag;
     Entity* vert;
-    Snapper snapper;
+    Snapper* snapper;
 };
 
-bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
+bool snapAllVerts(Adapt* a, Tag* t, Snapper& snapper)
 {
-  SnapAll op(a, t, isSimple);
+  SnapAll op(a, t, snapper);
   applyOperator(a, &op);
-  successCount += a->mesh->getPCU()->Add<long>(op.successCount);
   return a->mesh->getPCU()->Or(op.didAnything);
 }
 
@@ -847,84 +842,44 @@ long tagVertsToSnap(Adapt* a, Tag*& tag)
 {
   Mesh* m = a->mesh;
   int dim = m->getDimension();
-  int notProcessed = a->vtxToSnap.size();
-  int owned = 0;
-  while (notProcessed > 0)
-  {
-    notProcessed--;
-    Entity* vertex = a->vtxToSnap.front();
-    a->vtxToSnap.pop();
-    if (!getFlag(a, vertex, SNAP)) //This means the vertex was deleted
+  Entity* v;
+  long n = 0;
+  Iterator* it = m->begin(0);
+  while ((v = m->iterate(it))) {
+    int md = m->getModelType(m->toModel(v));
+    if (dim == 3 && md == 3)
       continue;
-    Vector target;
-    getSnapPoint(m, vertex, target);
-    Vector prev = getPosition(m, vertex);
-    if (apf::areClose(prev, target, 1e-12)) {
-      clearFlag(a, vertex, SNAP);
+    Vector s;
+    getSnapPoint(m, v, s);
+    Vector x = getPosition(m, v);
+    if (apf::areClose(s, x, 1e-12))
       continue;
-    }
-    m->setDoubleTag(vertex, tag, &target[0]);
-    if (m->isOwned(vertex))
-      ++owned;
-    a->vtxToSnap.push(vertex);
+    m->setDoubleTag(v, tag, &s[0]);
+    setFlag(a, v, SNAP);
+    if (m->isOwned(v))
+      ++n;
   }
-  return m->getPCU()->Add<long>(owned);
+  m->end(it);
+  return m->getPCU()->Add<long>(n);
 }
 
-static void markVertsToSnap(Adapt* a, Tag* t)
-{
-  HasTag p(a->mesh, t);
-  markEntities(a, 0, p, SNAP, DONT_SNAP);
-}
-
-bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
-{
-  markVertsToSnap(a, t);
-  if (a->mesh->hasMatching())
-    return snapMatchedVerts(a, t, isSimple, successCount);
-  else
-    return snapAllVerts(a, t, isSimple, successCount);
-}
-
-long snapTaggedVerts(Adapt* a, Tag* tag)
-{
-  long successCount = 0;
-  /* there are two approaches possible here:
-   * 1- first snap all the vertices we can without any additional
-   * operation such as digging (simple snap). And then try snapping
-   * the remaining vertices that will need extra modifications (non-
-   * simple snap).
-   * 2- first do the non-simple snaps and then the simple snaps.
-   *
-   * Here we choose approach 2 for the following reasons
-   * (a) approach 2 is approximately as fast as approach 1
-   * (b) the problematic snaps will be attempted as soon as possible.
-   * This is extremely helpful because if we wait until later on
-   * bringing the vert to-be-snapped to the boundary might become more
-   * difficult due to the change in location of neighboring verticies
-   * that will be snapped before the problematic vert to-be-snapped.
-   */
-  while (snapOneRound(a, tag, false, successCount));
-  while (snapOneRound(a, tag, true, successCount));
-  return successCount;
-}
-
-void trySnapping(Adapt* a, Snapper& snapper) 
+long snapTaggedVerts(Adapt* a, Tag* tag, Snapper& snapper)
 {
   bool shouldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = true; //Allows quality to decrease from snapping
 
-  while (a->vtxToSnap.size() > 0)
-  {
-    Entity* vertex = a->vtxToSnap.front();
-    a->vtxToSnap.pop();
-    snapper.setVert(vertex);
-    if (snapper.run() && getFlag(a, vertex, SNAP))
-      a->vtxToSnap.push(vertex);
+  long successCount = 0;
+  bool snapped = true;
+  while (snapped) {
+    tagVertsToSnap(a, tag);
+    if (a->mesh->hasMatching())
+      snapped = snapMatchedVerts(a, tag, false, successCount);
+    else
+      snapped = snapAllVerts(a, tag, snapper);
   }
 
   a->input->shouldForceAdaptation = shouldForce;
-  a->vtxToSnap = {};
+  return successCount;
 }
 
 void snap(Adapt* a)
@@ -933,43 +888,21 @@ void snap(Adapt* a)
     return;
   double t0 = pcu::Time();
   Tag* snapTag = a->mesh->createDoubleTag("ma_snap", 3);
-  // preventMatchedCavityMods(a);
+  preventMatchedCavityMods(a);
   int toSnap = tagVertsToSnap(a, snapTag);
 
   // ma_dbg::addTargetLocation(a, "snap_target");
   // ma_dbg::addClassification(a, "classification");
 
   Snapper snapper(a, snapTag, false);
-  trySnapping(a, snapper);
-  // snapLayer(a, tag);
+  snapTaggedVerts(a, snapTag, snapper);
+  snapLayer(a, snapTag);
 
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d - Collapse %d - Swap %d - SplitCollapse %d - completed in %f seconds\n",
             toSnap, snapper.numSnapped, snapper.numFailed, snapper.numCollapseToVtx, snapper.numCollapse, snapper.numSwap, snapper.numSplitCollapse, t1 - t0);
-  // if (a->hasLayer)
-  //   checkLayerShape(a->mesh, "after snapping");
-  a->mesh->destroyTag(snapTag);
-}
-
-void prevSnap(Adapt* a)
-{
-  if ( ! a->input->shouldSnap)
-    return;
-  double t0 = pcu::Time();
-  Tag* tag;
-  /* we are starting to support a few operations on matched
-     meshes, including snapping+UR. this should prevent snapping
-     from modifying any matched entities */
-  preventMatchedCavityMods(a);
-  long targets = tagVertsToSnap(a, tag);
-  long success = snapTaggedVerts(a, tag);
-  snapLayer(a, tag);
-  apf::removeTagFromDimension(a->mesh, tag, 0);
-  a->mesh->destroyTag(tag);
-  double t1 = pcu::Time();
-  print(a->mesh->getPCU(), "snapped in %f seconds: %ld targets, %ld non-layer snaps",
-    t1 - t0, targets, success);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after snapping");
+  a->mesh->destroyTag(snapTag);
 }
 }

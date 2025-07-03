@@ -55,7 +55,6 @@ class Adapt
     apf::BuildCallback* buildCallback;
     SizeField* sizeField;
     SolutionTransfer* solutionTransfer;
-    std::queue<Entity*> vtxToSnap;
     Refine* refine;
     ShapeHandler* shape;
     int coarsensLeft;

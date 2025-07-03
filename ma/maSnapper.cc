@@ -397,10 +397,10 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
     //   }
     // }
     //TODO: RUN FACE SWAP HERE
-    if (splitCollapse.run(ents[1], FPP->vert, 0)) {
-      numSplitCollapse++;
-      return true;
-    }
+    // if (splitCollapse.run(ents[1], FPP->vert, 0)) {
+    //   numSplitCollapse++;
+    //   return true;
+    // }
     print(mesh->getPCU(), "Swap failed: face swap not implemented");
   }
   return false;
