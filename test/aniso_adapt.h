@@ -54,7 +54,7 @@ void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
     ma::snap(a);
     ma::coarsenMultiple(a);
   }
-  // ma::fixElementShapes(a);
+  ma::fixElementShapes(a);
   m->verify();
   apf::writeVtkFiles("after_adapt",m);
 }

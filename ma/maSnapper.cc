@@ -390,6 +390,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
   else {
     Entity* edges[3];
     mesh->getDownward(ents[0], 1, edges);
+    // Commented until faceswap, other wise can run into infinite loop
     // for (int i=0; i<3; i++) {
     //   if (edgeSwap->run(edges[i])) {
     //     numSwap++;
