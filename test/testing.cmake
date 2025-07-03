@@ -978,18 +978,45 @@ if (PCU_COMPRESS)
     WORKING_DIRECTORY ${MDIR}/run)
 endif()
 
-if(ENABLE_CAPSTONE)
-  mpi_test(capCyl 1 ./capVol -v 1 ${MESHES}/cap/cyl_surf_only.cre)
-  mpi_test(capWing 1 ./capVol -v 2 ${MESHES}/cap/wing_surf_only.cre)
-  mpi_test(capCube 1 ./capVol -v 3 ${MESHES}/cap/cube_surf_only.cre)
-  mpi_test(capCyl2 1 ./capVol -v 4 ${MESHES}/cap/cyl_surf_only.cre)
-  mpi_test(capVolCyl 1 ./capVol -vg 1 ${MESHES}/cap/cyl_surf_only.cre)
-  mpi_test(capVolWing 1 ./capVol -vg 2 ${MESHES}/cap/wing_surf_only.cre)
-  mpi_test(capVolCube 1 ./capVol -vg 3 ${MESHES}/cap/cube_surf_only.cre)
-  mpi_test(capVolCyl2 1 ./capVol -vg 4 ${MESHES}/cap/cyl_surf_only.cre)
+if(PUMI_ENABLE_CAPSTONE)
+  set(MDIR "${MESHES}/cap")
+  mpi_test(capVol_Wing 1 ./capVol 2 ${MDIR}/wing_surf_only.cre capVol_Wing.cre
+  )
+  mpi_test(capVol_WingMds 1
+    ./capVol -m 2 ${MDIR}/wing_surf_only.cre capVol_WingMds.cre
+  )
+  mpi_test(capVol_BLCylMds3D 1
+    ./capVol -gm 4 ${MDIR}/cyl_surf_only.cre capVol_BLCylMds3D.cre
+  )
+  mpi_test(capVol_BLCylMds3D-4 4
+    ./capVol -gm 4 ${MDIR}/cyl_surf_only.cre capVol_BLCylMds3D.cre
+  )
+  mpi_test(capVol_CubeMds3D 1
+    ./capVol -gm 3 ${MDIR}/cube_surf_only.cre capVol_CubeMds3D.cre
+  )
+  mpi_test(capVol_CubeMds3D-4 4
+    ./capVol -gm 3 ${MDIR}/cube_surf_only.cre capVol_CubeMds3D.cre
+  )
+  if(PUMI_TEST_CAPVOL_EXTRA)
+    mpi_test(capVol_BLCyl3D 1
+      ./capVol -g 4 ${MDIR}/cyl_surf_only.cre capVol_BLCyl3D.cre
+    )
+    mpi_test(capVol_Cube3D 1
+      ./capVol -g 3 ${MDIR}/cube_surf_only.cre capVol_Cube3D.cre
+    )
+    mpi_test(capVol_Cyl3D 1 ./capVol -g 1 ${MDIR}/cyl_surf_only.cre out.cre)
+    mpi_test(capVol_Cube3D 1 ./capVol -g 3 ${MDIR}/cube_surf_only.cre out.cre)
+    mpi_test(capVol_BLCyl3D 1 ./capVol -g 4 ${MDIR}/cyl_surf_only.cre out.cre)
+    mpi_test(capVol_CylMds 1 ./capVol -m 1 ${MDIR}/cyl_surf_only.cre out.cre)
+    mpi_test(capVol_CubeMds 1 ./capVol -m 3 ${MDIR}/cube_surf_only.cre out.cre)
+    mpi_test(capVol_BLCylMds 1 ./capVol -m 4 ${MDIR}/cyl_surf_only.cre out.cre)
+    mpi_test(capVol_CylMds3D 1 ./capVol -gm 1 ${MDIR}/cyl_surf_only.cre out.cre)
+    mpi_test(capVol_Wing3D 1 ./capVol -g 2 ${MDIR}/wing_surf_only.cre out.cre)
+    mpi_test(capVol_WingMds3D 1 ./capVol -gm 2 ${MDIR}/wing_surf_only.cre out.cre)
+  endif()
   mpi_test(cap_inClosureOf 1 ./cap_inClosureOf ${MESHES}/cap/cube_surf_only.cre)
   mpi_test(cap_closestPoint 1 ./cap_closestPoint ${MESHES}/cap/cube_surf_only.cre)
-  if(HAVE_CAPSTONE_SIZINGMETRICTOOL)
+  if(PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL)
     mpi_test(cap_smooth 1 ./cap_smooth)
   endif()
 endif()
