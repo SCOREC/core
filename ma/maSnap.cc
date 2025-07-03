@@ -882,6 +882,10 @@ long snapTaggedVerts(Adapt* a, Tag* tag, Snapper& snapper)
   return successCount;
 }
 
+int collect(Adapt* a, int val) {
+  return a->mesh->getPCU()->Add<long>(val);
+}
+
 void snap(Adapt* a)
 {
   if (!a->input->shouldSnap)
@@ -900,7 +904,7 @@ void snap(Adapt* a)
 
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d - Collapse %d - Swap %d - SplitCollapse %d - completed in %f seconds\n",
-            toSnap, snapper.numSnapped, snapper.numFailed, snapper.numCollapseToVtx, snapper.numCollapse, snapper.numSwap, snapper.numSplitCollapse, t1 - t0);
+            toSnap, collect(a,snapper.numSnapped), collect(a,snapper.numFailed), collect(a,snapper.numCollapseToVtx), collect(a,snapper.numCollapse), collect(a,snapper.numSwap), collect(a,snapper.numSplitCollapse), t1 - t0);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after snapping");
   a->mesh->destroyTag(snapTag);
