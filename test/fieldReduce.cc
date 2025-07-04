@@ -5,7 +5,7 @@
 #include <apfShape.h>
 #include <lionPrint.h>
 #include <parma.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
@@ -171,7 +171,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   myrank = PCUObj.Self();
   commsize = PCUObj.Peers();
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
@@ -190,7 +190,7 @@ int main(int argc, char** argv)
     failflag = failflag || testReduce(m, i);
 
   freeMesh(m);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();

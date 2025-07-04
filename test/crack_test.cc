@@ -1,5 +1,5 @@
 #include <apf.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <SimUtil.h>
 #include <MeshSim.h>
 #include <gmi_sim.h>
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   const char* modelFile   = argv[1];
   
   lion_set_verbosity(1);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
@@ -352,7 +352,7 @@ int main(int argc, char** argv)
     bCurver(modelFile, "crack_linear.smb", &PCUObj, i, output);
   }
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();

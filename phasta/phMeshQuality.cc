@@ -9,7 +9,7 @@
 #include <maSize.h>
 #include <maShape.h>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <SimUtil.h>
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
@@ -40,7 +40,7 @@ void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag, apf::Field* sf_dir) {
   apf::MeshEntity* v;
   apf::MeshIterator* vit = m->begin(0);
   while ((v = m->iterate(vit))) {
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 // get sim size field
 // this is for simmetrix mesh, should be generalized
     {
@@ -95,7 +95,7 @@ void attachSIMSizeField(apf::Mesh2* m, apf::Field* sf_mag) {
   apf::MeshEntity* v;
   apf::MeshIterator* vit = m->begin(0);
   while ((v = m->iterate(vit))) {
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 // get sim size field
 // this is for simmetrix mesh, should be generalized
     {

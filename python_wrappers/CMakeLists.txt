@@ -31,9 +31,9 @@ endif()
 set(PY_SOURCES apf.i)
 set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
 swig_add_library(pyCore LANGUAGE python SOURCES ${PY_SOURCES})
-# let swig know about the HAVE_SIMMETRIX
+# let swig know about the PUMI_HAS_SIMMETRIX
 if(PUMI_ENABLE_SIMMETRIX)
-  set_property(TARGET pyCore PROPERTY SWIG_COMPILE_DEFINITIONS HAVE_SIMMETRIX)
+  set_property(TARGET pyCore PROPERTY SWIG_COMPILE_DEFINITIONS PUMI_HAS_SIMMETRIX)
 endif()
 set_property(TARGET pyCore
   PROPERTY SWIG_INCLUDE_DIRECTORIES

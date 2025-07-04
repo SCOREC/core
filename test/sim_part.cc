@@ -26,7 +26,7 @@
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
 #include "SimUtil.h"

@@ -3,7 +3,7 @@
 #include <gmi_mesh.h>
 #include <lionPrint.h>
 #include <pumi_version.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
     lion_oprint(1,"PUMI Git hash %s\n", pumi_version());
     lion_oprint(1,"PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
   }
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   in.load(inputPath.c_str(), &PCUObj);
   chef::cook(g,m,in,&PCUObj);
   freeMesh(m);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_stop();

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <stdio.h>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <apfSIM.h>
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
@@ -178,7 +178,7 @@ void cutInterface(apf::Mesh2* m, BCs& bcs)
   cutEntities(m, fbcs, mm);
 }
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 int M_numVerticesInClosure(pMesh mesh, pGEntity model){
   int counter = 0;
   pVertex meshVertex;

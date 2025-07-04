@@ -11,7 +11,7 @@
 #include <fstream>
 #include <cstring>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <phAttrib.h>
 #include <apfSIM.h>
 #include <gmi_sim.h>
@@ -158,7 +158,7 @@ bool mesh_has_ext(const char* filename, const char* ext)
 
 apf::Mesh2* loadMesh(gmi_model*& g, const char* meshfile, pcu::PCU *PCUObj) {
   apf::Mesh2* mesh;
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (mesh_has_ext(meshfile, "sms")) {
     pProgress progress = Progress_new();
