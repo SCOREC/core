@@ -3,7 +3,6 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.12)
 
