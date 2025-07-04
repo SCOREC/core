@@ -105,14 +105,6 @@ Splitter* makeZoltanGlobalSplitter(Mesh* mesh, int method, int approach,
 Balancer* makeZoltanBalancer(Mesh* mesh, int method, int approach,
     bool debug = false);
 
-/** \brief Tag global ids of opposite elements to boundary faces
-  \details this function creates a LONG tag of one value
-  and attaches to all partition boundary faces the global
-  id of the element on the other side.
-  \param gn global element numbering
-  \param name the name of the resulting tag */
-MeshTag* tagOpposites(GlobalNumbering* gn, const char* name);
-
 /** \brief Get an element-to-element connectivity array
   \details this function assumes the mesh has one element type.
   the resulting array is created with new int[nelements * nsides].

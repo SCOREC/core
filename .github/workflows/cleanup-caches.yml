@@ -1,0 +1,26 @@
+name: Cleanup caches on closed PRs
+# From https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
+on:
+  pull_request:
+    types: [ closed ]
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Cleanup
+        run: |
+          echo "Fetching list of cache keys"
+          cacheKeysForPR=$(gh cache list --ref $BRANCH --limit 100 --json id --jq '.[].id')
+          while [ "$cacheKeysForPR" ]; do
+            for cacheKey in $cacheKeysForPR; do
+                echo gh cache delete $cacheKey
+                gh cache delete $cacheKey
+            done
+            cacheKeysForPR=$(gh cache list --ref $BRANCH --limit 100 --json id --jq '.[].id')
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: refs/pull/${{ github.event.pull_request.number }}/merge

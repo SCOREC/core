@@ -627,6 +627,20 @@ void unpackTagInfo(std::string& name, int& type, int& size, pcu::PCU *PCUObj);
 
 extern char const* const dimName[4];
 
+/**
+ * \brief Tag boundary faces with global ids of opposite elements
+ *
+ * This function creates a LONG tag of one value and attaches to all mesh faces
+ * (edges) classified on a partition model face (edge) (i.e., a face in 3d or
+ * edge in 2d that has a remote copy in another part) the global id of the mesh
+ * region (face) on the other side.
+ *
+ * \param gn global element numbering
+ * \param name the name of the resulting tag
+ * \return a new MeshTag called name with global IDs of opposite elements
+ */
+MeshTag* tagOpposites(GlobalNumbering* gn, const char* name);
+
 } //namespace apf
 
 #endif

@@ -4,7 +4,7 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # This is the top level CMake file for the SCOREC build
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
 
 project(SCOREC VERSION 4.0.0 LANGUAGES CXX C)
 
@@ -100,42 +100,23 @@ add_custom_target(check
   COMMAND ${CMAKE_CTEST_COMMAND} -L SMOKE_TEST
   COMMENT "running a smoke test on the installed binaries")
 
-# Set options for doxygen documentation
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY
-)
-add_custom_target(doc
-  ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile_internal.in
-  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal @ONLY
-)
-add_custom_target(docInternal
-  ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT "Generating Internal API documentation with Doxygen" VERBATIM
-)
-endif()
-
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
 option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
 message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
-option(ENABLE_CAPSTONE "Build with Capstone support" OFF)
-message(STATUS "ENABLE_CAPSTONE: ${ENABLE_CAPSTONE}")
+option(PUMI_ENABLE_CAPSTONE "Build PUMI with Capstone support" OFF)
+# For compatibility and to inherit from owning projects:
+if(ENABLE_CAPSTONE)
+  set(PUMI_ENABLE_CAPSTONE ON)
+endif()
+message(STATUS "PUMI_ENABLE_CAPSTONE: ${PUMI_ENABLE_CAPSTONE}")
 
 if(ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
-if(ENABLE_CAPSTONE)
-  add_definitions(-DHAVE_CAPSTONE)
+if(PUMI_ENABLE_CAPSTONE)
+  add_definitions(-DPUMI_HAS_CAPSTONE)
 endif()
 
 option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
@@ -145,19 +126,30 @@ if(ENABLE_FPP)
 endif()
 
 macro(scorec_export_library target)
-bob_export_target(${target})
-install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-target_include_directories(${target} INTERFACE
-  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
+  bob_export_target(${target})
+  install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+  target_include_directories(${target} INTERFACE
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+  )
+  # Collect HEADERS for Doxygen
+  list(TRANSFORM HEADERS
+    PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/"
+    OUTPUT_VARIABLE ${target}_HEADERS
+  )
+  list(APPEND DOXYGEN_INPUTS ${${target}_HEADERS})
+  if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+    set(DOXYGEN_INPUTS "${DOXYGEN_INPUTS}" PARENT_SCOPE)
+    list(APPEND DOXYGEN_INTERNAL_INPUTS "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(DOXYGEN_INTERNAL_INPUTS "${DOXYGEN_INTERNAL_INPUTS}" PARENT_SCOPE)
+  endif()
 endmacro(scorec_export_library)
 
 if(ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
 endif()
 
-if(ENABLE_CAPSTONE)
-  set(SCOREC_USE_CreateMG_DEFAULT ${ENABLE_CAPSTONE})
+if(PUMI_ENABLE_CAPSTONE)
+  set(SCOREC_USE_CreateMG_DEFAULT ${PUMI_ENABLE_CAPSTONE})
   bob_public_dep(CreateMG)
 endif()
 
@@ -196,6 +188,7 @@ add_subdirectory(apf_sim)
 add_subdirectory(mds)
 add_subdirectory(parma)
 add_subdirectory(zoltan)
+add_subdirectory(metis)
 add_subdirectory(pumi)
 add_subdirectory(ma)
 add_subdirectory(crv)
@@ -223,6 +216,31 @@ endif()
 
 if(PUMI_PYTHON_INTERFACE)
   add_subdirectory(python_wrappers)
+endif()
+
+# Set options for doxygen documentation
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  list(JOIN DOXYGEN_INPUTS " \\\n" DOXYGEN_INPUT)
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY
+  )
+  add_custom_target(doc
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+  )
+  list(JOIN DOXYGEN_INTERNAL_INPUTS " \\\n" DOXYGEN_INTERNAL_INPUT)
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile_internal.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal @ONLY
+  )
+  add_custom_target(docInternal
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_internal
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating Internal API documentation with Doxygen" VERBATIM
+  )
 endif()
 
 bob_end_package()
