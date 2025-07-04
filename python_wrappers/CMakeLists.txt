@@ -14,7 +14,7 @@ include(${SWIG_USE_FILE})
 set(UseSWIG_TARGET_NAME_PREFERENCE STANDARD)
 
 # build simhelper if using Simmetrix
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set(SOURCES sim_helper.cc)
   set(HEADERS sim_helper.h)
   add_library(simhelper SHARED ${SOURCES})
@@ -32,7 +32,7 @@ set(PY_SOURCES apf.i)
 set_source_files_properties(${PY_SOURCES} PROPERTIES CPLUSPLUS ON)
 swig_add_library(pyCore LANGUAGE python SOURCES ${PY_SOURCES})
 # let swig know about the HAVE_SIMMETRIX
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set_property(TARGET pyCore PROPERTY SWIG_COMPILE_DEFINITIONS HAVE_SIMMETRIX)
 endif()
 set_property(TARGET pyCore
@@ -50,7 +50,7 @@ set(pyCoreDepLibs
   Python::Python
   core)
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   target_link_libraries(pyCore PUBLIC ${pyCoreDepLibs} simhelper)
 else()
   target_link_libraries(pyCore PUBLIC ${pyCoreDepLibs})
