@@ -2,7 +2,7 @@
 #include "phInterfaceCutter.h"
 #include "phAttrib.h"
 #include <lionPrint.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <SimUtil.h>
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
   {
   pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
   PCU_ALWAYS_ASSERT(PCUObj.Peers() == 1);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   SimModel_start();
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   ph::getSimmetrixAttributes(gm, bcs);
   apf::Mesh2* m = ph::loadMesh(gm, meshfile, &PCUObj);
   m->verify();
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   if (ph::mesh_has_ext(meshfile, "sms"))
     ph::cutInterfaceSIM(m, bcs);
   else
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
   m->writeNative(outfile);
   m->destroyNative();
   apf::destroyMesh(m);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
 #ifdef HAVE_SIMADVMESHING
   SimAdvMeshing_stop();

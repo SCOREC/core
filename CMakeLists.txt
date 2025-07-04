@@ -117,7 +117,7 @@ endif()
 message(STATUS "PUMI_ENABLE_CAPSTONE: ${PUMI_ENABLE_CAPSTONE}")
 
 if(PUMI_ENABLE_SIMMETRIX)
-  add_definitions(-DHAVE_SIMMETRIX)
+  add_definitions(-DPUMI_HAS_SIMMETRIX)
 endif()
 if(PUMI_ENABLE_CAPSTONE)
   add_definitions(-DPUMI_HAS_CAPSTONE)

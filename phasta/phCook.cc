@@ -1,7 +1,7 @@
 #include <ph.h>
 #include <chef.h>
 #include <phstream.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <phAttrib.h>
 #include <apfSIM.h>
 #include <gmi_sim.h>
@@ -218,7 +218,7 @@ namespace ph {
     if(!m->getPCU()->Self())
       ph::writeAuxiliaryFiles(path, in.timeStepNumber, m->getPCU());
     m->verify();
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
     gmi_model* g = m->getModel();
     ph::clearAttAssociation(g,in);
 #endif

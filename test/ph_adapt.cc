@@ -11,7 +11,7 @@
 #include <pcu_io.h>
 #include <phRestart.h>
 #include <phPartition.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
   {
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
   chef::preprocess(m,in);
   m->destroyNative();
   apf::destroyMesh(m);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();

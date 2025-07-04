@@ -4,7 +4,7 @@
 #include <apfMesh2.h>
 #include <phRestart.h>
 #include <gmi_mesh.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   pcu::Init(&argc, &argv);
   {
   pcu::PCU pcu_obj;
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
   lion_oprint(1,"volume %f\n", total_volume);
   m->destroyNative();
   apf::destroyMesh(m);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
 #endif
