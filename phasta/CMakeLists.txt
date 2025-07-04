@@ -23,7 +23,7 @@ set(SOURCES
   phiotimer.cc
 )
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   if(SIM_DOT_VERSION VERSION_GREATER 12.0.180605)
     set(SOURCES ${SOURCES} splitMeshOnGFace_2arg.cpp)
   else()
@@ -38,7 +38,7 @@ if(PUMI_FORTRAN_INTERFACE)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
 endif()
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set(SOURCES ${SOURCES}
       phAttrib.cc
       phSnap.cc
@@ -50,7 +50,7 @@ endif()
 if(SIMMODSUITE_SimAdvMeshing_FOUND) # simmetrix enabled
   set(SOURCES ${SOURCES} phGrowthCurves.cc)
 endif()
-if(NOT ENABLE_SIMMETRIX # no simmetrix
+if(NOT PUMI_ENABLE_SIMMETRIX # no simmetrix
    OR
    NOT SIMMODSUITE_SimAdvMeshing_FOUND) # have simmetrix, but not advMeshing
   set(SOURCES ${SOURCES} phGrowthCurves_empty.cc)
@@ -116,7 +116,7 @@ target_link_libraries(ph
       apf_zoltan
       pumi
     )
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   target_link_libraries(ph PUBLIC
       gmi_sim
       apf_sim

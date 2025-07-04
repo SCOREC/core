@@ -3,7 +3,7 @@ if(DEFINED TRIBITS_PACKAGE)
   return()
 endif()
 
-if(NOT ENABLE_SIMMETRIX)
+if(NOT PUMI_ENABLE_SIMMETRIX)
   return()
 endif()
 
