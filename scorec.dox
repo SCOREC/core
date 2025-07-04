@@ -9,6 +9,7 @@ The following packages are documented:
 - \subpage gmi
 - \subpage zoltan
 - \subpage parma
+- \subpage metis
 - \subpage phasta
 - \subpage spr
 - \subpage mth

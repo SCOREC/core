@@ -23,13 +23,13 @@ def main(argv):
    print('Mesh  file is "', mesh)
 
    # PCU initialization
-   pyCore.PCU_Comm_Init()
+   PCUObj = pyCore.PCU(MPI.COMM_WORLD)
 
    # gmi initialization
    pyCore.gmi_register_mesh()
 
    # load the mesh and model and write the initial mesh to vtk
-   mesh = pyCore.loadMdsMesh(model, mesh)
+   mesh = pyCore.loadMdsMesh(model, mesh, PCUObj)
    pyCore.writeASCIIVtkFiles('before', mesh);
 
    # setup uniform refiner and call mesh adapt
@@ -40,7 +40,7 @@ def main(argv):
    pyCore.writeASCIIVtkFiles('after', mesh);
 
    # gmi finalization
-   pyCore.PCU_Comm_Free()
+   del PCUObj
 
 if __name__ == "__main__":
    main(sys.argv[1:])

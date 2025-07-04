@@ -20,6 +20,7 @@ set(SOURCES
   apfMesh.cc
   apfMesh2.cc
   apfMigrate.cc
+  apfOpposites.cc
   apfScalarElement.cc
   apfScalarField.cc
   apfShape.cc
