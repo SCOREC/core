@@ -103,8 +103,12 @@ add_custom_target(check
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
-option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
-message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
+option(PUMI_ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
+# For compatibility and to inherit from owning projects:
+if(ENABLE_SIMMETRIX)
+  set(PUMI_ENABLE_SIMMETRIX ON)
+endif()
+message(STATUS "PUMI_ENABLE_SIMMETRIX: ${PUMI_ENABLE_SIMMETRIX}")
 option(PUMI_ENABLE_CAPSTONE "Build PUMI with Capstone support" OFF)
 # For compatibility and to inherit from owning projects:
 if(ENABLE_CAPSTONE)
@@ -112,7 +116,7 @@ if(ENABLE_CAPSTONE)
 endif()
 message(STATUS "PUMI_ENABLE_CAPSTONE: ${PUMI_ENABLE_CAPSTONE}")
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   add_definitions(-DHAVE_SIMMETRIX)
 endif()
 if(PUMI_ENABLE_CAPSTONE)
@@ -144,7 +148,7 @@ macro(scorec_export_library target)
   endif()
 endmacro(scorec_export_library)
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
 endif()
 

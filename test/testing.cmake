@@ -80,7 +80,7 @@ mpi_test(test_matrix_gradient 1
 mpi_test(modelInfo_dmg 1
   ./modelInfo
   "${MESHES}/cube/cube.dmg")
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
     ./inClosureOf_test
     "${MESHES}/cube/cube.smd")
@@ -91,9 +91,9 @@ if(ENABLE_SIMMETRIX)
     ./highOrderSizeFields
     "${MESHES}/cube/cube.smd"
     "${MESHES}/cube/pumi11/cube.smb")
-endif(ENABLE_SIMMETRIX)
+endif(PUMI_ENABLE_SIMMETRIX)
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set(GXT smd)
 else()
   set(GXT dmg)
@@ -101,7 +101,7 @@ endif()
 
 set(MDIR ${MESHES}/phasta/dg)
 
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   set(MDIR ${MESHES}/phasta/BL_query)
   mpi_test(chef-BL_query 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR}/run_case)
@@ -127,7 +127,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   )
 endif()
 
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   if(SIM_DOT_VERSION VERSION_GREATER 12.0.171000)
     set(MDIR ${MESHES}/faceExtrusion)
     mpi_test(rm_extrusion 1
@@ -174,10 +174,10 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
       set_test_depends(TESTS countBL_part_mesh DEPENDS partition_sim)
     endif()
   endif()
-endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
+endif(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
+if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
     AND SIMMODSUITE_SimAdvMeshing_FOUND)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
@@ -306,7 +306,7 @@ mpi_test(inviscid_ghost 4
 set_test_depends(TESTS inviscid_ghost DEPENDS inviscid_ugrid)
 
 set(MDIR ${SMOKE_TEST_MESHES}/pipe)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   mpi_test(convert 1
     ./convert
     "${MDIR}/pipe.smd"
@@ -319,10 +319,10 @@ mpi_test(verify_serial 1
   ./verify
   "${MDIR}/pipe.${GXT}"
   "pipe.smb")
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set_test_depends(TESTS verify_serial DEPENDS convert)
 endif()
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(convert_2d_quads 1
     ./convert
     "${MESHES}/disk/disk.smd"
@@ -337,7 +337,7 @@ endif()
 mpi_test(verify_2nd_order_shape_quads 1
   ./verify_2nd_order_shapes
   "disk_quad_mesh.smb")
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set_test_depends(TESTS verify_2nd_order_shape_quads DEPENDS convert_2d_quads)
 else()
   file(COPY "${MESHES}/disk/disk_quad_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -345,7 +345,7 @@ endif()
 mpi_test(verify_2nd_order_shape_tris 1
   ./verify_2nd_order_shapes
   "disk_tri_mesh.smb")
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set_test_depends(TESTS verify_2nd_order_shape_tris DEPENDS convert_2d_tris)
 else()
   file(COPY "${MESHES}/disk/disk_tri_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -356,7 +356,7 @@ mpi_test(uniform_serial 1
   "pipe.smb"
   "pipe_unif.smb")
 mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   mpi_test(snap_serial 1
     ./snap
     "${MDIR}/pipe.${GXT}"
@@ -396,7 +396,7 @@ mpi_test(tet_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(test_residual_error_estimate 1
     ./residualErrorEstimation_test
     "${MESHES}/electromagnetic/fichera_geomSim.smd"
@@ -419,7 +419,7 @@ mpi_test(collapse_2 2
   ${MESHFILE}
   pipe_p1_.smb
   2)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set_test_depends(TESTS split_2 collapse_2 tet_serial DEPENDS convert)
 endif()
 if(ENABLE_METIS)
@@ -447,7 +447,7 @@ if(ENABLE_METIS)
     "${MDIR}/pipe.dmg" "pipe.smb" 1
     "pipe_mbe_.smb"
   )
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     set_test_depends(
       TESTS msplit_2 msplit_3 msplit_6 mbalanceEmpty
       DEPENDS convert
@@ -594,7 +594,7 @@ mpi_test(parmaSerial 1
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb"
   "cubeBal.smb/")
-if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set(MDIR ${MESHES}/annular)
   mpi_test(simZBalance_4 4
     ./simZBalance
@@ -830,7 +830,7 @@ mpi_test(change_dim 1
   ./newdim)
 mpi_test(ma_insphere 1
   ./ma_insphere)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set(MDIR ${MESHES}/upright)
   if(SIMMODSUITE_SimAdvMeshing_FOUND)
     mpi_test(parallel_meshgen 4
@@ -918,7 +918,7 @@ if(ENABLE_SIMMETRIX)
   endif(SIM_PARASOLID)
 endif()
 if (PCU_COMPRESS)
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     set(RUNDIR run_sim)
   else()
     set(RUNDIR run)
@@ -931,7 +931,7 @@ if (PCU_COMPRESS)
   mpi_test(chef0 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     add_test(NAME chef1
       COMMAND diff -r ${RUNDIR}/1-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
@@ -951,7 +951,7 @@ if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
   mpi_test(chef6 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR}/${RUNDIR})
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     add_test(NAME chef7
       COMMAND diff -r ${RUNDIR}/4-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
@@ -961,7 +961,7 @@ if (PCU_COMPRESS)
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   set_test_depends(TESTS chef8 DEPENDS chef6)
-  if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
+  if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   endif()
