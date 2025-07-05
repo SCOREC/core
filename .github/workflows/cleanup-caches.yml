@@ -1,7 +1,7 @@
 name: Cleanup caches on closed PRs
 # From https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
 on:
-  pull_request:
+  pull_request_target:
     types: [ closed ]
 jobs:
   cleanup:
