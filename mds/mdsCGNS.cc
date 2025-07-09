@@ -1637,7 +1637,7 @@ apf::Mesh2 *DoIt(PCU_t h, gmi_model *g, const std::string &fname, apf::CGNSBCMap
     cgp_close(cgid);
   else
     cg_close(cgid);
-#ifndef SCOREC_NO_MPI
+#ifndef PUMI_NO_MPI
   MPI_Comm_free(&comm);
 #endif
 

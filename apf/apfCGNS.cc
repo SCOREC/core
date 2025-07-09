@@ -705,7 +705,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       displacement[i] = displacement[i - 1] + sizes[i - 1];
 
     allElements.resize(totalLength);
-    #ifndef SCOREC_NO_MPI
+    #ifndef PUMI_NO_MPI
     PCU_Comm comm;
     m->getPCU()->DupComm(&comm);
     MPI_Allgatherv(bcList.data(), bcList.size(), MPI_INT, allElements.data(),
@@ -1138,7 +1138,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   destroyGlobalNumbering(gcn);
   //
   cgp_close(cgns.index);
-  #ifndef SCOREC_NO_MPI
+  #ifndef PUMI_NO_MPI
   MPI_Comm_free(&communicator);
   #endif
 }

@@ -103,7 +103,7 @@ public:
    * function may be used to initialize other libraries using the PCU-defined
    * communication group.
    *
-   * If SCOREC::core was compiled with the SCOREC_NO_MPI flag, the return value
+   * If SCOREC::core was compiled with the PUMI_NO_MPI flag, the return value
    * is not meaningful.
    *
    * \param[out] newcomm The output address for the new communicator copy.
@@ -143,14 +143,14 @@ void Protect() noexcept;
 /**
  * \brief Initialize the underlying parallel library.
  *
- * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * This may be MPI (or a stub, given PUMI_NO_MPI). This function abstracts
  * the difference.
  */
 void Init(int *argc, char ***argv);
 /**
  * \brief Finalize the underlying parallel library.
  *
- * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * This may be MPI (or a stub, given PUMI_NO_MPI). This function abstracts
  * the difference.
  */
 void Finalize();
