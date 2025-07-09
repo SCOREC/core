@@ -2,7 +2,7 @@ set(MESHES ""
     CACHE STRING
     "Extracted http://scorec.rpi.edu/pumi/pumi_test_meshes.tar.gz")
 function(mpi_test TESTNAME PROCS EXE)
-  if(SCOREC_NO_MPI)
+  if(PUMI_NO_MPI)
     if(${PROCS} EQUAL "1")
       add_test(
         NAME ${TESTNAME}
@@ -25,7 +25,7 @@ function(set_test_depends)
   if (NOT DEFINED SET_TEST_DEPENDS_TESTS OR NOT DEFINED SET_TEST_DEPENDS_DEPENDS)
     return()
   endif()
-  if(SCOREC_NO_MPI)
+  if(PUMI_NO_MPI)
     # Check for test existence as it may be a multiproc test.
     if(TEST "${TESTNAME}")
       set_tests_properties(${SET_TEST_DEPENDS_TESTS} PROPERTIES

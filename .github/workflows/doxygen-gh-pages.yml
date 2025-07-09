@@ -26,7 +26,7 @@ jobs:
         env:
           MPICH_CXX: g++-10
           MPICH_CC: gcc-10
-        run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install -DSCOREC_NO_MPI=ON
+        run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DMESHES=${{github.workspace}}/pumi-meshes -DIS_TESTING=ON -DSCOREC_CXX_WARNINGS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install -DPUMI_NO_MPI=ON
       
       - name: Generate Doc
         run: doxygen ${{github.workspace}}/build/Doxyfile
