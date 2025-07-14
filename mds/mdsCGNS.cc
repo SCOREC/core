@@ -34,13 +34,8 @@
 #include <algorithm>
 #include <unordered_set>
 #include <utility>
-//
-#ifdef HAVE_CGNS
-//
 #include <cgns_io.h>
 #include <pcgnslib.h>
-//
-#endif
 
 namespace
 {
@@ -1729,31 +1724,16 @@ namespace apf
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
 Mesh2 *loadMdsFromCGNS(PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap, const std::vector<std::pair<std::string, std::string>> &meshData)
 {
-#ifdef HAVE_CGNS
   Mesh2 *m = DoIt(h, g, fname, cgnsBCMap, meshData);
   return m;
-#else
-  Mesh2 *m = nullptr;
-  PCU_ALWAYS_ASSERT_VERBOSE(m != nullptr,
-                            "Build with ENABLE_CGNS to allow this functionality.");
-  exit(EXIT_FAILURE);
-  return m;
-#endif
 }
 
 // caller needs to bring up and pull down mpi/pcu: mpi/pcu is required and assumed.
-Mesh2 *loadMdsFromCGNS(PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap)
-{
-#ifdef HAVE_CGNS
+Mesh2 *loadMdsFromCGNS(
+  PCU_t h, gmi_model *g, const char *fname, apf::CGNSBCMap &cgnsBCMap
+) {
   Mesh2 *m = DoIt(h, g, fname, cgnsBCMap);
   return m;
-#else
-  Mesh2 *m = nullptr;
-  PCU_ALWAYS_ASSERT_VERBOSE(m != nullptr,
-                            "Build with ENABLE_CGNS to allow this functionality.");
-  exit(EXIT_FAILURE);
-  return m;
-#endif
 }
 
 } // namespace apf

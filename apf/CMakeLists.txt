@@ -57,9 +57,11 @@ set(SOURCES
   apfMIS.cc
 )
 
-if(ENABLE_CGNS)
+if(PUMI_ENABLE_CGNS)
   set(SOURCES ${SOURCES} apfCGNS.cc)
-endif(ENABLE_CGNS)
+else()
+  set(SOURCES ${SOURCES} apfCGNSempty.cc)
+endif()
 
 # Package headers
 set(HEADERS

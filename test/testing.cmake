@@ -194,7 +194,7 @@ if(ENABLE_ZOLTAN)
     ${MESHES}/pumi/3d-1p/part.smb
     out.smb 1 0)
 endif()
-if(ENABLE_OMEGA_H)
+if(PUMI_ENABLE_OMEGA_H)
   mpi_test(mdsToOmega 1
     ./smb2osh
     ${MESHES}/cube/cube.dmg
@@ -612,7 +612,7 @@ if(ENABLE_ZOLTAN)
   )
 endif()
 
-if(ENABLE_CGNS AND ENABLE_ZOLTAN)
+if(PUMI_ENABLE_CGNS AND ENABLE_ZOLTAN)
 #
 # sort of an arbitrary choice
 set(numProcs 4)
@@ -697,7 +697,7 @@ mpi_test(cgns_bcs_3 ${numProcs}
   bcs3.smb
   additional)
 
-endif(ENABLE_CGNS AND ENABLE_ZOLTAN)
+endif(PUMI_ENABLE_CGNS AND ENABLE_ZOLTAN)
 
 mpi_test(construct 4
   ./construct
