@@ -1,7 +1,7 @@
 # Package options
 
 # Only install the package if enabled
-if (NOT ENABLE_OMEGA_H)
+if (NOT PUMI_ENABLE_OMEGA_H)
   return()
 endif()
 
