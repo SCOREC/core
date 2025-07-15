@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
@@ -36,7 +35,7 @@ void M_removeSurfaceExtrusionConstraints(pMesh, pPList);
 #endif
 
 
-void getConfig(int argc, char** argv) {
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj) {
 
   opterr = 0;
 
@@ -63,18 +62,18 @@ void getConfig(int argc, char** argv) {
         gmi_native_path = optarg;
         break;
       case '?':
-        if (!PCU_Comm_Self())
+        if (!PCUObj->Self())
           printf ("warning: skipping unrecognized option\n");
         break;
       default:
-        if (!PCU_Comm_Self())
+        if (!PCUObj->Self())
           printf("Usage %s %s", argv[0], usage);
         exit(EXIT_FAILURE);
     }
   }
 
   if(argc-optind != 3) {
-    if (!PCU_Comm_Self())
+    if (!PCUObj->Self())
       printf("Usage %s %s", argv[0], usage);
     exit(EXIT_FAILURE);
   }
@@ -83,7 +82,7 @@ void getConfig(int argc, char** argv) {
   sms_path = argv[i++];
   smsNew_path = argv[i++];
 
-  if (!PCU_Comm_Self()) {
+  if (!PCUObj->Self()) {
     printf ("enable_log %d\n", should_log);
     printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
       gmi_native_path, gmi_path, sms_path, smsNew_path);
@@ -92,8 +91,9 @@ void getConfig(int argc, char** argv) {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc, &argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   MS_init();
   SimAdvMeshing_start();
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
 
-  getConfig(argc, argv);
+  getConfig(argc, argv, &PCUObj);
   if( should_log )
     Sim_logOn("rm_extrusion.sim.log");
 
@@ -116,21 +116,21 @@ int main(int argc, char** argv)
   else
     mdl = gmi_load(gmi_path);
   pGModel simModel = gmi_export_sim(mdl);
-  if(!PCU_Comm_Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "Read model\n");
 
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pMesh sim_mesh = M_load(sms_path, simModel, progress);
-  if(!PCU_Comm_Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "Read mesh\n");
 
   M_removeSurfaceExtrusionConstraints(sim_mesh, NULL);
-  if(!PCU_Comm_Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "Removed surface extrusion constraints\n");
   M_write(sim_mesh, smsNew_path, 0, progress);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
 
-  if(!PCU_Comm_Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "read the mesh, removed the face extrusion attributes, and wrote the mesh %f seconds\n", t1-t0);
 
   M_release(sim_mesh);
@@ -144,6 +144,6 @@ int main(int argc, char** argv)
   MS_exit();
   if( should_log )
     Sim_logOff();
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

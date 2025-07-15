@@ -1,188 +1,328 @@
-#ifndef APFCAP
-#define APFCAP
+/****************************************************************************** 
 
-#include <apfMesh2.h>
+  Copyright 2025 Scientific Computation Research Center,
+      Rensselaer Polytechnic Institute. All rights reserved.
 
-#include "CapstoneModule.h"
-#include "CreateMG_Framework_Geometry.h"
-#include "CreateMG_Framework_Mesh.h"
+  This work is open source software, licensed under the terms of the
+  BSD license as described in the LICENSE file in the top-level directory.
 
-using namespace CreateMG;
-using namespace CreateMG::Attribution;
-using namespace CreateMG::Mesh;
-using namespace CreateMG::Geometry;
+******************************************************************************/
+#ifndef APF_CAP_H
+#define APF_CAP_H
+/**
+ * \file apfCAP.h
+ * \brief Capstone apf::Mesh2 implementation and interface.
+ *
+ * Like gmi_cap, the interface is used in two ways:
+ *
+ * 1. to import an existing Capstone mesh; and
+ * 2. to load or generate a mesh associated with a model which was previously
+ *    loaded by gmi_cap.
+ *
+ * \note Files which `#include` apfCAP.h should also `#include`
+ * CreateMG_Framework_Mesh.h (or another Capstone header with the full
+ * MeshDatabaseInterface definition) to import meshes or use exportCapNative.
+ */
 
+#include <string>
+#include <vector>
 
-
-class capEntity;
-class capMesh;
+/**
+ * \cond
+ * Forward declarations
+ */
+struct gmi_model;
+namespace pcu {
+  class PCU;
+}
+namespace CreateMG {
+  namespace Geometry { class GeometryDatabaseInterface; }
+  namespace Mesh { class MeshDatabaseInterface; }
+  typedef Geometry::GeometryDatabaseInterface GDBI;
+  typedef Mesh::MeshDatabaseInterface MDBI;
+  class Metric6;
+}
+/** \endcond */
 
 namespace apf {
 
+class Field;
+class Mesh2;
+class MeshEntity;
+
 /**
- * \brief Creates an apf::Mesh from a CapStone mesh.
+ * \defgroup apf_cap Capstone APF mesh interface
  *
- * \details This object should be destroyed by apf::destroyMesh.
+ * apf_cap provides access to an implementation of apf::Mesh2. The model must
+ * be loaded by gmi_cap. The interface in apfCAP.h provides additional
+ * functions to simplify loading and interacting with the underlying mesh.
+ *
+ * \{
  */
-Mesh2* createMesh(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
 
 /**
-  * \brief Casts a CapStone entity to an apf::MeshEntity.
-  *
-  * \details This does not create any objects, use freely.
-  */
-MeshEntity* castEntity(capEntity* entity);
+ * \brief Test for compiled Capstone library support.
+ * \return true if apf_cap was compiled with Capstone. otherwise all routines
+ *         will call apf::fail.
+ */
+bool hasCAP() noexcept;
 
-class TagCAP;
+/**
+ * \brief Create an apf::Mesh2 object from a Capstone mesh database.
+ *
+ * This object should be destroyed by apf::destroyMesh. Since Capstone meshes
+ * are serial only right now, PCUObj will not be directly used, but may have an
+ * impact on collective calls involving the mesh (e.g. a PCU::Add which uses
+ * Mesh::getPCU()).
+ *
+ * \param mdb A Capstone MeshDatabaseInterface with a current M_MModel.
+ * \param gdb A Capstone GeometryDatabaseInterface with a current M_GModel.
+ * \param PCUObj The PCU communicator to define the mesh over.
+ */
+Mesh2* createCapMesh(
+  CreateMG::MDBI* mdb, CreateMG::GDBI* gdb, pcu::PCU *PCUObj
+);
 
-class MeshCAP : public Mesh2
-{
-  public:
-    MeshCAP(MeshDatabaseInterface* mdb, GeometryDatabaseInterface* gdb);
-    virtual ~MeshCAP();
-    /* --------------------------------------------------------------------- */
-    /* Category 00: General Mesh APIs */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    int getDimension();
-    std::size_t count(int dimension);
-    Type getType(MeshEntity* e);
-    void verify();
-    // OPTIONAL Member Functions //
-    void writeNative(const char* fileName);
-    void destroyNative();
+/**
+ * \brief Create an apf::Mesh2 object from the first mesh linked to a loaded
+ * geometry model.
+ *
+ * The gmi_model should be loaded previously by gmi_load (on a .cre file),
+ * gmi_cap_load, or gmi_cap_load_selective. Try to load the first mesh (by
+ * index).
+ *
+ * \param model A gmi_model associated with a Capstone geometry.
+ * \param PCUObj The PCU communicator to define the mesh over
+ * \return an apf::Mesh2 interface to the Capstone mesh.
+ */
+Mesh2* createCapMesh(gmi_model* model, pcu::PCU* PCUObj);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 01: General Getters and Setters for vertex coordinates */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    void getPoint_(MeshEntity* e, int, Vector3& point);
-    void setPoint_(MeshEntity* e, int, Vector3 const& p);
-    void getParam(MeshEntity* e, Vector3& p);
-    void setParam(MeshEntity* e, Vector3 const& point);
+/**
+ * \brief Create an apf::Mesh2 object from a mesh linked to a loaded
+ * geometry model.
+ *
+ * The gmi_model should be loaded previously by gmi_load (on a .cre file),
+ * gmi_cap_load, or gmi_cap_load_selective. The list of acceptable values for
+ * meshname can be found by using gmi_cap_probe or direct Capstone interfaces.
+ *
+ * \param model A gmi_model associated with a Capstone geometry.
+ * \param meshname The name of a mesh associated with
+ * \param PCUObj The PCU communicator to define the mesh over
+ * \return an apf::Mesh2 interface to the Capstone mesh.
+ */
+Mesh2* createCapMesh(gmi_model* model, const char* meshname, pcu::PCU* PCUObj);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 02: Iterators */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    MeshIterator* begin(int dimension);
-    MeshEntity* iterate(MeshIterator* it);
-    void end(MeshIterator* it);
-    void increment(MeshIterator* it);
-    bool isDone(MeshIterator* it);
-    MeshEntity* deref(MeshIterator* it);
+/**
+ * \brief Generate Capstone mesh object on a model linked to a Capstone model.
+ *
+ * \param model A Capstone GMI model to generate a mesh on.
+ * \param dimension The dimension of mesh to generate
+ * \param PCUObj The PCU object to link to the mesh.
+ * \return An apf::Mesh2 object with the mesh.
+ */
+Mesh2* generateCapMesh(
+  gmi_model* model, int dimension, pcu::PCU* PCUObj
+);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 03: Adjacencies */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    void getAdjacent(MeshEntity* e, int dimension, Adjacent& adjacent);
-    int getDownward(MeshEntity* e, int dimension, MeshEntity** adjacent);
-    MeshEntity* getUpward(MeshEntity* e, int i);
-    bool hasUp(MeshEntity* e);
-    // OPTIONAL Member Functions //
-    bool hasAdjacency(int from_dim, int to_dim);
-    void createAdjacency(int from_dim, int to_dim);
-    void deleteAdjacency(int from_dim, int to_dim);
-    void getUp(MeshEntity* e, Up& up);
-    int countUpward(MeshEntity* e);
+/**
+ * \brief Make an empty Capstone M_MModel associated with the model.
+ *
+ * \param model Previously loaded Capstone gmi_model.
+ * \param meshname Name for new mesh in the Capstone database.
+ * \param PCUObj The PCU object to associate the new apf::Mesh2 with.
+ * \return a new apf::Mesh2 object.
+ */
+Mesh2* makeEmptyCapMesh(
+  gmi_model* model, const char* meshname, pcu::PCU* PCUObj
+);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 04: CAD model inquires */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    ModelEntity* toModel(MeshEntity* e);
-    // OPTIONAL Member Functions //
-    gmi_model* getModel();
-    void setModel(gmi_model* newModel);
-    void setModelEntity(MeshEntity* e, ModelEntity* me);
+/**
+ * \brief Disown capMesh's gmi_model.
+ *
+ * Mark the gmi_model as non-owned so that the destructor does not call
+ * gmi_destroy.
+ *
+ * \param capMesh A Capstone mesh wrapper.
+ */
+void disownCapModel(Mesh2* capMesh);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 05: Entity Creation/Deletion */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    MeshEntity* createVert_(ModelEntity* me);
-    MeshEntity* createEntity_(int type, ModelEntity* me, MeshEntity** down);
-    void destroy_(MeshEntity* e);
+/**
+ * \brief Get the native Capstone id of an APF entity.
+ *
+ * \param m A Capstone mesh
+ * \param e A MeshEntity on m
+ * \return Unique id associated with the underlying Capstone Topo.
+ */
+size_t getCapId(Mesh2* m, MeshEntity* e);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 06: Attachable Data Functionality */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    MeshTag* createDoubleTag(const char* name, int size);
-    MeshTag* createIntTag(const char* name, int size);
-    MeshTag* createLongTag(const char* name, int size);
-    MeshTag* findTag(const char* name);
-    void destroyTag(MeshTag* t);
-    void renameTag(MeshTag* t, const char* name);
-    void getTags(DynamicArray<MeshTag*>& tags);
-    /* void getTag(MeshEntity* e, MeshTag* t, void* data); */
-    /* void setTag(MeshEntity* e, MeshTag* t, void const* data); */
-    void getDoubleTag(MeshEntity* e, MeshTag* tag, double* data);
-    void setDoubleTag(MeshEntity* e, MeshTag* tag, double const* data);
-    void getIntTag(MeshEntity* e, MeshTag* tag, int* data);
-    void setIntTag(MeshEntity* e, MeshTag* tag, int const* data);
-    void getLongTag(MeshEntity* e, MeshTag* tag, long* data);
-    void setLongTag(MeshEntity* e, MeshTag* tag, long const* data);
-    void removeTag(MeshEntity* e, MeshTag* t);
-    bool hasTag(MeshEntity* e, MeshTag* t);
-    int getTagType(MeshTag* t);
-    int getTagSize(MeshTag* t);
-    const char* getTagName(MeshTag* t);
-    unsigned getTagChecksum(MeshTag*,int);
+/**
+ * \brief Get an entity from a Capstone mesh by dimension and native id.
+ *
+ * \param m A Capstone mesh
+ * \param dimension The dimension of the entity to retrieve
+ * \param id The native Capstone id
+ * \return The corresponding MeshEntity or nullptr if no such entity exists
+ */
+MeshEntity* getCapEntity(Mesh2* m, int dimension, size_t id);
 
+/**
+ * \brief Get native Capstone mesh database interface.
+ * \param capMesh Previously loaded capstone mesh.
+ * \return Underlying Capstone mesh database interface from capMesh.
+ */
+CreateMG::MDBI* exportCapNative(Mesh2* capMesh);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 07: Distributed Meshes */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    bool isShared(MeshEntity* e);
-    bool isGhost(MeshEntity*) { return false; }
-    bool isGhosted(MeshEntity*) { return false; }
-    bool isOwned(MeshEntity* e);
-    int getOwner(MeshEntity* e);
-    void getRemotes(MeshEntity* e, Copies& remotes);
-    void getResidence(MeshEntity* e, Parts& residence);
-    int getId();
-    void setResidence(MeshEntity*, Parts&) {}
-    void acceptChanges() {}
-    // OPTIONAL Member Functions //
-    void deleteGhost(MeshEntity*) {}
-    void addGhost(MeshEntity*, int, MeshEntity*) {}
-    int getGhosts(MeshEntity*, Copies&) { return 0; }
-    void migrate(Migration* plan);
-    void setRemotes(MeshEntity*, Copies&) {}
-    void addRemote(MeshEntity*, int, MeshEntity*) {}
-    void clearRemotes(MeshEntity*) {}
+/**
+ * \defgroup apf_cap_sizing Capstone APF mesh sizing utilities
+ * \{
+ */
 
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizing A bulk sizing vector of Metric6 from Capstone
+ * \param[out] scales An apf::Field of apf::Vector3's on vertices for
+ *                    anisotropic sizing scales
+ * \param[out] frames An apf::Field of apf::Matrix3x3's on vertices for
+ *                    anisotropic sizing frames
+ * \return true on success, false otherwise
+ */
+bool loadCapSizing(
+  apf::Mesh2* m, const std::vector<CreateMG::Metric6>& sizing,
+  apf::Field* scales, apf::Field* frames
+);
 
-    /* --------------------------------------------------------------------- */
-    /* Category 08: Periodic Meshes */
-    /* --------------------------------------------------------------------- */
-    // REQUIRED Member Functions //
-    bool hasMatching() { return false; }
-    void getMatches(MeshEntity* e, Matches& m);
-    // OPTIONAL Member Functions //
-    void addMatch(MeshEntity*, int, MeshEntity*) {}
-    void clearMatches(MeshEntity*) {}
-    void clear_() {}
-    void getDgCopies(MeshEntity* e, DgCopies& dgCopies, ModelEntity* me);
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields.
+ *
+ * This overload is a convenience wrapper to simplify Field creation.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizing A bulk sizing vector of Metric6 from Capstone
+ * \param[out] scales The name of a new apf::Field to create with anisotropic
+ *                    sizing scales
+ * \param[out] frames The name of a new apf::Field to create with anisotropic
+ *                    sizing frames
+ * \return true on success, false otherwise
+ */
+bool loadCapSizing(
+  apf::Mesh2* m, const std::vector<CreateMG::Metric6>& sizing,
+  const char* scales, const char* frames
+);
 
+/**
+ * \brief Load metrics from a sizing file and vmap file.
+ *
+ * \param m An apf Capstone mesh
+ * \param sizingFile The name of the bulk sizing file
+ * \param vmapFile The name of the vmap file
+ * \param sizing6 A vector to fill with bulk sizing metrics
+ */
+void loadCapSizingFileMetrics(
+  apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
+  std::vector<CreateMG::Metric6>& sizing6
+);
 
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields from a sizing file.
+ *
+ * The bulk sizing file contains 6 doubles for each vertex. The vmap file
+ * contains 1 size_t for each vertex, plus an extra one with vertex count
+ * information. The vmap contains the info to convert solver ids to mesh ids.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizingFile The name of the bulk sizing file.
+ * \param[in] vmapFile The name of the vmap file.
+ * \param[out] scales An apf::Field of apf::Vector3's on vertices with
+ *                    anisotropic sizing scales
+ * \param[out] frames An apf::Field of apf::Matrix3x3's on vertices with
+ *                    anisotropic sizing frames
+ * \param[in] smooth A boolean to request smoothing before loading to
+ *                   apf::Fields
+ * \param[in] analysis The analysis which may contain additional sizing
+ *                     information (passed to Capstone smoothing routine)
+ * \return true on success, false on failure or if smoothing is requested but
+ *         not supported
+ */
+bool loadCapSizingFile(
+  apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
+  apf::Field* scales, apf::Field* frames,
+  bool smooth = false, const std::string& analysis = ""
+);
 
-    MeshDatabaseInterface* getMesh() { return meshInterface; }
-  protected:
-    /* CapstoneModule capModule; */
-    MeshDatabaseInterface* meshInterface;
-    GeometryDatabaseInterface  *geomInterface;
-    /* AppContext                 *c; */
-    int iterDim;
-    int d;
-    gmi_model* model;
-    std::vector<TagCAP*> tags;
-};
+/**
+ * \brief Load Capstone bulk sizing into apf::Fields from a sizing file.
+ *
+ * The bulk sizing file contains 6 doubles for each vertex. The vmap file
+ * contains 1 size_t for each vertex, plus an extra one with vertex count
+ * information. The vmap contains the info to convert solver ids to mesh ids.
+ *
+ * This overload is a convenience wrapper to simplify Field creation.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] sizingFile The name of the bulk sizing file.
+ * \param[in] vmapFile The name of the vmap file.
+ * \param[out] scales The name of a new apf::Field to create with anisotropic
+ *                    sizing scales
+ * \param[out] frames The name of a new apf::Field to create with anisotropic
+ *                    sizing frames
+ * \param[in] smooth Whether to request smoothing before loading to apf::Fields
+ * \param[in] analysis The analysis which may contain additional sizing
+ *                     information (passed to Capstone smoothing routine)
+ * \return true on success, false on failure or if smoothing is requested but
+ *         not supported
+ */
+bool loadCapSizingFile(
+  apf::Mesh2* m, const std::string& sizingFile, const std::string& vmapFile,
+  const char* scales, const char* frames,
+  bool smooth = false, const std::string& analysis = ""
+);
 
+/**
+ * \brief Extract Capstone metric tensors from MeshAdapt frames and scales.
+ *
+ * \param[in] m An apf Capstone mesh
+ * \param[in] scales An apf::Field with anisotropic sizing scales
+ * \param[in] frames An apf::Field with anisotropic sizing frames
+ * \param[out] sizing A vector to output metric tensors to
+ */
+void extractCapSizing(
+  apf::Mesh2* m, apf::Field* scales, apf::Field* frames,
+  std::vector<CreateMG::Metric6>& sizing
+);
 
-}//namespace apf
+/**
+ * \brief Test for smoothCAPAnisoSizes support.
+ *
+ * \return A boolean indicating whether support was compiled. False indicates
+ *         the call would fail.
+ *
+ * \details smoothCAPAnisoSizes is only compiled if support for the underlying
+ *          call is detected in the version of Capstone apf_cap was compiled
+ *          against. Otherwise the call will always apf::fail. Use this
+ *          function to programmatically test for the capability.
+ */
+bool has_smoothCapAnisoSizes(void) noexcept;
 
-#endif
+/**
+ * \brief Use the SizingMetricTool to smooth a size field on a Capstone mesh.
+ *
+ * \param m A Capstone mesh.
+ * \param analysis The Capstone analysis to use.
+ * \param frames An apf::Field of apf::Matrix3x3 with orthogonal basis frames.
+ * \param scales An apf::Field of apf::Vector3 with frame scales (eigenvalues).
+ * \return A boolean indicating success.
+ * \pre m must be a Capstone mesh.
+ */
+bool smoothCapAnisoSizes(
+  apf::Mesh2* m, std::string analysis, apf::Field* scales, apf::Field* frames
+);
+
+/** \} apf_cap_sizing */
+
+/** \} apf_cap */
+
+} // namespace apf
+
+#endif // APF_CAP_H

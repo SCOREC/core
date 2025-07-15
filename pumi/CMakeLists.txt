@@ -40,7 +40,6 @@ add_library(pumi ${SOURCES})
 # Include directories
 target_include_directories(pumi PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 target_link_libraries(pumi

@@ -1,7 +1,6 @@
 #include <apf.h>
 #include <gmi_mesh.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -10,16 +9,18 @@
 #include <SimModel.h>
 #endif
 #include <cstdlib> //exit and exit_failure
+#include <PCU.h>
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 2 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -75,7 +76,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 

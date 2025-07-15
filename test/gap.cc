@@ -3,7 +3,6 @@
 #include <apfMesh2.h>
 #include <gmi_mesh.h>
 #include <parma.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -29,13 +28,14 @@ namespace {
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 5);
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <max elm imb> <out prefix>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 #endif
   gmi_register_mesh();
   //load model and mesh
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   Parma_PrintPtnStats(m, "initial");
   apf::MeshTag* weights = setWeights(m);
   int verbose = 2; // set to 1 to silence the 'endStep' stats
@@ -68,6 +68,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

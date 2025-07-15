@@ -2,7 +2,6 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
-#include <PCU.h>
 #include <pcu_util.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
@@ -62,12 +61,13 @@ static apf::MeshTag* tagMesh(
 int main(int argc, char** argv)
 {
 
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
-  if (PCU_Comm_Peers() > 1) {
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
+  if (PCUObj.Peers() > 1) {
     printf("%s should only be used for serial (single part) meshes!\n", argv[0]);
     printf("use the serialize utility to get a serial mesh, and retry!\n");
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   if (argc != 6) {
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
     printf("fb: creates all face cavities classified on boundary\n");
     printf("ls: get a list from user and creates cavities for that list\n");
     printf("tagname: creates cavities for all entities that have tagname\n");
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 
 
   // load the mesh and check if the tag exists on the mesh
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
 
   if (mode.compare(std::string("aa")) == 0)
     tag = tagMesh(m, -1, 1);
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
     tag = m->findTag(mode.c_str());
     if (!tag) {
       printf("tag with name %s was not found on the mesh. Aborting!\n", mode.c_str());
-      MPI_Finalize();
+      pcu::Finalize();
       exit(EXIT_FAILURE);
     }
   }
@@ -214,11 +214,11 @@ int main(int argc, char** argv)
       char cavityFileNameCurved[128];
       char entityFileNameLinear[128];
       char entityFileNameCurved[128];
-      sprintf(cavityFolderName, "%s_%05d", apf::Mesh::typeName[etype], index);
-      sprintf(cavityFileNameLinear, "%s", "cavity_linear");
-      sprintf(cavityFileNameCurved, "%s", "cavity_curved");
-      sprintf(entityFileNameLinear, "%s", "entity_linear");
-      sprintf(entityFileNameCurved, "%s", "entity_curved");
+      snprintf(cavityFolderName, 128, "%s_%05d", apf::Mesh::typeName[etype], index);
+      snprintf(cavityFileNameLinear, 128, "%s", "cavity_linear");
+      snprintf(cavityFileNameCurved, 128, "%s", "cavity_curved");
+      snprintf(entityFileNameLinear, 128, "%s", "entity_linear");
+      snprintf(entityFileNameCurved, 128, "%s", "entity_curved");
       writeMeshes(cavityMeshLinear, prefix, "cavities",
       	  cavityFolderName, cavityFileNameLinear, res);
       writeMeshes(cavityMeshCurved, prefix, "cavities",
@@ -253,8 +253,8 @@ int main(int argc, char** argv)
   MS_exit();
 #endif
 
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 
 static void safe_mkdir(
@@ -292,7 +292,7 @@ static apf::Mesh2*  makePoint(
     apf::MeshEntity* e)
 {
   PCU_ALWAYS_ASSERT(m->getType(e) == apf::Mesh::VERTEX);
-  apf::Mesh2* sphMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false);
+  apf::Mesh2* sphMesh = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, m->getPCU());
   double xrange[2] = {1.e16, -1.e16};
   double yrange[2] = {1.e16, -1.e16};
   double zrange[2] = {1.e16, -1.e16};
@@ -403,8 +403,8 @@ static void makeEntMeshes(
   }
   if (m->getType(e) == apf::Mesh::EDGE)
   {
-    entMeshLinear = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false);
-    entMeshCurved = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false);
+    entMeshLinear = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, m->getPCU());
+    entMeshCurved = apf::makeEmptyMdsMesh(gmi_load(".null"), 1, false, m->getPCU());
     apf::MeshEntity* vs[2];
     m->getDownward(e, 0, vs);
     apf::Vector3 p[2];
@@ -443,8 +443,8 @@ static void makeEntMeshes(
   }
   if (m->getType(e) == apf::Mesh::TRIANGLE)
   {
-    entMeshLinear = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
-    entMeshCurved = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false);
+    entMeshLinear = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false, m->getPCU());
+    entMeshCurved = apf::makeEmptyMdsMesh(gmi_load(".null"), 2, false, m->getPCU());
     apf::MeshEntity* downverts[3];
     apf::MeshEntity* downedges[3];
     m->getDownward(e, 0, downverts);
@@ -657,8 +657,8 @@ static void makeCavityMeshes(
   // we do this in a bottom up fashion, ie vets first then edges, faces and tets
   /* cavityMeshLinear = apf::makeEmptyMdsMesh(m->getModel(), dim, false); */
   /* cavityMeshCurved = apf::makeEmptyMdsMesh(m->getModel(), dim, false); */
-  cavityMeshLinear = apf::makeEmptyMdsMesh(gmi_load(".null"), dim, false);
-  cavityMeshCurved = apf::makeEmptyMdsMesh(gmi_load(".null"), dim, false);
+  cavityMeshLinear = apf::makeEmptyMdsMesh(gmi_load(".null"), dim, false, m->getPCU());
+  cavityMeshCurved = apf::makeEmptyMdsMesh(gmi_load(".null"), dim, false, m->getPCU());
 
   // verts
   for (int i = 0; i < (int) icavity0.size(); i++) {

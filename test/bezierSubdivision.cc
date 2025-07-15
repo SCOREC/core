@@ -6,7 +6,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <mth.h>
 #include <mth_def.h>
@@ -131,10 +130,10 @@ gmi_model* makeFaceModel()
   return model;
 }
 
-apf::Mesh2* createMesh2D()
+apf::Mesh2* createMesh2D(pcu::PCU *PCUObj)
 {
   gmi_model* model = makeFaceModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
   apf::MeshEntity* v[3], *edges[3];
   apf::Vector3 points2D[3] =
   {apf::Vector3(0,0,0),apf::Vector3(1,0,0),apf::Vector3(1,1,0)};
@@ -162,10 +161,10 @@ static apf::Vector3 points3D[4] =
     apf::Vector3(0,0,1)};
 
 
-apf::Mesh2* createMesh3D()
+apf::Mesh2* createMesh3D(pcu::PCU *PCUObj)
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
 
   apf::buildOneElement(m,0,apf::Mesh::TET,points3D);
   apf::deriveMdsModel(m);
@@ -182,12 +181,12 @@ apf::Mesh2* createMesh3D()
  * to compare correctness of the split.
  *
  */
-void testEdgeSubdivision()
+void testEdgeSubdivision(pcu::PCU *PCUObj)
 {
   for (int o = 1; o <= 6; ++o){
 
     gmi_model* model = makeEdgeModel();
-    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, false);
+    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 1, false, PCUObj);
 
     apf::ModelEntity* edgeModel = m->findModelEntity(1,0);
 
@@ -259,11 +258,11 @@ void testEdgeSubdivision()
  * exactly replicates its part of the old one
  *
  */
-void testTriSubdivision1()
+void testTriSubdivision1(pcu::PCU *PCUObj)
 {
 
   for(int o = 1; o <= 6; ++o){
-    apf::Mesh2* m = createMesh2D();
+    apf::Mesh2* m = createMesh2D(PCUObj);
     crv::BezierCurver bc(m,o,0);
     bc.run();
 
@@ -347,10 +346,10 @@ void testTriSubdivision1()
 /* Create a single triangle, split it into 4, and try not to crash
  *
  */
-void testTriSubdivision4()
+void testTriSubdivision4(pcu::PCU *PCUObj)
 {
   for(int o = 2; o <= 2; ++o){
-    apf::Mesh2* m = createMesh2D();
+    apf::Mesh2* m = createMesh2D(PCUObj);
     crv::BezierCurver bc(m,o,0);
     bc.run();
     apf::MeshIterator* it = m->begin(2);
@@ -379,14 +378,14 @@ void testTriSubdivision4()
  * exactly replicates its part of the old one
  *
  */
-void testTetSubdivision1()
+void testTetSubdivision1(pcu::PCU *PCUObj)
 {
 
   gmi_register_null();
 
   for (int order = 1; order <= 4; ++order){
 
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     crv::BezierCurver bc(m,order,0);
     bc.run();
 
@@ -481,13 +480,14 @@ void testTetSubdivision1()
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
-  testEdgeSubdivision();
-  testTriSubdivision1();
-  testTriSubdivision4();
-  testTetSubdivision1();
-  PCU_Comm_Free();
-  MPI_Finalize();
+  testEdgeSubdivision(&pcu_obj);
+  testTriSubdivision1(&pcu_obj);
+  testTriSubdivision4(&pcu_obj);
+  testTetSubdivision1(&pcu_obj);
+  }
+  pcu::Finalize();
 }

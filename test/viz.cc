@@ -3,7 +3,6 @@
 #include <apfMesh.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include "../viz/viz.h"
@@ -35,19 +34,20 @@ namespace {
 int main(int argc, char** argv)
 {
   int provided;
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
+  pcu::Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   PCU_ALWAYS_ASSERT(provided==MPI_THREAD_MULTIPLE);
-  PCU_Comm_Init();
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
  
   
   Visualization v;
   
   char output[128];
-  sprintf(output,"%d",PCU_Comm_Self());
+  snprintf(output,128,"%d",PCUObj.Self());
   std::string part_num(output);
 
   apf::MeshIterator* itr;
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
     }
     v.markPart(m,part_num);
-    sprintf(output,"Testing MIS %d",i);
+    snprintf(output,128,"Testing MIS %d",i);
     v.breakpoint(std::string(output));
   }
 
@@ -105,6 +105,6 @@ int main(int argc, char** argv)
   v.breakpoint("Part Boundaries");
 
   freeMesh(m);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

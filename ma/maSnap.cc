@@ -7,7 +7,6 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "maSnap.h"
 #include "maAdapt.h"
 #include "maOperator.h"
@@ -69,7 +68,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
-#ifdef HAVE_CAPSTONE
+#ifdef PUMI_HAS_CAPSTONE
     uTanSize = uTan * uTan;
     vTanSize = vTan * vTan;
 #endif
@@ -151,7 +150,7 @@ static void interpolateParametricCoordinateOnEdge(
   p[1] = 0.0;
   p[2] = 0.0;
 
-#ifdef HAVE_CAPSTONE
+#ifdef PUMI_HAS_CAPSTONE
   // account for non-uniform parameterization of model-edge
   Vector X[3];
   Vector para[2] = {a, b};
@@ -477,22 +476,26 @@ static void interpolateParametricCoordinatesOnRegularFace(
 {
   double range[2];
   int dim = m->getModelType(g);
+  bool gface_isPeriodic = 0;
   for (int d=0; d < dim; ++d) {
     bool isPeriodic = m->getPeriodicRange(g,d,range);
+    if ((dim == 2) && (isPeriodic > 0)) gface_isPeriodic = 1;
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 0);
   }
 
   /* check if the new point is inside the model.
    * otherwise re-run the above loop with last option
-   * in "interpolateParametricCoordinae" being 1.
+   * in "interpolateParametricCoordinate" being 1.
    * Notes
    * 1) we are assuming manifold surfaces
    * 2) we only check for faces that are periodic
    */
 
-#ifndef HAVE_CAPSTONE
+#ifndef PUMI_HAS_CAPSTONE
   // this need to be done for faces, only
   if (dim != 2)
+    return;
+  if (!gface_isPeriodic)
     return;
 
   Vector x;
@@ -505,6 +508,8 @@ static void interpolateParametricCoordinatesOnRegularFace(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
+#else
+  (void) gface_isPeriodic;
 #endif
 }
 
@@ -521,7 +526,7 @@ static void interpolateParametricCoordinatesOnFace(
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
 
   if (num > 0) { // the underlying surface is degenerate
-#ifndef HAVE_CAPSTONE
+#ifndef PUMI_HAS_CAPSTONE
     interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
 #else
     // account for non-uniform parameterization of model-edge
@@ -780,8 +785,8 @@ bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   SnapAll op(a, t, isSimple);
   applyOperator(a, &op);
-  successCount += PCU_Add_Long(op.successCount);
-  return PCU_Or(op.didAnything);
+  successCount += a->mesh->getPCU()->Add<long>(op.successCount);
+  return a->mesh->getPCU()->Or(op.didAnything);
 }
 
 class SnapMatched : public Operator
@@ -831,8 +836,8 @@ bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
 {
   SnapMatched op(a, t, isSimple);
   applyOperator(a, &op);
-  successCount += PCU_Add_Long(op.successCount);
-  return PCU_Or(op.didAnything);
+  successCount += a->mesh->getPCU()->Add<long>(op.successCount);
+  return a->mesh->getPCU()->Or(op.didAnything);
 }
 
 long tagVertsToSnap(Adapt* a, Tag*& t)
@@ -857,7 +862,7 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
       ++n;
   }
   m->end(it);
-  return PCU_Add_Long(n);
+  return m->getPCU()->Add<long>(n);
 }
 
 static void markVertsToSnap(Adapt* a, Tag* t)
@@ -902,7 +907,7 @@ void snap(Adapt* a)
 {
   if ( ! a->input->shouldSnap)
     return;
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   Tag* tag;
   /* we are starting to support a few operations on matched
      meshes, including snapping+UR. this should prevent snapping
@@ -913,8 +918,8 @@ void snap(Adapt* a)
   snapLayer(a, tag);
   apf::removeTagFromDimension(a->mesh, tag, 0);
   a->mesh->destroyTag(tag);
-  double t1 = PCU_Time();
-  print("snapped in %f seconds: %ld targets, %ld non-layer snaps",
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "snapped in %f seconds: %ld targets, %ld non-layer snaps",
     t1 - t0, targets, success);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after snapping");

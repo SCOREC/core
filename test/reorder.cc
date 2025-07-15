@@ -3,7 +3,6 @@
 #include <apfMDS.h>
 #include <apfMesh2.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #ifdef HAVE_SIMMETRIX
@@ -15,13 +14,14 @@
 #include <stdlib.h>
 
 int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 4 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 #endif
   gmi_register_null();
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   apf::MeshTag* order = Parma_BfsReorder(m);
   apf::reorderMdsMesh(m, order);
   m->writeNative(argv[3]);
@@ -45,6 +45,6 @@ int main(int argc, char** argv) {
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

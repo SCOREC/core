@@ -8,7 +8,6 @@
 
 *******************************************************************************/
 #include "pcu_msg.h"
-#include "pcu_pmpi.h"
 #include "noto_malloc.h"
 #include "reel.h"
 #include <string.h>
@@ -87,14 +86,14 @@ static void free_peers(pcu_aa_tree* t)
   pcu_make_aa(t);
 }
 
-void pcu_msg_start(pcu_msg* m)
+void pcu_msg_start(pcu_mpi_t* mpi, pcu_msg* m)
 {
   if (m->state != idle_state)
     reel_fail("PCU_Comm_Begin called at the wrong time");
   /* this barrier ensures no one starts a new superstep
      while others are receiving in the past superstep.
      It is the only blocking call in the pcu_msg system. */
-  pcu_barrier(&(m->coll));
+  pcu_barrier(mpi, &(m->coll));
   m->state = pack_state;
 }
 
@@ -143,49 +142,49 @@ size_t pcu_msg_packed(pcu_msg* m, int id)
   return peer->message.buffer.size;
 }
 
-static void send_peers(pcu_aa_tree t)
+static void send_peers(pcu_mpi_t* mpi, pcu_aa_tree t)
 {
   if (pcu_aa_empty(t))
     return;
   pcu_msg_peer* peer;
   peer = (pcu_msg_peer*)t;
-  pcu_mpi_send(&(peer->message),pcu_user_comm);
-  send_peers(t->left);
-  send_peers(t->right);
+  pcu_mpi_send(mpi, &(peer->message),mpi->user_comm);
+  send_peers(mpi, t->left);
+  send_peers(mpi, t->right);
 }
 
-void pcu_msg_send(pcu_msg* m)
+void pcu_msg_send(pcu_mpi_t* mpi, pcu_msg* m)
 {
   if (m->state != pack_state)
     reel_fail("PCU_Comm_Send called at the wrong time");
-  send_peers(m->peers);
+  send_peers(mpi, m->peers);
   m->state = send_recv_state;
 }
 
-static bool done_sending_peers(pcu_aa_tree t)
+static bool done_sending_peers(pcu_mpi_t* mpi, pcu_aa_tree t)
 {
   if (pcu_aa_empty(t))
     return true;
   pcu_msg_peer* peer;
   peer = (pcu_msg_peer*)t;
-  return pcu_mpi_done(&(peer->message))
-    && done_sending_peers(t->left)
-    && done_sending_peers(t->right);
+  return pcu_mpi_done(mpi, &(peer->message))
+    && done_sending_peers(mpi, t->left)
+    && done_sending_peers(mpi, t->right);
 }
 
-static bool receive_global(pcu_msg* m)
+static bool receive_global(pcu_mpi_t* mpi, pcu_msg* m)
 {
-  m->received.peer = MPI_ANY_SOURCE;
-  while ( ! pcu_mpi_receive(&(m->received),pcu_user_comm))
+  m->received.peer = PCU_ANY_SOURCE;
+  while ( ! pcu_mpi_receive(mpi, &(m->received),mpi->user_comm))
   {
     if (m->state == send_recv_state)
-      if (done_sending_peers(m->peers))
+      if (done_sending_peers(mpi, m->peers))
       {
-        pcu_begin_barrier(&(m->coll));
+        pcu_begin_barrier(mpi, &(m->coll));
         m->state = recv_state;
       }
     if (m->state == recv_state)
-      if (pcu_barrier_done(&(m->coll)))
+      if (pcu_barrier_done(mpi, &(m->coll)))
         return false;
   }
   return true;
@@ -197,14 +196,14 @@ static void free_comm(pcu_msg* m)
   pcu_free_message(&(m->received));
 }
 
-bool pcu_msg_receive(pcu_msg* m)
+bool pcu_msg_receive(pcu_mpi_t* mpi, pcu_msg* m)
 {
   if ((m->state != send_recv_state)&&
       (m->state != recv_state))
     reel_fail("PCU_Comm_Receive called at the wrong time");
   if ( ! pcu_msg_unpacked(m))
     reel_fail("PCU_Comm_Receive called before previous message unpacked");
-  if (receive_global(m))
+  if (receive_global(mpi, m))
   {
     pcu_begin_buffer(&(m->received.buffer));
     return true;

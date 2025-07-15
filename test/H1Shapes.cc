@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 #include <apf.h>
@@ -28,13 +27,14 @@ void testH1(
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
 
   lion_set_verbosity(1);
 
   if (argc != 3) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.Self())
       std::cerr << "usage: " << argv[0]
         << " <model.dmg or .null> <mesh.smb>\n";
     return EXIT_FAILURE;
@@ -44,12 +44,12 @@ int main(int argc, char** argv)
   gmi_register_null();
 
   gmi_model* g = gmi_load(argv[1]);
-  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(g,argv[2],&PCUObj);
   m->verify();
 
   // test fields interpolating a user-defined vector field
   for (int i = 1; i <= 6; i++) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.Self())
       lion_oprint(1, "----TESTING VECTOR FIELD OF ORDER %d----\n", i);
     testH1(
         m, /* mesh */
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
   // test fields interpolating a user-defined matrix field
   for (int i = 1; i <= 6; i++) {
-    if(0==PCU_Comm_Self())
+    if(0==PCUObj.Self())
       lion_oprint(1, "----TESTING MATRIX FIELD OF ORDER %d----\n", i);
     testH1(
         m, /* mesh */
@@ -72,8 +72,8 @@ int main(int argc, char** argv)
   }
 
   apf::destroyMesh(m);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 
 void E_exact(const apf::Vector3& x, apf::Vector3& value, int p)
@@ -140,12 +140,12 @@ void testH1(
 
   for (int d = 0; d <= dim; d++) {
     if (!h1Field->getShape()->countNodesOn(apf::Mesh::simplexTypes[d])) {
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "no nodes in dimension %d\n", d);
       continue;
     }
     else
-      if(0==PCU_Comm_Self())
+      if(0==m->getPCU()->Self())
         lion_oprint(1, "computing dofs for dimension %d\n", d);
     it = m->begin(d);
     while( (ent = m->iterate(it)) ) {
@@ -210,7 +210,7 @@ void testH1(
     m->end(it);
 
     // check for field interpolation
-    if(0==PCU_Comm_Self()) {
+    if(0==m->getPCU()->Self()) {
       lion_oprint(1, "L2Error for entities of dimension %d is %e\n", d, L2Error);
     }
     PCU_ALWAYS_ASSERT_VERBOSE(L2Error < 1.e-12,

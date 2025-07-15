@@ -3,19 +3,19 @@
 #include <apfMesh2.h>
 #include <apfShape.h>
 #include <gmi_mesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc == 3);
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
   {
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], &PCUObj);
   apf::Field* f = apf::createLagrangeField(m, "foo", apf::VECTOR, 1);
   apf::MeshIterator* it = m->begin(0);
   apf::MeshEntity* vert;
@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   apf::destroyMesh(m);
   }
   {
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], "tmp.smb");
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], "tmp.smb", &PCUObj);
   apf::Field* f = m->findField("foo");
   PCU_ALWAYS_ASSERT(f);
   PCU_ALWAYS_ASSERT(apf::VECTOR == apf::getValueType(f));
@@ -46,6 +46,6 @@ int main(int argc, char** argv)
   m->destroyNative();
   apf::destroyMesh(m);
   }
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

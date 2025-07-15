@@ -8,7 +8,6 @@
 
 *******************************************************************************/
 #include "pcu_coll.h"
-#include "pcu_pmpi.h"
 #include "reel.h"
 #include <string.h>
 
@@ -29,148 +28,54 @@ static int ceil_log2(int n)
   return r;
 }
 
-void pcu_merge_assign(void* local, void* incoming, size_t size)
+void pcu_merge_assign(int peers, int bit, void* local, void* incoming,
+                      size_t size)
 {
+  (void) peers, (void) bit;
   memcpy(local,incoming,size);
-}
-
-void pcu_add_doubles(void* local, void* incoming, size_t size)
-{
-  double* a = local;
-  double* b= incoming;
-  size_t n = size/sizeof(double);
-  for (size_t i=0; i < n; ++i)
-    a[i] += b[i];
-}
-
-void pcu_max_doubles(void* local, void* incoming, size_t size)
-{
-  double* a = local;
-  double* b= incoming;
-  size_t n = size/sizeof(double);
-  for (size_t i=0; i < n; ++i)
-    a[i] = MAX(a[i],b[i]);
-}
-
-void pcu_min_doubles(void* local, void* incoming, size_t size)
-{
-  double* a = local;
-  double* b= incoming;
-  size_t n = size/sizeof(double);
-  for (size_t i=0; i < n; ++i)
-    a[i] = MIN(a[i],b[i]);
-}
-
-void pcu_add_ints(void* local, void* incoming, size_t size)
-{
-  int* a = local;
-  int* b= incoming;
-  size_t n = size/sizeof(int);
-  for (size_t i=0; i < n; ++i)
-    a[i] += b[i];
-}
-
-void pcu_min_ints(void* local, void* incoming, size_t size)
-{
-  int* a = local;
-  int* b= incoming;
-  size_t n = size/sizeof(int);
-  for (size_t i=0; i < n; ++i)
-    a[i] = MIN(a[i],b[i]);
-}
-
-void pcu_max_ints(void* local, void* incoming, size_t size)
-{
-  int* a = local;
-  int* b= incoming;
-  size_t n = size/sizeof(int);
-  for (size_t i=0; i < n; ++i)
-    a[i] = MAX(a[i],b[i]);
-}
-
-void pcu_max_longs(void* local, void* incoming, size_t size)
-{
-  long* a = local;
-  long* b= incoming;
-  size_t n = size/sizeof(long);
-  for (size_t i=0; i < n; ++i)
-    a[i] = MAX(a[i],b[i]);
-}
-
-void pcu_min_sizets(void* local, void* incoming, size_t size)
-{
-  size_t* a = local;
-  size_t* b = incoming;
-  size_t n = size/sizeof(size_t);
-  for (size_t i=0; i < n; ++i)
-    a[i] = MIN(a[i],b[i]);
-}
-
-void pcu_max_sizets(void* local, void* incoming, size_t size)
-{
-  size_t* a = local;
-  size_t* b = incoming;
-  size_t n = size/sizeof(size_t);
-  for (size_t i=0; i < n; ++i)
-    a[i] = MAX(a[i],b[i]);
-}
-
-void pcu_add_sizets(void* local, void* incoming, size_t size)
-{
-  size_t* a = local;
-  size_t* b = incoming;
-  size_t n = size/sizeof(size_t);
-  for (size_t i=0; i < n; ++i)
-    a[i] += b[i];
-}
-
-void pcu_add_longs(void* local, void* incoming, size_t size)
-{
-  long* a = local;
-  long* b= incoming;
-  size_t n = size/sizeof(long);
-  for (size_t i=0; i < n; ++i)
-    a[i] += b[i];
 }
 
 /* initiates non-blocking calls for this
    communication step */
-static void begin_coll_step(pcu_coll* c)
+static void begin_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
 {
-  int action = c->pattern->action(c->bit);
+  int action = c->pattern->action(mpi, c->bit);
   if (action == pcu_coll_idle)
     return;
-  c->message.peer = c->pattern->peer(c->bit);
+  c->message.peer = c->pattern->peer(mpi, c->bit);
   if (action == pcu_coll_send)
-    pcu_mpi_send(&(c->message),pcu_coll_comm);
+    pcu_mpi_send(mpi, &(c->message),mpi->coll_comm);
 }
 
 /* tries to complete this communication step.
    Returns false if communication is not done,
    otherwise wraps up communication, merges
    if necessary, and returns true */
-static bool end_coll_step(pcu_coll* c)
+static bool end_coll_step(pcu_mpi_t* mpi, pcu_coll* c)
 {
-  int action = c->pattern->action(c->bit);
+  int action = c->pattern->action(mpi, c->bit);
   if (action == pcu_coll_idle)
     return true;
   if (action == pcu_coll_send)
-    return pcu_mpi_done(&(c->message));
+    return pcu_mpi_done(mpi, &(c->message));
   pcu_message incoming;
   pcu_make_message(&incoming);
-  incoming.peer = c->pattern->peer(c->bit);
-  if ( ! pcu_mpi_receive(&incoming,pcu_coll_comm))
+  incoming.peer = c->pattern->peer(mpi, c->bit);
+  if ( ! pcu_mpi_receive(mpi, &incoming,mpi->coll_comm))
     return false;
   if (c->message.buffer.size != incoming.buffer.size)
     reel_fail("PCU unexpected incoming message.\n"
               "Most likely a PCU collective was not called by all ranks.");
-  c->merge(c->message.buffer.start,incoming.buffer.start,incoming.buffer.size);
+  c->merge(pcu_mpi_size(mpi), c->bit, c->message.buffer.start,
+           incoming.buffer.start, incoming.buffer.size);
   pcu_free_message(&incoming);
   return true;
 }
 
-void pcu_make_coll(pcu_coll* c, pcu_pattern* p, pcu_merge* m)
+void pcu_make_coll(pcu_mpi_t* mpi, pcu_coll* c, pcu_pattern* p, pcu_merge* m)
 {
+  // silence warning
+  (void)mpi;
   c->pattern = p;
   c->merge = m;
 }
@@ -194,28 +99,28 @@ void pcu_make_coll(pcu_coll* c, pcu_pattern* p, pcu_merge* m)
 /* begins a non-blocking collective.
    The collective operation should be set with pcu_make_coll first.
    data[0..size] is the input/output local data */
-void pcu_begin_coll(pcu_coll* c, void* data, size_t size)
+void pcu_begin_coll(pcu_mpi_t* mpi, pcu_coll* c, void* data, size_t size)
 {
   pcu_set_buffer(&(c->message.buffer),data,size);
-  c->bit = c->pattern->begin_bit();
-  if (c->pattern->end_bit(c->bit))
+  c->bit = c->pattern->begin_bit(mpi);
+  if (c->pattern->end_bit(mpi, c->bit))
     return;
-  begin_coll_step(c);
+  begin_coll_step(mpi, c);
 }
 
 /* makes progress on a collective operation
    started by pcu_begin_coll.
    returns false if its done. */
-bool pcu_progress_coll(pcu_coll* c)
+bool pcu_progress_coll(pcu_mpi_t* mpi, pcu_coll* c)
 {
-  if (c->pattern->end_bit(c->bit))
+  if (c->pattern->end_bit(mpi, c->bit))
     return false;
-  if (end_coll_step(c))
+  if (end_coll_step(mpi, c))
   {
-    c->bit = c->pattern->shift(c->bit);
-    if (c->pattern->end_bit(c->bit))
+    c->bit = c->pattern->shift(mpi, c->bit);
+    if (c->pattern->end_bit(mpi, c->bit))
       return false;
-    begin_coll_step(c);
+    begin_coll_step(mpi, c);
   }
   return true;
 }
@@ -224,35 +129,39 @@ bool pcu_progress_coll(pcu_coll* c)
    then odd multiples of 2 into even ones, etc...
    until rank 0 has all inputs merged */
 
-static int reduce_begin_bit(void)
+static int reduce_begin_bit(pcu_mpi_t* mpi)
 {
+  // silence warning
+  (void)mpi;
   return 1;
 }
 
-static bool reduce_end_bit(int bit)
+static bool reduce_end_bit(pcu_mpi_t* mpi, int bit)
 {
-  int rank = pcu_mpi_rank();
+  int rank = pcu_mpi_rank(mpi);
   if (rank==0)
-    return bit >= pcu_mpi_size();
+    return bit >= pcu_mpi_size(mpi);
   return (bit>>1) & rank;
 }
 
-static int reduce_peer(int bit)
+static int reduce_peer(pcu_mpi_t* mpi, int bit)
 {
-  return pcu_mpi_rank() ^ bit;
+  return pcu_mpi_rank(mpi) ^ bit;
 }
 
-static int reduce_action(int bit)
+static int reduce_action(pcu_mpi_t* mpi, int bit)
 {
-  if (reduce_peer(bit) >= pcu_mpi_size())
+  if (reduce_peer(mpi, bit) >= pcu_mpi_size(mpi))
     return pcu_coll_idle;
-  if (bit & pcu_mpi_rank())
+  if (bit & pcu_mpi_rank(mpi))
     return pcu_coll_send;
   return pcu_coll_recv;
 }
 
-static int reduce_shift(int bit)
+static int reduce_shift(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit << 1;
 }
 
@@ -269,37 +178,41 @@ static pcu_pattern reduce =
    the pattern runs backwards and send/recv
    are flipped. */
 
-static int bcast_begin_bit(void)
+static int bcast_begin_bit(pcu_mpi_t* mpi)
 {
-  int rank = pcu_mpi_rank();
+  int rank = pcu_mpi_rank(mpi);
   if (rank == 0)
-    return 1 << ceil_log2(pcu_mpi_size());
+    return 1 << ceil_log2(pcu_mpi_size(mpi));
   int bit = 1;
   while ( ! (bit & rank)) bit <<= 1;
   return bit;
 }
 
-static bool bcast_end_bit(int bit)
+static bool bcast_end_bit(pcu_mpi_t * mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit == 0;
 }
 
-static int bcast_peer(int bit)
+static int bcast_peer(pcu_mpi_t * mpi, int bit)
 {
-  return pcu_mpi_rank() ^ bit;
+  return pcu_mpi_rank(mpi) ^ bit;
 }
 
-static int bcast_action(int bit)
+static int bcast_action(pcu_mpi_t* mpi, int bit)
 {
-  if (bcast_peer(bit) >= pcu_mpi_size())
+  if (bcast_peer(mpi, bit) >= pcu_mpi_size(mpi))
     return pcu_coll_idle;
-  if (bit & pcu_mpi_rank())
+  if (bit & pcu_mpi_rank(mpi))
     return pcu_coll_recv;
   return pcu_coll_send;
 }
 
-static int bcast_shift(int bit)
+static int bcast_shift(pcu_mpi_t * mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit >> 1;
 }
 
@@ -319,14 +232,16 @@ static pcu_pattern bcast =
    "Parallel Prefix (Scan) Algorithms for MPI".
 */
 
-static int scan_up_begin_bit(void)
+static int scan_up_begin_bit(pcu_mpi_t* mpi)
 {
+  // silence warning
+  (void)mpi;
   return 1;
 }
 
-static bool scan_up_end_bit(int bit)
+static bool scan_up_end_bit(pcu_mpi_t* mpi, int bit)
 {
-  return bit == (1 << floor_log2(pcu_mpi_size()));
+  return bit == (1 << floor_log2(pcu_mpi_size(mpi)));
 }
 
 static bool scan_up_could_receive(int rank, int bit)
@@ -345,35 +260,37 @@ static int scan_up_receiver_for(int rank, int bit)
   return rank + bit;
 }
 
-static int scan_up_action(int bit)
+static int scan_up_action(pcu_mpi_t* mpi, int bit)
 {
-  int rank = pcu_mpi_rank();
+  int rank = pcu_mpi_rank(mpi);
   if ((scan_up_could_receive(rank,bit))&&
       (0 <= scan_up_sender_for(rank,bit)))
     return pcu_coll_recv;
   int receiver = scan_up_receiver_for(rank,bit);
-  if ((receiver < pcu_mpi_size())&&
+  if ((receiver < pcu_mpi_size(mpi))&&
       (scan_up_could_receive(receiver,bit)))
     return pcu_coll_send;
   return pcu_coll_idle;
 }
 
-static int scan_up_peer(int bit)
+static int scan_up_peer(pcu_mpi_t* mpi, int bit)
 {
-  int rank = pcu_mpi_rank();
+  int rank = pcu_mpi_rank(mpi);
   int sender = scan_up_sender_for(rank,bit);
   if ((scan_up_could_receive(rank,bit))&&
       (0 <= sender))
     return sender;
   int receiver = scan_up_receiver_for(rank,bit);
-  if ((receiver < pcu_mpi_size())&&
+  if ((receiver < pcu_mpi_size(mpi))&&
       (scan_up_could_receive(receiver,bit)))
     return receiver;
   return -1;
 }
 
-static int scan_up_shift(int bit)
+static int scan_up_shift(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit << 1;
 }
 
@@ -386,13 +303,15 @@ static pcu_pattern scan_up =
   .shift = scan_up_shift,
 };
 
-static int scan_down_begin_bit(void)
+static int scan_down_begin_bit(pcu_mpi_t* mpi)
 {
-  return 1 << floor_log2(pcu_mpi_size());
+  return 1 << floor_log2(pcu_mpi_size(mpi));
 }
 
-static bool scan_down_end_bit(int bit)
+static bool scan_down_end_bit(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit == 1;
 }
 
@@ -412,11 +331,11 @@ static int scan_down_sender_for(int rank, int bit)
   return rank - (bit >> 1);
 }
 
-static int scan_down_action(int bit)
+static int scan_down_action(pcu_mpi_t * mpi, int bit)
 {
-  int rank = pcu_mpi_rank();
+  int rank = pcu_mpi_rank(mpi);
   if ((scan_down_could_send(rank,bit))&&
-      (scan_down_receiver_for(rank,bit) < pcu_mpi_size()))
+      (scan_down_receiver_for(rank,bit) < pcu_mpi_size(mpi)))
     return pcu_coll_send;
   int sender = scan_down_sender_for(rank,bit);
   if ((0 <= sender)&&
@@ -425,13 +344,13 @@ static int scan_down_action(int bit)
   return pcu_coll_idle;
 }
 
-static int scan_down_peer(int bit)
+static int scan_down_peer(pcu_mpi_t * mpi, int bit)
 {
-  int rank = pcu_mpi_rank();
+  int rank = pcu_mpi_rank(mpi);
   if (scan_down_could_send(rank,bit))
   {
     int receiver = scan_down_receiver_for(rank,bit);
-    if (receiver < pcu_mpi_size())
+    if (receiver < pcu_mpi_size(mpi))
       return receiver;
   }
   int sender = scan_down_sender_for(rank,bit);
@@ -441,8 +360,10 @@ static int scan_down_peer(int bit)
   return -1;
 }
 
-static int scan_down_shift(int bit)
+static int scan_down_shift(pcu_mpi_t* mpi, int bit)
 {
+  // silence warning
+  (void)mpi;
   return bit >> 1;
 }
 
@@ -455,59 +376,94 @@ static pcu_pattern scan_down =
   .shift = scan_down_shift,
 };
 
-void pcu_reduce(pcu_coll* c, pcu_merge* m, void* data, size_t size)
+static pcu_pattern gather =
 {
-  pcu_make_coll(c,&reduce,m);
-  pcu_begin_coll(c,data,size);
-  while(pcu_progress_coll(c));
+  .begin_bit = reduce_begin_bit,
+  .end_bit = reduce_end_bit,
+  .action = reduce_action,
+  .peer = reduce_peer,
+  .shift = reduce_shift,
+};
+
+void pcu_reduce(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size)
+{
+  pcu_make_coll(mpi, c,&reduce,m);
+  pcu_begin_coll(mpi, c,data,size);
+  while(pcu_progress_coll(mpi, c));
 }
 
-void pcu_bcast(pcu_coll* c, void* data, size_t size)
+void pcu_bcast(pcu_mpi_t * mpi, pcu_coll* c, void* data, size_t size)
 {
-  pcu_make_coll(c,&bcast,pcu_merge_assign);
-  pcu_begin_coll(c,data,size);
-  while(pcu_progress_coll(c));
+  pcu_make_coll(mpi, c,&bcast,pcu_merge_assign);
+  pcu_begin_coll(mpi, c,data,size);
+  while(pcu_progress_coll(mpi, c));
 }
 
-void pcu_allreduce(pcu_coll* c, pcu_merge* m, void* data, size_t size)
+void pcu_allreduce(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size)
 {
-  pcu_reduce(c,m,data,size);
-  pcu_bcast(c,data,size);
+  pcu_reduce(mpi, c,m,data,size);
+  pcu_bcast(mpi, c,data,size);
 }
 
-void pcu_scan(pcu_coll* c, pcu_merge* m, void* data, size_t size)
+void pcu_scan(pcu_mpi_t* mpi, pcu_coll* c, pcu_merge* m, void* data, size_t size)
 {
-  pcu_make_coll(c,&scan_up,m);
-  pcu_begin_coll(c,data,size);
-  while(pcu_progress_coll(c));
-  pcu_make_coll(c,&scan_down,m);
-  pcu_begin_coll(c,data,size);
-  while(pcu_progress_coll(c));
+  pcu_make_coll(mpi, c,&scan_up,m);
+  pcu_begin_coll(mpi, c,data,size);
+  while(pcu_progress_coll(mpi, c));
+  pcu_make_coll(mpi, c,&scan_down,m);
+  pcu_begin_coll(mpi, c,data,size);
+  while(pcu_progress_coll(mpi, c));
+}
+
+void pcu_merge_gather(int peers, int bit, void *local, void *incoming,
+                      size_t size) {
+  size_t block_size = size / peers;
+  // local has `bit` blocks.
+  // incoming may have `bit` (if peers is a power of 2) or `bit - 1` blocks.
+  // either way, writing `size - bit * block_size` prevents buffer overrun.
+  // Also, all incoming blocks are from greater ranks, so they go to the right.
+  memcpy(local + bit * block_size, incoming, size - bit * block_size);
+}
+
+void pcu_gather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
+                   void *recv_data, size_t size) {
+  memcpy(recv_data, send_data, size);
+  pcu_make_coll(mpi, c, &gather, pcu_merge_gather);
+  pcu_begin_coll(mpi, c, recv_data, size * pcu_mpi_size(mpi));
+  while (pcu_progress_coll(mpi, c));
+}
+
+void pcu_allgather(pcu_mpi_t* mpi, pcu_coll* c, const void *send_data,
+                   void *recv_data, size_t size) {
+  pcu_gather(mpi, c, send_data, recv_data, size);
+  pcu_bcast(mpi, c, recv_data, size * pcu_mpi_size(mpi));
 }
 
 /* a barrier is just an allreduce of nothing in particular */
-void pcu_begin_barrier(pcu_coll* c)
+void pcu_begin_barrier(pcu_mpi_t* mpi, pcu_coll* c)
 {
-  pcu_make_coll(c,&reduce,pcu_merge_assign);
-  pcu_begin_coll(c,NULL,0);
+  pcu_make_coll(mpi, c,&reduce,pcu_merge_assign);
+  pcu_begin_coll(mpi, c,NULL,0);
 }
 
-bool pcu_barrier_done(pcu_coll* c)
+bool pcu_barrier_done(pcu_mpi_t* mpi, pcu_coll* c)
 {
   if (c->pattern == &reduce)
-    if ( ! pcu_progress_coll(c))
+    if ( ! pcu_progress_coll(mpi, c))
     {
-      pcu_make_coll(c,&bcast,pcu_merge_assign);
-      pcu_begin_coll(c,c->message.buffer.start,c->message.buffer.size);
+      pcu_make_coll(mpi, c,&bcast,pcu_merge_assign);
+      pcu_begin_coll(mpi, c,c->message.buffer.start,c->message.buffer.size);
     }
   if (c->pattern == &bcast)
-    if ( ! pcu_progress_coll(c))
+    if ( ! pcu_progress_coll(mpi,c))
       return true;
   return false;
 }
 
-void pcu_barrier(pcu_coll* c)
+void pcu_barrier(pcu_mpi_t* mpi, pcu_coll* c)
 {
-  pcu_begin_barrier(c);
-  while( ! pcu_barrier_done(c));
+  // silence warning
+  (void)mpi;
+  pcu_begin_barrier(mpi, c);
+  while( ! pcu_barrier_done(mpi, c));
 }

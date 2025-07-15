@@ -5,7 +5,6 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apfDynamicMatrix.h>
 #include <pcu_util.h>
@@ -121,10 +120,10 @@ gmi_model* makeModel()
   return model;
 }
 
-apf::Mesh2* createMesh2D()
+apf::Mesh2* createMesh2D(pcu::PCU *PCUObj)
 {
   gmi_model* model = makeModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
   apf::MeshEntity* v[4];
   apf::Vector3 points2D[4] =
   {apf::Vector3(0,0,0),
@@ -153,10 +152,10 @@ apf::Mesh2* createMesh2D()
   return m;
 }
 
-apf::Mesh2* createMesh3D()
+apf::Mesh2* createMesh3D(pcu::PCU *PCUObj)
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
 
   apf::Vector3 points3D[4] =
   {apf::Vector3(0,0,0),
@@ -253,12 +252,12 @@ void testSize2D(apf::Mesh2* m, int order)
   }
 }
 
-void test2D()
+void test2D(pcu::PCU *PCUObj)
 {
   // test all orders for all blending orders
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 0; blendOrder <= 2; ++blendOrder){
-      apf::Mesh2* m = createMesh2D();
+      apf::Mesh2* m = createMesh2D(PCUObj);
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
       testInterpolatedPoints2D(m);
@@ -269,7 +268,7 @@ void test2D()
   }
   // test the pure interpolation side of things
   {
-    apf::Mesh2* m = createMesh2D();
+    apf::Mesh2* m = createMesh2D(PCUObj);
     apf::changeMeshShape(m,apf::getLagrange(2),true);
     crv::InterpolatingCurver ic(m,2);
     ic.run();
@@ -467,10 +466,10 @@ void test3D(apf::Mesh2* m)
  * triangles implemented. There are no nodes inside the tetrahedron
  *
  */
-void test3DBlended()
+void test3DBlended(pcu::PCU *PCUObj)
 {
   gmi_register_null();
-  apf::Mesh2* mbase = createMesh3D();
+  apf::Mesh2* mbase = createMesh3D(PCUObj);
 
   testSize3D(mbase);
   test3DJacobian(mbase);
@@ -481,7 +480,7 @@ void test3DBlended()
 
   for(int order = 1; order <= 6; ++order){
     for(int blendOrder = 1; blendOrder <= 2; ++blendOrder){
-      apf::Mesh2* m = createMesh3D();
+      apf::Mesh2* m = createMesh3D(PCUObj);
       crv::BezierCurver bc(m,order,blendOrder);
       bc.run();
       test3D(m);
@@ -492,12 +491,12 @@ void test3DBlended()
 }
 
 /* Tests Full Bezier tetrahedra */
-void test3DFull()
+void test3DFull(pcu::PCU *PCUObj)
 {
   gmi_register_null();
 
   for(int order = 1; order <= 6; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     crv::BezierCurver bc(m,order,0);
     bc.run();
     test3D(m);
@@ -540,7 +539,7 @@ void test3DFull()
   }
   // test simple elevation
   for(int order = 1; order <= 4; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     crv::BezierCurver bc(m,order,0);
     bc.run();
     crv::changeMeshOrder(m,5);
@@ -550,7 +549,7 @@ void test3DFull()
   }
   // test elevation inside a BezierCurver
   for(int order = 1; order <= 4; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     crv::BezierCurver bc1(m,order,0);
     bc1.run();
     crv::BezierCurver bc2(m,order+2,0);
@@ -561,7 +560,7 @@ void test3DFull()
   }
   // test going downward
   for(int order = 4; order <= 6; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     crv::BezierCurver bc1(m,order,0);
     bc1.run();
     crv::BezierCurver bc2(m,order-2,0);
@@ -572,7 +571,7 @@ void test3DFull()
   }
   // test going from 2nd order lagrange to various order bezier
   for(int order = 2; order <= 6; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     apf::changeMeshShape(m,apf::getLagrange(2),true);
     crv::BezierCurver bc(m,order,0);
     bc.run();
@@ -584,12 +583,13 @@ void test3DFull()
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
-  test2D();
-  test3DBlended();
-  test3DFull();
-  PCU_Comm_Free();
-  MPI_Finalize();
+  test2D(&pcu_obj);
+  test3DBlended(&pcu_obj);
+  test3DFull(&pcu_obj);
+  }
+  pcu::Finalize();
 }

@@ -13,6 +13,10 @@
 #include <string>
 #include <vector>
 
+namespace pcu{
+  class PCU;
+}
+
 struct RStream;
 
 namespace ph {
@@ -22,7 +26,7 @@ class Input
 {
   public:
     Input();
-    void load(const char* filename);
+    void load(const char* filename, pcu::PCU *PCUObj);
     int txtCoord; //HACK added to get through compile
     int timeStepNumber;
     /** \brief this corresponds to the number of degrees of
@@ -158,7 +162,7 @@ class Input
     double meshqCrtn;
     double elementImbalance;
     double vertexImbalance;
-    FILE* (*openfile_read)(Input& in, const char* path);
+    FILE* (*openfile_read)(Input& in, const char* path, pcu::PCU *PCUObj);
     RStream* rs;
     /** \brief the flag for switch between simmetrix mesh and pumi-based mesh.
        avoid run incompatible APIs with simmetrix mesh */
@@ -232,5 +236,3 @@ int countScalarBCs(Input& in);
 }
 
 #endif
-
-

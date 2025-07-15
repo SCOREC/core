@@ -2,18 +2,17 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <pcu_util.h>
 
-void testTriEdge()
+void testTriEdge(pcu::PCU *PCUObj)
 {
   int which, rotate;
   bool flip;
   for(int ed = 0; ed < 6; ++ed){
     gmi_model* model = gmi_load(".null");
-    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
+    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
     apf::MeshEntity* v[3];
     for (int i = 0; i < 3; ++i)
       v[i] = m->createVert(0);
@@ -32,13 +31,13 @@ void testTriEdge()
     apf::destroyMesh(m);
   }
 }
-void testTetEdge()
+void testTetEdge(pcu::PCU *PCUObj)
 {
   int which, rotate;
   bool flip;
   for(int ed = 0; ed < 12; ++ed){
     gmi_model* model = gmi_load(".null");
-    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+    apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
     apf::MeshEntity* v[4];
     for (int i = 0; i < 4; ++i)
       v[i] = m->createVert(0);
@@ -57,7 +56,7 @@ void testTetEdge()
     apf::destroyMesh(m);
   }
 }
-void testTetTri()
+void testTetTri(pcu::PCU *PCUObj)
 {
   int which, rotate;
   bool flip;
@@ -65,7 +64,7 @@ void testTetTri()
   for(int flipped = 0; flipped < 2; ++flipped){
     for(int fa = 0; fa < 12; ++fa){
       gmi_model* model = gmi_load(".null");
-      apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+      apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
       apf::MeshEntity* v[4];
       for (int i = 0; i < 4; ++i)
         v[i] = m->createVert(0);
@@ -90,13 +89,14 @@ void testTetTri()
 }
 int main()
 {
-  MPI_Init(0,0);
-  PCU_Comm_Init();
+  pcu::Init(0,0);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   gmi_register_null();
-  testTriEdge();
-  testTetEdge();
-  testTetTri();
-  PCU_Comm_Free();
-  MPI_Finalize();
+  testTriEdge(&pcu_obj);
+  testTetEdge(&pcu_obj);
+  testTetTri(&pcu_obj);
+  }
+  pcu::Finalize();
 }

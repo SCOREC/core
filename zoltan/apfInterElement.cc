@@ -1,76 +1,8 @@
-#include <PCU.h>
 #include "apfZoltan.h"
 #include <apfMesh.h>
 #include <pcu_util.h>
 
 namespace apf {
-
-static bool hasOtherSide(Mesh* m, MeshEntity* s)
-{
-  if (m->isShared(s))
-    return true;
-  if (!m->hasMatching())
-    return false;
-  Matches matches;
-  m->getMatches(s, matches);
-  return matches.getSize();
-}
-
-static Copy getOtherSide(Mesh* m, MeshEntity* s)
-{
-  if (m->isShared(s))
-    return getOtherCopy(m, s);
-  Matches matches;
-  m->getMatches(s, matches);
-  PCU_ALWAYS_ASSERT(matches.getSize() == 1);
-  return matches[0];
-}
-
-static MeshEntity* getSideElement(Mesh* m, MeshEntity* s)
-{
-  return m->getUpward(s, 0);
-}
-
-static long getElementGid(GlobalNumbering* gn, MeshEntity* e)
-{
-  return getNumber(gn, Node(e, 0));
-}
-
-static void packOtherGid(GlobalNumbering* gn, MeshEntity* s)
-{
-  Mesh* m = getMesh(gn);
-  Copy other = getOtherSide(m, s);
-  long gid = getElementGid(gn, getSideElement(m, s));
-  PCU_COMM_PACK(other.peer, other.entity);
-  PCU_COMM_PACK(other.peer, gid);
-}
-
-static void unpackOtherGid(Mesh* m, MeshTag* t)
-{
-  MeshEntity* s;
-  PCU_COMM_UNPACK(s);
-  long gid;
-  PCU_COMM_UNPACK(gid);
-  m->setLongTag(s, t, &gid);
-}
-
-MeshTag* tagOpposites(GlobalNumbering* gn, const char* name)
-{
-  Mesh* m = getMesh(gn);
-  MeshTag* t = m->createLongTag(name, 1);
-  int sideDim = m->getDimension() - 1;
-  PCU_Comm_Begin();
-  MeshIterator* it = m->begin(sideDim);
-  MeshEntity* e;
-  while ((e = m->iterate(it)))
-    if (hasOtherSide(m, e))
-      packOtherGid(gn, e);
-  m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive())
-    unpackOtherGid(m, t);
-  return t;
-}
 
 static long getOpposite(GlobalNumbering* gn, MeshTag* opposites,
     MeshEntity* element, int side_i)

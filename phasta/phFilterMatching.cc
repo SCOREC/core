@@ -5,7 +5,6 @@
 #include <map>
 #include <set>
 #include <apf.h>
-#include <PCU.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <cstdlib>
@@ -225,7 +224,7 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
 {
   gmi_model* gm;
   gm = m->getModel();
-  PCU_Comm_Begin();
+  m->getPCU()->Begin();
   apf::MeshIterator* it = m->begin(dim);
   apf::MeshEntity* e;
   int gd, gt;
@@ -238,28 +237,28 @@ void filterMatching(apf::Mesh2* m, ModelMatching& mm, int dim)
     gd = gmi_dim(gm, ge);
     gt = gmi_tag(gm, ge);
     APF_ITERATE(apf::Matches, matches, mit) {
-      PCU_COMM_PACK(mit->peer, mit->entity);
-      PCU_COMM_PACK(mit->peer, e);
-      PCU_COMM_PACK(mit->peer, gd);
-      PCU_COMM_PACK(mit->peer, gt);
+      m->getPCU()->Pack(mit->peer, mit->entity);
+      m->getPCU()->Pack(mit->peer, e);
+      m->getPCU()->Pack(mit->peer, gd);
+      m->getPCU()->Pack(mit->peer, gt);
     }
     m->clearMatches(e);
   }
   m->end(it);
-  PCU_Comm_Send();
-  while (PCU_Comm_Receive()) {
-    PCU_COMM_UNPACK(e);
+  m->getPCU()->Send();
+  while (m->getPCU()->Receive()) {
+    m->getPCU()->Unpack(e);
     apf::MeshEntity* oe;
-    PCU_COMM_UNPACK(oe);
-    PCU_COMM_UNPACK(gd);
-    PCU_COMM_UNPACK(gt);
+    m->getPCU()->Unpack(oe);
+    m->getPCU()->Unpack(gd);
+    m->getPCU()->Unpack(gt);
     gmi_ent* ge = (gmi_ent*) m->toModel(e);
     if (!mm.count(ge))
       continue;
     ModelSet& ms = mm[ge];
     gmi_ent* oge = gmi_find(gm, gd, gt);
     if (oge == ge || ms.count(oge))
-      m->addMatch(e, PCU_Comm_Sender(), oe);
+      m->addMatch(e, m->getPCU()->Sender(), oe);
   }
   checkFilteredMatching(m, mm, dim);
 }

@@ -2,7 +2,6 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <dsp.h>
 #include <dspGraphDistance.h>
@@ -10,17 +9,18 @@
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj =  pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
   if ( argc != 4 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   dsp::Boundary moving;
   moving.insert(m->findModelEntity(2, 57));
   moving.insert(m->findModelEntity(2, 62));
@@ -31,6 +31,6 @@ int main(int argc, char** argv)
   apf::writeVtkFiles(argv[3], m);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

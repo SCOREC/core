@@ -9,7 +9,7 @@ message(STATUS "PCU_COMPRESS: " ${PCU_COMPRESS})
 
 # Package sources
 set(SOURCES
-  pcu.c
+  pcu_c.cc
   pcu_aa.c
   pcu_coll.c
   pcu_io.c
@@ -18,18 +18,25 @@ set(SOURCES
   pcu_mpi.c
   pcu_msg.c
   pcu_order.c
-  pcu_pmpi.c
   pcu_util.c
   noto/noto_malloc.c
   reel/reel.c
-)
+  PCU.cc)
+
+if(SCOREC_NO_MPI)
+  set(SOURCES ${SOURCES} pcu_pnompi.c)
+else()
+  set(SOURCES ${SOURCES} pcu_pmpi.c)
+endif()
 
 # Package headers
 set(HEADERS
-  PCU.h
+  PCU_C.h
   pcu_io.h
   pcu_util.h
   reel/reel.h
+  pcu_defines.h
+  PCU.h
 )
 
 # Add the pcu library
@@ -64,7 +71,6 @@ target_include_directories(pcu
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/reel>
-    $<INSTALL_INTERFACE:include>
     PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/noto>
     )

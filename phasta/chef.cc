@@ -1,7 +1,6 @@
 #include <apf.h>
 #include <apfMesh.h>
 #include <gmi_mesh.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pumi_version.h>
 #ifdef HAVE_SIMMETRIX
@@ -30,11 +29,12 @@ namespace {
 /** @brief run the operations requested in "adapt.inp" */
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
-  PCU_Protect();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
+  pcu::Protect();
   lion_set_verbosity(1);
-  if( !PCU_Comm_Self() ) {
+  if( !PCUObj.Self() ) {
     lion_oprint(1,"PUMI Git hash %s\n", pumi_version());
     lion_oprint(1,"PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
   }
@@ -55,8 +55,8 @@ int main(int argc, char** argv)
   std::string inputPath = "adapt.inp";
   if(argc==2) inputPath = argv[1];
   ph::Input in;
-  in.load(inputPath.c_str());
-  chef::cook(g,m,in);
+  in.load(inputPath.c_str(), &PCUObj);
+  chef::cook(g,m,in,&PCUObj);
   freeMesh(m);
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 

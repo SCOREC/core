@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfMDS.h>
@@ -57,8 +56,8 @@ class Poisson {
       apf::destroyMesh(mesh);
     }
 
-    void run() {
-      setup_grid();
+    void run(pcu::PCU *PCUObj) {
+      setup_grid(PCUObj);
       setup_lin_alg();
       fill_volumetric();
       fill_boundary();
@@ -95,14 +94,14 @@ class Poisson {
     apf::NewArray<apf::Vector3> GBF;
     apf::NewArray<long> numbers;
 
-    void setup_grid() {
+    void setup_grid(pcu::PCU *PCUObj) {
       int nx = num_grid;
       int ny = (num_dims > 1) ? num_grid : 0;
       int nz = (num_dims > 2) ? num_grid : 0;
       double wx = 1.0;
       double wy = (num_dims > 1) ? 1.0 : 0.0;
       double wz = (num_dims > 2) ? 1.0 : 0.0;
-      mesh = apf::makeMdsBox(nx, ny, nz, wx, wy, wz, true);
+      mesh = apf::makeMdsBox(nx, ny, nz, wx, wy, wz, true, PCUObj);
       apf::reorderMdsMesh(mesh);
       shape = apf::getLagrange(p_order);
       sol = apf::createField(mesh, "u", apf::SCALAR, shape);
@@ -237,12 +236,12 @@ class Poisson {
 
 };
 
-void test(int dim, int p) {
+void test(int dim, int p, pcu::PCU *PCUObj) {
   int steps = 6-dim;
   int n_grid = 6-dim;
   for (int i=0; i < steps; ++i) {
     Poisson poisson(dim, p, n_grid);
-    poisson.run();
+    poisson.run(PCUObj);
     n_grid *= 2;
   }
 }
@@ -251,13 +250,14 @@ void test(int dim, int p) {
 
 int main(int argc, char** argv) {
   PCU_ALWAYS_ASSERT(argc == 3);
-  MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc, &argv);
+  {  
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
-  PCU_ALWAYS_ASSERT(! PCU_Comm_Self());
+  PCU_ALWAYS_ASSERT(! pcu_obj.Self());
   int dim = atoi(argv[1]);
   int p = atoi(argv[2]);
-  test(dim, p);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  test(dim, p, &pcu_obj);
+  }
+  pcu::Finalize();
 }

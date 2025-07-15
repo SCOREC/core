@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <apf.h>
 #include <apfMesh.h>
 #include "parma_ghostOwner.h"
@@ -11,6 +10,6 @@ namespace parma {
   }
 
   bool isOwned(apf::Mesh* m, apf::MeshEntity* v) {
-    return PCU_Comm_Self() == getOwner(m,v);
+    return m->getPCU()->Self() == getOwner(m,v);
   }
 }

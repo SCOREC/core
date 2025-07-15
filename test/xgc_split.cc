@@ -2,7 +2,6 @@
 
 #include <apf.h>
 #include <cstring>
-#include <mpi.h>
 #include <pcu_util.h>
 #include <cstdlib>
 #include <iostream>
@@ -14,12 +13,12 @@ const char* meshFile = 0;
 const char* outFile = 0;
 int serial=0;
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU* PCUObj)
 {
   if (argc < 4) {
-    if (!pumi_rank() )
+    if (!PCUObj->Self())
       printf("Usage: %s <model> <mesh> <outMesh>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -54,10 +53,11 @@ Migration* get_xgc_plan(pGeom g, pMesh m)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  pumi_start();
-
-  getConfig(argc,argv);
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
+  pumi_load_pcu(&PCUObj);
+  getConfig(argc,argv,&PCUObj);
 
   pGeom g = pumi_geom_load(modelFile);
   pMesh m;
@@ -77,23 +77,23 @@ int main(int argc, char** argv)
   snprintf(without_extension,strlen(argv[3])-3,"%s",argv[3]);
 
   char vtk_fname[512];
-  sprintf(vtk_fname,"%s",without_extension); 
+  snprintf(vtk_fname,512,"%s",without_extension); 
   pumi_mesh_write(m, vtk_fname, "vtk");
 
   // ghosting
   pumi_ghost_createLayer(m, 0, 2, 3, 0);
-  sprintf(vtk_fname,"%s-ghosted",without_extension); 
+  snprintf(vtk_fname,512,"%s-ghosted",without_extension); 
   pumi_mesh_write(m, vtk_fname, "vtk");
   pumi_ghost_delete(m);
 
   pumi_ghost_createLayer(m, 0, 2, 3, 1);
-  sprintf(vtk_fname,"%s-ghosted-copy",without_extension); 
+  snprintf(vtk_fname,512,"%s-ghosted-copy",without_extension); 
   pumi_mesh_write(m, vtk_fname, "vtk");
   pumi_ghost_delete(m);
 
   pumi_mesh_delete(m);
 
-  pumi_finalize();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 

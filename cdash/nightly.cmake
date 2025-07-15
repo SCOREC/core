@@ -5,14 +5,14 @@ SET(CTEST_TEST_TYPE Nightly)
 set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
 
 set(CTEST_NIGHTLY_START_TIME "17:00:00 EST")
-set(CTEST_SITE "cranium.scorec.rpi.edu" )
+set(CTEST_SITE "checkers.scorec.rpi.edu" )
 set(CTEST_DROP_METHOD "http")
 set(CTEST_DROP_SITE "my.cdash.org")
 set(CTEST_DROP_LOCATION "/submit.php?project=SCOREC")
 set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 
-set(CTEST_DASHBOARD_ROOT "/lore/cwsmith/nightlyBuilds/" )
+set(CTEST_DASHBOARD_ROOT "/lore/smithc11/nightlyBuilds/" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_BUILD_FLAGS -j4)
 
@@ -43,6 +43,9 @@ find_program(CTEST_GIT_COMMAND NAMES git)
 set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
 function(setup_repo)
+  if(EXISTS "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}")
+    cleanup_merge(develop master)
+  endif()
   if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}")
     message("Running \"git clone ${REPO_URL_BASE}.git ${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}\"")
     execute_process(COMMAND "${CTEST_GIT_COMMAND}" clone ${REPO_URL_BASE}.git
@@ -89,6 +92,18 @@ function(git_exec CMD ACTION)
   endif()
 endfunction(git_exec)
 
+function(remove_branch_if_exists BRANCH_NAME)
+  message("Attempting to delete ${BRANCH_NAME} if it exists")
+  execute_process(COMMAND "${CTEST_GIT_COMMAND}" show-ref --quiet refs/heads/${BRANCH_NAME}
+      WORKING_DIRECTORY "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
+      RESULT_VARIABLE BRANCH_RET)
+  message("git branch --list returned: ${BRANCH_RET}!")
+  if(NOT BRANCH_RET)
+    message("${BRANCH_NAME} exists.  Attempting to delete it.")
+    git_exec("branch -D ${BRANCH_NAME}" "Deleted ${BRANCH_NAME}.")
+  endif()
+endfunction()
+
 function(create_branch BRANCH_NAME TRACKING_NAME)
   git_exec("branch --track ${BRANCH_NAME} ${TRACKING_NAME}"
            "Creating branch ${BRANCH_NAME}")
@@ -123,6 +138,11 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS
     ERRVAR)
   file(MAKE_DIRECTORY "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}")
 
+  execute_process(COMMAND df -h /tmp OUTPUT_VARIABLE outVar)
+  message(STATUS "df result {\n${outVar}}")
+  execute_process(COMMAND pwd OUTPUT_VARIABLE outVar)
+  message(STATUS "pwd result output {\n${outVar}}")
+
   ctest_configure(
       BUILD "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}"
       SOURCE "${CTEST_SOURCE_DIRECTORY}/${CTEST_PROJECT_NAME}"
@@ -133,6 +153,11 @@ function(check_current_branch BRANCH_NAME CONFIG_OPTS
   else()
     message("${BRANCH_NAME} config passed")
   endif()
+
+  execute_process(COMMAND df -h /tmp OUTPUT_VARIABLE outVar)
+  message(STATUS "df result {\n${outVar}}")
+  execute_process(COMMAND pwd OUTPUT_VARIABLE outVar)
+  message(STATUS "pwd result output {\n${outVar}}")
 
   ctest_build(
       BUILD "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}"
@@ -214,6 +239,7 @@ function(start_merge FIRST_BRANCH SECOND_BRANCH NEXT_ACTION)
   update_branch(${FIRST_BRANCH})
   update_branch(${SECOND_BRANCH})
   set(NEW_BRANCH "${SECOND_BRANCH}-into-${FIRST_BRANCH}")
+  remove_branch_if_exists(${NEW_BRANCH})
   create_branch(${NEW_BRANCH} origin/${FIRST_BRANCH})
   checkout_branch(${NEW_BRANCH})
   message("Running \"git merge --no-ff --no-commit ${SECOND_BRANCH}\"")
@@ -313,7 +339,7 @@ SET(CONFIGURE_OPTIONS-sim
   "${CONFIGURE_OPTIONS}"
   "-DENABLE_SIMMETRIX:BOOL=ON"
   "-DSIM_PARASOLID:BOOL=ON"
-  "-DSIM_MPI:STRING=mpich3.3.2"
+  "-DSIM_MPI:STRING=mpich4.1.1"
 )
 
 setup_repo()

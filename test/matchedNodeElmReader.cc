@@ -5,7 +5,6 @@
 #include <apfConvert.h>
 #include <apfConvertTags.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <cstdlib>
@@ -158,7 +157,7 @@ void setVtxClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxC
   mesh->end(it);
 }
 
-void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh,apf::MeshTag* vtxClass) {
+void setEdgeClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* vtxClass) {
   (void)model;
   (void)mesh;
   (void)vtxClass;
@@ -424,11 +423,11 @@ void setClassification(gmi_model* model, apf::Mesh2* mesh, apf::MeshTag* t) {
 }
 
 
-
+ 
 void getLocalRange(apf::Gid total, int& local,
-    apf::Gid& first, apf::Gid& last) {
-  const int self = PCU_Comm_Self();
-  const int peers = PCU_Comm_Peers();
+    apf::Gid& first, apf::Gid& last, pcu::PCU *PCUObj) {
+  const int self = PCUObj->Self();
+  const int peers = PCUObj->Peers();
   local = total/peers; 
   if( self == peers-1 ) {  //last rank
     apf::Gid lp=local*peers;
@@ -438,7 +437,7 @@ void getLocalRange(apf::Gid total, int& local,
       local += lpd;
     }
   }
-  first = PCU_Exscan_Long(local);
+  first = PCUObj->Exscan<long>(local);
   last = first+local;
 }
 
@@ -529,9 +528,9 @@ void readSolution(FILE* f, int& localnumvtx, double** solution) {
   }
 }
 
-void readMatches(FILE* f, apf::Gid numvtx, int localnumvtx, apf::Gid** matches) {
+void readMatches(FILE* f, apf::Gid numvtx, int localnumvtx, apf::Gid** matches, pcu::PCU *PCUObj) {
   fprintf(stderr, "%d readMatches numvtx %ld localnumvtx %d \n",
-      PCU_Comm_Self(), numvtx, localnumvtx);
+      PCUObj->Self(), numvtx, localnumvtx);
   *matches = new apf::Gid[localnumvtx];
   rewind(f);
   apf::Gid matchedVtx;
@@ -610,9 +609,9 @@ fh = header file (there is only one for all processes), containing:
        ... for as many topos as are in  Part 0
    Repeat the above bock for each part.
 **/
-std::vector<BlockInfo> readHeader(std::ifstream& fh) {
+std::vector<BlockInfo> readHeader(std::ifstream& fh, pcu::PCU *PCUObj) {
   rewindStream(fh);
-  const int self = PCU_Comm_Self();;
+  const int self = PCUObj->Self();
   bool ret = seekPart(fh, std::to_string(self));
   PCU_ALWAYS_ASSERT(ret);
   auto blockInfo = readTopoBlockInfo(fh);
@@ -668,11 +667,12 @@ void readMesh(const char* meshfilename,
     const char* fathers2Dfilename,
     const char* solutionfilename,
     const char* connHeadfilename,
-    MeshInfo& mesh) {
+    MeshInfo& mesh,
+    pcu::PCU *PCUObj) {
 
   mesh.dim = 3; //FIXME
 
-  int self = PCU_Comm_Self();
+  int self = PCUObj->Self();
 
   char filename[1024];
   snprintf(filename, 1024, "%s.%d",coordfilename,self);
@@ -681,9 +681,9 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(fc);
   getNumVerts(fc,mesh.numVerts);
   mesh.localNumVerts=mesh.numVerts;
-  mesh.numVerts=PCU_Add_Long(mesh.numVerts);
+  mesh.numVerts=PCUObj->Add<long>(mesh.numVerts);
   
-  if(!PCU_Comm_Self())
+  if(!PCUObj->Self())
     fprintf(stderr, "numVerts %ld\n", mesh.numVerts);
   readCoords(fc, mesh.localNumVerts, &(mesh.coords));
   fclose(fc);
@@ -715,7 +715,7 @@ void readMesh(const char* meshfilename,
     snprintf(filename, 1024, "%s.%d",matchfilename,self);
     FILE* fm = fopen(filename, "r");
     PCU_ALWAYS_ASSERT(fm);
-    readMatches(fm, mesh.numVerts, mesh.localNumVerts, &(mesh.matches));
+    readMatches(fm, mesh.numVerts, mesh.localNumVerts, &(mesh.matches), PCUObj);
     fclose(fm);
   }
 
@@ -725,7 +725,7 @@ void readMesh(const char* meshfilename,
   PCU_ALWAYS_ASSERT(meshConnStream.is_open());
   std::ifstream connHeadStream(connHeadfilename, std::ios::in);
   PCU_ALWAYS_ASSERT(connHeadStream.is_open());
-  auto blockInfo = readHeader(connHeadStream);
+  auto blockInfo = readHeader(connHeadStream, PCUObj);
   connHeadStream.close();
   bool rewind = true;
   for(auto b : blockInfo) {
@@ -743,12 +743,13 @@ void readMesh(const char* meshfilename,
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   int noVerify=0;    // maintain default of verifying if not explicitly requesting it off
   if( argc < 11 ) {
-    if( !PCU_Comm_Self() ) {
+    if( !PCUObj.Self() ) {
       printf("Usage: %s <input dmg model> "
           "<ascii mesh connectivity .cnn> "
           "<ascii vertex coordinates .crd> "
@@ -769,19 +770,19 @@ int main(int argc, char** argv)
 
   if( argc == 11 ) noVerify=atoi(argv[10]);
 
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   MeshInfo m;
-  readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m);
+  readMesh(argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[8],m,&PCUObj);
 
   bool isMatched = true;
   if( !strcmp(argv[3], "NULL") )
     isMatched = false;
 
-  if(!PCU_Comm_Self())
+  if(!PCUObj.Self())
     fprintf(stderr, "isMatched %d\n", isMatched);
 
   gmi_model* model = gmi_load(argv[1]);
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(model, m.dim, isMatched, &PCUObj);
   apf::GlobalToVert outMap;
   for( size_t i=0; i< m.elements.size(); i++) {
     apf::assemble(mesh, m.elements[i], m.numElms[i], m.elementType[i], outMap);
@@ -807,7 +808,7 @@ int main(int argc, char** argv)
   if( strcmp(argv[6], "NULL") ) {
     setMappedTag(mesh, "fathers2D", m.fathers2D, 1, m.localNumVerts, outMap);
     delete [] m.fathers2D;
-  } else if(!PCU_Comm_Self())
+  } else if(!mesh->getPCU()->Self())
     fprintf(stderr, "fathers2D not requested \n");
 
   if(0==1) {
@@ -816,8 +817,8 @@ int main(int argc, char** argv)
   (void) ts;
   }
 
-  if(!PCU_Comm_Self())
-    fprintf(stderr, "seconds to create mesh %.3f\n", PCU_Time()-t0);
+  if(!mesh->getPCU()->Self())
+    fprintf(stderr, "seconds to create mesh %.3f\n", pcu::Time()-t0);
   if(noVerify != 1) mesh->verify();
 
   outMap.clear();
@@ -827,6 +828,6 @@ int main(int argc, char** argv)
 
   mesh->destroyNative();
   apf::destroyMesh(mesh);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

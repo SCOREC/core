@@ -2,7 +2,6 @@
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #include <pcu_util.h>
@@ -18,12 +17,12 @@ namespace {
     apf::destroyMesh(m);
   }
 
-  void getConfig(int argc, char** argv)
+  void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
   {
     if ( argc != 4 ) {
-      if ( !PCU_Comm_Self() )
+      if ( !PCUObj->Self() )
         printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
-      MPI_Finalize();
+      pcu::Finalize();
       exit(EXIT_FAILURE);
     }
     modelFile = argv[1];
@@ -77,17 +76,18 @@ namespace {
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  getConfig(argc,argv,&PCUObj);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   apf::MeshTag* weights = applyFun3dWeight(m);
   runParma(m,weights);
   m->destroyTag(weights);
   Parma_WriteVtxPtn(m,argv[3]);
   freeMesh(m);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
       // The meshing case doesn't seem to get fully deleted, so still want
       // to set the model so the smd file has the correct path
       AttCase_setModel(currentCase,model);
-      std::cout << "Deleting case "<<caseInfoType << std::endl;;
+      std::cout << "Deleting case "<<caseInfoType << std::endl;
       AMAN_removeNode(attmngr,currentCase,1);
     } else {
       std::cout << "Current image for class is "<<AttNode_imageClass(currentCase) << std::endl;

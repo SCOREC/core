@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfMDS.h>
@@ -193,18 +192,19 @@ void test(apf::Mesh* m, int p_order) {
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
-  PCU_ALWAYS_ASSERT(! PCU_Comm_Self());
+  PCU_ALWAYS_ASSERT(! pcu_obj.Self());
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1], argv[2], &pcu_obj);
   apf::reorderMdsMesh(m);
   m->verify();
   int p_order = atoi(argv[3]);
   test(m, p_order);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

@@ -20,7 +20,6 @@ add_library(mth ${SOURCES})
 # Include directories
 target_include_directories(mth INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
     )
 
 # Link this library to these libraries

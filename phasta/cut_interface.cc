@@ -1,7 +1,6 @@
 #include "ph.h"
 #include "phInterfaceCutter.h"
 #include "phAttrib.h"
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <SimUtil.h>
@@ -23,7 +22,7 @@ char const* outfile;
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
+  pcu::Init(&argc, &argv);
   lion_set_verbosity(1);
   if (argc < 4 || argc > 5) {
     lion_eprint(1,"Usage: %s <model .x_t> <attributes .smd> <in mesh> <out mesh>\n", argv[0]);
@@ -32,8 +31,9 @@ int main(int argc, char** argv)
     lion_eprint(1,"       to take combined model and attributes file (by simTranslate)\n");
     return 0;
   }
-  PCU_Comm_Init();
-  PCU_ALWAYS_ASSERT(PCU_Comm_Peers() == 1);
+  {
+  pcu::PCU PCUObj = pcu::PCU(MPI_COMM_WORLD);
+  PCU_ALWAYS_ASSERT(PCUObj.Peers() == 1);
 #ifdef HAVE_SIMMETRIX
   SimModel_start();
   Sim_readLicenseFile(0);
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
   gm = gmi_sim_load(modelfile, attribfile);
   ph::BCs bcs;
   ph::getSimmetrixAttributes(gm, bcs);
-  apf::Mesh2* m = ph::loadMesh(gm, meshfile);
+  apf::Mesh2* m = ph::loadMesh(gm, meshfile, &PCUObj);
   m->verify();
 #ifdef HAVE_SIMMETRIX
   if (ph::mesh_has_ext(meshfile, "sms"))
@@ -81,6 +81,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   Sim_unregisterAllKeys();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

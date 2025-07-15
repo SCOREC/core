@@ -2,7 +2,9 @@
 %{
 #include <mpi.h>
 #include <vector>
+#include <pcu_defines.h>
 #include <PCU.h>
+#include <PCU_C.h>
 #include <pcu_util.h>
 #include <gmi.h>
 #include <gmi_mesh.h>
@@ -40,14 +42,35 @@
 
 /* PCU RELATED WRAPPERS */
 /* ==== FROM PCU.h ====*/
-MPI_Comm PCU_Get_Comm(void);
-int PCU_Comm_Init(void);
-int PCU_Comm_Free(void);
+int PCU_Comm_Init(PCU_t* h);
+int PCU_Comm_Free(PCU_t* h);
 
-int PCU_Comm_Self(void);
-int PCU_Comm_Peers(void);
+int PCU_Comm_Self(PCU_t h);
+int PCU_Comm_Peers(PCU_t h);
 double PCU_Time(void);
-bool PCU_Comm_Initialized(void);
+bool PCU_Comm_Initialized(PCU_t h);
+%include<pcu_defines.h>
+%include<PCU.h>
+%template(Add_int) pcu::PCU::Add<int>;
+%template(Min_int) pcu::PCU::Min<int>;
+%template(Max_int) pcu::PCU::Max<int>;
+%template(Exscan_int) pcu::PCU::Exscan<int>;
+%template(ALLgather_int) pcu::PCU::Allgather<int>;
+%template(Add_size_t) pcu::PCU::Add<size_t>;
+%template(Min_size_t) pcu::PCU::Min<size_t>;
+%template(Max_size_t) pcu::PCU::Max<size_t>;
+%template(Exscan_size_t) pcu::PCU::Exscan<size_t>;
+%template(ALLgather_size_t) pcu::PCU::Allgather<size_t>;
+%template(Add_long) pcu::PCU::Add<long>;
+%template(Min_long) pcu::PCU::Min<long>;
+%template(Max_long) pcu::PCU::Max<long>;
+%template(Exscan_long) pcu::PCU::Exscan<long>;
+%template(ALLgather_long) pcu::PCU::Allgather<long>;
+%template(Add_double) pcu::PCU::Add<double>;
+%template(Min_double) pcu::PCU::Min<double>;
+%template(Max_double) pcu::PCU::Max<double>;
+%template(Exscan_double) pcu::PCU::Exscan<double>;
+%template(ALLgather_double) pcu::PCU::Allgather<double>;
 
 /* ==== FROM pcu_util.h ====*/
 void PCU_Assert_Fail(const char* msg);
@@ -221,7 +244,7 @@ void lion_set_verbosity(int lvl);
         local_min = val;
     }
     self->end(it);
-    PCU_Min_Doubles(&local_min, 1);
+    self->getPCU()->Min(&local_min, 1);
     return local_min;
   }
   double getMaxOfScalarField(apf::Field* field)
@@ -238,7 +261,7 @@ void lion_set_verbosity(int lvl);
         local_max = val;
     }
     self->end(it);
-    PCU_Max_Doubles(&local_max, 1);
+    self->getPCU()->Max(&local_max, 1);
     return local_max;
   }
   bool isBoundingModelRegion(int rtag, int dim, int tag)
@@ -262,6 +285,7 @@ void lion_set_verbosity(int lvl);
 
 #define __attribute__(x)
 %ignore apf::fail;
+%ignore apf::writeCGNS;
 %include<apf.h>
 %include<apfNumbering.h>
 %include<apfShape.h>
@@ -269,9 +293,9 @@ void lion_set_verbosity(int lvl);
 
 
 namespace apf {
-  apf::Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched);
-  apf::Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile);
-  apf::Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile);
+  apf::Mesh2* makeEmptyMdsMesh(gmi_model* model, int dim, bool isMatched, pcu::PCU *PCUObj);
+  apf::Mesh2* loadMdsMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj);
+  apf::Mesh2* loadMdsMesh(gmi_model* model, const char* meshfile, pcu::PCU *PCUObj);
   void writeASCIIVtkFiles(const char* prefix, apf::Mesh2* m);
   /* void writeVtkFiles(const char* prefix, apf::Mesh* m, int cellDim = -1); */
   /* void writeVtkFiles(const char* prefix, apf::Mesh* m, */

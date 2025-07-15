@@ -5,7 +5,6 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <PCU.h>
 #include <lionBase64.h>
 #include <lionCompress.h>
 #include "apfMesh.h"
@@ -46,7 +45,7 @@ static bool shouldPrint(
 bool isPrintable(FieldBase* f)
 {
   HasAll op;
-  return PCU_And(op.run(f));
+  return f->getMesh()->getPCU()->And(op.run(f));
 }
 
 static bool isNodal(FieldBase* f)
@@ -254,9 +253,9 @@ static std::string getRelativePathPSource(int id)
   return ss.str();
 }
 
-static void writePSources(std::ostream& file)
+static void writePSources(std::ostream& file, pcu::PCU *PCUObj)
 {
-  for (int i=0; i < PCU_Comm_Peers(); ++i)
+  for (int i=0; i < PCUObj->Peers(); ++i)
   {
     std::string fileName = stripPath(getPieceFileName(i));
     std::string fileNameAndPath = getRelativePathPSource(i) + fileName;
@@ -282,7 +281,7 @@ static void writePvtuFile(const char* prefix,
   writePPoints(file,m->getCoordinateField(),isWritingBinary);
   writePPointData(file,m,writeFields,isWritingBinary);
   writePCellData(file, m, writeFields, isWritingBinary, cellDim);
-  writePSources(file);
+  writePSources(file, m->getPCU());
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";
 }
@@ -832,9 +831,9 @@ static void writeVtuFile(const char* prefix,
     bool isWritingBinary,
     int cellDim)
 {
-  double t0 = PCU_Time();
-  std::string fileName = getPieceFileName(PCU_Comm_Self());
-  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, PCU_Comm_Self());
+  double t0 = pcu::Time();
+  std::string fileName = getPieceFileName(n->getMesh()->getPCU()->Self());
+  std::string fileNameAndPath = getFileNameAndPathVtu(prefix, fileName, n->getMesh()->getPCU()->Self());
   std::stringstream buf;
   Mesh* m = n->getMesh();
   DynamicArray<Node> nodes;
@@ -874,8 +873,8 @@ static void writeVtuFile(const char* prefix,
   buf << "</Piece>\n";
   buf << "</UnstructuredGrid>\n";
   buf << "</VTKFile>\n";
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"writeVtuFile into buffers: %f seconds\n", t1 - t0);
   }
@@ -884,8 +883,8 @@ static void writeVtuFile(const char* prefix,
     PCU_ALWAYS_ASSERT(file.is_open());
     file << buf.rdbuf();
   }
-  double t2 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t2 = pcu::Time();
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"writeVtuFile buffers to disk: %f seconds\n", t2 - t1);
   }
@@ -928,19 +927,19 @@ void writeVtkFilesRunner(const char* prefix,
     int cellDim)
 {
   if (cellDim == -1) cellDim = m->getDimension();
-  double t0 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t0 = pcu::Time();
+  if (!m->getPCU()->Self())
   {
     safe_mkdir(prefix);
-    makeVtuSubdirectories(prefix, PCU_Comm_Peers());
+    makeVtuSubdirectories(prefix, m->getPCU()->Peers());
     writePvtuFile(prefix, m, writeFields, isWritingBinary, cellDim);
   }
-  PCU_Barrier();
+  m->getPCU()->Barrier();
   Numbering* n = numberOverlapNodes(m,"apf_vtk_number");
   m->removeNumbering(n);
   writeVtuFile(prefix, n, writeFields, isWritingBinary, cellDim);
-  double t1 = PCU_Time();
-  if (!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if (!m->getPCU()->Self())
   {
     lion_oprint(1,"vtk files %s written in %f seconds\n", prefix, t1 - t0);
   }

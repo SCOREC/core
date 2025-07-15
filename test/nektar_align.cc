@@ -3,7 +3,6 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <vector>
 #include <algorithm>
@@ -109,8 +108,9 @@ static void alignForNektar(apf::Mesh2* m)
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&pcu_obj);
   alignForNektar(m);
   m->writeNative(argv[3]);
   m->destroyNative();
@@ -131,6 +131,6 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

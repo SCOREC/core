@@ -5,7 +5,6 @@
 #include <gmi_mesh.h>
 #include <ma.h>
 #include <maShape.h>
-#include <PCU.h>
 #include <crv.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
@@ -33,6 +32,7 @@ double testH1Field(
 void testCurveAdapt(
     const char* modelFile,
     const char* meshFile,
+    pcu::PCU *PCUObj,
     const int mesh_order,
     const int exact_order,
     const int field_order);
@@ -41,8 +41,9 @@ int main(int argc, char** argv)
 {
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
 #ifdef HAVE_SIMMETRIX
   MS_init();
@@ -62,35 +63,35 @@ int main(int argc, char** argv)
    */
 
   // linear adapt
-  testCurveAdapt(modelFile, meshFile,
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       1 /*mesh_order*/,
       2 /*exact_order*/,
       2 /*field_order*/);
 
   // quadratic adapts
-  testCurveAdapt(modelFile, meshFile,
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       2 /*mesh_order*/,
       2 /*exact_order*/,
       4 /*field_order*/);
-  testCurveAdapt(modelFile, meshFile,
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       2 /*mesh_order*/,
       3 /*exact_order*/,
       6 /*field_order*/);
 
   // cubic adapt
-  testCurveAdapt(modelFile, meshFile,
+  testCurveAdapt(modelFile, meshFile, &PCUObj,
       3 /*mesh_order*/,
       2 /*exact_order*/,
       6 /*field_order*/);
 
-  PCU_Comm_Free();
+  }
 #ifdef HAVE_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   MS_exit();
   SimModel_stop();
 #endif
-  MPI_Finalize();
+  pcu::Finalize();
 }
 
 
@@ -193,12 +194,13 @@ double testH1Field(
 void testCurveAdapt(
     const char* modelFile,
     const char* meshFile,
+    pcu::PCU *PCUObj,
     const int mesh_order,
     const int exact_order,
     const int field_order)
 {
 
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj);
   m->verify();
 
   if (mesh_order > 1) {

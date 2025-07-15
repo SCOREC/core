@@ -17,16 +17,22 @@ const char* meshFile = 0;
 const char* outFile = 0;
 int inputPartCount = 1;
 
+struct CreateGroupCommResult{
+  bool isOriginal;
+  std::unique_ptr<pcu::PCU> group_pcu_obj;
+};
+
 void freeMesh(apf::Mesh* m)
 {
   m->destroyNative();
   apf::destroyMesh(m);
 }
 
-bool switchToOriginals()
+CreateGroupCommResult createGroupComm(pcu::PCU *PCUObj)
 {
-  apf::Contract contract(inputPartCount, PCU_Comm_Peers());
-  int self = PCU_Comm_Self();
+  apf::Contract contract(inputPartCount, PCUObj->Peers());
+  int self = PCUObj->Self();
+  PCU_ALWAYS_ASSERT(self == PCUObj->Self());
   int group;
   int groupRank;
   bool isOriginal = contract.isValid(self);
@@ -39,38 +45,31 @@ bool switchToOriginals()
        no need to spend time computing a good contiguous number */
     groupRank = 0;
   }
-  MPI_Comm groupComm;
-  MPI_Comm_split(MPI_COMM_WORLD, group, groupRank, &groupComm);
-  PCU_Switch_Comm(groupComm);
-  return isOriginal;
+  CreateGroupCommResult result;
+  result.isOriginal = isOriginal;
+  result.group_pcu_obj = PCUObj->Split(group, groupRank);
+  return result;
 }
 
-void switchToAll()
-{
-  MPI_Comm prevComm = PCU_Get_Comm();
-  PCU_Switch_Comm(MPI_COMM_WORLD);
-  MPI_Comm_free(&prevComm);
-  PCU_Barrier();
-}
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc != 5 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj->Self() )
       printf("Usage: mpirun -n <outPartCount> %s"
              " <model> <inPartCount> <inMesh> <outMesh>\n"
              "Increase the part count of inMesh from inPartCount to outPartCount.\n"
              "Unlike the [z]split tool, outPartCount does not have to be an integer\n"
              "multiple of inPartCount.\n",
              argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
   inputPartCount = atoi(argv[2]);
   meshFile = argv[3];
   outFile = argv[4];
-  PCU_ALWAYS_ASSERT(inputPartCount <= PCU_Comm_Peers());
+  PCU_ALWAYS_ASSERT(inputPartCount <= PCUObj->Peers());
 }
 
 void balance(apf::Mesh2* m)
@@ -92,26 +91,29 @@ void balance(apf::Mesh2* m)
 
 }
 
+
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU expanded_pcu_obj;
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv);
+  getConfig(argc,argv,&expanded_pcu_obj);
   gmi_model* g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
-  bool isOriginal = switchToOriginals();
-  if (isOriginal)
-    m = apf::loadMdsMesh(g, meshFile);
-  switchToAll();
-  m = apf::expandMdsMesh(m, g, inputPartCount);
+  CreateGroupCommResult result = createGroupComm(&expanded_pcu_obj);
+
+  if (result.isOriginal)
+    m = apf::loadMdsMesh(g, meshFile, result.group_pcu_obj.get());
+  
+  m = apf::expandMdsMesh(m, g, inputPartCount, &expanded_pcu_obj);
   balance(m);
   Parma_PrintPtnStats(m, "");
   m->writeNative(outFile);
   freeMesh(m);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 
 

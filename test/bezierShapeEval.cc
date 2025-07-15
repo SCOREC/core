@@ -10,7 +10,6 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <mth.h>
 #include <mth_def.h>
@@ -20,24 +19,25 @@
  * blended bezier shapes
  */
 
-static apf::Mesh2* makeOneTriMesh(int order, apf::MeshEntity* &ent);
-static apf::Mesh2* makeOneTetMesh(int order, apf::MeshEntity* &ent);
+static apf::Mesh2* makeOneTriMesh(int order, apf::MeshEntity* &ent, pcu::PCU *PCUObj);
+static apf::Mesh2* makeOneTetMesh(int order, apf::MeshEntity* &ent, pcu::PCU *PCUObj);
 
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if ( argc != 7 ) {
-    if ( !PCU_Comm_Self() ) {
+    if ( !PCUObj.Self() ) {
       printf("Usage: %s <ent_type> <order> <blend_order> <xi_0> <xi_1> <xi_2>>\n", argv[0]);
       printf("<ent_type>            can only be 2 (for triangles) and 4 (for tets)\n");
       printf("<order>               is the order of bezier\n");
       printf("<blend_order>         can be -1, 0, 1, 2 (-1 means no blending)\n");
       printf("<xi_0> <xi_1> <xi_2>  inquiry point in the parent entity)\n");
     }
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
       "<blend_order> must be between -1 and 2!");
 
   apf::MeshEntity* ent = 0;
-  apf::Mesh2* m = type == 2 ? makeOneTriMesh(order,ent) : makeOneTetMesh(order,ent);
+  apf::Mesh2* m = type == 2 ? makeOneTriMesh(order,ent,&PCUObj) : makeOneTetMesh(order,ent,&PCUObj);
 
   double xi0 = atof(argv[4]);
   double xi1 = atof(argv[5]);
@@ -80,13 +80,13 @@ int main(int argc, char** argv)
     printf("%d,  %E \n", i, vals[i]);
   }
 
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 
-static apf::Mesh2* makeOneTriMesh(int order, apf::MeshEntity* &ent)
+static apf::Mesh2* makeOneTriMesh(int order, apf::MeshEntity* &ent, pcu::PCU *PCUObj)
 {
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(0, 2, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(0, 2, false, PCUObj);
 
   double vert_coords[3][6] = {
       {0.,0.,0., 0., 0., 0.},
@@ -142,10 +142,10 @@ static apf::Mesh2* makeOneTriMesh(int order, apf::MeshEntity* &ent)
   return mesh;
 }
 
-static apf::Mesh2* makeOneTetMesh(int order, apf::MeshEntity* &ent)
+static apf::Mesh2* makeOneTetMesh(int order, apf::MeshEntity* &ent, pcu::PCU *PCUObj)
 {
 
-  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(0, 3, false);
+  apf::Mesh2* mesh = apf::makeEmptyMdsMesh(0, 3, false, PCUObj);
 
   double vert_coords[4][6] = {
       {0.,0.,0., 0., 0., 0.},

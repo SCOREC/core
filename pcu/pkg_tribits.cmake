@@ -33,27 +33,38 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 #Sources & Headers
 set(SOURCES
-   pcu.c
-   pcu_aa.c
-   pcu_coll.c
-   pcu_io.c
-   pcu_buffer.c
-   pcu_mpi.c
-   pcu_msg.c
-   pcu_order.c
-   pcu_pmpi.c
-   pcu_util.c
-   noto/noto_malloc.c
-   reel/reel.c
-)
+        pcu_c.cc
+        pcu_aa.c
+        pcu_coll.c
+        pcu_io.c
+        pcu_buffer.c
+        pcu_mem.c
+        pcu_mpi.c
+        pcu_msg.c
+        pcu_order.c
+        pcu_util.c
+        noto/noto_malloc.c
+        reel/reel.c
+        PCU.cc)
+
+if(SCOREC_NO_MPI)
+  set(SOURCES ${SOURCES} pcu_pnompi.c)
+else()
+  set(SOURCES ${SOURCES} pcu_pmpi.c)
+endif()
 
 set(HEADERS
-   PCU.h
-   pcu_io.h
-   pcu_util.h
-   noto/noto_malloc.h
-   reel/reel.h)
+        PCU_C.h
+        pcu_io.h
+        pcu_util.h
+        reel/reel.h
+        pcu_defines.h
+        PCU.h
+        )
 
+if(SCOREC_NO_MPI)
+  set(HEADERS ${HEADERS} pcu_pnompi_types.h)
+endif()
 tribits_add_library(
    pcu
    HEADERS ${HEADERS}

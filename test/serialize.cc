@@ -1,5 +1,4 @@
 #include <parma.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apfMDS.h>
 #include <gmi_mesh.h>
@@ -26,13 +25,14 @@ struct GroupCode : public Parma_GroupCode
 
 int main( int argc, char* argv[])
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   if ( argc != 5 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !pcu_obj.Self() )
       printf("Usage: %s <model> <mesh> <out prefix> <reduction-factor>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -46,9 +46,9 @@ int main( int argc, char* argv[])
   gmi_register_null();
   crv::getBezier(2);//hack to make sure curved meshes can be serialized!
   GroupCode code;
-  code.mesh = apf::loadMdsMesh(argv[1], argv[2]);
+  code.mesh = apf::loadMdsMesh(argv[1], argv[2], &pcu_obj);
   code.meshFile = argv[3];
-  apf::Unmodulo outMap(PCU_Comm_Self(), PCU_Comm_Peers());
+  apf::Unmodulo outMap(code.mesh->getPCU()->Self(), code.mesh->getPCU()->Peers());
   Parma_ShrinkPartition(code.mesh, atoi(argv[4]), code);
   code.mesh->destroyNative();
   apf::destroyMesh(code.mesh);
@@ -58,7 +58,7 @@ int main( int argc, char* argv[])
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 

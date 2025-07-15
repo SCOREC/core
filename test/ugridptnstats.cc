@@ -2,7 +2,6 @@
 #include <gmi_null.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <cstdlib>
 #include <pcu_util.h>
@@ -19,8 +18,9 @@ const double weights[8] = {vtxw, edgew, triw, quadw, tetw, hexw, przw, pyrw};
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_null();
   PCU_ALWAYS_ASSERT( 3 == argc );
@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   const char* ptnfile = argv[2];
   gmi_register_null();
   gmi_model* g = gmi_load(".null");
-  apf::printUgridPtnStats(g,ugridfile,ptnfile,weights);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  apf::printUgridPtnStats(g,ugridfile,ptnfile,weights,&PCUObj);
+  }
+  pcu::Finalize();
 }

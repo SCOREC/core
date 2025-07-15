@@ -4,7 +4,6 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #ifdef HAVE_SIMMETRIX
 #include <gmi_sim.h>
@@ -33,15 +32,16 @@ static void number_dim(apf::Mesh* m, apf::FieldShape* shape, int dim, std::strin
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   if (!(argc == 4 || argc == 5)) {
-    if ( !PCU_Comm_Self() ) {
+    if ( !PCUObj.Self() ) {
       printf("Usage: %s <model> <mesh> <out prefix>\n", argv[0]);
       printf("       %s <model> <mesh> <dim> <out prefix>\n", argv[0]);
     }
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 #ifdef HAVE_SIMMETRIX
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   char const* modelpath = argv[1];
   char const* meshpath = argv[2];
-  apf::Mesh2* m = apf::loadMdsMesh(modelpath, meshpath);
+  apf::Mesh2* m = apf::loadMdsMesh(modelpath, meshpath, &PCUObj);
   int dim;
   char const* vtkpath;
   if (argc == 5) {
@@ -75,8 +75,8 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 
 

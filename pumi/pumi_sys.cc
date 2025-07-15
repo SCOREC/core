@@ -7,47 +7,38 @@
   BSD license as described in the LICENSE file in the top-level directory.
  
 *******************************************************************************/
-#include <PCU.h>
 #include "pumi.h"
 #include <lionPrint.h>
-#include <mpi.h>
 
 //************************************
 //************************************
 //      0- SYSTEM-LEVEL FUNCTIONS
 //************************************
 //************************************
-
-void pumi_start()
-{
-  PCU_Comm_Init();
-}
-
-void pumi_finalize(bool)
-{
-  PCU_Comm_Free();
+void pumi_load_pcu(pcu::PCU *PCUObj){
+  pumi::instance()->initializePCU(PCUObj);
 }
 
 int pumi_size()
 {
-  return PCU_Comm_Peers();
+  return pumi::instance()->getPCU()->Peers();
 }
 
 int pumi_rank()
 {
-  return PCU_Comm_Self();
+  return pumi::instance()->getPCU()->Self();
 }
 
-void pumi_sync(void)
+void pumi_sync()
 {
-  MPI_Barrier(PCU_Get_Comm());
+  pumi::instance()->getPCU()->Barrier();
 }
 
 #include <sys/utsname.h>
 #include <sys/resource.h>
 void pumi_printSys()
 {
-  if (PCU_Comm_Self()) return;
+  if (pumi::instance()->getPCU()->Self()) return;
   struct utsname u;
   if (uname(&u) == 0)
     lion_oprint(1,"[%s] %s %s %s %s %s\n\n",
@@ -64,12 +55,12 @@ double pumi_getTime()
 
 double pumi_getMem()
 {
-  return PCU_GetMem();
+  return pcu::GetMem();
 }
 
 void pumi_printTimeMem(const char* msg, double time, double memory)
 {
-  if (!PCU_Comm_Self())
+  if (!pumi::instance()->getPCU()->Self())
   {
     lion_oprint(1,"%-20s %6.3f sec %7.3f MB \n", msg, time, memory);
     fflush(stdout);

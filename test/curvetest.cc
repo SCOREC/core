@@ -4,7 +4,6 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <gmi_sim.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
@@ -77,18 +76,18 @@ static void testElementSize(apf::Mesh* m)
     m->end(it);
   }
 
-  PCU_Add_Doubles(&(sizes[0]),3);
-  if(!PCU_Comm_Self())
+  m->getPCU()->Add<double>(&(sizes[0]),3);
+  if(!m->getPCU()->Self())
     printf("Total sizes for order %d %f %f %f\n",
       m->getShape()->getOrder(),
       sizes[0],sizes[1],sizes[2]);
 }
 
 static void testInterpolating(const char* modelFile, const char* meshFile,
-    const int ne, const int nf)
+    const int ne, const int nf, pcu::PCU *PCUObj)
 {
   for(int order = 1; order <= 2; ++order){
-    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
+    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile,PCUObj);
     apf::changeMeshShape(m2,apf::getLagrange(order),true);
     crv::InterpolatingCurver ic(m2,order);
     ic.run();
@@ -103,7 +102,7 @@ static void testInterpolating(const char* modelFile, const char* meshFile,
 }
 
 static void testBezier(const char* modelFile, const char* meshFile,
-    const int ne, const int nf)
+    const int ne, const int nf, pcu::PCU *PCUObj)
 {
 
   apf::DynamicMatrix edgeErrors(ne,6);
@@ -111,7 +110,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
   // check blended shapes + interpolation error
   // interpolation error decreases as order is increased
   for(int order = 1; order <= 6; ++order){
-    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
+    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile,PCUObj);
     crv::BezierCurver bc(m2,order,2);
     bc.run();
     testElementSize(m2);
@@ -138,7 +137,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
     }
   // check some refinement
   for(int order = 2; order <= 4; ++order){
-    apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+    apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj);
     crv::BezierCurver bc(m,order,0);
     bc.run();
     Linear sf(m);
@@ -153,7 +152,7 @@ static void testBezier(const char* modelFile, const char* meshFile,
   }
   // check some refinement for blended shapes
   for(int order = 2; order <= 4; ++order){
-    apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+    apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,PCUObj);
     crv::BezierCurver bc(m,order,1);
     bc.run();
     Linear sf(m);
@@ -170,10 +169,10 @@ static void testBezier(const char* modelFile, const char* meshFile,
 }
 
 static void testGregory(const char* modelFile, const char* meshFile,
-    const int ne, const int nf)
+    const int ne, const int nf, pcu::PCU *PCUObj)
 {
   for(int order = 0; order <= 2; ++order){
-    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile);
+    apf::Mesh2* m2 = apf::loadMdsMesh(modelFile,meshFile,PCUObj);
     crv::GregoryCurver gc(m2,4,order);
     gc.run();
     testElementSize(m2);
@@ -191,28 +190,29 @@ int main(int argc, char** argv)
   PCU_ALWAYS_ASSERT(argc==3);
   const char* modelFile = argv[1];
   const char* meshFile = argv[2];
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
-  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile);
+  apf::Mesh2* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   int ne = m->count(1);
   int nf = m->count(2);
   m->destroyNative();
   apf::destroyMesh(m);
 
-  testInterpolating(modelFile,meshFile,ne,nf);
-  testBezier(modelFile,meshFile,ne,nf);
-  testGregory(modelFile,meshFile,ne,nf);
+  testInterpolating(modelFile,meshFile,ne,nf,&PCUObj);
+  testBezier(modelFile,meshFile,ne,nf,&PCUObj);
+  testGregory(modelFile,meshFile,ne,nf,&PCUObj);
 
-  PCU_Comm_Free();
+  }
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();
   MS_exit();
-  MPI_Finalize();
+  pcu::Finalize();
 }

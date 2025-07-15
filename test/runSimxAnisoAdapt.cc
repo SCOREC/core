@@ -6,7 +6,6 @@
 #include <apfNumbering.h>
 #include <apfShape.h>
 #include <apf.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
 
@@ -72,29 +71,30 @@ void addFields(apf::Mesh2* m,
     const vector<apf::Matrix3x3> &adaptedFrames);
 apf::Mesh2* convertToPumi(
     pMesh simxMesh, int dim,
-    const char* sizeName, const char* frameName);
+    const char* sizeName, const char* frameName, pcu::PCU *PCUObj);
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   MS_init(); // Call before calling Sim_readLicenseFile
   Sim_readLicenseFile(0);
   SimDiscrete_start(0);  // initialize GeomSim Discrete library
 
   if (argc < 7) {
-    if (PCU_Comm_Self() == 0) {
+    if (PCUObj.Self() == 0) {
       printf("USAGE: %s <model.dmg> <mesh.smb> <prefix>"
       	  "<scale field name> <frame field name> <min_quality>\n", argv[0]);
     }
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
 
   gmi_register_mesh();
   gmi_register_null();
 
-  PCU_ALWAYS_ASSERT_VERBOSE(PCU_Comm_Peers() == 1,
+  PCU_ALWAYS_ASSERT_VERBOSE(PCUObj.Peers() == 1,
       "This utility only works for serial meshes!");
 
   const char* inputPumiModel = argv[1];
@@ -111,25 +111,25 @@ int main(int argc, char** argv)
   char outImprovedSimxMesh[256];
   char outImprovedPumiMesh[256];
 
-  sprintf(outSimxModel, "%s.smd", prefix);
-  sprintf(outInitialSimxMesh, "%s_initial.sms", prefix);
-  sprintf(outAdaptedSimxMesh, "%s_adapted.sms", prefix);
-  sprintf(outAdaptedPumiMesh, "%s_adapted.smb", prefix);
-  sprintf(outImprovedSimxMesh, "%s_adapted_improved.sms", prefix);
-  sprintf(outImprovedPumiMesh, "%s_adapted_improved.smb", prefix);
+  snprintf(outSimxModel, 256, "%s.smd", prefix);
+  snprintf(outInitialSimxMesh, 256, "%s_initial.sms", prefix);
+  snprintf(outAdaptedSimxMesh, 256, "%s_adapted.sms", prefix);
+  snprintf(outAdaptedPumiMesh, 256, "%s_adapted.smb", prefix);
+  snprintf(outImprovedSimxMesh, 256, "%s_adapted_improved.sms", prefix);
+  snprintf(outImprovedPumiMesh, 256, "%s_adapted_improved.smb", prefix);
 
-  apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh);
+  apf::Mesh2* m = apf::loadMdsMesh(inputPumiModel, inputPumiMesh, &PCUObj);
 
   char message[512];
   // first find the sizes field
   apf::Field* sizes  = m->findField(sizeName);
-  sprintf(message, "Couldn't find a field with name %s in mesh!", sizeName);
+  snprintf(message, 512, "Couldn't find a field with name %s in mesh!", sizeName);
   PCU_ALWAYS_ASSERT_VERBOSE(sizes, message);
 
   // then find the frames field if they exist
   apf::Field* frames;
   frames  = m->findField(frameName);
-  sprintf(message, "Couldn't find a field with name %s in mesh!", frameName);
+  snprintf(message, 512, "Couldn't find a field with name %s in mesh!", frameName);
   PCU_ALWAYS_ASSERT_VERBOSE(frames, message);
 
   // remove every field except for sizes and frames
@@ -193,7 +193,7 @@ int main(int argc, char** argv)
   printf("%s\n", outAdaptedSimxMesh);
   printf("%s\n", outAdaptedPumiMesh);
   M_write(simxMesh,outAdaptedSimxMesh, 0,0);  // write out the initial mesh data
-  apf::Mesh2* m2 = convertToPumi(simxMesh, dim, sizeName, frameName);
+  apf::Mesh2* m2 = convertToPumi(simxMesh, dim, sizeName, frameName, &PCUObj);
 
   m2->writeNative(outAdaptedPumiMesh);
   printf("===DONE===\n");
@@ -207,7 +207,7 @@ int main(int argc, char** argv)
   printf("%s\n", outImprovedSimxMesh);
   printf("%s\n", outImprovedPumiMesh);
   M_write(simxMesh,outImprovedSimxMesh, 0,0);  // write out the initial mesh data
-  apf::Mesh2* m3 = convertToPumi(simxMesh, dim, sizeName, frameName);
+  apf::Mesh2* m3 = convertToPumi(simxMesh, dim, sizeName, frameName, &PCUObj);
 
   m3->writeNative(outImprovedPumiMesh);
   printf("===DONE===\n");
@@ -228,8 +228,8 @@ int main(int argc, char** argv)
   SimDiscrete_stop(0);
   Sim_unregisterAllKeys();
   MS_exit();
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }
 
 void printModelStats(pGModel model)
@@ -436,21 +436,21 @@ pMSAdapt addSizesToSimxMesh(
 
 double runSimxAdapt(pMSAdapt adapter)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   MSA_adapt(adapter, 0);
   MSA_delete(adapter);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
 double runSimxMeshImprover(pMesh mesh, double minQuality)
 {
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pVolumeMeshImprover vmi = VolumeMeshImprover_new(mesh);
   VolumeMeshImprover_setShapeMetric(vmi, ShapeMetricType_VolLenRatio, minQuality);
   VolumeMeshImprover_execute(vmi, 0);
   VolumeMeshImprover_delete(vmi);
-  double t1 = PCU_Time();
+  double t1 = pcu::Time();
   return t1 - t0;
 }
 
@@ -585,7 +585,8 @@ void addFields(apf::Mesh2* m,
 apf::Mesh2* convertToPumi(
     pMesh simxMesh, int dim,
     const char* sizeName,
-    const char* frameName)
+    const char* frameName,
+    pcu::PCU *PCUObj)
 {
   double* adaptedCoords;
   apf::Gid* adaptedConns;
@@ -596,9 +597,9 @@ apf::Mesh2* convertToPumi(
       adaptedNumVerts, adaptedNumElems, adaptedSizes, adaptedFrames);
 
   gmi_model* nullModel = gmi_load(".null");
-  apf::Mesh2* m2 = apf::makeEmptyMdsMesh(nullModel, dim, false);
+  apf::Mesh2* m2 = apf::makeEmptyMdsMesh(nullModel, dim, false, PCUObj);
   apf::GlobalToVert outMap;
-  apf::construct(m2, adaptedConns, adaptedNumElems, apf::Mesh::TET, outMap);;
+  apf::construct(m2, adaptedConns, adaptedNumElems, apf::Mesh::TET, outMap);
   apf::alignMdsRemotes(m2);
   apf::deriveMdsModel(m2);
   apf::setCoords(m2, adaptedCoords, adaptedNumVerts, outMap);

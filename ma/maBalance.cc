@@ -1,8 +1,11 @@
-#include <PCU.h>
+#include <apfMesh.h>
+#include <apfShape.h>
+#include <lionPrint.h>
 #include "maBalance.h"
 #include "maAdapt.h"
 #include <parma.h>
 #include <apfZoltan.h>
+#include <apfMETIS.h>
 
 #define MAX_ZOLTAN_GRAPH_RANKS 16*1024
 
@@ -115,12 +118,16 @@ void runParma(Adapt* a)
   runBalancer(a, Parma_MakeElmBalancer(a->mesh));
 }
 
+void runMETIS(Adapt* a) {
+  runBalancer(a, apf::makeMETISbalancer(a->mesh));
+}
+
 void printEntityImbalance(Mesh* m)
 {
   double imbalance[4];
   Parma_GetEntImbalance(m,&imbalance);
   double p = (imbalance[m->getDimension()]-1)*100;
-  print("element imbalance %.0f%% of average",p);
+  print(m->getPCU(), "element imbalance %.0f%% of average", p);
 }
 
 double estimateWeightedImbalance(Adapt* a)
@@ -135,7 +142,7 @@ double estimateWeightedImbalance(Adapt* a)
 
 void preBalance(Adapt* a)
 {
-  if (PCU_Comm_Peers()==1)
+  if (a->mesh->getPCU()->Peers()==1)
     return;
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
@@ -146,6 +153,10 @@ void preBalance(Adapt* a)
   }
   if (in->shouldRunPreZoltanRib) {
     runZoltan(a,apf::RIB);
+    return;
+  }
+  if (in->shouldRunPreMetis) {
+    runMETIS(a);
     return;
   }
   if (in->shouldRunPreParma) {
@@ -164,7 +175,7 @@ void preBalance(Adapt* a)
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
-    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+    if (a->mesh->getPCU()->Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       return;
     }
@@ -172,6 +183,10 @@ void preBalance(Adapt* a)
       runZoltan(a, apf::RIB);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
+    return;
 #else
     runParma(a);
     return;
@@ -181,13 +196,17 @@ void preBalance(Adapt* a)
 
 void midBalance(Adapt* a)
 {
-  if (PCU_Comm_Peers()==1)
+  if (a->mesh->getPCU()->Peers()==1)
     return;
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
   // is true, apply that balancer and return.
   if (in->shouldRunMidZoltan) {
     runZoltan(a);
+    return;
+  }
+  if (in->shouldRunMidMetis) {
+    runMETIS(a);
     return;
   }
   if (in->shouldRunMidParma) {
@@ -204,7 +223,7 @@ void midBalance(Adapt* a)
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
-    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+    if (a->mesh->getPCU()->Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       return;
     }
@@ -212,6 +231,10 @@ void midBalance(Adapt* a)
       runZoltan(a, apf::RIB);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
+    return;
 #else
     runParma(a);
     return;
@@ -221,7 +244,7 @@ void midBalance(Adapt* a)
 
 void postBalance(Adapt* a)
 {
-  if (PCU_Comm_Peers()==1)
+  if (a->mesh->getPCU()->Peers()==1)
     return;
   Input* in = a->input;
   // First take care of user overrides. That is, if any of the three options
@@ -233,6 +256,11 @@ void postBalance(Adapt* a)
   }
   if (in->shouldRunPostZoltanRib) {
     runZoltan(a,apf::RIB);
+    printEntityImbalance(a->mesh);
+    return;
+  }
+  if (in->shouldRunPostMetis) {
+    runMETIS(a);
     printEntityImbalance(a->mesh);
     return;
   }
@@ -252,7 +280,7 @@ void postBalance(Adapt* a)
 #ifdef PUMI_HAS_ZOLTAN
     // The parmetis multi-level graph partitioner memory usage grows
     // significantly with process count beyond 16K processes
-    if (PCU_Comm_Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
+    if (a->mesh->getPCU()->Peers() < MAX_ZOLTAN_GRAPH_RANKS) {
       runZoltan(a);
       printEntityImbalance(a->mesh);
       return;
@@ -262,6 +290,10 @@ void postBalance(Adapt* a)
       printEntityImbalance(a->mesh);
       return;
     }
+#elif defined(PUMI_HAS_METIS)
+    if (a->mesh->getPCU()->Peers() < APF_METIS_MAXRANKS) runMETIS(a);
+    else runParma(a);
+    printEntityImbalance(a->mesh);
 #else
     runParma(a);
     printEntityImbalance(a->mesh);

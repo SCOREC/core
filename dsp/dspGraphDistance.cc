@@ -1,5 +1,4 @@
 #include "dspGraphDistance.h"
-#include <PCU.h>
 #include <pcu_util.h>
 
 namespace dsp {
@@ -39,7 +38,7 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
     }
   }
   m->end(it);
-  for (int layer = 0; PCU_Or(!empty(vs, first)); ++layer) {
+  for (int layer = 0; m->getPCU()->Or(!empty(vs, first)); ++layer) {
     size_t layer_end = vs.size();
     while (first < layer_end) {
       v = pop(vs, first);
@@ -56,7 +55,7 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
         }
       }
     }
-    PCU_Comm_Begin();
+    m->getPCU()->Begin();
     apf::MeshEntity* sv;
     for (size_t i = first; i < vs.size(); ++i) {
       sv = vs[i];
@@ -67,11 +66,11 @@ apf::Numbering* getGraphDistance(apf::Mesh* m, Boundary& seed,
       apf::Copies remotes;
       m->getRemotes(sv, remotes);
       APF_ITERATE(apf::Copies, remotes, rit)
-        PCU_COMM_PACK(rit->first, rit->second);
+        m->getPCU()->Pack(rit->first, rit->second);
     }
-    PCU_Comm_Send();
-    while (PCU_Comm_Receive()) {
-      PCU_COMM_UNPACK(sv);
+    m->getPCU()->Send();
+    while (m->getPCU()->Receive()) {
+      m->getPCU()->Unpack(sv);
       if (!apf::isNumbered(dst, sv, 0, 0)) {
         apf::number(dst, sv, 0, 0, layer + 1);
         push(vs, sv);

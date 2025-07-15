@@ -3,7 +3,6 @@
 #include <apfMesh2.h>
 #include <apfMDS.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 #include <parma.h>
 #ifdef HAVE_SIMMETRIX
@@ -69,7 +68,7 @@ bool testReduce(apf::Mesh* m, int casenum)
     addval = myrank;
 
   char fname[256];
-  sprintf(fname, "test%d", casenum);
+  snprintf(fname, 256, "test%d", casenum);
   apf::Field* f = getTestField(m, fname, addval);
   apf::FieldShape* fshape = apf::getShape(f);
   apf::Sharing* shr = apf::getSharing(m);
@@ -147,12 +146,12 @@ void freeMesh(apf::Mesh* m)
   apf::destroyMesh(m);
 }
 
-void getConfig(int argc, char** argv)
+void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if ( argc != 3 ) {
-    if ( !PCU_Comm_Self() )
+    if ( !PCUObj->Self() )
       printf("Usage: %s <model> <mesh>\n", argv[0]);
-    MPI_Finalize();
+    pcu::Finalize();
     exit(EXIT_FAILURE);
   }
   modelFile = argv[1];
@@ -165,11 +164,13 @@ void getConfig(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  bool failflag = false;
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
-  MPI_Comm_rank(PCU_Get_Comm(), &myrank);
-  MPI_Comm_size(PCU_Get_Comm(), &commsize);
+  myrank = PCUObj.Self();
+  commsize = PCUObj.Peers();
 #ifdef HAVE_SIMMETRIX
   MS_init();
   SimModel_start();
@@ -178,13 +179,13 @@ int main(int argc, char** argv)
   gmi_register_sim();
 #endif
   gmi_register_mesh();
-  getConfig(argc,argv);
+  getConfig(argc,argv,&PCUObj);
   gmi_model* g = 0;
   g = gmi_load(modelFile);
   apf::Mesh2* m = 0;
-  m = apf::loadMdsMesh(g, meshFile);
+  m = apf::loadMdsMesh(g, meshFile, &PCUObj);
 
-  bool failflag = false;
+  
   for (int i=0; i < 3; ++i)
     failflag = failflag || testReduce(m, i);
 
@@ -195,9 +196,10 @@ int main(int argc, char** argv)
   SimModel_stop();
   MS_exit();
 #endif
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 
   return failflag;
+  
 }
 

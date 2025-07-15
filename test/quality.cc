@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <apf.h>
 #include <apfMDS.h>
@@ -19,18 +18,18 @@ double avgQuality = 0.0;
 double avgQualityBelowTol = 0.0;
 long numElemsBelowTol = 0;
 
-static void fail(char** argv)
+static void fail(char** argv, pcu::PCU *PCUObj)
 {
-  if (!PCU_Comm_Self())
+  if (!PCUObj->Self())
     printf("Usage: %s <model> <mesh> <quality tolerance>\n", argv[0]);
-  MPI_Finalize();
+  pcu::Finalize();
   exit(EXIT_FAILURE);
 }
 
-static void getConfig(int argc, char** argv)
+static void getConfig(int argc, char** argv, pcu::PCU *PCUObj)
 {
   if (argc != 4)
-    fail(argv);
+    fail(argv, PCUObj);
   modelFile = argv[1];
   meshFile = argv[2];
   qualityTol = atof(argv[3]);
@@ -39,14 +38,14 @@ static void getConfig(int argc, char** argv)
 static void parallelReduce(apf::Mesh2* m)
 {
   long numElems = m->count(m->getDimension());
-  numElems = PCU_Add_Long(numElems);
-  avgQuality = PCU_Add_Double(avgQuality);
+  numElems = m->getPCU()->Add<long>(numElems);
+  avgQuality = m->getPCU()->Add<double>(avgQuality);
   avgQuality /= numElems;
-  numElemsBelowTol = PCU_Add_Long(numElemsBelowTol);
-  avgQualityBelowTol = PCU_Add_Double(avgQualityBelowTol);
+  numElemsBelowTol = m->getPCU()->Add<long>(numElemsBelowTol);
+  avgQualityBelowTol = m->getPCU()->Add<double>(avgQualityBelowTol);
   if (numElemsBelowTol > 0)
     avgQualityBelowTol /= numElemsBelowTol;
-  minQuality = PCU_Min_Double(minQuality);
+  minQuality = m->getPCU()->Min<double>(minQuality);
 }
 
 static void processMesh(apf::Mesh2* m)
@@ -71,9 +70,9 @@ static void processMesh(apf::Mesh2* m)
   m->end(elems);
 }
 
-void printDiagnostics()
+void printDiagnostics(pcu::PCU *PCUObj)
 {
-  if (!PCU_Comm_Self())
+  if (!PCUObj->Self())
   {
     printf("average element quality: %f\n", avgQuality);
     printf("quality tolerance: %f\n", qualityTol);
@@ -90,16 +89,17 @@ void printDiagnostics()
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==4);
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
-  getConfig(argc,argv);
-  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2]);
+  getConfig(argc,argv,&PCUObj);
+  apf::Mesh2* m = apf::loadMdsMesh(argv[1],argv[2],&PCUObj);
   processMesh(m);
-  printDiagnostics();
+  printDiagnostics(&PCUObj);
   m->destroyNative();
   apf::destroyMesh(m);
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

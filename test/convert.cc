@@ -1,4 +1,3 @@
-#include <PCU.h>
 #include <lionPrint.h>
 #include <MeshSim.h>
 #include <SimPartitionedMesh.h>
@@ -23,6 +22,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdio.h>
+#include <array> //std::array
 
 using namespace std;
 
@@ -82,7 +82,7 @@ const char* extruRootPath = NULL;
 int ExtruRootId =0;
 bool found_bad_arg = false;
 
-void getConfig(int argc, char** argv) {
+void getConfig(int argc, char** argv, pcu::PCU *pcu_obj) {
 
   opterr = 0;
 
@@ -120,18 +120,18 @@ void getConfig(int argc, char** argv) {
         gmi_native_path = optarg;
         break;
       case '?':
-        if (!PCU_Comm_Self())
+        if (!pcu_obj->Self())
           printf ("warning: skipping unrecognized option \'%s\'\n", argv[optind-1]);
         break;
       default:
-        if (!PCU_Comm_Self())
+        if (!pcu_obj->Self())
           printf("Usage %s %s", argv[0], usage);
         exit(EXIT_FAILURE);
     }
   }
 
   if(argc-optind != 3) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj->Self())
       printf("Usage %s %s", argv[0], usage);
     exit(EXIT_FAILURE);
   }
@@ -139,7 +139,7 @@ void getConfig(int argc, char** argv) {
   gmi_path = argv[i++];
   sms_path = argv[i++];
   smb_path = argv[i++];
-  if (!PCU_Comm_Self()) {
+  if (!pcu_obj->Self()) {
     printf ("fix_pyramids %d attach_order %d enable_log %d extruRootPath %s\n",
             should_fix_pyramids, should_attach_order, should_log, extruRootPath);
     printf ("native-model \'%s\' model \'%s\' simmetrix mesh \'%s\' output mesh \'%s\'\n",
@@ -176,8 +176,8 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 
   char coordfilename[64];
   char cnnfilename[64];
-  sprintf(coordfilename, "geom.crd");
-  sprintf(cnnfilename, "geom.cnn");
+  snprintf(coordfilename, 64, "geom.crd");
+  snprintf(cnnfilename, 64, "geom.cnn");
   FILE* fcr = fopen(coordfilename, "w");
   FILE* fcn = fopen(cnnfilename, "w");
 
@@ -193,6 +193,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       int id = GEN_tag(gface);
       if(id==ExtruRootId) ExtruRootFace=gface;
     }
+    GFIter_delete(gfIter);
     assert(ExtruRootFace != NULL);
     // all of the work so far assumes translation extrusion.  Rotation extrusion (sweeping extruded entiy over an arc of some angle about 
     // a given axis) is useful but this would require some code change.  The principle is the same.  Every root entity has another 
@@ -246,7 +247,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       int nvert=i;
       PList_delete(listV);
 
-      double coordNewPt[nvert][3];
+      std::vector<std::array<double,3>> coordNewPt(nvert,{0,0,0});
       for(i=0; i< nvert ; i++) {
         int* markedData;
         if(!EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&markedData)){  // not sure about marked yet
@@ -344,28 +345,28 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 	   }
           PCU_ALWAYS_ASSERT(foundEETag != 0);
           count2D++;
-          int* vtxData = new int[1];
+          int* vtxData = new int;
           vtxData[0] = count2D;
           EN_attachDataPtr((pEntity)vrts[i],myFather,(void*)vtxData);
-          V_coord(vrts[i],coordNewPt[i]);
+          V_coord(vrts[i],coordNewPt[i].data());
 
           fprintf ( fcr, "%.15E %.15E %d %d %d %d  \n", coordNewPt[i][0],coordNewPt[i][1], vClassDim, foundESTag, foundETag, foundEETag );
         }
       }
 
-      double coordFather[nvert][3];
+      std::vector<std::array<double,3>> coordFather(nvert,{0,0,0});
       int fatherIds[4]; //store the ids of the fathers (vertices) on the root face
       for(i=0; i< nvert ; i++) {
         int* fatherIdPtr;
         const int exists = EN_getDataPtr((pEntity)vrts[i],myFather,(void**)&fatherIdPtr);
         if(!exists) {
-          if(!PCU_Comm_Self())
+          if(!simApfMesh->getPCU()->Self())
             fprintf(stderr, "Error: father id data pointer does not exist... exiting\n");
           exit(EXIT_FAILURE);
         }
         assert(exists);
         fatherIds[i] = fatherIdPtr[0];
-        V_coord(vrts[i],coordFather[i]);
+        V_coord(vrts[i],coordFather[i].data());
         fprintf ( fcn, "%d ", fatherIds[i]);
       }
       fprintf ( fcn, "\n");
@@ -382,7 +383,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       faces=PList_new();
       err = Extrusion_3DRegionsAndLayerFaces(region, regions, faces, 1);
       PList_delete(regions); // not used so delete
-      if(err!=1 && !PCU_Comm_Self())
+      if(err!=1 && !simApfMesh->getPCU()->Self())
         fprintf(stderr, "Extrusion_3DRegionsAndLayerFaces returned %d for err \n", err);
 
       // for each face in the returned list of faces
@@ -414,7 +415,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
               }
             }
             my2Dfath=fatherIds[iMin];
-            int* vtxData = new int[1];
+            int* vtxData = new int;
             vtxData[0] = my2Dfath;
             EN_attachDataPtr((pEntity)sonVtx,myFather,(void*)vtxData);
           }
@@ -424,6 +425,7 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
       }
       PList_delete(faces);
     } //end root face iterator
+    FIter_delete(fIter);
   }
   apf::MeshSIM* cake = reinterpret_cast<apf::MeshSIM*>(simApfMesh);
   cake->createIntTag("fathers2D", myFather, 1);
@@ -431,8 +433,9 @@ void addFathersTag(pGModel simModel, pParMesh sim_mesh, apf::Mesh* simApfMesh, c
 
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc, &argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc, &argv);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
   MS_init();
   SimAdvMeshing_start(); //for fancy BL/extrusion queries
@@ -440,12 +443,12 @@ int main(int argc, char** argv)
   Sim_readLicenseFile(NULL);
   SimPartitionedMesh_start(&argc,&argv);
 
-  getConfig(argc, argv);
+  getConfig(argc, argv, &pcu_obj);
   if( should_log )
     Sim_logOn("convert.sim.log");
 
   if (should_attach_order && should_fix_pyramids) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj.Self())
       std::cout << "disabling pyramid fix because --attach-order was given\n";
     should_fix_pyramids = false;
   }
@@ -457,7 +460,7 @@ int main(int argc, char** argv)
 
   gmi_model* mdl;
   if( gmi_native_path ) {
-    if (!PCU_Comm_Self())
+    if (!pcu_obj.Self())
       fprintf(stderr, "loading native model %s\n", gmi_native_path);
     mdl = gmi_sim_load(gmi_native_path,gmi_path);
   } else {
@@ -483,24 +486,24 @@ int main(int argc, char** argv)
   assert(false);
 */
 
-  double t0 = PCU_Time();
+  double t0 = pcu::Time();
   pParMesh sim_mesh = PM_load(sms_path, simModel, progress);
-  double t1 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t1 = pcu::Time();
+  if(!pcu_obj.Self())
     fprintf(stderr, "read and created the simmetrix mesh in %f seconds\n", t1-t0);
 
-  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh);
+  apf::Mesh* simApfMesh = apf::createMesh(sim_mesh, &pcu_obj);
 
   addFathersTag(simModel, sim_mesh, simApfMesh, extruRootPath);
 
-  double t2 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t2 = pcu::Time();
+  if(!simApfMesh->getPCU()->Self())
     fprintf(stderr, "created the apf_sim mesh in %f seconds\n", t2-t1);
   if (should_attach_order) attachOrder(simApfMesh);
 
   apf::Mesh2* mesh = apf::createMdsMesh(mdl, simApfMesh);
-  double t3 = PCU_Time();
-  if(!PCU_Comm_Self())
+  double t3 = pcu::Time();
+  if(!mesh->getPCU()->Self())
     fprintf(stderr, "created the apf_mds mesh in %f seconds\n", t3-t2);
 
   apf::printStats(mesh);
@@ -522,6 +525,6 @@ int main(int argc, char** argv)
   MS_exit();
   if( should_log )
     Sim_logOff();
-  PCU_Comm_Free();
-  MPI_Finalize();
+  }
+  pcu::Finalize();
 }

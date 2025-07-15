@@ -1,138 +1,186 @@
-/****************************************************************************** 
+#ifndef SCOREC_PCU_H
+#define SCOREC_PCU_H
 
-  Copyright 2011 Scientific Computation Research Center, 
-      Rensselaer Polytechnic Institute. All rights reserved.
-  
-  This work is open source software, licensed under the terms of the
-  BSD license as described in the LICENSE file in the top-level directory.
+/**
+ * \file PCU.h
+ * \brief The C++ interface to the Parallel Control Unit.
+ */
 
-*******************************************************************************/
-#ifndef PCU_H
-#define PCU_H
+#include <memory>
+#include <cstdlib>
+#include <cstdarg> //va_list
+#include "pcu_defines.h"
 
-#define PCU_SUCCESS 0
-#define PCU_FAILURE -1
+struct pcu_msg_struct;
+struct pcu_mpi_struct;
 
-#include <mpi.h>
+/**
+ * \namespace pcu
+ *
+ * All C++ PCU symbols are contained in this namespace.
+ */
+namespace pcu {
+/**
+ * \brief The Parallel Contrul Unit class encapsulates parallel communication.
+ */
+class PCU {
+public:
+  PCU();
+  explicit PCU(PCU_Comm comm);
+  ~PCU() noexcept;
+  PCU(PCU const &) = delete;
+  PCU(PCU &&) noexcept;
+  PCU &operator=(PCU const &) = delete;
+  PCU &operator=(PCU &&) noexcept;
+  /** \brief Returns the rank of the current process.
+   *  \return The rank of the current process.
+   */
+  [[nodiscard]] int Self() const noexcept;
+  /** \brief Returns the number of ranks in the communicator.
+   *  \return The number of ranks in the communicator.
+   */
+  [[nodiscard]] int Peers() const noexcept;
 
-#ifdef __cplusplus
-#include <cstddef>
-#include <cstdio>
-extern "C" {
-#else
-#include <stddef.h>
-#include <stdio.h>
-#include <stdbool.h>
-#endif
+  [[nodiscard]] PCU_t GetCHandle() {PCU_t h; h.ptr=this; return h;}
+  /*recommended message passing API*/
+  void Begin() noexcept;
+  int Pack(int to_rank, const void *data, size_t size) noexcept;
+  template<typename T> int Pack(int to_rank, const T& data) noexcept {
+    return Pack(to_rank, &(data), sizeof(data));
+  }
 
-/*library init/finalize*/
-int PCU_Comm_Init(void);
-int PCU_Comm_Free(void);
+  int Send() noexcept;
+  bool Receive() noexcept;
+  bool Listen() noexcept;
+  int Sender() noexcept;
+  bool Unpacked() noexcept;
+  int Unpack(void *data, size_t size) noexcept;
+  template<typename T> int Unpack(T& data) noexcept {
+    return Unpack(&(data), sizeof(data));
+  }
+  /*IPComMan replacement API*/
+  int Write(int to_rank, const void *data, size_t size) noexcept;
+  bool Read(int *from_rank, void **data, size_t *size) noexcept;
 
-/*rank/size functions*/
-int PCU_Comm_Self(void);
-int PCU_Comm_Peers(void);
+  /*turns deterministic ordering for the
+    above API on/off*/
+  void Order(bool on);
 
-/*recommended message passing API*/
-void PCU_Comm_Begin(void);
-int PCU_Comm_Pack(int to_rank, const void* data, size_t size);
-#define PCU_COMM_PACK(to_rank,object)\
-PCU_Comm_Pack(to_rank,&(object),sizeof(object))
-int PCU_Comm_Send(void);
-bool PCU_Comm_Receive(void);
-bool PCU_Comm_Listen(void);
-int PCU_Comm_Sender(void);
-bool PCU_Comm_Unpacked(void);
-int PCU_Comm_Unpack(void* data, size_t size);
-#define PCU_COMM_UNPACK(object)\
-PCU_Comm_Unpack(&(object),sizeof(object))
+  /*collective operations*/
+  void Barrier();
+  template <typename T> void Add(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Add(T p) noexcept;
+  template <typename T> void Min(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Min(T p) noexcept;
+  template <typename T> void Max(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Max(T p) noexcept;
+  template <typename T> void Exscan(T *p, size_t n) noexcept;
+  template <typename T> [[nodiscard]] T Exscan(T p) noexcept;
+  template <typename T>
+  void Allgather(const T *send, T *recv, size_t n) noexcept;
 
-/*turns deterministic ordering for the
-  above API on/off*/
-void PCU_Comm_Order(bool on);
+  /*bitwise operations*/
+  [[nodiscard]] int Or(int c) noexcept;
+  [[nodiscard]] int And(int c) noexcept;
 
-/*collective operations*/
-void PCU_Barrier(void);
-void PCU_Add_Doubles(double* p, size_t n);
-double PCU_Add_Double(double x);
-void PCU_Min_Doubles(double* p, size_t n);
-double PCU_Min_Double(double x);
-void PCU_Max_Doubles(double* p, size_t n);
-double PCU_Max_Double(double x);
-void PCU_Add_Ints(int* p, size_t n);
-int PCU_Add_Int(int x);
-void PCU_Add_Longs(long* p, size_t n);
-long PCU_Add_Long(long x);
-void PCU_Exscan_Ints(int* p, size_t n);
-int PCU_Exscan_Int(int x);
-void PCU_Exscan_Longs(long* p, size_t n);
-long PCU_Exscan_Long(long x);
-void PCU_Add_SizeTs(size_t* p, size_t n);
-size_t PCU_Add_SizeT(size_t x);
-void PCU_Min_SizeTs(size_t* p, size_t n);
-size_t PCU_Min_SizeT(size_t x);
-void PCU_Max_SizeTs(size_t* p, size_t n);
-size_t PCU_Max_SizeT(size_t x);
-void PCU_Min_Ints(int* p, size_t n);
-int PCU_Min_Int(int x);
-void PCU_Max_Ints(int* p, size_t n);
-int PCU_Max_Int(int x);
-void PCU_Max_Longs(long* p, size_t n);
-long PCU_Max_Long(long x);
-int PCU_Or(int c);
-int PCU_And(int c);
+  /**
+   * \brief Split a communicator into distinct subgroups.
+   *
+   * The resulting communicator is marked owned and automatically free the
+   * underlying communicator. This can be disabled with PCU::OwnsComm(bool). In
+   * that case, the user is responsible for cleanup.
+   *
+   * \param color subgroup indicator.
+   * \param key used for subgroup ordering; specify 0 if you don't care.
+   * \return a new communicator defined on the resulting subgroup.
+   */
+  std::unique_ptr<PCU> Split(int color, int key) noexcept;
 
-/*process-level self/peers (mpi wrappers)*/
-int PCU_Proc_Self(void);
-int PCU_Proc_Peers(void);
+  /**
+   * \brief Duplicate the underlying communicator.
+   *
+   * It is the user's responsiblity to cleanup the returned communicator. This
+   * function may be used to initialize other libraries using the PCU-defined
+   * communication group.
+   *
+   * If SCOREC::core was compiled with the SCOREC_NO_MPI flag, the return value
+   * is not meaningful.
+   *
+   * \param[out] newcomm The output address for the new communicator copy.
+   * \return 0 on success.
+   */
+  int DupComm(PCU_Comm* newcomm) const noexcept;
 
-/*IPComMan replacement API*/
-int PCU_Comm_Write(int to_rank, const void* data, size_t size);
-#define PCU_COMM_WRITE(to,data) \
-PCU_Comm_Write(to,&(data),sizeof(data))
-bool PCU_Comm_Read(int* from_rank, void** data, size_t* size);
+  /*lesser-used APIs*/
+  int Packed(int to_rank, size_t *size) noexcept;
+  int From(int *from_rank) noexcept;
+  int Received(size_t *size) noexcept;
+  void *Extract(size_t size) noexcept;
 
-/*Debug file I/O API*/
-void PCU_Debug_Open(void);
-#ifdef __GNUC__
-void PCU_Debug_Print(const char* format, ...)
-  __attribute__((format(printf,1,2)));
-#else
-void PCU_Debug_Print(const char* format, ...);
-#endif
+  /*
+   * Debug print function with printf-style formatting
+   * This function is excluded from SWIG parsing due to complex macro usage
+   * with variadic argument. Also, such functionalities is not needed for the Python API.
+   */
+  #ifndef SWIG
+  void DebugPrint(const char* format, ...) noexcept PCU_FORMAT_ATTRIBUTE(2, 3)
+  void DebugPrint(const char* format, va_list args) noexcept;
+  #endif // SWIG
+  /* Debug functions */
+  void DebugOpen() noexcept;
 
-/*lesser-used APIs*/
-bool PCU_Comm_Initialized(void);
-int PCU_Comm_Packed(int to_rank, size_t* size);
-int PCU_Comm_From(int* from_rank);
-int PCU_Comm_Received(size_t* size);
-void* PCU_Comm_Extract(size_t size);
-int PCU_Comm_Rank(int* rank);
-int PCU_Comm_Size(int* size);
-
-/*deprecated method enum*/
-#ifdef __cplusplus
-enum PCU_Method { PCU_GLOBAL_METHOD, PCU_LOCAL_METHOD };
-#else
-typedef enum { PCU_GLOBAL_METHOD, PCU_LOCAL_METHOD } PCU_Method;
-#endif
-int PCU_Comm_Start(PCU_Method method);
-
-/*special MPI_Comm replacement API*/
-void PCU_Switch_Comm(MPI_Comm new_comm);
-MPI_Comm PCU_Get_Comm(void);
-
+private:
+  pcu_msg_struct *msg_;
+  pcu_mpi_struct *mpi_;
+};
 /*stack trace helpers using GNU/Linux*/
-void PCU_Protect(void);
-
-/*MPI_Wtime() equivalent*/
-double PCU_Time(void);
-
+void Protect() noexcept;
 /*Memory usage*/
-double PCU_GetMem(void);
+[[nodiscard]] double GetMem() noexcept;
+/*MPI_Wtime() equivalent*/
+[[nodiscard]] double Time() noexcept;
 
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+/**
+ * \brief Initialize the underlying parallel library.
+ *
+ * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * the difference.
+ */
+void Init(int *argc, char ***argv);
+/**
+ * \brief Finalize the underlying parallel library.
+ *
+ * This may be MPI (or a stub, given SCOREC_NO_MPI). This function abstracts
+ * the difference.
+ */
+void Finalize();
 
-#endif
+/*
+ * Explicit instantiations of template functions,
+ * ignored by SWIG to avoid difficulties when parsing macros involving
+ * template functions. Templates are initialized manually in the interface file.
+ */
+#ifndef SWIG
+#define PCU_EXPL_INST_DECL(T)                                                  \
+  extern template void PCU::Add<T>(T * p, size_t n) noexcept;                  \
+  extern template T PCU::Add<T>(T p) noexcept;                                 \
+  extern template void PCU::Min<T>(T * p, size_t n) noexcept;                  \
+  extern template T PCU::Min<T>(T p) noexcept;                                 \
+  extern template void PCU::Max<T>(T * p, size_t n) noexcept;                  \
+  extern template T PCU::Max<T>(T p) noexcept;                                 \
+  extern template void PCU::Exscan<T>(T * p, size_t n) noexcept;               \
+  extern template T PCU::Exscan<T>(T p) noexcept;                              \
+  extern template                                                              \
+  void PCU::Allgather<T>(const T *send, T *recv, size_t n) noexcept;
+PCU_EXPL_INST_DECL(int)
+PCU_EXPL_INST_DECL(size_t)
+PCU_EXPL_INST_DECL(long)
+PCU_EXPL_INST_DECL(double)
+#undef PCU_EXPL_INST_DECL
+#endif // SWIG
+
+} // namespace pcu
+
+#endif // PCUOBJ_H
+
+

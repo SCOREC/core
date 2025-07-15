@@ -9,7 +9,6 @@
 #include <apfMesh2.h>
 #include <apf.h>
 #include <apfShape.h>
-#include <PCU.h>
 #include <lionPrint.h>
 
 #include <math.h>
@@ -138,10 +137,10 @@ gmi_model* makeModel()
   return model;
 }
 
-apf::Mesh2* createMesh2D()
+apf::Mesh2* createMesh2D(pcu::PCU *PCUObj)
 {
   gmi_model* model = makeModel();
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 2, false, PCUObj);
   apf::MeshEntity* v[4];
   apf::Vector3 points2D[4] =
   {apf::Vector3(0,0,0),
@@ -183,10 +182,10 @@ static double measureMesh(apf::Mesh2* m)
   return v;
 }
 
-void test2D()
+void test2D(pcu::PCU *PCUObj)
 {
   for(int order = 1; order <= 6; ++order){
-      apf::Mesh2* m = createMesh2D();
+      apf::Mesh2* m = createMesh2D(PCUObj);
       apf::changeMeshShape(m, crv::getBezier(order),true);
       crv::BezierCurver bc(m,order,0);
       if(order > 1){
@@ -239,10 +238,10 @@ void test2D()
     }
 }
 
-apf::Mesh2* createMesh3D()
+apf::Mesh2* createMesh3D(pcu::PCU *PCUObj)
 {
   gmi_model* model = gmi_load(".null");
-  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false);
+  apf::Mesh2* m = apf::makeEmptyMdsMesh(model, 3, false, PCUObj);
   double x = 1./sqrt(6.);
   double z = 1./sqrt(12.);
   apf::Vector3 points3D[4] =
@@ -260,12 +259,12 @@ apf::Mesh2* createMesh3D()
   return m;
 }
 
-void test3D()
+void test3D(pcu::PCU *PCUObj)
 {
   gmi_register_null();
   // test full
   for(int order = 1; order <= 4; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     crv::BezierCurver bc(m,order,0);
     bc.run();
 
@@ -285,7 +284,7 @@ void test3D()
   }
   // test blended
   for(int order = 1; order <= 4; ++order){
-    apf::Mesh2* m = createMesh3D();
+    apf::Mesh2* m = createMesh3D(PCUObj);
     crv::BezierCurver bc(m,order,1);
     bc.run();
 
@@ -310,11 +309,12 @@ void test3D()
 }
 int main(int argc, char** argv)
 {
-  MPI_Init(&argc,&argv);
-  PCU_Comm_Init();
+  pcu::Init(&argc,&argv);
+  {
+  pcu::PCU pcu_obj;
   lion_set_verbosity(1);
-  test2D();
-  test3D();
-  PCU_Comm_Free();
-  MPI_Finalize();
+  test2D(&pcu_obj);
+  test3D(&pcu_obj);
+  }
+  pcu::Finalize();
 }

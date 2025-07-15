@@ -1,0 +1,7 @@
+#ifndef SCOREC_CONFIG_H
+#define SCOREC_CONFIG_H
+
+#cmakedefine SCOREC_NO_MPI
+
+#endif // SCOREC_CONFIG_H
+
