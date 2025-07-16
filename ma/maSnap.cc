@@ -870,8 +870,11 @@ long snapTaggedVerts(Adapt* a, Tag* tag, Snapper& snapper)
 
   long successCount = 0;
   bool snapped = true;
+  int prevTagged = 0;
   while (snapped) {
-    tagVertsToSnap(a, tag);
+    int tagged = tagVertsToSnap(a, tag);
+    if (tagged == prevTagged) break;
+    prevTagged = tagged;
     if (a->mesh->hasMatching())
       snapped = snapMatchedVerts(a, tag, false, successCount);
     else
