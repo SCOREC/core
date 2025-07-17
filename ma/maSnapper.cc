@@ -184,13 +184,13 @@ static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert)
   return 0   : if an edge is degenerated
           1-7 : the index indicating the location of projection point
 */
-static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double area[4]) 
+static int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4]) 
 {
   Entity* faceEdges[3];
-  a->mesh->getDownward(FPP->problemFace, 1, faceEdges);
+  a->mesh->getDownward(face, 1, faceEdges);
 
   Entity* verts[3];
-  a->mesh->getDownward(FPP->problemFace, 0, verts);
+  a->mesh->getDownward(face, 0, verts);
 
   Vector facePos[3];
   Entity* edges[6];
@@ -200,12 +200,12 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
   }
 
   Entity* faces[4];
-  faces[0]=FPP->problemFace;
+  faces[0]=face;
 
   Entity* problemFaces[4];
-  a->mesh->getDownward(FPP->problemRegion, 2, problemFaces);
+  a->mesh->getDownward(region, 2, problemFaces);
   for (int i=0; i<4; i++) {
-    if (problemFaces[i] == FPP->problemFace ) continue;
+    if (problemFaces[i] == face ) continue;
     else if (isLowInHigh(a->mesh, problemFaces[i], edges[0])) faces[1] = problemFaces[i];
     else if (isLowInHigh(a->mesh, problemFaces[i], edges[1])) faces[2] = problemFaces[i];
     else if (isLowInHigh(a->mesh, problemFaces[i], edges[2])) faces[3] = problemFaces[i];
@@ -222,7 +222,7 @@ static int getTetStats(Adapt* a, FirstProblemPlane* FPP, Entity* ents[4], double
     }
   }
 
-  Vector projection = projOnTriPlane(a, FPP->problemFace, FPP->vert);
+  Vector projection = projOnTriPlane(a, face, vert);
   //TODO: ERROR if projection = any point on problem face
 
   /* find normal to the plane */
@@ -341,7 +341,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 {
   Entity* ents[4] = {0};
   double area[4];
-  int bit = getTetStats(adapt, FPP, ents, area);
+  int bit = getTetStats(adapt, FPP->vert, FPP->problemFace, FPP->problemRegion, ents, area);
 
   double min=area[0];
   for(int i=1; i<4; i++) 
