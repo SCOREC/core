@@ -89,6 +89,7 @@ class FirstProblemPlane
     void findCommonEdges(apf::Up& cpRegions);
 };
 
+int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4]);
 Entity* getTetFaceOppositeVert(Mesh* m, Entity* e, Entity* v);
 void getFaceCoords(Mesh* m, Entity* face, std::vector<Vector>& coords);
 Vector getCenter(Mesh* mesh, Entity* face);

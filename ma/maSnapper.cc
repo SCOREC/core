@@ -184,7 +184,7 @@ static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert)
   return 0   : if an edge is degenerated
           1-7 : the index indicating the location of projection point
 */
-static int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4]) 
+int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4])
 {
   Entity* faceEdges[3];
   a->mesh->getDownward(face, 1, faceEdges);

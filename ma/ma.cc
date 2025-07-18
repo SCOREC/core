@@ -28,6 +28,7 @@ void adapt(Input* in)
   Adapt* a = new Adapt(in);
   preBalance(a);
   coarsen(a);
+  fixElementShapes(a);
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
@@ -36,9 +37,9 @@ void adapt(Input* in)
     snap(a);
     coarsen(a);
     coarsenLayer(a);
+    fixElementShapes(a);
   }
   allowSplitCollapseOutsideLayer(a);
-  fixElementShapes(a);
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);
