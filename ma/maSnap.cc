@@ -897,9 +897,7 @@ void snap(Adapt* a)
   Tag* snapTag = a->mesh->createDoubleTag("ma_snap", 3);
   preventMatchedCavityMods(a);
   int toSnap = tagVertsToSnap(a, snapTag);
-
-  // ma_dbg::addTargetLocation(a, "snap_target");
-  // ma_dbg::addClassification(a, "classification");
+  if (toSnap == 0) return;
 
   Snapper snapper(a, snapTag, false);
   snapTaggedVerts(a, snapTag, snapper);

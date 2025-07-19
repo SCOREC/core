@@ -126,6 +126,9 @@ static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
+  ma_dbg::addTargetLocation(a, "snap_target");
+  ma_dbg::addClassification(a, "classification");
+
   apf::writeVtkFiles("FPP_Mesh", a->mesh);
   EntityArray invalid;
   for (int i=0; i<FPP->problemRegions.n; i++){
@@ -615,6 +618,8 @@ bool Snapper::trySimpleSnap()
   return tryReposition(adapt, vert, snapTag, invalid);
 }
 
+static int DEBUGFAILED=0;
+
 bool Snapper::run()
 {
   apf::Up invalid;
@@ -639,7 +644,7 @@ bool Snapper::run()
     mesh->removeTag(vert,snapTag);
     clearFlag(adapt, vert, SNAP);
   }
-  // if (!success && numFailed == 1) printFPP(adapt, FPP);
+  // if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
   
   if (FPP) delete FPP;
   return success;
