@@ -122,6 +122,8 @@ static double interpolateParametricCoordinate(
   }
   double period = range[1]-range[0];
   double span = b-a;
+  if (period < 0.5) //partial range can't be periodic
+    return (1-t)*a + t*b;
   if (!mode) {
     if (span < (period/2))
       return (1-t)*a + t*b;
@@ -493,8 +495,6 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 1) we are assuming manifold surfaces
    * 2) we only check for faces that are periodic
    */
-
-#ifndef HAVE_CAPSTONE
   // this need to be done for faces, only
   if (dim != 2)
     return;
@@ -511,9 +511,6 @@ static void interpolateParametricCoordinatesOnRegularFace(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
-#else
-  (void) gface_isPeriodic;
-#endif
 }
 
 static void interpolateParametricCoordinatesOnFace(

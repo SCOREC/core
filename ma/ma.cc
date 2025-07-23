@@ -37,9 +37,9 @@ void adapt(Input* in)
     snap(a);
     coarsen(a);
     coarsenLayer(a);
-    fixElementShapes(a);
   }
   allowSplitCollapseOutsideLayer(a);
+  // fixElementShapes(a);
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);

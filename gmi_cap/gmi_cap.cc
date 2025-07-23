@@ -197,10 +197,7 @@ static int periodic(struct gmi_model* m, struct gmi_ent* e, int dim)
   /*     PARAM_COMPOSITE=4,    //!< parametrization of a composite edge or face */
   /*     PARAM_UNBOUNDED=8     //!< infinite parametrization */
   /* }; */
-  if (paramType & 1) return 0;
-  int isPeriodic = paramType & (1<<1);
-  PCU_ALWAYS_ASSERT_VERBOSE(isPeriodic == false, "for now cannot handle periodic geometric entity (with discontinuity in parametric coords)");
-  return isPeriodic;
+  return paramType & (1<<1);
 }
 
 static void range(struct gmi_model* m, struct gmi_ent* e, int dim,
