@@ -38,8 +38,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mpich libbz2-dev ccache
+          apt-get update
+          apt-get install -y mpich libbz2-dev ccache
           mkdir -p /opt/ccache/libexec
           ln -s $(which ccache) /opt/ccache/libexec/gcc
           ln -s $(which ccache) /opt/ccache/libexec/g++
@@ -73,8 +73,10 @@ jobs:
         run: |
           git clone https://github.com/KarypisLab/GKlib.git
           cd GKlib
-          make config prefix=${{ github.workspace }}/libs/install shared=1
+          installDir=${{ github.workspace }}/libs/install
+          make config prefix=$installDir shared=1
           make install
+          ln -s $installDir/lib/libGKlib.so.0 $installDir/lib/libGKlib.so #https://github.com/KarypisLab/GKlib/issues/49
       
       - name: Build METIS
         run: |
