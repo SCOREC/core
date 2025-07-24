@@ -73,7 +73,7 @@ jobs:
         run: |
           git clone https://github.com/KarypisLab/GKlib.git
           cd GKlib
-          make config prefix=${{ github.workspace }}/libs/install
+          make config prefix=${{ github.workspace }}/libs/install shared=1
           make install
       
       - name: Build METIS
