@@ -80,14 +80,14 @@ jobs:
         run: |
           git clone https://github.com/KarypisLab/METIS.git
           cd METIS
-          make config prefix=${{ github.workspace }}/libs/install
+          make config prefix=${{ github.workspace }}/libs/install shared=1
           make install
       
       - name: Build ParMETIS
         run: |
           git clone https://github.com/KarypisLab/ParMETIS.git
           cd ParMETIS
-          make config prefix=${{ github.workspace }}/libs/install
+          make config prefix=${{ github.workspace }}/libs/install shared=1
           make install
 
       - name: Build Zoltan from Trilinos (minimal)
