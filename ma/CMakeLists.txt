@@ -80,6 +80,7 @@ target_link_libraries(ma
      apf
      mds
      parma
+     apf_cap
      apf_zoltan
      apf_metis
      pcu
