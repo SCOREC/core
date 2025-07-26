@@ -14,10 +14,9 @@ namespace ma {
 
 class Adapt;
 
-bool coarsenMultiple(Adapt* a, bool aggressive=false);
-bool coarsen(Adapt* a, bool aggressive=false);
+bool coarsenMultiple(Adapt* a);
+bool coarsen(Adapt* a);
 bool coarsenLayer(Adapt* a);
-bool coarsenAndPrint(Adapt* a);
 
 void checkAllEdgeCollapses(Adapt* a, int modelDimension);
 void findIndependentSet(Adapt* a);

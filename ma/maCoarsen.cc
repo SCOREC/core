@@ -229,7 +229,7 @@ long markEdgesToCollapse(Adapt* a)
                       DONT_COLLAPSE | NEED_NOT_COLLAPSE);
 }
 
-bool coarsen(Adapt* a, bool aggressive)
+bool coarsen(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
     return false;
@@ -411,16 +411,13 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
   return shortEdgeVerts;
 }
 
-bool coarsenMultiple(Adapt* a, bool aggressive)
+bool coarsenMultiple(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
     return false;
   double t0 = pcu::Time();
   Tag* lengthTag = a->mesh->createDoubleTag("edge_length", 1);
   std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
-  bool oldShouldForce = a->input->shouldForceAdaptation;
-  if (aggressive)
-    a->input->shouldForceAdaptation = true;
 
   Collapse collapse;
   collapse.Init(a);
@@ -438,7 +435,6 @@ bool coarsenMultiple(Adapt* a, bool aggressive)
     }
   }
   ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE | CHECKED, 0);
-  a->input->shouldForceAdaptation = oldShouldForce;
   a->mesh->destroyTag(lengthTag);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
