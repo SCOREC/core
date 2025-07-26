@@ -16,7 +16,6 @@
 #include "maLayer.h"
 #include "maMatch.h"
 #include "maDBG.h"
-#include "apfCAP.h"
 #include <apfGeometry.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -25,7 +24,21 @@
 #include <iostream>
 #include <fstream>
 
+#ifdef HAVE_CAPSTONE
+#include "apfCAP.h"
+#endif
+
 namespace ma {
+
+static bool isCapstoneMesh(apf::Mesh* m)
+{
+  #ifdef HAVE_CAPSTONE
+    if (dynamic_cast<apf::MeshCAP*>(m)) return true;
+    else return false;
+  #else
+    return false;
+  #endif
+}
 
 static size_t isSurfUnderlyingFaceDegenerate(
     apf::Mesh* m,
@@ -72,7 +85,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
-    if (dynamic_cast<apf::MeshCAP*>(m)) {
+    if (isCapstoneMesh(m)) {
       uTanSize = uTan * uTan;
       vTanSize = vTan * vTan;
     }
@@ -156,7 +169,7 @@ static void interpolateParametricCoordinateOnEdge(
   p[1] = 0.0;
   p[2] = 0.0;
 
-  if (dynamic_cast<apf::MeshCAP*>(m)) {
+  if (isCapstoneMesh(m)) {
     // account for non-uniform parameterization of model-edge
     Vector X[3];
     Vector para[2] = {a, b};
@@ -497,22 +510,22 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 2) we only check for faces that are periodic
    */
   // this need to be done for faces, only
-  if (!dynamic_cast<apf::MeshCAP*>(m)) {
-    if (dim != 2)
-      return;
-    if (!gface_isPeriodic)
-      return;
+  if (isCapstoneMesh(m)) 
+    return;
+  if (dim != 2)
+    return;
+  if (!gface_isPeriodic)
+    return;
 
-    Vector x;
-    bool ok;
-    ok = m->isParamPointInsideModel(g, &p[0], x);
-    if (ok)
-      return;
+  Vector x;
+  bool ok;
+  ok = m->isParamPointInsideModel(g, &p[0], x);
+  if (ok)
+    return;
 
-    for (int d=0; d < dim; ++d) {
-      bool isPeriodic = m->getPeriodicRange(g,d,range);
-      p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
-    }
+  for (int d=0; d < dim; ++d) {
+    bool isPeriodic = m->getPeriodicRange(g,d,range);
+    p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
 }
 
@@ -529,7 +542,7 @@ static void interpolateParametricCoordinatesOnFace(
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
 
   if (num > 0) { // the underlying surface is degenerate
-    if (!dynamic_cast<apf::MeshCAP*>(m)) {
+    if (!isCapstoneMesh(m)) {
       interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
     }
     else {

@@ -80,11 +80,14 @@ target_link_libraries(ma
      apf
      mds
      parma
-     apf_cap
      apf_zoltan
      apf_metis
      pcu
    )
+
+if (ENABLE_CAPSTONE)
+target_link_libraries(ma PUBLIC apf_cap)
+endif()
 
 scorec_export_library(ma)
 
