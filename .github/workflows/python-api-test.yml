@@ -73,21 +73,23 @@ jobs:
         run: |
           git clone https://github.com/KarypisLab/GKlib.git
           cd GKlib
-          make config prefix=${{ github.workspace }}/libs/install
+          installDir=${{ github.workspace }}/libs/install
+          make config prefix=$installDir shared=1
           make install
+          ln -s $installDir/lib/libGKlib.so.0 $installDir/lib/libGKlib.so #https://github.com/KarypisLab/GKlib/issues/49
       
       - name: Build METIS
         run: |
           git clone https://github.com/KarypisLab/METIS.git
           cd METIS
-          make config prefix=${{ github.workspace }}/libs/install
+          make config prefix=${{ github.workspace }}/libs/install shared=1
           make install
       
       - name: Build ParMETIS
         run: |
           git clone https://github.com/KarypisLab/ParMETIS.git
           cd ParMETIS
-          make config prefix=${{ github.workspace }}/libs/install
+          make config prefix=${{ github.workspace }}/libs/install shared=1
           make install
 
       - name: Build Zoltan from Trilinos (minimal)
