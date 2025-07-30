@@ -408,6 +408,7 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
     }
   }
   clearListFlag(a, shortEdgeVerts, CHECKED);
+  a->mesh->end(it);
   return shortEdgeVerts;
 }
 
