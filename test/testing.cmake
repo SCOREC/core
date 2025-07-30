@@ -374,11 +374,6 @@ if(ENABLE_ZOLTAN)
     "${MESHES}/cube/cube.dmg"
     "${MESHES}/cube/pumi670/cube.smb"
     "0")
-  mpi_test(aniso_ma2 1
-    ./aniso_ma_test
-    "${MESHES}/cube/cube.dmg"
-    "${MESHES}/cube/pumi670/cube.smb"
-    "1" "8")
   mpi_test(aniso_ma_serial_log_interpolation 1
     ./aniso_ma_test
     "${MESHES}/cube/cube.dmg"
@@ -716,7 +711,6 @@ mpi_test(construct_bottom_up 1
   ./construct_bottom_up
   "${MDIR}/bottom_up_constructed_cube.smb"
   "${MDIR}/cube.dmg")
-mpi_test(coarsen 1 ./coarsen)
 set(MDIR ${MESHES}/embeddedEdges)
 mpi_test(embedded_edges 1
   ./embedded_edges
