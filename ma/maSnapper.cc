@@ -362,7 +362,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       numSwap++;
       return true;
     }
-    if (splitCollapse.run(longest, FPP->vert, 0)) {
+    if (splitCollapse.run(longest, FPP->vert, adapt->input->validQuality)) {
       numSplitCollapse++;
       return true;
     }
@@ -379,11 +379,11 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
         return true;
       }
     for (int i=0; i<2; i++)
-      if (splitCollapse.run(ents[i], FPP->vert, 0)) {
+      if (splitCollapse.run(ents[i], FPP->vert, adapt->input->validQuality)) {
         numSplitCollapse++;
         return true;
       }
-    if (doubleSplitCollapse.run(ents, 0)) {
+    if (doubleSplitCollapse.run(ents, adapt->input->validQuality)) {
       numSplitCollapse++;
       return true;
     }
@@ -400,7 +400,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       }
     }
     //TODO: RUN FACE SWAP HERE
-    if (splitCollapse.run(ents[1], FPP->vert, 0)) {
+    if (splitCollapse.run(ents[1], FPP->vert, adapt->input->validQuality)) {
       numSplitCollapse++;
       return true;
     }
