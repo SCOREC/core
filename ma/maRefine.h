@@ -12,7 +12,6 @@
 
 #include "maMesh.h"
 #include "maTables.h"
-#include <queue>
 
 namespace ma {
 

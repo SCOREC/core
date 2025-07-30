@@ -80,25 +80,6 @@ bool Collapse::edgesGoodSize() {
   return true;
 }
 
-bool Collapse::edgeGrewPastMaxLength() {
-  PCU_ALWAYS_ASSERT(elementsToKeep.size());
-  PCU_ALWAYS_ASSERT(elementsToKeep.size() == newElements.size());
-  size_t i=0;
-  APF_ITERATE(EntitySet,elementsToKeep,it) {
-    Entity* edgesBefore[6];
-    adapt->mesh->getDownward(*it,1,edgesBefore);
-    Entity* edgesAfter[6];
-    adapt->mesh->getDownward(newElements[i++],1,edgesAfter);
-    for (int j=0; j<6; j++) {
-      double sizeBefore = adapt->sizeField->measure(edgesBefore[j]);
-      double sizeAfter = adapt->sizeField->measure(edgesAfter[j]);
-      if (sizeAfter > sizeBefore && sizeAfter > MAXLENGTH)
-        return true;
-    }
-  }
-  return false;
-}
-
 bool Collapse::tryThisDirection(double qualityToBeat)
 {
   if (!tryThisDirectionNoCancel(qualityToBeat)) {

@@ -11,7 +11,6 @@
 #define MA_ADAPT_H
 
 #include "maInput.h"
-#include <queue>
 
 namespace ma {
 

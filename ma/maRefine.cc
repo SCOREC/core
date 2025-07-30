@@ -19,7 +19,6 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <pcu_util.h>
-#include <apfGeometry.h>
 
 namespace ma {
 
