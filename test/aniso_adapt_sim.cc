@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
   apf::Mesh2* m = apf::createMdsMesh(mdl_ref, mesh_ref);
 
   //Adapt
-  refineSnapTest(m, 3, 1);
+  refineSnapTest(m);
 
   //Clean up
   m->destroyNative();

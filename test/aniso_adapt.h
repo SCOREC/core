@@ -39,22 +39,83 @@ class AnIso : public ma::AnisotropicFunction
     ma::Vector lower, upper;
 };
 
-void refineSnapTest(ma::Mesh* m, double sizeFactor1, double sizeFactor2)
+void measureQuality(ma::Mesh* m, double& avgQuality, double& minQuality)
+{
+  int d = m->getDimension();
+  apf::MeshEntity* elem;
+  apf::MeshIterator* elems = m->begin(d);
+  ma::IdentitySizeField I(m);
+  while ((elem = m->iterate(elems))) {
+    double q = ma::measureElementQuality(m, &I, elem);
+    avgQuality += q;
+    minQuality = fmin(minQuality, q);
+  }
+  m->end(elems);
+  avgQuality = avgQuality / m->count(d);
+}
+
+int countEdges(ma::Mesh* m)
+{
+  return m->count(1);
+}
+
+void coarsenTest(ma::Mesh* m)
+{
+  m->verify();
+  apf::writeVtkFiles("before_coarsen_test",m);
+  AnIso sf(m, .5, 1);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  ma::Adapt* a = new ma::Adapt(in);
+  double avgQualBefore, avgQualAfter, minQualBefore, minQualAfter;
+
+  measureQuality(m, avgQualBefore, minQualBefore);
+  double averageBefore = ma::getAverageEdgeLength(m);
+  int edgesBefore = countEdges(m);
+  ma::coarsenMultiple(a);
+  measureQuality(m, avgQualAfter, minQualAfter);
+  double averageAfter = ma::getAverageEdgeLength(m);
+  int edgesAfter = countEdges(m);
+
+  PCU_ALWAYS_ASSERT(edgesBefore > edgesAfter);
+  PCU_ALWAYS_ASSERT(averageBefore < averageAfter);
+  PCU_ALWAYS_ASSERT(minQualBefore <= minQualAfter);
+  // PCU_ALWAYS_ASSERT(avgQualBefore <= avgQualAfter);
+
+
+  //TODO: Check that force coarsen again doesn't result in any changes
+  m->verify();
+  apf::printStats(m);
+  apf::writeVtkFiles("after_coarsen_test",m);
+  delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
+  delete in;
+}
+
+void refineSnapTest(ma::Mesh* m)
 {
   m->verify();
   apf::writeVtkFiles("before_adapt",m);
-  AnIso sf(m, sizeFactor1, sizeFactor2);
+  AnIso sf(m, 2, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
+  int edgesBefore = countEdges(m);
+  double averageBefore = ma::getAverageEdgeLength(m);
 
-  ma::coarsenMultiple(a);
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     ma::refine(a);
     ma::snap(a);
-    ma::coarsenMultiple(a);
   }
-  ma::fixElementShapes(a);
+  int edgesAfter = countEdges(m);
+  double averageAfter = ma::getAverageEdgeLength(m);
+  PCU_ALWAYS_ASSERT(edgesBefore < edgesAfter);
+  PCU_ALWAYS_ASSERT(averageBefore > averageAfter);
+
+
   m->verify();
   apf::writeVtkFiles("after_adapt",m);
 }
