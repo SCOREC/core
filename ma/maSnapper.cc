@@ -585,12 +585,18 @@ static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up
   return FPP;
 }
 
-static void getInvalidTets(Mesh* mesh, Upward& adjacentElements, apf::Up& invalid)
+static void getInvalidTets(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
 {
   invalid.n = 0;
   Vector v[4];
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
-    ma::getVertPoints(mesh,adjacentElements[i],v);
+    /* for now, when snapping a vertex on the boundary
+    layer, ignore the quality of layer elements.
+    not only do we not have metrics for this, but the
+    algorithm that moves curves would need to change */
+    if (getFlag(a, adjacentElements[i], LAYER))
+      continue;
+    ma::getVertPoints(a->mesh,adjacentElements[i],v);
     if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
       invalid.e[invalid.n++] = adjacentElements[i];
   }
@@ -606,7 +612,7 @@ static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& i
   Upward adjacentElements;
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
   mesh->setPoint(vertex, 0, target);
-  getInvalidTets(mesh, adjacentElements, invalid);
+  getInvalidTets(adapt, adjacentElements, invalid);
   if (invalid.n == 0) return true;
   mesh->setPoint(vertex, 0, prev);
   return false;
@@ -624,7 +630,6 @@ bool Snapper::run()
 {
   apf::Up invalid;
   bool success = tryReposition(adapt, vert, snapTag, invalid);
-
   if (success) {
     numSnapped++;
     mesh->removeTag(vert,snapTag);
@@ -633,7 +638,6 @@ bool Snapper::run()
   }
 
   FirstProblemPlane* FPP = getFPP(adapt, vert, snapTag, invalid);
-
   if (!success) success = tryCollapseToVertex(FPP);
   if (!success) success = tryReduceCommonEdges(FPP);
   if (!success) success = tryCollapseTetEdges(FPP);

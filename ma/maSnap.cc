@@ -772,6 +772,8 @@ class SnapAll : public Operator
     {
       if ( ! getFlag(adapter, e, SNAP))
         return false;
+      if (getFlag(adapter, e, LAYER))
+        return false;
       vert = e;
       snapper->setVert(e);
       return true;
