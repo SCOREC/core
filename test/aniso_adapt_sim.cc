@@ -56,7 +56,10 @@ int main(int argc, char* argv[]) {
   apf::Mesh2* m = apf::createMdsMesh(mdl_ref, mesh_ref);
 
   //Adapt
-  refineSnapTest(m);
+  m->verify();
+  AnIso sf(m, 3, 1);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  adapt(in);
 
   //Clean up
   m->destroyNative();

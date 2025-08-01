@@ -13,6 +13,7 @@
 #include "maRefine.h"
 #include "maShape.h"
 #include "maSnap.h"
+#include "apfGeometry.h"
 
 class AnIso : public ma::AnisotropicFunction
 {
@@ -138,10 +139,35 @@ void coarsenTest(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
   apf::destroyMesh(mForce);
 }
 
-void refineSnapTest(ma::Mesh* m)
+bool allVertsOnModel(ma::Adapt* a)
 {
+  if (!a->input->shouldSnap)
+    return true;
+  ma::Mesh* m = a->mesh;
+  int dim = m->getDimension();
+  ma::Iterator* it = m->begin(0);
+  ma::Entity* vert;
+  while ((vert = m->iterate(it))) {
+    int md = m->getModelType(m->toModel(vert));
+    if (dim == 3 && md == 3)
+      continue;
+    ma::Vector position = ma::getPosition(m, vert);
+    ma::Model* g = m->toModel(vert);
+    ma::Vector target;
+    ma::Vector closest;
+    m->getClosestPoint(g, position, target, closest);
+    (void) target;
+    if (!apf::areClose(position, closest, 1e-12))
+      return false;
+  }
+  m->end(it);
+  return true;
+}
+
+void refineSnapTest(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+{
+  ma::Mesh* m = apf::loadMdsMesh(modelfile,meshfile,PCUObj);
   m->verify();
-  apf::writeVtkFiles("before_adapt",m);
   AnIso sf(m, 2, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
@@ -153,12 +179,17 @@ void refineSnapTest(ma::Mesh* m)
     ma::refine(a);
     ma::snap(a);
   }
-  int edgesAfter = countEdges(m);
-  double averageAfter = ma::getAverageEdgeLength(m);
-  PCU_ALWAYS_ASSERT(edgesBefore < edgesAfter);
-  PCU_ALWAYS_ASSERT(averageBefore > averageAfter);
 
+  PCU_ALWAYS_ASSERT(edgesBefore < countEdges(m));
+  PCU_ALWAYS_ASSERT(averageBefore > ma::getAverageEdgeLength(m));
+  PCU_ALWAYS_ASSERT(allVertsOnModel(a));
 
   m->verify();
-  apf::writeVtkFiles("after_adapt",m);
+  delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
+  delete in;
 }

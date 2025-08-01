@@ -19,7 +19,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   gmi_register_mesh();
   coarsenTest(modelFile,meshFile,&PCUObj);
-  // refineSnapTest(m);
+  refineSnapTest(modelFile,meshFile,&PCUObj);
   }
   pcu::Finalize();
 }
