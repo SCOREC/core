@@ -18,11 +18,8 @@ int main(int argc, char** argv)
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
-  ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
-  coarsenTest(m);
+  coarsenTest(modelFile,meshFile,&PCUObj);
   // refineSnapTest(m);
-  m->destroyNative();
-  apf::destroyMesh(m);
   }
   pcu::Finalize();
 }

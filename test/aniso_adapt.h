@@ -59,10 +59,43 @@ int countEdges(ma::Mesh* m)
   return m->count(1);
 }
 
-void coarsenTest(ma::Mesh* m)
+ma::Mesh* coarsenForced(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
 {
+  ma::Mesh* m = apf::loadMdsMesh(modelfile,meshfile,PCUObj);
   m->verify();
-  apf::writeVtkFiles("before_coarsen_test",m);
+  AnIso sf(m, .5, 1);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  in->shouldForceAdaptation = true;
+  ma::Adapt* a = new ma::Adapt(in);
+  double avgQualBefore, avgQualAfter, minQualBefore, minQualAfter;
+
+  measureQuality(m, avgQualBefore, minQualBefore);
+  double averageBefore = ma::getAverageEdgeLength(m);
+  int edgesBefore = countEdges(m);
+
+  ma::coarsenMultiple(a);
+
+  measureQuality(m, avgQualAfter, minQualAfter);
+
+  PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
+  PCU_ALWAYS_ASSERT(averageBefore < ma::getAverageEdgeLength(m));
+  PCU_ALWAYS_ASSERT(minQualAfter >= 0);
+
+  m->verify();
+  delete a;
+  // cleanup input object and associated sizefield and solutiontransfer objects
+  if (in->ownsSizeField)
+    delete in->sizeField;
+  if (in->ownsSolutionTransfer)
+    delete in->solutionTransfer;
+  delete in;
+  return m;
+}
+
+ma::Mesh* coarsenRegular(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+{
+  ma::Mesh* m = apf::loadMdsMesh(modelfile,meshfile,PCUObj);
+  m->verify();
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
@@ -71,21 +104,16 @@ void coarsenTest(ma::Mesh* m)
   measureQuality(m, avgQualBefore, minQualBefore);
   double averageBefore = ma::getAverageEdgeLength(m);
   int edgesBefore = countEdges(m);
+
   ma::coarsenMultiple(a);
+
   measureQuality(m, avgQualAfter, minQualAfter);
-  double averageAfter = ma::getAverageEdgeLength(m);
-  int edgesAfter = countEdges(m);
 
-  PCU_ALWAYS_ASSERT(edgesBefore > edgesAfter);
-  PCU_ALWAYS_ASSERT(averageBefore < averageAfter);
-  PCU_ALWAYS_ASSERT(minQualBefore <= minQualAfter);
-  // PCU_ALWAYS_ASSERT(avgQualBefore <= avgQualAfter);
+  PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
+  PCU_ALWAYS_ASSERT(averageBefore < ma::getAverageEdgeLength(m));
+  PCU_ALWAYS_ASSERT(fabs(minQualBefore - minQualAfter) < 0.001f || minQualBefore < minQualAfter);
 
-
-  //TODO: Check that force coarsen again doesn't result in any changes
   m->verify();
-  apf::printStats(m);
-  apf::writeVtkFiles("after_coarsen_test",m);
   delete a;
   // cleanup input object and associated sizefield and solutiontransfer objects
   if (in->ownsSizeField)
@@ -93,6 +121,21 @@ void coarsenTest(ma::Mesh* m)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
+  return m;
+}
+
+void coarsenTest(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+{
+  ma::Mesh* mReg = coarsenRegular(modelfile, meshfile, PCUObj);
+  ma::Mesh* mForce = coarsenForced(modelfile, meshfile, PCUObj);
+
+  PCU_ALWAYS_ASSERT(countEdges(mReg) > countEdges(mForce));
+  PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(mReg) < ma::getAverageEdgeLength(mForce));
+
+  mReg->destroyNative();
+  apf::destroyMesh(mReg);
+  mForce->destroyNative();
+  apf::destroyMesh(mForce);
 }
 
 void refineSnapTest(ma::Mesh* m)
