@@ -183,12 +183,13 @@ void adaptTests(const std::function<ma::Mesh*()>& createMesh)
 {
   ma::Mesh* meshReg = createMesh();
   apf::writeVtkFiles("startMesh", meshReg);
+
   refineSnapTest(meshReg);
   apf::writeVtkFiles("afterRefine", meshReg);
-  
 
   coarsenRegular(meshReg);
   apf::writeVtkFiles("afterCoarsen", meshReg);
+
   ma::Mesh* meshForce = coarsenForced(refineSnapTest(createMesh()));
   apf::writeVtkFiles("afterForcedCoarsen", meshForce);
 
