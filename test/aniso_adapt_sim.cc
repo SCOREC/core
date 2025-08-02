@@ -23,15 +23,29 @@
 #include "SimAdvMeshing.h"
 #include "SimMeshTools.h"
 
-int main(int argc, char* argv[]) {
+ma::Mesh* createMesh(const char* nativefile, const char* smdfile, const char* smsfile, pcu::PCU* PCUObj)
+{
+  pProgress progress = Progress_new();
+  Progress_setDefaultCallback(progress);
+  gmi_model* mdl_ref = gmi_sim_load(nativefile, smdfile);
+  pGModel model = gmi_export_sim(mdl_ref);
+  pParMesh mesh = PM_load(smsfile, model, progress);
+  ma::Mesh* mesh_ref = apf::createMesh(mesh, PCUObj);
+  apf::Mesh2* m = apf::createMdsMesh(mdl_ref, mesh_ref);
+  return m;
+}
+
+int main(int argc, char* argv[])
+{
   if (argc != 4) {
     std::cerr << "Usage: " << argv[0] <<
       "<model.x_t> <model.smd> <mesh.sms>" << std::endl;
       return 1;
   }
   //Load Mesh
-  const char* modelFile = argv[1];
-  const char* meshFile = argv[2];
+  const char* nativefile = argv[1];
+  const char* smdfile = argv[2];
+  const char* smsfile = argv[3];
   MPI_Init(&argc, &argv);
   pcu::PCU *PCUObj = new pcu::PCU(MPI_COMM_WORLD);
   lion_set_verbosity(1);
@@ -46,24 +60,12 @@ int main(int argc, char* argv[]) {
 
   gmi_sim_start();
   gmi_register_sim();
-  pProgress progress = Progress_new();
-  Progress_setDefaultCallback(progress);
 
-  gmi_model* mdl_ref = gmi_sim_load(argv[1], argv[2]);
-  pGModel model = gmi_export_sim(mdl_ref);
-  pParMesh mesh = PM_load(argv[3], model, progress);
-  ma::Mesh* mesh_ref = apf::createMesh(mesh, PCUObj);
-  apf::Mesh2* m = apf::createMdsMesh(mdl_ref, mesh_ref);
+  auto createMeshValues = [nativefile, smdfile, smsfile, PCUObj]() 
+    { return createMesh(nativefile, smdfile, smsfile, PCUObj); };
 
-  //Adapt
-  m->verify();
-  AnIso sf(m, 3, 1);
-  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
-  adapt(in);
+  refineSnapTest(createMeshValues);
 
-  //Clean up
-  m->destroyNative();
-  apf::destroyMesh(m);
   delete PCUObj;
   MPI_Finalize();
 }

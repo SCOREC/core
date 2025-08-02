@@ -363,6 +363,11 @@ if(ENABLE_SIMMETRIX)
     "pipe_unif.smb"
     "pipe.smb")
   set_test_depends(TESTS snap_serial DEPENDS uniform_serial)
+  mpi_test(adapt_deformed_slab 1
+    ./aniso_adapt_sim
+    "${MESHES}/deformedSlab/sim_model.x_t"
+    "${MESHES}/deformedSlab/sim_model.smd"
+    "${MESHES}/deformedSlab/sim_mesh.sms")
 endif()
 if(ENABLE_ZOLTAN)
   mpi_test(ma_serial 1

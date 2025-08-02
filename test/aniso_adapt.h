@@ -14,6 +14,7 @@
 #include "maShape.h"
 #include "maSnap.h"
 #include "apfGeometry.h"
+#include <functional>
 
 class AnIso : public ma::AnisotropicFunction
 {
@@ -60,9 +61,9 @@ int countEdges(ma::Mesh* m)
   return m->count(1);
 }
 
-ma::Mesh* coarsenForced(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+ma::Mesh* coarsenForced(const std::function<ma::Mesh*()>& createMesh)
 {
-  ma::Mesh* m = apf::loadMdsMesh(modelfile,meshfile,PCUObj);
+  ma::Mesh* m = createMesh();
   m->verify();
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
@@ -93,9 +94,9 @@ ma::Mesh* coarsenForced(const char* modelfile, const char* meshfile, pcu::PCU *P
   return m;
 }
 
-ma::Mesh* coarsenRegular(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+ma::Mesh* coarsenRegular(const std::function<ma::Mesh*()>& createMesh)
 {
-  ma::Mesh* m = apf::loadMdsMesh(modelfile,meshfile,PCUObj);
+  ma::Mesh* m = createMesh();
   m->verify();
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
@@ -125,10 +126,10 @@ ma::Mesh* coarsenRegular(const char* modelfile, const char* meshfile, pcu::PCU *
   return m;
 }
 
-void coarsenTest(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+void coarsenTest(const std::function<ma::Mesh*()>& createMesh)
 {
-  ma::Mesh* mReg = coarsenRegular(modelfile, meshfile, PCUObj);
-  ma::Mesh* mForce = coarsenForced(modelfile, meshfile, PCUObj);
+  ma::Mesh* mReg = coarsenRegular(createMesh);
+  ma::Mesh* mForce = coarsenForced(createMesh);
 
   PCU_ALWAYS_ASSERT(countEdges(mReg) > countEdges(mForce));
   PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(mReg) < ma::getAverageEdgeLength(mForce));
@@ -151,24 +152,24 @@ bool allVertsOnModel(ma::Adapt* a)
     int md = m->getModelType(m->toModel(vert));
     if (dim == 3 && md == 3)
       continue;
+    ma::Vector modelPoint, param;
+    m->getPoint(vert,0,modelPoint);
+    m->getParam(vert,param);
+    ma::Model* model = m->toModel(vert);
+    m->snapToModel(model,param,modelPoint);
     ma::Vector position = ma::getPosition(m, vert);
-    ma::Model* g = m->toModel(vert);
-    ma::Vector target;
-    ma::Vector closest;
-    m->getClosestPoint(g, position, target, closest);
-    (void) target;
-    if (!apf::areClose(position, closest, 1e-12))
-      return false;
+    if (apf::areClose(modelPoint, position, 1e-12))
+      continue;
   }
   m->end(it);
   return true;
 }
 
-void refineSnapTest(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+void refineSnapTest(const std::function<ma::Mesh*()>& createMesh)
 {
-  ma::Mesh* m = apf::loadMdsMesh(modelfile,meshfile,PCUObj);
+  ma::Mesh* m = createMesh();
   m->verify();
-  AnIso sf(m, 2, 1);
+  AnIso sf(m, 3, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
   int edgesBefore = countEdges(m);

@@ -8,6 +8,11 @@
 #include <stdlib.h>
 #include "aniso_adapt.h"
 
+ma::Mesh* createMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
+{
+  return apf::loadMdsMesh(modelfile,meshfile,PCUObj);
+}
+
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
@@ -18,8 +23,12 @@ int main(int argc, char** argv)
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
-  coarsenTest(modelFile,meshFile,&PCUObj);
-  refineSnapTest(modelFile,meshFile,&PCUObj);
+
+  auto createMeshValues = [modelFile,meshFile,&PCUObj]() 
+    { return createMesh(modelFile,meshFile,&PCUObj); };
+
+  coarsenTest(createMeshValues);
+  refineSnapTest(createMeshValues);
   }
   pcu::Finalize();
 }
