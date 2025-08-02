@@ -61,9 +61,8 @@ int countEdges(ma::Mesh* m)
   return m->count(1);
 }
 
-ma::Mesh* coarsenForced(const std::function<ma::Mesh*()>& createMesh)
+ma::Mesh* coarsenForced(ma::Mesh* m)
 {
-  ma::Mesh* m = createMesh();
   m->verify();
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
@@ -94,9 +93,8 @@ ma::Mesh* coarsenForced(const std::function<ma::Mesh*()>& createMesh)
   return m;
 }
 
-ma::Mesh* coarsenRegular(const std::function<ma::Mesh*()>& createMesh)
+ma::Mesh* coarsenRegular(ma::Mesh* m)
 {
-  ma::Mesh* m = createMesh();
   m->verify();
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
@@ -126,20 +124,6 @@ ma::Mesh* coarsenRegular(const std::function<ma::Mesh*()>& createMesh)
   return m;
 }
 
-void coarsenTest(const std::function<ma::Mesh*()>& createMesh)
-{
-  ma::Mesh* mReg = coarsenRegular(createMesh);
-  ma::Mesh* mForce = coarsenForced(createMesh);
-
-  PCU_ALWAYS_ASSERT(countEdges(mReg) > countEdges(mForce));
-  PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(mReg) < ma::getAverageEdgeLength(mForce));
-
-  mReg->destroyNative();
-  apf::destroyMesh(mReg);
-  mForce->destroyNative();
-  apf::destroyMesh(mForce);
-}
-
 bool allVertsOnModel(ma::Adapt* a)
 {
   if (!a->input->shouldSnap)
@@ -165,9 +149,8 @@ bool allVertsOnModel(ma::Adapt* a)
   return true;
 }
 
-void refineSnapTest(const std::function<ma::Mesh*()>& createMesh)
+ma::Mesh* refineSnapTest(ma::Mesh* m)
 {
-  ma::Mesh* m = createMesh();
   m->verify();
   AnIso sf(m, 3, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
@@ -193,4 +176,27 @@ void refineSnapTest(const std::function<ma::Mesh*()>& createMesh)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
+  return m;
+}
+
+void adaptTests(const std::function<ma::Mesh*()>& createMesh)
+{
+  ma::Mesh* meshReg = createMesh();
+  apf::writeVtkFiles("startMesh", meshReg);
+  refineSnapTest(meshReg);
+  apf::writeVtkFiles("afterRefine", meshReg);
+  
+
+  coarsenRegular(meshReg);
+  apf::writeVtkFiles("afterCoarsen", meshReg);
+  ma::Mesh* meshForce = coarsenForced(refineSnapTest(createMesh()));
+  apf::writeVtkFiles("afterForcedCoarsen", meshForce);
+
+  PCU_ALWAYS_ASSERT(countEdges(meshReg) > countEdges(meshForce));
+  PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(meshReg) < ma::getAverageEdgeLength(meshForce));
+
+  meshReg->destroyNative();
+  apf::destroyMesh(meshReg);
+  meshForce->destroyNative();
+  apf::destroyMesh(meshForce);
 }

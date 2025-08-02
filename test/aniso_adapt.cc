@@ -27,8 +27,7 @@ int main(int argc, char** argv)
   auto createMeshValues = [modelFile,meshFile,&PCUObj]() 
     { return createMesh(modelFile,meshFile,&PCUObj); };
 
-  coarsenTest(createMeshValues);
-  refineSnapTest(createMeshValues);
+  adaptTests(createMeshValues);
   }
   pcu::Finalize();
 }

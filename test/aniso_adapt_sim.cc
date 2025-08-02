@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
   auto createMeshValues = [nativefile, smdfile, smsfile, PCUObj]() 
     { return createMesh(nativefile, smdfile, smsfile, PCUObj); };
 
-  refineSnapTest(createMeshValues);
+  adaptTests(createMeshValues);
 
   delete PCUObj;
   MPI_Finalize();
