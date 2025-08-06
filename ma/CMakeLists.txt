@@ -28,6 +28,7 @@ set(SOURCES
   maSolutionTransferHelper.cc
   maSnap.cc
   maEdgeSwap.cc
+  maFaceSwap.cc
   maShape.cc
   maShapeHandler.cc
   maQuality.cc
