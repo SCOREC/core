@@ -52,11 +52,11 @@ ma::Mesh* createMesh(const char* meshFile, pcu::PCU* PCUObj)
   const std::string mdbName("Mesh Database : Create");
   const std::string adbName("Attribution Database : Create");
 
-  CapstoneModule  cs("the_module", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
+  CapstoneModule* cs = new CapstoneModule("the_module", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
 
-  GeometryDatabaseInterface     *g = cs.get_geometry();
-  MeshDatabaseInterface         *m = cs.get_mesh();
-  AppContext                    *c = cs.get_context();
+  GeometryDatabaseInterface     *g = cs->get_geometry();
+  MeshDatabaseInterface         *m = cs->get_mesh();
+  AppContext                    *c = cs->get_context();
 
   PCU_ALWAYS_ASSERT(g);
   PCU_ALWAYS_ASSERT(m);
@@ -65,7 +65,7 @@ ma::Mesh* createMesh(const char* meshFile, pcu::PCU* PCUObj)
   v_string filenames;
   filenames.push_back(meshFile);
 
-  M_GModel gmodel = cs.load_files(filenames);
+  M_GModel gmodel = cs->load_files(filenames);
 
   int numbreps = 0;
   MG_CALL(g->get_num_breps(numbreps));
