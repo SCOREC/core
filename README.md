@@ -9,7 +9,7 @@ For more information, start at our
 ### What is in this repository? ###
 
 * PUMI: parallel unstructured mesh infrastructure API
-  [User's Guide](http://scorec.rpi.edu/~seol/PUMI.pdf)
+  [User Guide](https://doi.org/10.5281/zenodo.16412599)
 * PCU: Communication and file IO built on MPI 
 * APF: Abstract definition of meshes, fields, and related operations
 * GMI: Common interface for geometric modeling kernels
