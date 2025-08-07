@@ -37,7 +37,7 @@ class Snapper
     int numSwap = 0;
     int numSplitCollapse = 0;
 
-    Snapper(Adapt* a, Tag* st, bool is);
+    Snapper(Adapt* a, Tag* st);
     ~Snapper();
     void setVert(Entity* v);
     Entity* getVert();

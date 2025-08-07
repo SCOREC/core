@@ -19,7 +19,7 @@
 
 namespace ma {
 
-Snapper::Snapper(Adapt* a, Tag* st, bool is) : splitCollapse(a), doubleSplitCollapse(a)
+Snapper::Snapper(Adapt* a, Tag* st) : splitCollapse(a), doubleSplitCollapse(a)
 {
   adapt = a;
   mesh = a->mesh;
@@ -59,62 +59,6 @@ bool Snapper::requestLocality(apf::CavityOp* o)
   for (int i = 0; i < edges.n; ++i)
     ovs.e[i] = apf::getEdgeVertOppositeVert(mesh, edges.e[i], vert);
   return o->requestLocality(&ovs.e[0], ovs.n);
-}
-
-static void computeNormals(Mesh* m, Upward& es, apf::NewArray<Vector>& normals)
-{
-  if (m->getDimension() != 2)
-    return;
-  normals.allocate(es.getSize());
-  for (size_t i = 0; i < es.getSize(); ++i)
-    normals[i] = getTriNormal(m, es[i]);
-}
-
-static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
-{
-  return (oldNormal * getTriNormal(m, tri)) < 0;
-}
-
-static void updateVertexParametricCoords(
-    Mesh* m,
-    Entity* vert,
-    Vector& newTarget)
-{
-  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(vert) == apf::Mesh::VERTEX,
-      "expecting a vertex!");
-
-  // if vert is classified on a model vert or edge return
-  Model* g = m->toModel(vert);
-  if (m->getModelType(g) != 2)
-    return;
-
-  // get the list of upward adj edges that are
-  // classified on the same model face as vert
-  apf::Up edges;
-  m->getUp(vert,edges);
-  apf::Up oes;
-  oes.n = edges.n;
-  int counter = 0;
-  for (int i = 0; i < edges.n; ++i) {
-    Model* h = m->toModel(edges.e[i]);
-    if (m->getModelType(h) == 3)
-      continue;
-    PCU_ALWAYS_ASSERT_VERBOSE(g == h,
-    	"expecting the model to be the same for current edge and vert");
-    oes.e[counter] = edges.e[i];
-    counter++;
-  }
-
-  Vector pBar(0., 0., 0.);
-  for (int i = 0; i < counter; i++) {
-    Vector pTmp;
-    transferParametricOnEdgeSplit(m, oes.e[i], 0.5, pTmp);
-    pBar += pTmp;
-  }
-  pBar = pBar / oes.n;
-
-  m->snapToModel(m->toModel(vert), pBar, newTarget);
-  m->setParam(vert, pBar);
 }
 
 static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
@@ -558,7 +502,7 @@ bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
 
   BestCollapse best;
 
-  for (size_t i = 0; i < FPP->commEdges.n; ++i) {
+  for (int i = 0; i < FPP->commEdges.n; ++i) {
     Entity* edge = FPP->commEdges.e[i];
     Entity* vertexOnFPP = getEdgeVertOppositeVert(mesh, edge, vert);
     Vector vFPPCoord = getPosition(mesh, vertexOnFPP);
@@ -648,7 +592,7 @@ bool Snapper::run()
     mesh->removeTag(vert,snapTag);
     clearFlag(adapt, vert, SNAP);
   }
-  // if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
+  if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
   
   if (FPP) delete FPP;
   return success;

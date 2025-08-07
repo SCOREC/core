@@ -807,8 +807,8 @@ bool snapAllVerts(Adapt* a, Tag* t, Snapper& snapper)
 class SnapMatched : public Operator
 {
   public:
-    SnapMatched(Adapt* a, Tag* t, bool simple):
-      snapper(a, t, simple)
+    SnapMatched(Adapt* a, Tag* t):
+      snapper(a, t)
     {
       adapter = a;
       tag = t;
@@ -847,9 +847,9 @@ class SnapMatched : public Operator
     MatchedSnapper snapper;
 };
 
-bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
+bool snapMatchedVerts(Adapt* a, Tag* t, long& successCount)
 {
-  SnapMatched op(a, t, isSimple);
+  SnapMatched op(a, t);
   applyOperator(a, &op);
   successCount += a->mesh->getPCU()->Add<long>(op.successCount);
   return a->mesh->getPCU()->Or(op.didAnything);
@@ -893,7 +893,7 @@ long snapTaggedVerts(Adapt* a, Tag* tag, Snapper& snapper)
     if (tagged == prevTagged) break;
     prevTagged = tagged;
     if (a->mesh->hasMatching())
-      snapped = snapMatchedVerts(a, tag, false, successCount);
+      snapped = snapMatchedVerts(a, tag, successCount);
     else
       snapped = snapAllVerts(a, tag, snapper);
   }
@@ -916,7 +916,7 @@ void snap(Adapt* a)
   int toSnap = tagVertsToSnap(a, snapTag);
   if (toSnap)
   {
-    Snapper snapper(a, snapTag, false);
+    Snapper snapper(a, snapTag);
     snapTaggedVerts(a, snapTag, snapper);
     snapLayer(a, snapTag);
 

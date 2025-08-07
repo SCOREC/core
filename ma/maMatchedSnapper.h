@@ -21,7 +21,7 @@ namespace ma {
 class MatchedSnapper
 {
   public:
-    MatchedSnapper(Adapt* a, Tag* st, bool is);
+    MatchedSnapper(Adapt* a, Tag* st);
     ~MatchedSnapper();
     void setVert(Entity* v);
     bool requestLocality(apf::CavityOp* o);
@@ -34,7 +34,6 @@ class MatchedSnapper
     Entity* vert;
     apf::DynamicArray<Snapper*> snappers;
     apf::DynamicArray<Vector> locations;
-    bool isSimple;
     apf::Sharing* sharing;
 };
 
