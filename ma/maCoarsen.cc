@@ -307,7 +307,7 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
 }
 
 //Prevent adjacent vertices from collapsing to create indepedent set
-void flagIndependentSet(Adapt* a, apf::Up& adjacent, int& checked)
+void flagIndependentSet(Adapt* a, apf::Up& adjacent, size_t& checked)
 {
   for (int adj=0; adj < adjacent.n; adj++) {
     Entity* vertices[2];
@@ -331,7 +331,7 @@ struct EdgeLength
   }
 };
 
-bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, int& checked, apf::Up& adjacent, Tag* lengthTag)
+bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, size_t& checked, apf::Up& adjacent, Tag* lengthTag)
 {
   Entity* vertex = *itr;
   std::vector<EdgeLength> sorted;
@@ -423,7 +423,7 @@ bool coarsenMultiple(Adapt* a)
   Collapse collapse;
   collapse.Init(a);
   int success = 0;
-  int checked = 0;
+  size_t checked = 0;
   bool independentSetStarted = false;
   std::list<Entity*>::iterator itr = shortEdgeVerts.begin();
   while (checked < shortEdgeVerts.size())
