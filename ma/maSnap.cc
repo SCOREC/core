@@ -36,6 +36,7 @@ static bool isCapstoneMesh(apf::Mesh* m)
     if (dynamic_cast<apf::MeshCAP*>(m)) return true;
     else return false;
   #else
+    (void)m;
     return false;
   #endif
 }
