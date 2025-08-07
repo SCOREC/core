@@ -1,9 +1,9 @@
 #include <apf.h>
+#include <apfMesh2.h>
 #include <apfCAP.h>
 #include <gmi_cap.h>
 #include <lionPrint.h>
 #include <pcu_util.h>
-#include <CapstoneModule.h>
 #include <PCU.h>
 
 int main (int argc, char* argv[]) {
@@ -11,16 +11,15 @@ int main (int argc, char* argv[]) {
   { // pcu object scope
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
+  gmi_cap_start();
   gmi_register_cap();
 
   PCU_ALWAYS_ASSERT(argc == 2);
-  std::string creFile(argv[1]);
+  const char* creFile(argv[1]);
   // 1. Load model.
-  CapstoneModule cs("cap_inClosureOf", "Geometry Database : SMLIB",
-    "Mesh Database : Create", "Attribution Database : Create");
-  cs.load_files(v_string(1, creFile));
+  gmi_model* model = gmi_cap_load(creFile);
   // 2. CreateMesh.
-  apf::Mesh2* m = apf::createMesh(cs.get_mesh(), cs.get_geometry(), &PCUObj);
+  apf::Mesh2* m = apf::createCapMesh(model, &PCUObj);
 
   PCU_ALWAYS_ASSERT(m->canGetClosestPoint());
 
@@ -35,6 +34,7 @@ int main (int argc, char* argv[]) {
   PCU_ALWAYS_ASSERT((to - apf::Vector3(0.5, 0.34, 0.5)).getLength() < 0.0001);
 
   apf::destroyMesh(m);
+  gmi_cap_stop();
   } // pcu object scope
   pcu::Finalize();
 }

@@ -1,276 +1,353 @@
-#include <cstring>
-#include <cstdlib>
+#include <exception>
+#include <stdexcept>
 
-// Output
-#include <lionPrint.h>
-
-// Parallelism
 #include <PCU.h>
-#include <pcu_util.h>
-
-// Mesh interfaces
 #include <apf.h>
 #include <apfCAP.h>
-
-// Geometry interfaces
+#include <apfConvert.h>
+#include <apfMDS.h>
+#include <apfMETIS.h>
+#include <apfMesh2.h>
+#include <apfPartition.h>
+#include <apfZoltan.h>
 #include <gmi.h>
 #include <gmi_cap.h>
-
-// Mesh adapt
+#include <lionPrint.h>
 #include <ma.h>
-
-using namespace CreateMG;
-using namespace CreateMG::Attribution;
-using namespace CreateMG::Mesh;
-using namespace CreateMG::Geometry;
+#include <parma.h>
+#include <pcu_util.h>
 
 #include "capVolSizeFields.h"
 
 namespace {
 
-void myExit(int exit_code = EXIT_SUCCESS) {
-  gmi_cap_stop();
-  pcu::Finalize();
-  exit(exit_code);
+/** \brief Print nested exceptions. */
+void print_exception(
+  const pcu::PCU& PCU, const std::exception& e, int level = 0
+);
+
+struct Args {
+  Args() {}
+  void parse(int argc, char* argv[]);
+  static void print_usage(const char* argv0);
+  std::string before, after, in, out;
+  bool analytic{false}, volume{false}, mds{false};
+  int sf{0};
+  enum Partitioner { Default, Zoltan, METIS, Parma } splitter, balancer;
+};
+
+void Args::print_usage(const char *argv0) {
+  std::cout << "USAGE: " << argv0 << " [-agm] [-B BEFORE.VTK] [-A AFTER.VTK] "
+    "[-s SPLITTER] [-b BALANCER] <size-field> <IN.CRE> <OUT.CRE>" << std::endl;
+  std::cout << R"help(
+Flags:
+-B BEFORE.VTK  Write the file BEFORE.VTK before adaptation with the
+               adapt_frames and adapt_scales fields.
+-A AFTER.VTK   Write the file AFTER.VTK after adaptation.
+-a             Evaluate size-field analytically during adaptation. The default
+               is to evaluate once, write the frames/scales, then transfer and
+               interpolate during adaptation.
+-g             Force mesh volume generation.
+-m             Convert mesh to MDS during adaptation (required for parallel
+               adaptation).
+-s SPLITTER    Force the selected splitter to be used. Possible values are:
+               Zoltan, METIS, Parma. The default is to use whatever is
+               available, in the order listed previously.
+-b BALANCER    Force the selected balancer to be used during adaptation.
+               Possible values and default priorities are the same as for
+               splitter selection. Using this option forces load-balancing
+               after each step, whereas the default only balances when the
+               estimated imbalance exceeds a threshold (10%%).
+
+SIZE-FIELDS:
+1, for uniform anisotropic size-field
+2, for wing-shock size-field
+3, for cube-shock size-field
+4, for cylinder boundary-layer size-field
+)help";
 }
 
-void writeCre(CapstoneModule& cs, const std::string& filename) {
-  GeometryDatabaseInterface    *gdbi = cs.get_geometry();
-  MeshDatabaseInterface        *mdbi = cs.get_mesh();
-  AppContext		       *ctx = cs.get_context();
+ma::Mesh* loadAdaptMesh(
+  pcu::PCU* PCU, gmi_model* model, bool volume, bool mds
+);
 
-  // Get the CRE writer.
-  Writer *creWriter = get_writer(ctx, "Create Native Writer");
-  if (!creWriter) {
-    lion_eprint(1, "FATAL: Could not find the CRE writer.\n");
-    myExit(EXIT_FAILURE);
-  }
-
-  IdMapping idmapping;
-  std::vector<M_MModel> mmodels;
-  M_GModel gmodel;
-  M_MModel mmodel;
-  gdbi->get_current_model(gmodel);
-  mdbi->get_current_model(mmodel);
-  mmodels.clear();
-  mmodels.push_back(mmodel);
-  creWriter->write(ctx, gmodel, mmodels, filename.c_str(), idmapping);
-}
-
-void printUsage(char *argv0) {
-  printf("USAGE: %s [-agwv] <size-field> <create_file.cre>\n", argv0);
-  printf("Flags:\n"
-  "-a\tEvaluate size-field analytically.\n"
-  "-g\tForce mesh generation.\n"
-  "-v\tEnable verbose output.\n"
-  "-w\tWrite before.vtk, after.vtk, and after.cre.\n"
-  "SIZE-FIELDS:\n"
-  "%d, for uniform anisotropic size-field\n"
-  "%d, for wing-shock size-field\n"
-  "%d, for cube-shock size-field\n"
-  "%d, for cylinder boundary-layer size-field\n", 1, 2, 3, 4);
-}
+void parallelAdapt(
+  pcu::PCU* PCU, gmi_model* model, apf::Mesh2* mesh, const Args& args
+);
 
 } // namespace
 
 int main(int argc, char** argv) {
+  lion_set_verbosity(1); // Initialize logging.
+  int retval = 0;
   // Initialize parallelism.
   pcu::Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
-
-  // Initialize logging.
-  lion_set_stdout(stdout);
-  lion_set_stderr(stderr);
-
-  // Check arguments or print usage.
-  if (argc < 3) {
-    if (PCUObj.Self() == 0) {
-      printUsage(argv[0]);
+  try {
+    // Check arguments or print usage.
+    Args args;
+    try {
+      args.parse(argc, argv);
+    } catch (const std::exception& e) {
+      if (PCUObj.Self() == 0) args.print_usage(argv[0]);
+      std::throw_with_nested(
+        std::runtime_error("invalid command line arguments")
+      );
     }
-    myExit(EXIT_FAILURE);
-  }
 
-  // Parse arguments.
-  bool volume_flag = false, write_flag = false, analytic_flag = false,
-       verbose_flag = false;
-  for (int i = 1; i < argc - 2; ++i) {
+    if (PCUObj.Peers() > 1 && !args.mds)
+      throw std::runtime_error("parallel run without -m flag");
+
+    // Initialize GMI.
+    gmi_cap_start();
+    gmi_register_cap();
+
+    try {
+      gmi_model* capGeomModel = nullptr;
+      if (PCUObj.Self() == 0) capGeomModel = gmi_cap_load(args.in.c_str());
+      else capGeomModel = gmi_cap_load_selective(args.in.c_str(), {});
+      auto soloPCU = PCUObj.Split(PCUObj.Self(), 0);
+      ma::Mesh* mesh = nullptr;
+      if (PCUObj.Self() == 0) {
+        mesh = loadAdaptMesh(
+          soloPCU.get(), capGeomModel, args.volume, args.mds
+        );
+        // APF default routine will typically fail to verify surface meshes.
+        if (args.volume) mesh->verify();
+      }
+      parallelAdapt(&PCUObj, capGeomModel, mesh, args);
+      if (PCUObj.Self() == 0) {
+        if (args.volume) mesh->verify();
+        if (args.mds) {
+          apf::Mesh2* mdsMesh = mesh;
+          mesh = apf::makeEmptyCapMesh(
+            capGeomModel, "MeshAdapt", soloPCU.get()
+          );
+          apf::disownCapModel(mesh);
+          apf::convert(mdsMesh, mesh);
+          apf::destroyMesh(mdsMesh);
+        }
+        gmi_cap_write(capGeomModel, args.out.c_str());
+        apf::destroyMesh(mesh);
+      }
+      gmi_destroy(capGeomModel);
+      gmi_cap_stop();
+    } catch(...) {
+      gmi_cap_stop();
+      std::rethrow_exception(std::current_exception());
+    }
+  } catch (const std::exception& e) {
+    if (PCUObj.Self() == 0) std::cerr << "ERROR: ";
+    print_exception(PCUObj, e);
+    retval = 1;
+  } catch(...) {
+    if (PCUObj.Self() == 0)
+      std::cerr << "ERROR: unspecified error" << std::endl;
+    retval = 1;
+  }
+  } // PCUObj scope
+  pcu::Finalize();
+  return retval;
+}
+
+namespace {
+
+void print_exception(const pcu::PCU& PCU, const std::exception& e, int level) {
+  if (PCU.Self() == 0)
+    std::cerr << std::string(level * 2, ' ') << e.what() << '\n';
+  try {
+    std::rethrow_if_nested(e);
+  } catch (const std::exception& nestedE) {
+    print_exception(PCU, nestedE, level + 1);
+  } catch (...) {}
+}
+
+void Args::parse(int argc, char* argv[]) {
+  constexpr int positional_args = 3;
+  if (argc < 1 + positional_args)
+    throw std::runtime_error("missing positional argument(s)");
+  auto strarg = [argc, argv](int& i, int& j) -> std::string {
+    if (argv[i][j + 1]) {
+      int oldj = j;
+      while (argv[i][j + 1] != '\0') ++j;
+      return &argv[i][oldj + 1];
+    } else if (i + 1 < argc - positional_args) {
+      ++i;
+      for (j = 0; argv[i][j + 1] != '\0'; ++j);
+      return argv[i];
+    } else throw std::runtime_error("missing argument for -" + argv[i][j]);
+  };
+  auto strlower = [](std::string str) {
+    for (auto& c : str) c = std::tolower(c);
+    return str;
+  };
+  auto str2part = [strlower](std::string str) -> Partitioner {
+    str = strlower(str);
+    if (str == "metis") return METIS;
+    if (str == "parma") return Parma;
+    if (str == "zoltan") return Zoltan;
+    throw std::invalid_argument("invalid partitioner name: " + str);
+  };
+  int i;
+  for (i = 1; i < argc - positional_args; ++i) {
     if (*argv[i] == '-') {
       for (int j = 1; argv[i][j] != '\0'; ++j) {
         switch(argv[i][j]) {
-        case 'a':
-          analytic_flag = true;
-          break;
-        case 'g':
-          volume_flag = true;
-          break;
-        case 'v':
-          verbose_flag = true;
-          lion_set_verbosity(1);
-          break;
-        case 'w':
-          write_flag = true;
-          break;
-        default:
-          printf("Error: invalid flag.\n");
-          printUsage(argv[0]);
-          myExit(EXIT_FAILURE);
+        case 'A': after = strarg(i, j); break;
+        case 'B': before = strarg(i, j); break;
+        case 'a': analytic = true; break;
+        case 'g': volume = true; break;
+        case 'm': mds = true; break;
+        case 's': splitter = str2part(strarg(i, j)); break;
+        case 'b': balancer = str2part(strarg(i, j)); break;
+        default: throw std::runtime_error("unrecognized flag: -" + argv[i][j]);
         }
       }
-    }
+    } else break;
   }
+  sf = std::atoi(argv[i]);
+  in = argv[i + 1];
+  out = argv[i + 2];
+}
 
-  const char* createFileName = argv[argc - 1];
-  int mode = atoi(argv[argc - 2]);
+ma::Mesh* loadAdaptMesh(
+  pcu::PCU* PCU, gmi_model* model, bool volume, bool mds
+) {
+  // Load Capstone mesh (with optional volume generation).
+  ma::Mesh* capMesh = nullptr;
+  if (volume) {
+    int dim = 3;
+    capMesh = apf::generateCapMesh(model, dim, PCU);
+    // FIXME: maybe create copy of mesh model to work on (preserve original).
+  } else capMesh = apf::createCapMesh(model, PCU);
+  apf::disownCapModel(capMesh);
+  // Optionally convert to MDS
+  ma::Mesh* adaptMesh = nullptr;
+  if (mds) {
+    adaptMesh = apf::createMdsMesh(model, capMesh, true);
+    apf::disownMdsModel(adaptMesh); // Model is managed in main.
+    apf::destroyMesh(capMesh);
+  } else adaptMesh = capMesh;
+  return adaptMesh;
+}
 
-  // Initialize GMI.
-  gmi_cap_start();
-  gmi_register_cap();
-  // create an instance of the Capstone Module activating SMLIB/CREATE/CREATE
-  // for the Geometry/Mesh/Attribution databases
-  const std::string gdbName("Geometry Database : SMLIB");
-  const std::string mdbName("Mesh Database : Create");
-  const std::string adbName("Attribution Database : Create");
-
-  CapstoneModule  cs("capTest", gdbName.c_str(), mdbName.c_str(), adbName.c_str());
-
-  GeometryDatabaseInterface     *g = cs.get_geometry();
-  MeshDatabaseInterface         *m = cs.get_mesh();
-  AppContext                    *c = cs.get_context();
-
-  PCU_ALWAYS_ASSERT(g);
-  PCU_ALWAYS_ASSERT(m);
-  PCU_ALWAYS_ASSERT(c);
-
-  // Load Capstone mesh.
-  v_string filenames;
-  filenames.push_back(createFileName);
-  M_GModel gmodel = cs.load_files(filenames);
-
-  if (volume_flag) {
-    M_MModel mmodel = cs.generate_mesh();
-    if (mmodel.is_invalid()) {
-      lion_eprint(1, "FATAL: Failed to mesh the model.\n");
-      myExit(EXIT_FAILURE);
-    }
-    MG_API_CALL(m, set_current_model(mmodel));
-  } else {
-    // Use the first existing mesh model.
-    std::vector<M_MModel> mmodels;
-    MG_API_CALL(m, get_associated_mesh_models(gmodel, mmodels));
-    PCU_ALWAYS_ASSERT(mmodels.size() == 1);
-    MG_API_CALL(m, set_current_model(mmodels[0]));
+apf::Splitter* makeSplitter(Args::Partitioner ptnr, apf::Mesh2* mesh) {
+  switch (ptnr) {
+  case Args::Zoltan:
+    return apf::makeZoltanSplitter(mesh, apf::GRAPH, apf::PARTITION);
+  case Args::METIS: return apf::makeMETISsplitter(mesh);
+  case Args::Parma: return Parma_MakeRibSplitter(mesh);
+  default:
+    #if defined(PUMI_HAS_ZOLTAN)
+    return apf::makeZoltanSplitter(
+      mesh, apf::GRAPH, apf::PARTITION
+    );
+    #elif defined(PUMI_HAS_METIS)
+    return apf::makeMETISsplitter(mesh);
+    #else
+    return Parma_MakeRibSplitter(mesh);
+    #endif
   }
+}
 
-  if (write_flag) {
-    writeCre(cs, "core_capVol_before.cre");
-  }
-
-  // Calculate adjacencies.
-  MG_API_CALL(m, set_adjacency_state(REGION2FACE|REGION2EDGE|REGION2VERTEX|
-				     FACE2EDGE|FACE2VERTEX));
-  MG_API_CALL(m, set_reverse_states());
-  MG_API_CALL(m, compute_adjacency());
-
-  // Make APF adapter over Capstone mesh.
-  ma::Mesh* apfCapMesh = apf::createMesh(m, g, &PCUObj);
-
-  // Choose appropriate size-field.
-  ma::AnisotropicFunction* sf = nullptr;
+ma::AnisotropicFunction* makeUDF(int mode, ma::Mesh* mesh) {
   switch (mode) {
-    case 1:
-      sf = new UniformAniso(apfCapMesh);
-      break;
-    case 2:
-      sf = new WingShock(apfCapMesh, 50);
-      break;
-    case 3:
-      sf = new Shock(apfCapMesh);
-      break;
-    case 4:
-      sf = new CylBoundaryLayer(apfCapMesh);
-      break;
-    default:
-      lion_eprint(1, "FATAL: Invalid size-field.\n");
-      myExit(EXIT_FAILURE);
+    case 1: return new UniformAniso(mesh);
+    case 2: return new WingShock(mesh, 50);
+    case 3: return new Shock2(mesh);
+    case 4: return new CylBoundaryLayer(mesh);
+    default: throw std::runtime_error("invalid size-field");
   }
+}
+
+void migrateHome(apf::Mesh2* mesh) {
+  auto t0 = pcu::Time();
+  apf::Migration* plan = new apf::Migration(mesh);
+  apf::MeshIterator* it = mesh->begin(mesh->getDimension());
+  for (apf::MeshEntity* e; (e = mesh->iterate(it));) plan->send(e, 0);
+  mesh->end(it);
+  mesh->migrate(plan); // destroys plan
+  auto map0 = apf::Multiply(0);
+  apf::remapPartition(mesh, map0);
+  auto t1 = pcu::Time();
+  if (mesh->getPCU()->Self() == 0)
+    std::cout << "INFO: Migrated home in " << t1 - t0 << " seconds"
+      << std::endl;
+}
+
+void parallelAdapt(
+  pcu::PCU* PCU, gmi_model* model, apf::Mesh2* mesh, const Args& args
+) {
+  pcu::PCU* oldPCU = nullptr;
+  if (mesh) oldPCU = mesh->getPCU();
+  if (PCU->Peers() > 1) {
+    apf::Migration* plan = nullptr;
+    if (PCU->Self() == 0) {
+      apf::Splitter* splitter = makeSplitter(args.splitter, mesh);
+      apf::MeshTag* weights = Parma_WeighByMemory(mesh);
+      plan = splitter->split(weights, 1.10, PCU->Peers());
+      apf::removeTagFromDimension(
+        mesh, weights, mesh->getDimension()
+      );
+      mesh->destroyTag(weights);
+      delete splitter;
+      mesh->switchPCU(PCU);
+    }
+    mesh = apf::repeatMdsMesh(mesh, model, plan, PCU->Peers(), PCU);
+    apf::disownMdsModel(mesh);
+  }
+  // Choose appropriate size-field.
+  std::unique_ptr<ma::AnisotropicFunction> sf(makeUDF(args.sf, mesh));
 
   // Make pumi fields for the frames and scales for anisotropic size-fields.
   apf::Field* frameField = nullptr;
   apf::Field* scaleField = nullptr;
-  ma::Input *in = nullptr;
-  if (!analytic_flag || write_flag) {
-    frameField = apf::createFieldOn(apfCapMesh, "adapt_frames", apf::MATRIX);
-    scaleField = apf::createFieldOn(apfCapMesh, "adapt_scales", apf::VECTOR);
-
-    ma::Entity *v;
-    ma::Iterator* it = apfCapMesh->begin(0);
-    while( (v = apfCapMesh->iterate(it)) ) {
+  if (!args.analytic || !args.before.empty()) {
+    frameField = apf::createFieldOn(mesh, "adapt_frames", apf::MATRIX);
+    scaleField = apf::createFieldOn(mesh, "adapt_scales", apf::VECTOR);
+    apf::MeshIterator* it = mesh->begin(0);
+    for (apf::MeshEntity* v; (v = mesh->iterate(it));) {
       ma::Vector s;
       ma::Matrix f;
       sf->getValue(v, f, s);
       apf::setVector(scaleField, v, 0, s);
       apf::setMatrix(frameField, v, 0, f);
     }
-    apfCapMesh->end(it);
+    mesh->end(it);
 
-    if (write_flag) {
-      apf::writeVtkFiles("core_capVol_before", apfCapMesh);
+    if (!args.before.empty()) apf::writeVtkFiles(args.before.c_str(), mesh);
+    if (args.analytic) { // Cleanup if fields were only for before.vtk
+      apf::destroyField(frameField);
+      apf::destroyField(scaleField);
+      frameField = scaleField = nullptr;
     }
   }
 
-  if (!analytic_flag) {
-    // Pass the field data.
-    in = ma::makeAdvanced(ma::configure(apfCapMesh, scaleField, frameField));
-  } else {
-    // Pass the function.
-    in = ma::makeAdvanced(ma::configure(apfCapMesh, sf));
+  ma::Input *in = nullptr;
+  if (args.analytic) in = ma::makeAdvanced(ma::configure(mesh, sf.get()));
+  else in = ma::makeAdvanced(ma::configure(mesh, scaleField, frameField));
+  switch (args.balancer) {
+  case Args::Zoltan:
+    in->shouldRunPreZoltan = in->shouldRunMidZoltan = true;
+    in->shouldRunPostZoltan = true;
+    break;
+  case Args::METIS:
+    in->shouldRunPreMetis = in->shouldRunMidMetis = true;
+    in->shouldRunPostMetis = true;
+    break;
+  case Args::Parma:
+    in->shouldRunPreParma = in->shouldRunMidParma = true;
+    in->shouldRunPostParma = true;
+    break;
+  default:;
   }
 
-  in->shouldSnap = true;
-  in->shouldTransferParametric = true;
-  in->shouldFixShape = true;
-  in->shouldForceAdaptation = true;
-  if (apfCapMesh->getDimension() == 2)
-    in->goodQuality = 0.04; // this is mean-ratio squared
-  else // 3D meshes
-    in->goodQuality = 0.027; // this is the mean-ratio cubed
-  in->maximumIterations = 10;
-
-  if (verbose_flag) {
-    // Adapt with verbose logging but without intermediate VTKs.
-    ma::adaptVerbose(in, false);
-  } else {
-    ma::adapt(in);
-  }
-
-  if (volume_flag) {
-    // We can't verify surface meshes.
-    apfCapMesh->verify();
-  }
-
-  if (write_flag) {
-    apf::writeVtkFiles("core_capVol_after", apfCapMesh);
-    writeCre(cs, "core_capVol_after.cre");
-  }
-
-  /* PRINT ADAPTED MESH INFO */
-  if (verbose_flag) {
-    M_MModel mmdl;
-    m->get_current_model(mmdl);
-    std::string info;
-    m->print_info(mmdl, info);
-    lion_oprint(1, "%s", info.c_str());
-  }
-
-  // Clean up.
-  if (frameField) apf::destroyField(frameField);
-  if (scaleField) apf::destroyField(scaleField);
-  apf::destroyMesh(apfCapMesh);
-  delete sf;
-
-  // Exit calls.
-  gmi_cap_stop();
-  }
-  pcu::Finalize();
+  ma::adapt(in);
+  if (!args.after.empty()) apf::writeVtkFiles(args.after.c_str(), mesh);
+  if (PCU->Peers() > 1) migrateHome(mesh);
+  if (PCU->Self() != 0) apf::destroyMesh(mesh);
+  else mesh->switchPCU(oldPCU);
 }
+
+} // namespace

@@ -51,7 +51,7 @@ int const quad_edge_verts[4][2] =
 */
 
 int const tet_edge_verts[6][2] =
-#ifndef HAVE_CAPSTONE
+#ifndef PUMI_HAS_CAPSTONE
 {{0,1}
 ,{1,2}
 ,{2,0}
@@ -78,7 +78,7 @@ int const pyramid_edge_verts[8][2] =
 ,{0,4},{1,4},{2,4},{3,4}};
 
 int const tet_tri_verts[4][3] =
-#ifndef HAVE_CAPSTONE
+#ifndef PUMI_HAS_CAPSTONE
 {{0,1,2}
 ,{0,1,3}
 ,{1,2,3}

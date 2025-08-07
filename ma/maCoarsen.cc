@@ -307,7 +307,7 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
 }
 
 //Prevent adjacent vertices from collapsing to create indepedent set
-void flagIndependentSet(Adapt* a, apf::Up& adjacent, int& checked)
+void flagIndependentSet(Adapt* a, apf::Up& adjacent, size_t& checked)
 {
   for (int adj=0; adj < adjacent.n; adj++) {
     Entity* vertices[2];
@@ -331,7 +331,7 @@ struct EdgeLength
   }
 };
 
-bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, int& checked, apf::Up& adjacent, Tag* lengthTag)
+bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, size_t& checked, apf::Up& adjacent, Tag* lengthTag)
 {
   Entity* vertex = *itr;
   std::vector<EdgeLength> sorted;
@@ -346,7 +346,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
     itr = shortEdgeVerts.erase(itr);
     return false;
   }
-  for (int i=0; i < sorted.size(); i++) {
+  for (size_t i=0; i < sorted.size(); i++) {
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
     if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
     flagIndependentSet(a, adjacent, checked);
@@ -367,9 +367,9 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
 }
 
 //Iterates through shortEdgeVerts until it finds a vertex that is adjacent to an independent set
-bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, bool& independentSetStarted, const int checked, apf::Up& adjacent)
+bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, bool& independentSetStarted, apf::Up& adjacent)
 {
-  int numItr=0;
+  size_t numItr=0;
   do {
     numItr++;
     if (itr == shortEdgeVerts.end()) itr = shortEdgeVerts.begin();
@@ -423,13 +423,13 @@ bool coarsenMultiple(Adapt* a)
   Collapse collapse;
   collapse.Init(a);
   int success = 0;
-  int checked = 0;
+  size_t checked = 0;
   bool independentSetStarted = false;
   std::list<Entity*>::iterator itr = shortEdgeVerts.begin();
   while (checked < shortEdgeVerts.size())
   {
     apf::Up adjacent;
-    if (!getAdjIndependentSet(a, shortEdgeVerts, itr, independentSetStarted, checked, adjacent)) continue;
+    if (!getAdjIndependentSet(a, shortEdgeVerts, itr, independentSetStarted, adjacent)) continue;
     if (collapseShortest(a, collapse, shortEdgeVerts, itr, checked, adjacent, lengthTag)) {
       independentSetStarted=true;
       success++;
@@ -438,7 +438,7 @@ bool coarsenMultiple(Adapt* a)
   ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE | CHECKED, 0);
   a->mesh->destroyTag(lengthTag);
   double t1 = pcu::Time();
-  print(a->mesh->getPCU(), "coarsened %li edges in %f seconds", success, t1-t0);
+  print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", success, t1-t0);
   return true;
 }
 
