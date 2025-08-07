@@ -20,7 +20,7 @@ class AnIso : public ma::AnisotropicFunction
 {
   public:
     AnIso(ma::Mesh* m, double sf1, double sf2) :
-      mesh(m), sizeFactor1(sf1), sizeFactor2(sf2)
+      sizeFactor1(sf1), sizeFactor2(sf2)
     {
       average = ma::getAverageEdgeLength(m);
       ma::getBoundingBox(m, lower, upper);
@@ -36,7 +36,6 @@ class AnIso : public ma::AnisotropicFunction
       );
     }
   private:
-    ma::Mesh* mesh;
     double sizeFactor1, sizeFactor2, average;
     ma::Vector lower, upper;
 };
