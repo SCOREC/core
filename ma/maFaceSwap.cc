@@ -1,4 +1,6 @@
 #include "maAdapt.h"
+#include "maSnapper.h"
+#include "apfGeometry.h"
 
 namespace ma {
 
@@ -34,8 +36,18 @@ namespace ma {
       newEdgeVerts[0] = getTetVertOppositeTri(mesh, adjTets.e[0], face);
       newEdgeVerts[1] = getTetVertOppositeTri(mesh, adjTets.e[1], face);
 
-      //TODO: determine two2two or two2three by checking if two adjacent sides are coplanar
-      //        check that they are coplanar by comparing normals
+      type = Two2Three;
+      Entity* verts[3];
+      mesh->getDownward(face, 0, verts);
+      for (int i=0; i<3; i++) {
+        Entity* face0 = getTetFaceOppositeVert(mesh, adjTets.e[0], verts[i]);
+        Entity* face1 = getTetFaceOppositeVert(mesh, adjTets.e[1], verts[i]);
+        Vector normal0 = getTriNormal(mesh, face0);
+        Vector normal1 = getTriNormal(mesh, face1);
+        if (apf::areClose(normal0, normal1, 1e-10))
+          type = Two2Two;
+      }
+
       //TODO: check quality from swap depending each case
 
       if (type == Two2Two) {
