@@ -257,6 +257,7 @@ bool coarsen(Adapt* a)
   return true;
 }
 
+//Measure and edge lenght and stores the result so it doesn't have to be calculated again
 static double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
 {
   double length = 0;
@@ -271,6 +272,7 @@ static double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
   
 }
 
+//Make sure that a collapse will not create an edge longer than the max
 bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent)
 {
   Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vertex);
@@ -306,7 +308,11 @@ static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& coll
   return result;
 }
 
-//Prevent adjacent vertices from collapsing to create indepedent set
+/*
+  Used after collpasing a vertex to flag adjacent vertices NEED_NOT_COLLAPSE, will create a
+  set of collapses were no two adjacent vertices collapsed called an independent set. Will
+  also clear adjacent vertices for collapse in next independent set since they might succeed now.
+*/
 void flagIndependentSet(Adapt* a, apf::Up& adjacent, size_t& checked)
 {
   for (int adj=0; adj < adjacent.n; adj++) {
@@ -331,6 +337,11 @@ struct EdgeLength
   }
 };
 
+/*
+  Given an iterator pointing to a vertex we will collapse the shortest adjacent edge and try the next
+  shorted until one succeeds and then it will expand independent set. In Li's thesis it only attempts
+  to collapse the shortest edge, but this gave us better results.
+*/
 bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, size_t& checked, apf::Up& adjacent, Tag* lengthTag)
 {
   Entity* vertex = *itr;
@@ -366,7 +377,12 @@ void clearListFlag(Adapt* a, std::list<Entity*> list, int flag)
     clearFlag(a, *i++, flag);
 }
 
-//Iterates through shortEdgeVerts until it finds a vertex that is adjacent to an independent set
+/*
+  Iterates through shortEdgeVerts until it finds a vertex that is adjacent to an 
+  independent set. We want our collapses to touch the independent set in order to
+  reduce adjacent collapses, since collapsing adjacent vertices will result in a
+  lower quality mesh.
+*/
 bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, bool& independentSetStarted, apf::Up& adjacent)
 {
   size_t numItr=0;
@@ -390,6 +406,7 @@ bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::lis
   return false;
 }
 
+//returns a list of vertices that bound a short edge and flags them
 std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
 {
   std::list<Entity*> shortEdgeVerts;
@@ -412,6 +429,10 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
   return shortEdgeVerts;
 }
 
+/*
+  Follows the alogritm in Li's thesis in order to coarsen all short edges 
+  in a mesh while maintaining a decent quality mesh.
+*/
 bool coarsenMultiple(Adapt* a)
 {
   if (!a->input->shouldCoarsen)

@@ -61,6 +61,8 @@ bool Snapper::requestLocality(apf::CavityOp* o)
   return o->requestLocality(&ovs.e[0], ovs.n);
 }
 
+//Write snapping data to files for debugging purposes
+//In order to view relevant information it is neccessary to hide entities with relevent flag in vtk viewer
 static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 {
   setFlag(a, ent, CHECKED);
@@ -68,6 +70,7 @@ static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
   clearFlag(a, ent, CHECKED);
 }
 
+//Write snapping data to files for debugging purposes
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
   ma_dbg::addTargetLocation(a, "snap_target");
@@ -284,6 +287,11 @@ int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* en
   return bit;
 }
 
+/*
+  We perform this last to make sure that we have a simple region where we can determine the
+  best operation to perform and because we want to avoid creating more vertices to snap since
+  we could get stuck in an infinite loop of creating and snapping those vertices.
+*/
 bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 {
   Entity* ents[4] = {0};
@@ -379,6 +387,11 @@ struct BestCollapse
   Entity* keep;
 };
 
+/*
+  Perfomes a collapse operation and stores the operation in best if the quality is better, 
+  then cancels the collapse. We want to pick the highest quality after collapsing to the
+  first problem plane so future operations are more likely to succeed.
+*/
 static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, BestCollapse& best)
 {
   PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
@@ -400,6 +413,7 @@ static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collaps
   if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
 }
 
+//returns if testVert and refVert are on the same side of the face
 static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
 {
   Entity* faceVert[3];
@@ -420,6 +434,11 @@ static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
   return true; //same side of face
 }
 
+/*
+  If collapsing the common edges failed we want to try collapsing any edge that will
+  move us towards the first problem plane. We try collapses first in order to simplify
+  the region until we can perform smarter operations.
+*/
 bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
 {
   apf::Up& commEdges = FPP->commEdges;
@@ -454,6 +473,11 @@ bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
   else return false;
 }
 
+/*
+  If collapsing to the first problem plane has failed then we want
+  to collapse edges on the first problem plane in order to simplify
+  the region future operations are more likely to succeed.
+*/
 bool Snapper::tryReduceCommonEdges(FirstProblemPlane* FPP)
 {
   apf::Up& commEdges = FPP->commEdges;
@@ -493,6 +517,11 @@ bool Snapper::tryReduceCommonEdges(FirstProblemPlane* FPP)
   else return false;
 }
 
+/*
+  First we try collapsing to a vertex on the first problem plane because this is the most likely
+  operation to succeed. We first try collapsing to the common edges among the invalid regions 
+  since those are more likely to succeed.
+*/
 bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
 {
   Vector position = getPosition(mesh, vert);
@@ -506,7 +535,6 @@ bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
     Entity* edge = FPP->commEdges.e[i];
     Entity* vertexOnFPP = getEdgeVertOppositeVert(mesh, edge, vert);
     Vector vFPPCoord = getPosition(mesh, vertexOnFPP);
-    //TODO: add logic for boundary layers
     double distToFPPVert = (vFPPCoord - target).getLength();
     if (distToFPPVert > distTarget) continue;
     getBestQualityCollapse(adapt, edge, vert, collapse, best);
@@ -546,6 +574,7 @@ static void getInvalidTets(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
   }
 }
 
+//Moved vertex to model surface or returns invalid elements if not possible
 static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
 {
   Mesh* mesh = adapt->mesh;
@@ -567,9 +596,16 @@ bool Snapper::trySimpleSnap()
   apf::Up invalid;
   return tryReposition(adapt, vert, snapTag, invalid);
 }
-
+#if defined(DEBUG_FPP)
 static int DEBUGFAILED=0;
+#endif
 
+/*
+This function will attempt to move vert to the model surface, if it can not do so then it
+will atleast move to the first problem plane as described in Li's thesis. It might take multiple
+iterations for vert to reach the model surface. Li's thesis was missing some details on how
+to apply certain opperators so other algoritms were adapted from old scorec libraries.
+*/
 bool Snapper::run()
 {
   apf::Up invalid;
@@ -592,8 +628,9 @@ bool Snapper::run()
     mesh->removeTag(vert,snapTag);
     clearFlag(adapt, vert, SNAP);
   }
+  #if defined(DEBUG_FPP)
   if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
-  
+  #endif
   if (FPP) delete FPP;
   return success;
 }
