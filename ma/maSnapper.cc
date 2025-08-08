@@ -63,14 +63,17 @@ bool Snapper::requestLocality(apf::CavityOp* o)
 
 //Write snapping data to files for debugging purposes
 //In order to view relevant information it is neccessary to hide entities with relevent flag in vtk viewer
+#if defined(DEBUG_FPP)
 static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 {
   setFlag(a, ent, CHECKED);
   ma_dbg::dumpMeshWithFlag(a, 0, dim, CHECKED, name, name);
   clearFlag(a, ent, CHECKED);
 }
+#endif
 
 //Write snapping data to files for debugging purposes
+#if defined(DEBUG_FPP)
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
   ma_dbg::addTargetLocation(a, "snap_target");
@@ -91,6 +94,7 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
   flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
   flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
 }
+#endif
 
 static int indexOfMin(double a0, double a1, double a2)
 {
