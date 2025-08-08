@@ -2,6 +2,10 @@
 #include "maSnapper.h"
 #include "apfGeometry.h"
 
+//TODO: move useful functions to header
+//TODO: break up functions into smaller chunks
+//TODO: add comments
+
 namespace ma {
 
   enum FaceSwapType {
@@ -9,8 +13,13 @@ namespace ma {
     Two2Three,
   };
 
-  Entity* findCommonEdge(Entity* face1, Entity* face2)
+  Entity* findCommonEdge(Mesh* mesh, Entity* face1, Entity* face2)
   {
+    Entity* face1Edges[3];
+    mesh->getDownward(face1, 1, face1Edges);
+    for (int i=0; i<3; i++)
+      if (isLowInHigh(mesh, face2, face1Edges[i]))
+        return face1Edges[i];
     return face1;
   }
 
@@ -59,7 +68,7 @@ namespace ma {
         Vector normal1 = getTriNormal(mesh, face1);
         if (apf::areClose(normal0, normal1, 1e-10)) {
           type = Two2Two;
-          commonEdge = findCommonEdge(face0, face1);
+          commonEdge = findCommonEdge(mesh, face0, face1);
         }
       }
 
