@@ -241,7 +241,7 @@ apf::Splitter* makeSplitter(Args::Partitioner ptnr, apf::Mesh2* mesh) {
   default:
     #if defined(PUMI_HAS_ZOLTAN)
     return apf::makeZoltanSplitter(
-      adaptMesh, apf::GRAPH, apf::PARTITION
+      mesh, apf::GRAPH, apf::PARTITION
     );
     #elif defined(PUMI_HAS_METIS)
     return apf::makeMETISsplitter(mesh);
