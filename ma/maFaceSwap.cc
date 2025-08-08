@@ -14,13 +14,13 @@ namespace ma {
     return face1;
   }
 
-  void fillAdjVerts(Mesh* mesh, Entity* newTetVerts[4], const apf::Up& adjTets)
+  void fillAdjVerts(Mesh* mesh, Entity* newTetVerts[4], const Upward& adjTets)
   {
     apf::Up adjEdges;
     mesh->getUp(newTetVerts[0], adjEdges);
     int j=1;
     for (int i=0; i<adjEdges.n; i++) {
-      if (isLowInHigh(mesh, adjTets.e[0] , adjEdges.e[i]))
+      if (isLowInHigh(mesh, adjTets[0] , adjEdges.e[i]))
         newTetVerts[j++] = apf::getEdgeVertOppositeVert(mesh, adjEdges.e[i], newTetVerts[0]);
     }
   }
@@ -28,11 +28,10 @@ namespace ma {
   class FaceSwap
   {
     public:
-    FaceSwap(Adapt* a, Entity* f):
-      adapt(a),
-      mesh(a->mesh),
-      face(f)
-    {}
+    FaceSwap(Adapt* a, Entity* f): adapt(a), mesh(a->mesh), face(f)
+    {
+      cavity.init(a);
+    }
 
     bool topoCheck()
     {   
@@ -46,19 +45,16 @@ namespace ma {
 
     bool geomCheck()
     {
-      apf::Up adjTets;
-      mesh->getUp(face, adjTets);
-      Entity* newEdgeVerts[2];
-      newEdgeVerts[0] = getTetVertOppositeTri(mesh, adjTets.e[0], face);
-      newEdgeVerts[1] = getTetVertOppositeTri(mesh, adjTets.e[1], face);
+      Upward adjTets;
+      mesh->getAdjacent(face, 3, adjTets);
 
       type = Two2Three;
-      Entity* verts[3];
-      mesh->getDownward(face, 0, verts);
+      Entity* faceVerts[3];
+      mesh->getDownward(face, 0, faceVerts);
       Entity* commonEdge;
       for (int i=0; i<3; i++) {
-        Entity* face0 = getTetFaceOppositeVert(mesh, adjTets.e[0], verts[i]);
-        Entity* face1 = getTetFaceOppositeVert(mesh, adjTets.e[1], verts[i]);
+        Entity* face0 = getTetFaceOppositeVert(mesh, adjTets[0], faceVerts[i]);
+        Entity* face1 = getTetFaceOppositeVert(mesh, adjTets[1], faceVerts[i]);
         Vector normal0 = getTriNormal(mesh, face0);
         Vector normal1 = getTriNormal(mesh, face1);
         if (apf::areClose(normal0, normal1, 1e-10)) {
@@ -68,7 +64,8 @@ namespace ma {
       }
 
       //TODO: check quality from swap depending each case
-      int tempDim = 3; //TODO: calculate dim
+      cavity.beforeBuilding();
+      Model* model = mesh->toModel(adjTets[0]);
       if (type == Two2Two) {
         Entity* commEdgeVerts[2];
         mesh->getDownward(commonEdge, 0, commEdgeVerts);
@@ -81,13 +78,29 @@ namespace ma {
         fillAdjVerts(mesh, newTetVerts0, adjTets);
         fillAdjVerts(mesh, newTetVerts1, adjTets);
 
-        buildElement(adapt, tempDim, apf::Mesh::TET, newTetVerts0);
-        buildElement(adapt, tempDim, apf::Mesh::TET, newTetVerts1);
+        buildElement(adapt, model, apf::Mesh::TET, newTetVerts0);
+        buildElement(adapt, model, apf::Mesh::TET, newTetVerts1);
       }
       else if (type == Two2Three) {
-        
+        Entity* newTetVerts[4];
+        newTetVerts[0] = getTetVertOppositeTri(mesh, adjTets[0], face);
+        newTetVerts[1] = getTetVertOppositeTri(mesh, adjTets[1], face);
+
+        Entity* faceEdges[3];
+        mesh->getDownward(face, 1, faceEdges);
+        for (int i=0; i<3; i++) {
+          Entity* faceEdgeVerts[2];
+          mesh->getDownward(faceEdges[i], 0, faceEdgeVerts);
+          newTetVerts[2]=faceEdgeVerts[0];
+          newTetVerts[3]=faceEdgeVerts[1];
+          buildElement(adapt, model, apf::Mesh::TET, newTetVerts);
+        }
       }
-      
+      cavity.afterBuilding();
+      cavity.fit(adjTets);
+      cavity.transfer(adjTets);
+      destroyElement(adapt, adjTets[0]);
+      destroyElement(adapt, adjTets[1]);
       return true;
     }
 
@@ -107,6 +120,7 @@ namespace ma {
     Adapt* adapt;
     Entity* face;
     FaceSwapType type;
+    Cavity cavity;
   };
 
   bool runEdgeSwap(Adapt* a, Entity* face)
