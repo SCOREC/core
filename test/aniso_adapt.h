@@ -44,15 +44,27 @@ void measureQuality(ma::Mesh* m, double& avgQuality, double& minQuality)
 {
   int d = m->getDimension();
   apf::MeshEntity* elem;
-  apf::MeshIterator* elems = m->begin(d);
+  apf::MeshIterator* it = m->begin(d);
   ma::IdentitySizeField I(m);
-  while ((elem = m->iterate(elems))) {
+  while ((elem = m->iterate(it))) {
     double q = ma::measureElementQuality(m, &I, elem);
     avgQuality += q;
     minQuality = fmin(minQuality, q);
   }
-  m->end(elems);
+  m->end(it);
   avgQuality = avgQuality / m->count(d);
+}
+
+//make sure refinement is done
+bool noLongEdges(ma::Adapt* a)
+{
+  apf::MeshEntity* edge;
+  apf::MeshIterator* it = a->mesh->begin(1);
+  while ((edge = a->mesh->iterate(it)))
+    if (a->sizeField->measure(edge) > ma::MAXLENGTH)
+      return false;
+  a->mesh->end(it);
+  return true;
 }
 
 int countEdges(ma::Mesh* m)
@@ -77,9 +89,10 @@ ma::Mesh* coarsenForced(ma::Mesh* m)
 
   measureQuality(m, avgQualAfter, minQualAfter);
 
+  //make sure that coarsening is happening and it doesn't make the mesh invalid
   PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
   PCU_ALWAYS_ASSERT(averageBefore < ma::getAverageEdgeLength(m));
-  PCU_ALWAYS_ASSERT(minQualAfter >= 0);
+  PCU_ALWAYS_ASSERT(minQualAfter >= in->validQuality);
 
   m->verify();
   delete a;
@@ -108,6 +121,7 @@ ma::Mesh* coarsenRegular(ma::Mesh* m)
 
   measureQuality(m, avgQualAfter, minQualAfter);
 
+  //Makes sure that coarsening is happening and it isn't decreasing the quality of the mesh
   PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
   PCU_ALWAYS_ASSERT(averageBefore < ma::getAverageEdgeLength(m));
   PCU_ALWAYS_ASSERT(fabs(minQualBefore - minQualAfter) < 0.001f || minQualBefore < minQualAfter);
@@ -123,6 +137,7 @@ ma::Mesh* coarsenRegular(ma::Mesh* m)
   return m;
 }
 
+//Makes sure that all of the vertices snapped to the model
 bool allVertsOnModel(ma::Adapt* a)
 {
   if (!a->input->shouldSnap)
@@ -163,9 +178,16 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
     ma::snap(a);
   }
 
+  double avgQualAfter, minQualAfter;
+  measureQuality(m, avgQualAfter, minQualAfter);
+
+  //Makes sure that refinement is happening
   PCU_ALWAYS_ASSERT(edgesBefore < countEdges(m));
   PCU_ALWAYS_ASSERT(averageBefore > ma::getAverageEdgeLength(m));
+
+  PCU_ALWAYS_ASSERT(noLongEdges(a));
   PCU_ALWAYS_ASSERT(allVertsOnModel(a));
+  PCU_ALWAYS_ASSERT(minQualAfter >= 0);
 
   m->verify();
   delete a;
@@ -180,6 +202,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
 
 void adaptTests(const std::function<ma::Mesh*()>& createMesh)
 {
+  //Mesh created multiple times to compare adaptation
   ma::Mesh* meshReg = createMesh();
   apf::writeVtkFiles("startMesh", meshReg);
 
@@ -192,6 +215,7 @@ void adaptTests(const std::function<ma::Mesh*()>& createMesh)
   ma::Mesh* meshForce = coarsenForced(refineSnapTest(createMesh()));
   apf::writeVtkFiles("afterForcedCoarsen", meshForce);
 
+  //Make sure setting to force coarsen is functioning
   PCU_ALWAYS_ASSERT(countEdges(meshReg) > countEdges(meshForce));
   PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(meshReg) < ma::getAverageEdgeLength(meshForce));
 
