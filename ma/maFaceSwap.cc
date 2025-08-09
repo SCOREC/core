@@ -1,6 +1,7 @@
 #include "maAdapt.h"
 #include "maSnapper.h"
 #include "apfGeometry.h"
+#include "maDBG.h"
 
 //TODO: move useful functions to header
 //TODO: break up functions into smaller chunks
@@ -76,6 +77,7 @@ namespace ma {
       cavity.beforeBuilding();
       Model* model = mesh->toModel(adjTets[0]);
       if (type == Two2Two) {
+        printf("\t[Warning]: found two2two face swap, this is unteasted please test\n");
         Entity* commEdgeVerts[2];
         mesh->getDownward(commonEdge, 0, commEdgeVerts);
 
@@ -132,13 +134,17 @@ namespace ma {
     Cavity cavity;
   };
 
-  bool runEdgeSwap(Adapt* a, Entity* face)
+  bool runFaceSwap(Adapt* a, Entity* face)
   {
+    printf("InFaceSwap\n");
     FaceSwap faceSwap(a, face);
     if (!faceSwap.topoCheck())
       return false;
+    printf("TopoCheck\n");
     if (!faceSwap.geomCheck())
       return false;
+    printf("GeomCheck\n");
+    exit(1);
     if (!faceSwap.sizeCheck())
       return false;
     return true;

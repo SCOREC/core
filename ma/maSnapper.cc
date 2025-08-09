@@ -10,6 +10,7 @@
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
+#include "maFaceSwap.h"
 #include "maSnap.h"
 #include "maDBG.h"
 #include <apfCavityOp.h>
@@ -93,6 +94,19 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
   flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
   flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
   flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
+
+  apf::Adjacent adj;
+  a->mesh->getAdjacent(FPP->vert, 3, adj);
+  for (int i=0; i<adj.size(); i++) setFlag(a, adj[i], CHECKED);
+  Entity* problemFaceVerts[3];
+  a->mesh->getDownward(FPP->problemFace, 0, problemFaceVerts);
+  for (int i=0; i<3; i++){
+    a->mesh->getAdjacent(problemFaceVerts[i], 3, adj);
+    for (int i=0; i<adj.size(); i++) setFlag(a, adj[i], CHECKED);
+  }
+
+  ma_dbg::dumpMeshWithFlag(a, 0, 3, CHECKED, "FPP_Adjacent", "FPP_Adjacent");
+  clearFlagFromDimension(a, CHECKED, 3);
 }
 #endif
 
@@ -355,11 +369,11 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
         return true;
       }
     }
-    //TODO: RUN FACE SWAP HERE
     if (splitCollapse.run(ents[1], FPP->vert, adapt->input->validQuality)) {
       numSplitCollapse++;
       return true;
     }
+    runFaceSwap(adapt, ents[0]);
     print(mesh->getPCU(), "Swap failed: face swap not implemented");
   }
   return false;
@@ -633,7 +647,7 @@ bool Snapper::run()
     clearFlag(adapt, vert, SNAP);
   }
   #if defined(DEBUG_FPP)
-  if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
+  // if (!success && ++DEBUGFAILED == 2) printFPP(adapt, FPP);
   #endif
   if (FPP) delete FPP;
   return success;

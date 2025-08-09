@@ -2,7 +2,7 @@
 #define MA_FACESWAP_H
 
 namespace ma {
-    bool runEdgeSwap();
+    bool runFaceSwap(Adapt* a, Entity* face);
 }
 
 #endif

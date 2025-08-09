@@ -172,6 +172,10 @@ if(ENABLE_CGNS)
   add_definitions(-DHAVE_CGNS)
 endif()
 
+if(DEBUG_FPP)
+  add_definitions(-DDEBUG_FPP)
+endif()
+
 configure_file(SCOREC_config.h.in SCOREC_config.h)
 install(FILES "${CMAKE_BINARY_DIR}/SCOREC_config.h" DESTINATION include)
 include_directories(PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>")
