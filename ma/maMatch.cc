@@ -75,6 +75,9 @@ void matchNewElements(Refine* r)
   print(m->getPCU(), "updated matching for %li faces", face_count);
 }
 
+/* we are starting to support a few operations on matched
+meshes, sincluding snapping+UR. this should prevent snapping
+from modifying any matched entities */
 void preventMatchedCavityMods(Adapt* a)
 {
   Mesh* m = a->mesh;

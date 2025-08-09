@@ -216,11 +216,11 @@ struct MetricSizeField : public SizeField
   }
   bool shouldSplit(Entity* edge)
   {
-    return this->measure(edge) > 1.5;
+    return this->measure(edge) > MAXLENGTH;
   }
   bool shouldCollapse(Entity* edge)
   {
-    return this->measure(edge) < 0.5;
+    return this->measure(edge) < MINLENGTH;
   }
   double getWeight(Entity* e)
   {

@@ -32,7 +32,7 @@ public:
   bool tryThisCollapse();
   bool tryBothCollapses(Entity* e);
   void accept();
-  bool run(Entity* edge, Entity* vert);
+  bool run(Entity* edge, Entity* vert, double quality=-1);
   Adapt* getAdapt();
 private:
   Entity *oldVert, *oldEdge;

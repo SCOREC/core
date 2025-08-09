@@ -55,13 +55,13 @@ void DoubleSplitCollapse::accept()
   collapse.destroyOldElements();
 }
 
-bool DoubleSplitCollapse::run(Entity** edges)
+bool DoubleSplitCollapse::run(Entity** edges, double quality)
 {
   Adapt* a = getAdapt();
   Mesh* m = a->mesh;
   if ( ! splits.setEdges(edges,2))
     return false;
-  oldQuality = getWorstQuality(a,splits.getTets());
+  oldQuality = (quality >= 0) ? quality : getWorstQuality(a,splits.getTets());
   splits.makeNewElements();
   splits.transfer();
   Entity* splitVerts[2];

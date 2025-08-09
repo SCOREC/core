@@ -27,14 +27,15 @@ void adapt(Input* in)
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
+  coarsen(a);
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
-    coarsen(a);
-    coarsenLayer(a);
     midBalance(a);
     refine(a);
     snap(a);
+    coarsen(a);
+    coarsenLayer(a);
   }
   allowSplitCollapseOutsideLayer(a);
   fixElementShapes(a);
@@ -100,7 +101,7 @@ void adaptVerbose(Input* in, bool verbose)
   int count = 0;
   double lMax = ma::getMaximumEdgeLength(a->mesh, a->sizeField);
   print(a->mesh->getPCU(), "Maximum (metric) edge length in the mesh is %f", lMax);
-  while (lMax > 1.5) {
+  while (lMax > MAXLENGTH) {
     print(a->mesh->getPCU(), "%dth additional refine-snap call", count);
     refine(a);
     snap(a);
