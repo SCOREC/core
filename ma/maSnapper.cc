@@ -561,7 +561,21 @@ static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up
   return FPP;
 }
 
-static void getInvalidTets(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
+static void computeNormals(Mesh* m, Upward& es, apf::NewArray<Vector>& normals)
+{
+  if (m->getDimension() != 2)
+    return;
+  normals.allocate(es.getSize());
+  for (size_t i = 0; i < es.getSize(); ++i)
+    normals[i] = getTriNormal(m, es[i]);
+}
+
+static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
+{
+  return (oldNormal * getTriNormal(m, tri)) < 0;
+}
+
+static void getInvalid(Adapt* a, Upward& adjacentElements, apf::NewArray<Vector>& normals, apf::Up& invalid)
 {
   invalid.n = 0;
   Vector v[4];
@@ -572,9 +586,16 @@ static void getInvalidTets(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
     algorithm that moves curves would need to change */
     if (getFlag(a, adjacentElements[i], LAYER))
       continue;
-    ma::getVertPoints(a->mesh,adjacentElements[i],v);
-    if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
-      invalid.e[invalid.n++] = adjacentElements[i];
+
+    if ((a->mesh->getDimension() == 2)) {
+      if (didInvert(a->mesh, normals[i], adjacentElements[i]))
+        invalid.e[invalid.n++] = adjacentElements[i];
+    }
+    else{
+      ma::getVertPoints(a->mesh,adjacentElements[i],v);
+      if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+        invalid.e[invalid.n++] = adjacentElements[i];
+    }
   }
 }
 
@@ -588,8 +609,12 @@ static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& i
   mesh->getDoubleTag(vertex, snapTag, &target[0]);
   Upward adjacentElements;
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+
+  apf::NewArray<Vector> normals;
+  computeNormals(mesh, adjacentElements, normals);
+
   mesh->setPoint(vertex, 0, target);
-  getInvalidTets(adapt, adjacentElements, invalid);
+  getInvalid(adapt, adjacentElements, normals, invalid);
   if (invalid.n == 0) return true;
   mesh->setPoint(vertex, 0, prev);
   return false;
