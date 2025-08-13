@@ -1,6 +1,7 @@
 #include "maAdapt.h"
 #include "maSnapper.h"
 #include "apfGeometry.h"
+#include "maShapeHandler.h"
 #include "maDBG.h"
 
 //TODO: move useful functions to header
@@ -8,11 +9,6 @@
 //TODO: add comments
 
 namespace ma {
-
-  enum FaceSwapType {
-    Two2Two,
-    Two2Three,
-  };
 
   Entity* findCommonEdge(Mesh* mesh, Entity* face1, Entity* face2)
   {
@@ -38,7 +34,8 @@ namespace ma {
   class FaceSwap
   {
     public:
-    FaceSwap(Adapt* a, Entity* f): adapt(a), mesh(a->mesh), face(f)
+    FaceSwap(Adapt* a, Entity* f, bool improve) : 
+      adapt(a), mesh(a->mesh), face(f), improveQuality(improve)
     {
       cavity.init(a);
     }
@@ -53,30 +50,43 @@ namespace ma {
       return true;
     }
 
+    bool qualityCheck()
+    {
+      double qualityToBeat = adapt->input->validQuality;
+      if (improveQuality)
+        qualityToBeat = std::max(getWorstQuality(adapt, oldTets), adapt->input->validQuality);
+
+      for (int i=0; i<numNewTets; i++) {
+        double quality = adapt->shape->getQuality(newTets[i]);
+        if (quality < qualityToBeat)
+          return false;
+      }
+      return true;
+    }
+
     bool geomCheck()
     {
-      Upward adjTets;
-      mesh->getAdjacent(face, 3, adjTets);
+      mesh->getAdjacent(face, 3, oldTets);
 
-      type = Two2Three;
+      numNewTets = 3;
       Entity* faceVerts[3];
       mesh->getDownward(face, 0, faceVerts);
       Entity* commonEdge;
       for (int i=0; i<3; i++) {
-        Entity* face0 = getTetFaceOppositeVert(mesh, adjTets[0], faceVerts[i]);
-        Entity* face1 = getTetFaceOppositeVert(mesh, adjTets[1], faceVerts[i]);
+        Entity* face0 = getTetFaceOppositeVert(mesh, oldTets[0], faceVerts[i]);
+        Entity* face1 = getTetFaceOppositeVert(mesh, oldTets[1], faceVerts[i]);
         Vector normal0 = getTriNormal(mesh, face0);
         Vector normal1 = getTriNormal(mesh, face1);
         if (apf::areClose(normal0, normal1, 1e-10)) {
-          type = Two2Two;
+          numNewTets = 2;
           commonEdge = findCommonEdge(mesh, face0, face1);
         }
       }
 
       //TODO: check quality from swap depending each case
       cavity.beforeBuilding();
-      Model* model = mesh->toModel(adjTets[0]);
-      if (type == Two2Two) {
+      Model* model = mesh->toModel(oldTets[0]);
+      if (numNewTets == 2) {
         printf("\t[Warning]: found two2two face swap, this is unteasted please test\n");
         Entity* commEdgeVerts[2];
         mesh->getDownward(commonEdge, 0, commEdgeVerts);
@@ -86,16 +96,16 @@ namespace ma {
         newTetVerts0[0] = commEdgeVerts[0];
         newTetVerts1[0] = commEdgeVerts[1];
 
-        fillAdjVerts(mesh, newTetVerts0, adjTets);
-        fillAdjVerts(mesh, newTetVerts1, adjTets);
+        fillAdjVerts(mesh, newTetVerts0, oldTets);
+        fillAdjVerts(mesh, newTetVerts1, oldTets);
 
-        buildElement(adapt, model, apf::Mesh::TET, newTetVerts0);
-        buildElement(adapt, model, apf::Mesh::TET, newTetVerts1);
+        newTets[0] = buildElement(adapt, model, apf::Mesh::TET, newTetVerts0);
+        newTets[1] = buildElement(adapt, model, apf::Mesh::TET, newTetVerts1);
       }
-      else if (type == Two2Three) {
+      else if (numNewTets == 3) {
         Entity* newTetVerts[4];
-        newTetVerts[0] = getTetVertOppositeTri(mesh, adjTets[0], face);
-        newTetVerts[1] = getTetVertOppositeTri(mesh, adjTets[1], face);
+        newTetVerts[0] = getTetVertOppositeTri(mesh, oldTets[0], face);
+        newTetVerts[1] = getTetVertOppositeTri(mesh, oldTets[1], face);
 
         Entity* faceEdges[3];
         mesh->getDownward(face, 1, faceEdges);
@@ -104,23 +114,23 @@ namespace ma {
           mesh->getDownward(faceEdges[i], 0, faceEdgeVerts);
           newTetVerts[2]=faceEdgeVerts[0];
           newTetVerts[3]=faceEdgeVerts[1];
-          buildElement(adapt, model, apf::Mesh::TET, newTetVerts);
+          newTets[i] = buildElement(adapt, model, apf::Mesh::TET, newTetVerts);
         }
       }
       cavity.afterBuilding();
-      cavity.fit(adjTets);
-      cavity.transfer(adjTets);
-      destroyElement(adapt, adjTets[0]);
-      destroyElement(adapt, adjTets[1]);
+      cavity.fit(oldTets);
+      cavity.transfer(oldTets);
+      destroyElement(adapt, oldTets[0]);
+      destroyElement(adapt, oldTets[1]);
       return true;
     }
 
     bool sizeCheck()
     {
-      if (type == Two2Two) {
+      if (numNewTets == 2) {
 
       }
-      else if (type == Two2Three) {
+      else if (numNewTets == 3) {
 
       }
       return true;
@@ -130,14 +140,17 @@ namespace ma {
     Mesh* mesh;
     Adapt* adapt;
     Entity* face;
-    FaceSwapType type;
     Cavity cavity;
+    int numNewTets;
+    Upward oldTets;
+    Entity* newTets[3];
+    bool improveQuality;
   };
 
-  bool runFaceSwap(Adapt* a, Entity* face)
+  bool runFaceSwap(Adapt* a, Entity* face, bool improveQuality)
   {
     printf("InFaceSwap\n");
-    FaceSwap faceSwap(a, face);
+    FaceSwap faceSwap(a, face, improveQuality);
     if (!faceSwap.topoCheck())
       return false;
     printf("TopoCheck\n");
