@@ -36,6 +36,7 @@ namespace ma {
       adapt(a), mesh(a->mesh), face(f), improveQuality(improve)
     {
       cavity.init(a);
+      numNewTets=0;
     }
 
     bool topoCheck()
@@ -148,12 +149,6 @@ namespace ma {
 
     bool sizeCheck()
     {
-      if (numNewTets == 2) {
-
-      }
-      else if (numNewTets == 3) {
-
-      }
       return true;
     }
 
@@ -171,17 +166,11 @@ namespace ma {
 
   bool runFaceSwap(Adapt* a, Entity* face, bool improveQuality)
   {
-    printf("InFaceSwap\n");
     FaceSwap faceSwap(a, face, improveQuality);
-    if (!faceSwap.topoCheck())
+    if (!faceSwap.topoCheck() && !faceSwap.geomCheck()) {
+      faceSwap.cancel();
       return false;
-    printf("TopoCheck\n");
-    if (!faceSwap.geomCheck())
-      return false;
-    printf("GeomCheck\n");
-    exit(1);
-    if (!faceSwap.sizeCheck())
-      return false;
+    }
     return true;
   }
 

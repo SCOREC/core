@@ -17,6 +17,7 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <iostream>
+#include "apfGeometry.cc"
 
 namespace ma {
 
@@ -305,6 +306,42 @@ int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* en
   return bit;
 }
 
+static void getInvalidTets(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
+{
+  invalid.n = 0;
+  Vector v[4];
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    /* for now, when snapping a vertex on the boundary
+    layer, ignore the quality of layer elements.
+    not only do we not have metrics for this, but the
+    algorithm that moves curves would need to change */
+    if (getFlag(a, adjacentElements[i], LAYER))
+      continue;
+    ma::getVertPoints(a->mesh,adjacentElements[i],v);
+    if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+      invalid.e[invalid.n++] = adjacentElements[i];
+  }
+}
+
+//Moved vertex to model surface or returns invalid elements if not possible
+static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
+{
+  Mesh* mesh = adapt->mesh;
+  if (!mesh->hasTag(vertex, snapTag)) return true;
+  Vector prev = getPosition(mesh, vertex);
+  Vector target;
+  mesh->getDoubleTag(vertex, snapTag, &target[0]);
+  Upward adjacentElements;
+  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  mesh->setPoint(vertex, 0, target);
+  getInvalidTets(adapt, adjacentElements, invalid);
+  if (invalid.n == 0) return true;
+  mesh->setPoint(vertex, 0, prev);
+  return false;
+}
+
+static int debugprint = 0;
+
 /*
   We perform this last to make sure that we have a simple region where we can determine the
   best operation to perform and because we want to avoid creating more vertices to snap since
@@ -369,11 +406,21 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
         return true;
       }
     }
+    // Vector pos = getPosition(mesh, vert);
+    // Vector target(1109.718490, 389.662701, 158.589216);
+    // if (apf::areClose(pos, target, 1e-6) && ++debugprint==2) {
+    //   printFPP(adapt, FPP);
+    //   exit(1);
+    // }
+    if (runFaceSwap(adapt, ents[0])) {
+      numSwap++;
+      printf("run face swap\n");
+      return true;
+    }
     if (splitCollapse.run(ents[1], FPP->vert, adapt->input->validQuality)) {
       numSplitCollapse++;
       return true;
     }
-    runFaceSwap(adapt, ents[0]);
     print(mesh->getPCU(), "Swap failed: face swap not implemented");
   }
   return false;
@@ -573,40 +620,6 @@ static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up
   std::vector<Entity*> commEdges;
   FPP->getCandidateEdges(commEdges);
   return FPP;
-}
-
-static void getInvalidTets(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
-{
-  invalid.n = 0;
-  Vector v[4];
-  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
-    /* for now, when snapping a vertex on the boundary
-    layer, ignore the quality of layer elements.
-    not only do we not have metrics for this, but the
-    algorithm that moves curves would need to change */
-    if (getFlag(a, adjacentElements[i], LAYER))
-      continue;
-    ma::getVertPoints(a->mesh,adjacentElements[i],v);
-    if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
-      invalid.e[invalid.n++] = adjacentElements[i];
-  }
-}
-
-//Moved vertex to model surface or returns invalid elements if not possible
-static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
-{
-  Mesh* mesh = adapt->mesh;
-  if (!mesh->hasTag(vertex, snapTag)) return true;
-  Vector prev = getPosition(mesh, vertex);
-  Vector target;
-  mesh->getDoubleTag(vertex, snapTag, &target[0]);
-  Upward adjacentElements;
-  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-  mesh->setPoint(vertex, 0, target);
-  getInvalidTets(adapt, adjacentElements, invalid);
-  if (invalid.n == 0) return true;
-  mesh->setPoint(vertex, 0, prev);
-  return false;
 }
 
 bool Snapper::trySimpleSnap()
