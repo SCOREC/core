@@ -17,8 +17,34 @@
 #include "maLayer.h"
 #include "maDBG.h"
 #include <pcu_util.h>
+#include <iostream>
 
 namespace ma {
+
+void printHistogramData(std::string name, std::vector<double> input, double min, double max, Mesh* m)
+{
+  const int nbins = 10;
+  int count[nbins] = {0};
+  const double bin_size = (max-min)/(nbins*1.0);
+  for (size_t i = 0; i < input.size(); ++i) {
+    int bin = (int)std::round((input[i] - min)/bin_size);
+    count[bin] += 1;
+  }
+
+  std::cout << name << "\n";
+  for (int i = 0; i < nbins; ++i) {
+    fprintf(stderr, "%d\n", count[i]);
+  }
+}
+
+void printHistogramStats(Adapt* a)
+{
+  std::vector<double> lengths;
+  std::vector<double> qualities;
+  ma::stats(a->mesh, a->input->sizeField, lengths, qualities, true);
+  printHistogramData("quality", qualities, 0, 1, a->mesh);
+  printHistogramData("lengths", lengths, 0, MAXLENGTH+1, a->mesh);
+}
 
 void adapt(Input* in)
 {

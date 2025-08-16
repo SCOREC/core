@@ -49,20 +49,6 @@ namespace ma {
       return true;
     }
 
-    bool qualityCheck()
-    {
-      double qualityToBeat = adapt->input->validQuality;
-      if (improveQuality)
-        qualityToBeat = std::max(getWorstQuality(adapt, oldTets), adapt->input->validQuality);
-
-      for (int i=0; i<numNewTets; i++) {
-        double quality = adapt->shape->getQuality(newTets[i]);
-        if (quality < qualityToBeat)
-          return false;
-      }
-      return true;
-    }
-
     void findNumNewTets()
     {
       mesh->getAdjacent(face, 3, oldTets);
@@ -141,14 +127,33 @@ namespace ma {
         buildTwo2Three();
       cavity.afterBuilding();
       cavity.fit(oldTets);
-      if (!qualityCheck())
-        return false;
-      destroyOldElements();
       return true;
     }
 
     bool sizeCheck()
     {
+      if (!improveQuality) return true;
+      for (int i=0; i<numNewTets; i++) {
+        Entity* edges[6];
+        mesh->getDownward(newTets[i], 1, edges);
+        for (int e=0; e<6; e++)
+          if (adapt->sizeField->measure(edges[e]) > MAXLENGTH)
+            return false;
+      }
+      return true;
+    }
+
+    bool qualityCheck()
+    {
+      double qualityToBeat = adapt->input->validQuality;
+      if (improveQuality)
+        qualityToBeat = std::max(getWorstQuality(adapt, oldTets), adapt->input->validQuality);
+
+      for (int i=0; i<numNewTets; i++) {
+        double quality = adapt->shape->getQuality(newTets[i]);
+        if (quality < qualityToBeat)
+          return false;
+      }
       return true;
     }
 
@@ -166,12 +171,20 @@ namespace ma {
 
   bool runFaceSwap(Adapt* a, Entity* face, bool improveQuality)
   {
+    return false;
     FaceSwap faceSwap(a, face, improveQuality);
-    if (!faceSwap.topoCheck() && !faceSwap.geomCheck()) {
+
+    if (faceSwap.topoCheck() 
+      && faceSwap.geomCheck() 
+      && faceSwap.sizeCheck() 
+      && faceSwap.qualityCheck()) {
+      faceSwap.destroyOldElements();
+      return true;
+    }
+    else {
       faceSwap.cancel();
       return false;
     }
-    return true;
   }
 
 }

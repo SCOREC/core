@@ -406,17 +406,10 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
         return true;
       }
     }
-    // Vector pos = getPosition(mesh, vert);
-    // Vector target(1109.718490, 389.662701, 158.589216);
-    // if (apf::areClose(pos, target, 1e-6) && ++debugprint==2) {
-    //   printFPP(adapt, FPP);
-    //   exit(1);
+    // if (runFaceSwap(adapt, ents[0], false)) {
+    //   numSwap++;
+    //   return true;
     // }
-    if (runFaceSwap(adapt, ents[0])) {
-      numSwap++;
-      printf("run face swap\n");
-      return true;
-    }
     if (splitCollapse.run(ents[1], FPP->vert, adapt->input->validQuality)) {
       numSplitCollapse++;
       return true;
