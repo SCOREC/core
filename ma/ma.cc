@@ -26,15 +26,22 @@ void printHistogramData(std::string name, std::vector<double> input, double min,
   const int nbins = 10;
   int count[nbins] = {0};
   const double bin_size = (max-min)/(nbins*1.0);
+  double inputMax = 0;
+  double inputMin = max;
+
   for (size_t i = 0; i < input.size(); ++i) {
+    if (input[i] > inputMax)
+      inputMax = input[i];
+    if (input[i] < inputMin)
+      inputMin = input[i];
     int bin = (int)std::round((input[i] - min)/bin_size);
     count[bin] += 1;
   }
 
   std::cout << name << "\n";
-  for (int i = 0; i < nbins; ++i) {
+  printf("Min: %f, Max: %f\n", inputMin, inputMax);
+  for (int i = 0; i < nbins; ++i)
     fprintf(stderr, "%d\n", count[i]);
-  }
 }
 
 void printHistogramStats(Adapt* a)
@@ -70,6 +77,11 @@ void adapt(Input* in)
   printQuality(a);
   postBalance(a);
   Mesh* m = a->mesh;
+
+  double t1 = pcu::Time();
+  print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
+  printHistogramStats(a);
+
   delete a;
   // cleanup input object and associated sizefield and solutiontransfer objects
   if (in->ownsSizeField)
@@ -77,8 +89,6 @@ void adapt(Input* in)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
-  double t1 = pcu::Time();
-  print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
   apf::printStats(m);
 }
 

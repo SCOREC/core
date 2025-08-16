@@ -394,7 +394,6 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       numSplitCollapse++;
       return true;
     }
-    print(mesh->getPCU(), "Swap failed: Consider more collapses");
   }
   // three large dihedral angles -> key entity: a mesh face
   else {
@@ -414,7 +413,6 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       numSplitCollapse++;
       return true;
     }
-    print(mesh->getPCU(), "Swap failed: face swap not implemented");
   }
   return false;
 }
