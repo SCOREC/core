@@ -30,6 +30,7 @@ set(SOURCES
   maEdgeSwap.cc
   maFaceSwap.cc
   maShape.cc
+  maShapeNew.cc
   maShapeHandler.cc
   maQuality.cc
   maSplits.cc
@@ -60,6 +61,7 @@ set(HEADERS
   maMesh.h
   maSize.h
   maShape.h
+  maShapeNew.h
   maTables.h
   maSolutionTransfer.h
   maExtrude.h

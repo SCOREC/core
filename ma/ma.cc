@@ -16,6 +16,7 @@
 #include "maBalance.h"
 #include "maLayer.h"
 #include "maDBG.h"
+#include "maShapeNew.h"
 #include <pcu_util.h>
 #include <iostream>
 
@@ -71,7 +72,7 @@ void adapt(Input* in)
     coarsenLayer(a);
   }
   allowSplitCollapseOutsideLayer(a);
-  fixElementShapes(a);
+  fixElementShapesNew(a);
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);
