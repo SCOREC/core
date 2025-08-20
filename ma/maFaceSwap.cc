@@ -39,6 +39,24 @@ namespace ma {
       numNewTets=0;
     }
 
+    void printCavityBefore()
+    {
+      EntityArray cavity;
+      for (int i=0; i<2; i++){
+        cavity.append(oldTets[i]);
+      }
+      ma_dbg::createCavityMesh(adapt, cavity, "BeforeFaceSwap");
+    }
+
+    void printCavityAfter()
+    {
+      EntityArray cavity;
+      for (int i=0; i<numNewTets; i++){
+        cavity.append(newTets[i]);
+      }
+      ma_dbg::createCavityMesh(adapt, cavity, "AfterFaceSwap");
+    }
+
     bool topoCheck()
     {   
       int modelDim = mesh->getModelType(mesh->toModel(face));
@@ -120,6 +138,7 @@ namespace ma {
     bool geomCheck()
     {
       findNumNewTets();
+      // printCavityBefore();
       cavity.beforeBuilding();
       if (numNewTets == 2)
         buildTwo2Two();
@@ -127,6 +146,7 @@ namespace ma {
         buildTwo2Three();
       cavity.afterBuilding();
       cavity.fit(oldTets);
+      // printCavityAfter();
       return true;
     }
 
@@ -171,7 +191,6 @@ namespace ma {
 
   bool runFaceSwap(Adapt* a, Entity* face, bool improveQuality)
   {
-    return false;
     FaceSwap faceSwap(a, face, improveQuality);
 
     if (faceSwap.topoCheck() 
