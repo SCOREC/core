@@ -18,6 +18,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maSingleSplitCollapse.h"
 #include "maFaceSplitCollapse.h"
+#include "maFaceSwap.h"
 #include "maShortEdgeRemover.h"
 #include "maShapeHandler.h"
 #include "maBalance.h"
@@ -55,8 +56,71 @@ void unMarkBadQualityNew(Adapt* a)
   m->end(it);
 }
 
+static bool shortEdgeCase(Adapt* a, Entity* tet, Collapse& collapse)
+{
+  Entity* edges[6];
+  a->mesh->getDownward(tet, 1, edges);
+  bool shortEdgeCase = false;
+  for (int i=0; i<6; i++) {
+    if (a->sizeField->measure(edges[i]) < MINLENGTH) {
+      shortEdgeCase = true;
+      if (collapse.setEdge(edges[i]) && 
+            collapse.checkClass() &&
+            collapse.checkTopo() &&
+            collapse.tryBothDirections(a->input->validQuality)) {
+        collapse.destroyOldElements();
+        return true;
+      }
+    }
+  }
+  return shortEdgeCase;
+}
+
+static double getWorstTriangle(Adapt* a, Entity* tet, Entity*& worstTriangle)
+{
+  Entity* triangles[4];
+  a->mesh->getDownward(tet, 2, triangles);
+  double worstQuality = a->sizeField->measure(triangles[0]);
+  worstTriangle = triangles[0];
+  for (int i=1; i<4; i++) {
+    double quality = a->sizeField->measure(triangles[i]);
+    if (quality < worstQuality) {
+      worstQuality = quality;
+      worstTriangle = triangles[i];
+    }
+  }
+  return worstQuality;
+}
+
+static bool oneLargeAngle(Adapt* a, Entity* tet, SingleSplitCollapse& splitCollapse, EdgeSwap* edgeSwap)
+{
+  Entity* worstTriangle;
+  if (getWorstTriangle(a, tet, worstTriangle) >= a->input->goodQuality) return false;
+
+  Entity* edges[3];
+  a->mesh->getDownward(worstTriangle, 1, edges);
+  double longestLength = a->sizeField->measure(edges[0]);
+  Entity* longestEdge = edges[0];
+  for (int i=1; i<3; i++) {
+    double length = a->sizeField->measure(edges[i]);
+    if (length > longestLength) {
+      longestLength = length;
+      longestEdge = edges[i];
+    }
+  }
+
+  Entity* oppositeVert = getTriVertOppositeEdge(a->mesh, worstTriangle, longestEdge);
+  if (splitCollapse.run(longestEdge, oppositeVert))
+    return true;
+  if (edgeSwap->run(longestEdge))
+    return true;
+  return true;
+}
+
 static void fixLargeAngleTetsNew(Adapt* a)
 {
+  Collapse collapse;
+  collapse.Init(a);
   FaceSplitCollapse faceSplitCollapse(a);
   SingleSplitCollapse splitCollapse(a);
   DoubleSplitCollapse doubleSplitCollapse(a);
@@ -67,6 +131,10 @@ static void fixLargeAngleTetsNew(Adapt* a)
   while ((tet = a->mesh->iterate(it))) {
     if (!getFlag(a, tet, BAD_QUALITY)) continue;
     clearFlag(a, tet, BAD_QUALITY);
+
+    if (shortEdgeCase(a, tet, collapse)) continue;
+    if (oneLargeAngle(a, tet, splitCollapse, edgeSwap)) continue;
+
     Entity* verts[4];
     a->mesh->getDownward(tet, 0, verts);
     Entity* vert = verts[0];
@@ -75,23 +143,14 @@ static void fixLargeAngleTetsNew(Adapt* a)
     double area[4];
     int bit = getTetStats(a, vert, face, tet, ents, area);
 
-    // two large dihedral angles -> key problem: two mesh edges
-    if (bit==3 || bit==5 || bit==6) {
+    if (bit==3 || bit==5 || bit==6) { //Two Large Angles
+      if (doubleSplitCollapse.run(ents)) continue;
       if (edgeSwap->run(ents[0])) continue;
       if (edgeSwap->run(ents[1])) continue;
-      if (splitCollapse.run(ents[0], vert)) continue;
-      if (splitCollapse.run(ents[1], vert)) continue;
-      if (doubleSplitCollapse.run(ents)) continue;
     }
-    // three large dihedral angles -> key entity: a mesh face
-    else {
-      Entity* edges[3];
-      a->mesh->getDownward(ents[0], 1, edges);
-      if (edgeSwap->run(edges[0])) continue;
-      if (edgeSwap->run(edges[1])) continue;
-      if (edgeSwap->run(edges[2])) continue;
-      //TODO: RUN FACE SWAP HERE
+    else { //Three Large Angles
       if (faceSplitCollapse.run(ents[0], tet)) continue;
+      // if (runFaceSwap(a, ents[0], true)) continue;
     }
   }
 }

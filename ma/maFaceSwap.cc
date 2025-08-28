@@ -141,7 +141,7 @@ namespace ma {
       // printCavityBefore();
       cavity.beforeBuilding();
       if (numNewTets == 2)
-        buildTwo2Two();
+        return false; // buildTwo2Two();
       else if (numNewTets == 3)
         buildTwo2Three();
       cavity.afterBuilding();
