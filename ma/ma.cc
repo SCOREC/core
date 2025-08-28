@@ -27,15 +27,14 @@ void adapt(Input* in)
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  coarsen(a);
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
+    coarsen(a);
+    coarsenLayer(a);
     midBalance(a);
     refine(a);
     snap(a);
-    coarsen(a);
-    coarsenLayer(a);
   }
   allowSplitCollapseOutsideLayer(a);
   fixElementShapes(a);
