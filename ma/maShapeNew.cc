@@ -150,7 +150,7 @@ static void fixLargeAngleTetsNew(Adapt* a)
     }
     else { //Three Large Angles
       if (faceSplitCollapse.run(ents[0], tet)) continue;
-      // if (runFaceSwap(a, ents[0], true)) continue;
+      if (runFaceSwap(a, ents[0], true)) continue;
     }
   }
 }

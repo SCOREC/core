@@ -57,6 +57,29 @@ namespace ma {
       ma_dbg::createCavityMesh(adapt, cavity, "AfterFaceSwap");
     }
 
+    bool invalid(Entity* verts[4])
+    {
+      Vector v[4] {getPosition(mesh, verts[0]), getPosition(mesh, verts[1]), 
+                  getPosition(mesh, verts[2]), getPosition(mesh, verts[3])};
+      if ((apf::cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+        return true;
+      return false;
+    }
+
+    bool invalidSwap() {
+      Entity* opp1 = getTetVertOppositeTri(mesh, oldTets[0], face);
+      Entity* opp2 = getTetVertOppositeTri(mesh, oldTets[1], face);
+      Entity* faceVerts[3];
+      mesh->getDownward(face, 0, faceVerts);
+      Entity* tetVertsA[4] = {faceVerts[0], faceVerts[1], opp1, opp2};
+      if (invalid(tetVertsA)) return true;
+      Entity* tetVertsB[4] = {faceVerts[1], faceVerts[2], opp1, opp2};
+      if (invalid(tetVertsB)) return true;
+      Entity* tetVertsC[4] = {faceVerts[2], faceVerts[0], opp1, opp2};
+      if (invalid(tetVertsC)) return true;
+      return false;
+    }
+
     bool topoCheck()
     {   
       int modelDim = mesh->getModelType(mesh->toModel(face));
@@ -64,12 +87,14 @@ namespace ma {
         return false;
       if (getFlag(adapt,face,DONT_SWAP))
         return false;
+      mesh->getAdjacent(face, 3, oldTets);
+      if (invalidSwap())
+        return false;
       return true;
     }
 
     void findNumNewTets()
     {
-      mesh->getAdjacent(face, 3, oldTets);
       numNewTets = 3;
       Entity* faceVerts[3];
       mesh->getDownward(face, 0, faceVerts);
@@ -79,7 +104,7 @@ namespace ma {
         Vector normal0 = getTriNormal(mesh, face0);
         Vector normal1 = getTriNormal(mesh, face1);
         if (apf::areClose(normal0, normal1, 1e-10)) {
-          numNewTets = 2;
+          numNewTets = 0; //TODO: TEST Two2Two CASE
           commonEdge = findCommonEdge(mesh, face0, face1);
         }
       }
@@ -140,8 +165,10 @@ namespace ma {
       findNumNewTets();
       // printCavityBefore();
       cavity.beforeBuilding();
-      if (numNewTets == 2)
-        return false; // buildTwo2Two();
+      if (numNewTets == 0)
+        return false;
+      else if (numNewTets == 2)
+        buildTwo2Two();
       else if (numNewTets == 3)
         buildTwo2Three();
       cavity.afterBuilding();
