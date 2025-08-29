@@ -55,7 +55,9 @@ bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
   return true;
 }
 
-//Prevents snapping from undoing refinement
+/*Sometimes the snapping procedure will attempt to collapse a edge that was just 
+refined. This function will prevent that when the growth of the edge is above a 
+thresh hold where it might not reach the target edge length*/
 bool Collapse::edgesGoodSize() {
   PCU_ALWAYS_ASSERT(elementsToKeep.size());
   PCU_ALWAYS_ASSERT(elementsToKeep.size() == newElements.size());

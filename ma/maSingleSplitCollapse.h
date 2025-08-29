@@ -32,6 +32,9 @@ public:
   bool tryThisCollapse();
   bool tryBothCollapses(Entity* e);
   void accept();
+  /* Quality is optional since during fix shape we don't need a target quality as
+  the quality improves. However we need a target quality during snapping since
+  we don't care if the quality gets worse. */
   bool run(Entity* edge, Entity* vert, double quality=-1);
   Adapt* getAdapt();
 private:

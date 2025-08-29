@@ -7,6 +7,12 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+/*
+  This file contains functions to move a point to the model surface. As described
+  in Li's thesis it will first try to collapse in the target direction. Otherwise 
+  it will collapse to simplify the region and attempt other operators such as
+  swap, split collapse, double split collapse.
+*/
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
