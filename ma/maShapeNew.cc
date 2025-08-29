@@ -183,6 +183,7 @@ void fixElementShapesNew(Adapt* a)
     // balance the mesh to avoid empty parts
     midBalance(a);
     iter++;
+    print(a->mesh->getPCU(), "loop %d: bad Shapes went from %d to %d", iter, prev_count, count); 
   } while(count < prev_count);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds", 
