@@ -633,7 +633,7 @@ bool Snapper::run()
     mesh->removeTag(vert,snapTag);
     clearFlag(adapt, vert, SNAP);
   }
-  #if defined(DEBUG_FPP)
+  #if defined(PUMI_DEBUG_FPP)
   if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
   #endif
   if (FPP) delete FPP;
