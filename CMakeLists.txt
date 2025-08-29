@@ -124,11 +124,14 @@ if(PUMI_ENABLE_CAPSTONE)
   add_definitions(-DPUMI_HAS_CAPSTONE)
 endif()
 
-option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
-message(STATUS "ENABLE_FPP: ${ENABLE_FPP}")
-if(ENABLE_FPP)
-
-  add_definitions(-DDO_FPP)
+option(
+  PUMI_ENABLE_FPP
+  "Build with snapping to first problem plane"
+  ${ENABLE_FPP} # Inherit default value
+)
+message(STATUS "PUMI_ENABLE_FPP: ${PUMI_ENABLE_FPP}")
+if(PUMI_ENABLE_FPP)
+  add_definitions(-DPUMI_DO_FPP)
 endif()
 
 macro(scorec_export_library target)
