@@ -50,8 +50,8 @@ void printHistogramStats(Adapt* a)
   std::vector<double> lengths;
   std::vector<double> qualities;
   ma::stats(a->mesh, a->input->sizeField, lengths, qualities, true);
-  printHistogramData("quality", qualities, 0, 1, a->mesh);
-  printHistogramData("lengths", lengths, 0, MAXLENGTH+1, a->mesh);
+  printHistogramData("\nQualities:", qualities, 0, 1, a->mesh);
+  printHistogramData("\nLengths:", lengths, 0, MAXLENGTH+1, a->mesh);
 }
 
 void adapt(Input* in)
