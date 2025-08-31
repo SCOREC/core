@@ -66,6 +66,20 @@ class FixShape
   FaceSplitCollapse faceSplitCollapse;
   EdgeSwap* edgeSwap;
 
+  //TODO: Count Operations
+  int numCollapse=0;
+  int numEdgeSwap=0;
+  int numFaceSwap=0;
+  int numEdgeSplitCollapse=0;
+  int numFaceSplitCollapse=0;
+  int numDoubleSplitCollapse=0;
+
+  //TODO: Count Types
+  int numShortEdges=0;
+  int numOneLargeAngle=0;
+  int numTwoLargeAngles=0;
+  int numThreeLargeAngles=0;
+
   FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt)
   {
     a = adapt;
@@ -85,13 +99,13 @@ class FixShape
     return false;
   }
 
-  bool shortEdgeCase(Entity* tet)
+  bool fixShortEdge(Entity* tet)
   {
     Entity* edges[6];
     a->mesh->getDownward(tet, 1, edges);
     for (int i=0; i<6; i++)
       if (a->sizeField->measure(edges[i]) < MINLENGTH)
-        if (collapseEdge(edges[i]))
+        if (collapseEdge(edges[i])) // TODO: Else try collapsing adjacent edges such that edges[i] merges with other edge
           return true;
     return false;
   }
@@ -112,7 +126,7 @@ class FixShape
     return worstQuality;
   }
 
-  bool oneLargeAngle(Entity* tet)
+  bool fixOneLargeAngle(Entity* tet)
   {
     Entity* worstTriangle;
     if (getWorstTriangle(tet, worstTriangle) >= a->input->goodQuality) return false;
@@ -166,7 +180,7 @@ class FixShape
     a->mesh->getDownward(tet, 1, tetEdges);
     for (int i=0; i<6; i++)
       if (!isLowInHigh(a->mesh, problemEnts[0], tetEdges[i]))
-        if (collapseEdge(tetEdges[i]))
+        if (collapseEdge(tetEdges[i])) //TODO: test collapsing in one direction either towards problemEnts[0] or away
           return;
     Entity* faceEdges[3];
     a->mesh->getDownward(problemEnts[0], 1, faceEdges);
@@ -187,8 +201,8 @@ class FixShape
       if (!getFlag(a, tet, BAD_QUALITY)) continue;
       clearFlag(a, tet, BAD_QUALITY);
 
-      if (shortEdgeCase(tet)) continue;
-      if (oneLargeAngle(tet)) continue;
+      if (fixShortEdge(tet)) continue;
+      if (fixOneLargeAngle(tet)) continue;
       Entity* problemEnts[4];
       if (isTwoLargeAngles(tet, problemEnts))
         fixTwoLargeAngles(tet, problemEnts);
