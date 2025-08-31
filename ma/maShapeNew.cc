@@ -162,6 +162,12 @@ class FixShape
 
   void fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
   {
+    Entity* tetEdges[6];
+    a->mesh->getDownward(tet, 1, tetEdges);
+    for (int i=0; i<6; i++)
+      if (!isLowInHigh(a->mesh, problemEnts[0], tetEdges[i]))
+        if (collapseEdge(tetEdges[i]))
+          return;
     Entity* faceEdges[3];
     a->mesh->getDownward(problemEnts[0], 1, faceEdges);
     if (edgeSwap->run(faceEdges[0])) return;
