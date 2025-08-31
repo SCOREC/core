@@ -121,6 +121,17 @@ static bool oneLargeAngle(Adapt* a, Entity* tet, SingleSplitCollapse& splitColla
   return false;
 }
 
+static bool isTwoLargeAngles(Adapt* a, Entity* tet, Entity* problemEnts[4])
+{
+  Entity* verts[4];
+  a->mesh->getDownward(tet, 0, verts);
+  Entity* vert = verts[0];
+  Entity* face = getTetFaceOppositeVert(a->mesh, tet, vert);
+  double area[4];
+  int bit = getTetStats(a, vert, face, tet, problemEnts, area);
+  return bit==3 || bit==5 || bit==6;
+}
+
 static void fixLargeAngleTetsNew(Adapt* a)
 {
   Collapse collapse;
@@ -139,33 +150,26 @@ static void fixLargeAngleTetsNew(Adapt* a)
     if (shortEdgeCase(a, tet, collapse)) continue;
     if (oneLargeAngle(a, tet, splitCollapse, edgeSwap, collapse)) continue;
 
-    Entity* verts[4];
-    a->mesh->getDownward(tet, 0, verts);
-    Entity* vert = verts[0];
-    Entity* face = getTetFaceOppositeVert(a->mesh, tet, vert);
-    Entity* ents[4];
-    double area[4];
-    int bit = getTetStats(a, vert, face, tet, ents, area);
-
-    if (bit==3 || bit==5 || bit==6) { //Two Large Angles
-      if (edgeSwap->run(ents[0])) continue;
-      if (edgeSwap->run(ents[1])) continue;
-      Entity* v0 = getTriVertOppositeEdge(a->mesh, ents[2], ents[0]);
-      if (splitCollapse.run(ents[0], v0)) continue;
-      Entity* v1 = getTriVertOppositeEdge(a->mesh, ents[3], ents[1]);
-      if (splitCollapse.run(ents[1], v1)) continue;
-      if (doubleSplitCollapse.run(ents)) continue;
+    Entity* problemEnts[4];
+    if (isTwoLargeAngles(a, tet, problemEnts)) {
+      if (edgeSwap->run(problemEnts[0])) continue;
+      if (edgeSwap->run(problemEnts[1])) continue;
+      Entity* v0 = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[0]);
+      if (splitCollapse.run(problemEnts[0], v0)) continue;
+      Entity* v1 = getTriVertOppositeEdge(a->mesh, problemEnts[3], problemEnts[1]);
+      if (splitCollapse.run(problemEnts[1], v1)) continue;
+      if (doubleSplitCollapse.run(problemEnts)) continue;
     }
     else { //Three Large Angles
       Entity* faceEdges[3];
-      a->mesh->getDownward(ents[0], 1, faceEdges);
+      a->mesh->getDownward(problemEnts[0], 1, faceEdges);
       if (edgeSwap->run(faceEdges[0])) continue;
       if (edgeSwap->run(faceEdges[1])) continue;
       if (edgeSwap->run(faceEdges[2])) continue;
-      if (runFaceSwap(a, ents[0], true)) continue;
-      Entity* v = getTriVertOppositeEdge(a->mesh, ents[2], ents[1]);
-      if (splitCollapse.run(ents[1], v)) continue;
-      if (faceSplitCollapse.run(ents[0], tet)) continue;
+      if (runFaceSwap(a, problemEnts[0], true)) continue;
+      Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
+      if (splitCollapse.run(problemEnts[1], v)) continue;
+      if (faceSplitCollapse.run(problemEnts[0], tet)) continue;
     }
   }
 }
