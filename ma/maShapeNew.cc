@@ -56,123 +56,134 @@ void unMarkBadQualityNew(Adapt* a)
   m->end(it);
 }
 
-static bool collapseEdge(Adapt* a, Entity* edge, Collapse& collapse)
+class FixShape
 {
-  if (collapse.setEdge(edge) && 
-        collapse.checkClass() &&
-        collapse.checkTopo() &&
-        collapse.tryBothDirections(a->input->validQuality)) {
-    collapse.destroyOldElements();
-    return true;
-  }
-  return false;
-}
-
-static bool shortEdgeCase(Adapt* a, Entity* tet, Collapse& collapse)
-{
-  Entity* edges[6];
-  a->mesh->getDownward(tet, 1, edges);
-  for (int i=0; i<6; i++)
-    if (a->sizeField->measure(edges[i]) < MINLENGTH)
-      if (collapseEdge(a, edges[i], collapse))
-        return true;
-  return false;
-}
-
-static double getWorstTriangle(Adapt* a, Entity* tet, Entity*& worstTriangle)
-{
-  Entity* triangles[4];
-  a->mesh->getDownward(tet, 2, triangles);
-  double worstQuality = a->sizeField->measure(triangles[0]);
-  worstTriangle = triangles[0];
-  for (int i=1; i<4; i++) {
-    double quality = a->sizeField->measure(triangles[i]);
-    if (quality < worstQuality) {
-      worstQuality = quality;
-      worstTriangle = triangles[i];
-    }
-  }
-  return worstQuality;
-}
-
-static bool oneLargeAngle(Adapt* a, Entity* tet, SingleSplitCollapse& splitCollapse, EdgeSwap* edgeSwap, Collapse& collapse)
-{
-  Entity* worstTriangle;
-  if (getWorstTriangle(a, tet, worstTriangle) >= a->input->goodQuality) return false;
-
-  Entity* edges[3];
-  a->mesh->getDownward(worstTriangle, 1, edges);
-  double longestLength = a->sizeField->measure(edges[0]);
-  Entity* longestEdge = edges[0];
-  for (int i=1; i<3; i++) {
-    double length = a->sizeField->measure(edges[i]);
-    if (length > longestLength) {
-      longestLength = length;
-      longestEdge = edges[i];
-    }
-  }
-
-  Entity* oppositeVert = getTriVertOppositeEdge(a->mesh, worstTriangle, longestEdge);
-  if (edgeSwap->run(longestEdge)) return true;
-  if (splitCollapse.run(longestEdge, oppositeVert)) return true;
-  for (int i=0; i<3; i++)
-    if (edges[i] != longestEdge && collapseEdge(a, edges[i], collapse))
-      return true;
-  return false;
-}
-
-static bool isTwoLargeAngles(Adapt* a, Entity* tet, Entity* problemEnts[4])
-{
-  Entity* verts[4];
-  a->mesh->getDownward(tet, 0, verts);
-  Entity* vert = verts[0];
-  Entity* face = getTetFaceOppositeVert(a->mesh, tet, vert);
-  double area[4];
-  int bit = getTetStats(a, vert, face, tet, problemEnts, area);
-  return bit==3 || bit==5 || bit==6;
-}
-
-static void fixLargeAngleTetsNew(Adapt* a)
-{
+  public:
+  Adapt* a;
   Collapse collapse;
-  collapse.Init(a);
-  FaceSplitCollapse faceSplitCollapse(a);
-  SingleSplitCollapse splitCollapse(a);
-  DoubleSplitCollapse doubleSplitCollapse(a);
-  EdgeSwap* edgeSwap = makeEdgeSwap(a);
+  SingleSplitCollapse splitCollapse;
+  DoubleSplitCollapse doubleSplitCollapse;
+  FaceSplitCollapse faceSplitCollapse;
+  EdgeSwap* edgeSwap;
 
-  Entity* tet;
-  Iterator* it = a->mesh->begin(3);
-  while ((tet = a->mesh->iterate(it))) {
-    if (!getFlag(a, tet, BAD_QUALITY)) continue;
-    clearFlag(a, tet, BAD_QUALITY);
+  FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt)
+  {
+    a = adapt;
+    collapse.Init(a);
+    edgeSwap = makeEdgeSwap(a);
+  }
 
-    if (shortEdgeCase(a, tet, collapse)) continue;
-    if (oneLargeAngle(a, tet, splitCollapse, edgeSwap, collapse)) continue;
-
-    Entity* problemEnts[4];
-    if (isTwoLargeAngles(a, tet, problemEnts)) {
-      if (edgeSwap->run(problemEnts[0])) continue;
-      if (edgeSwap->run(problemEnts[1])) continue;
-      Entity* v0 = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[0]);
-      if (splitCollapse.run(problemEnts[0], v0)) continue;
-      Entity* v1 = getTriVertOppositeEdge(a->mesh, problemEnts[3], problemEnts[1]);
-      if (splitCollapse.run(problemEnts[1], v1)) continue;
-      if (doubleSplitCollapse.run(problemEnts)) continue;
+  bool collapseEdge(Entity* edge)
+  {
+    if (collapse.setEdge(edge) && 
+          collapse.checkClass() &&
+          collapse.checkTopo() &&
+          collapse.tryBothDirections(a->input->validQuality)) {
+      collapse.destroyOldElements();
+      return true;
     }
-    else { //Three Large Angles
-      Entity* faceEdges[3];
-      a->mesh->getDownward(problemEnts[0], 1, faceEdges);
-      if (edgeSwap->run(faceEdges[0])) continue;
-      if (edgeSwap->run(faceEdges[1])) continue;
-      if (edgeSwap->run(faceEdges[2])) continue;
-      if (runFaceSwap(a, problemEnts[0], true)) continue;
-      Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
-      if (splitCollapse.run(problemEnts[1], v)) continue;
-      if (faceSplitCollapse.run(problemEnts[0], tet)) continue;
+    return false;
+  }
+
+  bool shortEdgeCase(Entity* tet)
+  {
+    Entity* edges[6];
+    a->mesh->getDownward(tet, 1, edges);
+    for (int i=0; i<6; i++)
+      if (a->sizeField->measure(edges[i]) < MINLENGTH)
+        if (collapseEdge(edges[i]))
+          return true;
+    return false;
+  }
+
+  double getWorstTriangle(Entity* tet, Entity*& worstTriangle)
+  {
+    Entity* triangles[4];
+    a->mesh->getDownward(tet, 2, triangles);
+    double worstQuality = a->sizeField->measure(triangles[0]);
+    worstTriangle = triangles[0];
+    for (int i=1; i<4; i++) {
+      double quality = a->sizeField->measure(triangles[i]);
+      if (quality < worstQuality) {
+        worstQuality = quality;
+        worstTriangle = triangles[i];
+      }
+    }
+    return worstQuality;
+  }
+
+  bool oneLargeAngle(Entity* tet)
+  {
+    Entity* worstTriangle;
+    if (getWorstTriangle(tet, worstTriangle) >= a->input->goodQuality) return false;
+
+    Entity* edges[3];
+    a->mesh->getDownward(worstTriangle, 1, edges);
+    double longestLength = a->sizeField->measure(edges[0]);
+    Entity* longestEdge = edges[0];
+    for (int i=1; i<3; i++) {
+      double length = a->sizeField->measure(edges[i]);
+      if (length > longestLength) {
+        longestLength = length;
+        longestEdge = edges[i];
+      }
+    }
+
+    Entity* oppositeVert = getTriVertOppositeEdge(a->mesh, worstTriangle, longestEdge);
+    if (edgeSwap->run(longestEdge)) return true;
+    if (splitCollapse.run(longestEdge, oppositeVert)) return true;
+    for (int i=0; i<3; i++)
+      if (edges[i] != longestEdge && collapseEdge(edges[i]))
+        return true;
+    return false;
+  }
+
+  bool isTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
+  {
+    Entity* verts[4];
+    a->mesh->getDownward(tet, 0, verts);
+    Entity* vert = verts[0];
+    Entity* face = getTetFaceOppositeVert(a->mesh, tet, vert);
+    double area[4];
+    int bit = getTetStats(a, vert, face, tet, problemEnts, area);
+    return bit==3 || bit==5 || bit==6;
+  }
+
+  void fixOnce()
+  {
+    Entity* tet;
+    Iterator* it = a->mesh->begin(3);
+    while ((tet = a->mesh->iterate(it))) {
+      if (!getFlag(a, tet, BAD_QUALITY)) continue;
+      clearFlag(a, tet, BAD_QUALITY);
+
+      if (shortEdgeCase(tet)) continue;
+      if (oneLargeAngle(tet)) continue;
+
+      Entity* problemEnts[4];
+      if (isTwoLargeAngles(tet, problemEnts)) {
+        if (edgeSwap->run(problemEnts[0])) continue;
+        if (edgeSwap->run(problemEnts[1])) continue;
+        Entity* v0 = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[0]);
+        if (splitCollapse.run(problemEnts[0], v0)) continue;
+        Entity* v1 = getTriVertOppositeEdge(a->mesh, problemEnts[3], problemEnts[1]);
+        if (splitCollapse.run(problemEnts[1], v1)) continue;
+        if (doubleSplitCollapse.run(problemEnts)) continue;
+      }
+      else { //Three Large Angles
+        Entity* faceEdges[3];
+        a->mesh->getDownward(problemEnts[0], 1, faceEdges);
+        if (edgeSwap->run(faceEdges[0])) continue;
+        if (edgeSwap->run(faceEdges[1])) continue;
+        if (edgeSwap->run(faceEdges[2])) continue;
+        if (runFaceSwap(a, problemEnts[0], true)) continue;
+        Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
+        if (splitCollapse.run(problemEnts[1], v)) continue;
+        if (faceSplitCollapse.run(problemEnts[0], tet)) continue;
+      }
     }
   }
-}
+};
 
 void fixElementShapesNew(Adapt* a)
 {
@@ -181,6 +192,7 @@ void fixElementShapesNew(Adapt* a)
   double t0 = pcu::Time();
   int count = markBadQualityNew(a);
   print(a->mesh->getPCU(), "--iter %d of shape correction loop: #bad elements %d", 0, count);
+  FixShape fixShape(a);
   int originalCount = count;
   int prev_count;
   int iter = 0;
@@ -188,7 +200,7 @@ void fixElementShapesNew(Adapt* a)
     if ( ! count)
       break;
     prev_count = count;
-    fixLargeAngleTetsNew(a);
+    fixShape.fixOnce();
     /* We need to snap the new verts as soon as they are
      * created (to avoid future problems). At the moment
      * new verts are created only during 3D mesh adapt, so
