@@ -149,7 +149,31 @@ class FixShape
     return bit==3 || bit==5 || bit==6;
   }
 
-  void fixOnce()
+  void fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
+  {
+    if (edgeSwap->run(problemEnts[0])) return;
+    if (edgeSwap->run(problemEnts[1])) return;
+    Entity* v0 = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[0]);
+    if (splitCollapse.run(problemEnts[0], v0)) return;
+    Entity* v1 = getTriVertOppositeEdge(a->mesh, problemEnts[3], problemEnts[1]);
+    if (splitCollapse.run(problemEnts[1], v1)) return;
+    if (doubleSplitCollapse.run(problemEnts)) return;
+  }
+
+  void fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
+  {
+    Entity* faceEdges[3];
+    a->mesh->getDownward(problemEnts[0], 1, faceEdges);
+    if (edgeSwap->run(faceEdges[0])) return;
+    if (edgeSwap->run(faceEdges[1])) return;
+    if (edgeSwap->run(faceEdges[2])) return;
+    if (runFaceSwap(a, problemEnts[0], true)) return;
+    Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
+    if (splitCollapse.run(problemEnts[1], v)) return;
+    if (faceSplitCollapse.run(problemEnts[0], tet)) return;
+  }
+
+  void loopOnce()
   {
     Entity* tet;
     Iterator* it = a->mesh->begin(3);
@@ -159,28 +183,11 @@ class FixShape
 
       if (shortEdgeCase(tet)) continue;
       if (oneLargeAngle(tet)) continue;
-
       Entity* problemEnts[4];
-      if (isTwoLargeAngles(tet, problemEnts)) {
-        if (edgeSwap->run(problemEnts[0])) continue;
-        if (edgeSwap->run(problemEnts[1])) continue;
-        Entity* v0 = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[0]);
-        if (splitCollapse.run(problemEnts[0], v0)) continue;
-        Entity* v1 = getTriVertOppositeEdge(a->mesh, problemEnts[3], problemEnts[1]);
-        if (splitCollapse.run(problemEnts[1], v1)) continue;
-        if (doubleSplitCollapse.run(problemEnts)) continue;
-      }
-      else { //Three Large Angles
-        Entity* faceEdges[3];
-        a->mesh->getDownward(problemEnts[0], 1, faceEdges);
-        if (edgeSwap->run(faceEdges[0])) continue;
-        if (edgeSwap->run(faceEdges[1])) continue;
-        if (edgeSwap->run(faceEdges[2])) continue;
-        if (runFaceSwap(a, problemEnts[0], true)) continue;
-        Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
-        if (splitCollapse.run(problemEnts[1], v)) continue;
-        if (faceSplitCollapse.run(problemEnts[0], tet)) continue;
-      }
+      if (isTwoLargeAngles(tet, problemEnts))
+        fixTwoLargeAngles(tet, problemEnts);
+      else
+        fixThreeLargeAngles(tet, problemEnts);
     }
   }
 };
@@ -200,19 +207,13 @@ void fixElementShapesNew(Adapt* a)
     if ( ! count)
       break;
     prev_count = count;
-    fixShape.fixOnce();
-    /* We need to snap the new verts as soon as they are
-     * created (to avoid future problems). At the moment
-     * new verts are created only during 3D mesh adapt, so
-     * we only run a bulk snap operation if the mesh is 3D.
-     */
+    fixShape.loopOnce();
     if (a->mesh->getDimension() == 3)
       snap(a);
     count = markBadQualityNew(a);
     if (count >= prev_count)
       unMarkBadQualityNew(a); // to make sure markEntities does not complain!
-    // balance the mesh to avoid empty parts
-    midBalance(a);
+    midBalance(a); // balance the mesh to avoid empty parts
     iter++;
     print(a->mesh->getPCU(), "loop %d: bad shapes went from %d to %d", iter, prev_count, count); 
   } while(count < prev_count);
