@@ -4,21 +4,29 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # Package options
-option(ENABLE_STK "Enable the stk interface [ON|OFF]" OFF)
-option(ENABLE_STK_MESH "Enable the stk mesh interface [ON|OFF]" OFF)
-message(STATUS "ENABLE_STK: " ${ENABLE_STK})
-message(STATUS "ENABLE_STK_MESH: " ${ENABLE_STK_MESH})
+option(
+  PUMI_ENABLE_STK
+  "Enable the stk interface [ON|OFF]"
+  ${ENABLE_STK}
+)
+option(
+  PUMI_ENABLE_STK_MESH
+  "Enable the stk mesh interface [ON|OFF]"
+  ${ENABLE_STK_MESH}
+)
+message(STATUS "PUMI_ENABLE_STK: " ${PUMI_ENABLE_STK})
+message(STATUS "PUMI_ENABLE_STK_MESH: " ${PUMI_ENABLE_STK_MESH})
 
 # Only install the package if enabled
-if(NOT ENABLE_STK)
+if(NOT PUMI_ENABLE_STK)
   return()
 endif()
 
 # Find the shards Trilinos package
-set(SCOREC_USE_Shards_DEFAULT ${ENABLE_STK})
-set(SCOREC_USE_STKIO_DEFAULT ${ENABLE_STK_MESH})
-set(SCOREC_USE_STKMesh_DEFAULT ${ENABLE_STK_MESH})
-set(SCOREC_USE_SEACASIoss_DEFAULT ${ENABLE_STK_MESH})
+set(SCOREC_USE_Shards_DEFAULT ${PUMI_ENABLE_STK})
+set(SCOREC_USE_STKIO_DEFAULT ${PUMI_ENABLE_STK_MESH})
+set(SCOREC_USE_STKMesh_DEFAULT ${PUMI_ENABLE_STK_MESH})
+set(SCOREC_USE_SEACASIoss_DEFAULT ${PUMI_ENABLE_STK_MESH})
 set(Shards_PREFIX_DEFAULT "${Trilinos_PREFIX}")
 set(STKIO_PREFIX_DEFAULT "${Trilinos_PREFIX}")
 set(STKMesh_PREFIX_DEFAULT "${Trilinos_PREFIX}")
@@ -47,7 +55,7 @@ set(HEADERS
   apfAlbany.h
 )
 
-if(ENABLE_STK_MESH)
+if(PUMI_ENABLE_STK_MESH)
   set(HEADERS ${HEADERS} apfSTK.h)
   set(SOURCES ${SOURCES} apfExodusOutput.cc)
 endif()
@@ -71,7 +79,7 @@ target_include_directories(apf_stk PRIVATE
     )
 
 # Do some extra work if has stk is on
-if(ENABLE_STK_MESH)
+if(PUMI_ENABLE_STK_MESH)
   target_link_libraries(apf_stk PUBLIC
     stk_io
     stk_io_util

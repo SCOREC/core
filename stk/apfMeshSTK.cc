@@ -11,7 +11,7 @@
 #include <lionPrint.h>
 #include <cstdlib>
 
-#if HAS_STK
+#if PUMI_HAS_STK
 #include "apfSTK.h"
 #include <stk_io/IossBridge.hpp>
 #include <stk_mesh/base/FEMHelpers.hpp>
@@ -69,7 +69,7 @@ int getLocalSideId(Mesh* m, MeshEntity* e,
    We use the face->vertex ordering of our mesh database, which is consistent.
  */
 
-#if HAS_STK
+#if PUMI_HAS_STK
 static void special_declare_element_side(
   GlobalNumbering* nn,
   StkBulkData* bulk,
