@@ -6,7 +6,7 @@
  */
 
 #include <apf_stkConfig.h>
-#if !HAS_STK
+#if !PUMI_HAS_STK
 #error "configuration bug"
 #endif
 #include "apfSTK.h"
