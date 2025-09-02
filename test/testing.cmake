@@ -422,7 +422,7 @@ mpi_test(collapse_2 2
 if(PUMI_ENABLE_SIMMETRIX)
   set_test_depends(TESTS split_2 collapse_2 tet_serial DEPENDS convert)
 endif()
-if(ENABLE_METIS)
+if(PUMI_ENABLE_METIS)
   mpi_test(msplit_2 2
     ./msplit
     "${MDIR}/pipe.${GXT}" "pipe.smb"
@@ -537,7 +537,7 @@ if(ENABLE_ZOLTAN)
     "${MDIR}/4imb/torus.smb"
     "torusZbal4p/")
 endif()
-if(ENABLE_METIS)
+if(PUMI_ENABLE_METIS)
   mpi_test(mbalance 4
     ./mbalance
     "${MDIR}/torus.dmg"
