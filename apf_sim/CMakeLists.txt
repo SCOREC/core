@@ -21,13 +21,17 @@ target_include_directories(apf_sim PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-option(ENABLE_FIELDSIM "Enable use of FieldSim from Simmetrix SimModSuite" FALSE)
-message(STATUS "ENABLE_FIELDSIM: ${ENABLE_FIELDSIM}")
-set(USE_FIELDSIM FALSE)
-if( ${SIMMODSUITE_SimField_FOUND} AND ENABLE_FIELDSIM )
-  set(USE_FIELDSIM TRUE)
+option(
+  PUMI_ENABLE_FIELDSIM
+  "Request use of FieldSim from Simmetrix SimModSuite (only used if found)"
+  ${ENABLE_FIELDSIM} # Inherit default value
+)
+message(STATUS "PUMI_ENABLE_FIELDSIM: ${PUMI_ENABLE_FIELDSIM}")
+set(PUMI_USE_FIELDSIM FALSE)
+if( ${SIMMODSUITE_SimField_FOUND} AND PUMI_ENABLE_FIELDSIM )
+  set(PUMI_USE_FIELDSIM TRUE)
 endif()
-set(USE_SIM_ADVMESHING ${HAVE_SIMADVMESHING})
+set(PUMI_USE_SIM_ADVMESHING ${SIMMODSUITE_SimAdvMeshing_FOUND})
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/apf_simConfig.h.in"
