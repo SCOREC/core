@@ -1,9 +1,13 @@
 # Component options
-option(ENABLE_DSP "Enable the dsp package [ON|OFF]" OFF)
-message(STATUS "ENABLE_DSP: " ${ENABLE_DSP})
+option(
+  PUMI_ENABLE_DSP
+  "Enable the dsp package [ON|OFF]"
+  ${ENABLE_DSP} # compatability with PUMI < 5.0 and/or inherit from parent
+)
+message(STATUS "PUMI_ENABLE_DSP: " ${PUMI_ENABLE_DSP})
 
 # Only install the package if enabled
-if(NOT ENABLE_DSP)
+if(NOT PUMI_ENABLE_DSP)
   return()
 endif()
 
