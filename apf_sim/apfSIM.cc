@@ -12,7 +12,7 @@
 #include <pcu_util.h>
 #include <algorithm>
 
-#ifdef USE_FIELDSIM
+#ifdef PUMI_USE_FIELDSIM
 
 #include "apfSIMDataOf.h"
 
