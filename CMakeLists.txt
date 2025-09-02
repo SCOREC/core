@@ -184,14 +184,18 @@ endif()
 configure_file(SCOREC_config.h.in SCOREC_config.h)
 install(FILES "${CMAKE_BINARY_DIR}/SCOREC_config.h" DESTINATION include)
 
-if(ENABLE_SIMMETRIX)
-  option(ENABLE_FIELDSIM "Enable use of FieldSim from Simmetrix SimModSuite" FALSE)
-  message(STATUS "ENABLE_FIELDSIM: ${ENABLE_FIELDSIM}")
-  set(USE_FIELDSIM FALSE)
-  if(SIMMODSUITE_SimField_FOUND AND ENABLE_FIELDSIM)
-    set(USE_FIELDSIM TRUE)
+if(PUMI_ENABLE_SIMMETRIX)
+  option(
+    PUMI_ENABLE_FIELDSIM
+    "Request use of FieldSim from Simmetrix SimModSuite (only used if found)"
+    ${ENABLE_FIELDSIM} # Inherit default value
+  )
+  message(STATUS "PUMI_ENABLE_FIELDSIM: ${PUMI_ENABLE_FIELDSIM}")
+  set(PUMI_USE_FIELDSIM FALSE)
+  if(SIMMODSUITE_SimField_FOUND AND PUMI_ENABLE_FIELDSIM)
+    set(PUMI_USE_FIELDSIM TRUE)
   endif()
-  set(USE_SIM_ADVMESHING ${SIMMODSUITE_SimAdvMeshing_FOUND})
+  set(PUMI_USE_SIM_ADVMESHING ${SIMMODSUITE_SimAdvMeshing_FOUND})
   configure_file(pumi_simModSuiteConfig.h.in pumi_simModSuiteConfig.h)
   install(FILES "${CMAKE_BINARY_DIR}/pumi_simModSuiteConfig.h" DESTINATION include)
 endif()
