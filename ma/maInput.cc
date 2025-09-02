@@ -165,7 +165,7 @@ void validateInput(Input* in)
   ) {
     rejectInput(
       "PUMI was not compiled with METIS. Use a different balancer or compile "
-      "PUMI with ENABLE_METIS=ON!", in->mesh->getPCU()
+      "with PUMI_ENABLE_METIS=ON!", in->mesh->getPCU()
     );
   }
 #endif
