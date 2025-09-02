@@ -66,7 +66,6 @@ class FixShape
   FaceSplitCollapse faceSplitCollapse;
   EdgeSwap* edgeSwap;
 
-  //TODO: Count Operations
   int numCollapse=0;
   int numEdgeSwap=0;
   int numFaceSwap=0;
@@ -74,8 +73,10 @@ class FixShape
   int numFaceSplitCollapse=0;
   int numDoubleSplitCollapse=0;
 
-  //TODO: Count Types
-  int numShortEdges=0;
+  int numOneShortEdge=0;
+  int numTwoShortEdge=0;
+  int numThreeShortEdge=0;
+  int numMoreShortEdge=0;
   int numOneLargeAngle=0;
   int numTwoLargeAngles=0;
   int numThreeLargeAngles=0;
@@ -105,8 +106,10 @@ class FixShape
     a->mesh->getDownward(tet, 1, edges);
     for (int i=0; i<6; i++)
       if (a->sizeField->measure(edges[i]) < MINLENGTH)
-        if (collapseEdge(edges[i])) // TODO: Else try collapsing adjacent edges such that edges[i] merges with other edge
+        if (collapseEdge(edges[i])) { // TODO: Else try collapsing adjacent edges such that edges[i] merges with other edge
+          numCollapse++;
           return true;
+        }
     return false;
   }
 
@@ -144,11 +147,13 @@ class FixShape
     }
 
     Entity* oppositeVert = getTriVertOppositeEdge(a->mesh, worstTriangle, longestEdge);
-    if (edgeSwap->run(longestEdge)) return true;
-    if (splitCollapse.run(longestEdge, oppositeVert)) return true;
+    if (edgeSwap->run(longestEdge))
+      {numEdgeSwap++; return true;}
+    if (splitCollapse.run(longestEdge, oppositeVert))
+      {numEdgeSplitCollapse++; return true;}
     for (int i=0; i<3; i++)
       if (edges[i] != longestEdge && collapseEdge(edges[i]))
-        return true;
+        {numCollapse++; return true;}
     return false;
   }
 
@@ -165,13 +170,13 @@ class FixShape
 
   void fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
   {
-    if (edgeSwap->run(problemEnts[0])) return;
-    if (edgeSwap->run(problemEnts[1])) return;
+    if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return;}
+    if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return;}
     Entity* v0 = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[0]);
-    if (splitCollapse.run(problemEnts[0], v0)) return;
+    if (splitCollapse.run(problemEnts[0], v0)) {numEdgeSplitCollapse++; return;}
     Entity* v1 = getTriVertOppositeEdge(a->mesh, problemEnts[3], problemEnts[1]);
-    if (splitCollapse.run(problemEnts[1], v1)) return;
-    if (doubleSplitCollapse.run(problemEnts)) return;
+    if (splitCollapse.run(problemEnts[1], v1)) {numEdgeSplitCollapse++; return;}
+    if (doubleSplitCollapse.run(problemEnts)) {numDoubleSplitCollapse++; return;}
   }
 
   void fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
@@ -181,16 +186,16 @@ class FixShape
     for (int i=0; i<6; i++)
       if (!isLowInHigh(a->mesh, problemEnts[0], tetEdges[i]))
         if (collapseEdge(tetEdges[i])) //TODO: test collapsing in one direction either towards problemEnts[0] or away
-          return;
+          {numCollapse++; return;}
     Entity* faceEdges[3];
     a->mesh->getDownward(problemEnts[0], 1, faceEdges);
-    if (edgeSwap->run(faceEdges[0])) return;
-    if (edgeSwap->run(faceEdges[1])) return;
-    if (edgeSwap->run(faceEdges[2])) return;
-    if (runFaceSwap(a, problemEnts[0], true)) return;
+    if (edgeSwap->run(faceEdges[0])) {numEdgeSwap++; return;}
+    if (edgeSwap->run(faceEdges[1])) {numEdgeSwap++; return;}
+    if (edgeSwap->run(faceEdges[2])) {numEdgeSwap++; return;}
+    if (runFaceSwap(a, problemEnts[0], true)) {numFaceSwap++; return;}
     Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
-    if (splitCollapse.run(problemEnts[1], v)) return;
-    if (faceSplitCollapse.run(problemEnts[0], tet)) return;
+    if (splitCollapse.run(problemEnts[1], v)) {numEdgeSplitCollapse++; return;}
+    if (faceSplitCollapse.run(problemEnts[0], tet)) {numFaceSplitCollapse++; return;}
   }
 
   void loopOnce()
@@ -210,6 +215,68 @@ class FixShape
         fixThreeLargeAngles(tet, problemEnts);
     }
   }
+
+  void printNumOperations()
+  {
+    print(a->mesh->getPCU(), "shape operations: collapses %d - edge swaps %d - face swaps %d - edge split collapses %d - face split collapses %d - double split collapse %d",
+                                                numCollapse, numEdgeSwap, numFaceSwap, numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
+  }
+
+  bool isShortEdge(Entity* tet)
+  {
+    Entity* edges[6];
+    a->mesh->getDownward(tet, 1, edges);
+    int numShortEdges=0;
+    for (int i=0; i<6; i++)
+      if (a->sizeField->measure(edges[i]) < MINLENGTH)
+        numShortEdges++;
+
+    if (numShortEdges==0) return false;
+    else if (numShortEdges==1) numOneShortEdge++;
+    else if (numShortEdges==2) numTwoShortEdge++;
+    else if (numShortEdges==3) numThreeShortEdge++;
+    else numMoreShortEdge++;
+    return true;
+  }
+
+  bool isOneLargeAngle(Entity* tet)
+  {
+    Entity* worstTriangle;
+    if (getWorstTriangle(tet, worstTriangle) >= a->input->goodQuality) return false;
+    return true;
+  }
+
+  void resetCounters()
+  {
+    numOneShortEdge=0;
+    numTwoShortEdge=0;
+    numThreeShortEdge=0;
+    numMoreShortEdge=0;
+    numOneLargeAngle=0;
+    numTwoLargeAngles=0;
+    numThreeLargeAngles=0;
+  }
+
+  void printNumTypes()
+  {
+    resetCounters();
+    Entity* tet;
+    Iterator* it = a->mesh->begin(3);
+    while ((tet = a->mesh->iterate(it))) {
+      if (!getFlag(a, tet, BAD_QUALITY)) continue;
+      
+      Entity* problemEnts[4];
+      if (isShortEdge(tet)) continue;
+      else if (isOneLargeAngle(tet))
+        numOneLargeAngle++;
+      else if (isTwoLargeAngles(tet, problemEnts))
+        numTwoLargeAngles++;
+      else
+        numThreeLargeAngles++;
+    }
+    print(a->mesh->getPCU(), "bad shape types: oneShortEdge %d - twoShortEdges %d - threeShortEdges %d - moreShortEdges %d - oneLargeAngle %d - twoLargeAngle %d - threeLargeAngle %d",
+                                          numOneShortEdge, numTwoShortEdge, numThreeShortEdge, numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
+  }
 };
 
 void fixElementShapesNew(Adapt* a)
@@ -218,21 +285,19 @@ void fixElementShapesNew(Adapt* a)
     return;
   double t0 = pcu::Time();
   int count = markBadQualityNew(a);
-  print(a->mesh->getPCU(), "--iter %d of shape correction loop: #bad elements %d", 0, count);
+  print(a->mesh->getPCU(), "loop %d: of shape correction loop: #bad elements %d", 0, count);
   FixShape fixShape(a);
+  fixShape.printNumTypes();
   int originalCount = count;
   int prev_count;
   int iter = 0;
   do {
-    if ( ! count)
-      break;
+    if (!count) break;
     prev_count = count;
     fixShape.loopOnce();
     if (a->mesh->getDimension() == 3)
       snap(a);
     count = markBadQualityNew(a);
-    if (count >= prev_count)
-      unMarkBadQualityNew(a); // to make sure markEntities does not complain!
     midBalance(a); // balance the mesh to avoid empty parts
     iter++;
     print(a->mesh->getPCU(), "loop %d: bad shapes went from %d to %d", iter, prev_count, count); 
@@ -240,6 +305,9 @@ void fixElementShapesNew(Adapt* a)
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds", 
         originalCount,count,t1-t0);
+  fixShape.printNumOperations();
+  fixShape.printNumTypes();
+  unMarkBadQualityNew(a);
 }
 
 }
