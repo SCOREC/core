@@ -41,6 +41,10 @@ void gmi_cap_start(void) {
   }
 }
 
+bool is_gmi_cap_started() {
+  return cs_module->get_context() && cs_module->get_geometry() && cs_module->get_mesh();
+}
+
 void gmi_cap_stop(void) {
   if (!cs_module)
     gmi_fail("gmi_cap_stop called before gmi_cap_start");

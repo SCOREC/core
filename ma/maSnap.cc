@@ -24,17 +24,16 @@
 #include <iostream>
 #include <fstream>
 
-#ifdef HAVE_CAPSTONE
-#include "apfCAP.h"
+#ifdef PUMI_HAS_CAPSTONE
+#include "gmi_cap.h"
 #endif
 
 namespace ma {
 
-static bool isCapstoneMesh(apf::Mesh* m)
+static bool isCapstone()
 {
-  #ifdef HAVE_CAPSTONE
-    if (dynamic_cast<apf::MeshCAP*>(m)) return true;
-    else return false;
+  #ifdef PUMI_HAS_CAPSTONE
+    return is_gmi_cap_started();
   #else
     (void)m;
     return false;
@@ -86,7 +85,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
-    if (isCapstoneMesh(m)) {
+    if (isCapstone()) {
       uTanSize = uTan * uTan;
       vTanSize = vTan * vTan;
     }
@@ -170,7 +169,7 @@ static void interpolateParametricCoordinateOnEdge(
   p[1] = 0.0;
   p[2] = 0.0;
 
-  if (isCapstoneMesh(m)) {
+  if (isCapstone()) {
     // account for non-uniform parameterization of model-edge
     Vector X[3];
     Vector para[2] = {a, b};
@@ -511,7 +510,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 2) we only check for faces that are periodic
    */
   // this need to be done for faces, only
-  if (isCapstoneMesh(m)) 
+  if (isCapstone()) 
     return;
   if (dim != 2)
     return;
@@ -543,7 +542,7 @@ static void interpolateParametricCoordinatesOnFace(
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
 
   if (num > 0) { // the underlying surface is degenerate
-    if (!isCapstoneMesh(m)) {
+    if (!isCapstone()) {
       interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
     }
     else {
