@@ -7,6 +7,12 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+/*
+  This file contains functions to move a point to the model surface. As described
+  in Li's thesis it will first try to collapse in the target direction. Otherwise 
+  it will collapse to simplify the region and attempt other operators such as
+  swap, split collapse, double split collapse.
+*/
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
@@ -323,23 +329,6 @@ static void getInvalidTets(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
   }
 }
 
-//Moved vertex to model surface or returns invalid elements if not possible
-static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
-{
-  Mesh* mesh = adapt->mesh;
-  if (!mesh->hasTag(vertex, snapTag)) return true;
-  Vector prev = getPosition(mesh, vertex);
-  Vector target;
-  mesh->getDoubleTag(vertex, snapTag, &target[0]);
-  Upward adjacentElements;
-  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-  mesh->setPoint(vertex, 0, target);
-  getInvalidTets(adapt, adjacentElements, invalid);
-  if (invalid.n == 0) return true;
-  mesh->setPoint(vertex, 0, prev);
-  return false;
-}
-
 static int debugprint = 0;
 
 /*
@@ -611,6 +600,65 @@ static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up
   std::vector<Entity*> commEdges;
   FPP->getCandidateEdges(commEdges);
   return FPP;
+}
+
+static void computeNormals(Mesh* m, Upward& es, apf::NewArray<Vector>& normals)
+{
+  if (m->getDimension() != 2)
+    return;
+  normals.allocate(es.getSize());
+  for (size_t i = 0; i < es.getSize(); ++i)
+    normals[i] = getTriNormal(m, es[i]);
+}
+
+static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
+{
+  return (oldNormal * getTriNormal(m, tri)) < 0;
+}
+
+static void getInvalid(Adapt* a, Upward& adjacentElements, apf::NewArray<Vector>& normals, apf::Up& invalid)
+{
+  invalid.n = 0;
+  Vector v[4];
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    /* for now, when snapping a vertex on the boundary
+    layer, ignore the quality of layer elements.
+    not only do we not have metrics for this, but the
+    algorithm that moves curves would need to change */
+    if (getFlag(a, adjacentElements[i], LAYER))
+      continue;
+
+    if ((a->mesh->getDimension() == 2)) {
+      if (didInvert(a->mesh, normals[i], adjacentElements[i]))
+        invalid.e[invalid.n++] = adjacentElements[i];
+    }
+    else{
+      ma::getVertPoints(a->mesh,adjacentElements[i],v);
+      if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+        invalid.e[invalid.n++] = adjacentElements[i];
+    }
+  }
+}
+
+//Moved vertex to model surface or returns invalid elements if not possible
+static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
+{
+  Mesh* mesh = adapt->mesh;
+  if (!mesh->hasTag(vertex, snapTag)) return true;
+  Vector prev = getPosition(mesh, vertex);
+  Vector target;
+  mesh->getDoubleTag(vertex, snapTag, &target[0]);
+  Upward adjacentElements;
+  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+
+  apf::NewArray<Vector> normals;
+  computeNormals(mesh, adjacentElements, normals);
+
+  mesh->setPoint(vertex, 0, target);
+  getInvalid(adapt, adjacentElements, normals, invalid);
+  if (invalid.n == 0) return true;
+  mesh->setPoint(vertex, 0, prev);
+  return false;
 }
 
 bool Snapper::trySimpleSnap()

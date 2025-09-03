@@ -7,6 +7,15 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+/*
+This file contains two coarsening alogrithms. 
+  1. coarsenMultiple: will repeatedly create independent sets and collapse the mesh 
+      until there are no more short edges left. This code is currently only used for testing 
+      since more work needs to be done to achieve better performance and have the code work in 
+      parallel, at which point the other coarsen algorithm can be deleted.
+  2. coarsen: The first will create one independent set and then collapse all of the edges 
+      in that independent set. 
+*/
 #include "maCoarsen.h"
 #include "maAdapt.h"
 #include "maCollapse.h"

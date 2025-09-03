@@ -15,7 +15,12 @@
 #include "maSnap.h"
 #include "apfGeometry.h"
 #include <functional>
-
+/*
+ Test some of the individual components in mesh adaptation to make sure that they are 
+ functioning as intended. Right now it only tests coarsen refinement and snapping but
+ can be expanded to test more in the future. This has been tested with mds, simmetrix,
+ and capstone meshes.
+*/
 class AnIso : public ma::AnisotropicFunction
 {
   public:

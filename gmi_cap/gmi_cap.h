@@ -57,6 +57,12 @@ struct gmi_ent;
  * \note This call is required before calling any other gmi_cap functions.
  */
 void gmi_cap_start(void);
+
+/**
+ * \brief Returns true if gmi_cap library has been initialized with gmi_cap_start
+ */
+bool is_gmi_cap_started();
+
 /**
  * \brief Finalize gmi_cap library.
  *
