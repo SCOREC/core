@@ -35,7 +35,6 @@ static bool isCapstone()
   #ifdef PUMI_HAS_CAPSTONE
     return is_gmi_cap_started();
   #else
-    (void)m;
     return false;
   #endif
 }
