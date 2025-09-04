@@ -100,16 +100,35 @@ class FixShape
     return false;
   }
 
+  //TODO: consider why this isn't improving
+  bool collapseToAdjacent(Entity* edge)
+  {
+    Entity* verts[2];
+    a->mesh->getDownward(edge, 0, verts);
+    for (int v=0; v<2; v++) {
+      apf::Up adjEdges;
+      a->mesh->getUp(verts[v], adjEdges);
+      for (int e=0; e<adjEdges.n; e++) {
+        if (adjEdges.e[e] == edge) continue;
+        Entity* keep = getEdgeVertOppositeVert(a->mesh, adjEdges.e[e], verts[v]);
+        bool alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+        setFlag(a, keep, DONT_COLLAPSE);
+        bool success = collapseEdge(adjEdges.e[e]);
+        if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+        if (success) return true;
+      }
+    }
+    return false;
+  }
+
   bool fixShortEdge(Entity* tet)
   {
     Entity* edges[6];
     a->mesh->getDownward(tet, 1, edges);
     for (int i=0; i<6; i++)
       if (a->sizeField->measure(edges[i]) < MINLENGTH)
-        if (collapseEdge(edges[i])) { // TODO: Else try collapsing adjacent edges such that edges[i] merges with other edge
-          numCollapse++;
-          return true;
-        }
+        if (collapseEdge(edges[i]))
+          { numCollapse++; return true; }
     return false;
   }
 
