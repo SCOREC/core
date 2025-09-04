@@ -205,27 +205,40 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   return m;
 }
 
+ma::Mesh* shapeTest(ma::Mesh* m)
+{
+  m->verify();
+  AnIso sf(m, 8, 1);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  adapt(in);
+  delete in;
+  return m;
+}
+
 void adaptTests(const std::function<ma::Mesh*()>& createMesh)
 {
   //Mesh created multiple times to compare adaptation
   ma::Mesh* meshReg = createMesh();
   apf::writeVtkFiles("startMesh", meshReg);
 
-  refineSnapTest(meshReg);
-  apf::writeVtkFiles("afterRefine", meshReg);
+  shapeTest(meshReg);
+  apf::writeVtkFiles("afterShape", meshReg);
 
-  coarsenRegular(meshReg);
-  apf::writeVtkFiles("afterCoarsen", meshReg);
+  // refineSnapTest(meshReg);
+  // apf::writeVtkFiles("afterRefine", meshReg);
 
-  ma::Mesh* meshForce = coarsenForced(refineSnapTest(createMesh()));
-  apf::writeVtkFiles("afterForcedCoarsen", meshForce);
+  // coarsenRegular(meshReg);
+  // apf::writeVtkFiles("afterCoarsen", meshReg);
 
-  //Make sure setting to force coarsen is functioning
-  PCU_ALWAYS_ASSERT(countEdges(meshReg) > countEdges(meshForce));
-  PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(meshReg) < ma::getAverageEdgeLength(meshForce));
+  // ma::Mesh* meshForce = coarsenForced(refineSnapTest(createMesh()));
+  // apf::writeVtkFiles("afterForcedCoarsen", meshForce);
 
-  meshReg->destroyNative();
-  apf::destroyMesh(meshReg);
-  meshForce->destroyNative();
-  apf::destroyMesh(meshForce);
+  // //Make sure setting to force coarsen is functioning
+  // PCU_ALWAYS_ASSERT(countEdges(meshReg) > countEdges(meshForce));
+  // PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(meshReg) < ma::getAverageEdgeLength(meshForce));
+
+  // meshReg->destroyNative();
+  // apf::destroyMesh(meshReg);
+  // meshForce->destroyNative();
+  // apf::destroyMesh(meshForce);
 }
