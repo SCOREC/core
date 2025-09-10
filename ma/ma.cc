@@ -35,7 +35,8 @@ void printHistogramData(std::string name, std::vector<double> input, double min,
       inputMax = input[i];
     if (input[i] < inputMin)
       inputMin = input[i];
-    int bin = (int)std::round((input[i] - min)/bin_size);
+    int bin = (int)std::floor((input[i] - min)/bin_size);
+    if (bin >= nbins) bin = nbins - 1;
     count[bin] += 1;
   }
 
