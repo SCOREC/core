@@ -129,6 +129,10 @@ class FixShape
       if (a->sizeField->measure(edges[i]) < MINLENGTH)
         if (collapseEdge(edges[i]))
           { numCollapse++; return true; }
+    for (int i=0; i<6; i++)
+      if (a->sizeField->measure(edges[i]) < MINLENGTH)
+        if (collapseToAdjacent(edges[i]))
+          { numCollapse++; return true; }
     return false;
   }
 
@@ -303,6 +307,8 @@ void fixElementShapesNew(Adapt* a)
   if ( ! a->input->shouldFixShape)
     return;
   double t0 = pcu::Time();
+  bool oldForce = a->input->shouldForceAdaptation;
+  a->input->shouldForceAdaptation = false;
   int count = markBadQualityNew(a);
   print(a->mesh->getPCU(), "loop %d: of shape correction loop: #bad elements %d", 0, count);
   FixShape fixShape(a);
@@ -321,6 +327,7 @@ void fixElementShapesNew(Adapt* a)
     iter++;
     print(a->mesh->getPCU(), "loop %d: bad shapes went from %d to %d", iter, prev_count, count); 
   } while(count < prev_count);
+  a->input->shouldForceAdaptation = oldForce;
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds", 
         originalCount,count,t1-t0);
