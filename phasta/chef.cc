@@ -5,11 +5,12 @@
 #include <pumi_version.h>
 #ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
+#include <apf_simConfig.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
 #include <SimModel.h>
 #include <SimPartitionedMesh.h>
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
 #include <SimAdvMeshing.h>
 #endif
 #endif
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
   SimModel_start();
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   SimAdvMeshing_start();
 #endif
   gmi_sim_start();
@@ -60,7 +61,7 @@ int main(int argc, char** argv)
   freeMesh(m);
 #ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   SimAdvMeshing_stop();
 #endif
   SimPartitionedMesh_stop();
