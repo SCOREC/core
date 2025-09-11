@@ -877,7 +877,7 @@ void printQuality(Adapt* a)
 {
   if ( ! a->input->shouldPrintQuality)
     return;
-  double minqual = getMinQuality(a);
+  double minqual = cbrt(getMinQuality(a));
   print(a->mesh->getPCU(), "worst element quality is %e",  minqual);
 }
 

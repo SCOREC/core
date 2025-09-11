@@ -100,7 +100,6 @@ class FixShape
     return false;
   }
 
-  //TODO: consider why this isn't improving
   bool collapseToAdjacent(Entity* edge)
   {
     Entity* verts[2];
@@ -241,8 +240,10 @@ class FixShape
 
   void printNumOperations()
   {
-    print(a->mesh->getPCU(), "shape operations: collapses %d - edge swaps %d - face swaps %d - edge split collapses %d - face split collapses %d - double split collapse %d",
-                                                numCollapse, numEdgeSwap, numFaceSwap, numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
+    print(a->mesh->getPCU(), "shape operations: collapses %d - edge swaps %d - face swaps %d - 
+                              edge split collapses %d - face split collapses %d - double split collapse %d",
+                              numCollapse, numEdgeSwap, numFaceSwap, 
+                              numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
   }
 
   bool isShortEdge(Entity* tet)
@@ -271,13 +272,8 @@ class FixShape
 
   void resetCounters()
   {
-    numOneShortEdge=0;
-    numTwoShortEdge=0;
-    numThreeShortEdge=0;
-    numMoreShortEdge=0;
-    numOneLargeAngle=0;
-    numTwoLargeAngles=0;
-    numThreeLargeAngles=0;
+    numOneShortEdge=numTwoShortEdge=numThreeShortEdge=numMoreShortEdge=0;
+    numOneLargeAngle=numTwoLargeAngles=numThreeLargeAngles=0;
   }
 
   void printNumTypes()
@@ -297,8 +293,10 @@ class FixShape
       else
         numThreeLargeAngles++;
     }
-    print(a->mesh->getPCU(), "bad shape types: oneShortEdge %d - twoShortEdges %d - threeShortEdges %d - moreShortEdges %d - oneLargeAngle %d - twoLargeAngle %d - threeLargeAngle %d",
-                                          numOneShortEdge, numTwoShortEdge, numThreeShortEdge, numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
+    print(a->mesh->getPCU(), "bad shape types: oneShortEdge %d - twoShortEdges %d - threeShortEdges %d - 
+                              moreShortEdges %d - oneLargeAngle %d - twoLargeAngle %d - threeLargeAngle %d",
+                              numOneShortEdge, numTwoShortEdge, numThreeShortEdge,
+                              numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
   }
 };
 
