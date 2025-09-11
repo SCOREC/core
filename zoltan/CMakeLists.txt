@@ -4,12 +4,16 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # Package options
-option(ENABLE_ZOLTAN "Enable Zoltan interface [ON|OFF]" OFF)
+option(
+  PUMI_ENABLE_ZOLTAN
+  "Enable Zoltan interface [ON|OFF]"
+  ${ENABLE_ZOLTAN} # Inherit from parent project
+)
 xsdk_add_tpl(ZOLTAN)
 xsdk_add_tpl(PARMETIS)
-message(STATUS "ENABLE_ZOLTAN: " ${ENABLE_ZOLTAN})
+message(STATUS "PUMI_ENABLE_ZOLTAN: " ${PUMI_ENABLE_ZOLTAN})
 
-if(PUMI_NO_MPI AND ENABLE_ZOLTAN)
+if(PUMI_NO_MPI AND PUMI_ENABLE_ZOLTAN)
   message(FATAL_ERROR "PUMI_NO_MPI is incompatible with Zoltan.")
 endif()
 
@@ -19,7 +23,7 @@ set(CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/")
 
 # Check for and enable zoltan support
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   if(Trilinos_PREFIX)
     set(ZOLTAN_PREFIX_DEFAULT "${Trilinos_PREFIX}")
     message(STATUS "ZOLTAN_PREFIX_DEFAULT ${ZOLTAN_PREFIX_DEFAULT}")
@@ -28,7 +32,7 @@ if(ENABLE_ZOLTAN)
 endif()
 
 # Package sources
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   set(SOURCES
     apfInterElement.cc
     apfZoltan.cc
@@ -57,7 +61,7 @@ target_include_directories(apf_zoltan INTERFACE
 target_link_libraries(apf_zoltan PUBLIC pcu apf)
 
 # Do extra work if zoltan is enabled
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   target_include_directories(apf_zoltan PRIVATE
       ${ZOLTAN_INCLUDE_DIRS}
       ${PARMETIS_INCLUDE_DIRS}
