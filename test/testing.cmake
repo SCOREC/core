@@ -48,7 +48,7 @@ mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
 mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
 mpi_test(print_pumipic_partion 1
          ./print_pumipic_partition
          ${MESHES}/cube/cube.dmg
@@ -177,8 +177,8 @@ if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 endif(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
-    AND SIMMODSUITE_SimAdvMeshing_FOUND)
+if(PUMI_ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND PCU_COMPRESS
+    AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
     "${MDIR}/model.smd"
@@ -187,7 +187,7 @@ if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
 endif()
 
 
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
     ./test_pumi
     ${MESHES}/pumi/3d-1p/model.dmg
@@ -364,7 +364,7 @@ if(PUMI_ENABLE_SIMMETRIX)
     "pipe.smb")
   set_test_depends(TESTS snap_serial DEPENDS uniform_serial)
 endif()
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(ma_serial 1
     ./ma_test
     "${MDIR}/pipe.${GXT}"
@@ -454,7 +454,7 @@ if(PUMI_ENABLE_METIS)
     )
   endif()
 endif()
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x
     "${MDIR}/pipe.${GXT}"
@@ -491,7 +491,7 @@ mpi_test(vtxElmMixedBalance 4
   ./vtxElmMixedBalance
   "${MDIR}/pipe.${GXT}"
   "pipe_4_.smb")
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(ma_parallel 4
     ./ma_test
     "${MDIR}/pipe.${GXT}"
@@ -530,7 +530,7 @@ mpi_test(gap 4
 set_test_depends(TESTS gap DEPENDS balance)
 mpi_test(applyMatrixFunc 1
   ./applyMatrixFunc)
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(zbalance 4
     ./zbalance
     "${MDIR}/torus.dmg"
@@ -594,7 +594,7 @@ mpi_test(parmaSerial 1
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb"
   "cubeBal.smb/")
-if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set(MDIR ${MESHES}/annular)
   mpi_test(simZBalance_4 4
     ./simZBalance
@@ -602,7 +602,7 @@ if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
     "${MDIR}/annular_4_part.sms")
 endif()
 set(MDIR ${MESHES}/cube)
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(ptnParma_cube 4
     ./ptnParma
     "${MDIR}/cube.dmg"
@@ -612,7 +612,7 @@ if(ENABLE_ZOLTAN)
   )
 endif()
 
-if(PUMI_ENABLE_CGNS AND ENABLE_ZOLTAN)
+if(PUMI_ENABLE_CGNS AND PUMI_ENABLE_ZOLTAN)
 #
 # sort of an arbitrary choice
 set(numProcs 4)
@@ -697,7 +697,7 @@ mpi_test(cgns_bcs_3 ${numProcs}
   bcs3.smb
   additional)
 
-endif(PUMI_ENABLE_CGNS AND ENABLE_ZOLTAN)
+endif(PUMI_ENABLE_CGNS AND PUMI_ENABLE_ZOLTAN)
 
 mpi_test(construct 4
   ./construct
@@ -818,7 +818,7 @@ mpi_test(split_fusion 2
 set_test_depends(TESTS split_fusion DEPENDS mktopomodel_fusion)
 # the part count mismatch is intentional,
 # this test runs on half its procs
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(adapt_fusion 4
     ./fusion
     "fusion_2_.smb")
@@ -856,7 +856,7 @@ if(PUMI_ENABLE_SIMMETRIX)
       "${MDIR}/upright.smd"
       "67k")
     endif()
-    if(ENABLE_ZOLTAN)
+    if(PUMI_ENABLE_ZOLTAN)
       # adapt_meshgen uses the output of parallel_meshgen
       mpi_test(adapt_meshgen 4
         ./ma_test
@@ -940,7 +940,7 @@ if (PCU_COMPRESS)
   add_test(NAME chef2
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  if(ENABLE_ZOLTAN)
+  if(PUMI_ENABLE_ZOLTAN)
     mpi_test(chef3 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/${RUNDIR})
     mpi_test(chef4 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
@@ -961,14 +961,14 @@ if (PCU_COMPRESS)
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   set_test_depends(TESTS chef8 DEPENDS chef6)
-  if(ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   endif()
   mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
     ../../../model.dmg bz2:../good_mesh/ adapt.ur.inp
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
-  if(ENABLE_ZOLTAN)
+  if(PUMI_ENABLE_ZOLTAN)
     mpi_test(chefReadRibUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
       ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
       WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
