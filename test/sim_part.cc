@@ -25,6 +25,7 @@
 #include <lionPrint.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
+#include <apf_simConfig.h>
 
 #ifdef PUMI_HAS_SIMMETRIX
 #include "SimPartitionedMesh.h"
@@ -34,7 +35,7 @@
 #ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
 #endif
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
 #include <SimAdvMeshing.h>
 #endif
 #endif
@@ -75,7 +76,7 @@ int main(int argc, char **argv)
   // Also initializes MPI in parallel
   SimPartitionedMesh_start(&argc, &argv);
   SimDiscrete_start(0);
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   SimAdvMeshing_start();
 #endif
 #ifdef SIM_PARASOLID
@@ -167,7 +168,7 @@ int main(int argc, char **argv)
   SimParasolid_stop(1);
 #endif
   Sim_unregisterAllKeys();
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   SimAdvMeshing_stop();
 #endif
   SimDiscrete_stop(0);
