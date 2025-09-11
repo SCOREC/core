@@ -155,7 +155,7 @@ class FixShape
   bool fixOneLargeAngle(Entity* tet)
   {
     Entity* worstTriangle;
-    if (getWorstTriangle(tet, worstTriangle) >= a->input->goodQuality) return false;
+    if (getWorstTriangle(tet, worstTriangle) >= .09) return false;
 
     Entity* edges[3];
     a->mesh->getDownward(worstTriangle, 1, edges);
