@@ -28,12 +28,8 @@
 #include <errno.h>     /* for checking the error from mkdir */
 // ===============================
 
-#ifdef HAVE_CGNS
-//
 #include <cgns_io.h>
 #include <pcgnslib.h>
-//
-#endif
 
 // Note: currently, even in 2D or 1D a full 3D vector and matrix are written out to the file
 
@@ -705,7 +701,7 @@ void AddBocosToMainBase(const CGNS &cgns, const CellElementReturn &cellResults, 
       displacement[i] = displacement[i - 1] + sizes[i - 1];
 
     allElements.resize(totalLength);
-    #ifndef SCOREC_NO_MPI
+    #ifndef PUMI_NO_MPI
     PCU_Comm comm;
     m->getPCU()->DupComm(&comm);
     MPI_Allgatherv(bcList.data(), bcList.size(), MPI_INT, allElements.data(),
@@ -1138,7 +1134,7 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
   destroyGlobalNumbering(gcn);
   //
   cgp_close(cgns.index);
-  #ifndef SCOREC_NO_MPI
+  #ifndef PUMI_NO_MPI
   MPI_Comm_free(&communicator);
   #endif
 }
@@ -1147,15 +1143,8 @@ void WriteCGNS(const char *prefix, apf::Mesh *m, const apf::CGNSBCMap &cgnsBCMap
 namespace apf
 {
 
-void writeCGNS(const char *prefix, Mesh *m, const apf::CGNSBCMap &cgnsBCMap)
-{
-#ifdef HAVE_CGNS
+void writeCGNS(const char *prefix, Mesh *m, const apf::CGNSBCMap &cgnsBCMap) {
   WriteCGNS(prefix, m, cgnsBCMap);
-#else
-  PCU_ALWAYS_ASSERT_VERBOSE(true == false,
-                            "Build with ENABLE_CGNS to allow this functionality.");
-  exit(EXIT_FAILURE);
-#endif
 }
 
 } // namespace apf

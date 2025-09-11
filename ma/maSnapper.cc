@@ -263,7 +263,7 @@ bool Snapper::run()
   // there is no need for the following if there exists no bad elements
   if (badElements.n == 0) return true;
   FirstProblemPlane* FPP;
-#ifdef DO_FPP
+#ifdef PUMI_DO_FPP
   FPP = new FirstProblemPlane(adapter, snapTag);
   FPP->setVertex(vert);
 #else

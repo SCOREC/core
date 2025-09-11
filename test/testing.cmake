@@ -2,7 +2,7 @@ set(MESHES ""
     CACHE STRING
     "Extracted http://scorec.rpi.edu/pumi/pumi_test_meshes.tar.gz")
 function(mpi_test TESTNAME PROCS EXE)
-  if(SCOREC_NO_MPI)
+  if(PUMI_NO_MPI)
     if(${PROCS} EQUAL "1")
       add_test(
         NAME ${TESTNAME}
@@ -25,7 +25,7 @@ function(set_test_depends)
   if (NOT DEFINED SET_TEST_DEPENDS_TESTS OR NOT DEFINED SET_TEST_DEPENDS_DEPENDS)
     return()
   endif()
-  if(SCOREC_NO_MPI)
+  if(PUMI_NO_MPI)
     # Check for test existence as it may be a multiproc test.
     if(TEST "${TESTNAME}")
       set_tests_properties(${SET_TEST_DEPENDS_TESTS} PROPERTIES
@@ -48,7 +48,7 @@ mpi_test(bezierSubdivision 1 ./bezierSubdivision)
 mpi_test(bezierValidity 1 ./bezierValidity)
 mpi_test(ma_analytic 1 ./ma_test_analytic_model)
 
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
 mpi_test(print_pumipic_partion 1
          ./print_pumipic_partition
          ${MESHES}/cube/cube.dmg
@@ -80,7 +80,7 @@ mpi_test(test_matrix_gradient 1
 mpi_test(modelInfo_dmg 1
   ./modelInfo
   "${MESHES}/cube/cube.dmg")
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   mpi_test(in_closure_of 1
     ./inClosureOf_test
     "${MESHES}/cube/cube.smd")
@@ -91,9 +91,9 @@ if(ENABLE_SIMMETRIX)
     ./highOrderSizeFields
     "${MESHES}/cube/cube.smd"
     "${MESHES}/cube/pumi11/cube.smb")
-endif(ENABLE_SIMMETRIX)
+endif(PUMI_ENABLE_SIMMETRIX)
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set(GXT smd)
 else()
   set(GXT dmg)
@@ -101,7 +101,7 @@ endif()
 
 set(MDIR ${MESHES}/phasta/dg)
 
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   set(MDIR ${MESHES}/phasta/BL_query)
   mpi_test(chef-BL_query 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR}/run_case)
@@ -127,7 +127,7 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   )
 endif()
 
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   if(SIM_DOT_VERSION VERSION_GREATER 12.0.171000)
     set(MDIR ${MESHES}/faceExtrusion)
     mpi_test(rm_extrusion 1
@@ -174,11 +174,11 @@ if(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
       set_test_depends(TESTS countBL_part_mesh DEPENDS partition_sim)
     endif()
   endif()
-endif(ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
+endif(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
 
 set(MDIR ${MESHES}/phasta/loopDriver)
-if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
-    AND SIMMODSUITE_SimAdvMeshing_FOUND)
+if(PUMI_ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND PCU_COMPRESS
+    AND SIM_PARASOLID AND SIMMODSUITE_SimAdvMeshing_FOUND)
   mpi_test(ph_adapt 1
     ${CMAKE_CURRENT_BINARY_DIR}/ph_adapt
     "${MDIR}/model.smd"
@@ -187,14 +187,14 @@ if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND PCU_COMPRESS AND SIM_PARASOLID
 endif()
 
 
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(pumi3d-1p 4
     ./test_pumi
     ${MESHES}/pumi/3d-1p/model.dmg
     ${MESHES}/pumi/3d-1p/part.smb
     out.smb 1 0)
 endif()
-if(ENABLE_OMEGA_H)
+if(PUMI_ENABLE_OMEGA_H)
   mpi_test(mdsToOmega 1
     ./smb2osh
     ${MESHES}/cube/cube.dmg
@@ -306,7 +306,7 @@ mpi_test(inviscid_ghost 4
 set_test_depends(TESTS inviscid_ghost DEPENDS inviscid_ugrid)
 
 set(MDIR ${SMOKE_TEST_MESHES}/pipe)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   mpi_test(convert 1
     ./convert
     "${MDIR}/pipe.smd"
@@ -319,10 +319,10 @@ mpi_test(verify_serial 1
   ./verify
   "${MDIR}/pipe.${GXT}"
   "pipe.smb")
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set_test_depends(TESTS verify_serial DEPENDS convert)
 endif()
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(convert_2d_quads 1
     ./convert
     "${MESHES}/disk/disk.smd"
@@ -337,7 +337,7 @@ endif()
 mpi_test(verify_2nd_order_shape_quads 1
   ./verify_2nd_order_shapes
   "disk_quad_mesh.smb")
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set_test_depends(TESTS verify_2nd_order_shape_quads DEPENDS convert_2d_quads)
 else()
   file(COPY "${MESHES}/disk/disk_quad_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -345,7 +345,7 @@ endif()
 mpi_test(verify_2nd_order_shape_tris 1
   ./verify_2nd_order_shapes
   "disk_tri_mesh.smb")
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set_test_depends(TESTS verify_2nd_order_shape_tris DEPENDS convert_2d_tris)
 else()
   file(COPY "${MESHES}/disk/disk_tri_mesh0.smb" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -356,7 +356,7 @@ mpi_test(uniform_serial 1
   "pipe.smb"
   "pipe_unif.smb")
 mpi_test(classifyThenAdapt 1 ./classifyThenAdapt)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   mpi_test(snap_serial 1
     ./snap
     "${MDIR}/pipe.${GXT}"
@@ -364,7 +364,7 @@ if(ENABLE_SIMMETRIX)
     "pipe.smb")
   set_test_depends(TESTS snap_serial DEPENDS uniform_serial)
 endif()
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(ma_serial 1
     ./ma_test
     "${MDIR}/pipe.${GXT}"
@@ -396,7 +396,7 @@ mpi_test(tet_serial 1
   "${MDIR}/pipe.${GXT}"
   "pipe.smb"
   "tet.smb")
-if(ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   mpi_test(test_residual_error_estimate 1
     ./residualErrorEstimation_test
     "${MESHES}/electromagnetic/fichera_geomSim.smd"
@@ -419,10 +419,10 @@ mpi_test(collapse_2 2
   ${MESHFILE}
   pipe_p1_.smb
   2)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set_test_depends(TESTS split_2 collapse_2 tet_serial DEPENDS convert)
 endif()
-if(ENABLE_METIS)
+if(PUMI_ENABLE_METIS)
   mpi_test(msplit_2 2
     ./msplit
     "${MDIR}/pipe.${GXT}" "pipe.smb"
@@ -447,14 +447,14 @@ if(ENABLE_METIS)
     "${MDIR}/pipe.dmg" "pipe.smb" 1
     "pipe_mbe_.smb"
   )
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     set_test_depends(
       TESTS msplit_2 msplit_3 msplit_6 mbalanceEmpty
       DEPENDS convert
     )
   endif()
 endif()
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(refineX 2
     ./refine2x
     "${MDIR}/pipe.${GXT}"
@@ -491,7 +491,7 @@ mpi_test(vtxElmMixedBalance 4
   ./vtxElmMixedBalance
   "${MDIR}/pipe.${GXT}"
   "pipe_4_.smb")
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(ma_parallel 4
     ./ma_test
     "${MDIR}/pipe.${GXT}"
@@ -530,14 +530,14 @@ mpi_test(gap 4
 set_test_depends(TESTS gap DEPENDS balance)
 mpi_test(applyMatrixFunc 1
   ./applyMatrixFunc)
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(zbalance 4
     ./zbalance
     "${MDIR}/torus.dmg"
     "${MDIR}/4imb/torus.smb"
     "torusZbal4p/")
 endif()
-if(ENABLE_METIS)
+if(PUMI_ENABLE_METIS)
   mpi_test(mbalance 4
     ./mbalance
     "${MDIR}/torus.dmg"
@@ -594,7 +594,7 @@ mpi_test(parmaSerial 1
   "${MESHES}/cube/cube.dmg"
   "${MESHES}/cube/pumi670/cube.smb"
   "cubeBal.smb/")
-if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND SIM_PARASOLID)
+if(PUMI_ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX AND SIM_PARASOLID)
   set(MDIR ${MESHES}/annular)
   mpi_test(simZBalance_4 4
     ./simZBalance
@@ -602,7 +602,7 @@ if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX AND SIM_PARASOLID)
     "${MDIR}/annular_4_part.sms")
 endif()
 set(MDIR ${MESHES}/cube)
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(ptnParma_cube 4
     ./ptnParma
     "${MDIR}/cube.dmg"
@@ -612,7 +612,7 @@ if(ENABLE_ZOLTAN)
   )
 endif()
 
-if(ENABLE_CGNS AND ENABLE_ZOLTAN)
+if(PUMI_ENABLE_CGNS AND PUMI_ENABLE_ZOLTAN)
 #
 # sort of an arbitrary choice
 set(numProcs 4)
@@ -697,7 +697,7 @@ mpi_test(cgns_bcs_3 ${numProcs}
   bcs3.smb
   additional)
 
-endif(ENABLE_CGNS AND ENABLE_ZOLTAN)
+endif(PUMI_ENABLE_CGNS AND PUMI_ENABLE_ZOLTAN)
 
 mpi_test(construct 4
   ./construct
@@ -818,7 +818,7 @@ mpi_test(split_fusion 2
 set_test_depends(TESTS split_fusion DEPENDS mktopomodel_fusion)
 # the part count mismatch is intentional,
 # this test runs on half its procs
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   mpi_test(adapt_fusion 4
     ./fusion
     "fusion_2_.smb")
@@ -830,7 +830,7 @@ mpi_test(change_dim 1
   ./newdim)
 mpi_test(ma_insphere 1
   ./ma_insphere)
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set(MDIR ${MESHES}/upright)
   if(SIMMODSUITE_SimAdvMeshing_FOUND)
     mpi_test(parallel_meshgen 4
@@ -856,7 +856,7 @@ if(ENABLE_SIMMETRIX)
       "${MDIR}/upright.smd"
       "67k")
     endif()
-    if(ENABLE_ZOLTAN)
+    if(PUMI_ENABLE_ZOLTAN)
       # adapt_meshgen uses the output of parallel_meshgen
       mpi_test(adapt_meshgen 4
         ./ma_test
@@ -918,7 +918,7 @@ if(ENABLE_SIMMETRIX)
   endif(SIM_PARASOLID)
 endif()
 if (PCU_COMPRESS)
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     set(RUNDIR run_sim)
   else()
     set(RUNDIR run)
@@ -931,7 +931,7 @@ if (PCU_COMPRESS)
   mpi_test(chef0 1 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR})
   set(MDIR ${MESHES}/phasta/1-1-Chef-Tet-Part)
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     add_test(NAME chef1
       COMMAND diff -r ${RUNDIR}/1-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
@@ -940,7 +940,7 @@ if (PCU_COMPRESS)
   add_test(NAME chef2
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
-  if(ENABLE_ZOLTAN)
+  if(PUMI_ENABLE_ZOLTAN)
     mpi_test(chef3 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/2-1-Chef-Tet-Part/${RUNDIR})
     mpi_test(chef4 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
@@ -951,7 +951,7 @@ if (PCU_COMPRESS)
   set(MDIR ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20)
   mpi_test(chef6 4 ${CMAKE_CURRENT_BINARY_DIR}/chef
     WORKING_DIRECTORY ${MDIR}/${RUNDIR})
-  if(ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_SIMMETRIX)
     add_test(NAME chef7
       COMMAND diff -r ${RUNDIR}/4-procs_case/ good_phasta/
       WORKING_DIRECTORY ${MDIR})
@@ -961,14 +961,14 @@ if (PCU_COMPRESS)
     COMMAND diff -r out_mesh/ good_mesh/
     WORKING_DIRECTORY ${MDIR})
   set_test_depends(TESTS chef8 DEPENDS chef6)
-  if(ENABLE_ZOLTAN AND ENABLE_SIMMETRIX)
+  if(PUMI_ENABLE_ZOLTAN AND PUMI_ENABLE_SIMMETRIX)
     mpi_test(chef9 2 ${CMAKE_CURRENT_BINARY_DIR}/chef
       WORKING_DIRECTORY ${MESHES}/phasta/simModelAndAttributes)
   endif()
   mpi_test(chefReadUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
     ../../../model.dmg bz2:../good_mesh/ adapt.ur.inp
     WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)
-  if(ENABLE_ZOLTAN)
+  if(PUMI_ENABLE_ZOLTAN)
     mpi_test(chefReadRibUrPrep 4 ${CMAKE_CURRENT_BINARY_DIR}/chefReadUrPrep
       ../../../model.dmg bz2:../good_mesh/ adapt.prerib.inp
       WORKING_DIRECTORY ${MESHES}/phasta/4-1-Chef-Tet-Part/4-4-Chef-Part-ts20/run)

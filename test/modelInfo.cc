@@ -2,7 +2,7 @@
 #include <gmi_mesh.h>
 #include <apfMDS.h>
 #include <lionPrint.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     pcu::Finalize();
     exit(EXIT_FAILURE);
   }
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(NULL);
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
   }
 
   gmi_destroy(g);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();

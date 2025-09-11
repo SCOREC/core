@@ -57,9 +57,11 @@ set(APF_SOURCES
   apfFile.cc
 )
 
-if(ENABLE_CGNS)
+if(PUMI_ENABLE_CGNS)
   set(APF_SOURCES ${APF_SOURCES} apfCGNS.cc)
-endif(ENABLE_CGNS)
+else()
+  set(APF_SOURCES ${APF_SOURCES} apfCGNSempty.cc)
+endif()
 
 set(APF_HEADERS
   apf.h

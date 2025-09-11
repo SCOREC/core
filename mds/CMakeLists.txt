@@ -31,9 +31,11 @@ set(SOURCES
   mdsUgrid.cc
 )
 
-if(ENABLE_CGNS)
+if(PUMI_ENABLE_CGNS)
   set(SOURCES ${SOURCES} mdsCGNS.cc)
-endif(ENABLE_CGNS)
+else()
+  set(SOURCES ${SOURCES} mdsCGNSempty.cc)
+endif()
 
 # Package headers
 set(HEADERS
@@ -62,10 +64,10 @@ target_link_libraries(mds
      apf
    )
 
-if(ENABLE_CGNS)
+if(PUMI_ENABLE_CGNS)
   message(STATUS ${CGNS_LIBRARIES})
   target_link_libraries(mds PRIVATE ${CGNS_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-endif(ENABLE_CGNS)
+endif(PUMI_ENABLE_CGNS)
 
 scorec_export_library(mds)
 

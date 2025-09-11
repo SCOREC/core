@@ -20,18 +20,20 @@ if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
 endif()
 
-option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
-message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
-option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
+option(PUMI_ENABLE_CGNS
+  "Enable the CGNS reader (requires c++14 extensions)" ${ENABLE_CGNS}
+)
+message(STATUS "PUMI_ENABLE_CGNS: ${PUMI_ENABLE_CGNS}")
+option(PUMI_ENABLE_OMEGA_H "Enable the Omega_h interface" ${ENABLE_OMEGA_H})
 set(PUMI_USE_OMEGA_H_VERSION "10.0.0" CACHE STRING "Specify the Omega_h version PUMI should use")
-message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
-if(NOT ENABLE_CGNS AND NOT ENABLE_OMEGA_H)
+message(STATUS "PUMI_ENABLE_OMEGA_H: ${PUMI_ENABLE_OMEGA_H}")
+if(NOT PUMI_ENABLE_CGNS AND NOT PUMI_ENABLE_OMEGA_H)
   message(STATUS "enabling cxx11")
   bob_set_cxx_standard(11)
-elseif(ENABLE_CGNS)
+elseif(PUMI_ENABLE_CGNS)
   message(STATUS "enabling cxx14")
   bob_set_cxx_standard(14)
-elseif(ENABLE_OMEGA_H)
+elseif(PUMI_ENABLE_OMEGA_H)
   message(STATUS "enabling cxx17")
   bob_set_cxx_standard(17)
 endif()
@@ -39,10 +41,10 @@ endif()
 #
 # option related to MPI
 #
-option(SCOREC_NO_MPI "Disable MPI support.  When enabled only serial execution is supported." OFF)
-message(STATUS "SCOREC_NO_MPI: ${SCOREC_NO_MPI}")
-if(SCOREC_NO_MPI AND ENABLE_CGNS)
-  message(FATAL_ERROR "SCOREC_NO_MPI is incompatible with CGNS.")
+option(PUMI_NO_MPI "Disable MPI support.  When enabled only serial execution is supported." OFF)
+message(STATUS "PUMI_NO_MPI: ${PUMI_NO_MPI}")
+if(PUMI_NO_MPI AND PUMI_ENABLE_CGNS)
+  message(FATAL_ERROR "PUMI_NO_MPI is incompatible with CGNS.")
 endif()
 
 # Set some default compiler flags that should always be used
@@ -51,7 +53,7 @@ if(NOT USE_XSDK_DEFAULTS)
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
-  if(ENABLE_CGNS)
+  if(PUMI_ENABLE_CGNS)
     bob_cxx14_flags()
   else()
     bob_cxx11_flags()
@@ -103,26 +105,33 @@ add_custom_target(check
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
-option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
-message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
-option(PUMI_ENABLE_CAPSTONE "Build PUMI with Capstone support" OFF)
-# For compatibility and to inherit from owning projects:
-if(ENABLE_CAPSTONE)
-  set(PUMI_ENABLE_CAPSTONE ON)
+option(
+  PUMI_ENABLE_SIMMETRIX
+  "Build PUMI with Simmetrix support"
+  ${ENABLE_SIMMETRIX} # For compatibility and to inherit from owning projects
+)
+message(STATUS "PUMI_ENABLE_SIMMETRIX: ${PUMI_ENABLE_SIMMETRIX}")
+if(PUMI_ENABLE_SIMMETRIX)
+  add_definitions(-DPUMI_HAS_SIMMETRIX)
 endif()
+option(
+  PUMI_ENABLE_CAPSTONE
+  "Build PUMI with Capstone support"
+  ${ENABLE_CAPSTONE}
+)
 message(STATUS "PUMI_ENABLE_CAPSTONE: ${PUMI_ENABLE_CAPSTONE}")
-
-if(ENABLE_SIMMETRIX)
-  add_definitions(-DHAVE_SIMMETRIX)
-endif()
 if(PUMI_ENABLE_CAPSTONE)
   add_definitions(-DPUMI_HAS_CAPSTONE)
 endif()
 
-option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
-message(STATUS "ENABLE_FPP: ${ENABLE_FPP}")
-if(ENABLE_FPP)
-  add_definitions(-DDO_FPP)
+option(
+  PUMI_ENABLE_FPP
+  "Build with snapping to first problem plane"
+  ${ENABLE_FPP} # Inherit default value
+)
+message(STATUS "PUMI_ENABLE_FPP: ${PUMI_ENABLE_FPP}")
+if(PUMI_ENABLE_FPP)
+  add_definitions(-DPUMI_DO_FPP)
 endif()
 
 macro(scorec_export_library target)
@@ -144,7 +153,7 @@ macro(scorec_export_library target)
   endif()
 endmacro(scorec_export_library)
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
 endif()
 
@@ -153,23 +162,23 @@ if(PUMI_ENABLE_CAPSTONE)
   bob_public_dep(CreateMG)
 endif()
 
-if(ENABLE_OMEGA_H)
+if(PUMI_ENABLE_OMEGA_H)
   bob_cxx17_flags()
   bob_set_cxx_standard(17)
   # find the omega_h library
-  set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
+  set(SCOREC_USE_Omega_h_DEFAULT ${PUMI_ENABLE_OMEGA_H})
   set(Omega_h_REQUIRED_VERSION ${PUMI_USE_OMEGA_H_VERSION})
   bob_public_dep(Omega_h)
 endif()
 
-if(ENABLE_CGNS)
-  set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
+if(PUMI_ENABLE_CGNS)
+  set(SCOREC_USE_CGNS_DEFAULT ${PUMI_ENABLE_CGNS})
   bob_public_dep(CGNS)
   #CGNS does not provide cmake targets :(
   include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
-  set(SCOREC_USE_HDF5_DEFAULT ${ENABLE_CGNS})
+  set(SCOREC_USE_HDF5_DEFAULT ${PUMI_ENABLE_CGNS})
   bob_public_dep(HDF5)
-  add_definitions(-DHAVE_CGNS)
+  add_definitions(-DPUMI_HAS_CGNS)
 endif()
 
 configure_file(SCOREC_config.h.in SCOREC_config.h)
@@ -205,7 +214,7 @@ add_subdirectory(apf_cap)
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
 target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
-if(ENABLE_CGNS)
+if(PUMI_ENABLE_CGNS)
   target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
 endif()
 scorec_export_library(core)

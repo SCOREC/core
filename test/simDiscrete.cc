@@ -1,4 +1,4 @@
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include "MeshSim.h"
 #include "SimDiscrete.h"
 #include "SimMessages.h"

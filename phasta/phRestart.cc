@@ -11,7 +11,7 @@
 #include <sstream>
 #include <pcu_util.h>
 #include <cstring>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <apfSIM.h>
 #endif
 
@@ -41,7 +41,7 @@ apf::Field* extractField(apf::Mesh* m,
     numOfComp= 3;
   else
     PCU_ALWAYS_ASSERT(valueType == apf::SCALAR || valueType == apf::VECTOR);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   if (simField) {
     rf = apf::createSIMFieldOn(m, requestFieldname, valueType);
   } else
