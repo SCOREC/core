@@ -318,7 +318,7 @@ class FixShape
     Iterator* it = a->mesh->begin(3);
     while ((tet = a->mesh->iterate(it))) {
       if (!getFlag(a, tet, BAD_QUALITY)) continue;
-      prinBadShape(tet);
+      printBadShape(tet);
       
       Entity* problemEnts[4];
       if (isShortEdge(tet)) continue;
