@@ -73,6 +73,7 @@ void adapt(Input* in)
     coarsenLayer(a);
   }
   allowSplitCollapseOutsideLayer(a);
+  // fixElementShapes(a);
   fixElementShapesNew(a);
   cleanupLayer(a);
   tetrahedronize(a);

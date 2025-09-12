@@ -248,8 +248,8 @@ class FixShape
 
   void printNumOperations()
   {
-    print(a->mesh->getPCU(), "shape operations: collapses %d - edge swaps %d - face swaps %d - "
-                              "edge split collapses %d - face split collapses %d - double split collapse %d",
+    print(a->mesh->getPCU(), "shape operations: \n collapses %10d\n edge swaps %10d\n face swaps %10d\n"
+                              "edge split collapses %2d\n face split collapses %d\n double split collapse %d\n",
                               numCollapse, numEdgeSwap, numFaceSwap, 
                               numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
   }
@@ -286,6 +286,7 @@ class FixShape
 
   void printBadShape(Entity* tet)
   {
+    return;
     if (cbrt(a->shape->getQuality(tet)) > .11) return;
     EntityArray bad;
     bad.append(tet);
@@ -329,8 +330,8 @@ class FixShape
       else
         numThreeLargeAngles++;
     }
-    print(a->mesh->getPCU(), "bad shape types: oneShortEdge %d - twoShortEdges %d - threeShortEdges %d - "
-                              "moreShortEdges %d - oneLargeAngle %d - twoLargeAngle %d - threeLargeAngle %d",
+    print(a->mesh->getPCU(), "bad shape types: \n oneShortEdge   \t%d\n twoShortEdges   \t%d\n threeShortEdges \t%d\n"
+                              "moreShortEdges   \t%d\n oneLargeAngle   \t%d\n twoLargeAngle   \t%d\n threeLargeAngle \t%d\n",
                               numOneShortEdge, numTwoShortEdge, numThreeShortEdge,
                               numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
   }
