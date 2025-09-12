@@ -194,10 +194,18 @@ class FixShape
   {
     if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return;}
     if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return;}
-    Entity* v0 = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[0]);
-    if (splitCollapse.run(problemEnts[0], v0)) {numEdgeSplitCollapse++; return;}
-    Entity* v1 = getTriVertOppositeEdge(a->mesh, problemEnts[3], problemEnts[1]);
-    if (splitCollapse.run(problemEnts[1], v1)) {numEdgeSplitCollapse++; return;}
+    Entity* faces[4];
+    a->mesh->getDownward(tet, 2, faces);
+    for (int i=0; i<4; i++) {
+      if (isLowInHigh(a->mesh, faces[i], problemEnts[0])) {
+        Entity* v0 = getTriVertOppositeEdge(a->mesh, faces[i], problemEnts[0]);
+        if (splitCollapse.run(problemEnts[0], v0)) {numEdgeSplitCollapse++; return;}
+      }
+      else {
+        Entity* v0 = getTriVertOppositeEdge(a->mesh, faces[i], problemEnts[1]);
+        if (splitCollapse.run(problemEnts[1], v0)) {numEdgeSplitCollapse++; return;}
+      }
+    }
     if (doubleSplitCollapse.run(problemEnts)) {numDoubleSplitCollapse++; return;}
   }
 
@@ -240,8 +248,8 @@ class FixShape
 
   void printNumOperations()
   {
-    print(a->mesh->getPCU(), "shape operations: collapses %d - edge swaps %d - face swaps %d - 
-                              edge split collapses %d - face split collapses %d - double split collapse %d",
+    print(a->mesh->getPCU(), "shape operations: collapses %d - edge swaps %d - face swaps %d - "
+                              "edge split collapses %d - face split collapses %d - double split collapse %d",
                               numCollapse, numEdgeSwap, numFaceSwap, 
                               numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
   }
@@ -276,6 +284,33 @@ class FixShape
     numOneLargeAngle=numTwoLargeAngles=numThreeLargeAngles=0;
   }
 
+  void printBadShape(Entity* tet)
+  {
+    if (cbrt(a->shape->getQuality(tet)) > .11) return;
+    EntityArray bad;
+    bad.append(tet);
+    apf::writeVtkFiles("shape_mesh", a->mesh);
+    ma_dbg::createCavityMesh(a, bad, "shape_worst");
+
+    Entity* faces[4];
+    a->mesh->getDownward(tet, 2, faces);
+    for (int f=0; f<4; f++) {
+      apf::Up upward;
+      a->mesh->getUp(faces[f], upward);
+      for (int u=0; u<upward.n; u++)
+        bad.append(upward.e[u]);
+    }
+    ma_dbg::createCavityMesh(a, bad, "shape_adjacent");
+
+    Entity* problemEnts[4];
+    if (isTwoLargeAngles(tet, problemEnts)) {
+      printf("TWO LARGE ANGLES\n");
+      setFlag(a, problemEnts[0], CHECKED);
+      setFlag(a, problemEnts[1], CHECKED);
+      ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "shape_edges", "shape_edges");
+    }
+  }
+
   void printNumTypes()
   {
     resetCounters();
@@ -283,6 +318,7 @@ class FixShape
     Iterator* it = a->mesh->begin(3);
     while ((tet = a->mesh->iterate(it))) {
       if (!getFlag(a, tet, BAD_QUALITY)) continue;
+      prinBadShape(tet);
       
       Entity* problemEnts[4];
       if (isShortEdge(tet)) continue;
@@ -293,8 +329,8 @@ class FixShape
       else
         numThreeLargeAngles++;
     }
-    print(a->mesh->getPCU(), "bad shape types: oneShortEdge %d - twoShortEdges %d - threeShortEdges %d - 
-                              moreShortEdges %d - oneLargeAngle %d - twoLargeAngle %d - threeLargeAngle %d",
+    print(a->mesh->getPCU(), "bad shape types: oneShortEdge %d - twoShortEdges %d - threeShortEdges %d - "
+                              "moreShortEdges %d - oneLargeAngle %d - twoLargeAngle %d - threeLargeAngle %d",
                               numOneShortEdge, numTwoShortEdge, numThreeShortEdge,
                               numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
   }
@@ -310,7 +346,7 @@ void fixElementShapesNew(Adapt* a)
   int count = markBadQualityNew(a);
   print(a->mesh->getPCU(), "loop %d: of shape correction loop: #bad elements %d", 0, count);
   FixShape fixShape(a);
-  fixShape.printNumTypes();
+  // fixShape.printNumTypes();
   int originalCount = count;
   int prev_count;
   int iter = 0;
