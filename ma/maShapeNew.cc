@@ -135,7 +135,7 @@ class FixShape
     return false;
   }
 
-  double getWorstTriangle(Entity* tet, Entity*& worstTriangle)
+  bool isOneLargeAngle(Entity* tet, Entity*& worstTriangle)
   {
     Entity* triangles[4];
     a->mesh->getDownward(tet, 2, triangles);
@@ -148,13 +148,13 @@ class FixShape
         worstTriangle = triangles[i];
       }
     }
-    return worstQuality;
+    return worstQuality < .09;
   }
 
   bool fixOneLargeAngle(Entity* tet)
   {
     Entity* worstTriangle;
-    if (getWorstTriangle(tet, worstTriangle) >= .09) return false;
+    if (!isOneLargeAngle(tet, worstTriangle)) return false; 
 
     Entity* edges[3];
     a->mesh->getDownward(worstTriangle, 1, edges);
@@ -253,12 +253,24 @@ class FixShape
     }
   }
 
+  void resetCounters()
+  {
+    numOneShortEdge=numTwoShortEdge=numThreeShortEdge=numMoreShortEdge=0;
+    numOneLargeAngle=numTwoLargeAngles=numThreeLargeAngles=0;
+  }
   void printNumOperations()
   {
     print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n face swaps %12d\n "
                               "edge split collapses %5d\n face split collapses %3d\n double split collapse %d\n",
                               numCollapse, numEdgeSwap, numFaceSwap, 
                               numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
+  }
+  void printBadTypes()
+  {
+    print(a->mesh->getPCU(), "bad shape types: \n oneShortEdge   \t%d\n twoShortEdges   \t%d\n threeShortEdges \t%d\n "
+                              "moreShortEdges \t%d\n oneLargeAngle   \t%d\n twoLargeAngle   \t%d\n threeLargeAngle \t%d\n",
+                              numOneShortEdge, numTwoShortEdge, numThreeShortEdge,
+                              numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
   }
 
   bool isShortEdge(Entity* tet)
@@ -278,23 +290,8 @@ class FixShape
     return true;
   }
 
-  bool isOneLargeAngle(Entity* tet)
-  {
-    Entity* worstTriangle;
-    if (getWorstTriangle(tet, worstTriangle) >= a->input->goodQuality) return false;
-    return true;
-  }
-
-  void resetCounters()
-  {
-    numOneShortEdge=numTwoShortEdge=numThreeShortEdge=numMoreShortEdge=0;
-    numOneLargeAngle=numTwoLargeAngles=numThreeLargeAngles=0;
-  }
-
   void printBadShape(Entity* tet)
   {
-    return;
-    if (cbrt(a->shape->getQuality(tet)) > .11) return;
     EntityArray bad;
     bad.append(tet);
     apf::writeVtkFiles("shape_mesh", a->mesh);
@@ -309,14 +306,6 @@ class FixShape
         bad.append(upward.e[u]);
     }
     ma_dbg::createCavityMesh(a, bad, "shape_adjacent");
-
-    Entity* problemEnts[4];
-    if (isTwoLargeAngles(tet, problemEnts)) {
-      printf("TWO LARGE ANGLES\n");
-      setFlag(a, problemEnts[0], CHECKED);
-      setFlag(a, problemEnts[1], CHECKED);
-      ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "shape_edges", "shape_edges");
-    }
   }
 
   void printNumTypes()
@@ -324,23 +313,28 @@ class FixShape
     resetCounters();
     Entity* tet;
     Iterator* it = a->mesh->begin(3);
+    double worstQual = 1;
+    Entity* worstShape;
     while ((tet = a->mesh->iterate(it))) {
       if (!getFlag(a, tet, BAD_QUALITY)) continue;
-      printBadShape(tet);
+      double qual = a->shape->getQuality(tet);
+      if (qual < worstQual) {
+        worstQual = qual;
+        worstShape = tet;
+      }
       
       Entity* problemEnts[4];
+      Entity* worst;
       if (isShortEdge(tet)) continue;
-      else if (isOneLargeAngle(tet))
+      else if (isOneLargeAngle(tet, worst))
         numOneLargeAngle++;
       else if (isTwoLargeAngles(tet, problemEnts))
         numTwoLargeAngles++;
       else
         numThreeLargeAngles++;
     }
-    print(a->mesh->getPCU(), "bad shape types: \n oneShortEdge   \t%d\n twoShortEdges   \t%d\n threeShortEdges \t%d\n "
-                              "moreShortEdges \t%d\n oneLargeAngle   \t%d\n twoLargeAngle   \t%d\n threeLargeAngle \t%d\n",
-                              numOneShortEdge, numTwoShortEdge, numThreeShortEdge,
-                              numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
+    printBadTypes();
+    printBadShape(worstShape);
   }
 };
 
