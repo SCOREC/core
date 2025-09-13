@@ -214,9 +214,16 @@ class FixShape
     Entity* tetEdges[6];
     a->mesh->getDownward(tet, 1, tetEdges);
     for (int i=0; i<6; i++)
-      if (!isLowInHigh(a->mesh, problemEnts[0], tetEdges[i]))
-        if (collapseEdge(tetEdges[i])) //TODO: test collapsing in one direction either towards problemEnts[0] or away
-          {numCollapse++; return;}
+      if (!isLowInHigh(a->mesh, problemEnts[0], tetEdges[i])) {
+        Entity* verts[2];
+        a->mesh->getDownward(tetEdges[i], 0, verts);
+        Entity* keep = isLowInHigh(a->mesh, problemEnts[0], verts[0]) ? verts[0] : verts[1];
+        bool alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+        setFlag(a, keep, DONT_COLLAPSE);
+        bool success = collapseEdge(tetEdges[i]);
+        if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+        if (success) {numCollapse++; return;}
+      }
     Entity* faceEdges[3];
     a->mesh->getDownward(problemEnts[0], 1, faceEdges);
     if (edgeSwap->run(faceEdges[0])) {numEdgeSwap++; return;}
@@ -248,8 +255,8 @@ class FixShape
 
   void printNumOperations()
   {
-    print(a->mesh->getPCU(), "shape operations: \n collapses %10d\n edge swaps %10d\n face swaps %10d\n"
-                              "edge split collapses %2d\n face split collapses %d\n double split collapse %d\n",
+    print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n face swaps %12d\n "
+                              "edge split collapses %5d\n face split collapses %3d\n double split collapse %d\n",
                               numCollapse, numEdgeSwap, numFaceSwap, 
                               numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
   }
@@ -330,8 +337,8 @@ class FixShape
       else
         numThreeLargeAngles++;
     }
-    print(a->mesh->getPCU(), "bad shape types: \n oneShortEdge   \t%d\n twoShortEdges   \t%d\n threeShortEdges \t%d\n"
-                              "moreShortEdges   \t%d\n oneLargeAngle   \t%d\n twoLargeAngle   \t%d\n threeLargeAngle \t%d\n",
+    print(a->mesh->getPCU(), "bad shape types: \n oneShortEdge   \t%d\n twoShortEdges   \t%d\n threeShortEdges \t%d\n "
+                              "moreShortEdges \t%d\n oneLargeAngle   \t%d\n twoLargeAngle   \t%d\n threeLargeAngle \t%d\n",
                               numOneShortEdge, numTwoShortEdge, numThreeShortEdge,
                               numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
   }
