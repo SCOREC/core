@@ -69,6 +69,7 @@ class FixShape
   int numCollapse=0;
   int numEdgeSwap=0;
   int numFaceSwap=0;
+  int numRegionCollapse=0;
   int numEdgeSplitCollapse=0;
   int numFaceSplitCollapse=0;
   int numDoubleSplitCollapse=0;
@@ -179,6 +180,37 @@ class FixShape
     return false;
   }
 
+  bool collapseRegion(Entity* tet, Entity* problemEnts[4]) 
+  {
+    Mesh* mesh = a->mesh;
+    Entity* faces[4];
+    Entity* surface[4];
+    Entity* interior[4];
+    mesh->getDownward(tet, 2, faces);
+    int s = 0, i = 0;
+    for (int f=0; f<4; f++) {
+      if (mesh->getModelType(mesh->toModel(faces[f])) == 2)
+        surface[s++] = faces[f];
+      else interior[i++] = faces[f];
+    }
+    if (s != 2 || i != 2) return false;
+    Entity* surfaceEdge = mesh->getModelType(mesh->toModel(problemEnts[0])) == 2 ? problemEnts[0] : problemEnts[1];
+    if (!isLowInHigh(mesh, surface[0], surfaceEdge) || !isLowInHigh(mesh, surface[1], surfaceEdge))
+      return false;
+
+    Entity* interiorEdge = problemEnts[0] == surfaceEdge ? problemEnts[1] : problemEnts[0];
+    Model* modelFace = mesh->toModel(surface[0]);
+    mesh->destroy(tet);
+    mesh->destroy(surface[0]);
+    mesh->destroy(surface[1]);
+    mesh->destroy(surfaceEdge);
+    
+    mesh->setModelEntity(interior[0], modelFace);
+    mesh->setModelEntity(interior[1], modelFace);
+    mesh->setModelEntity(interiorEdge, modelFace);
+    return true;
+  }
+
   bool isTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
   {
     Entity* verts[4];
@@ -192,6 +224,7 @@ class FixShape
 
   void fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
   {
+    if (collapseRegion(tet, problemEnts)) {numRegionCollapse++; return;}
     if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return;}
     if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return;}
     Entity* faces[4];
@@ -260,10 +293,10 @@ class FixShape
   }
   void printNumOperations()
   {
-    print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n face swaps %12d\n "
-                              "edge split collapses %5d\n face split collapses %3d\n double split collapse %d\n",
-                              numCollapse, numEdgeSwap, numFaceSwap, 
-                              numEdgeSplitCollapse, numFaceSplitCollapse, numDoubleSplitCollapse);
+    print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n double split collapse %d\n "
+                              "edge split collapses %5d\n face split collapses %3d\n region collapses %7d\n face swaps %12d\n ",
+                              numCollapse, numEdgeSwap, numDoubleSplitCollapse,
+                              numEdgeSplitCollapse, numFaceSplitCollapse, numRegionCollapse, numFaceSwap);
   }
   void printBadTypes()
   {
@@ -306,7 +339,7 @@ class FixShape
 
   void printBadShape(Entity* tet)
   {
-    apf::writeVtkFiles("shape_mesh", a->mesh);
+    // apf::writeVtkFiles("shape_mesh", a->mesh);
     EntitySet bad;
     bad.insert(tet);
     ma_dbg::createCavityMesh(a, bad, "shape_worst");
