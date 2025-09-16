@@ -294,7 +294,7 @@ class FixShape
   void printNumOperations()
   {
     print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n double split collapse %d\n "
-                              "edge split collapses %5d\n face split collapses %3d\n region collapses %7d\n face swaps %12d\n ",
+                              "edge split collapses %5d\n face split collapses %3d\n region collapses %8d\n face swaps %12d\n ",
                               numCollapse, numEdgeSwap, numDoubleSplitCollapse,
                               numEdgeSplitCollapse, numFaceSplitCollapse, numRegionCollapse, numFaceSwap);
   }
