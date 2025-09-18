@@ -60,15 +60,18 @@ class FixShape
 {
   public:
   Adapt* a;
+  Mesh* mesh;
   Collapse collapse;
   SingleSplitCollapse splitCollapse;
   DoubleSplitCollapse doubleSplitCollapse;
   FaceSplitCollapse faceSplitCollapse;
   EdgeSwap* edgeSwap;
+  Splits split;
 
   int numCollapse=0;
   int numEdgeSwap=0;
   int numFaceSwap=0;
+  int numSplitReposition=0;
   int numRegionCollapse=0;
   int numEdgeSplitCollapse=0;
   int numFaceSplitCollapse=0;
@@ -82,9 +85,10 @@ class FixShape
   int numTwoLargeAngles=0;
   int numThreeLargeAngles=0;
 
-  FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt)
+  FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), split(adapt)
   {
     a = adapt;
+    mesh = a->mesh;
     collapse.Init(a);
     edgeSwap = makeEdgeSwap(a);
   }
@@ -136,6 +140,65 @@ class FixShape
     return false;
   }
 
+  double getWorstShape(EntityArray& tets, Entity*& worst)
+  {
+    double worstQuality = 1;
+    for (int i=0; i<tets.size(); i++) {
+      double quality = a->sizeField->measure(tets[i]);
+      if (quality < worstQuality) {
+        worstQuality = quality;
+        worst = tets[i];
+      }
+    }
+    return worstQuality;
+  }
+
+  void repositionVertex(Entity* vert)
+  {
+    EntityArray adjacent;
+    mesh->getAdjacent(vert, mesh->getDimension(), adjacent);
+    Entity* worstShape;
+    Vector prevPos = getPosition(mesh, vert);
+    getWorstShape(adjacent, worstShape);
+    double speed = (prevPos - getLinearCentroid(mesh, worstShape)).getLength();
+    double prevWorstQuality = 0;
+    for (int i=0; i<10; i++) {
+      double worstQuality = getWorstShape(adjacent, worstShape);
+      if (worstQuality > prevWorstQuality) {
+        prevWorstQuality = worstQuality;
+        prevPos = getPosition(mesh, vert);
+        Vector dir = (prevPos - getLinearCentroid(mesh, worstShape)).normalize();
+        mesh->setPoint(vert, 0, prevPos + (dir * speed));
+        speed *= 2;
+      }
+      else {
+        mesh->setPoint(vert, 0, prevPos);
+        speed /= 4;
+      }
+    }
+  }
+
+  bool splitReposition(Entity* edge)
+  {
+    if (mesh->getModelType(mesh->toModel(edge)) != 3) return false;
+    if (!split.setEdges(&edge, 1))
+      return false;
+    double worstQuality = getWorstQuality(a,split.getTets());
+    split.makeNewElements();
+    split.transfer();
+    Entity* newVert = split.getSplitVert(0);
+    repositionVertex(newVert);
+
+    EntityArray adjacent;
+    mesh->getAdjacent(newVert, mesh->getDimension(), adjacent);
+    if (hasWorseQuality(a,adjacent,worstQuality)) {
+      split.cancel();
+      return false;
+    }
+    split.destroyOldElements();
+    return true;
+  }
+
   bool isOneLargeAngle(Entity* tet, Entity*& worstTriangle)
   {
     Entity* triangles[4];
@@ -152,13 +215,8 @@ class FixShape
     return worstQuality < .09;
   }
 
-  bool fixOneLargeAngle(Entity* tet)
+  Entity* getLongestEdge(Entity* edges[3])
   {
-    Entity* worstTriangle;
-    if (!isOneLargeAngle(tet, worstTriangle)) return false; 
-
-    Entity* edges[3];
-    a->mesh->getDownward(worstTriangle, 1, edges);
     double longestLength = a->sizeField->measure(edges[0]);
     Entity* longestEdge = edges[0];
     for (int i=1; i<3; i++) {
@@ -168,12 +226,19 @@ class FixShape
         longestEdge = edges[i];
       }
     }
+    return longestEdge;
+  }
 
+  bool fixOneLargeAngle(Entity* tet)
+  {
+    Entity* worstTriangle;
+    if (!isOneLargeAngle(tet, worstTriangle)) return false; 
+    Entity* edges[3];
+    a->mesh->getDownward(worstTriangle, 1, edges);
+    Entity* longestEdge = getLongestEdge(edges);
     Entity* oppositeVert = getTriVertOppositeEdge(a->mesh, worstTriangle, longestEdge);
-    if (edgeSwap->run(longestEdge))
-      {numEdgeSwap++; return true;}
-    if (splitCollapse.run(longestEdge, oppositeVert))
-      {numEdgeSplitCollapse++; return true;}
+    if (edgeSwap->run(longestEdge)) {numEdgeSwap++; return true;}
+    if (splitCollapse.run(longestEdge, oppositeVert)) {numEdgeSplitCollapse++; return true;}
     for (int i=0; i<3; i++)
       if (edges[i] != longestEdge && collapseEdge(edges[i]))
         {numCollapse++; return true;}
@@ -182,7 +247,6 @@ class FixShape
 
   bool collapseRegion(Entity* tet, Entity* problemEnts[4]) 
   {
-    Mesh* mesh = a->mesh;
     Entity* faces[4];
     Entity* surface[4];
     Entity* interior[4];
@@ -227,6 +291,8 @@ class FixShape
     if (collapseRegion(tet, problemEnts)) {numRegionCollapse++; return;}
     if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return;}
     if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return;}
+    if (splitReposition(problemEnts[0])) {numSplitReposition++; return;}
+    if (splitReposition(problemEnts[1])) {numSplitReposition++; return;}
     Entity* faces[4];
     a->mesh->getDownward(tet, 2, faces);
     for (int i=0; i<4; i++) {
@@ -293,9 +359,9 @@ class FixShape
   }
   void printNumOperations()
   {
-    print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n double split collapse %d\n "
-                              "edge split collapses %5d\n face split collapses %3d\n region collapses %8d\n face swaps %12d\n ",
-                              numCollapse, numEdgeSwap, numDoubleSplitCollapse,
+    print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n split reposition %9d\n double split collapse %d\n "
+                              "edge split collapses %5d\n face split collapses %3d\n region collapses %7d\n face swaps %12d\n ",
+                              numCollapse, numEdgeSwap, numSplitReposition, numDoubleSplitCollapse,
                               numEdgeSplitCollapse, numFaceSplitCollapse, numRegionCollapse, numFaceSwap);
   }
   void printBadTypes()
