@@ -389,8 +389,9 @@ class FixShape
     return true;
   }
 
-  void addNextLayer(EntitySet& tets)
+  EntitySet addNextLayer(EntitySet& tets)
   {
+    EntitySet adjacent;
     APF_ITERATE(ma::EntitySet,tets,it) {
       Entity* faces[4];
       a->mesh->getDownward(*it, 2, faces);
@@ -398,9 +399,10 @@ class FixShape
         apf::Up nextLayer;
         a->mesh->getUp(faces[f], nextLayer);
         for (int n=0; n<nextLayer.n; n++)
-          tets.insert(nextLayer.e[n]);
+          adjacent.insert(nextLayer.e[n]);
       }
     }
+    return adjacent;
   }
 
   void printBadShape(Entity* tet)
@@ -409,12 +411,10 @@ class FixShape
     EntitySet bad;
     bad.insert(tet);
     ma_dbg::createCavityMesh(a, bad, "shape_worst");
-
-    addNextLayer(bad);
-    ma_dbg::createCavityMesh(a, bad, "shape_adjacent_1");
-
-    addNextLayer(bad);
-    ma_dbg::createCavityMesh(a, bad, "shape_adjacent_2");
+    EntitySet adjacent1 = addNextLayer(bad);
+    ma_dbg::createCavityMesh(a, adjacent1, "shape_adjacent_1");
+    EntitySet adjacent2 = addNextLayer(adjacent1);
+    ma_dbg::createCavityMesh(a, adjacent2, "shape_adjacent_2");
   }
 
   void printNumTypes()
