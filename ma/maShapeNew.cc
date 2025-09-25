@@ -258,11 +258,12 @@ class FixShape
       else interior[i++] = faces[f];
     }
     if (s != 2 || i != 2) return false;
-    Entity* surfaceEdge = mesh->getModelType(mesh->toModel(problemEnts[0])) == 2 ? problemEnts[0] : problemEnts[1];
+    Entity* interiorEdge = mesh->getModelType(mesh->toModel(problemEnts[0])) == 3 ? problemEnts[0] : problemEnts[1];
+    Entity* surfaceEdge = problemEnts[0] == interiorEdge ? problemEnts[1] : problemEnts[0];
+    if (mesh->getModelType(mesh->toModel(surfaceEdge)) == 1)
+      return false;
     if (!isLowInHigh(mesh, surface[0], surfaceEdge) || !isLowInHigh(mesh, surface[1], surfaceEdge))
       return false;
-
-    Entity* interiorEdge = problemEnts[0] == surfaceEdge ? problemEnts[1] : problemEnts[0];
     Model* modelFace = mesh->toModel(surface[0]);
     mesh->destroy(tet);
     mesh->destroy(surface[0]);
@@ -407,7 +408,7 @@ class FixShape
 
   void printBadShape(Entity* tet)
   {
-    // apf::writeVtkFiles("shape_mesh", a->mesh);
+    apf::writeVtkFiles("shape_mesh", a->mesh);
     EntitySet bad;
     bad.insert(tet);
     ma_dbg::createCavityMesh(a, bad, "shape_worst");
