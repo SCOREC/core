@@ -135,7 +135,7 @@ static double interpolateParametricCoordinate(
   }
   double period = range[1]-range[0];
   double span = b-a;
-  if (period < 0.5) //partial range can't be periodic
+  if (period < 0.5) //meshes in capstone can have partial ranges that aren't periodic
     return (1-t)*a + t*b;
   if (!mode) {
     if (span < (period/2))

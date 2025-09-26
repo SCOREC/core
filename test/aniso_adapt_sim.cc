@@ -1,27 +1,9 @@
-#include <iostream>
-#include <cstdlib>
-#include <filesystem>
-
-#include <lionPrint.h>
-#include <pcu_util.h>
-#include <gmi_mesh.h>
-#include <apf.h>
-#include <apfMDS.h>
-#include <ma.h>
 #include "aniso_adapt.h"
-
 #include <gmi_sim.h>
 #include <apfSIM.h>
-#include <MeshSim.h>
 #include <SimUtil.h>
 #include <SimPartitionedMesh.h>
-#include <PCU.h>
-
-#include "SimParasolidKrnl.h"
-#include "MeshSimAdapt.h"
-#include "SimDiscrete.h"
 #include "SimAdvMeshing.h"
-#include "SimMeshTools.h"
 
 ma::Mesh* createMesh(const char* nativefile, const char* smdfile, const char* smsfile, pcu::PCU* PCUObj)
 {

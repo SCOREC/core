@@ -1,31 +1,7 @@
 #include <PCU.h>
 #include <apfCAP.h>
-#include <apfMDS.h>
-#include <samSz.h>
-#include <queue>
-#include <ma.h>
-#include <gmi.h>
 #include <gmi_cap.h>
 #include <gmi_null.h>
-#include <gmi_mesh.h>
-#include <apf.h>
-#include <apfConvert.h>
-#include <apfMesh2.h>
-#include <apfNumbering.h>
-#include <apfShape.h>
-#include <ma.h>
-#include <pcu_util.h>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <math.h>
-#include "maAdapt.h"
-#include "maCoarsen.h"
-#include "maRefine.h"
-#include "maSnap.h"
-#include "lionPrint.h"
 #include "aniso_adapt.h"
 
 ma::Mesh* createMesh(const char* meshFile, pcu::PCU* PCUObj)

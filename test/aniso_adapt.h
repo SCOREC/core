@@ -1,19 +1,19 @@
-#include <iostream>
-#include <cstdlib>
-#include <filesystem>
+#ifndef TEST_ANISO_ADAPT_H
+#define TEST_ANISO_ADAPT_H
 
+#include <iostream>
 #include <lionPrint.h>
 #include <pcu_util.h>
 #include <gmi_mesh.h>
 #include <apf.h>
 #include <apfMDS.h>
 #include <ma.h>
-#include "maCoarsen.h"
-#include "maAdapt.h"
-#include "maRefine.h"
-#include "maShape.h"
-#include "maSnap.h"
-#include "apfGeometry.h"
+#include <maCoarsen.h>
+#include <maAdapt.h>
+#include <maRefine.h>
+#include <maShape.h>
+#include <maSnap.h>
+#include <apfGeometry.h>
 #include <functional>
 /*
  Test some of the individual components in mesh adaptation to make sure that they are 
@@ -54,7 +54,7 @@ void measureQuality(ma::Mesh* m, double& avgQuality, double& minQuality)
   while ((elem = m->iterate(it))) {
     double q = ma::measureElementQuality(m, &I, elem);
     avgQuality += q;
-    minQuality = fmin(minQuality, q);
+    minQuality = std::min(minQuality, q);
   }
   m->end(it);
   avgQuality = avgQuality / m->count(d);
@@ -229,3 +229,5 @@ void adaptTests(const std::function<ma::Mesh*()>& createMesh)
   meshForce->destroyNative();
   apf::destroyMesh(meshForce);
 }
+
+#endif
