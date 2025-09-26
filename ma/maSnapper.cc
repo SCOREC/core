@@ -581,10 +581,9 @@ static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
   return (oldNormal * getTriNormal(m, tri)) < 0;
 }
 
-static void getInvalid(Adapt* a, Upward& adjacentElements, apf::NewArray<Vector>& normals, apf::Up& invalid)
+static void getInvalid(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
 {
   invalid.n = 0;
-  Vector v[4];
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
     /* for now, when snapping a vertex on the boundary
     layer, ignore the quality of layer elements.
@@ -592,16 +591,8 @@ static void getInvalid(Adapt* a, Upward& adjacentElements, apf::NewArray<Vector>
     algorithm that moves curves would need to change */
     if (getFlag(a, adjacentElements[i], LAYER))
       continue;
-
-    if ((a->mesh->getDimension() == 2)) {
-      if (didInvert(a->mesh, normals[i], adjacentElements[i]))
-        invalid.e[invalid.n++] = adjacentElements[i];
-    }
-    else{
-      ma::getVertPoints(a->mesh,adjacentElements[i],v);
-      if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
-        invalid.e[invalid.n++] = adjacentElements[i];
-    }
+    if (a->shape->getQuality(adjacentElements[i]) < a->input->validQuality)
+      invalid.e[invalid.n++] = adjacentElements[i];
   }
 }
 
@@ -616,11 +607,8 @@ static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& i
   Upward adjacentElements;
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
 
-  apf::NewArray<Vector> normals;
-  computeNormals(mesh, adjacentElements, normals);
-
   mesh->setPoint(vertex, 0, target);
-  getInvalid(adapt, adjacentElements, normals, invalid);
+  getInvalid(adapt, adjacentElements, invalid);
   if (invalid.n == 0) return true;
   mesh->setPoint(vertex, 0, prev);
   return false;
