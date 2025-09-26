@@ -732,13 +732,13 @@ bool FirstProblemPlane::find()
     problemRegion = problemRegions[0];
     problemFace = getTetFaceOppositeVert(mesh, problemRegion, vert);
     coplanarProblemRegions.n = n;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       coplanarProblemRegions.e[i] = problemRegions[i];
     }
   }
   else {
     minDist += tol;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       if (dists[i] < minDist) {
         coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions[i];
         coplanarProblemRegions.n++;
