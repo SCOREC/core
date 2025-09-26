@@ -454,14 +454,14 @@ bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
   std::vector<Entity*>& commEdges = FPP->commEdges;
   BestCollapse best;
 
-  for (int i=0; i<commEdges.size(); i++) {
+  for (size_t i=0; i<commEdges.size(); i++) {
     Entity* vertex[2];
     mesh->getDownward(commEdges[i], 0, vertex);
     for (int j=0; j<2; j++)
       getBestQualityCollapse(adapt, commEdges[i], vertex[j], collapse, best);
   }
 
-  for (int i=0; i<commEdges.size(); i++) {
+  for (size_t i=0; i<commEdges.size(); i++) {
     Entity* edge = commEdges[i];
     Entity* vertexFPP = getEdgeVertOppositeVert(mesh, edge, vert);
     apf::Up adjEdges;
@@ -541,7 +541,7 @@ bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
 
   BestCollapse best;
 
-  for (int i = 0; i < FPP->commEdges.size(); ++i) {
+  for (size_t i = 0; i < FPP->commEdges.size(); ++i) {
     Entity* edge = FPP->commEdges[i];
     Entity* vertexOnFPP = getEdgeVertOppositeVert(mesh, edge, vert);
     Vector vFPPCoord = getPosition(mesh, vertexOnFPP);
@@ -685,7 +685,7 @@ bool FirstProblemPlane::find()
 
   // determine distances to all possible problem faces, the shortest
   // distance and its intersection on first problem plane (FPP)
-  int n = problemRegions.size();
+  size_t n = problemRegions.size();
   Entity* elem;
   Entity* face;
   Ray ray;
@@ -696,7 +696,7 @@ bool FirstProblemPlane::find()
   ray.dir   = target - ray.start;
 
   dists.clear();
-  for (int i = 0; i < n; i++) {
+  for (size_t i = 0; i < n; i++) {
     elem = problemRegions[i];
     face = getTetFaceOppositeVert(mesh, elem, vert);
     std::vector<Vector> coords;
@@ -767,7 +767,7 @@ void FirstProblemPlane::findCandidateEdges(std::vector<Entity*> &edges)
   Entity* edge;
   Entity* v;
 
-  for (int i = 0; i < commEdges.size(); i++) {
+  for (size_t i = 0; i < commEdges.size(); i++) {
     edge = commEdges[i];
     Downward dv;
     mesh->getDownward(edge, 0, dv);
