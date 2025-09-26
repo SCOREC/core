@@ -919,8 +919,12 @@ void snap(Adapt* a)
     snapLayer(a, snapTag);
 
     double t1 = pcu::Time();
-    print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d - Collapse %d - Swap %d - SplitCollapse %d - completed in %f seconds",
-              toSnap, collect(a,snapper.numSnapped), collect(a,snapper.numFailed), collect(a,snapper.numCollapseToVtx), collect(a,snapper.numCollapse), collect(a,snapper.numSwap), collect(a,snapper.numSplitCollapse), t1 - t0);
+    print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d"
+                            " - Collapse %d - Swap %d - SplitCollapse %d"
+                            " - completed in %f seconds",
+              toSnap, collect(a,snapper.numSnapped), collect(a,snapper.numFailed), 
+              collect(a,snapper.numCollapseToVtx), collect(a,snapper.numCollapse), 
+              collect(a,snapper.numSwap), collect(a,snapper.numSplitCollapse), t1 - t0);
     if (a->hasLayer)
       checkLayerShape(a->mesh, "after snapping");
   }

@@ -1,7 +1,6 @@
 #include <PCU.h>
 #include <apfCAP.h>
 #include <gmi_cap.h>
-#include <gmi_null.h>
 #include "aniso_adapt.h"
 
 ma::Mesh* createMesh(const char* meshFile, pcu::PCU* PCUObj)
@@ -30,7 +29,6 @@ int main(int argc, char** argv)
   }
 
   gmi_register_mesh();
-  gmi_register_null();
   gmi_cap_start();
   gmi_register_cap();
   lion_set_verbosity(1);

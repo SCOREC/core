@@ -713,16 +713,16 @@ bool FirstProblemPlane::find()
         lion_oprint(1, "Info: Found Infinitely Many Intersection Points!\n");
       Vector newDirection = intersect - ray.start;
       if (newDirection.getLength() < minDist) {
-	      dists.push_back(newDirection.getLength());
-      	minDist = dists.back();
-      	problemFace = face;
-      	problemRegion = elem;
-      	intersection = intersect;
-      	// do not need to check whether the move is valid since the valid
-      	// ones should have been taken care of by this point
+        dists.push_back(newDirection.getLength());
+        minDist = dists.back();
+        problemFace = face;
+        problemRegion = elem;
+        intersection = intersect;
+        // do not need to check whether the move is valid since the valid
+        // ones should have been taken care of by this point
       }
       else
-      	dists.push_back(newDirection.getLength());
+        dists.push_back(newDirection.getLength());
     }
   }
 
