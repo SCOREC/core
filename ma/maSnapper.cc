@@ -7,11 +7,13 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
-/*
-  This file contains functions to move a point to the model surface. As described
-  in Li's thesis it will first try to collapse in the target direction. Otherwise 
-  it will collapse to simplify the region and attempt other operators such as
-  swap, split collapse, double split collapse.
+/**
+ * \file maSnapper.cc
+ * \brief Definition of maSnapper.h file.
+ * This file contains functions to move a point to the model surface. As described
+ * in Li's thesis it will first try to collapse in the target direction. Otherwise 
+ * it will collapse to simplify the region and attempt other operators such as
+ * swap, split collapse, double split collapse.
 */
 #include "maSnapper.h"
 #include "maAdapt.h"
@@ -102,29 +104,23 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 }
 #endif
 
+//returns the greater index in the case of equality 
 static int indexOfMin(double a0, double a1, double a2)
 {
-  int k;
-  double buf;
-  if( a0<a1 )
-    { buf=a0; k=0; }
-  else
-    { buf=a1; k=1; }
-  return (buf<a2) ? k:2;
+  if (a1 < a0) {
+    if (a2 < a1) return 2;
+    else return 1;
+  } else {
+    if (a2 < a0) return 2;
+    else return 0;
+  }
 }
 
-static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert)
+static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert, Vector normal, Vector v0)
 {
-  Entity* faceVert[3];
-  a->mesh->getDownward(face, 0, faceVert);
-  Vector facePos[3];
-  for (int i=0; i < 3; ++i)
-    facePos[i] = getPosition(a->mesh,faceVert[i]);
-  
-  Vector normal = apf::cross((facePos[1]-facePos[0]),(facePos[2]-facePos[0]));
   double magN = normal*normal;
   Vector vertPos = getPosition(a->mesh, vert);
-  double magCP = (vertPos-facePos[0]) * normal;
+  double magCP = (vertPos-v0) * normal;
   double ratio=magCP/magN;
 
   Vector result;
@@ -182,14 +178,12 @@ int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* en
     }
   }
 
-  Vector projection = projOnTriPlane(a, face, vert);
-  //TODO: ERROR if projection = any point on problem face
-
   /* find normal to the plane */
   Vector v01 = facePos[1] - facePos[0];
   Vector v02 = facePos[2] - facePos[0];
   Vector norm = apf::cross(v01, v02);
 
+  Vector projection = projOnTriPlane(a, face, vert, norm, facePos[0]);
   Vector ri = projection - facePos[0];
   Vector rj = projection - facePos[1];
   Vector rk = projection - facePos[2];

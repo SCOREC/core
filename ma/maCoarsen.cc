@@ -26,6 +26,7 @@ This file contains two coarsening alogrithms.
 #include "apfShape.h"
 #include <vector>
 #include <list>
+#include <algorithm>
 
 namespace ma {
 
@@ -360,13 +361,13 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
     double length = getLength(a, lengthTag, adjacent.e[i]);
     EdgeLength measured{adjacent.e[i], length};
     if (measured.length > MINLENGTH) continue;
-    auto pos = std::lower_bound(sorted.begin(), sorted.end(), measured);
-    sorted.insert(pos, measured);
+    sorted.push_back(measured);
   }
   if (sorted.size() == 0) { //performance optimization, will rarely result in a missed edge
     itr = shortEdgeVerts.erase(itr);
     return false;
   }
+  std::sort(sorted.begin(), sorted.end());
   for (size_t i=0; i < sorted.size(); i++) {
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
     if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
