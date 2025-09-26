@@ -451,18 +451,18 @@ static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
 */
 bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
 {
-  apf::Up& commEdges = FPP->commEdges;
+  std::vector<Entity*>& commEdges = FPP->commEdges;
   BestCollapse best;
 
-  for (int i=0; i<commEdges.n; i++) {
+  for (int i=0; i<commEdges.size(); i++) {
     Entity* vertex[2];
-    mesh->getDownward(commEdges.e[i], 0, vertex);
+    mesh->getDownward(commEdges[i], 0, vertex);
     for (int j=0; j<2; j++)
-      getBestQualityCollapse(adapt, commEdges.e[i], vertex[j], collapse, best);
+      getBestQualityCollapse(adapt, commEdges[i], vertex[j], collapse, best);
   }
 
-  for (int i=0; i<commEdges.n; i++) {
-    Entity* edge = commEdges.e[i];
+  for (int i=0; i<commEdges.size(); i++) {
+    Entity* edge = commEdges[i];
     Entity* vertexFPP = getEdgeVertOppositeVert(mesh, edge, vert);
     apf::Up adjEdges;
     mesh->getUp(vertexFPP, adjEdges);
@@ -490,15 +490,15 @@ bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
 */
 bool Snapper::tryReduceCommonEdges(FirstProblemPlane* FPP)
 {
-  apf::Up& commEdges = FPP->commEdges;
+  std::vector<Entity*>& commEdges = FPP->commEdges;
   BestCollapse best;
 
   Entity* pbEdges[3];
   mesh->getDownward(FPP->problemFace, 1, pbEdges);
-  switch(commEdges.n) {
+  switch(commEdges.size()) {
     case 2: {
-      Entity* v1 = getEdgeVertOppositeVert(mesh, commEdges.e[0], vert);
-      Entity* v2 = getEdgeVertOppositeVert(mesh, commEdges.e[1], vert);
+      Entity* v1 = getEdgeVertOppositeVert(mesh, commEdges[0], vert);
+      Entity* v2 = getEdgeVertOppositeVert(mesh, commEdges[1], vert);
       
       for (int i=0; i<3; i++) {
         Entity* pbVert[2];
@@ -541,8 +541,8 @@ bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
 
   BestCollapse best;
 
-  for (int i = 0; i < FPP->commEdges.n; ++i) {
-    Entity* edge = FPP->commEdges.e[i];
+  for (int i = 0; i < FPP->commEdges.size(); ++i) {
+    Entity* edge = FPP->commEdges[i];
     Entity* vertexOnFPP = getEdgeVertOppositeVert(mesh, edge, vert);
     Vector vFPPCoord = getPosition(mesh, vertexOnFPP);
     double distToFPPVert = (vFPPCoord - target).getLength();
@@ -653,7 +653,7 @@ FirstProblemPlane::FirstProblemPlane(Adapt* a, Tag* st)
   snapTag = st;
   problemFace = 0;
   problemRegion = 0;
-  commEdges.n = 0;
+  commEdges.clear();
   tol = 1.0e-14;
 }
 
@@ -664,9 +664,8 @@ void FirstProblemPlane::setVertex(Entity* v)
 
 void FirstProblemPlane::setBadElements(apf::Up& badElements)
 {
-  problemRegions.n = badElements.n;
   for (int i = 0; i < badElements.n; i++) {
-    problemRegions.e[i] = badElements.e[i];
+    problemRegions.push_back(badElements.e[i]);
   }
 }
 
@@ -686,8 +685,7 @@ bool FirstProblemPlane::find()
 
   // determine distances to all possible problem faces, the shortest
   // distance and its intersection on first problem plane (FPP)
-  int n;
-  n = problemRegions.n;
+  int n = problemRegions.size();
   Entity* elem;
   Entity* face;
   Ray ray;
@@ -699,7 +697,7 @@ bool FirstProblemPlane::find()
 
   dists.clear();
   for (int i = 0; i < n; i++) {
-    elem = problemRegions.e[i];
+    elem = problemRegions[i];
     face = getTetFaceOppositeVert(mesh, elem, vert);
     std::vector<Vector> coords;
     getFaceCoords(mesh, face, coords);
@@ -731,18 +729,18 @@ bool FirstProblemPlane::find()
   coplanarProblemRegions.n = 0;
 
   if (!problemRegion) {
-    problemRegion = problemRegions.e[0];
+    problemRegion = problemRegions[0];
     problemFace = getTetFaceOppositeVert(mesh, problemRegion, vert);
     coplanarProblemRegions.n = n;
     for (int i = 0; i < n; i++) {
-      coplanarProblemRegions.e[i] = problemRegions.e[i];
+      coplanarProblemRegions.e[i] = problemRegions[i];
     }
   }
   else {
     minDist += tol;
     for (int i = 0; i < n; i++) {
       if (dists[i] < minDist) {
-        coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions.e[i];
+        coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions[i];
         coplanarProblemRegions.n++;
       }
     }
@@ -769,8 +767,8 @@ void FirstProblemPlane::findCandidateEdges(std::vector<Entity*> &edges)
   Entity* edge;
   Entity* v;
 
-  for (int i = 0; i < commEdges.n; i++) {
-    edge = commEdges.e[i];
+  for (int i = 0; i < commEdges.size(); i++) {
+    edge = commEdges[i];
     Downward dv;
     mesh->getDownward(edge, 0, dv);
     (dv[0] == vert) ? v = dv[1] : v = dv[0];
@@ -844,10 +842,8 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
     Downward edges;
     int nDownEdges = mesh->getDownward(cpRegions.e[0], 1, edges);
     for (int i = 0; i < nDownEdges; i++) {
-      if (isLowInHigh(mesh, edges[i], vert)) {
-        commEdges.e[commEdges.n] = edges[i];
-        commEdges.n++;
-      }
+      if (isLowInHigh(mesh, edges[i], vert))
+        commEdges.push_back(edges[i]);
     }
     return;
   }
@@ -887,10 +883,7 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
       	  break;
         }
       }
-      if (flag) {
-        commEdges.e[commEdges.n] = edges[i];
-        commEdges.n++;
-      }
+      if (flag) commEdges.push_back(edges[i]);
     }
   }
 }
