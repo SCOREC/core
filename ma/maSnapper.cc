@@ -567,20 +567,6 @@ static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up
   return FPP;
 }
 
-static void computeNormals(Mesh* m, Upward& es, apf::NewArray<Vector>& normals)
-{
-  if (m->getDimension() != 2)
-    return;
-  normals.allocate(es.getSize());
-  for (size_t i = 0; i < es.getSize(); ++i)
-    normals[i] = getTriNormal(m, es[i]);
-}
-
-static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
-{
-  return (oldNormal * getTriNormal(m, tri)) < 0;
-}
-
 static void getInvalid(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
 {
   invalid.n = 0;
@@ -640,11 +626,14 @@ bool Snapper::run()
     return true;
   }
 
-  FirstProblemPlane* FPP = getFPP(adapt, vert, snapTag, invalid);
-  if (!success) success = tryCollapseToVertex(FPP);
-  if (!success) success = tryReduceCommonEdges(FPP);
-  if (!success) success = tryCollapseTetEdges(FPP);
-  if (!success) success = trySwapOrSplit(FPP);
+  FirstProblemPlane* FPP=0;
+  if (mesh->getDimension() == 3) {
+    if (!success) FPP = getFPP(adapt, vert, snapTag, invalid);
+    if (!success) success = tryCollapseToVertex(FPP);
+    if (!success) success = tryReduceCommonEdges(FPP);
+    if (!success) success = tryCollapseTetEdges(FPP);
+    if (!success) success = trySwapOrSplit(FPP);
+  }
 
   if (!success) {
     numFailed++;
