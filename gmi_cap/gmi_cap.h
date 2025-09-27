@@ -59,11 +59,6 @@ struct gmi_ent;
 void gmi_cap_start(void);
 
 /**
- * \brief Returns true if gmi_cap library has been initialized with gmi_cap_start
- */
-bool is_gmi_cap_started();
-
-/**
  * \brief Finalize gmi_cap library.
  *
  * \note No gmi_cap functions except gmi_cap_import and gmi_cap_export should
@@ -99,6 +94,15 @@ struct gmi_model* gmi_cap_load(const char* creFileName);
  * \param creFileName filename for the new CRE file.
  */
 void gmi_cap_write(struct gmi_model* model, const char* creFileName);
+
+/**
+ * \brief Test if model is a Capstone gmi_model.
+ *
+ * \param model An abstract gmi_model which may have an underlying Capstone
+ * database.
+ * \return 1 if model is a Capstone gmi_model and 0 otherwise.
+ */
+int gmi_cap_test(struct gmi_model* model);
 
 #ifdef __cplusplus
 

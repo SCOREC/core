@@ -116,7 +116,7 @@ static int indexOfMin(double a0, double a1, double a2)
   }
 }
 
-static Vector projOnTriPlane(Adapt* a, Entity* face, Entity* vert, Vector normal, Vector v0)
+static Vector projOnTriPlane(Adapt* a, Entity* vert, Vector normal, Vector v0)
 {
   double magN = normal*normal;
   Vector vertPos = getPosition(a->mesh, vert);
@@ -183,7 +183,7 @@ int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* en
   Vector v02 = facePos[2] - facePos[0];
   Vector norm = apf::cross(v01, v02);
 
-  Vector projection = projOnTriPlane(a, face, vert, norm, facePos[0]);
+  Vector projection = projOnTriPlane(a, vert, norm, facePos[0]);
   Vector ri = projection - facePos[0];
   Vector rj = projection - facePos[1];
   Vector rk = projection - facePos[2];
