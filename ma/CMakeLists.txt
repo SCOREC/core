@@ -89,7 +89,7 @@ target_link_libraries(ma
    )
 
 if (ENABLE_CAPSTONE)
-target_link_libraries(ma PUBLIC apf_cap)
+target_link_libraries(ma PRIVATE apf_cap)
 endif()
 
 scorec_export_library(ma)

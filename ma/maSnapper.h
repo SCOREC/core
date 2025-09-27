@@ -74,8 +74,8 @@ class FirstProblemPlane
     void getCandidateEdges(std::vector<Entity*> &edges);
     Entity* vert;
     Entity* problemFace;
-    apf::Up commEdges;
-    apf::Up problemRegions;
+    std::vector<Entity*> commEdges;
+    std::vector<Entity*> problemRegions;
     Entity* problemRegion;
     Tag* snapTag;
   private:

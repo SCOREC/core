@@ -79,7 +79,7 @@ bool Collapse::edgesGoodSize() {
       }
     }
   }
-  if (maxSize > MAXLENGTH && ratioAtMaxSize > 1.2 ) return false;
+  if (maxSize > MAXLENGTH && ratioAtMaxSize > MAXLENGTHRATIO) return false;
   return true;
 }
 

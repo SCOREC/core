@@ -26,8 +26,61 @@ This file contains two coarsening alogrithms.
 #include "apfShape.h"
 #include <vector>
 #include <list>
+#include <algorithm>
 
 namespace ma {
+
+namespace {
+
+//Measures edge length and stores the result so it doesn't have to be calculated again
+double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
+{
+  double length = 0;
+  if (a->mesh->hasTag(edge, lengthTag))
+    a->mesh->getDoubleTag(edge, lengthTag, &length);
+  else {
+    length = a->sizeField->measure(edge);
+    a->mesh->setDoubleTag(edge, lengthTag, &length);
+  }
+  return length;
+}
+
+//Make sure that a collapse will not create an edge longer than the max
+bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent)
+{
+  Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vertex);
+  for (int i=0; i<adjacent.n; i++) {
+    Entity* newEdgeVerts[2]{vertex, getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vCollapse)};
+    Entity* newEdge = a->mesh->createEntity(apf::Mesh::EDGE, 0, newEdgeVerts);
+    double length = a->sizeField->measure(newEdge);
+    destroyElement(a, newEdge);
+    if (length > MAXLENGTH) return false;
+  }
+  return true;
+}
+
+bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
+{
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
+
+  double quality = a->input->shouldForceAdaptation ? a->input->validQuality 
+                                                  : a->input->goodQuality;
+
+  bool result = false;
+  if (collapse.setEdge(edge) && 
+      collapse.checkClass() &&
+      collapse.checkTopo() &&
+      collapseSizeCheck(a, keep, edge, adjacent) &&
+      collapse.tryBothDirections(quality)) {
+    result = true;
+  }  
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+  return result;
+}
+}
 
 class CollapseChecker : public apf::CavityOp
 {
@@ -266,61 +319,10 @@ bool coarsen(Adapt* a)
   return true;
 }
 
-//Measure and edge lenght and stores the result so it doesn't have to be calculated again
-static double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
-{
-  double length = 0;
-  length = a->sizeField->measure(edge);
-  if (a->mesh->hasTag(edge, lengthTag))
-    a->mesh->getDoubleTag(edge, lengthTag, &length);
-  else {
-    length = a->sizeField->measure(edge);
-    a->mesh->setDoubleTag(edge, lengthTag, &length);
-  }
-  return length;
-  
-}
-
-//Make sure that a collapse will not create an edge longer than the max
-bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent)
-{
-  Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vertex);
-  for (int i=0; i<adjacent.n; i++) {
-    Entity* newEdgeVerts[2]{vertex, getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vCollapse)};
-    Entity* newEdge = a->mesh->createEntity(apf::Mesh::EDGE, 0, newEdgeVerts);
-    double length = a->sizeField->measure(newEdge);
-    destroyElement(a, newEdge);
-    if (length > MAXLENGTH) return false;
-  }
-  return true;
-}
-
-static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
-{
-  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-  bool alreadyFlagged = true;
-  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
-  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
-
-  double quality = a->input->shouldForceAdaptation ? a->input->validQuality 
-                                                  : a->input->goodQuality;
-
-  bool result = false;
-  if (collapse.setEdge(edge) && 
-      collapse.checkClass() &&
-      collapse.checkTopo() &&
-      collapseSizeCheck(a, keep, edge, adjacent) &&
-      collapse.tryBothDirections(quality)) {
-    result = true;
-  }  
-  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
-  return result;
-}
-
 /*
-  Used after collpasing a vertex to flag adjacent vertices NEED_NOT_COLLAPSE, will create a
-  set of collapses were no two adjacent vertices collapsed called an independent set. Will
-  also clear adjacent vertices for collapse in next independent set since they might succeed now.
+  To be used after collapsing a vertex to flag adjacent vertices as NEED_NOT_COLLAPSE. This will create a
+  set of collapses where no two adjacent are vertices collapsed. Will also clear adjacent vertices for 
+  collapse in next independent set since they might succeed after a collapse.
 */
 void flagIndependentSet(Adapt* a, apf::Up& adjacent, size_t& checked)
 {
@@ -359,13 +361,13 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
     double length = getLength(a, lengthTag, adjacent.e[i]);
     EdgeLength measured{adjacent.e[i], length};
     if (measured.length > MINLENGTH) continue;
-    auto pos = std::lower_bound(sorted.begin(), sorted.end(), measured);
-    sorted.insert(pos, measured);
+    sorted.push_back(measured);
   }
   if (sorted.size() == 0) { //performance optimization, will rarely result in a missed edge
     itr = shortEdgeVerts.erase(itr);
     return false;
   }
+  std::sort(sorted.begin(), sorted.end());
   for (size_t i=0; i < sorted.size(); i++) {
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
     if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
@@ -377,13 +379,6 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
   setFlag(a, vertex, CHECKED);
   checked++;
   return false;
-}
-
-void clearListFlag(Adapt* a, std::list<Entity*> list, int flag) 
-{
-  auto i = list.begin();
-  while (i != list.end())
-    clearFlag(a, *i++, flag);
 }
 
 /*
@@ -410,7 +405,7 @@ bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::lis
     }
     itr++;
   } while (numItr < shortEdgeVerts.size());
-  clearListFlag(a, shortEdgeVerts, NEED_NOT_COLLAPSE);
+  for (auto v : shortEdgeVerts) clearFlag(a, v, NEED_NOT_COLLAPSE);
   independentSetStarted = false;
   return false;
 }
@@ -433,7 +428,7 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
       shortEdgeVerts.push_back(vertices[i]);
     }
   }
-  clearListFlag(a, shortEdgeVerts, CHECKED);
+  for (auto v : shortEdgeVerts) clearFlag(a, v, CHECKED);
   a->mesh->end(it);
   return shortEdgeVerts;
 }

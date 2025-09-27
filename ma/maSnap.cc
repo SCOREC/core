@@ -30,11 +30,11 @@
 
 namespace ma {
 
-static bool isCapstone()
-{
+static bool isCapstone(apf::Mesh* m) {
   #ifdef PUMI_HAS_CAPSTONE
-    return is_gmi_cap_started();
+    return gmi_cap_test(m->getModel());
   #else
+    (void) m;
     return false;
   #endif
 }
@@ -84,7 +84,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
-    if (isCapstone()) {
+    if (isCapstone(m)) {
       uTanSize = uTan * uTan;
       vTanSize = vTan * vTan;
     }
@@ -135,7 +135,7 @@ static double interpolateParametricCoordinate(
   }
   double period = range[1]-range[0];
   double span = b-a;
-  if (period < 0.5) //partial range can't be periodic
+  if (period < 0.5) //meshes in capstone can have partial ranges that aren't periodic
     return (1-t)*a + t*b;
   if (!mode) {
     if (span < (period/2))
@@ -168,7 +168,7 @@ static void interpolateParametricCoordinateOnEdge(
   p[1] = 0.0;
   p[2] = 0.0;
 
-  if (isCapstone()) {
+  if (isCapstone(m)) {
     // account for non-uniform parameterization of model-edge
     Vector X[3];
     Vector para[2] = {a, b};
@@ -509,7 +509,7 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 2) we only check for faces that are periodic
    */
   // this need to be done for faces, only
-  if (isCapstone()) 
+  if (isCapstone(m))
     return;
   if (dim != 2)
     return;
@@ -540,8 +540,53 @@ static void interpolateParametricCoordinatesOnFace(
   int axes;
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
 
-  if (num > 0) // the underlying surface is degenerate
-    interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
+  if (num > 0) { // the underlying surface is degenerate
+    if (!isCapstone(m)) {
+      interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
+    }
+    else {
+      // account for non-uniform parameterization of model-edge
+      Vector X[3];
+      Vector para[2] = {a, b};
+      for (int i = 0; i < 2; i++)
+        m->snapToModel(g, para[i], X[i]);
+
+      interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
+
+      double tMax = 1., tMin = 0.;
+      m->snapToModel(g, p, X[2]);
+
+      // check if the snap point on the model edge is
+      // approximately at same length from either vertices
+
+      double r = (X[0]-X[2]).getLength();
+      double s = (X[1]-X[2]).getLength();
+
+      double alpha = t/(1. - t); //parametric ratio
+
+      int num_it = 0;
+      while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
+        if ( r/s > alpha) {
+          tMax = t;
+          t = (tMin + t) / 2.;
+        }
+        else {
+          tMin = t;
+          t = (t + tMax) / 2.;
+        }
+
+        interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
+
+        m->snapToModel(g, p, X[2]);
+
+        r = (X[0]-X[2]).getLength();
+        s = (X[1]-X[2]).getLength();
+
+        if ( num_it > 20) break;
+        num_it++;
+      }
+    }
+  }
   else
     interpolateParametricCoordinatesOnRegularFace(m, g, t, a, b, p);
 }
@@ -874,8 +919,12 @@ void snap(Adapt* a)
     snapLayer(a, snapTag);
 
     double t1 = pcu::Time();
-    print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d - Collapse %d - Swap %d - SplitCollapse %d - completed in %f seconds",
-              toSnap, collect(a,snapper.numSnapped), collect(a,snapper.numFailed), collect(a,snapper.numCollapseToVtx), collect(a,snapper.numCollapse), collect(a,snapper.numSwap), collect(a,snapper.numSplitCollapse), t1 - t0);
+    print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d"
+                            " - Collapse %d - Swap %d - SplitCollapse %d"
+                            " - completed in %f seconds",
+              toSnap, collect(a,snapper.numSnapped), collect(a,snapper.numFailed), 
+              collect(a,snapper.numCollapseToVtx), collect(a,snapper.numCollapse), 
+              collect(a,snapper.numSwap), collect(a,snapper.numSplitCollapse), t1 - t0);
     if (a->hasLayer)
       checkLayerShape(a->mesh, "after snapping");
   }

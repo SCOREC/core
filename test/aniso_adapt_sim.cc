@@ -1,39 +1,9 @@
-#include <iostream>
-#include <cstdlib>
-#include <filesystem>
-
-#include <lionPrint.h>
-#include <pcu_util.h>
-#include <gmi_mesh.h>
-#include <apf.h>
-#include <apfMDS.h>
-#include <ma.h>
 #include "aniso_adapt.h"
-
 #include <gmi_sim.h>
 #include <apfSIM.h>
-#include <MeshSim.h>
 #include <SimUtil.h>
 #include <SimPartitionedMesh.h>
-#include <PCU.h>
-
-#include "SimParasolidKrnl.h"
-#include "MeshSimAdapt.h"
-#include "SimDiscrete.h"
 #include "SimAdvMeshing.h"
-#include "SimMeshTools.h"
-
-ma::Mesh* createMesh(const char* nativefile, const char* smdfile, const char* smsfile, pcu::PCU* PCUObj)
-{
-  pProgress progress = Progress_new();
-  Progress_setDefaultCallback(progress);
-  gmi_model* mdl_ref = gmi_sim_load(nativefile, smdfile);
-  pGModel model = gmi_export_sim(mdl_ref);
-  pParMesh mesh = PM_load(smsfile, model, progress);
-  ma::Mesh* mesh_ref = apf::createMesh(mesh, PCUObj);
-  apf::Mesh2* m = apf::createMdsMesh(mdl_ref, mesh_ref);
-  return m;
-}
 
 int main(int argc, char* argv[])
 {
@@ -61,10 +31,25 @@ int main(int argc, char* argv[])
   gmi_sim_start();
   gmi_register_sim();
 
-  auto createMeshValues = [nativefile, smdfile, smsfile, PCUObj]() 
-    { return createMesh(nativefile, smdfile, smsfile, PCUObj); };
+  pProgress progress = Progress_new();
+  Progress_setDefaultCallback(progress);
+  gmi_model* mdl_ref = gmi_sim_load(nativefile, smdfile);
+  pGModel model = gmi_export_sim(mdl_ref);
+  pParMesh mesh = PM_load(smsfile, model, progress);
+  ma::Mesh* mesh_ref = apf::createMesh(mesh, PCUObj);
+
+  auto createMeshValues = [mdl_ref, mesh_ref]() 
+    { return apf::createMdsMesh(mdl_ref, mesh_ref); };
 
   adaptTests(createMeshValues);
+
+  M_release(mesh);
+  Progress_delete(progress);
+  gmi_sim_stop();
+  SimPartitionedMesh_stop();
+  Sim_unregisterAllKeys();
+  SimModel_stop();
+  MS_exit();
 
   delete PCUObj;
   MPI_Finalize();
