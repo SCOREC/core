@@ -3,11 +3,6 @@
 #include <apfMDS.h>
 #include "aniso_adapt.h"
 
-ma::Mesh* createMesh(const char* modelfile, const char* meshfile, pcu::PCU *PCUObj)
-{
-  return apf::loadMdsMesh(modelfile,meshfile,PCUObj);
-}
-
 int main(int argc, char** argv)
 {
   PCU_ALWAYS_ASSERT(argc==3);
@@ -20,7 +15,7 @@ int main(int argc, char** argv)
   gmi_register_mesh();
 
   auto createMeshValues = [modelFile,meshFile,&PCUObj]() 
-    { return createMesh(modelFile,meshFile,&PCUObj); };
+    { return apf::loadMdsMesh(modelFile,meshFile,&PCUObj); };
 
   adaptTests(createMeshValues);
   }

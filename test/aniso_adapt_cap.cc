@@ -3,17 +3,6 @@
 #include <gmi_cap.h>
 #include "aniso_adapt.h"
 
-ma::Mesh* createMesh(const char* meshFile, pcu::PCU* PCUObj)
-{
-  gmi_model* model = gmi_load(meshFile);
-  ma::Mesh* apfCapMesh = apf::createCapMesh(model, PCUObj);
-  apf::disownCapModel(apfCapMesh);
-  ma::Mesh* apfMesh = apf::createMdsMesh(model, apfCapMesh, true);
-  apf::disownMdsModel(apfMesh);
-  apf::destroyMesh(apfCapMesh);
-  return apfMesh;
-}
-
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
@@ -32,13 +21,20 @@ int main(int argc, char** argv)
   gmi_cap_start();
   gmi_register_cap();
   lion_set_verbosity(1);
-
   const char* meshFile = argv[1];
-  auto createMeshValues = [meshFile, &PCUObj]() 
-    { return createMesh(meshFile, &PCUObj); };
+
+  gmi_model* model = gmi_load(meshFile); //Freed in adaptTests
+  ma::Mesh* apfCapMesh = apf::createCapMesh(model, &PCUObj);
+  apf::disownCapModel(apfCapMesh);
+  ma::Mesh* mesh = apf::createMdsMesh(model, apfCapMesh, true);
+  apf::disownMdsModel(mesh);
+  apf::destroyMesh(apfCapMesh);
+
+  auto createMeshValues = [model, mesh]() 
+    { return apf::createMdsMesh(model, mesh, true); };
 
   adaptTests(createMeshValues);
-
+  apf::destroyMesh(mesh);
   gmi_cap_stop();
   }
   MPI_Finalize();
