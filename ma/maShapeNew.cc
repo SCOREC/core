@@ -390,31 +390,15 @@ class FixShape
     return true;
   }
 
-  EntitySet addNextLayer(EntitySet& tets)
-  {
-    EntitySet adjacent;
-    APF_ITERATE(ma::EntitySet,tets,it) {
-      Entity* faces[4];
-      a->mesh->getDownward(*it, 2, faces);
-      for (int f=0; f<4; f++) {
-        apf::Up nextLayer;
-        a->mesh->getUp(faces[f], nextLayer);
-        for (int n=0; n<nextLayer.n; n++)
-          adjacent.insert(nextLayer.e[n]);
-      }
-    }
-    return adjacent;
-  }
-
   void printBadShape(Entity* tet)
   {
     apf::writeVtkFiles("shape_mesh", a->mesh);
     EntitySet bad;
     bad.insert(tet);
     ma_dbg::createCavityMesh(a, bad, "shape_worst");
-    EntitySet adjacent1 = addNextLayer(bad);
+    EntitySet adjacent1 = getNextLayer(a, bad);
     ma_dbg::createCavityMesh(a, adjacent1, "shape_adjacent_1");
-    EntitySet adjacent2 = addNextLayer(adjacent1);
+    EntitySet adjacent2 = getNextLayer(a, adjacent1);
     ma_dbg::createCavityMesh(a, adjacent2, "shape_adjacent_2");
   }
 

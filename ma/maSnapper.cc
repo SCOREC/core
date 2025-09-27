@@ -90,32 +90,22 @@ static void printFPP(Adapt* a, FirstProblemPlane* FPP)
   ma_dbg::addClassification(a, "classification");
 
   apf::writeVtkFiles("FPP_Mesh", a->mesh);
-  EntityArray invalid;
-  for (int i=0; i<FPP->problemRegions.n; i++){
-    invalid.append(FPP->problemRegions.e[i]);
-  }
+  EntitySet invalid;
+  for (auto e : FPP->problemRegions) invalid.insert(e);
   ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
-  for (int i=0; i<FPP->commEdges.n; i++) setFlag(a, FPP->commEdges.e[i], CHECKED);
+  for (auto e : FPP->commEdges) setFlag(a, e, CHECKED);
   ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
-  for (int i=0; i<FPP->commEdges.n; i++) clearFlag(a, FPP->commEdges.e[i], CHECKED);
+  for (auto e : FPP->commEdges) clearFlag(a, e, CHECKED);
 
   flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
   flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
   flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
 
-  apf::Adjacent adj;
-  a->mesh->getAdjacent(FPP->vert, 3, adj);
-  for (int i=0; i<adj.size(); i++) setFlag(a, adj[i], CHECKED);
-  Entity* problemFaceVerts[3];
-  a->mesh->getDownward(FPP->problemFace, 0, problemFaceVerts);
-  for (int i=0; i<3; i++){
-    a->mesh->getAdjacent(problemFaceVerts[i], 3, adj);
-    for (int i=0; i<adj.size(); i++) setFlag(a, adj[i], CHECKED);
-  }
-
-  ma_dbg::dumpMeshWithFlag(a, 0, 3, CHECKED, "FPP_Adjacent", "FPP_Adjacent");
-  clearFlagFromDimension(a, CHECKED, 3);
+  EntitySet adjacent1 = getNextLayer(a, invalid);
+  ma_dbg::createCavityMesh(a, adjacent1, "FPP_ADJACENT_1");
+  EntitySet adjacent2 = getNextLayer(a, adjacent1);
+  ma_dbg::createCavityMesh(a, adjacent2, "FPP_ADJACENT_2");
 }
 #endif
 
@@ -985,6 +975,22 @@ bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt)
       return true;
   }
   return false;
+}
+
+EntitySet getNextLayer(Adapt* a, EntitySet& tets)
+{
+  EntitySet adjacent;
+    APF_ITERATE(ma::EntitySet,tets,it) {
+      Entity* faces[4];
+      a->mesh->getDownward(*it, 2, faces);
+      for (int f=0; f<4; f++) {
+        apf::Up nextLayer;
+        a->mesh->getUp(faces[f], nextLayer);
+        for (int n=0; n<nextLayer.n; n++)
+          adjacent.insert(nextLayer.e[n]);
+      }
+    }
+    return adjacent;
 }
 
 }

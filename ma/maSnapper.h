@@ -94,6 +94,7 @@ Entity* getTetFaceOppositeVert(Mesh* m, Entity* e, Entity* v);
 void getFaceCoords(Mesh* m, Entity* face, std::vector<Vector>& coords);
 Vector getCenter(Mesh* mesh, Entity* face);
 bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt);
+EntitySet getNextLayer(Adapt* a, EntitySet& tets);
 
 }
 
