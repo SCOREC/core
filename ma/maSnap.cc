@@ -34,6 +34,7 @@ static bool isCapstone(apf::Mesh* m) {
   #ifdef PUMI_HAS_CAPSTONE
     return gmi_cap_test(m->getModel());
   #else
+    (void) m;
     return false;
   #endif
 }

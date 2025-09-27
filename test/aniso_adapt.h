@@ -226,8 +226,6 @@ void adaptTests(const std::function<ma::Mesh*()>& createMesh)
 
   meshReg->destroyNative();
   apf::destroyMesh(meshReg);
-  meshForce->destroyNative();
-  apf::destroyMesh(meshForce);
 }
 
 #endif
