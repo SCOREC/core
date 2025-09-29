@@ -14,6 +14,7 @@
 #include "apfMesh.h"
 #include <vector>
 #include <cstring>
+#include <functional>
 
 namespace apf {
 
@@ -102,6 +103,9 @@ class CavityOp
     bool tryToPull();
     void applyLocallyWithModification(int d);
     void applyLocallyWithoutModification(int d);
+    void iterateDimension(int d, std::function<Outcome(const MeshEntity*)> checkValidity, 
+                                        std::function<void(const MeshEntity*)> modifyMesh);
+
     bool canModify;
     bool movedByDeletion;
     MeshIterator* iterator;

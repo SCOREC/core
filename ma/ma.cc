@@ -41,10 +41,13 @@ void printHistogramData(std::string name, std::vector<double> input, double min,
     count[bin] += 1;
   }
 
-  std::cout << name << "\n";
-  printf("Min: %f, Max: %f\n", inputMin, inputMax);
-  for (int i = 0; i < nbins; ++i)
-    fprintf(stderr, "%d\n", count[i]);
+  inputMin = m->getPCU()->Min<double>(inputMin);
+  inputMax = m->getPCU()->Max<double>(inputMax);
+  for (int i = 0; i < nbins; ++i) count[i] = m->getPCU()->Add<long>(count[i]);
+
+  if (m->getPCU()->Self()) return;
+  printf("%s Min: %f, Max: %f\n", name.c_str(), inputMin, inputMax);
+  for (int i = 0; i < nbins; ++i) printf("%d\n", count[i]);
 }
 
 void printHistogramStats(Adapt* a)

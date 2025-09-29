@@ -56,7 +56,7 @@ void unMarkBadQualityNew(Adapt* a)
   m->end(it);
 }
 
-class FixShape
+class FixShape : public Operator
 {
   public:
   Adapt* a;
@@ -67,6 +67,7 @@ class FixShape
   FaceSplitCollapse faceSplitCollapse;
   EdgeSwap* edgeSwap;
   Splits split;
+  Entity* badTet;
 
   int numCollapse=0;
   int numEdgeSwap=0;
@@ -93,6 +94,18 @@ class FixShape
     edgeSwap = makeEdgeSwap(a);
   }
 
+  int getTargetDimension() { return 3; }
+  bool shouldApply(Entity* e) {
+    badTet = e;
+    return getFlag(a, e, BAD_QUALITY); 
+  }
+  bool requestLocality(apf::CavityOp* o)
+  {
+    Entity* verts[4];
+    a->mesh->getDownward(badTet, 0, verts);
+    return o->requestLocality(verts, 4);
+  }
+
   bool collapseEdge(Entity* edge)
   {
     if (collapse.setEdge(edge) && 
@@ -115,6 +128,8 @@ class FixShape
       for (int e=0; e<adjEdges.n; e++) {
         if (adjEdges.e[e] == edge) continue;
         Entity* keep = getEdgeVertOppositeVert(a->mesh, adjEdges.e[e], verts[v]);
+        if (!mesh->isOwned(keep)) continue; // TODO: improvement to requestLocality should remove use for this function
+        if (mesh->isShared(keep)) continue; // TODO: improvement to requestLocality should remove use for this function
         bool alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
         setFlag(a, keep, DONT_COLLAPSE);
         bool success = collapseEdge(adjEdges.e[e]);
@@ -335,22 +350,16 @@ class FixShape
     if (faceSplitCollapse.run(problemEnts[0], tet)) {numFaceSplitCollapse++; return;}
   }
 
-  void loopOnce()
+  void apply()
   {
-    Entity* tet;
-    Iterator* it = a->mesh->begin(3);
-    while ((tet = a->mesh->iterate(it))) {
-      if (!getFlag(a, tet, BAD_QUALITY)) continue;
-      clearFlag(a, tet, BAD_QUALITY);
-
-      if (fixShortEdge(tet)) continue;
-      if (fixOneLargeAngle(tet)) continue;
-      Entity* problemEnts[4];
-      if (isTwoLargeAngles(tet, problemEnts))
-        fixTwoLargeAngles(tet, problemEnts);
-      else
-        fixThreeLargeAngles(tet, problemEnts);
-    }
+    clearFlag(a, badTet, BAD_QUALITY);
+    if (fixShortEdge(badTet)) return;
+    if (fixOneLargeAngle(badTet)) return;
+    Entity* problemEnts[4];
+    if (isTwoLargeAngles(badTet, problemEnts))
+      fixTwoLargeAngles(badTet, problemEnts);
+    else
+      fixThreeLargeAngles(badTet, problemEnts);
   }
 
   void resetCounters()
@@ -358,19 +367,22 @@ class FixShape
     numOneShortEdge=numTwoShortEdge=numThreeShortEdge=numMoreShortEdge=0;
     numOneLargeAngle=numTwoLargeAngles=numThreeLargeAngles=0;
   }
+  int collect(int val) {
+    return a->mesh->getPCU()->Add<long>(val);
+  }
   void printNumOperations()
   {
     print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n split reposition %9d\n double split collapse %d\n "
                               "edge split collapses %5d\n face split collapses %3d\n region collapses %7d\n face swaps %12d\n ",
-                              numCollapse, numEdgeSwap, numSplitReposition, numDoubleSplitCollapse,
-                              numEdgeSplitCollapse, numFaceSplitCollapse, numRegionCollapse, numFaceSwap);
+                              collect(numCollapse), collect(numEdgeSwap), collect(numSplitReposition), collect(numDoubleSplitCollapse),
+                              collect(numEdgeSplitCollapse), collect(numFaceSplitCollapse), collect(numRegionCollapse), collect(numFaceSwap));
   }
   void printBadTypes()
   {
     print(a->mesh->getPCU(), "bad shape types: \n oneShortEdge   \t%d\n twoShortEdges   \t%d\n threeShortEdges \t%d\n "
                               "moreShortEdges \t%d\n oneLargeAngle   \t%d\n twoLargeAngle   \t%d\n threeLargeAngle \t%d\n",
-                              numOneShortEdge, numTwoShortEdge, numThreeShortEdge,
-                              numMoreShortEdge, numOneLargeAngle, numTwoLargeAngles, numThreeLargeAngles);
+                              collect(numOneShortEdge), collect(numTwoShortEdge), collect(numThreeShortEdge),
+                              collect(numMoreShortEdge), collect(numOneLargeAngle), collect(numTwoLargeAngles), collect(numThreeLargeAngles));
   }
 
   bool isShortEdge(Entity* tet)
@@ -449,7 +461,7 @@ void fixElementShapesNew(Adapt* a)
   do {
     if (!count) break;
     prev_count = count;
-    fixShape.loopOnce();
+    applyOperator(a,&fixShape);
     if (a->mesh->getDimension() == 3)
       snap(a);
     count = markBadQualityNew(a);
