@@ -119,9 +119,7 @@ void compute_vertex_data(apf::Mesh2 *mesh_mds, apf::Field *frameField, apf::Fiel
   mesh_mds->end(it);
 }
 
-void compute_vtx_max_AR(apf::Mesh2 *mesh_mds, std::string filename) {
-  std::ofstream file;
-  file.open(filename);
+void compute_vtx_max_AR(apf::Mesh2 *mesh_mds, apf::Field* arField) {
 
   ma::Iterator* it = mesh_mds->begin(3);
   for (ma::Entity *r = mesh_mds->iterate(it); r;
@@ -140,12 +138,9 @@ void compute_vtx_max_AR(apf::Mesh2 *mesh_mds, std::string filename) {
     }
     double shortest_altitude = apf::computeShortestHeightInTet(mesh_mds, r);
     double ar = longest_edge / shortest_altitude;
-
-    file << ar << " " << apf::getLinearCentroid(mesh_mds, r) << "\n";
+    apf::setScalar(arField, r, 0, ar);
   }
   mesh_mds->end(it);
-
-  file.close();
 }
 
 int main(int argc, char *argv[])
@@ -229,8 +224,9 @@ int main(int argc, char *argv[])
   apf::Field *frameField = nullptr, *scaleField = nullptr, *arField = nullptr;
   frameField = apf::createFieldOn(mesh_mds, "adapt_frames", apf::MATRIX);
   scaleField = apf::createFieldOn(mesh_mds, "adapt_scales", apf::VECTOR);
+  arField = apf::createStepField(mesh_mds, "aspect_ratio", apf::SCALAR);
   compute_vertex_data(mesh_mds, frameField, scaleField, generator, distribution, args);
-  compute_vtx_max_AR(mesh_mds, args.prefix()+"/before_AR");
+  compute_vtx_max_AR(mesh_mds, arField);
 
   std::string before_name = args.prefix()+"/before";
   apf::writeVtkFiles(before_name.data(), mesh_mds);
@@ -249,7 +245,7 @@ int main(int argc, char *argv[])
   }
   cout << " MeshAdapt adapt time (s): " << PCU_Time()-t0 << endl;
 
-  compute_vtx_max_AR(mesh_mds, args.prefix()+"/after_AR");
+  compute_vtx_max_AR(mesh_mds, arField);
   compute_vertex_data(mesh_mds, frameField, scaleField, generator, distribution, args);
   cout<<"Adapted mesh statistics (MDS): Num. elements: "<<mesh_mds->count(3)<<", num. vertices: "<<mesh_mds->count(0)<<endl;
   cout << " writing meshdapt result" << endl;
