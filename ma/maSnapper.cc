@@ -27,10 +27,9 @@
 
 namespace ma {
 
-Snapper::Snapper(Adapt* a, Tag* st) : splitCollapse(a), doubleSplitCollapse(a)
+Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSplitCollapse(a)
 {
   adapt = a;
-  mesh = a->mesh;
   snapTag = st;
   collapse.Init(a);
   edgeSwap = makeEdgeSwap(a);
@@ -134,11 +133,11 @@ static Vector projOnTriPlane(Adapt* a, Entity* vert, Vector normal, Vector v0)
   Given a poorly-shaped tetrahedron, a base triangle and the opposite vertex of the base,
   determine the following information:
   1. the key mesh entities to apply local mesh modification
-  2. area of the four faces
-  3. the intersection of two intersected opposite edges in case two large dihedral angles
-  
-  return 0   : if an edge is degenerated
-          1-7 : the index indicating the location of projection point
+  2. area of the four face
+
+  return 0 : if an edge is degenerated
+     3,5,6 : the tetrahedron has two large dihedral angles. The opposite edges will be stored in ents[0], ents[1].
+   1,2,4,7 : the tetrahedron has three large angles. The largeest face is stored in ents[0].
 */
 int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4])
 {
