@@ -904,6 +904,12 @@ int collect(Adapt* a, int val) {
   return a->mesh->getPCU()->Add<long>(val);
 }
 
+/*
+  This function follows the snapping procedure specified in Li's thesis, in which verticies
+  will be moved directly to the model boundary, however if the movement fails due to making
+  an element invalid, then several operations will be attempted in order to resolve invalid
+  elements.
+*/
 void snap(Adapt* a)
 {
   if (!a->input->shouldSnap)
