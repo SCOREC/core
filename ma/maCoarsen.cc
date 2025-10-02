@@ -467,5 +467,58 @@ bool coarsenMultiple(Adapt* a)
   return true;
 }
 
+/*
+  Given an iterator pointing to a vertex we will collapse the shortest adjacent edge and try the next
+  shorted until one succeeds and then it will expand independent set. In Li's thesis it only attempts
+  to collapse the shortest edge, but this gave us better results.
+*/
+bool collapseShortest(Adapt* a, Collapse& collapse, Entity* vertex, apf::Up& adjacent, Tag* lengthTag)
+{
+  std::vector<EdgeLength> sorted;
+  for (int i=0; i < adjacent.n; i++) {
+    double length = getLength(a, lengthTag, adjacent.e[i]);
+    EdgeLength measured{adjacent.e[i], length};
+    if (measured.length > MINLENGTH) continue;
+    sorted.push_back(measured);
+  }
+  std::sort(sorted.begin(), sorted.end());
+  for (size_t i=0; i < sorted.size(); i++) {
+    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
+    if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
+    for (int adj=0; adj < adjacent.n; adj++) {
+      Entity* verts[2];
+      a->mesh->getDownward(adjacent.e[adj], 0, verts);
+      for (int v = 0; v < 2; v++)
+        setFlag(a, verts[v], NEED_NOT_COLLAPSE);
+    }
+    collapse.destroyOldElements();
+    return true;
+  }
+  return false;
+}
+
+void coarsenOnce(Adapt* a)
+{
+  if (!a->input->shouldCoarsen)
+    return;
+  double t0 = pcu::Time();
+  Tag* lengthTag = a->mesh->createDoubleTag("edge_length", 1);
+  std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
+
+  Collapse collapse;
+  collapse.Init(a);
+  int success = 0;
+  for (Entity* vertex : shortEdgeVerts) {
+    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) continue;
+    apf::Up adjacent;
+    a->mesh->getUp(vertex, adjacent);
+    if (collapseShortest(a, collapse, vertex, adjacent, lengthTag)) success++;
+  }
+  ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
+  a->mesh->destroyTag(lengthTag);
+  double t1 = pcu::Time();
+  print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", success, t1-t0);
+}
+
 
 }
