@@ -73,7 +73,7 @@ void adapt(Input* in)
     midBalance(a);
     refine(a);
     snap(a);
-    coarsen(a);
+    coarsenOnce(a);
     coarsenLayer(a);
   }
   allowSplitCollapseOutsideLayer(a);

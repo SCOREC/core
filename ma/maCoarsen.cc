@@ -468,6 +468,24 @@ bool coarsenMultiple(Adapt* a)
 }
 
 /*
+  To be used after collapsing a vertex to flag adjacent vertices as NEED_NOT_COLLAPSE. This will create a
+  set of collapses where no two adjacent are vertices collapsed. Will also clear adjacent vertices for 
+  collapse in next independent set since they might succeed after a collapse.
+*/
+void flagIndependentSet(Adapt* a, apf::Up& adjacent)
+{
+  for (int adj=0; adj < adjacent.n; adj++) {
+    Entity* vertices[2];
+    a->mesh->getDownward(adjacent.e[adj],0, vertices);
+    for (int v = 0; v < 2; v++) {
+      setFlag(a, vertices[v], NEED_NOT_COLLAPSE);
+      if (getFlag(a, vertices[v], CHECKED))
+        clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
+    }
+  }
+}
+
+/*
   Given an iterator pointing to a vertex we will collapse the shortest adjacent edge and try the next
   shorted until one succeeds and then it will expand independent set. In Li's thesis it only attempts
   to collapse the shortest edge, but this gave us better results.
@@ -485,12 +503,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, Entity* vertex, apf::Up& adj
   for (size_t i=0; i < sorted.size(); i++) {
     Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
     if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
-    for (int adj=0; adj < adjacent.n; adj++) {
-      Entity* verts[2];
-      a->mesh->getDownward(adjacent.e[adj], 0, verts);
-      for (int v = 0; v < 2; v++)
-        setFlag(a, verts[v], NEED_NOT_COLLAPSE);
-    }
+    flagIndependentSet(a, adjacent);
     collapse.destroyOldElements();
     return true;
   }
@@ -503,21 +516,31 @@ void coarsenOnce(Adapt* a)
     return;
   double t0 = pcu::Time();
   Tag* lengthTag = a->mesh->createDoubleTag("edge_length", 1);
-  std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
-
   Collapse collapse;
   collapse.Init(a);
+  int totalSuccess = 0;
   int success = 0;
-  for (Entity* vertex : shortEdgeVerts) {
-    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) continue;
-    apf::Up adjacent;
-    a->mesh->getUp(vertex, adjacent);
-    if (collapseShortest(a, collapse, vertex, adjacent, lengthTag)) success++;
-  }
-  ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
+  int counter = 0;
+  do {
+    success = 0;
+    std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
+    for (Entity* vertex : shortEdgeVerts) {
+      if (getFlag(a, vertex, CHECKED)) continue;
+      if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) continue;
+      apf::Up adjacent;
+      a->mesh->getUp(vertex, adjacent);
+      if (collapseShortest(a, collapse, vertex, adjacent, lengthTag)) success++;
+      else setFlag(a, vertex, CHECKED);
+    }
+    ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
+    totalSuccess += success;
+    if (counter++ == 5) break;
+  } while (success > 0);
+
+  ma::clearFlagFromDimension(a, CHECKED, 0);
   a->mesh->destroyTag(lengthTag);
   double t1 = pcu::Time();
-  print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", success, t1-t0);
+  print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", totalSuccess, t1-t0);
 }
 
 
