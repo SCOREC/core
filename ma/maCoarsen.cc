@@ -479,8 +479,8 @@ void flagIndependentSet(Adapt* a, apf::Up& adjacent)
     a->mesh->getDownward(adjacent.e[adj],0, vertices);
     for (int v = 0; v < 2; v++) {
       setFlag(a, vertices[v], NEED_NOT_COLLAPSE);
-      if (getFlag(a, vertices[v], CHECKED))
-        clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
+      // if (getFlag(a, vertices[v], CHECKED))
+      //   clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
     }
   }
 }
