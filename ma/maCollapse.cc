@@ -53,7 +53,7 @@ bool Collapse::requestLocality(apf::CavityOp* o)
 // }
 
 
-bool Collapse::isValid()
+bool Collapse::isValid(double qualityToBeat)
 {
   Vector prev = getPosition(adapt->mesh, vertToCollapse);
   Vector target = getPosition(adapt->mesh, vertToKeep);
@@ -63,9 +63,12 @@ bool Collapse::isValid()
   int i=0;
   for (Entity* e : elementsToKeep)
     elements[i++] = e;
-  bool output = areTetsValid(adapt->mesh, elements);
+
+  bool valid = areTetsValid(adapt->mesh, elements) 
+            && !hasWorseQuality(adapt, elements, qualityToBeat);
+
   adapt->mesh->setPoint(vertToCollapse, 0, prev);
-  return output;
+  return valid;
 }
 
 bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
@@ -520,23 +523,20 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert)
   Adapt* adapt = collapse.adapt;
   double qualityToBeat = adapt->input->shouldForceAdaptation ? adapt->input->validQuality 
                                                   : adapt->input->goodQuality;
-  if (!setupCollapse(collapse, edge, vert))
-    return false;
-  if (!collapse.isValid())
-    return false;
-
   if (!adapt->input->shouldForceAdaptation)
     qualityToBeat = std::min(adapt->input->goodQuality,
         std::max(collapse.getOldQuality(),adapt->input->validQuality));
 
+  if (!setupCollapse(collapse, edge, vert))
+    return false;
+  if (!collapse.isValid(qualityToBeat)) {
+    collapse.unmark();
+    return false;
+  }
+
   collapse.rebuildElements();
   collapse.fitElements();
-  if (hasWorseQuality(adapt,collapse.newElements,qualityToBeat))
-    collapse.destroyNewElements();
-  else return true;
-
-  collapse.unmark();
-  return false;
+  return true;
 }
 
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)
