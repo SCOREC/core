@@ -499,16 +499,18 @@ void coarsenOnce(Adapt* a)
   int totalSuccess = 0;
   int success = 0;
   int counter = 0;
+  std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
   do {
     success = 0;
-    std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
-    for (Entity* vertex : shortEdgeVerts) {
-      if (getFlag(a, vertex, CHECKED)) continue;
-      if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) continue;
+    for (auto it = shortEdgeVerts.begin(); it != shortEdgeVerts.end();) {
+      Entity* vertex = *it;
+      if (getFlag(a, vertex, CHECKED)) {it = shortEdgeVerts.erase(it); continue;}
+      if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {++it; continue;}
       apf::Up adjacent;
       a->mesh->getUp(vertex, adjacent);
       if (collapseShortest(a, collapse, vertex, adjacent, lengthTag)) success++;
       else setFlag(a, vertex, CHECKED);
+      it = shortEdgeVerts.erase(it);
     }
     ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
     totalSuccess += success;
