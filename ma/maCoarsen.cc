@@ -27,6 +27,8 @@ This file contains two coarsening alogrithms.
 #include <vector>
 #include <list>
 #include <algorithm>
+#include "maSnapper.h"
+#include "maShapeHandler.h"
 
 namespace ma {
 
@@ -58,6 +60,25 @@ bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent
   }
   return true;
 }
+
+// bool collapseValid(Adapt* a, Entity* vKeep, Entity* edge, apf::Up& adjacent)
+// {
+//   // double worst = getWorstQuality(a, adjacent.e, adjacent.n);
+//   Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vKeep);
+//   Vector prev = getPosition(a->mesh, vCollapse);
+//   Vector target = getPosition(a->mesh, vKeep);
+//   a->mesh->setPoint(vCollapse, 0, target);
+//   bool output = true;
+//   for (int i=0; i<adjacent.n; i++) {
+//     if (isLowInHigh(a->mesh, adjacent.e[i], vCollapse)) continue;
+//     if (a->shape->getQuality(adjacent.e[i]) < a->input->goodQuality) {
+//       output = false;
+//       break;
+//     }
+//   }
+//   a->mesh->setPoint(vCollapse, 0, prev);
+//   return output;
+// }
 
 bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
 {
@@ -534,7 +555,6 @@ void coarsenOnce(Adapt* a)
     }
     ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
     totalSuccess += success;
-    if (counter++ == 5) break;
   } while (success > 0);
 
   ma::clearFlagFromDimension(a, CHECKED, 0);

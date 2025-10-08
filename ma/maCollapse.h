@@ -42,6 +42,7 @@ class Collapse
     bool tryBothDirections(double qualityToBeat);
     void getOldElements(EntityArray& oldElements);
     bool edgesGoodSize();
+    bool collapseValid(double qualityToBeat);
     double getOldQuality();
     Adapt* adapt;
     Entity* edge; 
