@@ -79,28 +79,6 @@ bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent
 //   a->mesh->setPoint(vCollapse, 0, prev);
 //   return output;
 // }
-
-bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
-{
-  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-  bool alreadyFlagged = true;
-  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
-  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
-
-  double quality = a->input->shouldForceAdaptation ? a->input->validQuality 
-                                                  : a->input->goodQuality;
-
-  bool result = false;
-  if (collapse.setEdge(edge) && 
-      collapse.checkClass() &&
-      collapse.checkTopo() &&
-      collapseSizeCheck(a, keep, edge, adjacent) &&
-      collapse.tryBothDirections(quality)) {
-    result = true;
-  }  
-  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
-  return result;
-}
 }
 
 class CollapseChecker : public apf::CavityOp
@@ -390,8 +368,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
   }
   std::sort(sorted.begin(), sorted.end());
   for (size_t i=0; i < sorted.size(); i++) {
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
-    if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
+    if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex)) continue;
     flagIndependentSet(a, adjacent, checked);
     itr = shortEdgeVerts.erase(itr);
     collapse.destroyOldElements();
@@ -522,8 +499,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, Entity* vertex, apf::Up& adj
   }
   std::sort(sorted.begin(), sorted.end());
   for (size_t i=0; i < sorted.size(); i++) {
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
-    if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
+    if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex)) continue;
     flagIndependentSet(a, adjacent);
     collapse.destroyOldElements();
     return true;
