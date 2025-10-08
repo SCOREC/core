@@ -60,25 +60,6 @@ bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent
   }
   return true;
 }
-
-// bool collapseValid(Adapt* a, Entity* vKeep, Entity* edge, apf::Up& adjacent)
-// {
-//   // double worst = getWorstQuality(a, adjacent.e, adjacent.n);
-//   Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vKeep);
-//   Vector prev = getPosition(a->mesh, vCollapse);
-//   Vector target = getPosition(a->mesh, vKeep);
-//   a->mesh->setPoint(vCollapse, 0, target);
-//   bool output = true;
-//   for (int i=0; i<adjacent.n; i++) {
-//     if (isLowInHigh(a->mesh, adjacent.e[i], vCollapse)) continue;
-//     if (a->shape->getQuality(adjacent.e[i]) < a->input->goodQuality) {
-//       output = false;
-//       break;
-//     }
-//   }
-//   a->mesh->setPoint(vCollapse, 0, prev);
-//   return output;
-// }
 }
 
 class CollapseChecker : public apf::CavityOp
