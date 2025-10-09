@@ -59,8 +59,8 @@ class Collapse
 bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);
 bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex);
 bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex);
-bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert);
-bool collapseEdge(Collapse& collapse, Entity* edge);
+bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double qualityToBeat);
+bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat);
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert);
 
 }

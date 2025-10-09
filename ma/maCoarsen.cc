@@ -335,6 +335,10 @@ struct EdgeLength
 */
 bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, size_t& checked, apf::Up& adjacent, Tag* lengthTag)
 {
+  double qualityToBeat = a->input->shouldForceAdaptation ? a->input->validQuality 
+                                                : a->input->goodQuality;
+
+
   Entity* vertex = *itr;
   std::vector<EdgeLength> sorted;
   for (int i=0; i < adjacent.n; i++) {
@@ -349,7 +353,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdg
   }
   std::sort(sorted.begin(), sorted.end());
   for (size_t i=0; i < sorted.size(); i++) {
-    if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex)) continue;
+    if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex, qualityToBeat)) continue;
     flagIndependentSet(a, adjacent, checked);
     itr = shortEdgeVerts.erase(itr);
     collapse.destroyOldElements();
@@ -471,6 +475,9 @@ void flagIndependentSet(Adapt* a, apf::Up& adjacent)
 */
 bool collapseShortest(Adapt* a, Collapse& collapse, Entity* vertex, apf::Up& adjacent, Tag* lengthTag)
 {
+  double qualityToBeat = a->input->shouldForceAdaptation ? a->input->validQuality 
+                                                : a->input->goodQuality;
+
   std::vector<EdgeLength> sorted;
   for (int i=0; i < adjacent.n; i++) {
     double length = getLength(a, lengthTag, adjacent.e[i]);
@@ -480,7 +487,7 @@ bool collapseShortest(Adapt* a, Collapse& collapse, Entity* vertex, apf::Up& adj
   }
   std::sort(sorted.begin(), sorted.end());
   for (size_t i=0; i < sorted.size(); i++) {
-    if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex)) continue;
+    if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex, qualityToBeat)) continue;
     flagIndependentSet(a, adjacent);
     collapse.destroyOldElements();
     return true;

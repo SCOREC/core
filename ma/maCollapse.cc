@@ -510,7 +510,7 @@ bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex)
   return isRequiredForAnEdgeCollapse(adapt, vertex);
 }
 
-bool collapseEdge(Collapse& collapse, Entity* edge)
+bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat)
 {
   Adapt* adapt = collapse.adapt;
   PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
@@ -518,8 +518,6 @@ bool collapseEdge(Collapse& collapse, Entity* edge)
   if (!collapse.checkClass()) return false;
   if (!collapse.checkTopo()) return false;
 
-  double qualityToBeat = adapt->input->shouldForceAdaptation ? adapt->input->validQuality 
-                                                  : adapt->input->goodQuality;
   if (!adapt->input->shouldForceAdaptation)
     qualityToBeat = std::min(adapt->input->goodQuality,
                     std::max(collapse.getOldQuality(),adapt->input->validQuality));
@@ -528,7 +526,7 @@ bool collapseEdge(Collapse& collapse, Entity* edge)
   if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) {
     if (!getFlag(adapt,collapse.vertToKeep,COLLAPSE)) { collapse.unmark(); return false; }
     std::swap(collapse.vertToKeep,collapse.vertToCollapse);
-    computeElementSets();
+    collapse.computeElementSets();
     if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) { collapse.unmark(); return false; }
   } 
 
@@ -537,7 +535,7 @@ bool collapseEdge(Collapse& collapse, Entity* edge)
   return true;
 }
 
-bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert)
+bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double qualityToBeat)
 {
   Adapt* adapt = collapse.adapt;
   PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
@@ -555,8 +553,6 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert)
   if (!getFlag(adapt, vert, COLLAPSE)) { collapse.unmark(); return false; }
   PCU_ALWAYS_ASSERT(collapse.vertToCollapse == vert);
 
-  double qualityToBeat = adapt->input->shouldForceAdaptation ? adapt->input->validQuality 
-                                                  : adapt->input->goodQuality;
   if (!adapt->input->shouldForceAdaptation)
     qualityToBeat = std::min(adapt->input->goodQuality,
         std::max(collapse.getOldQuality(),adapt->input->validQuality));
