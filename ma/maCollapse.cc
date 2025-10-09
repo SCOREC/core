@@ -392,7 +392,7 @@ void Collapse::computeElementSets()
   APF_ITERATE(Upward,adjacent,it)
     if ( ! elementsToCollapse.count(*it))
       elementsToKeep.insert(*it);
-  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+  // PCU_ALWAYS_ASSERT(elementsToKeep.size()); TODO: change computeElementSets to bool function that fails when this is false
 }
 
 void Collapse::rebuildElements()
@@ -518,12 +518,15 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert)
   if (!collapse.setEdge(edge)) return false;
   if (!collapse.checkClass()) return false;
   if (!getFlag(adapt, vert, COLLAPSE)) { collapse.unmark(); return false; }
-  if (!collapse.checkTopo()) return false;
-  if (!getFlag(adapt, vert, COLLAPSE)) { collapse.unmark(); return false; }
-  if (collapse.vertToCollapse != vert)
-    std::swap(collapse.vertToCollapse, collapse.vertToKeep);
-  PCU_ALWAYS_ASSERT(collapse.vertToCollapse == vert);
+  collapse.vertToCollapse = vert;
+  collapse.vertToKeep = getEdgeVertOppositeVert(adapt->mesh, edge, vert);
   collapse.computeElementSets();
+  if (collapse.elementsToKeep.size() == 0) { collapse.unmark(); return false; }
+  if (!collapse.isValid()) { collapse.unmark(); return false; }
+  
+  if (!checkEdgeCollapseTopology(adapt, edge)) { collapse.unmark(); return false; }
+  if (!getFlag(adapt, vert, COLLAPSE)) { collapse.unmark(); return false; }
+  PCU_ALWAYS_ASSERT(collapse.vertToCollapse == vert);
 
   double qualityToBeat = adapt->input->shouldForceAdaptation ? adapt->input->validQuality 
                                                   : adapt->input->goodQuality;
@@ -531,7 +534,7 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert)
     qualityToBeat = std::min(adapt->input->goodQuality,
         std::max(collapse.getOldQuality(),adapt->input->validQuality));
 
-  if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) {
+  if (collapse.anyWorseQuality(qualityToBeat)) {
     collapse.unmark();
     return false;
   }
