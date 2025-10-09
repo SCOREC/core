@@ -545,6 +545,7 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double q
   if (!getFlag(adapt, vert, COLLAPSE)) { collapse.unmark(); return false; }
   collapse.vertToCollapse = vert;
   collapse.vertToKeep = getEdgeVertOppositeVert(adapt->mesh, edge, vert);
+  clearFlag(adapt, collapse.vertToKeep, COLLAPSE);
   collapse.computeElementSets();
   if (collapse.elementsToKeep.size() == 0) { collapse.unmark(); return false; }
   if (!collapse.isValid()) { collapse.unmark(); return false; }
@@ -557,10 +558,7 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double q
     qualityToBeat = std::min(adapt->input->goodQuality,
         std::max(collapse.getOldQuality(),adapt->input->validQuality));
 
-  if (collapse.anyWorseQuality(qualityToBeat)) {
-    collapse.unmark();
-    return false;
-  }
+  if (collapse.anyWorseQuality(qualityToBeat)) { collapse.unmark(); return false;}
 
   collapse.rebuildElements();
   collapse.fitElements();
