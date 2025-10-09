@@ -60,6 +60,7 @@ bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);
 bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex);
 bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex);
 bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert);
+bool collapseEdge(Collapse& collapse, Entity* edge);
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert);
 
 }

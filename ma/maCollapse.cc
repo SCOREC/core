@@ -510,6 +510,33 @@ bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex)
   return isRequiredForAnEdgeCollapse(adapt, vertex);
 }
 
+bool collapseEdge(Collapse& collapse, Entity* edge)
+{
+  Adapt* adapt = collapse.adapt;
+  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
+  if (!collapse.setEdge(edge)) return false;
+  if (!collapse.checkClass()) return false;
+  if (!collapse.checkTopo()) return false;
+
+  double qualityToBeat = adapt->input->shouldForceAdaptation ? adapt->input->validQuality 
+                                                  : adapt->input->goodQuality;
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+                    std::max(collapse.getOldQuality(),adapt->input->validQuality));
+
+  collapse.computeElementSets();
+  if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) {
+    if (!getFlag(adapt,collapse.vertToKeep,COLLAPSE)) { collapse.unmark(); return false; }
+    std::swap(collapse.vertToKeep,collapse.vertToCollapse);
+    computeElementSets();
+    if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) { collapse.unmark(); return false; }
+  } 
+
+  collapse.rebuildElements();
+  collapse.fitElements();
+  return true;
+}
+
 bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert)
 {
   Adapt* adapt = collapse.adapt;
