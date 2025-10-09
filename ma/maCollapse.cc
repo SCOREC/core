@@ -35,24 +35,6 @@ bool Collapse::requestLocality(apf::CavityOp* o)
   return o->requestLocality(v,2);
 }
 
-// bool Collapse::collapseValid(double qualityToBeat)
-// {
-//   Vector prev = getPosition(adapt->mesh, vertToCollapse);
-//   Vector target = getPosition(adapt->mesh, vertToKeep);
-//   adapt->mesh->setPoint(vertToCollapse, 0, target);
-//   bool output = true;
-//   for (Entity* shape : newElements) {
-//     // if (isLowInHigh(m, adjacent.e[i], vertToCollapse)) continue;
-//     if (adapt->shape->getQuality(shape) < qualityToBeat) {
-//       output = false;
-//       break;
-//     }
-//   }
-//   adapt->mesh->setPoint(vertToCollapse, 0, prev);
-//   return output;
-// }
-
-
 bool Collapse::isValid()
 {
   Vector prev = getPosition(adapt->mesh, vertToCollapse);
