@@ -483,8 +483,8 @@ void flagIndependentSet(Adapt* a, apf::Up& adjacent)
     a->mesh->getDownward(adjacent.e[adj],0, vertices);
     for (int v = 0; v < 2; v++) {
       setFlag(a, vertices[v], NEED_NOT_COLLAPSE);
-      // if (getFlag(a, vertices[v], CHECKED))
-      //   clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
+      if (getFlag(a, vertices[v], CHECKED))
+        clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
     }
   }
 }
@@ -534,13 +534,12 @@ void coarsenOnce(Adapt* a)
     success = 0;
     for (auto it = shortEdgeVerts.begin(); it != shortEdgeVerts.end();) {
       Entity* vertex = *it;
-      if (getFlag(a, vertex, CHECKED)) {it = shortEdgeVerts.erase(it); continue;}
+      if (getFlag(a, vertex, CHECKED)) {++it; continue;}
       if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {++it; continue;}
       apf::Up adjacent;
       a->mesh->getUp(vertex, adjacent);
-      if (collapseShortest(a, collapse, vertex, adjacent, lengthTag)) success++;
+      if (collapseShortest(a, collapse, vertex, adjacent, lengthTag)) {it = shortEdgeVerts.erase(it); success++;}
       else setFlag(a, vertex, CHECKED);
-      it = shortEdgeVerts.erase(it);
     }
     ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0);
     totalSuccess += success;
