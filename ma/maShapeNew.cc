@@ -404,7 +404,6 @@ class FixShape : public Operator
 
   void printBadShape(Entity* tet)
   {
-    apf::writeVtkFiles("shape_mesh", a->mesh);
     EntitySet bad;
     bad.insert(tet);
     ma_dbg::createCavityMesh(a, bad, "shape_worst");
@@ -412,6 +411,19 @@ class FixShape : public Operator
     ma_dbg::createCavityMesh(a, adjacent1, "shape_adjacent_1");
     EntitySet adjacent2 = getNextLayer(a, adjacent1);
     ma_dbg::createCavityMesh(a, adjacent2, "shape_adjacent_2");
+
+    EntitySet badFaces;
+    Iterator* it = a->mesh->begin(3);
+    while ((tet = a->mesh->iterate(it))) {
+      if (!getFlag(a, tet, BAD_QUALITY)) continue;
+      Entity* faces[4];
+      mesh->getDownward(tet, 2, faces);
+      for (Entity* face : faces)
+        if (mesh->getModelType(mesh->toModel(face)) == 2)
+          badFaces.insert(face);
+    }
+    ma_dbg::createCavityMesh(a, badFaces, "shape_bad_surface");
+    apf::writeVtkFiles("shape_mesh", a->mesh);
   }
 
   void printNumTypes()
