@@ -60,6 +60,27 @@ bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent
   }
   return true;
 }
+
+bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
+{
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
+
+  double quality = a->input->shouldForceAdaptation ? a->input->validQuality 
+                                                  : a->input->goodQuality;
+
+  bool result = false;
+  if (collapse.setEdge(edge) && 
+      collapse.checkClass() &&
+      collapse.checkTopo() &&
+      collapse.tryBothDirections(quality)) {
+    result = true;
+  }  
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+  return result;
+}
 }
 
 class CollapseChecker : public apf::CavityOp
@@ -487,6 +508,8 @@ bool collapseShortest(Adapt* a, Collapse& collapse, Entity* vertex, apf::Up& adj
   }
   std::sort(sorted.begin(), sorted.end());
   for (size_t i=0; i < sorted.size(); i++) {
+    // Entity* opposite = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
+    // if (!tryCollapseEdge(a, sorted[i].edge, opposite, collapse, adjacent)) continue;
     if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex, qualityToBeat)) continue;
     flagIndependentSet(a, adjacent);
     collapse.destroyOldElements();

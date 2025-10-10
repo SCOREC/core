@@ -518,11 +518,11 @@ bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat)
   if (!collapse.checkClass()) return false;
   if (!collapse.checkTopo()) return false;
 
+  collapse.computeElementSets();
   if (!adapt->input->shouldForceAdaptation)
     qualityToBeat = std::min(adapt->input->goodQuality,
                     std::max(collapse.getOldQuality(),adapt->input->validQuality));
 
-  collapse.computeElementSets();
   if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) {
     if (!getFlag(adapt,collapse.vertToKeep,COLLAPSE)) { collapse.unmark(); return false; }
     std::swap(collapse.vertToKeep,collapse.vertToCollapse);
