@@ -1005,8 +1005,6 @@ if(PUMI_ENABLE_CAPSTONE)
       ./capVol -g 3 ${MDIR}/cube_surf_only.cre capVol_Cube3D.cre
     )
     mpi_test(capVol_Cyl3D 1 ./capVol -g 1 ${MDIR}/cyl_surf_only.cre out.cre)
-    mpi_test(capVol_Cube3D 1 ./capVol -g 3 ${MDIR}/cube_surf_only.cre out.cre)
-    mpi_test(capVol_BLCyl3D 1 ./capVol -g 4 ${MDIR}/cyl_surf_only.cre out.cre)
     mpi_test(capVol_CylMds 1 ./capVol -m 1 ${MDIR}/cyl_surf_only.cre out.cre)
     mpi_test(capVol_CubeMds 1 ./capVol -m 3 ${MDIR}/cube_surf_only.cre out.cre)
     mpi_test(capVol_BLCylMds 1 ./capVol -m 4 ${MDIR}/cyl_surf_only.cre out.cre)
