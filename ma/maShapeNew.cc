@@ -412,7 +412,6 @@ class FixShape : public Operator
     EntitySet adjacent2 = getNextLayer(a, adjacent1);
     ma_dbg::createCavityMesh(a, adjacent2, "shape_adjacent_2");
 
-    EntitySet badFaces;
     Iterator* it = a->mesh->begin(3);
     while ((tet = a->mesh->iterate(it))) {
       if (!getFlag(a, tet, BAD_QUALITY)) continue;
@@ -420,10 +419,10 @@ class FixShape : public Operator
       mesh->getDownward(tet, 2, faces);
       for (Entity* face : faces)
         if (mesh->getModelType(mesh->toModel(face)) == 2)
-          badFaces.insert(face);
+          setFlag(a, face, CHECKED);
     }
-    ma_dbg::createCavityMesh(a, badFaces, "shape_bad_surface");
-    apf::writeVtkFiles("shape_mesh", a->mesh);
+    ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "shape_bad_faces", "shape_bad_faces");
+    // apf::writeVtkFiles("shape_mesh", a->mesh);
   }
 
   void printNumTypes()
@@ -452,7 +451,7 @@ class FixShape : public Operator
         numThreeLargeAngles++;
     }
     printBadTypes();
-    // printBadShape(worstShape);
+    printBadShape(worstShape);
   }
 };
 
