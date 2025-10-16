@@ -343,17 +343,18 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
   return shortEdgeVerts;
 }
 
-class CollapseAll
+class CollapseAll : public apf::CavityOp, public DeleteCallback
 {
   public:
   Adapt* a;
+  Entity* vertex;
   Tag* lengthTag;
   Collapse collapse;
   std::list<Entity*> shortEdgeVerts;
 
   int success=0;
 
-  CollapseAll(Adapt* adapt)
+  CollapseAll(Adapt* adapt) : apf::CavityOp(adapt->mesh,true), DeleteCallback(adapt)
   {
     a = adapt;
     collapse.Init(a);
@@ -367,6 +368,8 @@ class CollapseAll
     a->mesh->destroyTag(lengthTag);
   }
 
+  int getTargetDimension() { return 0; }
+  void call(Entity* e) { movedByDeletion = true; }
   void resetIndependentSet() { ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0); }
 
   /*
@@ -425,19 +428,22 @@ class CollapseAll
     return false;
   }
 
-  int collapseOneSet()
+  Outcome setEntity(Entity* vert)
   {
-    success = 0;
-    for (auto it = shortEdgeVerts.begin(); it != shortEdgeVerts.end();) {
-      Entity* vertex = *it;
-      if (getFlag(a, vertex, CHECKED)) {++it; continue;}
-      if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {++it; continue;}
-      apf::Up adjacent;
-      a->mesh->getUp(vertex, adjacent);
-      if (collapseShortest(vertex, adjacent)) {it = shortEdgeVerts.erase(it); success++;}
-      else setFlag(a, vertex, CHECKED);
-    }
-    return success;
+    vertex = vert;
+    if (getFlag(a, vertex, CHECKED)) return SKIP;
+    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) return SKIP;
+    if (!requestLocality(&vertex, 1))
+      return REQUEST;
+    return OK;
+  }
+
+  void apply()
+  {
+    apf::Up adjacent;
+    a->mesh->getUp(vertex, adjacent);
+    setFlag(a, vertex, CHECKED);
+    if (collapseShortest(vertex, adjacent)) success++;
   }
 };
 
@@ -448,12 +454,12 @@ void coarsenOnce(Adapt* a)
   double t0 = pcu::Time();
   CollapseAll collapseAll(a);
   int totalSuccess = 0;
-  int success = 0;
   do {
-    success = collapseAll.collapseOneSet();
+    collapseAll.success = 0;
+    collapseAll.applyToList(collapseAll.shortEdgeVerts);
     collapseAll.resetIndependentSet();
-    totalSuccess += success;
-  } while (success > 0);
+    totalSuccess += collapseAll.success;
+  } while (collapseAll.success > 0);
 
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", totalSuccess, t1-t0);

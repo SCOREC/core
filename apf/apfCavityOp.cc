@@ -119,41 +119,34 @@ void CavityOp::applyToDimension(int d)
   sharing = 0;
 }
 
-void CavityOp::iterateDimension(int d, std::function<Outcome(const MeshEntity*)> getLocality, 
-                                        std::function<void(const MeshEntity*)> modifyMesh)
+void CavityOp::applyToList(std::list<MeshEntity*>& elements)
 {
   do {
     delete sharing;
     sharing = apf::getSharing(mesh);
 
-    Mesh2* mesh2 = static_cast<Mesh2*>(mesh);
-    MeshEntity* e;
     isRequesting = false;
-    iterator = mesh->begin(d);
-    while ((e = mesh->iterate(iterator))) {
-      if (sharing->isOwned(e)) {
-        if (getLocality(e) == OK) {
-          movedByDeletion = false;
-          modifyMesh(e);
-          if (movedByDeletion)
-            continue;
+    for (auto iter = elements.begin(); iter != elements.end();) {
+      if (sharing->isOwned(*iter)) {
+        if (setEntity(*iter) == OK) {
+          movedByDeletion=false;
+          apply();
+          if (movedByDeletion) {iter = elements.erase(iter); continue;}
         }
       }
-      mesh2->increment(iterator);
+      ++iter;
     }
-    mesh2->end(iterator);
     /* request any non-local cavities.
       note: it is critical that this loop
       be separated from the one above for
       mesh-modifying operators, since an apply()
       call could change other overlapping cavities */
     isRequesting = true;
-    iterator = mesh2->begin(d);
-    while ((e = mesh2->iterate(iterator))) {
-      if (!sharing->isOwned(e)) continue;
-      getLocality(e);
+    for (auto iter = elements.begin(); iter != elements.end();) {
+      if (sharing->isOwned(*iter))
+        setEntity(*iter);
+      ++iter;
     }
-    mesh2->end(iterator);
   } while (tryToPull());
 
   delete sharing;
