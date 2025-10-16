@@ -187,9 +187,9 @@ bool checkEdgeCollapseEdgeRings(Adapt* a, Entity* edge)
   Mesh* m = a->mesh;
   Entity* v[2];
   m->getDownward(edge,0,v);
-  if (!getFlag(a, v[0], DONT_COLLAPSE)) //Allow collapse in one direction
+  if (getFlag(a, v[0], COLLAPSE)) //Allow collapse in one direction
     PCU_ALWAYS_ASSERT( ! m->isShared(v[0]));
-  if (!getFlag(a, v[1], DONT_COLLAPSE)) //Allow collapse in one direction
+  if (getFlag(a, v[1], COLLAPSE)) //Allow collapse in one direction
     PCU_ALWAYS_ASSERT( ! m->isShared(v[1]));
   apf::Up ve[2];
   m->getUp(v[0],ve[0]);

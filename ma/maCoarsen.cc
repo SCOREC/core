@@ -454,12 +454,14 @@ void coarsenOnce(Adapt* a)
   double t0 = pcu::Time();
   CollapseAll collapseAll(a);
   int totalSuccess = 0;
+  int success = 0;
   do {
     collapseAll.success = 0;
     collapseAll.applyToList(collapseAll.shortEdgeVerts);
     collapseAll.resetIndependentSet();
-    totalSuccess += collapseAll.success;
-  } while (collapseAll.success > 0);
+    success = a->mesh->getPCU()->Add<int>(collapseAll.success);
+    totalSuccess += success;
+  } while (success > 0);
 
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", totalSuccess, t1-t0);
