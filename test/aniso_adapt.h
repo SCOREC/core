@@ -90,7 +90,7 @@ ma::Mesh* coarsenForced(ma::Mesh* m)
   double averageBefore = ma::getAverageEdgeLength(m);
   int edgesBefore = countEdges(m);
 
-  ma::coarsenMultiple(a);
+  // ma::coarsenMultiple(a);
 
   measureQuality(m, avgQualAfter, minQualAfter);
 
@@ -122,7 +122,7 @@ ma::Mesh* coarsenRegular(ma::Mesh* m)
   double averageBefore = ma::getAverageEdgeLength(m);
   int edgesBefore = countEdges(m);
 
-  ma::coarsenMultiple(a);
+  // ma::coarsenMultiple(a);
 
   measureQuality(m, avgQualAfter, minQualAfter);
 
