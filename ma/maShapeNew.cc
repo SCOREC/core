@@ -404,6 +404,13 @@ class FixShape : public Operator
 
   void printBadShape(Entity* tet)
   {
+    Entity* worst;
+    Entity* problemEnts[4];
+    if (isShortEdge(tet)) print(a->mesh->getPCU(), "Worst is short\n");
+    else if (isOneLargeAngle(tet, worst)) print(a->mesh->getPCU(), "Worst is one large angle\n");
+    else if (isTwoLargeAngles(tet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
+    else print(a->mesh->getPCU(), "Worst is three large angles\n");
+
     EntitySet bad;
     bad.insert(tet);
     ma_dbg::createCavityMesh(a, bad, "shape_worst");
