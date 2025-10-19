@@ -402,24 +402,43 @@ class FixShape : public Operator
     return true;
   }
 
-  void printBadShape(Entity* tet)
+  void printBadShape(Entity* badTet)
   {
     Entity* worst;
     Entity* problemEnts[4];
-    if (isShortEdge(tet)) print(a->mesh->getPCU(), "Worst is short\n");
-    else if (isOneLargeAngle(tet, worst)) print(a->mesh->getPCU(), "Worst is one large angle\n");
-    else if (isTwoLargeAngles(tet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
+    if (isShortEdge(badTet)) print(a->mesh->getPCU(), "Worst is short\n");
+    else if (isOneLargeAngle(badTet, worst)) print(a->mesh->getPCU(), "Worst is one large angle\n");
+    else if (isTwoLargeAngles(badTet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
     else print(a->mesh->getPCU(), "Worst is three large angles\n");
 
-    EntitySet bad;
-    bad.insert(tet);
-    ma_dbg::createCavityMesh(a, bad, "shape_worst");
-    EntitySet adjacent1 = getNextLayer(a, bad);
-    ma_dbg::createCavityMesh(a, adjacent1, "shape_adjacent_1");
-    EntitySet adjacent2 = getNextLayer(a, adjacent1);
-    ma_dbg::createCavityMesh(a, adjacent2, "shape_adjacent_2");
+    ma_dbg::addClassification(a, "classification");
 
+    EntitySet bad;
+    bad.insert(badTet);
+    EntitySet adjacent1 = getNextLayer(a, bad);
+    EntitySet adjacent2 = getNextLayer(a, adjacent1);
+    apf::Field* worstTet = apf::createField(mesh, "worstTet", apf::SCALAR, apf::getConstant(3));
+    apf::Field* worstVert = apf::createFieldOn(mesh, "worstVert", apf::SCALAR);
     Iterator* it = a->mesh->begin(3);
+    Entity* tet;
+    while ((tet = a->mesh->iterate(it))) {
+      double zero = 0.0;
+      apf::setComponents(worstTet, tet, 0, &zero);
+      Entity* verts[4];
+      mesh->getDownward(tet, 0, verts);
+      for (Entity* vert : verts) apf::setComponents(worstVert, vert, 0, &zero);
+    }
+    for (Entity* shape : adjacent2) {
+      double adj = 3.0;
+      if (bad.count(shape)) adj = 1.0;
+      else if (adjacent1.count(shape)) adj = 2.0;
+      apf::setComponents(worstTet, shape, 0, &adj);
+      Entity* verts[4];
+      mesh->getDownward(shape, 0, verts);
+      for (Entity* vert : verts) apf::setComponents(worstVert, vert, 0, &adj);
+    }
+
+    it = a->mesh->begin(3);
     while ((tet = a->mesh->iterate(it))) {
       if (!getFlag(a, tet, BAD_QUALITY)) continue;
       Entity* faces[4];
@@ -429,7 +448,8 @@ class FixShape : public Operator
           setFlag(a, face, CHECKED);
     }
     ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "shape_bad_faces", "shape_bad_faces");
-    // apf::writeVtkFiles("shape_mesh", a->mesh);
+    apf::writeVtkFiles("shape_mesh_verts", a->mesh, 0);
+    apf::writeVtkFiles("shape_mesh_tets", a->mesh);
   }
 
   void printNumTypes()
