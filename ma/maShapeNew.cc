@@ -168,6 +168,19 @@ class FixShape : public Operator
     return worstQuality;
   }
 
+  Vector avgCavityPos(Entity* vert)
+  {
+    apf::Up edges;
+    mesh->getUp(vert, edges);
+    Vector avg(0,0,0);
+    for (int i=0; i<edges.n; i++) {
+      Entity* opp = getEdgeVertOppositeVert(mesh, edges.e[i], vert);
+      avg += getPosition(mesh, opp);
+    }
+    avg = avg / edges.n;
+    return avg;
+  }
+
   void repositionVertex(Entity* vert)
   {
     EntityArray adjacent;
@@ -175,14 +188,14 @@ class FixShape : public Operator
     Entity* worstShape;
     Vector prevPos = getPosition(mesh, vert);
     getWorstShape(adjacent, worstShape);
-    double speed = (prevPos - getLinearCentroid(mesh, worstShape)).getLength();
+    Vector dir = (avgCavityPos(vert) - prevPos).normalize();
+    double speed = (avgCavityPos(vert) - prevPos).getLength()/2;
     double prevWorstQuality = 0;
     for (int i=0; i<10; i++) {
       double worstQuality = getWorstShape(adjacent, worstShape);
       if (worstQuality > prevWorstQuality) {
         prevWorstQuality = worstQuality;
         prevPos = getPosition(mesh, vert);
-        Vector dir = (prevPos - getLinearCentroid(mesh, worstShape)).normalize();
         mesh->setPoint(vert, 0, prevPos + (dir * speed));
         speed *= 2;
       }
@@ -478,7 +491,7 @@ class FixShape : public Operator
         numThreeLargeAngles++;
     }
     printBadTypes();
-    printBadShape(worstShape);
+    // printBadShape(worstShape);
   }
 };
 

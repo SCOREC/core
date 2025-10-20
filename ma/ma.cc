@@ -31,6 +31,7 @@ void printHistogramData(std::string name, std::vector<double> input, double min,
   double inputMin = max;
 
   for (size_t i = 0; i < input.size(); ++i) {
+    if (std::isnan(input[i])) continue;
     if (input[i] > inputMax)
       inputMax = input[i];
     if (input[i] < inputMin)
