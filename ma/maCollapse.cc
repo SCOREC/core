@@ -532,6 +532,7 @@ bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat)
 
   collapse.rebuildElements();
   collapse.fitElements();
+  collapse.unmark();
   return true;
 }
 
@@ -562,6 +563,7 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double q
 
   collapse.rebuildElements();
   collapse.fitElements();
+  collapse.unmark();
   return true;
 }
 
