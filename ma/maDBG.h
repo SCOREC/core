@@ -25,16 +25,16 @@ void writeMesh(ma::Mesh* m,
     const char* prefix,
     const char* suffix);
 
-/* Creates a field to contain the model classification for each vertex. Which can be
-  printed to a file using writeMesh() with dim=0. */
-void addClassification(ma::Adapt* a,
-    const char* fieldName);
+/* Creates a field to contain the model classification for each entity*/
+void addClassification(ma::Adapt* a);
 
 void addTargetLocation(ma::Adapt* a,
     const char* fieldName);
 
 void addParamCoords(ma::Adapt* a,
     const char* fieldName);
+
+void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entToFlag, int size);
 
 void colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,

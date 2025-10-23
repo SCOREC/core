@@ -46,23 +46,44 @@ void writeMesh(ma::Mesh* m,
   apf::writeVtkFiles(fileName, m, dim);
 }
 
-void addClassification(ma::Adapt* a,
-    const char* fieldName)
+apf::Field* getField(ma::Adapt* a, int dim,  const char* fieldName)
 {
-  ma::Mesh* m = a->mesh;
-  apf::Field* field;
-  field = m->findField(fieldName);
+  apf::Field* field = a->mesh->findField(fieldName);
   if (field)
     apf::destroyField(field);
+  if (dim == 0)
+    field = apf::createFieldOn(a->mesh, fieldName, apf::SCALAR);
+  else
+    field = apf::createField(a->mesh, fieldName, apf::SCALAR, apf::getConstant(dim));
+  return field;
+}
 
-  field = apf::createFieldOn(m, fieldName, apf::SCALAR);
-  ma::Entity* ent;
-  ma::Iterator* it;
-  it = m->begin(0);
-  while ( (ent = m->iterate(it)) ){
-    ma::Model* g = m->toModel(ent);
-    double modelDimension = (double)m->getModelType(g);
-    apf::setComponents(field, ent, 0, &modelDimension);
+void addClassification(ma::Adapt* a)
+{
+  ma::Mesh* m = a->mesh;
+  apf::Field* fieldVert = getField(a, 0, "vert_classification");
+  apf::Field* fieldEdge = getField(a, 1, "edge_classification");
+  apf::Field* fieldFace = getField(a, 2, "face_classification");
+
+  ma::Entity* e;
+  ma::Iterator* it = m->begin(0);
+  while ((e = m->iterate(it))){
+    double modelDimension = (double)m->getModelType(m->toModel(e));
+    apf::setComponents(fieldVert, e, 0, &modelDimension);
+  }
+  m->end(it);
+
+  it = m->begin(1);
+  while ((e = m->iterate(it))){
+    double modelDimension = (double)m->getModelType(m->toModel(e));
+    apf::setComponents(fieldEdge, e, 0, &modelDimension);
+  }
+  m->end(it);
+
+  it = m->begin(2);
+  while ((e = m->iterate(it))){
+    double modelDimension = (double)m->getModelType(m->toModel(e));
+    apf::setComponents(fieldFace, e, 0, &modelDimension);
   }
   m->end(it);
 }
@@ -114,6 +135,23 @@ void addParamCoords(ma::Adapt* a,
     apf::setVector(paramField , ent, 0, p);
   }
   m->end(it);
+}
+
+void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entToFlag, int size)
+{
+  apf::Field* colorField = getField(a, dim, fieldName);
+  ma::Entity* entity;
+  ma::Iterator* it = a->mesh->begin(dim);
+  while ((entity = a->mesh->iterate(it))){
+    double zero = 0.0;
+    apf::setComponents(colorField, entity, 0, &zero);
+  }
+  a->mesh->end(it);
+
+  for (int i=0; i<size; i++){
+    double one = 1.0;
+    apf::setComponents(colorField, entToFlag[i], 0, &one);
+  }
 }
 
 void colorEntitiesOfDimWithValues(ma::Adapt* a,

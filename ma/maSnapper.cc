@@ -86,7 +86,7 @@ static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
   ma_dbg::addTargetLocation(a, "snap_target");
-  ma_dbg::addClassification(a, "classification");
+  ma_dbg::addClassification(a);
 
   apf::writeVtkFiles("FPP_Mesh", a->mesh);
   EntitySet invalid;

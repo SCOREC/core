@@ -424,7 +424,7 @@ class FixShape : public Operator
     else if (isTwoLargeAngles(badTet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
     else print(a->mesh->getPCU(), "Worst is three large angles\n");
 
-    ma_dbg::addClassification(a, "classification");
+    ma_dbg::addClassification(a);
 
     EntitySet bad;
     bad.insert(badTet);

@@ -13,6 +13,8 @@
 #include "maShapeHandler.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
+#include "apfGeometry.h"
+#include "maDBG.h"
 
 namespace ma {
 
@@ -536,6 +538,49 @@ bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat)
   return true;
 }
 
+static int DEBUG=0;
+
+void printCollapseInfo(Collapse& collapse, Entity* edge, Entity* vert)
+{
+  Adapt* adapt = collapse.adapt;
+  const Vector target(1502.327985, 375.402966, 174.096195);
+  Entity* found = 0;
+  for (Entity* shape : collapse.elementsToKeep) {
+    Entity* verts[4];
+    adapt->mesh->getDownward(shape, 0, verts);
+    for (Entity* v : verts) {
+      Vector pos = getPosition(adapt->mesh, v);
+      if (apf::areClose(pos, target, 1e-5)) found = v;
+    }
+  }
+
+  if (found && ++DEBUG == 4) {
+    ma_dbg::addClassification(adapt);
+    ma_dbg::flagEntity(adapt, 1, "edge_to_collapse", &edge, 1);
+    ma_dbg::flagEntity(adapt, 0, "vert_to_collapse", &vert, 1);
+    apf::Adjacent tets;
+    adapt->mesh->getAdjacent(vert, 3, tets);
+
+    std::vector<Entity*> adjEdges;
+    for(int i=0; i<tets.size(); i++) {
+      Entity* edges[6];
+      adapt->mesh->getDownward(tets[i], 1, edges);
+      for (Entity* e : edges)
+        adjEdges.push_back(e);
+    }
+    std::vector<Entity*> elemsToCollapse(collapse.elementsToCollapse.begin(), collapse.elementsToCollapse.end());
+    ma_dbg::flagEntity(adapt, 3, "tets_to_collapse", &elemsToCollapse[0], elemsToCollapse.size());
+    std::vector<Entity*> elemsToKeep(collapse.elementsToKeep.begin(), collapse.elementsToKeep.end());
+    ma_dbg::flagEntity(adapt, 3, "tets_to_keep", &elemsToKeep[0], elemsToKeep.size());
+    ma_dbg::flagEntity(adapt, 1, "adjacent_edge", &adjEdges[0], adjEdges.size());
+    ma_dbg::flagEntity(adapt, 3, "adjacent_tets", &tets[0], tets.size());
+    apf::writeVtkFiles("mesh_before_bad_collapse_3", adapt->mesh, 3);
+    apf::writeVtkFiles("mesh_before_bad_collapse_1", adapt->mesh, 1);
+    // apf::writeVtkFiles("mesh_before_bad_collapse_0", adapt->mesh, 0);
+    exit(0);
+  }
+}
+
 bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double qualityToBeat)
 {
   Adapt* adapt = collapse.adapt;
@@ -560,6 +605,8 @@ bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double q
         std::max(collapse.getOldQuality(),adapt->input->validQuality));
 
   if (collapse.anyWorseQuality(qualityToBeat)) { collapse.unmark(); return false;}
+
+  // printCollapseInfo(collapse, edge, vert);
 
   collapse.rebuildElements();
   collapse.fitElements();
