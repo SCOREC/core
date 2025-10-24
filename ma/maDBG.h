@@ -34,7 +34,16 @@ void addTargetLocation(ma::Adapt* a,
 void addParamCoords(ma::Adapt* a,
     const char* fieldName);
 
-void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entToFlag, int size);
+void flagEntity(ma::Adapt* a, 
+    int dim, 
+    const char* fieldName, 
+    ma::EntitySet toFlag);
+
+void flagEntity(ma::Adapt* a, 
+    int dim, 
+    const char* fieldName, 
+    ma::Entity** entToFlag, 
+    int size);
 
 void colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,

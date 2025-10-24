@@ -137,6 +137,12 @@ void addParamCoords(ma::Adapt* a,
   m->end(it);
 }
 
+void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::EntitySet toFlag)
+{
+  std::vector<ma::Entity*> converted(toFlag.begin(), toFlag.end());
+  flagEntity(a, dim, fieldName, &converted[0], converted.size());
+}
+
 void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entToFlag, int size)
 {
   apf::Field* colorField = getField(a, dim, fieldName);

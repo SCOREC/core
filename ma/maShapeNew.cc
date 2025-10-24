@@ -430,39 +430,26 @@ class FixShape : public Operator
     bad.insert(badTet);
     EntitySet adjacent1 = getNextLayer(a, bad);
     EntitySet adjacent2 = getNextLayer(a, adjacent1);
-    apf::Field* worstTet = apf::createField(mesh, "worstTet", apf::SCALAR, apf::getConstant(3));
-    apf::Field* worstVert = apf::createFieldOn(mesh, "worstVert", apf::SCALAR);
+
+    ma_dbg::flagEntity(a, 3, "worst_tet", bad);
+    ma_dbg::flagEntity(a, 3, "worst_tet_adj", adjacent1);
+    ma_dbg::flagEntity(a, 3, "worst_tet_adj2", adjacent2);
+
+    std::vector<Entity*> badFaces;
     Iterator* it = a->mesh->begin(3);
     Entity* tet;
-    while ((tet = a->mesh->iterate(it))) {
-      double zero = 0.0;
-      apf::setComponents(worstTet, tet, 0, &zero);
-      Entity* verts[4];
-      mesh->getDownward(tet, 0, verts);
-      for (Entity* vert : verts) apf::setComponents(worstVert, vert, 0, &zero);
-    }
-    for (Entity* shape : adjacent2) {
-      double adj = 3.0;
-      if (bad.count(shape)) adj = 1.0;
-      else if (adjacent1.count(shape)) adj = 2.0;
-      apf::setComponents(worstTet, shape, 0, &adj);
-      Entity* verts[4];
-      mesh->getDownward(shape, 0, verts);
-      for (Entity* vert : verts) apf::setComponents(worstVert, vert, 0, &adj);
-    }
-
-    it = a->mesh->begin(3);
     while ((tet = a->mesh->iterate(it))) {
       if (!getFlag(a, tet, BAD_QUALITY)) continue;
       Entity* faces[4];
       mesh->getDownward(tet, 2, faces);
       for (Entity* face : faces)
         if (mesh->getModelType(mesh->toModel(face)) == 2)
-          setFlag(a, face, CHECKED);
+          badFaces.push_back(face);
     }
-    ma_dbg::dumpMeshWithFlag(a, 0, 2, CHECKED, "shape_bad_faces", "shape_bad_faces");
-    apf::writeVtkFiles("shape_mesh_verts", a->mesh, 0);
-    apf::writeVtkFiles("shape_mesh_tets", a->mesh);
+    ma_dbg::flagEntity(a, 2, "bad_surface_tets", &badFaces[0], badFaces.size());
+    apf::writeVtkFiles("mesh_faces", a->mesh, 2);
+    apf::writeVtkFiles("mesh_edges", a->mesh, 1);
+    apf::writeVtkFiles("mesh_tets", a->mesh);
   }
 
   void printNumTypes()
