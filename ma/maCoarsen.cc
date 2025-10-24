@@ -447,7 +447,7 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
   }
 };
 
-void coarsenOnce(Adapt* a)
+void coarsenMultiple(Adapt* a)
 {
   if (!a->input->shouldCoarsen)
     return;

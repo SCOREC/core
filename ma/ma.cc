@@ -19,6 +19,7 @@
 #include "maShapeNew.h"
 #include <pcu_util.h>
 #include <iostream>
+#include <valgrind/callgrind.h>
 
 namespace ma {
 
@@ -67,14 +68,17 @@ void adapt(Input* in)
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  coarsenOnce(a);
+  CALLGRIND_START_INSTRUMENTATION;
+  coarsenMultiple(a);
+  CALLGRIND_STOP_INSTRUMENTATION;
+  return;
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
     midBalance(a);
     refine(a);
     snap(a);
-    coarsenOnce(a);
+    coarsenMultiple(a);
     coarsenLayer(a);
   }
   allowSplitCollapseOutsideLayer(a);
