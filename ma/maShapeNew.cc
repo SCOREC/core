@@ -431,27 +431,10 @@ class FixShape : public Operator
     EntitySet adjacent1 = getNextLayer(a, bad);
     EntitySet adjacent2 = getNextLayer(a, adjacent1);
 
+    ma_dbg::flagEntityAllDim(a, 3, "worst_tet", &badTet, 1);
     ma_dbg::flagEntity(a, 3, "worst_tet", bad);
     ma_dbg::flagEntity(a, 3, "worst_tet_adj", adjacent1);
     ma_dbg::flagEntity(a, 3, "worst_tet_adj2", adjacent2);
-    ma_dbg::flagEntity(a, 2, "worst_tet_triangle", &worstTri, 1);
-
-    Entity* worstEdges[3];
-    a->mesh->getDownward(worstTri, 1, worstEdges);
-    Entity* longestEdge = getLongestEdge(worstEdges);
-    ma_dbg::flagEntity(a, 1, "worst_triangle_longest", &longestEdge, 1);
-
-    Entity* faces[4];
-    a->mesh->getDownward(badTet, 2, faces);
-    ma_dbg::flagEntity(a, 2, "worst_tet_faces", faces, 4);
-
-    Entity* edges[6];
-    a->mesh->getDownward(badTet, 1, edges);
-    ma_dbg::flagEntity(a, 1, "worst_tet_edges", edges, 6);
-
-    Entity* verts[4];
-    a->mesh->getDownward(badTet, 0, verts);
-    ma_dbg::flagEntity(a, 0, "worst_tet_verts", verts, 4);
 
     std::vector<Entity*> badFaces;
     Iterator* it = a->mesh->begin(3);

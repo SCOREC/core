@@ -137,13 +137,54 @@ void addParamCoords(ma::Adapt* a,
   m->end(it);
 }
 
-void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::EntitySet toFlag)
+void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::EntitySet entities)
 {
-  std::vector<ma::Entity*> converted(toFlag.begin(), toFlag.end());
+  std::vector<ma::Entity*> converted(entities.begin(), entities.end());
   flagEntity(a, dim, fieldName, &converted[0], converted.size());
 }
 
-void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entToFlag, int size)
+void flagEntityAllDim(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entities, int size)
+{
+  std::vector<ma::Entity*> allFaces;
+  std::vector<ma::Entity*> allEdges;
+  std::vector<ma::Entity*> allVerts;
+
+  for (int i = 0; i<size; i++) {
+    if (dim > 2){
+      ma::Entity* faces[4];
+      a->mesh->getDownward(entities[i], 2, faces);
+      for (ma::Entity* face : faces) allFaces.push_back(face);
+    }
+    if (dim > 1){
+      ma::Entity* edges[6];
+      a->mesh->getDownward(entities[i], 1, edges);
+      for (ma::Entity* edge : edges) allEdges.push_back(edge);
+    }
+    if (dim > 0){
+      ma::Entity* verts[4];
+      a->mesh->getDownward(entities[i], 0, verts);
+      for (ma::Entity* vert : verts) allVerts.push_back(vert); 
+    }
+  }
+
+  std::string dimName = std::string(fieldName) + std::to_string(dim);
+  flagEntity(a, dim, dimName.c_str(), entities, size);
+
+  if (dim > 2){
+    std::string dimName2 = std::string(fieldName) + "2";
+    flagEntity(a, 2, dimName2.c_str(), &allFaces[0], allFaces.size());
+  }
+  if (dim > 1){
+    std::string dimName1 = std::string(fieldName) + "1";
+    flagEntity(a, 1, dimName1.c_str(), &allEdges[0], allEdges.size());
+  }
+  if (dim > 0){
+    std::string dimName0 = std::string(fieldName) + "0";
+    flagEntity(a, 0, dimName0.c_str(), &allVerts[0], allVerts.size());
+  }
+}
+
+void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entities, int size)
 {
   apf::Field* colorField = getField(a, dim, fieldName);
   ma::Entity* entity;
@@ -156,7 +197,7 @@ void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entTo
 
   for (int i=0; i<size; i++){
     double one = 1.0;
-    apf::setComponents(colorField, entToFlag[i], 0, &one);
+    apf::setComponents(colorField, entities[i], 0, &one);
   }
 }
 
