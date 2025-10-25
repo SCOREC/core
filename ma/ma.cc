@@ -71,7 +71,6 @@ void adapt(Input* in)
   CALLGRIND_START_INSTRUMENTATION;
   coarsenMultiple(a);
   CALLGRIND_STOP_INSTRUMENTATION;
-  return;
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);

@@ -417,10 +417,10 @@ class FixShape : public Operator
 
   void printBadShape(Entity* badTet)
   {
-    Entity* worst;
+    Entity* worstTri;
     Entity* problemEnts[4];
     if (isShortEdge(badTet)) print(a->mesh->getPCU(), "Worst is short\n");
-    else if (isOneLargeAngle(badTet, worst)) print(a->mesh->getPCU(), "Worst is one large angle\n");
+    else if (isOneLargeAngle(badTet, worstTri)) print(a->mesh->getPCU(), "Worst is one large angle\n");
     else if (isTwoLargeAngles(badTet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
     else print(a->mesh->getPCU(), "Worst is three large angles\n");
 
@@ -434,6 +434,24 @@ class FixShape : public Operator
     ma_dbg::flagEntity(a, 3, "worst_tet", bad);
     ma_dbg::flagEntity(a, 3, "worst_tet_adj", adjacent1);
     ma_dbg::flagEntity(a, 3, "worst_tet_adj2", adjacent2);
+    ma_dbg::flagEntity(a, 2, "worst_tet_triangle", &worstTri, 1);
+
+    Entity* worstEdges[3];
+    a->mesh->getDownward(worstTri, 1, worstEdges);
+    Entity* longestEdge = getLongestEdge(worstEdges);
+    ma_dbg::flagEntity(a, 1, "worst_triangle_longest", &longestEdge, 1);
+
+    Entity* faces[4];
+    a->mesh->getDownward(badTet, 2, faces);
+    ma_dbg::flagEntity(a, 2, "worst_tet_faces", faces, 4);
+
+    Entity* edges[6];
+    a->mesh->getDownward(badTet, 1, edges);
+    ma_dbg::flagEntity(a, 1, "worst_tet_edges", edges, 6);
+
+    Entity* verts[4];
+    a->mesh->getDownward(badTet, 0, verts);
+    ma_dbg::flagEntity(a, 0, "worst_tet_verts", verts, 4);
 
     std::vector<Entity*> badFaces;
     Iterator* it = a->mesh->begin(3);
@@ -478,7 +496,7 @@ class FixShape : public Operator
         numThreeLargeAngles++;
     }
     printBadTypes();
-    // printBadShape(worstShape);
+    printBadShape(worstShape);
   }
 };
 
