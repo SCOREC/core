@@ -465,9 +465,9 @@ class FixShape : public Operator
           badFaces.push_back(face);
     }
     ma_dbg::flagEntity(a, 2, "bad_surface_tets", &badFaces[0], badFaces.size());
+    apf::writeVtkFiles("mesh_tets", a->mesh, 3);
     apf::writeVtkFiles("mesh_faces", a->mesh, 2);
     apf::writeVtkFiles("mesh_edges", a->mesh, 1);
-    apf::writeVtkFiles("mesh_tets", a->mesh);
   }
 
   void printNumTypes()
