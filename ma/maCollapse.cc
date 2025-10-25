@@ -560,23 +560,16 @@ void printCollapseInfo(Collapse& collapse, Entity* edge, Entity* vert)
     ma_dbg::flagEntity(adapt, 0, "vert_to_collapse", &vert, 1);
     apf::Adjacent tets;
     adapt->mesh->getAdjacent(vert, 3, tets);
+    ma_dbg::flagEntityAllDim(adapt, 3, "adjacent_tets", &tets[0], tets.size());
 
-    std::vector<Entity*> adjEdges;
-    for(int i=0; i<tets.size(); i++) {
-      Entity* edges[6];
-      adapt->mesh->getDownward(tets[i], 1, edges);
-      for (Entity* e : edges)
-        adjEdges.push_back(e);
-    }
     std::vector<Entity*> elemsToCollapse(collapse.elementsToCollapse.begin(), collapse.elementsToCollapse.end());
     ma_dbg::flagEntity(adapt, 3, "tets_to_collapse", &elemsToCollapse[0], elemsToCollapse.size());
     std::vector<Entity*> elemsToKeep(collapse.elementsToKeep.begin(), collapse.elementsToKeep.end());
     ma_dbg::flagEntity(adapt, 3, "tets_to_keep", &elemsToKeep[0], elemsToKeep.size());
-    ma_dbg::flagEntity(adapt, 1, "adjacent_edge", &adjEdges[0], adjEdges.size());
-    ma_dbg::flagEntity(adapt, 3, "adjacent_tets", &tets[0], tets.size());
-    apf::writeVtkFiles("mesh_before_bad_collapse_3", adapt->mesh, 3);
-    apf::writeVtkFiles("mesh_before_bad_collapse_1", adapt->mesh, 1);
-    // apf::writeVtkFiles("mesh_before_bad_collapse_0", adapt->mesh, 0);
+
+    apf::writeVtkFiles("mesh_tets", adapt->mesh, 3);
+    apf::writeVtkFiles("mesh_faces", adapt->mesh, 2);
+    apf::writeVtkFiles("mesh_edges", adapt->mesh, 1);
     exit(0);
   }
 }

@@ -167,21 +167,10 @@ void flagEntityAllDim(ma::Adapt* a, int dim, const char* fieldName, ma::Entity**
     }
   }
 
-  std::string dimName = std::string(fieldName) + std::to_string(dim);
-  flagEntity(a, dim, dimName.c_str(), entities, size);
-
-  if (dim > 2){
-    std::string dimName2 = std::string(fieldName) + "2";
-    flagEntity(a, 2, dimName2.c_str(), &allFaces[0], allFaces.size());
-  }
-  if (dim > 1){
-    std::string dimName1 = std::string(fieldName) + "1";
-    flagEntity(a, 1, dimName1.c_str(), &allEdges[0], allEdges.size());
-  }
-  if (dim > 0){
-    std::string dimName0 = std::string(fieldName) + "0";
-    flagEntity(a, 0, dimName0.c_str(), &allVerts[0], allVerts.size());
-  }
+  flagEntity(a, dim, fieldName, entities, size);
+  if (dim > 2) flagEntity(a, 2, fieldName, &allFaces[0], allFaces.size());
+  if (dim > 1) flagEntity(a, 1, fieldName, &allEdges[0], allEdges.size());
+  if (dim > 0) flagEntity(a, 0, fieldName, &allVerts[0], allVerts.size());
 }
 
 void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entities, int size)
