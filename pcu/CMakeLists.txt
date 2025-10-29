@@ -46,9 +46,14 @@ add_library(pcu ${SOURCES})
 # see: https://github.com/open-mpi/ompi/issues/5157
 target_compile_definitions(pcu PUBLIC OMPI_SKIP_MPICXX)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CMAKE_SYSTEM_NAME STREQUAL "NetBSD"
-OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR CMAKE_SYSTEM_NAME STREQUAL "DragonFly")
-target_link_libraries(pcu PRIVATE execinfo)
+if(
+  SCOREC_PCU_LINK_EXECINFO
+  OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
+  OR CMAKE_SYSTEM_NAME STREQUAL "NetBSD"
+  OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD"
+  OR CMAKE_SYSTEM_NAME STREQUAL "DragonFly"
+)
+  target_link_libraries(pcu PRIVATE execinfo)
 endif()
 
 # Check for mallinfo, mallctl for PCU_GetMem().
