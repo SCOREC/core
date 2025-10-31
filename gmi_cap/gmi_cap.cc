@@ -541,3 +541,7 @@ GDBI* gmi_export_cap(gmi_model* m)
   cap_model* cm = (cap_model*)m;
   return cm->geomInterface;
 }
+
+int gmi_cap_test(struct gmi_model* model) {
+  return model->ops == &ops ? 1 : 0;
+}

@@ -16,11 +16,10 @@
 
 namespace ma {
 
-MatchedSnapper::MatchedSnapper(Adapt* a, Tag* st, bool is)
+MatchedSnapper::MatchedSnapper(Adapt* a, Tag* st)
 {
   adapter = a;
   snapTag = st;
-  isSimple = is;
   sharing = apf::getSharing(a->mesh);
   vert = 0;
 }
@@ -38,7 +37,7 @@ void MatchedSnapper::setVert(Entity* v)
 {
   snappers.setSize(0);
   snappers.setSize(1);
-  snappers[0] = new Snapper(adapter, snapTag, isSimple);
+  snappers[0] = new Snapper(adapter, snapTag);
   snappers[0]->setVert(v);
   vert = v;
 }
@@ -63,7 +62,7 @@ void MatchedSnapper::setVerts()
 
   snappers.setSize(copies.getSize() + 1);
   for (unsigned i = 0; i < snappers.getSize(); i++)
-    snappers[i] = new Snapper(adapter, snapTag, isSimple);
+    snappers[i] = new Snapper(adapter, snapTag);
   snappers[0]->setVert(v);
   for (unsigned i = 0; i < copies.getSize(); i++)
     snappers[i+1]->setVert(copies[i].entity);

@@ -55,6 +55,34 @@ bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
   return true;
 }
 
+/*Sometimes the snapping procedure will attempt to collapse a edge that was just 
+refined. This function will prevent that when the growth of the edge is above a 
+thresh hold where it might not reach the target edge length*/
+bool Collapse::edgesGoodSize() {
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+  PCU_ALWAYS_ASSERT(elementsToKeep.size() == newElements.size());
+  size_t i=0;
+  double maxSize=0;
+  double ratioAtMaxSize=0;
+  APF_ITERATE(EntitySet,elementsToKeep,it) {
+    Entity* edgesBefore[6];
+    adapt->mesh->getDownward(*it,1,edgesBefore);
+    Entity* edgesAfter[6];
+    adapt->mesh->getDownward(newElements[i++],1,edgesAfter);
+    for (int j=0; j<6; j++) {
+      double sizeBefore = adapt->sizeField->measure(edgesBefore[j]);
+      double sizeAfter = adapt->sizeField->measure(edgesAfter[j]);
+      double ratio = sizeAfter/sizeBefore;
+      if (sizeAfter > maxSize) {
+        maxSize = sizeAfter;
+        ratioAtMaxSize = ratio;
+      }
+    }
+  }
+  if (maxSize > MAXLENGTH && ratioAtMaxSize > MAXLENGTHRATIO) return false;
+  return true;
+}
+
 bool Collapse::tryThisDirection(double qualityToBeat)
 {
   if (!tryThisDirectionNoCancel(qualityToBeat)) {
@@ -74,17 +102,20 @@ bool Collapse::tryBothDirections(double qualityToBeat)
     qualityToBeat = std::min(adapt->input->goodQuality,
         std::max(getOldQuality(),adapt->input->validQuality));
 
-  if (tryThisDirection(qualityToBeat))
+  if (tryThisDirectionNoCancel(qualityToBeat))
     return true;
-  if ( ! getFlag(adapt,vertToKeep,COLLAPSE))
-    return false;
-  std::swap(vertToKeep,vertToCollapse);
-  computeElementSets();
-  if (!adapt->input->shouldForceAdaptation)
-    qualityToBeat = std::min(adapt->input->goodQuality,
-        std::max(getOldQuality(),adapt->input->validQuality));
+  else destroyNewElements();
 
-  return tryThisDirection(qualityToBeat);
+  if (getFlag(adapt,vertToKeep,COLLAPSE)) {
+    std::swap(vertToKeep,vertToCollapse);
+    computeElementSets();
+    if (tryThisDirectionNoCancel(qualityToBeat))
+      return true;
+    else destroyNewElements();
+  }
+
+  unmark();
+  return false;
 }
 
 bool Collapse::setEdge(Entity* e)
@@ -127,8 +158,10 @@ bool checkEdgeCollapseEdgeRings(Adapt* a, Entity* edge)
   Mesh* m = a->mesh;
   Entity* v[2];
   m->getDownward(edge,0,v);
-  PCU_ALWAYS_ASSERT( ! m->isShared(v[0]));
-  PCU_ALWAYS_ASSERT( ! m->isShared(v[1]));
+  if (!getFlag(a, v[0], DONT_COLLAPSE)) //Allow collapse in one direction
+    PCU_ALWAYS_ASSERT( ! m->isShared(v[0]));
+  if (!getFlag(a, v[1], DONT_COLLAPSE)) //Allow collapse in one direction
+    PCU_ALWAYS_ASSERT( ! m->isShared(v[1]));
   apf::Up ve[2];
   m->getUp(v[0],ve[0]);
   m->getUp(v[1],ve[1]);

@@ -11,6 +11,7 @@
 #include "maAdapt.h"
 #include "maOperator.h"
 #include "maSnapper.h"
+#include "maRefine.h"
 #include "maMatchedSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
@@ -20,8 +21,23 @@
 #include <lionPrint.h>
 #include <iostream>
 #include <algorithm>
+#include <iostream>
+#include <fstream>
+
+#ifdef PUMI_HAS_CAPSTONE
+#include "gmi_cap.h"
+#endif
 
 namespace ma {
+
+static bool isCapstone(apf::Mesh* m) {
+  #ifdef PUMI_HAS_CAPSTONE
+    return gmi_cap_test(m->getModel());
+  #else
+    (void) m;
+    return false;
+  #endif
+}
 
 static size_t isSurfUnderlyingFaceDegenerate(
     apf::Mesh* m,
@@ -68,10 +84,10 @@ static size_t isSurfUnderlyingFaceDegenerate(
     m->getFirstDerivative(g, p, uTan, vTan);
     double uTanSize = uTan.getLength();
     double vTanSize = vTan.getLength();
-#ifdef PUMI_HAS_CAPSTONE
-    uTanSize = uTan * uTan;
-    vTanSize = vTan * vTan;
-#endif
+    if (isCapstone(m)) {
+      uTanSize = uTan * uTan;
+      vTanSize = vTan * vTan;
+    }
     if (uTanSize < tol || vTanSize < tol) {
       axis = degenAxes;
       values.push_back(candidateDegenParam);
@@ -119,6 +135,8 @@ static double interpolateParametricCoordinate(
   }
   double period = range[1]-range[0];
   double span = b-a;
+  if (period < 0.5) //meshes in capstone can have partial ranges that aren't periodic
+    return (1-t)*a + t*b;
   if (!mode) {
     if (span < (period/2))
       return (1-t)*a + t*b;
@@ -150,46 +168,46 @@ static void interpolateParametricCoordinateOnEdge(
   p[1] = 0.0;
   p[2] = 0.0;
 
-#ifdef PUMI_HAS_CAPSTONE
-  // account for non-uniform parameterization of model-edge
-  Vector X[3];
-  Vector para[2] = {a, b};
-  for (int i = 0; i < 2; i++)
-    m->snapToModel(g, para[i], X[i]);
+  if (isCapstone(m)) {
+    // account for non-uniform parameterization of model-edge
+    Vector X[3];
+    Vector para[2] = {a, b};
+    for (int i = 0; i < 2; i++)
+      m->snapToModel(g, para[i], X[i]);
 
-  double tMax = 1., tMin = 0.;
-  m->snapToModel(g, p, X[2]);
-
-  // check if the snap point on the model edge is
-  // approximately at same length from either vertices
-
-  double r = (X[0]-X[2]).getLength();
-  double s = (X[1]-X[2]).getLength();
-
-  double alpha = t/(1. - t); //parametric ratio
-
-  int num_it = 0;
-  while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
-    if ( r/s > alpha) {
-      tMax = t;
-      t = (tMin + t) / 2.;
-    }
-    else {
-      tMin = t;
-      t = (t + tMax) / 2.;
-    }
-
-    p[0] = interpolateParametricCoordinate(t, a[0], b[0], range, isPeriodic, 0);
-
+    double tMax = 1., tMin = 0.;
     m->snapToModel(g, p, X[2]);
 
-    r = (X[0]-X[2]).getLength();
-    s = (X[1]-X[2]).getLength();
+    // check if the snap point on the model edge is
+    // approximately at same length from either vertices
 
-    if ( num_it > 20) break;
-      num_it++;
+    double r = (X[0]-X[2]).getLength();
+    double s = (X[1]-X[2]).getLength();
+
+    double alpha = t/(1. - t); //parametric ratio
+
+    int num_it = 0;
+    while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
+      if ( r/s > alpha) {
+        tMax = t;
+        t = (tMin + t) / 2.;
+      }
+      else {
+        tMin = t;
+        t = (t + tMax) / 2.;
+      }
+
+      p[0] = interpolateParametricCoordinate(t, a[0], b[0], range, isPeriodic, 0);
+
+      m->snapToModel(g, p, X[2]);
+
+      r = (X[0]-X[2]).getLength();
+      s = (X[1]-X[2]).getLength();
+
+      if ( num_it > 20) break;
+        num_it++;
+    }
   }
-#endif
 }
 
 // convert (phi,theta) on unit sphere to (x,y,z)
@@ -490,9 +508,9 @@ static void interpolateParametricCoordinatesOnRegularFace(
    * 1) we are assuming manifold surfaces
    * 2) we only check for faces that are periodic
    */
-
-#ifndef PUMI_HAS_CAPSTONE
   // this need to be done for faces, only
+  if (isCapstone(m))
+    return;
   if (dim != 2)
     return;
   if (!gface_isPeriodic)
@@ -508,9 +526,6 @@ static void interpolateParametricCoordinatesOnRegularFace(
     bool isPeriodic = m->getPeriodicRange(g,d,range);
     p[d] = interpolateParametricCoordinate(t,a[d],b[d],range,isPeriodic, 1);
   }
-#else
-  (void) gface_isPeriodic;
-#endif
 }
 
 static void interpolateParametricCoordinatesOnFace(
@@ -526,50 +541,51 @@ static void interpolateParametricCoordinatesOnFace(
   size_t num = isSurfUnderlyingFaceDegenerate(m, g, axes, vals);
 
   if (num > 0) { // the underlying surface is degenerate
-#ifndef PUMI_HAS_CAPSTONE
-    interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
-#else
-    // account for non-uniform parameterization of model-edge
-    Vector X[3];
-    Vector para[2] = {a, b};
-    for (int i = 0; i < 2; i++)
-      m->snapToModel(g, para[i], X[i]);
-
-    interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
-
-    double tMax = 1., tMin = 0.;
-    m->snapToModel(g, p, X[2]);
-
-    // check if the snap point on the model edge is
-    // approximately at same length from either vertices
-
-    double r = (X[0]-X[2]).getLength();
-    double s = (X[1]-X[2]).getLength();
-
-    double alpha = t/(1. - t); //parametric ratio
-
-    int num_it = 0;
-    while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
-      if ( r/s > alpha) {
-	tMax = t;
-	t = (tMin + t) / 2.;
-      }
-      else {
-	tMin = t;
-	t = (t + tMax) / 2.;
-      }
+    if (!isCapstone(m)) {
+      interpolateParametricCoordinatesOnDegenerateFace(m, g, t, a, b, axes, vals, p);
+    }
+    else {
+      // account for non-uniform parameterization of model-edge
+      Vector X[3];
+      Vector para[2] = {a, b};
+      for (int i = 0; i < 2; i++)
+        m->snapToModel(g, para[i], X[i]);
 
       interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
 
+      double tMax = 1., tMin = 0.;
       m->snapToModel(g, p, X[2]);
 
-      r = (X[0]-X[2]).getLength();
-      s = (X[1]-X[2]).getLength();
+      // check if the snap point on the model edge is
+      // approximately at same length from either vertices
 
-      if ( num_it > 20) break;
-	num_it++;
+      double r = (X[0]-X[2]).getLength();
+      double s = (X[1]-X[2]).getLength();
+
+      double alpha = t/(1. - t); //parametric ratio
+
+      int num_it = 0;
+      while (r/s < 0.95 * alpha || r/s > 1.05 * alpha) {
+        if ( r/s > alpha) {
+          tMax = t;
+          t = (tMin + t) / 2.;
+        }
+        else {
+          tMin = t;
+          t = (t + tMax) / 2.;
+        }
+
+        interpolateParametricCoordinatesOnDegenerateFace(m, g, t, para[0], para[1], axes, vals, p);
+
+        m->snapToModel(g, p, X[2]);
+
+        r = (X[0]-X[2]).getLength();
+        s = (X[1]-X[2]).getLength();
+
+        if ( num_it > 20) break;
+        num_it++;
+      }
     }
-#endif
   }
   else
     interpolateParametricCoordinatesOnRegularFace(m, g, t, a, b, p);
@@ -742,12 +758,11 @@ static void getSnapPoint(Mesh* m, Entity* v, Vector& x)
 class SnapAll : public Operator
 {
   public:
-    SnapAll(Adapt* a, Tag* t, bool simple):
-      snapper(a, t, simple)
+    SnapAll(Adapt* a, Tag* t, Snapper& snapperIn)
     {
       adapter = a;
       tag = t;
-      successCount = 0;
+      snapper = &snapperIn;
       didAnything = false;
       vert = 0;
     }
@@ -756,21 +771,20 @@ class SnapAll : public Operator
     {
       if ( ! getFlag(adapter, e, SNAP))
         return false;
+      if (getFlag(adapter, e, LAYER))
+        return false;
       vert = e;
-      snapper.setVert(e);
+      snapper->setVert(e);
       return true;
     }
     bool requestLocality(apf::CavityOp* o)
     {
-      return snapper.requestLocality(o);
+      return snapper->requestLocality(o);
     }
     void apply()
     {
-      bool snapped = snapper.run();
-      didAnything = didAnything || snapped || snapper.dug;
-      if (snapped)
-        ++successCount;
-      clearFlag(adapter, vert, SNAP);
+      bool snapped = snapper->run();
+      didAnything = didAnything || snapped;
     }
     int successCount;
     bool didAnything;
@@ -778,22 +792,21 @@ class SnapAll : public Operator
     Adapt* adapter;
     Tag* tag;
     Entity* vert;
-    Snapper snapper;
+    Snapper* snapper;
 };
 
-bool snapAllVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
+bool snapAllVerts(Adapt* a, Tag* t, Snapper& snapper)
 {
-  SnapAll op(a, t, isSimple);
+  SnapAll op(a, t, snapper);
   applyOperator(a, &op);
-  successCount += a->mesh->getPCU()->Add<long>(op.successCount);
   return a->mesh->getPCU()->Or(op.didAnything);
 }
 
 class SnapMatched : public Operator
 {
   public:
-    SnapMatched(Adapt* a, Tag* t, bool simple):
-      snapper(a, t, simple)
+    SnapMatched(Adapt* a, Tag* t):
+      snapper(a, t)
     {
       adapter = a;
       tag = t;
@@ -832,19 +845,18 @@ class SnapMatched : public Operator
     MatchedSnapper snapper;
 };
 
-bool snapMatchedVerts(Adapt* a, Tag* t, bool isSimple, long& successCount)
+bool snapMatchedVerts(Adapt* a, Tag* t, long& successCount)
 {
-  SnapMatched op(a, t, isSimple);
+  SnapMatched op(a, t);
   applyOperator(a, &op);
   successCount += a->mesh->getPCU()->Add<long>(op.successCount);
   return a->mesh->getPCU()->Or(op.didAnything);
 }
 
-long tagVertsToSnap(Adapt* a, Tag*& t)
+long tagVertsToSnap(Adapt* a, Tag*& tag)
 {
   Mesh* m = a->mesh;
   int dim = m->getDimension();
-  t = m->createDoubleTag("ma_snap", 3);
   Entity* v;
   long n = 0;
   Iterator* it = m->begin(0);
@@ -857,7 +869,8 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
     Vector x = getPosition(m, v);
     if (apf::areClose(s, x, 1e-12))
       continue;
-    m->setDoubleTag(v, t, &s[0]);
+    m->setDoubleTag(v, tag, &s[0]);
+    setFlag(a, v, SNAP);
     if (m->isOwned(v))
       ++n;
   }
@@ -865,108 +878,62 @@ long tagVertsToSnap(Adapt* a, Tag*& t)
   return m->getPCU()->Add<long>(n);
 }
 
-static void markVertsToSnap(Adapt* a, Tag* t)
+long snapTaggedVerts(Adapt* a, Tag* tag, Snapper& snapper)
 {
-  HasTag p(a->mesh, t);
-  markEntities(a, 0, p, SNAP, DONT_SNAP);
-}
+  bool shouldForce = a->input->shouldForceAdaptation;
+  a->input->shouldForceAdaptation = true; //Allows quality to decrease from snapping
 
-bool snapOneRound(Adapt* a, Tag* t, bool isSimple, long& successCount)
-{
-  markVertsToSnap(a, t);
-  if (a->mesh->hasMatching())
-    return snapMatchedVerts(a, t, isSimple, successCount);
-  else
-    return snapAllVerts(a, t, isSimple, successCount);
-}
-
-long snapTaggedVerts(Adapt* a, Tag* tag)
-{
   long successCount = 0;
-  /* there are two approaches possible here:
-   * 1- first snap all the vertices we can without any additional
-   * operation such as digging (simple snap). And then try snapping
-   * the remaining vertices that will need extra modifications (non-
-   * simple snap).
-   * 2- first do the non-simple snaps and then the simple snaps.
-   *
-   * Here we choose approach 2 for the following reasons
-   * (a) approach 2 is approximately as fast as approach 1
-   * (b) the problematic snaps will be attempted as soon as possible.
-   * This is extremely helpful because if we wait until later on
-   * bringing the vert to-be-snapped to the boundary might become more
-   * difficult due to the change in location of neighboring verticies
-   * that will be snapped before the problematic vert to-be-snapped.
-   */
-  while (snapOneRound(a, tag, false, successCount));
-  while (snapOneRound(a, tag, true, successCount));
+  bool snapped = true;
+  int prevTagged = 0;
+  while (snapped) {
+    int tagged = tagVertsToSnap(a, tag);
+    if (tagged == prevTagged) break;
+    prevTagged = tagged;
+    if (a->mesh->hasMatching())
+      snapped = snapMatchedVerts(a, tag, successCount);
+    else
+      snapped = snapAllVerts(a, tag, snapper);
+  }
+
+  a->input->shouldForceAdaptation = shouldForce;
   return successCount;
 }
 
+int collect(Adapt* a, int val) {
+  return a->mesh->getPCU()->Add<long>(val);
+}
+
+/*
+  This function follows the snapping procedure specified in Li's thesis, in which verticies
+  will be moved directly to the model boundary, however if the movement fails due to making
+  an element invalid, then several operations will be attempted in order to resolve invalid
+  elements.
+*/
 void snap(Adapt* a)
 {
-  if ( ! a->input->shouldSnap)
+  if (!a->input->shouldSnap)
     return;
   double t0 = pcu::Time();
-  Tag* tag;
-  /* we are starting to support a few operations on matched
-     meshes, including snapping+UR. this should prevent snapping
-     from modifying any matched entities */
+  Tag* snapTag = a->mesh->createDoubleTag("ma_snap", 3);
   preventMatchedCavityMods(a);
-  long targets = tagVertsToSnap(a, tag);
-  long success = snapTaggedVerts(a, tag);
-  snapLayer(a, tag);
-  apf::removeTagFromDimension(a->mesh, tag, 0);
-  a->mesh->destroyTag(tag);
-  double t1 = pcu::Time();
-  print(a->mesh->getPCU(), "snapped in %f seconds: %ld targets, %ld non-layer snaps",
-    t1 - t0, targets, success);
-  if (a->hasLayer)
-    checkLayerShape(a->mesh, "after snapping");
-}
-
-void visualizeGeometricInfo(Mesh* m, const char* name)
-{
-  Tag* dimensionTag = m->createIntTag("ma_geom_dim",1);
-  Tag* idTag = m->createIntTag("ma_geom_id",1);
-  apf::Field* field = apf::createLagrangeField(m,"ma_param",apf::VECTOR,1);
-  apf::Field* targetField = apf::createLagrangeField(m,"ma_target",apf::VECTOR,1);
-  Iterator* it = m->begin(0);
-  Entity* v;
-  while ((v = m->iterate(it)))
+  int toSnap = tagVertsToSnap(a, snapTag);
+  if (toSnap)
   {
-    Model* c = m->toModel(v);
-    int dimension = m->getModelType(c);
-    m->setIntTag(v,dimensionTag,&dimension);
-    int id = m->getModelTag(c);
-    m->setIntTag(v,idTag,&id);
-    Vector p;
-    Vector xp = getPosition(m, v);
-    m->getParam(v,p);
-    if (dimension == 2 || dimension == 1) {
-      Vector x;
-      m->isParamPointInsideModel(c, &p[0], x);
-      apf::setVector(targetField, v, 0, x - xp);
-    }
-    else {
-      Vector x(0., 0., 0.);
-      apf::setVector(targetField, v, 0, x);
-    }
-    apf::setVector(field,v,0,p);
-  }
-  m->end(it);
-  apf::writeVtkFiles(name,m);
-  it = m->begin(0);
-  while ((v = m->iterate(it)))
-  {
-    m->removeTag(v,dimensionTag);
-    m->removeTag(v,idTag);
-  }
-  m->end(it);
-  m->destroyTag(dimensionTag);
-  m->destroyTag(idTag);
-  apf::destroyField(field);
-  apf::destroyField(targetField);
-}
+    Snapper snapper(a, snapTag);
+    snapTaggedVerts(a, snapTag, snapper);
+    snapLayer(a, snapTag);
 
+    double t1 = pcu::Time();
+    print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d"
+                            " - Collapse %d - Swap %d - SplitCollapse %d"
+                            " - completed in %f seconds",
+              toSnap, collect(a,snapper.numSnapped), collect(a,snapper.numFailed), 
+              collect(a,snapper.numCollapseToVtx), collect(a,snapper.numCollapse), 
+              collect(a,snapper.numSwap), collect(a,snapper.numSplitCollapse), t1 - t0);
+    if (a->hasLayer)
+      checkLayerShape(a->mesh, "after snapping");
+  }
+  a->mesh->destroyTag(snapTag);
+}
 }
