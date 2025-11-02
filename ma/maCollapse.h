@@ -54,6 +54,8 @@ class Collapse
     EntityArray newElements;
     Cavity cavity;
     RebuildCallback* rebuildCallback;
+  private:
+    std::map<Entity*,Entity*> getReusableEntities();
 };
 
 bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);

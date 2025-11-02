@@ -397,16 +397,12 @@ void Collapse::computeElementSets()
   // PCU_ALWAYS_ASSERT(elementsToKeep.size()); TODO: change computeElementSets to bool function that fails when this is false
 }
 
-void Collapse::rebuildElements()
+//Find edges and faces that can be reused in new entities after collapse
+std::map<Entity*,Entity*> Collapse::getReusableEntities()
 {
-  PCU_ALWAYS_ASSERT(elementsToKeep.size());
-  newElements.setSize(elementsToKeep.size());
-  cavity.beforeBuilding();
-  size_t ni=0;
   Mesh* m = adapt->mesh;
-  std::map<Entity*,Entity*> rebuilt;
-
-  for (Entity* elm : elementsToCollapse) { //Find edges and faces that are being reused in new elements
+  std::map<Entity*,Entity*> reusable;
+  for (Entity* elm : elementsToCollapse) {
     Entity* faces[4];
     m->getDownward(elm, 2, faces);
     Entity* faceToKeep;
@@ -428,10 +424,20 @@ void Collapse::rebuildElements()
       if (edgeToKeep != 0 && edgeToDelete == 0 && edgeToReplace == 0)
         faceToKeep = faces[f];
       if (edgeToDelete != 0)
-        rebuilt[edgeToReplace] = edgeToKeep;
+        reusable[edgeToReplace] = edgeToKeep;
     }
-    rebuilt[faceToReplace] = faceToKeep;
+    reusable[faceToReplace] = faceToKeep;
   }
+  return reusable;
+}
+
+void Collapse::rebuildElements()
+{
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+  newElements.setSize(elementsToKeep.size());
+  cavity.beforeBuilding();
+  size_t ni=0;
+  std::map<Entity*,Entity*> rebuilt = getReusableEntities();
 
   // APF_ITERATE(EntitySet,elementsToKeep,it) {
   //   Entity* tetEdges[6];
