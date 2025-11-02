@@ -16,6 +16,7 @@
 #include <apfMesh2.h>
 #include <apfMatrix.h>
 #include <set>
+#include <map>
 
 namespace ma {
 
@@ -87,7 +88,8 @@ Entity* rebuildElement(
     Entity* oldVert,
     Entity* newVert,
     apf::BuildCallback* cb,
-    RebuildCallback* rcb = 0);
+    RebuildCallback* rcb = 0,
+    std::map<Entity*,Entity*>* rebuilt = 0);
 
 bool isInClosure(Mesh* m, Entity* parent, Entity* e);
 
