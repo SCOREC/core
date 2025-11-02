@@ -437,55 +437,41 @@ void Collapse::rebuildElements()
   newElements.setSize(elementsToKeep.size());
   cavity.beforeBuilding();
   size_t ni=0;
+
+  Mesh* m = adapt->mesh;
   std::map<Entity*,Entity*> rebuilt = getReusableEntities();
+  APF_ITERATE(EntitySet,elementsToKeep,it) {
+    Entity* tetFaces[4];
+    m->getDownward(*it, 2, tetFaces);
+    for (int f=0; f<4; f++) {
+      auto foundFace = rebuilt.find(tetFaces[f]);
+      if (foundFace != rebuilt.end()) {tetFaces[f] = foundFace->second; continue;}
+      if (!isInClosure(m, tetFaces[f], vertToCollapse)) continue;
 
-  // APF_ITERATE(EntitySet,elementsToKeep,it) {
-  //   Entity* tetEdges[6];
-  //   m->getDownward(*it, 1, tetEdges);
-  //   for (int e=0; e<6; e++) { //Rebuild edges only if necessary
-  //     if (rebuilt.find(tetEdges[e]) != rebuilt.end()) continue; //Edge already rebuilt
+      Entity* faceEdges[3];
+      m->getDownward(tetFaces[f], 1, faceEdges);
+      for (int e=0; e<3; e++) {
+        auto foundEdge = rebuilt.find(faceEdges[e]);
+        if (foundEdge != rebuilt.end()) {faceEdges[e] = foundEdge->second; continue;}
+        Entity* edgeVerts[2];
+        m->getDownward(faceEdges[e], 0, edgeVerts);
+        if (edgeVerts[0] == vertToCollapse) edgeVerts[0] = vertToKeep;
+        else if (edgeVerts[1] == vertToCollapse) edgeVerts[1] = vertToKeep;
+        else continue;
+        Entity* newEdge = m->createEntity(m->getType(faceEdges[e]), m->toModel(faceEdges[e]), edgeVerts);
+        rebuilt[faceEdges[e]] = newEdge;
+        faceEdges[e] = newEdge;
+      }
+      Entity* newFace = m->createEntity(m->getType(tetFaces[f]), m->toModel(tetFaces[f]), faceEdges);
+      rebuilt[tetFaces[f]] = newFace;
+      tetFaces[f] = newFace;
+    }
 
-  //     Entity* edgeVerts[2];
-  //     m->getDownward(tetEdges[e], 0, edgeVerts);
-  //     if (edgeVerts[0] == vertToCollapse) edgeVerts[0] = vertToKeep;
-  //     else if (edgeVerts[1] == vertToCollapse) edgeVerts[1] = vertToKeep;
-  //     else continue;
-  //     rebuilt[tetEdges[e]] = m->createEntity(m->getType(tetEdges[e]), m->toModel(tetEdges[e]), edgeVerts);
-  //   }
-    // Entity* tetFaces[4];
-    // m->getDownward(*it, 2, tetFaces);
-    // for (int f=0; f<4; f++) { //Rebuild faces only if necessary
-    //   auto foundFace = rebuilt.find(tetFaces[f]);
-    //   if (foundFace != rebuilt.end()) { //Face already rebuilt
-    //     tetFaces[f] = foundFace->second;
-    //     continue;
-    //   }
-
-    //   Entity* faceEdges[3];
-    //   m->getDownward(tetFaces[f], 1, faceEdges);
-    //   bool rebuild = false;
-    //   for (int e=0; e<3; e++) {
-    //     auto foundEdge = rebuilt.find(faceEdges[e]);
-    //     if (foundEdge == rebuilt.end()) continue; //edge does not need rebuilding
-    //     rebuild = true;
-    //     faceEdges[e] = foundEdge->second;
-    //   }
-    //   if (!rebuild) continue;
-    //   Entity* newFace = m->createEntity(m->getType(tetFaces[f]), m->toModel(tetFaces[f]), faceEdges);
-    //   rebuilt[tetFaces[f]] = newFace;
-    //   tetFaces[f] = newFace;
-    // }
-
-    // newElements[ni++]= m->createEntity(m->getType(*it), m->toModel(*it), tetFaces);
+    newElements[ni]= m->createEntity(m->getType(*it), m->toModel(*it), tetFaces);
     // if (adapt->buildCallback) adapt->buildCallback->call(newElements[ni]);
     // if (rebuildCallback) rebuildCallback->rebuilt(newElements[ni], *it);
-    // ni++;
-  // }
-
-  APF_ITERATE(EntitySet,elementsToKeep,it)
-    newElements[ni++]=
-        rebuildElement(adapt->mesh, *it, vertToCollapse, vertToKeep,
-            adapt->buildCallback, rebuildCallback, &rebuilt);
+    ni++;
+  }
   cavity.afterBuilding();
 }
 

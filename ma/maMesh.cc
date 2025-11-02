@@ -230,8 +230,7 @@ Entity* rebuildElement(
     Entity* oldVert,
     Entity* newVert,
     apf::BuildCallback* cb,
-    RebuildCallback* rcb,
-    std::map<Entity*,Entity*>* rebuilt)
+    RebuildCallback* rcb)
 {
   int type = m->getType(original);
   if (type == apf::Mesh::VERTEX)
@@ -241,20 +240,15 @@ Entity* rebuildElement(
       return newVert;
     return original;
   }
-  auto foundNew = rebuilt->find(original);
-  if (foundNew != rebuilt->end()) return foundNew->second;
-  if (!isInClosure(m, original, oldVert)) return original;
-
   int d = Mesh::typeDimension[type];
   Downward down;
   int nd = m->getDownward(original,d-1,down);
   for (int i=0; i < nd; ++i)
-    down[i] = rebuildElement(m, down[i], oldVert, newVert, cb, rcb, rebuilt);
-
-  Entity* e = m->createEntity(type,m->toModel(original),down);
-  (*rebuilt)[original] = e;
-  if (rcb) rcb->rebuilt(e, original);
-    
+    down[i] = rebuildElement(m, down[i], oldVert, newVert, cb, rcb);
+  bool made;
+  Entity* e = apf::makeOrFind(m, m->toModel(original), type, down, cb, &made);
+  if (made && rcb)
+    rcb->rebuilt(e, original);
   return e;
 }
 

@@ -88,8 +88,7 @@ Entity* rebuildElement(
     Entity* oldVert,
     Entity* newVert,
     apf::BuildCallback* cb,
-    RebuildCallback* rcb = 0,
-    std::map<Entity*,Entity*>* rebuilt = 0);
+    RebuildCallback* rcb = 0);
 
 bool isInClosure(Mesh* m, Entity* parent, Entity* e);
 
