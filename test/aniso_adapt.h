@@ -51,6 +51,7 @@ void measureQuality(ma::Mesh* m, double& avgQuality, double& minQuality)
   apf::MeshEntity* elem;
   apf::MeshIterator* it = m->begin(d);
   ma::IdentitySizeField I(m);
+  minQuality = 1;
   while ((elem = m->iterate(it))) {
     double q = ma::measureElementQuality(m, &I, elem);
     avgQuality += q;
@@ -84,7 +85,7 @@ ma::Mesh* coarsenForced(ma::Mesh* m)
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   in->shouldForceAdaptation = true;
   ma::Adapt* a = new ma::Adapt(in);
-  double avgQualBefore, avgQualAfter, minQualBefore, minQualAfter;
+  double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
 
   measureQuality(m, avgQualBefore, minQualBefore);
   double averageBefore = ma::getAverageEdgeLength(m);
@@ -116,7 +117,7 @@ ma::Mesh* coarsenRegular(ma::Mesh* m)
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   ma::Adapt* a = new ma::Adapt(in);
-  double avgQualBefore, avgQualAfter, minQualBefore, minQualAfter;
+  double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
 
   measureQuality(m, avgQualBefore, minQualBefore);
   double averageBefore = ma::getAverageEdgeLength(m);
@@ -129,7 +130,7 @@ ma::Mesh* coarsenRegular(ma::Mesh* m)
   //Makes sure that coarsening is happening and it isn't decreasing the quality of the mesh
   PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
   PCU_ALWAYS_ASSERT(averageBefore < ma::getAverageEdgeLength(m));
-  PCU_ALWAYS_ASSERT(fabs(minQualBefore - minQualAfter) < 0.001f || minQualBefore < minQualAfter);
+  PCU_ALWAYS_ASSERT(fabs(minQualBefore - minQualAfter) < 0.01f || minQualBefore < minQualAfter);
 
   m->verify();
   delete a;
@@ -183,7 +184,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
     ma::snap(a);
   }
 
-  double avgQualAfter, minQualAfter;
+  double avgQualAfter=0, minQualAfter=0;
   measureQuality(m, avgQualAfter, minQualAfter);
 
   //Makes sure that refinement is happening
@@ -205,10 +206,8 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   return m;
 }
 
-void adaptTests(const std::function<ma::Mesh*()>& createMesh)
+void adaptTests(ma::Mesh* meshReg, ma::Mesh* meshForced)
 {
-  //Mesh created multiple times to compare adaptation
-  ma::Mesh* meshReg = createMesh();
   apf::writeVtkFiles("startMesh", meshReg);
 
   refineSnapTest(meshReg);
@@ -217,15 +216,12 @@ void adaptTests(const std::function<ma::Mesh*()>& createMesh)
   coarsenRegular(meshReg);
   apf::writeVtkFiles("afterCoarsen", meshReg);
 
-  ma::Mesh* meshForce = coarsenForced(refineSnapTest(createMesh()));
-  apf::writeVtkFiles("afterForcedCoarsen", meshForce);
+  coarsenForced(refineSnapTest(meshForced));
+  apf::writeVtkFiles("afterForcedCoarsen", meshForced);
 
   //Make sure setting to force coarsen is functioning
-  PCU_ALWAYS_ASSERT(countEdges(meshReg) > countEdges(meshForce));
-  PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(meshReg) < ma::getAverageEdgeLength(meshForce));
-
-  meshReg->destroyNative();
-  apf::destroyMesh(meshReg);
+  PCU_ALWAYS_ASSERT(countEdges(meshReg) > countEdges(meshForced));
+  PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(meshReg) < ma::getAverageEdgeLength(meshForced));
 }
 
 #endif

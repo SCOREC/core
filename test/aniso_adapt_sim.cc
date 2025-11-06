@@ -37,13 +37,20 @@ int main(int argc, char* argv[])
   pGModel model = gmi_export_sim(mdl_ref);
   pParMesh mesh = PM_load(smsfile, model, progress);
   ma::Mesh* mesh_ref = apf::createMesh(mesh, PCUObj);
+  ma::Mesh* mesh1 = apf::createMdsMesh(mdl_ref, mesh_ref);
+  ma::Mesh* mesh2 = apf::createMdsMesh(mdl_ref, mesh_ref);
+  apf::disownMdsModel(mesh1);
+  apf::disownMdsModel(mesh2);
 
-  auto createMeshValues = [mdl_ref, mesh_ref]() 
-    { return apf::createMdsMesh(mdl_ref, mesh_ref); };
+  adaptTests(mesh1, mesh2);
 
-  adaptTests(createMeshValues);
-
-  M_release(mesh);
+  mesh1->destroyNative();
+  mesh2->destroyNative();
+  mesh_ref->destroyNative();
+  apf::destroyMesh(mesh1);
+  apf::destroyMesh(mesh2);
+  apf::destroyMesh(mesh_ref);
+  gmi_destroy(mdl_ref);
   Progress_delete(progress);
   gmi_sim_stop();
   SimPartitionedMesh_stop();

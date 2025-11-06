@@ -13,11 +13,13 @@ int main(int argc, char** argv)
   pcu::PCU PCUObj;
   lion_set_verbosity(1);
   gmi_register_mesh();
-
-  auto createMeshValues = [modelFile,meshFile,&PCUObj]() 
-    { return apf::loadMdsMesh(modelFile,meshFile,&PCUObj); };
-
-  adaptTests(createMeshValues);
+  ma::Mesh* mesh1 = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
+  ma::Mesh* mesh2 = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
+  adaptTests(mesh1, mesh2);
+  mesh1->destroyNative();
+  mesh2->destroyNative();
+  apf::destroyMesh(mesh1);
+  apf::destroyMesh(mesh2);
   }
   pcu::Finalize();
 }
