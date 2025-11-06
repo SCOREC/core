@@ -56,6 +56,7 @@ class Collapse
     RebuildCallback* rebuildCallback;
   private:
     std::map<Entity*,Entity*> getReusableEntities();
+    Entity* rebuildEntity(Mesh* m, Entity* original, Entity** downward);
 };
 
 bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);

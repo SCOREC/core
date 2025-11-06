@@ -431,6 +431,14 @@ std::map<Entity*,Entity*> Collapse::getReusableEntities()
   return reusable;
 }
 
+Entity* Collapse::rebuildEntity(Mesh* m, Entity* original, Entity** downward)
+{
+  Entity* entity = m->createEntity(m->getType(original), m->toModel(original), downward);
+  if (adapt->buildCallback) adapt->buildCallback->call(entity);
+  if (rebuildCallback) rebuildCallback->rebuilt(entity, original);
+  return entity;
+}
+
 void Collapse::rebuildElements()
 {
   PCU_ALWAYS_ASSERT(elementsToKeep.size());
@@ -440,7 +448,7 @@ void Collapse::rebuildElements()
 
   Mesh* m = adapt->mesh;
   std::map<Entity*,Entity*> rebuilt = getReusableEntities();
-  APF_ITERATE(EntitySet,elementsToKeep,it) {
+  APF_ITERATE(EntitySet, elementsToKeep, it) {
     Entity* tetFaces[4];
     m->getDownward(*it, 2, tetFaces);
     for (int f=0; f<4; f++) {
@@ -458,19 +466,15 @@ void Collapse::rebuildElements()
         if (edgeVerts[0] == vertToCollapse) edgeVerts[0] = vertToKeep;
         else if (edgeVerts[1] == vertToCollapse) edgeVerts[1] = vertToKeep;
         else continue;
-        Entity* newEdge = m->createEntity(m->getType(faceEdges[e]), m->toModel(faceEdges[e]), edgeVerts);
+        Entity* newEdge = rebuildEntity(m, faceEdges[e], edgeVerts);
         rebuilt[faceEdges[e]] = newEdge;
         faceEdges[e] = newEdge;
       }
-      Entity* newFace = m->createEntity(m->getType(tetFaces[f]), m->toModel(tetFaces[f]), faceEdges);
+      Entity* newFace = rebuildEntity(m, tetFaces[f], faceEdges);
       rebuilt[tetFaces[f]] = newFace;
       tetFaces[f] = newFace;
     }
-
-    newElements[ni]= m->createEntity(m->getType(*it), m->toModel(*it), tetFaces);
-    // if (adapt->buildCallback) adapt->buildCallback->call(newElements[ni]);
-    // if (rebuildCallback) rebuildCallback->rebuilt(newElements[ni], *it);
-    ni++;
+    newElements[ni++] = rebuildEntity(m, *it, tetFaces);
   }
   cavity.afterBuilding();
 }

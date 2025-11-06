@@ -479,7 +479,7 @@ class FixShape : public Operator
         numThreeLargeAngles++;
     }
     printBadTypes();
-    printBadShape(worstShape);
+    // printBadShape(worstShape);
   }
 };
 
