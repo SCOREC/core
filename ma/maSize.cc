@@ -214,22 +214,22 @@ struct MetricSizeField : public SizeField
   {
     if (me == 0) me = apf::createMeshElement(mesh, e);
     else me->init(mesh->getCoordinateField(), e, 0);
-    int integrationOrder = std::max(mesh->getShape()->getOrder(), order)+1; 
+    int integrationOrder = std::max(mesh->getShape()->getOrder(), order)+1;
     double measurement = 0;
-    int dimension = apf::getDimension(me);
-    int np = countIntPoints(me,integrationOrder);
+    int dim = apf::getDimension(me);
+    int np = numIntegrationPoints.try_emplace(dim, countIntPoints(me,integrationOrder)).first->second;
+    double w = integrationWeight.try_emplace(dim, getIntWeight(me,integrationOrder,0)).first->second;
     for (int p=0; p < np; ++p)
     {
       Vector point;
       getIntPoint(me,integrationOrder,p,point);
-      double w = getIntWeight(me,integrationOrder,p);
       Matrix Q;
       getTransform(me,point,Q);
       Matrix J;
       apf::getJacobian(me,point,J);
       /* transforms the rows of J, the differential tangent vectors,
         into the metric space, then uses the generalized determinant */
-      double dV2 = apf::getJacobianDeterminant(J*Q,dimension);
+      double dV2 = apf::getJacobianDeterminant(J*Q,dim);
       measurement += w*dV2;
     }
     return measurement;
@@ -250,6 +250,8 @@ struct MetricSizeField : public SizeField
   Mesh* mesh;
   int order; // this is the underlying sizefield order (default 1)
   apf::MeshElement* me=0;
+  std::map<int, int> numIntegrationPoints;
+  std::map<int, double> integrationWeight;
 };
 
 AnisotropicFunction::~AnisotropicFunction()
