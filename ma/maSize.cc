@@ -13,6 +13,7 @@
 #include <apfShape.h>
 #include <cstdlib>
 #include <pcu_util.h>
+#include "apfVectorElement.h"
 
 namespace ma {
 
@@ -206,13 +207,14 @@ class SizeFieldIntegrator : public apf::Integrator
 
 struct MetricSizeField : public SizeField
 {
-  MetricSizeField() : integrator(this, 1)
-  {}
+  MetricSizeField(Mesh* m, int o) : mesh(m), order(o), integrator(this, 1)
+  {
+  }
   double measure(Entity* e)
   {
-    apf::MeshElement* me = apf::createMeshElement(mesh, e);
+    if (me == 0) me = apf::createMeshElement(mesh, e);
+    else me->init(mesh->getCoordinateField(), e, 0);
     integrator.process(me);
-    apf::destroyMeshElement(me);
     return integrator.measurement;
   }
   bool shouldSplit(Entity* edge)
@@ -231,6 +233,7 @@ struct MetricSizeField : public SizeField
   Mesh* mesh;
   int order; // this is the underlying sizefield order (default 1)
   SizeFieldIntegrator integrator;
+  apf::MeshElement* me=0;
 };
 
 AnisotropicFunction::~AnisotropicFunction()
@@ -365,18 +368,14 @@ struct LogMEval : public apf::Function
 
 struct AnisoSizeField : public MetricSizeField
 {
-  AnisoSizeField()
+  AnisoSizeField() : MetricSizeField(0, 1)
   {
-    mesh = 0;
-    order = 1;
   }
-  AnisoSizeField(Mesh* m, AnisotropicFunction* f):
+  AnisoSizeField(Mesh* m, AnisotropicFunction* f): MetricSizeField(m, 1),
     bothEval(f),
     sizesEval(&bothEval),
     frameEval(&bothEval)
   {
-    mesh = m;
-    order = 1;
     hField = apf::createUserField(m, "ma_sizes", apf::VECTOR,
         apf::getLagrange(1), &sizesEval);
     rField = apf::createUserField(m, "ma_frame", apf::MATRIX,
@@ -458,12 +457,10 @@ struct AnisoSizeField : public MetricSizeField
 
 struct LogAnisoSizeField : public MetricSizeField
 {
-  LogAnisoSizeField()
+  LogAnisoSizeField() : MetricSizeField(0, 1)
   {
-    mesh = 0;
-    order = 1;
   }
-  LogAnisoSizeField(Mesh* m, AnisotropicFunction* f):
+  LogAnisoSizeField(Mesh* m, AnisotropicFunction* f): MetricSizeField(m, 1),
     logMEval(f)
   {
     mesh = m;

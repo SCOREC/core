@@ -36,8 +36,8 @@ class Element
     FieldShape* getFieldShape() {return field->getShape();}
     void getComponents(Vector3 const& xi, double* c);
     void getElementNodeData(NewArray<double>& d);
-  protected:
     void init(Field* f, MeshEntity* e, VectorElement* p);
+  protected:
     void getNodeData();
     Field* field;
     Mesh* mesh;
