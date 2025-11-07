@@ -416,6 +416,7 @@ struct AnisoSizeField : public MetricSizeField
       Vector const& xi,
       Matrix& Q)
   {
+    //TODO: cache these elements
     apf::Element* hElement = apf::createElement(hField,me);
     apf::Element* rElement = apf::createElement(rField,me);
     Vector h;
@@ -525,10 +526,10 @@ struct LogAnisoSizeField : public MetricSizeField
       Vector const& xi,
       Matrix& Q)
   {
-    apf::Element* logMElement = apf::createElement(logMField,me);
+    if (logMElement==0) logMElement = apf::createElement(logMField,me);
+    else logMElement->init(logMField,me->getEntity(),me);
     Matrix logM;
     apf::getMatrix(logMElement,xi,logM);
-    apf::destroyElement(logMElement);
     Vector v;
     Matrix R;
     orthogonalEigenDecompForSymmetricMatrix(logM, v, R);
@@ -542,11 +543,11 @@ struct LogAnisoSizeField : public MetricSizeField
       Vector const& xi,
       Entity* newVert)
   {
-    apf::Element* logMElement = apf::createElement(logMField,parent);
+    if (logMElement==0) logMElement = apf::createElement(logMField,parent);
+    else logMElement->init(logMField,parent->getEntity(),parent);
     Matrix logM;
     apf::getMatrix(logMElement,xi,logM);
     this->setValue(newVert,logM);
-    apf::destroyElement(logMElement);
   }
   void setValue(
       Entity* vert,
@@ -591,6 +592,7 @@ struct LogAnisoSizeField : public MetricSizeField
     return apf::getShape(logMField)->hasNodesIn(dimension);
   }
   apf::NewArray<double> fieldVal;
+  apf::Element* logMElement=0;
   apf::Field* logMField;
   LogMEval logMEval;
 };
