@@ -184,6 +184,7 @@ class SizeFieldIntegrator : public apf::Integrator
     {
       meshElement = me;
       dimension = apf::getDimension(me);
+      measurement = 0;
     }
     void atPoint(Vector const& p , double w, double )
     {
@@ -205,14 +206,14 @@ class SizeFieldIntegrator : public apf::Integrator
 
 struct MetricSizeField : public SizeField
 {
+  MetricSizeField() : integrator(this, 1)
+  {}
   double measure(Entity* e)
   {
-    SizeFieldIntegrator sFI(this,
-    	std::max(mesh->getShape()->getOrder(), order)+1);
     apf::MeshElement* me = apf::createMeshElement(mesh, e);
-    sFI.process(me);
+    integrator.process(me);
     apf::destroyMeshElement(me);
-    return sFI.measurement;
+    return integrator.measurement;
   }
   bool shouldSplit(Entity* edge)
   {
@@ -229,6 +230,7 @@ struct MetricSizeField : public SizeField
   }
   Mesh* mesh;
   int order; // this is the underlying sizefield order (default 1)
+  SizeFieldIntegrator integrator;
 };
 
 AnisotropicFunction::~AnisotropicFunction()
@@ -391,6 +393,8 @@ struct AnisoSizeField : public MetricSizeField
     order = apf::getShape(sizes)->getOrder();
     hField = sizes;
     rField = frames;
+    integrator = SizeFieldIntegrator(this,
+    	  std::max(mesh->getShape()->getOrder(), order)+1);
   }
   void getTransform(
       apf::MeshElement* me,
@@ -475,6 +479,8 @@ struct LogAnisoSizeField : public MetricSizeField
   {
     mesh = m;
     order = apf::getShape(sizes)->getOrder();
+    integrator = SizeFieldIntegrator(this,
+    	  std::max(mesh->getShape()->getOrder(), order)+1);
     logMField = apf::createField(m, "ma_logM", apf::MATRIX,
         apf::getShape(sizes));
     int dim = m->getDimension();
@@ -485,19 +491,19 @@ struct LogAnisoSizeField : public MetricSizeField
         continue;
       it = m->begin(d);
       while( (ent = m->iterate(it)) ){
-	int type = m->getType(ent);
-	int non = apf::getShape(logMField)->countNodesOn(type);
-	for (int i = 0; i < non; i++) {
-	  Vector h;
-	  Matrix f;
-	  apf::getVector(sizes, ent, i, h);
-	  apf::getMatrix(frames, ent, i, f);
-	  Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
-	  Matrix S(s[0], 0   , 0,
-	      0    , s[1], 0,
-	      0    , 0   , s[2]);
-	  apf::setMatrix(logMField, ent, i, f * S * transpose(f));
-	}
+        int type = m->getType(ent);
+        int non = apf::getShape(logMField)->countNodesOn(type);
+        for (int i = 0; i < non; i++) {
+          Vector h;
+          Matrix f;
+          apf::getVector(sizes, ent, i, h);
+          apf::getMatrix(frames, ent, i, f);
+          Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
+          Matrix S(s[0], 0   , 0,
+              0    , s[1], 0,
+              0    , 0   , s[2]);
+          apf::setMatrix(logMField, ent, i, f * S * transpose(f));
+        }
       }
       m->end(it);
     }
