@@ -219,10 +219,14 @@ struct MetricSizeField : public SizeField
     int dim = apf::getDimension(me);
     int np = numIntegrationPoints.try_emplace(dim, countIntPoints(me,integrationOrder)).first->second;
     double w = integrationWeight.try_emplace(dim, getIntWeight(me,integrationOrder,0)).first->second;
-    for (int p=0; p < np; ++p)
-    {
+    for (int p=0; p < np; ++p) {
       Vector point;
-      getIntPoint(me,integrationOrder,p,point);
+      auto it = integrationPoint.find({dim, p});
+      if (it == integrationPoint.end()) {
+        getIntPoint(me,integrationOrder,p,point);
+        integrationPoint.insert(it, {{dim, p}, point});
+      }
+      else point = it->second;
       Matrix Q;
       getTransform(me,point,Q);
       Matrix J;
@@ -252,6 +256,7 @@ struct MetricSizeField : public SizeField
   apf::MeshElement* me=0;
   std::map<int, int> numIntegrationPoints;
   std::map<int, double> integrationWeight;
+  std::map<std::pair<int, int>, Vector> integrationPoint;
 };
 
 AnisotropicFunction::~AnisotropicFunction()
