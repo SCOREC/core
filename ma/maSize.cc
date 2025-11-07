@@ -207,15 +207,32 @@ class SizeFieldIntegrator : public apf::Integrator
 
 struct MetricSizeField : public SizeField
 {
-  MetricSizeField(Mesh* m, int o) : mesh(m), order(o), integrator(this, 1)
+  MetricSizeField(Mesh* m, int o) : mesh(m), order(o)
   {
   }
   double measure(Entity* e)
   {
     if (me == 0) me = apf::createMeshElement(mesh, e);
     else me->init(mesh->getCoordinateField(), e, 0);
-    integrator.process(me);
-    return integrator.measurement;
+    int integrationOrder = std::max(mesh->getShape()->getOrder(), order)+1; 
+    double measurement = 0;
+    int dimension = apf::getDimension(me);
+    int np = countIntPoints(me,integrationOrder);
+    for (int p=0; p < np; ++p)
+    {
+      Vector point;
+      getIntPoint(me,integrationOrder,p,point);
+      double w = getIntWeight(me,integrationOrder,p);
+      Matrix Q;
+      getTransform(me,point,Q);
+      Matrix J;
+      apf::getJacobian(me,point,J);
+      /* transforms the rows of J, the differential tangent vectors,
+        into the metric space, then uses the generalized determinant */
+      double dV2 = apf::getJacobianDeterminant(J*Q,dimension);
+      measurement += w*dV2;
+    }
+    return measurement;
   }
   bool shouldSplit(Entity* edge)
   {
@@ -232,7 +249,6 @@ struct MetricSizeField : public SizeField
   }
   Mesh* mesh;
   int order; // this is the underlying sizefield order (default 1)
-  SizeFieldIntegrator integrator;
   apf::MeshElement* me=0;
 };
 
@@ -392,8 +408,6 @@ struct AnisoSizeField : public MetricSizeField
     order = apf::getShape(sizes)->getOrder();
     hField = sizes;
     rField = frames;
-    integrator = SizeFieldIntegrator(this,
-    	  std::max(mesh->getShape()->getOrder(), order)+1);
   }
   void getTransform(
       apf::MeshElement* me,
@@ -476,8 +490,6 @@ struct LogAnisoSizeField : public MetricSizeField
   {
     mesh = m;
     order = apf::getShape(sizes)->getOrder();
-    integrator = SizeFieldIntegrator(this,
-    	  std::max(mesh->getShape()->getOrder(), order)+1);
     logMField = apf::createField(m, "ma_logM", apf::MATRIX,
         apf::getShape(sizes));
     int dim = m->getDimension();
