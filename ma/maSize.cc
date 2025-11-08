@@ -532,7 +532,7 @@ struct LogAnisoSizeField : public MetricSizeField
       Matrix& Q)
   {
     if (logMElement==0) logMElement = apf::createElement(logMField,me);
-    else logMElement->init(logMField,me->getEntity(),me);
+    else if (me->getEntity() != logMElement->getEntity()) logMElement->init(logMField,me->getEntity(),me);
     Matrix logM;
     apf::getMatrix(logMElement,xi,logM);
     Vector v;
@@ -549,7 +549,7 @@ struct LogAnisoSizeField : public MetricSizeField
       Entity* newVert)
   {
     if (logMElement==0) logMElement = apf::createElement(logMField,parent);
-    else logMElement->init(logMField,parent->getEntity(),parent);
+    else if (parent->getEntity() != logMElement->getEntity()) logMElement->init(logMField,parent->getEntity(),parent);
     Matrix logM;
     apf::getMatrix(logMElement,xi,logM);
     this->setValue(newVert,logM);
