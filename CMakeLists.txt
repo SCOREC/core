@@ -205,6 +205,7 @@ add_subdirectory(dsp)
 add_subdirectory(omega_h)
 add_subdirectory(gmi_cap)
 add_subdirectory(apf_cap)
+add_subdirectory(Eigen)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)

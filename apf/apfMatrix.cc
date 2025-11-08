@@ -9,6 +9,7 @@
 #include "apf2mth.h"
 #include <mthQR.h>
 #include <pcu_util.h>
+#include <../Eigen/Dense>
 
 namespace apf {
 
@@ -69,16 +70,30 @@ int eigen(Matrix3x3 const& A,
           Vector<3>* eigenVectors,
           double* eigenValues)
 {
-  mth::Matrix<double,3,3> A2 = to_mth(A);
-  mth::Matrix<double,3,3> L;
-  mth::Matrix<double,3,3> Q;
-  bool converged = mth::eigenQR(A2, L, Q, 100);
-  PCU_ALWAYS_ASSERT(converged);
+  // mth::Matrix<double,3,3> A2 = to_mth(A);
+  // mth::Matrix<double,3,3> L;
+  // mth::Matrix<double,3,3> Q;
+  // bool converged = mth::eigenQR(A2, L, Q, 100);
+  // PCU_ALWAYS_ASSERT(converged);
+  // for (unsigned i = 0; i < 3; ++i)
+  //   eigenValues[i] = L(i,i);
+  // for (unsigned i = 0; i < 3; ++i)
+  // for (unsigned j = 0; j < 3; ++j)
+  //   eigenVectors[j][i] = Q(i,j);
+  Eigen::Matrix3d matrix;
+  for (int i = 0; i < 3; ++i)
+  for (int j = 0; j < 3; ++j)
+      matrix(i, j) = A[i][j];
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(matrix);
+  Eigen::Vector3d values = solver.eigenvalues();
+  Eigen::Matrix3d vectors = solver.eigenvectors();
+
   for (unsigned i = 0; i < 3; ++i)
-    eigenValues[i] = L(i,i);
+    eigenValues[i] = values(i);
   for (unsigned i = 0; i < 3; ++i)
   for (unsigned j = 0; j < 3; ++j)
-    eigenVectors[j][i] = Q(i,j);
+    eigenVectors[j][i] = vectors(i,j);
   return 3;
 }
 

@@ -96,6 +96,8 @@ target_include_directories(apf PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
+target_link_libraries (apf PRIVATE eigen)
+
 # Link this library to these others
 target_link_libraries(apf
    PUBLIC
