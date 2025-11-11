@@ -30,10 +30,11 @@ static double PI = 3.14159265359;
 
 namespace ma_dbg {
 
-
+// If no dimension specified then it will write the greatest dimension to the file.
 void writeMesh(ma::Mesh* m,
     const char* prefix,
-    const char* suffix)
+    const char* suffix,
+    int dim=-1)
 {
   std::stringstream ss;
   if (std::string(suffix) != "")
@@ -42,7 +43,28 @@ void writeMesh(ma::Mesh* m,
     ss << prefix;
   std::string tmp = ss.str();
   const char* fileName = tmp.c_str();
-  apf::writeVtkFiles(fileName, m);
+  apf::writeVtkFiles(fileName, m, dim);
+}
+
+void addClassification(ma::Adapt* a,
+    const char* fieldName)
+{
+  ma::Mesh* m = a->mesh;
+  apf::Field* field;
+  field = m->findField(fieldName);
+  if (field)
+    apf::destroyField(field);
+
+  field = apf::createFieldOn(m, fieldName, apf::SCALAR);
+  ma::Entity* ent;
+  ma::Iterator* it;
+  it = m->begin(0);
+  while ( (ent = m->iterate(it)) ){
+    ma::Model* g = m->toModel(ent);
+    double modelDimension = (double)m->getModelType(g);
+    apf::setComponents(field, ent, 0, &modelDimension);
+  }
+  m->end(it);
 }
 
 void addTargetLocation(ma::Adapt* a,
@@ -168,7 +190,7 @@ void dumpMeshWithQualities(ma::Adapt* a,
   ss << std::setfill('0') << std::setw(3) << iter << "_";
   ss << prefix;
 
-  writeMesh(a->mesh, ss.str().c_str(), "");
+  writeMesh(a->mesh, ss.str().c_str(), "", -1);
 
   apf::Field* colorField;
   colorField = a->mesh->findField("qual_metric");
@@ -208,7 +230,7 @@ void dumpMeshWithFlag(ma::Adapt* a,
   }
   ss << prefix << "_" << std::setfill('0') << std::setw(3) << iter;
 
-  writeMesh(a->mesh, ss.str().c_str(), "");
+  writeMesh(a->mesh, ss.str().c_str(), "", dim);
 
   apf::Field* colorField;
   colorField = a->mesh->findField(flagName);
@@ -240,7 +262,10 @@ void createCavityMesh(ma::Adapt* a,
 
   cavityMesh->acceptChanges();
   std::stringstream ss;
-  ss << a->input->debugFolder << "/";
+  //Allows the user to print to current directory or to folder
+  if (a->input->debugFolder) {
+    ss << a->input->debugFolder << "/";
+  }
   ss << prefix;
 
 

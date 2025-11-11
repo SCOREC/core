@@ -19,6 +19,13 @@
 namespace ma {
 
 typedef apf::Matrix3x3 Matrix;
+/* Desired length bounds in metric space to replace hard coded values. Right now
+these values are const, since we are not sure it is worth while to have the user,
+modify these in addition to desired length. Future testing in need because Li's 
+thesis describes there might be utility to having the user modify them */
+const double MAXLENGTH = 1.5;
+const double MINLENGTH = .5;
+const double MAXLENGTHRATIO = 1.2;
 
 class SizeField
 {

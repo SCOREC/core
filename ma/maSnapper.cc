@@ -7,10 +7,19 @@
   of the SCOREC Non-Commercial License this program is distributed under.
  
 *******************************************************************************/
+/**
+ * \file maSnapper.cc
+ * \brief Definition of maSnapper.h file.
+ * This file contains functions to move a point to the model surface. As described
+ * in Li's thesis it will first try to collapse in the target direction. Otherwise 
+ * it will collapse to simplify the region and attempt other operators such as
+ * swap, split collapse, double split collapse.
+*/
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
 #include "maSnap.h"
+#include "maDBG.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -18,14 +27,18 @@
 
 namespace ma {
 
-Snapper::Snapper(Adapt* a, Tag* st, bool is)
+Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSplitCollapse(a)
 {
-  adapter = a;
+  adapt = a;
   snapTag = st;
   collapse.Init(a);
-  isSimple = is;
-  dug = false;
+  edgeSwap = makeEdgeSwap(a);
   vert = 0;
+}
+
+Snapper::~Snapper()
+{
+  delete edgeSwap;
 }
 
 void Snapper::setVert(Entity* v)
@@ -42,241 +55,589 @@ bool Snapper::requestLocality(apf::CavityOp* o)
 {
   if (!o->requestLocality(&vert, 1))
     return false;
-  if (isSimple)
-    return true;
 /* in order to try an edge collapse (we don't yet know
    which edge), bring in a cavity such that all adjacent
    edges have both vertices local.
    This is basically two layers of elements around the vertex */
   apf::Up edges;
-  adapter->mesh->getUp(vert,edges);
+  mesh->getUp(vert,edges);
   apf::Up ovs;
   ovs.n = edges.n;
   for (int i = 0; i < edges.n; ++i)
-    ovs.e[i] = apf::getEdgeVertOppositeVert(adapter->mesh, edges.e[i], vert);
+    ovs.e[i] = apf::getEdgeVertOppositeVert(mesh, edges.e[i], vert);
   return o->requestLocality(&ovs.e[0], ovs.n);
 }
 
-static void computeNormals(Mesh* m, Upward& es, apf::NewArray<Vector>& normals)
+//Write snapping data to files for debugging purposes
+//In order to view relevant information it is neccessary to hide entities with relevent flag in vtk viewer
+#if defined(DEBUG_FPP)
+static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 {
-  if (m->getDimension() != 2)
-    return;
-  normals.allocate(es.getSize());
-  for (size_t i = 0; i < es.getSize(); ++i)
-    normals[i] = getTriNormal(m, es[i]);
+  setFlag(a, ent, CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, dim, CHECKED, name, name);
+  clearFlag(a, ent, CHECKED);
 }
+#endif
 
-static bool didInvert(Mesh* m, Vector& oldNormal, Entity* tri)
+//Write snapping data to files for debugging purposes
+#if defined(DEBUG_FPP)
+static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
-  return (oldNormal * getTriNormal(m, tri)) < 0;
-}
+  ma_dbg::addTargetLocation(a, "snap_target");
+  ma_dbg::addClassification(a, "classification");
 
-static void collectBadElements(Adapt* a, Upward& es,
-    apf::NewArray<Vector>& normals, apf::Up& bad)
-{
-  Mesh* m = a->mesh;
-  bad.n = 0;
-  for (size_t i = 0; i < es.getSize(); ++i) {
-/* for now, when snapping a vertex on the boundary
-   layer, ignore the quality of layer elements.
-   not only do we not have metrics for this, but the
-   algorithm that moves curves would need to change */
-    if (getFlag(a, es[i], LAYER))
-      continue;
-    double quality = a->shape->getQuality(es[i]);
-    if (quality < a->input->validQuality)
-      bad.e[bad.n++] = es[i];
-/* check for triangles whose normals have changed by
-   more than 90 degrees when the vertex was snapped */
-    else if ((m->getDimension() == 2) &&
-             didInvert(m, normals[i], es[i]))
-      bad.e[bad.n++] = es[i];
+  apf::writeVtkFiles("FPP_Mesh", a->mesh);
+  EntityArray invalid;
+  for (int i=0; i<FPP->problemRegions.n; i++){
+    invalid.append(FPP->problemRegions.e[i]);
   }
-  PCU_ALWAYS_ASSERT(bad.n < (int)(sizeof(bad.e) / sizeof(Entity*)));
-}
+  ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
-static bool trySnapping(Adapt* adapter, Tag* tag, Entity* vert,
-    apf::Up& badElements)
+  for (int i=0; i<FPP->commEdges.n; i++) setFlag(a, FPP->commEdges.e[i], CHECKED);
+  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
+  for (int i=0; i<FPP->commEdges.n; i++) clearFlag(a, FPP->commEdges.e[i], CHECKED);
+
+  flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
+  flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
+  flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
+}
+#endif
+
+//returns the greater index in the case of equality 
+static int indexOfMin(double a0, double a1, double a2)
 {
-  Mesh* mesh = adapter->mesh;
-  Vector x = getPosition(mesh, vert);
-  Vector s;
-  mesh->getDoubleTag(vert, tag, &s[0]);
-/* gather the adjacent elements */
-  Upward elements;
-  mesh->getAdjacent(vert, mesh->getDimension(), elements);
-/* in 2D, get the old triangle normals */
-  apf::NewArray<Vector> normals;
-  computeNormals(mesh, elements, normals);
-/* move the vertex to the desired point */
-  mesh->setPoint(vert, 0, s);
-/* check resulting cavity */
-  collectBadElements(adapter, elements, normals, badElements);
-  if (badElements.n) {
-    /* not ok, put the vertex back where it was */
-    mesh->setPoint(vert, 0, x);
-    return false;
+  if (a1 < a0) {
+    if (a2 < a1) return 2;
+    else return 1;
   } else {
-    /* ok, take off the snap tag */
-    mesh->removeTag(vert, tag);
-    return true;
+    if (a2 < a0) return 2;
+    else return 0;
   }
 }
 
-static bool tryDiggingEdge(Adapt* adapter, Collapse& collapse, Entity* e)
+static Vector projOnTriPlane(Adapt* a, Entity* vert, Vector normal, Vector v0)
 {
-  Mesh* mesh = adapter->mesh;
-  PCU_ALWAYS_ASSERT(mesh->getType(e) == apf::Mesh::EDGE);
-  if ( ! collapse.setEdge(e))
-    return false;
-  if ( ! collapse.checkClass())
-    return false;
-  if ( ! collapse.checkTopo())
-    return false;
-  double q = adapter->input->validQuality;
-  bool oldShouldForce = adapter->input->shouldForceAdaptation;
-  adapter->input->shouldForceAdaptation = true;
-  if ( ! collapse.tryBothDirections(q))
-    return false;
-  adapter->input->shouldForceAdaptation = oldShouldForce;
-  collapse.destroyOldElements();
-  return true;
+  double magN = normal*normal;
+  Vector vertPos = getPosition(a->mesh, vert);
+  double magCP = (vertPos-v0) * normal;
+  double ratio=magCP/magN;
+
+  Vector result;
+  for (int i=0; i<3; ++i)
+    result[i]=vertPos[i]-ratio*normal[i];
+  
+  return result;
 }
 
-static bool tryDigging2(Adapt* a, Collapse& c, apf::Up& badElements,
-    FirstProblemPlane* FPP)
+/*
+  Given a poorly-shaped tetrahedron, a base triangle and the opposite vertex of the base,
+  determine the following information:
+  1. the key mesh entities to apply local mesh modification
+  2. area of the four face
+
+  return 0 : if an edge is degenerated
+     3,5,6 : the tetrahedron has two large dihedral angles. The opposite edges will be stored in ents[0], ents[1].
+   1,2,4,7 : the tetrahedron has three large angles. The largeest face is stored in ents[0].
+*/
+int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4])
 {
+  Entity* faceEdges[3];
+  a->mesh->getDownward(face, 1, faceEdges);
 
-  Mesh* m = a->mesh;
-  int dim = m->getDimension();
+  Entity* verts[3];
+  a->mesh->getDownward(face, 0, verts);
 
-  // first go through the candidate edges found by the first problem plane
-  // (if any)
-  std::vector<Entity*> edgesFromFPP;
-  edgesFromFPP.clear();
-  if (FPP && dim == 3) {
-    FPP->setBadElements(badElements);
-    FPP->getCandidateEdges(edgesFromFPP);
-  }
-  for (size_t i = 0; i < edgesFromFPP.size(); ++i) {
-    if (tryDiggingEdge(a, c, edgesFromFPP[i]))
-      return true;
+  Vector facePos[3];
+  Entity* edges[6];
+  for (int i=0; i<3; i++) {
+    edges[i]=faceEdges[i];
+    facePos[i]=getPosition(a->mesh, verts[i]);
   }
 
-  // next try all the edges
-  for (int i = 0; i < badElements.n; ++i) {
-    Entity* elem = badElements.e[i];
-    Downward edges;
-    int nedges;
-    nedges = m->getDownward(elem, 1, edges);
-    for (int j = 0; j < nedges; ++j){
-      if (tryDiggingEdge(a, c, edges[j]))
-	return true;
+  Entity* faces[4];
+  faces[0]=face;
+
+  Entity* problemFaces[4];
+  a->mesh->getDownward(region, 2, problemFaces);
+  for (int i=0; i<4; i++) {
+    if (problemFaces[i] == face ) continue;
+    else if (isLowInHigh(a->mesh, problemFaces[i], edges[0])) faces[1] = problemFaces[i];
+    else if (isLowInHigh(a->mesh, problemFaces[i], edges[1])) faces[2] = problemFaces[i];
+    else if (isLowInHigh(a->mesh, problemFaces[i], edges[2])) faces[3] = problemFaces[i];
+  }
+
+  for (int i=1; i<3; i++) {
+    Entity* problemEdges[3];
+    a->mesh->getDownward(faces[i], 1, problemEdges);
+    for (int j=0; j<3; j++) {
+      if (problemEdges[j]==edges[i-1] ) continue;
+      else if (isLowInHigh(a->mesh, problemEdges[j], verts[0])) edges[3] = problemEdges[j];
+      else if (isLowInHigh(a->mesh, problemEdges[j], verts[1])) edges[4] = problemEdges[j];
+      else if (isLowInHigh(a->mesh, problemEdges[j], verts[2])) edges[5] = problemEdges[j];
     }
+  }
+
+  /* find normal to the plane */
+  Vector v01 = facePos[1] - facePos[0];
+  Vector v02 = facePos[2] - facePos[0];
+  Vector norm = apf::cross(v01, v02);
+
+  Vector projection = projOnTriPlane(a, vert, norm, facePos[0]);
+  Vector ri = projection - facePos[0];
+  Vector rj = projection - facePos[1];
+  Vector rk = projection - facePos[2];
+
+  /* determine which side of the edges does the point R lie.
+      First get normal vectors */
+  Vector normi = apf::cross(v01, ri);
+  Vector normj = apf::cross(facePos[2]-facePos[1], rj);
+  Vector normk = apf::cross(facePos[0]-facePos[2], rk);
+
+  Vector mag;
+  mag[0]=normi*norm;
+  mag[1]=normj*norm;
+  mag[2]=normk*norm;
+
+  area[0]=norm*norm;
+  area[1]=normi*normi;
+  area[2]=normj*normj;
+  area[3]=normk*normk;
+
+  int filter[]={1,2,4};
+  int bit=0;
+  /* examine signs of mag[0], mag[1] and mag[2] */
+  for(int i=0; i<3; i++)
+    if(mag[i]>0.0)
+      bit = bit | filter[i];
+
+  /*  
+           010=2   | 011=3  /  001=1
+                   |       /
+       ------------+--e2--+-----------
+                 v0|     /v2
+                   | 7  /
+           110=6   e0  e1
+                   |  /
+                   | /    101=5
+                   |/
+                 v1+
+                  /|
+                 / |
+                  4
+  */
+
+ switch( bit ) {
+    case 1:{
+      int Emap[]={0,4,3};
+      int Fmap[]={0,2,3};
+      ents[0]=faces[1];
+      int i=indexOfMin(area[0],area[2],area[3]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;
+    }
+    case 2: {
+      int Emap[]={1,4,5};
+      int Fmap[]={0,1,3};
+      ents[0]=faces[2];
+      int i=indexOfMin(area[0],area[1],area[3]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;   
+    }
+    case 3: {
+      ents[0]=edges[2];
+      ents[1]=edges[4];
+      ents[2]=((area[0]<area[3]) ? faces[0] : faces[3]);
+      ents[3]=((area[1]<area[2]) ? faces[1] : faces[2]);
+      break;
+    }
+    case 4: {
+      int Emap[]={2,3,5};
+      int Fmap[]={0,1,2};
+      ents[0]=faces[3];
+      int i=indexOfMin(area[0],area[1],area[2]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;
+    }
+    case 5: {
+      ents[0]=edges[1];
+      ents[1]=edges[3];
+      ents[2]=((area[0]<area[2]) ? faces[0] : faces[2]);
+      ents[3]=((area[1]<area[3]) ? faces[1] : faces[3]);
+      break;
+    }
+    case 6: {
+      ents[0]=edges[0];
+      ents[1]=edges[5];
+      ents[2]=((area[0]<area[1]) ? faces[0]:faces[1]);
+      ents[3]=((area[2]<area[3]) ? faces[2]:faces[3]);
+      break;
+    }
+    case 7: {
+      int Emap[]={0,1,2};
+      int Fmap[]={1,2,3};
+      ents[0]=faces[0];
+      int i=indexOfMin(area[1],area[2],area[3]);
+      ents[1]=edges[Emap[i]];
+      ents[2]=faces[Fmap[i]];
+      break;
+    }
+    default:
+      print(a->mesh->getPCU(), "Swap warning: This swap/splt may not work consider more collapses");
+  }
+  return bit;
+}
+
+/*
+  We perform this last to make sure that we have a simple region where we can determine the
+  best operation to perform and because we want to avoid creating more vertices to snap since
+  we could get stuck in an infinite loop of creating and snapping those vertices.
+*/
+bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
+{
+  Entity* ents[4] = {0};
+  double area[4];
+  int bit = getTetStats(adapt, FPP->vert, FPP->problemFace, FPP->problemRegion, ents, area);
+
+  double min=area[0];
+  for(int i=1; i<4; i++) 
+    if( area[i]<min ) min=area[i]; 
+
+  if (area[0]==min) {
+    Entity* edges[3];
+    mesh->getDownward(FPP->problemFace, 1, edges);
+    Entity* longest = edges[0];
+    for (int i=1; i<3; i++)
+      if (adapt->sizeField->measure(edges[i]) > adapt->sizeField->measure(longest))
+        longest = edges[i];
+
+    if (edgeSwap->run(longest)) {
+      numSwap++;
+      return true;
+    }
+    if (splitCollapse.run(longest, FPP->vert, adapt->input->validQuality)) {
+      numSplitCollapse++;
+      return true;
+    }
+  }
+
+  if (ents[0] == 0)
+    return false;
+
+  // two large dihedral angles -> key problem: two mesh edges
+  if (bit==3 || bit==5 || bit==6) {
+    for (int i=0; i<2; i++)
+      if (edgeSwap->run(ents[i])) {
+        numSwap++;
+        return true;
+      }
+    for (int i=0; i<2; i++)
+      if (splitCollapse.run(ents[i], FPP->vert, adapt->input->validQuality)) {
+        numSplitCollapse++;
+        return true;
+      }
+    if (doubleSplitCollapse.run(ents, adapt->input->validQuality)) {
+      numSplitCollapse++;
+      return true;
+    }
+    print(mesh->getPCU(), "Swap failed: Consider more collapses");
+  }
+  // three large dihedral angles -> key entity: a mesh face
+  else {
+    Entity* edges[3];
+    mesh->getDownward(ents[0], 1, edges);
+    for (int i=0; i<3; i++) {
+      if (edgeSwap->run(edges[i])) {
+        numSwap++;
+        return true;
+      }
+    }
+    //TODO: RUN FACE SWAP HERE
+    if (splitCollapse.run(ents[1], FPP->vert, adapt->input->validQuality)) {
+      numSplitCollapse++;
+      return true;
+    }
+    print(mesh->getPCU(), "Swap failed: face swap not implemented");
   }
   return false;
 }
 
-static void updateVertexParametricCoords(
-    Mesh* m,
-    Entity* vert,
-    Vector& newTarget)
+static bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse)
 {
-  PCU_ALWAYS_ASSERT_VERBOSE(m->getType(vert) == apf::Mesh::VERTEX,
-      "expecting a vertex!");
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
 
-  // if vert is classified on a model vert or edge return
-  Model* g = m->toModel(vert);
-  if (m->getModelType(g) != 2)
-    return;
+  bool result = false;
+  if (collapse.setEdge(edge) && 
+      collapse.checkClass() &&
+      collapse.checkTopo() &&
+      collapse.tryBothDirections(a->input->validQuality)) {
+    collapse.destroyOldElements();
+    result = true;
+  }  
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+  return result;
+}
 
-  // get the list of upward adj edges that are
-  // classified on the same model face as vert
-  apf::Up edges;
-  m->getUp(vert,edges);
-  apf::Up oes;
-  oes.n = edges.n;
-  int counter = 0;
-  for (int i = 0; i < edges.n; ++i) {
-    Model* h = m->toModel(edges.e[i]);
-    if (m->getModelType(h) == 3)
+struct BestCollapse
+{
+  double quality=-1;
+  Entity* edge;
+  Entity* keep;
+};
+
+/*
+  Perfomes a collapse operation and stores the operation in best if the quality is better, 
+  then cancels the collapse. We want to pick the highest quality after collapsing to the
+  first problem plane so future operations are more likely to succeed.
+*/
+static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, BestCollapse& best)
+{
+  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
+  bool alreadyFlagged = true;
+  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
+  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
+  if (collapse.setEdge(edge) && collapse.checkClass() && collapse.checkTopo()) {
+      collapse.computeElementSets();
+      if (collapse.tryThisDirectionNoCancel(a->input->validQuality) && collapse.edgesGoodSize()) {
+        double quality = getWorstQuality(a, collapse.newElements);
+        if (quality > best.quality) {
+          best.quality = quality;
+          best.edge = edge;
+          best.keep = keep;
+        }
+      }
+      collapse.cancel();
+  }
+  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
+}
+
+//returns if testVert and refVert are on the same side of the face
+static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
+{
+  Entity* faceVert[3];
+  a->mesh->getDownward(face, 0, faceVert);
+  Vector facePos[3];
+  for (int i=0; i < 3; ++i)
+    facePos[i] = getPosition(a->mesh,faceVert[i]);
+  
+  Vector normal = apf::cross((facePos[1]-facePos[0]),(facePos[2]-facePos[0]));
+  Vector testPos = getPosition(a->mesh, testVert);
+  Vector refPos = getPosition(a->mesh, refVert);
+  const double tol=1e-12;
+
+  double dr = (testPos - facePos[0]) * normal;
+  if (dr*dr < tol) return false; //testVert is on the face
+  double ds = (refPos - facePos[0]) * normal;
+  if (dr*ds < 0.0) return false; //different sides of face
+  return true; //same side of face
+}
+
+/*
+  If collapsing the common edges failed we want to try collapsing any edge that will
+  move us towards the first problem plane. We try collapses first in order to simplify
+  the region until we can perform smarter operations.
+*/
+bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
+{
+  std::vector<Entity*>& commEdges = FPP->commEdges;
+  BestCollapse best;
+
+  for (size_t i=0; i<commEdges.size(); i++) {
+    Entity* vertex[2];
+    mesh->getDownward(commEdges[i], 0, vertex);
+    for (int j=0; j<2; j++)
+      getBestQualityCollapse(adapt, commEdges[i], vertex[j], collapse, best);
+  }
+
+  for (size_t i=0; i<commEdges.size(); i++) {
+    Entity* edge = commEdges[i];
+    Entity* vertexFPP = getEdgeVertOppositeVert(mesh, edge, vert);
+    apf::Up adjEdges;
+    mesh->getUp(vertexFPP, adjEdges);
+    for (int j=0; j<adjEdges.n; j++) {
+      Entity* edgeDel = adjEdges.e[j];
+      if (edgeDel==edge) continue;
+      if (isLowInHigh(mesh, FPP->problemFace, edgeDel)) continue;
+      Entity* vertKeep = getEdgeVertOppositeVert(mesh, edgeDel, vertexFPP);
+      if (sameSide(adapt, vertKeep, vert, FPP->problemFace)) continue;
+      getBestQualityCollapse(adapt, edgeDel, vertKeep, collapse, best);
+    }
+  }
+
+  if (best.quality > 0) {
+    numCollapse++;
+    return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
+  }
+  else return false;
+}
+
+/*
+  If collapsing to the first problem plane has failed then we want
+  to collapse edges on the first problem plane in order to simplify
+  the region future operations are more likely to succeed.
+*/
+bool Snapper::tryReduceCommonEdges(FirstProblemPlane* FPP)
+{
+  std::vector<Entity*>& commEdges = FPP->commEdges;
+  BestCollapse best;
+
+  Entity* pbEdges[3];
+  mesh->getDownward(FPP->problemFace, 1, pbEdges);
+  switch(commEdges.size()) {
+    case 2: {
+      Entity* v1 = getEdgeVertOppositeVert(mesh, commEdges[0], vert);
+      Entity* v2 = getEdgeVertOppositeVert(mesh, commEdges[1], vert);
+      
+      for (int i=0; i<3; i++) {
+        Entity* pbVert[2];
+        mesh->getDownward(pbEdges[i], 0, pbVert);
+        if (pbVert[0] == v1 && pbVert[1] == v2) continue;
+        if (pbVert[1] == v1 && pbVert[0] == v2) continue;
+        for (int j=0; j<2; j++)
+          getBestQualityCollapse(adapt, pbEdges[i], pbVert[j], collapse, best);
+      }
+      break;
+    }
+    case 3: {
+      for (int i=0; i<3; i++) {
+        Entity* pbVert[2];
+        mesh->getDownward(pbEdges[i], 0, pbVert);
+        for (int j=0; j<2; j++)
+          getBestQualityCollapse(adapt, pbEdges[i], pbVert[j], collapse, best);
+      }
+      break;
+    }
+  }
+  if (best.quality > 0) {
+    numCollapse++;
+    return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
+  }
+  else return false;
+}
+
+/*
+  First we try collapsing to a vertex on the first problem plane because this is the most likely
+  operation to succeed. We first try collapsing to the common edges among the invalid regions 
+  since those are more likely to succeed.
+*/
+bool Snapper::tryCollapseToVertex(FirstProblemPlane* FPP)
+{
+  Vector position = getPosition(mesh, vert);
+  Vector target;
+  mesh->getDoubleTag(vert, snapTag, &target[0]);
+  double distTarget = (position - target).getLength();
+
+  BestCollapse best;
+
+  for (size_t i = 0; i < FPP->commEdges.size(); ++i) {
+    Entity* edge = FPP->commEdges[i];
+    Entity* vertexOnFPP = getEdgeVertOppositeVert(mesh, edge, vert);
+    Vector vFPPCoord = getPosition(mesh, vertexOnFPP);
+    double distToFPPVert = (vFPPCoord - target).getLength();
+    if (distToFPPVert > distTarget) continue;
+    getBestQualityCollapse(adapt, edge, vert, collapse, best);
+  }
+
+  if (best.quality > 0) {
+    numCollapseToVtx++;
+    return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
+  }
+  else return false;
+}
+
+static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+{
+  FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
+  FPP->setVertex(vertex);
+  FPP->setBadElements(invalid);
+  std::vector<Entity*> commEdges;
+  FPP->getCandidateEdges(commEdges);
+  return FPP;
+}
+
+static void getInvalid(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
+{
+  invalid.n = 0;
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    /* for now, when snapping a vertex on the boundary
+    layer, ignore the quality of layer elements.
+    not only do we not have metrics for this, but the
+    algorithm that moves curves would need to change */
+    if (getFlag(a, adjacentElements[i], LAYER))
       continue;
-    PCU_ALWAYS_ASSERT_VERBOSE(g == h,
-    	"expecting the model to be the same for current edge and vert");
-    oes.e[counter] = edges.e[i];
-    counter++;
+    if (a->shape->getQuality(adjacentElements[i]) < a->input->validQuality)
+      invalid.e[invalid.n++] = adjacentElements[i];
   }
-
-  Vector pBar(0., 0., 0.);
-  for (int i = 0; i < counter; i++) {
-    Vector pTmp;
-    transferParametricOnEdgeSplit(m, oes.e[i], 0.5, pTmp);
-    pBar += pTmp;
-  }
-  pBar = pBar / oes.n;
-
-  m->snapToModel(m->toModel(vert), pBar, newTarget);
-  m->setParam(vert, pBar);
 }
 
-static bool tryMoving(Adapt* adapter, Entity* v, Tag* tag)
+//Moved vertex to model surface or returns invalid elements if not possible
+static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
 {
-  Mesh* m = adapter->mesh;
-  PCU_ALWAYS_ASSERT_VERBOSE(m->hasTag(v, tag),
-      "expecting the vertex to have a tag!");
-  bool hadItBefore = getFlag(adapter, v, DONT_MOVE);
-  setFlag(adapter, v, DONT_MOVE);
-  Vector newTarget;
-  m->getDoubleTag(v, tag, &newTarget[0]); // default
-  updateVertexParametricCoords(m, v, newTarget);
-  m->setDoubleTag(v, tag, &newTarget[0]);
-  if (!hadItBefore)
-    clearFlag(adapter, v, DONT_MOVE);
-  return true;
-}
+  Mesh* mesh = adapt->mesh;
+  if (!mesh->hasTag(vertex, snapTag)) return true;
+  Vector prev = getPosition(mesh, vertex);
+  Vector target;
+  mesh->getDoubleTag(vertex, snapTag, &target[0]);
+  Upward adjacentElements;
+  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
 
-static bool tryDigging(Adapt* a, Collapse& c, Entity* v,
-    apf::Up& badElements, FirstProblemPlane* FPP = 0)
-{
-  bool hadItBefore = getFlag(a, v, DONT_COLLAPSE);
-  setFlag(a, v, DONT_COLLAPSE);
-  bool ok = tryDigging2(a, c, badElements, FPP);
-  if (!hadItBefore)
-    clearFlag(a, v, DONT_COLLAPSE);
-  return ok;
+  mesh->setPoint(vertex, 0, target);
+  getInvalid(adapt, adjacentElements, invalid);
+  if (invalid.n == 0) return true;
+  mesh->setPoint(vertex, 0, prev);
+  return false;
 }
 
 bool Snapper::trySimpleSnap()
 {
-  apf::Up badElements;
-  return trySnapping(adapter, snapTag, vert, badElements);
+  apf::Up invalid;
+  return tryReposition(adapt, vert, snapTag, invalid);
 }
+#if defined(DEBUG_FPP)
+static int DEBUGFAILED=0;
+#endif
 
+/*
+This function will attempt to move vert to the model surface, if it can not do so then it
+will atleast move to the first problem plane as described in Li's thesis. It might take multiple
+iterations for vert to reach the model surface. Li's thesis was missing some details on how
+to apply certain opperators so other algoritms were adapted from old scorec libraries.
+*/
 bool Snapper::run()
 {
-  dug = false;
-  moved = false;
-  apf::Up badElements;
-  bool ok = trySnapping(adapter, snapTag, vert, badElements);
-  if (isSimple)
-    return ok;
-  // there is no need for the following if there exists no bad elements
-  if (badElements.n == 0) return true;
-  FirstProblemPlane* FPP;
-#ifdef DO_FPP
-  FPP = new FirstProblemPlane(adapter, snapTag);
-  FPP->setVertex(vert);
-#else
-  FPP = 0;
-#endif
-  if (adapter->mesh->getDimension() == 2)
-    moved = tryMoving(adapter, vert, snapTag);
-  else
-    dug = tryDigging(adapter, collapse, vert, badElements, FPP);
-  delete FPP;
-  if (!dug && !moved)
-    return false;
-  return trySnapping(adapter, snapTag, vert, badElements);
+  apf::Up invalid;
+  bool success = tryReposition(adapt, vert, snapTag, invalid);
+  if (success) {
+    numSnapped++;
+    mesh->removeTag(vert,snapTag);
+    clearFlag(adapt, vert, SNAP);
+    return true;
+  }
+
+  FirstProblemPlane* FPP=0;
+  if (mesh->getDimension() == 3) {
+    if (!success) FPP = getFPP(adapt, vert, snapTag, invalid);
+    if (!success) success = tryCollapseToVertex(FPP);
+    if (!success) success = tryReduceCommonEdges(FPP);
+    if (!success) success = tryCollapseTetEdges(FPP);
+    if (!success) success = trySwapOrSplit(FPP);
+  }
+
+  if (!success) {
+    numFailed++;
+    mesh->removeTag(vert,snapTag);
+    clearFlag(adapt, vert, SNAP);
+  }
+  #if defined(DEBUG_FPP)
+  if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
+  #endif
+  if (FPP) delete FPP;
+  return success;
 }
 
 FirstProblemPlane::FirstProblemPlane(Adapt* a, Tag* st)
@@ -285,7 +646,7 @@ FirstProblemPlane::FirstProblemPlane(Adapt* a, Tag* st)
   snapTag = st;
   problemFace = 0;
   problemRegion = 0;
-  commEdges.n = 0;
+  commEdges.clear();
   tol = 1.0e-14;
 }
 
@@ -296,9 +657,8 @@ void FirstProblemPlane::setVertex(Entity* v)
 
 void FirstProblemPlane::setBadElements(apf::Up& badElements)
 {
-  problemRegions.n = badElements.n;
   for (int i = 0; i < badElements.n; i++) {
-    problemRegions.e[i] = badElements.e[i];
+    problemRegions.push_back(badElements.e[i]);
   }
 }
 
@@ -318,8 +678,7 @@ bool FirstProblemPlane::find()
 
   // determine distances to all possible problem faces, the shortest
   // distance and its intersection on first problem plane (FPP)
-  int n;
-  n = problemRegions.n;
+  size_t n = problemRegions.size();
   Entity* elem;
   Entity* face;
   Ray ray;
@@ -330,8 +689,8 @@ bool FirstProblemPlane::find()
   ray.dir   = target - ray.start;
 
   dists.clear();
-  for (int i = 0; i < n; i++) {
-    elem = problemRegions.e[i];
+  for (size_t i = 0; i < n; i++) {
+    elem = problemRegions[i];
     face = getTetFaceOppositeVert(mesh, elem, vert);
     std::vector<Vector> coords;
     getFaceCoords(mesh, face, coords);
@@ -345,16 +704,16 @@ bool FirstProblemPlane::find()
         lion_oprint(1, "Info: Found Infinitely Many Intersection Points!\n");
       Vector newDirection = intersect - ray.start;
       if (newDirection.getLength() < minDist) {
-	dists.push_back(newDirection.getLength());
-      	minDist = dists.back();
-      	problemFace = face;
-      	problemRegion = elem;
-      	intersection = intersect;
-      	// do not need to check whether the move is valid since the valid
-      	// ones should have been taken care of by this point
+        dists.push_back(newDirection.getLength());
+        minDist = dists.back();
+        problemFace = face;
+        problemRegion = elem;
+        intersection = intersect;
+        // do not need to check whether the move is valid since the valid
+        // ones should have been taken care of by this point
       }
       else
-      	dists.push_back(minDist + 1.0 + tol);
+        dists.push_back(newDirection.getLength());
     }
   }
 
@@ -363,19 +722,19 @@ bool FirstProblemPlane::find()
   coplanarProblemRegions.n = 0;
 
   if (!problemRegion) {
-    problemRegion = problemRegions.e[0];
+    problemRegion = problemRegions[0];
     problemFace = getTetFaceOppositeVert(mesh, problemRegion, vert);
     coplanarProblemRegions.n = n;
-    for (int i = 0; i < n; i++) {
-      coplanarProblemRegions.e[i] = problemRegions.e[i];
+    for (size_t i = 0; i < n; i++) {
+      coplanarProblemRegions.e[i] = problemRegions[i];
     }
   }
   else {
     minDist += tol;
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       if (dists[i] < minDist) {
-	coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions.e[i];
-	coplanarProblemRegions.n++;
+        coplanarProblemRegions.e[coplanarProblemRegions.n] = problemRegions[i];
+        coplanarProblemRegions.n++;
       }
     }
   }
@@ -401,8 +760,8 @@ void FirstProblemPlane::findCandidateEdges(std::vector<Entity*> &edges)
   Entity* edge;
   Entity* v;
 
-  for (int i = 0; i < commEdges.n; i++) {
-    edge = commEdges.e[i];
+  for (size_t i = 0; i < commEdges.size(); i++) {
+    edge = commEdges[i];
     Downward dv;
     mesh->getDownward(edge, 0, dv);
     (dv[0] == vert) ? v = dv[1] : v = dv[0];
@@ -476,10 +835,8 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
     Downward edges;
     int nDownEdges = mesh->getDownward(cpRegions.e[0], 1, edges);
     for (int i = 0; i < nDownEdges; i++) {
-      if (isLowInHigh(mesh, edges[i], vert)) {
-	commEdges.e[commEdges.n] = edges[i];
-	commEdges.n++;
-      }
+      if (isLowInHigh(mesh, edges[i], vert))
+        commEdges.push_back(edges[i]);
     }
     return;
   }
@@ -517,12 +874,9 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
       	if (!isLowInHigh(mesh, region, edges[i])) {
       	  flag = 0;
       	  break;
-	}
-	if (flag) {
-	  commEdges.e[commEdges.n] = edges[i];
-	  commEdges.n++;
-	}
+        }
       }
+      if (flag) commEdges.push_back(edges[i]);
     }
   }
 }

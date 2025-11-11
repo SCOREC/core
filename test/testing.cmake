@@ -363,12 +363,21 @@ if(ENABLE_SIMMETRIX)
     "pipe_unif.smb"
     "pipe.smb")
   set_test_depends(TESTS snap_serial DEPENDS uniform_serial)
+  mpi_test(adapt_deformed_slab 1
+    ./aniso_adapt_sim
+    "${MESHES}/deformedSlab/sim_model.x_t"
+    "${MESHES}/deformedSlab/sim_model.smd"
+    "${MESHES}/deformedSlab/sim_mesh.sms")
 endif()
 if(ENABLE_ZOLTAN)
   mpi_test(ma_serial 1
     ./ma_test
     "${MDIR}/pipe.${GXT}"
     "pipe.smb")
+  mpi_test(adapt_cube 1
+    ./aniso_adapt
+    "${MESHES}/cube/cube.dmg"
+    "${MESHES}/cube/pumi670/cube.smb")
   mpi_test(aniso_ma_serial 1
     ./aniso_ma_test
     "${MESHES}/cube/cube.dmg"
@@ -1014,6 +1023,7 @@ if(PUMI_ENABLE_CAPSTONE)
   endif()
   mpi_test(cap_inClosureOf 1 ./cap_inClosureOf ${MESHES}/cap/cube_surf_only.cre)
   mpi_test(cap_closestPoint 1 ./cap_closestPoint ${MESHES}/cap/cube_surf_only.cre)
+  mpi_test(adapt_curved_cube 1 ./aniso_adapt_cap ${MESHES}/curvedCube/cap_mesh.cre)
   if(PUMI_HAS_CAPSTONE_SIZINGMETRICTOOL)
     mpi_test(cap_smooth 1 ./cap_smooth)
   endif()

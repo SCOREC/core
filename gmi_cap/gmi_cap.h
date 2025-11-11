@@ -57,6 +57,7 @@ struct gmi_ent;
  * \note This call is required before calling any other gmi_cap functions.
  */
 void gmi_cap_start(void);
+
 /**
  * \brief Finalize gmi_cap library.
  *
@@ -93,6 +94,15 @@ struct gmi_model* gmi_cap_load(const char* creFileName);
  * \param creFileName filename for the new CRE file.
  */
 void gmi_cap_write(struct gmi_model* model, const char* creFileName);
+
+/**
+ * \brief Test if model is a Capstone gmi_model.
+ *
+ * \param model An abstract gmi_model which may have an underlying Capstone
+ * database.
+ * \return 1 if model is a Capstone gmi_model and 0 otherwise.
+ */
+int gmi_cap_test(struct gmi_model* model);
 
 #ifdef __cplusplus
 

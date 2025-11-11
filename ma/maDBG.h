@@ -25,6 +25,11 @@ void writeMesh(ma::Mesh* m,
     const char* prefix,
     const char* suffix);
 
+/* Creates a field to contain the model classification for each vertex. Which can be
+  printed to a file using writeMesh() with dim=0. */
+void addClassification(ma::Adapt* a,
+    const char* fieldName);
+
 void addTargetLocation(ma::Adapt* a,
     const char* fieldName);
 
