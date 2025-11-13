@@ -192,10 +192,10 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
 
   //std::cout << "FOUND " << found << " " << path.size() << " " << path << " " << index << std::endl;
 
-#ifndef NDEBUG // debug settings, cmake double negative....
-  const auto prefix = path.substr(index) + "_debug" + post;
-#else // optimised setting
+#ifdef NDEBUG //release build
   const auto prefix = path.substr(index) + "_release" + post;
+#else //debug build
+  const auto prefix = path.substr(index) + "_debug" + post;
 #endif
 
   const auto dim = m->getDimension();

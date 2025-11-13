@@ -579,7 +579,11 @@ static mds_id add_ent(struct mds* m, int t, mds_id* from)
 
 static void check_ent(struct mds* m, mds_id e)
 {
-#ifndef NDEBUG
+#ifdef NDEBUG // release build
+  /* good luck ! */
+  (void)m;
+  (void)e;
+#else //debug build
   int t;
   mds_id i;
   PCU_ALWAYS_ASSERT(e >= 0);
@@ -588,10 +592,6 @@ static void check_ent(struct mds* m, mds_id e)
   i = INDEX(e);
   PCU_ALWAYS_ASSERT(i < m->end[t]);
   PCU_ALWAYS_ASSERT(m->free[t][i] == MDS_LIVE);
-#else
-  /* good luck ! */
-  (void)m;
-  (void)e;
 #endif
 }
 
