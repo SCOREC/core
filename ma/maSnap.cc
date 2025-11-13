@@ -39,6 +39,8 @@ static bool isCapstone(apf::Mesh* m) {
   #endif
 }
 
+std::map<Model*, std::pair<Vector, Vector>> boundingBoxes;
+
 static size_t isSurfUnderlyingFaceDegenerate(
     apf::Mesh* m,
     Model* g, // this the model entity in question
@@ -53,11 +55,20 @@ static size_t isSurfUnderlyingFaceDegenerate(
   Vector bmin;
   Vector bmax;
 
-  m->boundingBox(g, bmin, bmax);
+  auto it = boundingBoxes.find(g);
+  if (it != boundingBoxes.end()) {
+    bmin = it->second.first;
+    bmax = it->second.second;
+  }
+  else{
+    m->boundingBox(g, bmin, bmax);
+    boundingBoxes.insert(it, {g, {bmin, bmax}});
+  }
+
   double tol = 1.0e-6 * (bmax - bmin).getLength();
 
-  bool isPeriodic[2];
-  double range[2][2];
+  bool isPeriodic[2] = {0};
+  double range[2][2] = {0};
   int numPeriodicDims = 0;
   for (int i = 0; i < md; i++) {
     isPeriodic[i] = m->getPeriodicRange(g,i,range[i]);

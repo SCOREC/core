@@ -221,11 +221,21 @@ void Mesh::getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
   gmi_reparam(getModel(), from, &from_p[0], to, &p[0]);
 }
 
+std::map<std::pair<ModelEntity*, int>, std::pair<double*, bool>> periodicRanges;
 bool Mesh::getPeriodicRange(ModelEntity* g, int axis, double range[2])
 {
-  gmi_ent* e = (gmi_ent*)g;
-  gmi_range(getModel(), e, axis, range);
-  return gmi_periodic(getModel(), e, axis);
+  // auto it = periodicRanges.find({g, axis});
+  // if (it != periodicRanges.end()) {
+  //   range = it->second.first;
+  //   return it->second.second;
+  // }
+  // else{
+    gmi_ent* e = (gmi_ent*)g;
+    gmi_range(getModel(), e, axis, range);
+    bool output = gmi_periodic(getModel(), e, axis);
+    // periodicRanges[{g, axis}] = {range, output};
+    return output;
+  // }
 }
 
 void Mesh::getClosestPoint(ModelEntity* g, Vector3 const& from,
