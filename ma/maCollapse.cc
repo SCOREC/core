@@ -612,31 +612,78 @@ static int DEBUG=0;
 void printCollapseInfo(Collapse& collapse, Entity* edge, Entity* vert)
 {
   Adapt* adapt = collapse.adapt;
-  const Vector target(1502.327985, 375.402966, 174.096195);
-  Entity* found = 0;
-  for (Entity* shape : collapse.elementsToKeep) {
-    Entity* verts[4];
-    adapt->mesh->getDownward(shape, 0, verts);
-    for (Entity* v : verts) {
-      Vector pos = getPosition(adapt->mesh, v);
-      if (apf::areClose(pos, target, 1e-5)) found = v;
+  Mesh* m = adapt->mesh;
+  // const Vector target(1502.327985, 375.402966, 174.096195);
+  // Entity* found = 0;
+  // for (Entity* shape : collapse.elementsToKeep) {
+  //   Entity* verts[4];
+  //   adapt->mesh->getDownward(shape, 0, verts);
+  //   for (Entity* v : verts) {
+  //     Vector pos = getPosition(adapt->mesh, v);
+  //     if (apf::areClose(pos, target, 1e-5)) found = v;
+  //   }
+  // }
+  // if (!found) return;
+  // if (++DEBUG != 4) return;
+
+
+  if (m->getModelType(m->toModel(edge)) != 2) return;
+  Vector prev = getPosition(m, collapse.vertToCollapse);
+  Vector target = getPosition(m, collapse.vertToKeep);
+  m->setPoint(collapse.vertToCollapse, 0, target);
+  double worstQual = 1;
+  Entity* worst;
+  for (Entity* e : collapse.elementsToKeep) {
+    double qual = adapt->sizeField->measure(e);
+    if (qual < worstQual) {
+      worstQual = qual;
+      worst = e;
     }
   }
-  if (!found) return;
-  if (++DEBUG != 4) return;
+  m->setPoint(collapse.vertToCollapse, 0, prev);
+  if (cbrt(worstQual) > 0.01) return;
+  printf("worst qual before %f\n", cbrt(adapt->sizeField->measure(worst)));
+  printf("worst qual after %f\n", cbrt(worstQual));
+
 
   ma_dbg::addClassification(adapt);
   ma_dbg::flagEntity(adapt, 1, "edge_to_collapse", &edge, 1);
   ma_dbg::flagEntity(adapt, 0, "vert_to_collapse", &vert, 1);
 
+  ma_dbg::flagEntityAllDim(adapt, 3, "worst_entity", &worst, 1);
   std::vector<Entity*> elemsToCollapse(collapse.elementsToCollapse.begin(), collapse.elementsToCollapse.end());
   ma_dbg::flagEntityAllDim(adapt, 3, "tets_to_collapse", &elemsToCollapse[0], elemsToCollapse.size());
   std::vector<Entity*> elemsToKeep(collapse.elementsToKeep.begin(), collapse.elementsToKeep.end());
   ma_dbg::flagEntityAllDim(adapt, 3, "tets_to_keep", &elemsToKeep[0], elemsToKeep.size());
 
-  apf::writeVtkFiles("mesh_tets", adapt->mesh, 3);
-  apf::writeVtkFiles("mesh_faces", adapt->mesh, 2);
-  apf::writeVtkFiles("mesh_edges", adapt->mesh, 1);
+  apf::writeVtkFiles("mesh_tets_before", adapt->mesh, 3);
+  apf::writeVtkFiles("mesh_faces_before", adapt->mesh, 2);
+  apf::writeVtkFiles("mesh_edges_before", adapt->mesh, 1);
+
+  collapse.rebuildElements();
+  collapse.fitElements();
+  collapse.unmark();
+  collapse.destroyOldElements();
+
+  worstQual = 1;
+  for (Entity* e : collapse.newElements) {
+    double qual = adapt->sizeField->measure(e);
+    if (qual < worstQual) {
+      worstQual = qual;
+      worst = e;
+    }
+  }
+
+  printf("worst qual %f\n", cbrt(worstQual));
+  ma_dbg::addClassification(adapt);
+  ma_dbg::flagEntityAllDim(adapt, 3, "worst_entity", &worst, 1);
+  std::vector<Entity*> newElements(collapse.newElements.begin(), collapse.newElements.end());
+  ma_dbg::flagEntityAllDim(adapt, 3, "new_tets", &newElements[0], newElements.size());
+
+  apf::writeVtkFiles("mesh_tets_after", adapt->mesh, 3);
+  apf::writeVtkFiles("mesh_faces_after", adapt->mesh, 2);
+  apf::writeVtkFiles("mesh_edges_after", adapt->mesh, 1);
+
   exit(0);
 }
 
