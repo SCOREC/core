@@ -16,7 +16,7 @@
 #include "maBalance.h"
 #include "maLayer.h"
 #include "maDBG.h"
-#include "maShapeNew.h"
+#include "maFixShape.h"
 #include <pcu_util.h>
 #include <iostream>
 #include <valgrind/callgrind.h>

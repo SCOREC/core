@@ -8,7 +8,7 @@
   of the SCOREC Non-Commercial License this program is distributed under.
 
 *******************************************************************************/
-#include "maShapeNew.h"
+#include "maFixShape.h"
 #include "maSize.h"
 #include "maAdapt.h"
 #include "maSnap.h"
