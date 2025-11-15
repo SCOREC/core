@@ -622,25 +622,22 @@ void printCollapseInfo(Collapse& collapse, Entity* edge, Entity* vert)
       if (apf::areClose(pos, target, 1e-5)) found = v;
     }
   }
+  if (!found) return;
+  if (++DEBUG != 4) return;
 
-  if (found && ++DEBUG == 4) {
-    ma_dbg::addClassification(adapt);
-    ma_dbg::flagEntity(adapt, 1, "edge_to_collapse", &edge, 1);
-    ma_dbg::flagEntity(adapt, 0, "vert_to_collapse", &vert, 1);
-    apf::Adjacent tets;
-    adapt->mesh->getAdjacent(vert, 3, tets);
-    ma_dbg::flagEntityAllDim(adapt, 3, "adjacent_tets", &tets[0], tets.size());
+  ma_dbg::addClassification(adapt);
+  ma_dbg::flagEntity(adapt, 1, "edge_to_collapse", &edge, 1);
+  ma_dbg::flagEntity(adapt, 0, "vert_to_collapse", &vert, 1);
 
-    std::vector<Entity*> elemsToCollapse(collapse.elementsToCollapse.begin(), collapse.elementsToCollapse.end());
-    ma_dbg::flagEntity(adapt, 3, "tets_to_collapse", &elemsToCollapse[0], elemsToCollapse.size());
-    std::vector<Entity*> elemsToKeep(collapse.elementsToKeep.begin(), collapse.elementsToKeep.end());
-    ma_dbg::flagEntity(adapt, 3, "tets_to_keep", &elemsToKeep[0], elemsToKeep.size());
+  std::vector<Entity*> elemsToCollapse(collapse.elementsToCollapse.begin(), collapse.elementsToCollapse.end());
+  ma_dbg::flagEntityAllDim(adapt, 3, "tets_to_collapse", &elemsToCollapse[0], elemsToCollapse.size());
+  std::vector<Entity*> elemsToKeep(collapse.elementsToKeep.begin(), collapse.elementsToKeep.end());
+  ma_dbg::flagEntityAllDim(adapt, 3, "tets_to_keep", &elemsToKeep[0], elemsToKeep.size());
 
-    apf::writeVtkFiles("mesh_tets", adapt->mesh, 3);
-    apf::writeVtkFiles("mesh_faces", adapt->mesh, 2);
-    apf::writeVtkFiles("mesh_edges", adapt->mesh, 1);
-    exit(0);
-  }
+  apf::writeVtkFiles("mesh_tets", adapt->mesh, 3);
+  apf::writeVtkFiles("mesh_faces", adapt->mesh, 2);
+  apf::writeVtkFiles("mesh_edges", adapt->mesh, 1);
+  exit(0);
 }
 
 bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double qualityToBeat)
