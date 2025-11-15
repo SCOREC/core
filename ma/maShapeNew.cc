@@ -285,29 +285,30 @@ bool FixShape::isTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
   return bit==3 || bit==5 || bit==6;
 }
 
-void FixShape::fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
+bool FixShape::fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
 {
-  if (collapseRegion(tet, problemEnts)) {numRegionCollapse++; return;}
-  if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return;}
-  if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return;}
-  if (splitReposition(problemEnts[0])) {numSplitReposition++; return;}
-  if (splitReposition(problemEnts[1])) {numSplitReposition++; return;}
+  if (collapseRegion(tet, problemEnts)) {numRegionCollapse++; return true;}
+  if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return true;}
+  if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return true;}
+  if (splitReposition(problemEnts[0])) {numSplitReposition++; return true;}
+  if (splitReposition(problemEnts[1])) {numSplitReposition++; return true;}
   Entity* faces[4];
   a->mesh->getDownward(tet, 2, faces);
   for (int i=0; i<4; i++) {
     if (isLowInHigh(a->mesh, faces[i], problemEnts[0])) {
       Entity* v0 = getTriVertOppositeEdge(a->mesh, faces[i], problemEnts[0]);
-      if (splitCollapse.run(problemEnts[0], v0)) {numEdgeSplitCollapse++; return;}
+      if (splitCollapse.run(problemEnts[0], v0)) {numEdgeSplitCollapse++; return true;}
     }
     else {
       Entity* v0 = getTriVertOppositeEdge(a->mesh, faces[i], problemEnts[1]);
-      if (splitCollapse.run(problemEnts[1], v0)) {numEdgeSplitCollapse++; return;}
+      if (splitCollapse.run(problemEnts[1], v0)) {numEdgeSplitCollapse++; return true;}
     }
   }
-  if (doubleSplitCollapse.run(problemEnts)) {numDoubleSplitCollapse++; return;}
+  if (doubleSplitCollapse.run(problemEnts)) {numDoubleSplitCollapse++; return true;}
+  return false;
 }
 
-void FixShape::fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
+bool FixShape::fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
 {
   Entity* tetEdges[6];
   a->mesh->getDownward(tet, 1, tetEdges);
@@ -320,17 +321,18 @@ void FixShape::fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
       setFlag(a, keep, DONT_COLLAPSE);
       bool success = collapseEdge(tetEdges[i]);
       if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
-      if (success) {numCollapse++; return;}
+      if (success) {numCollapse++; return true;}
     }
   Entity* faceEdges[3];
   a->mesh->getDownward(problemEnts[0], 1, faceEdges);
-  if (edgeSwap->run(faceEdges[0])) {numEdgeSwap++; return;}
-  if (edgeSwap->run(faceEdges[1])) {numEdgeSwap++; return;}
-  if (edgeSwap->run(faceEdges[2])) {numEdgeSwap++; return;}
-  if (runFaceSwap(a, problemEnts[0], true)) {numFaceSwap++; return;}
+  if (edgeSwap->run(faceEdges[0])) {numEdgeSwap++; return true;}
+  if (edgeSwap->run(faceEdges[1])) {numEdgeSwap++; return true;}
+  if (edgeSwap->run(faceEdges[2])) {numEdgeSwap++; return true;}
+  if (runFaceSwap(a, problemEnts[0], true)) {numFaceSwap++; return true;}
   Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
-  if (splitCollapse.run(problemEnts[1], v)) {numEdgeSplitCollapse++; return;}
-  if (faceSplitCollapse.run(problemEnts[0], tet)) {numFaceSplitCollapse++; return;}
+  if (splitCollapse.run(problemEnts[1], v)) {numEdgeSplitCollapse++; return true;}
+  if (faceSplitCollapse.run(problemEnts[0], tet)) {numFaceSplitCollapse++; return true;}
+  return false;
 }
 
 void FixShape::apply()
@@ -385,23 +387,23 @@ bool FixShape::isShortEdge(Entity* tet)
   return true;
 }
 
-void FixShape::printBadShape(Entity* badTet)
+void FixShape::printBadShape(Entity* problemTet)
 {
   Entity* worstTri;
   Entity* problemEnts[4];
-  if (isShortEdge(badTet)) print(a->mesh->getPCU(), "Worst is short\n");
-  else if (isOneLargeAngle(badTet, worstTri)) print(a->mesh->getPCU(), "Worst is one large angle\n");
-  else if (isTwoLargeAngles(badTet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
+  if (isShortEdge(problemTet)) print(a->mesh->getPCU(), "Worst is short\n");
+  else if (isOneLargeAngle(problemTet, worstTri)) print(a->mesh->getPCU(), "Worst is one large angle\n");
+  else if (isTwoLargeAngles(problemTet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
   else print(a->mesh->getPCU(), "Worst is three large angles\n");
 
   ma_dbg::addClassification(a);
 
   EntitySet bad;
-  bad.insert(badTet);
+  bad.insert(problemTet);
   EntitySet adjacent1 = getNextLayer(a, bad);
   EntitySet adjacent2 = getNextLayer(a, adjacent1);
 
-  ma_dbg::flagEntityAllDim(a, 3, "worst_tet", &badTet, 1);
+  ma_dbg::flagEntityAllDim(a, 3, "worst_tet", &problemTet, 1);
   ma_dbg::flagEntity(a, 3, "worst_tet", bad);
   ma_dbg::flagEntity(a, 3, "worst_tet_adj", adjacent1);
   ma_dbg::flagEntity(a, 3, "worst_tet_adj2", adjacent2);

@@ -67,8 +67,8 @@ class FixShape : public Operator
   
   bool fixShortEdge(Entity* tet);
   bool fixOneLargeAngle(Entity* tet);
-  void fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4]);
-  void fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4]);
+  bool fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4]);
+  bool fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4]);
 
   void resetCounters();
   int collect(int val);
