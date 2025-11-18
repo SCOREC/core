@@ -85,6 +85,10 @@ target_link_libraries(ma
      pcu
    )
 
+if (ENABLE_CAPSTONE)
+target_link_libraries(ma PRIVATE apf_cap)
+endif()
+
 scorec_export_library(ma)
 
 bob_end_subdir()

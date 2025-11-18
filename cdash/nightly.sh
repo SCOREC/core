@@ -11,7 +11,7 @@ unset MODULEPATH
 module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
 module load gcc/12.3.0-iil3lno
 module load mpich/4.1.1-xpoyz4t
-module load simmetrix-simmodsuite/2024.0-240119dev-7abimo4
+module load simmetrix-simmodsuite/2025.0-250108dev-llxq6sk
 module load zoltan/3.83-hap4ggo
 module load cmake/3.26.3-2duxfcd
 module load cgns/develop-cc4dfwp
