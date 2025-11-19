@@ -116,6 +116,7 @@ void adapt(Input* in)
 
   double t1 = pcu::Time();
   print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
+  m->verify();
   apf::writeVtkFiles("mesh_tets_end", m, 3);
   printHistogramStats(a);
 
