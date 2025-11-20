@@ -59,7 +59,7 @@ class FixShape : public Operator
   Vector avgCavityPos(Entity* vert);
   void repositionVertex(Entity* vert);
   bool splitReposition(Entity* edge);
-  bool collapseRegion(Entity* tet, Entity* problemEnts[4]);
+  bool collapseRegion(Entity* tet);
   
   bool isShortEdge(Entity* tet);
   bool isOneLargeAngle(Entity* tet, Entity*& worstTriangle);

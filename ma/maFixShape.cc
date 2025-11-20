@@ -178,7 +178,7 @@ void FixShape::repositionVertex(Entity* vert)
 
 bool FixShape::splitReposition(Entity* edge)
 {
-  if (mesh->getModelType(mesh->toModel(edge)) != 3) return false;
+  if (!isInModelRegion(mesh, edge)) return false;
   if (!split.setEdges(&edge, 1))
     return false;
   double worstQuality = getWorstQuality(a,split.getTets());
@@ -229,8 +229,9 @@ Entity* FixShape::getLongestEdge(Entity* edges[3])
 
 bool FixShape::fixOneLargeAngle(Entity* tet)
 {
+  if (collapseRegion(tet)) {numRegionCollapse++; return true;}
   Entity* worstTriangle;
-  if (!isOneLargeAngle(tet, worstTriangle)) return false; 
+  if (!isOneLargeAngle(tet, worstTriangle)) return false;
   Entity* edges[3];
   a->mesh->getDownward(worstTriangle, 1, edges);
   Entity* longestEdge = getLongestEdge(edges);
@@ -243,7 +244,7 @@ bool FixShape::fixOneLargeAngle(Entity* tet)
   return false;
 }
 
-bool FixShape::collapseRegion(Entity* tet, Entity* problemEnts[4]) 
+bool FixShape::collapseRegion(Entity* tet) 
 {
   Entity* faces[4];
   Entity* surface[4];
@@ -251,17 +252,25 @@ bool FixShape::collapseRegion(Entity* tet, Entity* problemEnts[4])
   mesh->getDownward(tet, 2, faces);
   int s = 0, i = 0;
   for (int f=0; f<4; f++) {
-    if (mesh->getModelType(mesh->toModel(faces[f])) == 2)
+    if (isOnModelFace(mesh, faces[f]))
       surface[s++] = faces[f];
     else interior[i++] = faces[f];
   }
-  if (s != 2 || i != 2) return false;
-  Entity* interiorEdge = mesh->getModelType(mesh->toModel(problemEnts[0])) == 3 ? problemEnts[0] : problemEnts[1];
-  Entity* surfaceEdge = problemEnts[0] == interiorEdge ? problemEnts[1] : problemEnts[0];
-  if (mesh->getModelType(mesh->toModel(surfaceEdge)) == 1)
-    return false;
-  if (!isLowInHigh(mesh, surface[0], surfaceEdge) || !isLowInHigh(mesh, surface[1], surfaceEdge))
-    return false;
+  if (s != 2 || i != 2) return false; //Only hanlding one case for now
+
+  Entity* interiorEdge = 0;
+  Entity* surfaceEdge = 0;
+  Entity* edges[6];
+  mesh->getDownward(tet, 1, edges);
+  for (Entity* edge : edges) {
+    if (isLowInHigh(mesh, surface[0], edge) && isLowInHigh(mesh, surface[1], edge))
+      surfaceEdge = edge;
+    else if (isLowInHigh(mesh, interior[0], edge) && isLowInHigh(mesh, interior[1], edge))
+      interiorEdge = edge;
+  }
+  if (interiorEdge==0 || surfaceEdge==0) return false;
+  if (isOnModelEdge(mesh, surfaceEdge)) return false;
+
   Model* modelFace = mesh->toModel(surface[0]);
   mesh->destroy(tet);
   mesh->destroy(surface[0]);
@@ -287,7 +296,7 @@ bool FixShape::isTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
 
 bool FixShape::fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
 {
-  if (collapseRegion(tet, problemEnts)) {numRegionCollapse++; return true;}
+  if (collapseRegion(tet)) {numRegionCollapse++; return true;}
   if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return true;}
   if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return true;}
   if (splitReposition(problemEnts[0])) {numSplitReposition++; return true;}
@@ -416,7 +425,7 @@ void FixShape::printBadShape(Entity* problemTet)
     Entity* faces[4];
     mesh->getDownward(tet, 2, faces);
     for (Entity* face : faces)
-      if (mesh->getModelType(mesh->toModel(face)) == 2)
+      if (isOnModelFace(mesh, face))
         badFaces.push_back(face);
   }
   ma_dbg::flagEntity(a, 2, "bad_surface_tets", &badFaces[0], badFaces.size());
