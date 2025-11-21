@@ -246,41 +246,42 @@ bool FixShape::fixOneLargeAngle(Entity* tet)
 
 bool FixShape::collapseRegion(Entity* tet) 
 {
-  Entity* faces[4];
-  Entity* surface[4];
   Entity* interior[4];
+  Entity* surface[4];
+  Entity* faces[4];
   mesh->getDownward(tet, 2, faces);
-  int s = 0, i = 0;
+  int numSurface = 0, numInterior = 0;
   for (int f=0; f<4; f++) {
     if (isOnModelFace(mesh, faces[f]))
-      surface[s++] = faces[f];
-    else interior[i++] = faces[f];
+      surface[numSurface++] = faces[f];
+    else interior[numInterior++] = faces[f];
   }
-  if (s != 2 || i != 2) return false; //Only hanlding one case for now
+  if (numSurface == 2 && numInterior == 2) {
+    Entity* interiorEdge = 0;
+    Entity* surfaceEdge = 0;
+    Entity* edges[6];
+    mesh->getDownward(tet, 1, edges);
+    for (Entity* edge : edges) {
+      if (isLowInHigh(mesh, surface[0], edge) && isLowInHigh(mesh, surface[1], edge))
+        surfaceEdge = edge;
+      else if (isLowInHigh(mesh, interior[0], edge) && isLowInHigh(mesh, interior[1], edge))
+        interiorEdge = edge;
+    }
+    if (interiorEdge==0 || surfaceEdge==0) return false;
+    if (isOnModelEdge(mesh, surfaceEdge)) return false;
 
-  Entity* interiorEdge = 0;
-  Entity* surfaceEdge = 0;
-  Entity* edges[6];
-  mesh->getDownward(tet, 1, edges);
-  for (Entity* edge : edges) {
-    if (isLowInHigh(mesh, surface[0], edge) && isLowInHigh(mesh, surface[1], edge))
-      surfaceEdge = edge;
-    else if (isLowInHigh(mesh, interior[0], edge) && isLowInHigh(mesh, interior[1], edge))
-      interiorEdge = edge;
+    Model* modelFace = mesh->toModel(surface[0]);
+    mesh->destroy(tet);
+    mesh->destroy(surface[0]);
+    mesh->destroy(surface[1]);
+    mesh->destroy(surfaceEdge);
+
+    mesh->setModelEntity(interior[0], modelFace);
+    mesh->setModelEntity(interior[1], modelFace);
+    mesh->setModelEntity(interiorEdge, modelFace);
+    return true;
   }
-  if (interiorEdge==0 || surfaceEdge==0) return false;
-  if (isOnModelEdge(mesh, surfaceEdge)) return false;
-
-  Model* modelFace = mesh->toModel(surface[0]);
-  mesh->destroy(tet);
-  mesh->destroy(surface[0]);
-  mesh->destroy(surface[1]);
-  mesh->destroy(surfaceEdge);
-  
-  mesh->setModelEntity(interior[0], modelFace);
-  mesh->setModelEntity(interior[1], modelFace);
-  mesh->setModelEntity(interiorEdge, modelFace);
-  return true;
+  return false;
 }
 
 bool FixShape::isTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
