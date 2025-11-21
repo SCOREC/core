@@ -9,7 +9,7 @@
 #include "apf2mth.h"
 #include <mthQR.h>
 #include <pcu_util.h>
-#include <../Eigen/Dense>
+#include <Eigen/Dense>
 
 namespace apf {
 

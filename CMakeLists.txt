@@ -4,7 +4,7 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # This is the top level CMake file for the SCOREC build
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 project(SCOREC VERSION 4.1.0 LANGUAGES CXX C)
 
@@ -35,6 +35,16 @@ elseif(ENABLE_OMEGA_H)
   message(STATUS "enabling cxx17")
   bob_set_cxx_standard(17)
 endif()
+
+
+include(FetchContent)
+FetchContent_Declare(
+  eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG        5.0
+)
+FetchContent_MakeAvailable(eigen)
+include_directories(${eigen_SOURCE_DIR})
 
 #
 # option related to MPI
@@ -205,7 +215,6 @@ add_subdirectory(dsp)
 add_subdirectory(omega_h)
 add_subdirectory(gmi_cap)
 add_subdirectory(apf_cap)
-add_subdirectory(Eigen)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)

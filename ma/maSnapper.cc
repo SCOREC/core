@@ -357,9 +357,10 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
   else {
     Entity* edges[3];
     mesh->getDownward(ents[0], 1, edges);
-    for (int i=0; i<3; i++) (edgeSwap->run(edges[i])) { numSwap++; return true; }
+    for (int i=0; i<3; i++) 
+      if (edgeSwap->run(edges[i])) { numSwap++; return true; }
     // if (runFaceSwap(adapt, ents[0], false)) { numSwap++; return true; }
-    if (splitCollapse.run(ents[1], FPP->vert, qual)) { numSplitCollapse++; return true; s}
+    if (splitCollapse.run(ents[1], FPP->vert, qual)) { numSplitCollapse++; return true; }
   }
   return false;
 }
