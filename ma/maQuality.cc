@@ -26,7 +26,6 @@ bool areTetsValid(Mesh* m, EntityArray& tets)
   size_t n = tets.getSize();
   for (size_t i = 0; i < n; ++i){
     ma::getVertPoints(m,tets[i],v);
-    // if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0.00001)
     if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
       return false;
   }

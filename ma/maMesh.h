@@ -16,7 +16,6 @@
 #include <apfMesh2.h>
 #include <apfMatrix.h>
 #include <set>
-#include <map>
 
 namespace ma {
 

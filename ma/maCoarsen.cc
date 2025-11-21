@@ -456,10 +456,9 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
   }
 };
 
-void coarsenMultiple(Adapt* a)
+bool coarsenMultiple(Adapt* a)
 {
-  if (!a->input->shouldCoarsen)
-    return;
+  if (!a->input->shouldCoarsen) return false;
   double t0 = pcu::Time();
   CollapseAll collapseAll(a);
   int totalSuccess = 0;
@@ -474,6 +473,7 @@ void coarsenMultiple(Adapt* a)
 
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", totalSuccess, t1-t0);
+  return true;
 }
 
 

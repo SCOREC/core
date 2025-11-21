@@ -31,7 +31,6 @@ static double PI = 3.14159265359;
 namespace ma_dbg {
 
 // If no dimension specified then it will write the greatest dimension to the file.
-// If no dimension specified then it will write the greatest dimension to the file.
 void writeMesh(ma::Mesh* m,
     const char* prefix,
     const char* suffix,
