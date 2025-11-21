@@ -44,12 +44,12 @@
 
 namespace
 {
-#ifndef NDEBUG                 // debug settings, cmake double negative....
-const bool debugOutput = true; // probably will not get away with c++17
-//static constexpr bool debugOutput = true; // probably will not get away with c++17
-#else // optimised setting
+#ifdef NDEBUG // optimised build
 const bool debugOutput = false; // probably will not get away with c++17
                                 //static constexpr bool debugOutput = false; // probably will not get away with c++17
+#else // debug build
+const bool debugOutput = true; // probably will not get away with c++17
+                               //static constexpr bool debugOutput = true; // probably will not get away with c++17
 #endif
 
 static std::string SupportedCGNSElementTypeToString(const CGNS_ENUMT(ElementType_t) & elementType)

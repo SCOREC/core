@@ -15,11 +15,20 @@
  * it will collapse to simplify the region and attempt other operators such as
  * swap, split collapse, double split collapse.
 */
+/**
+ * \file maSnapper.cc
+ * \brief Definition of maSnapper.h file.
+ * This file contains functions to move a point to the model surface. As described
+ * in Li's thesis it will first try to collapse in the target direction. Otherwise 
+ * it will collapse to simplify the region and attempt other operators such as
+ * swap, split collapse, double split collapse.
+*/
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
 #include "maFaceSwap.h"
 #include "maSnap.h"
+#include "maDBG.h"
 #include "maDBG.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
@@ -32,8 +41,10 @@ namespace ma {
 Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSplitCollapse(a)
 {
   adapt = a;
+  adapt = a;
   snapTag = st;
   collapse.Init(a);
+  edgeSwap = makeEdgeSwap(a);
   edgeSwap = makeEdgeSwap(a);
   vert = 0;
 }

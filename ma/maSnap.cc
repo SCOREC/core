@@ -12,6 +12,7 @@
 #include "maOperator.h"
 #include "maSnapper.h"
 #include "maRefine.h"
+#include "maRefine.h"
 #include "maMatchedSnapper.h"
 #include "maLayer.h"
 #include "maMatch.h"
@@ -21,6 +22,12 @@
 #include <lionPrint.h>
 #include <iostream>
 #include <algorithm>
+#include <iostream>
+#include <fstream>
+
+#ifdef PUMI_HAS_CAPSTONE
+#include "gmi_cap.h"
+#endif
 #include <iostream>
 #include <fstream>
 
