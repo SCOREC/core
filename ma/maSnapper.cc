@@ -324,6 +324,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
   Entity* ents[4] = {0};
   double area[4];
   int bit = getTetStats(adapt, FPP->vert, FPP->problemFace, FPP->problemRegion, ents, area);
+  double qual = adapt->input->validQuality;
 
   double min=area[0];
   for(int i=1; i<4; i++) 
@@ -337,14 +338,8 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       if (adapt->sizeField->measure(edges[i]) > adapt->sizeField->measure(longest))
         longest = edges[i];
 
-    if (edgeSwap->run(longest)) {
-      numSwap++;
-      return true;
-    }
-    if (splitCollapse.run(longest, FPP->vert, adapt->input->validQuality)) {
-      numSplitCollapse++;
-      return true;
-    }
+    if (edgeSwap->run(longest)) { numSwap++; return true; }
+    if (splitCollapse.run(longest, FPP->vert, qual)) { numSplitCollapse++; return true; }
   }
 
   if (ents[0] == 0)
@@ -352,39 +347,19 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 
   // two large dihedral angles -> key problem: two mesh edges
   if (bit==3 || bit==5 || bit==6) {
-    for (int i=0; i<2; i++)
-      if (edgeSwap->run(ents[i])) {
-        numSwap++;
-        return true;
-      }
-    for (int i=0; i<2; i++)
-      if (splitCollapse.run(ents[i], FPP->vert, adapt->input->validQuality)) {
-        numSplitCollapse++;
-        return true;
-      }
-    if (doubleSplitCollapse.run(ents, adapt->input->validQuality)) {
-      numSplitCollapse++;
-      return true;
-    }
+    if (edgeSwap->run(ents[0])) { numSwap++; return true; }
+    if (edgeSwap->run(ents[1])) { numSwap++; return true; }
+    if (splitCollapse.run(ents[0], FPP->vert, qual)) { numSplitCollapse++; return true; }
+    if (splitCollapse.run(ents[1], FPP->vert, qual)) { numSplitCollapse++; return true; }
+    if (doubleSplitCollapse.run(ents, qual)) { numSplitCollapse++; return true; }
   }
   // three large dihedral angles -> key entity: a mesh face
   else {
     Entity* edges[3];
     mesh->getDownward(ents[0], 1, edges);
-    for (int i=0; i<3; i++) {
-      if (edgeSwap->run(edges[i])) {
-        numSwap++;
-        return true;
-      }
-    }
-    // if (runFaceSwap(adapt, ents[0], false)) {
-    //   numSwap++;
-    //   return true;
-    // }
-    if (splitCollapse.run(ents[1], FPP->vert, adapt->input->validQuality)) {
-      numSplitCollapse++;
-      return true;
-    }
+    for (int i=0; i<3; i++) (edgeSwap->run(edges[i])) { numSwap++; return true; }
+    // if (runFaceSwap(adapt, ents[0], false)) { numSwap++; return true; }
+    if (splitCollapse.run(ents[1], FPP->vert, qual)) { numSplitCollapse++; return true; s}
   }
   return false;
 }
