@@ -72,30 +72,6 @@ void adapt(Input* in)
   CALLGRIND_START_INSTRUMENTATION;
   coarsenMultiple(a);
   CALLGRIND_STOP_INSTRUMENTATION;
-
-  // const Vector target(1502.327985, 375.402966, 174.096195);
-  // ma::Iterator* it = a->mesh->begin(0);
-  // Entity* vert;
-  // while ((vert = a->mesh->iterate(it))) {
-  //   Vector pos = getPosition(a->mesh, vert);
-  //   if (apf::areClose(pos, target, 1e-5)) {
-  //     apf::Adjacent tets;
-  //     a->mesh->getAdjacent(vert, 3, tets);
-  //     for (int i=0; i<tets.size(); i++) {
-  //       double qual = cbrt(a->sizeField->measure(tets[i]));
-  //       printf("Qual %f\n", qual);
-  //       if (qual < .1) {
-  //         ma_dbg::addClassification(a);
-  //         ma_dbg::flagEntityAllDim(a, 3, "worst_tet", &tets[i], 1);
-  //         apf::writeVtkFiles("mesh_tets", a->mesh, 3);
-  //         apf::writeVtkFiles("mesh_faces", a->mesh, 2);
-  //         apf::writeVtkFiles("mesh_verts", a->mesh, 1);
-  //         exit(1);
-  //       }
-  //     }
-  //   }
-  // }
-
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);

@@ -4,7 +4,7 @@ if(DEFINED TRIBITS_PACKAGE)
 endif()
 
 # This is the top level CMake file for the SCOREC build
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.12)
 
 project(SCOREC VERSION 4.1.0 LANGUAGES CXX C)
 

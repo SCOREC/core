@@ -29,8 +29,8 @@ set(SOURCES
   maSnap.cc
   maEdgeSwap.cc
   maFaceSwap.cc
-  maShape.cc
   maFixShape.cc
+  maShape.cc
   maShapeHandler.cc
   maQuality.cc
   maSplits.cc
