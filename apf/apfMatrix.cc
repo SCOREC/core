@@ -9,7 +9,9 @@
 #include "apf2mth.h"
 #include <mthQR.h>
 #include <pcu_util.h>
+#ifdef EIGEN_ENABLED
 #include <Eigen/Dense>
+#endif
 
 namespace apf {
 
@@ -70,16 +72,7 @@ int eigen(Matrix3x3 const& A,
           Vector<3>* eigenVectors,
           double* eigenValues)
 {
-  // mth::Matrix<double,3,3> A2 = to_mth(A);
-  // mth::Matrix<double,3,3> L;
-  // mth::Matrix<double,3,3> Q;
-  // bool converged = mth::eigenQR(A2, L, Q, 100);
-  // PCU_ALWAYS_ASSERT(converged);
-  // for (unsigned i = 0; i < 3; ++i)
-  //   eigenValues[i] = L(i,i);
-  // for (unsigned i = 0; i < 3; ++i)
-  // for (unsigned j = 0; j < 3; ++j)
-  //   eigenVectors[j][i] = Q(i,j);
+#ifdef EIGEN_ENABLED
   Eigen::Matrix3d matrix;
   for (int i = 0; i < 3; ++i)
   for (int j = 0; j < 3; ++j)
@@ -94,6 +87,18 @@ int eigen(Matrix3x3 const& A,
   for (unsigned i = 0; i < 3; ++i)
   for (unsigned j = 0; j < 3; ++j)
     eigenVectors[j][i] = vectors(i,j);
+#else
+  mth::Matrix<double,3,3> A2 = to_mth(A);
+  mth::Matrix<double,3,3> L;
+  mth::Matrix<double,3,3> Q;
+  bool converged = mth::eigenQR(A2, L, Q, 100);
+  PCU_ALWAYS_ASSERT(converged);
+  for (unsigned i = 0; i < 3; ++i)
+    eigenValues[i] = L(i,i);
+  for (unsigned i = 0; i < 3; ++i)
+  for (unsigned j = 0; j < 3; ++j)
+    eigenVectors[j][i] = Q(i,j);
+#endif
   return 3;
 }
 
