@@ -24,6 +24,7 @@ class Collapse
 {
   public:
     void Init(Adapt* a);
+    bool run(Entity* edge, Entity* vert, double qualityToBeat);
     bool requestLocality(apf::CavityOp* o);
     void destroyOldElements();
     void destroyNewElements();
@@ -62,7 +63,6 @@ class Collapse
 bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);
 bool isRequiredForAnEdgeCollapse(Adapt* adapt, Entity* vertex);
 bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex);
-bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double qualityToBeat);
 bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat);
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert);
 

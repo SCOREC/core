@@ -27,6 +27,38 @@ void Collapse::Init(Adapt* a)
   vertToKeep = 0;
 }
 
+
+bool Collapse::run(Entity* edge, Entity* vert, double qualityToBeat)
+{
+  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
+  PCU_ALWAYS_ASSERT(adapt->mesh->getType(vert) == apf::Mesh::VERTEX);
+  if (!setEdge(edge)) return false;
+  if (!checkClass()) return false;
+  if (!getFlag(adapt, vert, COLLAPSE)) { unmark(); return false; }
+  vertToCollapse = vert;
+  vertToKeep = getEdgeVertOppositeVert(adapt->mesh, edge, vert);
+  clearFlag(adapt, vertToKeep, COLLAPSE);
+  computeElementSets();
+  if (elementsToKeep.size() == 0) { unmark(); return false; }
+  if (!isValid()) { unmark(); return false; }
+  
+  if (!checkEdgeCollapseTopology(adapt, edge)) { unmark(); return false; }
+  if (!getFlag(adapt, vert, COLLAPSE)) { unmark(); return false; }
+  PCU_ALWAYS_ASSERT(vertToCollapse == vert);
+
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+        std::max(getOldQuality(),adapt->input->validQuality));
+
+  if (anyWorseQuality(qualityToBeat)) { unmark(); return false;}
+
+  rebuildElements();
+  fitElements();
+  unmark();
+  return true;
+}
+
+
 bool Collapse::requestLocality(apf::CavityOp* o)
 {
 /* get vertices again since this is sometimes used
@@ -600,39 +632,6 @@ bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat)
     collapse.computeElementSets();
     if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) { collapse.unmark(); return false; }
   } 
-
-  collapse.rebuildElements();
-  collapse.fitElements();
-  collapse.unmark();
-  return true;
-}
-
-bool collapseEdgeVertex(Collapse& collapse, Entity* edge, Entity* vert, double qualityToBeat)
-{
-  Adapt* adapt = collapse.adapt;
-  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
-  PCU_ALWAYS_ASSERT(adapt->mesh->getType(vert) == apf::Mesh::VERTEX);
-  if (!collapse.setEdge(edge)) return false;
-  if (!collapse.checkClass()) return false;
-  if (!getFlag(adapt, vert, COLLAPSE)) { collapse.unmark(); return false; }
-  collapse.vertToCollapse = vert;
-  collapse.vertToKeep = getEdgeVertOppositeVert(adapt->mesh, edge, vert);
-  clearFlag(adapt, collapse.vertToKeep, COLLAPSE);
-  collapse.computeElementSets();
-  if (collapse.elementsToKeep.size() == 0) { collapse.unmark(); return false; }
-  if (!collapse.isValid()) { collapse.unmark(); return false; }
-  
-  if (!checkEdgeCollapseTopology(adapt, edge)) { collapse.unmark(); return false; }
-  if (!getFlag(adapt, vert, COLLAPSE)) { collapse.unmark(); return false; }
-  PCU_ALWAYS_ASSERT(collapse.vertToCollapse == vert);
-
-  if (!adapt->input->shouldForceAdaptation)
-    qualityToBeat = std::min(adapt->input->goodQuality,
-        std::max(collapse.getOldQuality(),adapt->input->validQuality));
-
-  if (collapse.anyWorseQuality(qualityToBeat)) { collapse.unmark(); return false;}
-
-  // printCollapseInfo(collapse, edge, vert);
 
   collapse.rebuildElements();
   collapse.fitElements();

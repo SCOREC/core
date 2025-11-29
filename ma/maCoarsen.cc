@@ -429,7 +429,7 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
     for (size_t i=0; i < sorted.size(); i++) {
       // Entity* opposite = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
       // if (!tryCollapseEdge(a, sorted[i].edge, opposite, collapse, adjacent)) continue;
-      if (!collapseEdgeVertex(collapse, sorted[i].edge, vertex, qualityToBeat)) continue;
+      if (!collapse.run(sorted[i].edge, vertex, qualityToBeat)) continue;
       flagIndependentSet(adjacent);
       collapse.destroyOldElements();
       return true;
