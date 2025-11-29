@@ -70,16 +70,15 @@ void adapt(Input* in)
   Adapt* a = new Adapt(in);
   preBalance(a);
   CALLGRIND_START_INSTRUMENTATION;
-  coarsenMultiple(a);
   CALLGRIND_STOP_INSTRUMENTATION;
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
+    coarsenMultiple(a);
+    coarsenLayer(a);
     midBalance(a);
     refine(a);
     snap(a);
-    coarsenMultiple(a);
-    coarsenLayer(a);
   }
   allowSplitCollapseOutsideLayer(a);
   // fixElementShapes(a);
