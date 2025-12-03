@@ -129,7 +129,7 @@ double FixShape::getWorstShape(EntityArray& tets, Entity*& worst)
 {
   double worstQuality = 1;
   for (int i=0; i<tets.size(); i++) {
-    double quality = a->sizeField->measure(tets[i]);
+    double quality = a->shape->getQuality(tets[i]);
     if (quality < worstQuality) {
       worstQuality = quality;
       worst = tets[i];
@@ -201,10 +201,10 @@ bool FixShape::isOneLargeAngle(Entity* tet, Entity*& worstTriangle)
 {
   Entity* triangles[4];
   a->mesh->getDownward(tet, 2, triangles);
-  double worstQuality = a->sizeField->measure(triangles[0]);
+  double worstQuality = a->shape->getQuality(triangles[0]);
   worstTriangle = triangles[0];
   for (int i=1; i<4; i++) {
-    double quality = a->sizeField->measure(triangles[i]);
+    double quality = a->shape->getQuality(triangles[i]);
     if (quality < worstQuality) {
       worstQuality = quality;
       worstTriangle = triangles[i];

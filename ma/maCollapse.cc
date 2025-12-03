@@ -91,7 +91,7 @@ bool Collapse::anyWorseQuality(double qualityToBeat)
   adapt->mesh->setPoint(vertToCollapse, 0, target);
   bool worse = false;
   for (Entity* e : elementsToKeep)
-    if (adapt->sizeField->measure(e) < qualityToBeat)
+    if (adapt->shape->getQuality(e) < qualityToBeat)
       {worse = true; break;}
   adapt->mesh->setPoint(vertToCollapse, 0, prev);
   return worse;

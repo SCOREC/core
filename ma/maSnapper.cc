@@ -582,7 +582,10 @@ static void getInvalid(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
     algorithm that moves curves would need to change */
     if (getFlag(a, adjacentElements[i], LAYER))
       continue;
-    if (a->shape->getQuality(adjacentElements[i]) < a->input->validQuality)
+    if (a->mesh->getType(adjacentElements[i]) == apf::Mesh::TET 
+        && !isTetValid(a->mesh, adjacentElements[i]))
+      invalid.e[invalid.n++] = adjacentElements[i];
+    else if (a->shape->getQuality(adjacentElements[i]) < a->input->validQuality)
       invalid.e[invalid.n++] = adjacentElements[i];
   }
 }
@@ -636,7 +639,7 @@ bool Snapper::run()
     if (!success) FPP = getFPP(adapt, vert, snapTag, invalid);
     if (!success) success = tryCollapseToVertex(FPP);
     if (!success) success = tryReduceCommonEdges(FPP);
-    if (!success) success = tryCollapseTetEdges(FPP);
+    // if (!success) success = tryCollapseTetEdges(FPP); //TODO causing holes in mesh
     if (!success) success = trySwapOrSplit(FPP);
   }
 

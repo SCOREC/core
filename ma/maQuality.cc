@@ -20,6 +20,15 @@
 
 namespace ma {
 
+bool isTetValid(Mesh* m, Entity* tet)
+{
+  Vector v[4];
+  ma::getVertPoints(m,tet,v);
+  if ((cross((v[1] - v[0]), (v[2] - v[0])) * (v[3] - v[0])) < 0)
+    return false;
+  return true;
+}
+
 bool areTetsValid(Mesh* m, EntityArray& tets)
 {
   Vector v[4];
