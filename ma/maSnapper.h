@@ -14,6 +14,7 @@
 #include "maSingleSplitCollapse.h"
 #include "maDoubleSplitCollapse.h"
 #include "maEdgeSwap.h"
+#include "maReposition.h"
 
 namespace apf {
 class CavityOp;
@@ -52,6 +53,7 @@ class Snapper
     Collapse collapse;
     SingleSplitCollapse splitCollapse;
     DoubleSplitCollapse doubleSplitCollapse;
+    RepositionVertex reposition;
     EdgeSwap* edgeSwap;
 
     bool tryCollapseToVertex(FirstProblemPlane* FPP);

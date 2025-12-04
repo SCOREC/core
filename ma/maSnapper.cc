@@ -38,7 +38,7 @@
 
 namespace ma {
 
-Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSplitCollapse(a)
+Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSplitCollapse(a), reposition(a)
 {
   adapt = a;
   adapt = a;
@@ -625,8 +625,12 @@ to apply certain opperators so other algoritms were adapted from old scorec libr
 */
 bool Snapper::run()
 {
-  apf::Up invalid;
-  bool success = tryReposition(adapt, vert, snapTag, invalid);
+  if (!mesh->hasTag(vert, snapTag)) return true;
+  Vector target;
+  adapt->mesh->getDoubleTag(vert, snapTag, &target[0]);
+  bool success = reposition.move(vert, target);
+  apf::Up& invalid = reposition.getInvalid();
+
   if (success) {
     numSnapped++;
     mesh->removeTag(vert,snapTag);
@@ -639,7 +643,7 @@ bool Snapper::run()
     if (!success) FPP = getFPP(adapt, vert, snapTag, invalid);
     if (!success) success = tryCollapseToVertex(FPP);
     if (!success) success = tryReduceCommonEdges(FPP);
-    // if (!success) success = tryCollapseTetEdges(FPP); //TODO causing holes in mesh
+    if (!success) success = tryCollapseTetEdges(FPP); //TODO causing holes in mesh
     if (!success) success = trySwapOrSplit(FPP);
   }
 
