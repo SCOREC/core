@@ -151,22 +151,22 @@ double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax)
    * If useMax is true metric at a (downward) vertex with the
    * largest determinant is used.
    * Note: In the future we may want to used average of Q over the tet */
-  Matrix Q;
-  if (useMax)
-    Q = getMetricWithMaxJacobean(m, f, tet);
-  else {
-    apf::MeshElement* me = createMeshElement(m, tet);
-    Vector xi(0.25, 0.25, 0.25);
-    f->getTransform(me, xi, Q);
-    apf::destroyMeshElement(me);
-  }
+  // Matrix Q;
+  // if (useMax)
+  //   Q = getMetricWithMaxJacobean(m, f, tet);
+  // else {
+  //   apf::MeshElement* me = createMeshElement(m, tet);
+  //   Vector xi(0.25, 0.25, 0.25);
+  //   f->getTransform(me, xi, Q);
+  //   apf::destroyMeshElement(me);
+  // }
 
   Entity* e[6];
   m->getDownward(tet,1,e);
   double l[6];
   for (int i=0; i < 6; ++i)
-    l[i] = qMeasure(m, e[i], Q);
-  double V = qMeasure(m, tet, Q);
+    l[i] = f->measure(e[i]);
+  double V = f->measure(tet);
   double s=0;
   for (int i=0; i < 6; ++i)
     s += l[i]*l[i];
