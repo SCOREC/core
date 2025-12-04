@@ -23,6 +23,8 @@ class RepositionVertex
     Upward adjacentElements;
     apf::Up invalid;
     double worstQuality;
+
+    void findInvalid();
 };
 
 bool repositionVertex(Mesh* m, Entity* v,

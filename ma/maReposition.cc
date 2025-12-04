@@ -18,27 +18,25 @@ RepositionVertex::RepositionVertex(Adapt* a) : adapt(a), mesh(a->mesh)
 {
 }
 
-void findInvalid(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
+void RepositionVertex::findInvalid()
 {
-  double worstQuality = 1;
+  worstQuality = 1;
   invalid.n = 0;
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
     /* for now, when snapping a vertex on the boundary
     layer, ignore the quality of layer elements.
     not only do we not have metrics for this, but the
     algorithm that moves curves would need to change */
-    if (getFlag(a, adjacentElements[i], LAYER))
-      continue;
+    if (getFlag(adapt, adjacentElements[i], LAYER)) continue;
+
     double quality;
-    if (a->mesh->getType(adjacentElements[i]) == apf::Mesh::TET && !isTetValid(a->mesh, adjacentElements[i]))
+    if (mesh->getType(adjacentElements[i]) == apf::Mesh::TET && !isTetValid(mesh, adjacentElements[i]))
       quality = -1;
     else 
-      quality = a->shape->getQuality(adjacentElements[i]);
+      quality = adapt->shape->getQuality(adjacentElements[i]);
 
-    if (quality < worstQuality)
-      worstQuality = quality;
-    if (quality < a->input->validQuality)
-      invalid.e[invalid.n++] = adjacentElements[i];
+    if (quality < worstQuality) worstQuality = quality;
+    if (quality < adapt->input->validQuality) invalid.e[invalid.n++] = adjacentElements[i];
   }
 }
 
@@ -50,7 +48,7 @@ bool RepositionVertex::move(Entity* vertex, Vector target)
   this->prevPosition = getPosition(mesh, vertex);
   mesh->setPoint(vertex, 0, target);
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-  findInvalid(adapt, adjacentElements, invalid);
+  findInvalid();
   if (invalid.n == 0) return true;
   cancel(vertex);
   return false;
