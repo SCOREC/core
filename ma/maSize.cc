@@ -212,25 +212,24 @@ struct MetricSizeField : public SizeField
   }
   double measure(Entity* e)
   {
-    if (me == 0) me = apf::createMeshElement(mesh, e);
-    else me->init(mesh->getCoordinateField(), e, 0);
+    me.init(mesh->getCoordinateField(), e, 0);
     int integrationOrder = std::max(mesh->getShape()->getOrder(), order)+1;
     double measurement = 0;
-    int dim = apf::getDimension(me);
-    int np = numIntegrationPoints.try_emplace(dim, countIntPoints(me,integrationOrder)).first->second;
-    double w = integrationWeight.try_emplace(dim, getIntWeight(me,integrationOrder,0)).first->second;
+    int dim = apf::getDimension(&me);
+    int np = numIntegrationPoints.try_emplace(dim, countIntPoints(&me,integrationOrder)).first->second;
+    double w = integrationWeight.try_emplace(dim, getIntWeight(&me,integrationOrder,0)).first->second;
     for (int p=0; p < np; ++p) {
       Vector point;
       auto it = integrationPoint.find({dim, p});
       if (it == integrationPoint.end()) {
-        getIntPoint(me,integrationOrder,p,point);
+        getIntPoint(&me,integrationOrder,p,point);
         integrationPoint.insert(it, {{dim, p}, point});
       }
       else point = it->second;
       Matrix Q;
-      getTransform(me,point,Q);
+      getTransform(&me,point,Q);
       Matrix J;
-      apf::getJacobian(me,point,J);
+      apf::getJacobian(&me,point,J);
       /* transforms the rows of J, the differential tangent vectors,
         into the metric space, then uses the generalized determinant */
       double dV2 = apf::getJacobianDeterminant(J*Q,dim);
@@ -253,7 +252,7 @@ struct MetricSizeField : public SizeField
   }
   Mesh* mesh;
   int order; // this is the underlying sizefield order (default 1)
-  apf::MeshElement* me=0;
+  apf::MeshElement me;
   std::map<int, int> numIntegrationPoints;
   std::map<int, double> integrationWeight;
   std::map<std::pair<int, int>, Vector> integrationPoint;

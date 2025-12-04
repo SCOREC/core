@@ -21,6 +21,7 @@ class VectorElement;
 class Element
 {
   public:
+    Element();
     Element(Field* f, MeshEntity* e);
     Element(Field* f, VectorElement* p);
     virtual ~Element();

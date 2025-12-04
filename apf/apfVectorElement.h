@@ -18,6 +18,7 @@ class VectorField;
 class VectorElement : public ElementOf<Vector3>
 {
   public:
+    VectorElement();
     VectorElement(VectorField* f, MeshEntity* e);
     VectorElement(VectorField* f, VectorElement* p);
     virtual ~VectorElement() {}

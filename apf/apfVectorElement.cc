@@ -10,6 +10,11 @@
 
 namespace apf {
 
+VectorElement::VectorElement(): 
+  ElementOf<Vector3>()
+{
+}
+
 VectorElement::VectorElement(VectorField* f, MeshEntity* e):
   ElementOf<Vector3>(f,e)
 {
