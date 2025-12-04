@@ -219,13 +219,7 @@ struct MetricSizeField : public SizeField
     int np = numIntegrationPoints.try_emplace(dim, countIntPoints(&me,integrationOrder)).first->second;
     double w = integrationWeight.try_emplace(dim, getIntWeight(&me,integrationOrder,0)).first->second;
     for (int p=0; p < np; ++p) {
-      Vector point;
-      auto it = integrationPoint.find({dim, p});
-      if (it == integrationPoint.end()) {
-        getIntPoint(&me,integrationOrder,p,point);
-        integrationPoint.insert(it, {{dim, p}, point});
-      }
-      else point = it->second;
+      Vector point = integrationPoint.try_emplace({dim, p}, getIntPoint(&me,integrationOrder,p)).first->second;
       Matrix Q;
       getTransform(&me,point,Q);
       Matrix J;
