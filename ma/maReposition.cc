@@ -18,6 +18,18 @@ RepositionVertex::RepositionVertex(Adapt* a) : adapt(a), mesh(a->mesh)
 {
 }
 
+void RepositionVertex::storeOldCache()
+{
+  oldCache.clear();
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    if (mesh->hasTag(adjacentElements[i], adapt->qualityCache)) {
+      oldCache.push_back(getCachedQuality(adapt, adjacentElements[i]));
+      mesh->removeTag(adjacentElements[i], adapt->qualityCache);
+    }
+    else oldCache.push_back(-1);
+  }
+}
+
 void RepositionVertex::findInvalid()
 {
   worstQuality = 1;
@@ -46,8 +58,9 @@ bool RepositionVertex::move(Entity* vertex, Vector target)
   adjacentElements.setSize(0);
   this->vertex = vertex;
   this->prevPosition = getPosition(mesh, vertex);
-  mesh->setPoint(vertex, 0, target);
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  // storeOldCache();
+  mesh->setPoint(vertex, 0, target);
   findInvalid();
   if (invalid.n == 0) return true;
   cancel(vertex);
