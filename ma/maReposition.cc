@@ -67,6 +67,59 @@ bool RepositionVertex::move(Entity* vertex, Vector target)
   return false;
 }
 
+Vector RepositionVertex::cavityCenter()
+{
+  apf::Up edges;
+  mesh->getUp(vertex, edges);
+  Vector avg(0,0,0);
+  for (int i=0; i<edges.n; i++) {
+    Entity* opp = getEdgeVertOppositeVert(mesh, edges.e[i], vertex);
+    avg += getPosition(mesh, opp);
+  }
+  avg = avg / edges.n;
+  return avg;
+}
+
+void RepositionVertex::findWorstShape()
+{
+  worstQuality = 1;
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
+    double quality = adapt->shape->getQuality(adjacentElements[i]);
+    if (quality < worstQuality) {
+      worstQuality = quality;
+      worstTet = adjacentElements[i];
+    }
+  }
+}
+
+void RepositionVertex::moveToHighestQuality(Entity* vertex)
+{
+  invalid.n = 0;
+  adjacentElements.setSize(0);
+  this->vertex = vertex;
+  prevPosition = getPosition(mesh, vertex);
+  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  storeOldCache();
+
+  Vector center = cavityCenter();
+  Vector dir = (center - prevPosition).normalize();
+  double speed = (center - prevPosition).getLength()/2;
+  double prevWorstQuality = 0;
+  for (int i=0; i<10; i++) {
+    findWorstShape();
+    if (worstQuality > prevWorstQuality) {
+      prevWorstQuality = worstQuality;
+      prevPosition = getPosition(mesh, vertex);
+      mesh->setPoint(vertex, 0, prevPosition + (dir * speed));
+      speed *= 2;
+    }
+    else {
+      mesh->setPoint(vertex, 0, prevPosition);
+      speed /= 4;
+    }
+  }
+}
+
 void RepositionVertex::cancel(Entity* vertex)
 {
   PCU_ALWAYS_ASSERT(this->vertex == vertex);

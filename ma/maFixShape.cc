@@ -56,7 +56,7 @@ void unMarkBadQualityNew(Adapt* a)
   m->end(it);
 }
 
-FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), split(adapt)
+FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), split(adapt), reposition(adapt)
 {
   a = adapt;
   mesh = a->mesh;
@@ -138,44 +138,6 @@ double FixShape::getWorstShape(EntityArray& tets, Entity*& worst)
   return worstQuality;
 }
 
-Vector FixShape::avgCavityPos(Entity* vert)
-{
-  apf::Up edges;
-  mesh->getUp(vert, edges);
-  Vector avg(0,0,0);
-  for (int i=0; i<edges.n; i++) {
-    Entity* opp = getEdgeVertOppositeVert(mesh, edges.e[i], vert);
-    avg += getPosition(mesh, opp);
-  }
-  avg = avg / edges.n;
-  return avg;
-}
-
-void FixShape::repositionVertex(Entity* vert)
-{
-  EntityArray adjacent;
-  mesh->getAdjacent(vert, mesh->getDimension(), adjacent);
-  Entity* worstShape;
-  Vector prevPos = getPosition(mesh, vert);
-  getWorstShape(adjacent, worstShape);
-  Vector dir = (avgCavityPos(vert) - prevPos).normalize();
-  double speed = (avgCavityPos(vert) - prevPos).getLength()/2;
-  double prevWorstQuality = 0;
-  for (int i=0; i<10; i++) {
-    double worstQuality = getWorstShape(adjacent, worstShape);
-    if (worstQuality > prevWorstQuality) {
-      prevWorstQuality = worstQuality;
-      prevPos = getPosition(mesh, vert);
-      mesh->setPoint(vert, 0, prevPos + (dir * speed));
-      speed *= 2;
-    }
-    else {
-      mesh->setPoint(vert, 0, prevPos);
-      speed /= 4;
-    }
-  }
-}
-
 bool FixShape::splitReposition(Entity* edge)
 {
   if (!isInModelRegion(mesh, edge)) return false;
@@ -185,7 +147,7 @@ bool FixShape::splitReposition(Entity* edge)
   split.makeNewElements();
   split.transfer();
   Entity* newVert = split.getSplitVert(0);
-  repositionVertex(newVert);
+  reposition.moveToHighestQuality(newVert);
 
   EntityArray adjacent;
   mesh->getAdjacent(newVert, mesh->getDimension(), adjacent);

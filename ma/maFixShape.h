@@ -10,6 +10,7 @@
 #include "maSingleSplitCollapse.h"
 #include "maFaceSplitCollapse.h"
 #include "maFaceSwap.h"
+#include "maReposition.h"
 
 namespace ma {
 class Adapt;
@@ -23,6 +24,7 @@ class FixShape : public Operator
   SingleSplitCollapse splitCollapse;
   DoubleSplitCollapse doubleSplitCollapse;
   FaceSplitCollapse faceSplitCollapse;
+  RepositionVertex reposition;
   EdgeSwap* edgeSwap;
   Splits split;
   Entity* badTet;
@@ -56,8 +58,6 @@ class FixShape : public Operator
   double getWorstShape(EntityArray& tets, Entity*& worst);
   Entity* getLongestEdge(Entity* edges[3]);
 
-  Vector avgCavityPos(Entity* vert);
-  void repositionVertex(Entity* vert);
   bool splitReposition(Entity* edge);
   bool collapseRegion(Entity* tet);
   
