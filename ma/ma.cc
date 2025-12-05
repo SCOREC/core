@@ -64,6 +64,7 @@ void printHistogramStats(Adapt* a)
 
 void adapt(Input* in)
 {
+  apf::writeVtkFiles("mesh_tets_start", in->mesh, 3);
   double t0 = pcu::Time();
   print(in->mesh->getPCU(), "version 2.0 !");
   validateInput(in);
