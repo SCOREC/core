@@ -487,16 +487,11 @@ struct LogAnisoSizeField : public MetricSizeField
   {
     apf::destroyField(logMField);
   }
-  Vector clampLength(Vector const& v, double maxLen)
+  void clampComponents(Vector& v, double max)
   {
-    double len = v.getLength();
-    if (len == 0.0) return v;
-
-    double clamped = len;
-    if (maxLen > 0.0 && clamped > maxLen) clamped = maxLen;
-
-    if (clamped == len) return v;
-    return v * (clamped / len);
+    if (v[0] > max) v[0] = max;
+    if (v[1] > max) v[1] = max;
+    if (v[2] > max) v[2] = max;
   }
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
@@ -519,6 +514,7 @@ struct LogAnisoSizeField : public MetricSizeField
           Matrix f;
           apf::getVector(sizes, ent, i, h);
           apf::getMatrix(frames, ent, i, f);
+          // clampComponents(h, 5);
           Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
           Matrix S(s[0], 0   , 0,
               0    , s[1], 0,

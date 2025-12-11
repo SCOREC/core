@@ -58,7 +58,7 @@ apf::Field* getField(ma::Adapt* a, int dim,  const char* fieldName)
   return field;
 }
 
-void addClassification(ma::Adapt* a)
+void addFieldInfo(ma::Adapt* a)
 {
   ma::Mesh* m = a->mesh;
   apf::Field* fieldVert = getField(a, 0, "vert_classification");
@@ -86,6 +86,15 @@ void addClassification(ma::Adapt* a)
     apf::setComponents(fieldFace, e, 0, &modelDimension);
   }
   m->end(it);
+
+  // measure qualities
+  std::vector<double> lq_metric;
+  std::vector<double> lq_no_metric;
+  ma::getLinearQualitiesInMetricSpace(a->mesh, a->sizeField, lq_metric);
+  ma::getLinearQualitiesInPhysicalSpace(a->mesh, lq_no_metric);
+  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
+  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
+
 }
 
 void addTargetLocation(ma::Adapt* a,
