@@ -32,7 +32,6 @@ void RepositionVertex::storeOldCache()
 
 void RepositionVertex::findInvalid()
 {
-  worstQuality = 1;
   invalid.n = 0;
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
     /* for now, when snapping a vertex on the boundary
@@ -47,7 +46,6 @@ void RepositionVertex::findInvalid()
     else 
       quality = adapt->shape->getQuality(adjacentElements[i]);
 
-    if (quality < worstQuality) worstQuality = quality;
     if (quality < adapt->input->validQuality) invalid.e[invalid.n++] = adjacentElements[i];
   }
 }
@@ -85,10 +83,7 @@ void RepositionVertex::findWorstShape()
   worstQuality = 1;
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
     double quality = adapt->shape->getQuality(adjacentElements[i]);
-    if (quality < worstQuality) {
-      worstQuality = quality;
-      worstTet = adjacentElements[i];
-    }
+    if (quality < worstQuality) worstQuality = quality;
   }
 }
 
@@ -130,12 +125,6 @@ apf::Up& RepositionVertex::getInvalid()
 {
   return invalid;
 }
-
-double RepositionVertex::getWorstQuality()
-{
-  return worstQuality;
-}
-
 
 typedef mth::AD<double, 3> AD;
 typedef mth::Vector<AD, 3> ADVec;

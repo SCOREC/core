@@ -14,7 +14,6 @@ class RepositionVertex
     void moveToHighestQuality(Entity* vertex);
     void cancel(Entity* vertex);
     apf::Up& getInvalid();
-    double getWorstQuality();
 
     private:
     Adapt* adapt;
@@ -23,7 +22,6 @@ class RepositionVertex
     Vector prevPosition;
     Upward adjacentElements;
     apf::Up invalid;
-    Entity* worstTet;
     double worstQuality;
     std::vector<double> oldCache;
 
