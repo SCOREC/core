@@ -165,8 +165,8 @@ double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax)
   m->getDownward(tet,1,e);
   double l[6];
   for (int i=0; i < 6; ++i)
-    l[i] = qMeasure(m, e[i], Q);
-  double V = qMeasure(m, tet, Q);
+    l[i] = f->measure(e[i], Q);
+  double V = f->measure(tet, Q);
   double s=0;
   for (int i=0; i < 6; ++i)
     s += l[i]*l[i];

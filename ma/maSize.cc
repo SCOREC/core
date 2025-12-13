@@ -60,6 +60,14 @@ double IdentitySizeField::measure(Entity* e)
   return x;
 }
 
+double IdentitySizeField::measure(Entity* e, Matrix const& Q)
+{
+  apf::MeshElement* me = apf::createMeshElement(mesh,e);
+  double x = apf::measure(me);
+  apf::destroyMeshElement(me);
+  return x;
+}
+
 bool IdentitySizeField::shouldSplit(Entity*)
 {
   return false;
@@ -222,6 +230,25 @@ struct MetricSizeField : public SizeField
       Vector point = integrationPoint.try_emplace({dim, p}, getIntPoint(&me,integrationOrder,p)).first->second;
       Matrix Q;
       getTransform(&me,point,Q);
+      Matrix J;
+      apf::getJacobian(&me,point,J);
+      /* transforms the rows of J, the differential tangent vectors,
+        into the metric space, then uses the generalized determinant */
+      double dV2 = apf::getJacobianDeterminant(J*Q,dim);
+      measurement += w*dV2;
+    }
+    return measurement;
+  }
+  double measure(Entity* e, Matrix const& Q)
+  {
+    me.init(mesh->getCoordinateField(), e, 0);
+    int integrationOrder = std::max(mesh->getShape()->getOrder(), order)+1;
+    double measurement = 0;
+    int dim = apf::getDimension(&me);
+    int np = numIntegrationPoints.try_emplace(dim, countIntPoints(&me,integrationOrder)).first->second;
+    double w = integrationWeight.try_emplace(dim, getIntWeight(&me,integrationOrder,0)).first->second;
+    for (int p=0; p < np; ++p) {
+      Vector point = integrationPoint.try_emplace({dim, p}, getIntPoint(&me,integrationOrder,p)).first->second;
       Matrix J;
       apf::getJacobian(&me,point,J);
       /* transforms the rows of J, the differential tangent vectors,
