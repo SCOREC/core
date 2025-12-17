@@ -11,6 +11,7 @@
 
 #include <sstream>
 #include <cmath>
+#include <functional>
 
 namespace ma {
 
@@ -78,13 +79,36 @@ Vector RepositionVertex::cavityCenter()
   return avg;
 }
 
-void RepositionVertex::findWorstShape()
+double RepositionVertex::findWorstShape(Vector position)
 {
-  worstQuality = 1;
+  mesh->setPoint(vertex, 0, position);
+  double worst = 1;
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
     double quality = adapt->shape->getQuality(adjacentElements[i]);
-    if (quality < worstQuality) worstQuality = quality;
+    if (quality < worst) worst = quality;
   }
+  return worst;
+}
+
+Vector goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector right, double tol)
+{
+  Vector prev_mean = left;
+  Vector mean = left;
+  const double M_GOLDEN_RATIO = (1.0 + std::sqrt(5.0)) / 2.0;
+
+  do {
+    prev_mean = mean;
+    Vector delta_left = left + (right - left) * M_GOLDEN_RATIO;
+    Vector delta_right = right + (left - right) * M_GOLDEN_RATIO;
+
+    if (f(delta_left) < f(delta_right))
+      right = delta_right;
+    else
+      left = delta_left;
+
+    mean = (left + right) / 2.f;
+  } while ((left-right).getLength() > tol);
+  return prev_mean;
 }
 
 void RepositionVertex::moveToHighestQuality(Entity* vertex)
@@ -92,27 +116,13 @@ void RepositionVertex::moveToHighestQuality(Entity* vertex)
   invalid.n = 0;
   adjacentElements.setSize(0);
   this->vertex = vertex;
-  prevPosition = getPosition(mesh, vertex);
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
   storeOldCache();
 
+  prevPosition = getPosition(mesh, vertex);
   Vector center = cavityCenter();
-  Vector dir = (center - prevPosition).normalize();
-  double speed = (center - prevPosition).getLength()/2;
-  double prevWorstQuality = 0;
-  for (int i=0; i<10; i++) {
-    findWorstShape();
-    if (worstQuality > prevWorstQuality) {
-      prevWorstQuality = worstQuality;
-      prevPosition = getPosition(mesh, vertex);
-      mesh->setPoint(vertex, 0, prevPosition + (dir * speed));
-      speed *= 2;
-    }
-    else {
-      mesh->setPoint(vertex, 0, prevPosition);
-      speed /= 4;
-    }
-  }
+  const auto getQuality = [this](const Vector& pos) { return this->findWorstShape(pos); };
+  Vector newPosition = goldenSearch(getQuality, prevPosition, center, 0.000001);
 }
 
 void RepositionVertex::cancel(Entity* vertex)

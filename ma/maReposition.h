@@ -28,7 +28,7 @@ class RepositionVertex
     void findInvalid();
     void storeOldCache();
     Vector cavityCenter();
-    void findWorstShape();
+    double findWorstShape(Vector position);
 };
 
 bool repositionVertex(Mesh* m, Entity* v,
