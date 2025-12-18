@@ -19,6 +19,17 @@ RepositionVertex::RepositionVertex(Adapt* a) : adapt(a), mesh(a->mesh)
 {
 }
 
+void RepositionVertex::init(Entity* vertex)
+{
+  this->invalid.n = 0;
+  this->adjEdges.n = 0;
+  this->adjacentElements.setSize(0);
+  this->vertex = vertex;
+  this->prevPosition = getPosition(mesh, vertex);
+  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  storeOldCache();
+}
+
 void RepositionVertex::storeOldCache()
 {
   oldCache.clear();
@@ -33,7 +44,6 @@ void RepositionVertex::storeOldCache()
 
 void RepositionVertex::findInvalid()
 {
-  invalid.n = 0;
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
     /* for now, when snapping a vertex on the boundary
     layer, ignore the quality of layer elements.
@@ -53,30 +63,12 @@ void RepositionVertex::findInvalid()
 
 bool RepositionVertex::move(Entity* vertex, Vector target)
 {
-  invalid.n = 0;
-  adjacentElements.setSize(0);
-  this->vertex = vertex;
-  this->prevPosition = getPosition(mesh, vertex);
-  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-  // storeOldCache();
+  init(vertex);
   mesh->setPoint(vertex, 0, target);
   findInvalid();
   if (invalid.n == 0) return true;
   cancel(vertex);
   return false;
-}
-
-Vector RepositionVertex::cavityCenter()
-{
-  apf::Up edges;
-  mesh->getUp(vertex, edges);
-  Vector avg(0,0,0);
-  for (int i=0; i<edges.n; i++) {
-    Entity* opp = getEdgeVertOppositeVert(mesh, edges.e[i], vertex);
-    avg += getPosition(mesh, opp);
-  }
-  avg = avg / edges.n;
-  return avg;
 }
 
 double RepositionVertex::findWorstShape(Vector position)
@@ -113,16 +105,52 @@ Vector goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector 
 
 void RepositionVertex::moveToHighestQuality(Entity* vertex)
 {
-  invalid.n = 0;
-  adjacentElements.setSize(0);
-  this->vertex = vertex;
-  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-  storeOldCache();
+  init(vertex);
+  mesh->getUp(vertex, adjEdges);
 
-  prevPosition = getPosition(mesh, vertex);
-  Vector center = cavityCenter();
+  Vector center = modelCenter();
+  Vector target = center + (prevPosition - center)/4;
   const auto getQuality = [this](const Vector& pos) { return this->findWorstShape(pos); };
-  Vector newPosition = goldenSearch(getQuality, prevPosition, center, 0.000001);
+  Vector newPosition = goldenSearch(getQuality, prevPosition, target, 0.000001);
+}
+
+Vector RepositionVertex::modelCenter()
+{
+  Model* vertModel = mesh->toModel(vertex);
+  Vector avg(0,0,0);
+  for (int i=0; i<adjEdges.n; i++) {
+    if (vertModel != mesh->toModel(adjEdges.e[i])) continue;
+    Entity* opp = getEdgeVertOppositeVert(mesh, adjEdges.e[i], vertex);
+    avg += getPosition(mesh, opp);
+  }
+  avg = avg / adjEdges.n;
+  return avg;
+}
+
+double RepositionVertex::findShortestEdge(Vector position)
+{
+  double quality = findWorstShape(position);
+  if (quality < startingQuality && quality < adapt->input->goodQuality) return -1;
+
+  double shortest = 1000;
+  for (int i=0; i<adjEdges.n; i++) {
+    double length = adapt->sizeField->measure(adjEdges.e[i]);
+    if (length < shortest) shortest = length;
+  }
+  return shortest;
+}
+
+void RepositionVertex::moveToImproveShortEdges(Entity* vertex)
+{
+  int dim = mesh->getModelType(mesh->toModel(vertex));
+  if (dim == 0) return;
+  init(vertex);
+  
+  mesh->getUp(vertex, adjEdges);
+  this->startingQuality = findWorstShape(prevPosition);
+  Vector center = modelCenter();
+  const auto getLength = [this](const Vector& pos) { return this->findShortestEdge(pos); };
+  goldenSearch(getLength, prevPosition, center, 0.000001);
 }
 
 void RepositionVertex::cancel(Entity* vertex)

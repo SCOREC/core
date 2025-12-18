@@ -92,10 +92,10 @@ void adapt(Input* in)
 
   double t1 = pcu::Time();
   print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
+  printHistogramStats(a);
   m->verify();
   ma_dbg::addFieldInfo(a);
   apf::writeVtkFiles("mesh_tets_end", m, 3);
-  printHistogramStats(a);
 
   delete a;
   // cleanup input object and associated sizefield and solutiontransfer objects

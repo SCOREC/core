@@ -12,6 +12,7 @@ class RepositionVertex
     RepositionVertex(Adapt* a);
     bool move(Entity* vertex, Vector target);
     void moveToHighestQuality(Entity* vertex);
+    void moveToImproveShortEdges(Entity* vertex);
     void cancel(Entity* vertex);
     apf::Up& getInvalid();
 
@@ -22,13 +23,17 @@ class RepositionVertex
     Vector prevPosition;
     Upward adjacentElements;
     apf::Up invalid;
+    apf::Up adjEdges;
     double worstQuality;
+    double startingQuality;
     std::vector<double> oldCache;
 
     void findInvalid();
     void storeOldCache();
-    Vector cavityCenter();
+    Vector modelCenter();
+    void init(Entity* vertex);
     double findWorstShape(Vector position);
+    double findShortestEdge(Vector position);
 };
 
 bool repositionVertex(Mesh* m, Entity* v,
