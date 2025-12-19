@@ -11,8 +11,9 @@ class RepositionVertex
     public:
     RepositionVertex(Adapt* a);
     bool move(Entity* vertex, Vector target);
-    void moveToHighestQuality(Entity* vertex);
+    bool moveToImproveQuality(Entity* vertex);
     void moveToImproveShortEdges(Entity* vertex);
+    bool improveQuality(Entity* tet);
     void cancel(Entity* vertex);
     apf::Up& getInvalid();
 

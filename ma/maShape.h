@@ -34,6 +34,7 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
+double getAndCacheQuality(Adapt* a, Entity* e);
 
 /* has worse quality than qualityToBeat
  */

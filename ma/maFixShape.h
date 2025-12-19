@@ -32,6 +32,7 @@ class FixShape : public Operator
   int numCollapse=0;
   int numEdgeSwap=0;
   int numFaceSwap=0;
+  int numReposition=0;
   int numSplitReposition=0;
   int numRegionCollapse=0;
   int numEdgeSplitCollapse=0;

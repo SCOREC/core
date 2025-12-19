@@ -190,6 +190,15 @@ double measureElementQuality(Mesh* m, SizeField* f, Entity* e, bool useMax)
   return table[m->getType(e)](m,f,e,useMax);
 }
 
+double getAndCacheQuality(Adapt* a, Entity* e)
+{
+  if (a->mesh->hasTag(e, a->qualityCache))
+    return getCachedQuality(a, e);
+  double quality = a->shape->getQuality(e);
+  setCachedQuality(a, e, quality);
+  return quality;
+}
+
 double getWorstQuality(Adapt* a, Entity** e, size_t n)
 {
   PCU_ALWAYS_ASSERT(n);

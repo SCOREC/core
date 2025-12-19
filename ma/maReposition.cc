@@ -82,36 +82,45 @@ double RepositionVertex::findWorstShape(Vector position)
   return worst;
 }
 
-Vector goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector right, double tol)
+double goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector right, double tol)
 {
-  Vector prev_mean = left;
-  Vector mean = left;
   const double M_GOLDEN_RATIO = (1.0 + std::sqrt(5.0)) / 2.0;
+  double leftValue;
 
   do {
-    prev_mean = mean;
     Vector delta_left = left + (right - left) * M_GOLDEN_RATIO;
     Vector delta_right = right + (left - right) * M_GOLDEN_RATIO;
+    leftValue = f(delta_left);
 
-    if (f(delta_left) < f(delta_right))
+    if (leftValue < f(delta_right))
       right = delta_right;
     else
       left = delta_left;
 
-    mean = (left + right) / 2.f;
   } while ((left-right).getLength() > tol);
-  return prev_mean;
+  return leftValue;
 }
 
-void RepositionVertex::moveToHighestQuality(Entity* vertex)
+bool RepositionVertex::moveToImproveQuality(Entity* vertex)
 {
+  if (mesh->getModelType(mesh->toModel(vertex)) != 3) return false; //TODO: remove limitation
   init(vertex);
   mesh->getUp(vertex, adjEdges);
 
   Vector center = modelCenter();
   Vector target = center + (prevPosition - center)/4;
   const auto getQuality = [this](const Vector& pos) { return this->findWorstShape(pos); };
-  Vector newPosition = goldenSearch(getQuality, prevPosition, target, 0.000001);
+  worstQuality = goldenSearch(getQuality, prevPosition, target, 0.000001);
+  return worstQuality > adapt->input->goodQuality;
+}
+
+bool RepositionVertex::improveQuality(Entity* tet)
+{
+  Entity* verts[4];
+  mesh->getDownward(tet, 0, verts);
+  for (int i=0; i<4; i++)
+    if (moveToImproveQuality(verts[i])) return true;
+  return false;
 }
 
 Vector RepositionVertex::modelCenter()

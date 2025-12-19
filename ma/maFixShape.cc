@@ -27,33 +27,21 @@
 
 namespace ma {
 
-struct IsBadQuality : public Predicate
-{
-  IsBadQuality(Adapt* a_):a(a_) {}
-  bool operator()(Entity* e)
-  {
-    return a->shape->getQuality(e) < a->input->goodQuality;
-  }
-  Adapt* a;
-};
-
 int markBadQualityNew(Adapt* a)
-{
-  IsBadQuality p(a);
-  return markEntities(a, a->mesh->getDimension(), p, BAD_QUALITY, OK_QUALITY);
-}
-
-void unMarkBadQualityNew(Adapt* a)
 {
   Mesh* m = a->mesh;
   Iterator* it;
   Entity* e;
   it = m->begin(m->getDimension());
+  int total = 0;
   while ((e = m->iterate(it))) {
-    if (getFlag(a, e, ma::BAD_QUALITY))
-      clearFlag(a, e, ma::BAD_QUALITY);
+    if (getAndCacheQuality(a, e) < a->input->goodQuality){
+      setFlag(a, e, ma::BAD_QUALITY);
+      total++;
+    }
   }
   m->end(it);
+  return total;
 }
 
 FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), split(adapt), reposition(adapt)
@@ -140,14 +128,13 @@ double FixShape::getWorstShape(EntityArray& tets, Entity*& worst)
 
 bool FixShape::splitReposition(Entity* edge)
 {
-  if (!isInModelRegion(mesh, edge)) return false;
   if (!split.setEdges(&edge, 1))
     return false;
   double worstQuality = getWorstQuality(a,split.getTets());
   split.makeNewElements();
   split.transfer();
   Entity* newVert = split.getSplitVert(0);
-  reposition.moveToHighestQuality(newVert);
+  reposition.moveToImproveQuality(newVert);
 
   EntityArray adjacent;
   mesh->getAdjacent(newVert, mesh->getDimension(), adjacent);
@@ -203,6 +190,7 @@ bool FixShape::fixOneLargeAngle(Entity* tet)
   for (int i=0; i<3; i++)
     if (edges[i] != longestEdge && collapseEdge(edges[i]))
       {numCollapse++; return true;}
+  if (reposition.improveQuality(tet)) {numReposition++; return true;}
   return false;
 }
 
@@ -277,6 +265,7 @@ bool FixShape::fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
     }
   }
   if (doubleSplitCollapse.run(problemEnts)) {numDoubleSplitCollapse++; return true;}
+  if (reposition.improveQuality(tet)) {numReposition++; return true;}
   return false;
 }
 
@@ -304,6 +293,7 @@ bool FixShape::fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
   Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
   if (splitCollapse.run(problemEnts[1], v)) {numEdgeSplitCollapse++; return true;}
   if (faceSplitCollapse.run(problemEnts[0], tet)) {numFaceSplitCollapse++; return true;}
+  if (reposition.moveToImproveQuality(v)) {numReposition++; return true;}
   return false;
 }
 
@@ -329,9 +319,9 @@ int FixShape::collect(int val) {
 }
 void FixShape::printNumOperations()
 {
-  print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n split reposition %9d\n double split collapse %d\n "
+  print(a->mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n reposition %16d\n split reposition %9d\n double split collapse %d\n "
                             "edge split collapses %5d\n face split collapses %3d\n region collapses %7d\n face swaps %12d\n ",
-                            collect(numCollapse), collect(numEdgeSwap), collect(numSplitReposition), collect(numDoubleSplitCollapse),
+                            collect(numCollapse), collect(numEdgeSwap), collect(numReposition), collect(numSplitReposition), collect(numDoubleSplitCollapse),
                             collect(numEdgeSplitCollapse), collect(numFaceSplitCollapse), collect(numRegionCollapse), collect(numFaceSwap));
 }
 void FixShape::printBadTypes()
@@ -457,7 +447,7 @@ void fixElementShapesNew(Adapt* a)
         originalCount,count,t1-t0);
   fixShape.printNumOperations();
   fixShape.printNumTypes();
-  unMarkBadQualityNew(a);
+  clearFlagFromDimension(a, BAD_QUALITY, a->mesh->getDimension());
 }
 
 }
