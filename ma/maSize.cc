@@ -514,12 +514,6 @@ struct LogAnisoSizeField : public MetricSizeField
   {
     apf::destroyField(logMField);
   }
-  void clampComponents(Vector& v, double max)
-  {
-    if (v[0] > max) v[0] = max;
-    if (v[1] > max) v[1] = max;
-    if (v[2] > max) v[2] = max;
-  }
   void init(Mesh* m, apf::Field* sizes, apf::Field* frames)
   {
     mesh = m;
@@ -541,7 +535,6 @@ struct LogAnisoSizeField : public MetricSizeField
           Matrix f;
           apf::getVector(sizes, ent, i, h);
           apf::getMatrix(frames, ent, i, f);
-          // clampComponents(h, 5);
           Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
           Matrix S(s[0], 0   , 0,
               0    , s[1], 0,
@@ -666,10 +659,34 @@ struct IsoUserField : public IsoSizeField
   FieldReader reader;
 };
 
+static void clampSizeField(Mesh*m, apf::Field* sizes)
+{
+  Vector lower;
+  Vector upper;
+  getBoundingBox(m, lower, upper);
+  Entity* ent;
+  Iterator* it;
+  for (int d = 0; d <= m->getDimension(); d++) {
+    it = m->begin(d);
+    while( (ent = m->iterate(it)) ){
+      int type = m->getType(ent);
+      int non = sizes->getShape()->countNodesOn(type);
+      for (int i = 0; i < non; i++) {
+        Vector h;
+        apf::getVector(sizes, ent, i, h);
+        if (h[0] > upper[0]) h[0] = upper[0];
+        if (h[1] > upper[1]) h[1] = upper[1];
+        if (h[2] > upper[2]) h[2] = upper[2];
+        apf::setVector(sizes, ent, i, h);
+      }
+    }
+  }
+}
+
 SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames,
     bool logInterpolation)
 {
-  // logInterpolation is "false" by default
+  clampSizeField(m, sizes);
   if (! logInterpolation) {
     AnisoSizeField* anisoF = new AnisoSizeField();
     anisoF->init(m, sizes, frames);
