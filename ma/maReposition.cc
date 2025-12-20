@@ -28,23 +28,20 @@ void RepositionVertex::init(Entity* vertex)
   this->prevPosition = getPosition(mesh, vertex);
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
   mesh->getUp(vertex, adjEdges);
-  storeOldCache();
+  clearAdjCache();
 }
 
-void RepositionVertex::storeOldCache()
+void RepositionVertex::clearAdjCache()
 {
-  oldCache.clear();
-  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
-    if (mesh->hasTag(adjacentElements[i], adapt->qualityCache)) {
-      oldCache.push_back(getCachedQuality(adapt, adjacentElements[i]));
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i)
       mesh->removeTag(adjacentElements[i], adapt->qualityCache);
-    }
-    else oldCache.push_back(-1);
-  }
-
-  for (size_t i = 0; i < adjEdges.n; ++i) {
-    if (mesh->hasTag(adjEdges.e[i], adapt->sizeCache))
+  for (size_t i = 0; i < adjEdges.n; ++i)
       mesh->removeTag(adjEdges.e[i], adapt->sizeCache);
+  apf::Adjacent adjTri;
+  mesh->getAdjacent(vertex, 2, adjTri);
+  for (size_t i = 0; i < adjTri.getSize(); ++i) {
+      mesh->removeTag(adjTri[i], adapt->qualityCache);
+      mesh->removeTag(adjTri[i], adapt->sizeCache);
   }
 }
 

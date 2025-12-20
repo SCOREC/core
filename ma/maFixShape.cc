@@ -136,10 +136,10 @@ bool FixShape::isOneLargeAngle(Entity* tet, Entity*& worstTriangle)
 {
   Entity* triangles[4];
   a->mesh->getDownward(tet, 2, triangles);
-  double worstQuality = a->shape->getQuality(triangles[0]);
+  double worstQuality = 1;
   worstTriangle = triangles[0];
-  for (int i=1; i<4; i++) {
-    double quality = a->shape->getQuality(triangles[i]);
+  for (int i=0; i<4; i++) {
+    double quality = getAndCacheQuality(a, triangles[i]);
     if (quality < worstQuality) {
       worstQuality = quality;
       worstTriangle = triangles[i];
@@ -382,7 +382,7 @@ void FixShape::printNumTypes()
   Entity* worstShape;
   while ((tet = a->mesh->iterate(it))) {
     if (!getFlag(a, tet, BAD_QUALITY)) continue;
-    double qual = a->shape->getQuality(tet);
+    double qual = getAndCacheQuality(a, tet);
     if (qual < worstQual) {
       worstQual = qual;
       worstShape = tet;

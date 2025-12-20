@@ -27,10 +27,9 @@ class RepositionVertex
     apf::Up adjEdges;
     double worstQuality;
     double startingQuality;
-    std::vector<double> oldCache;
 
     void findInvalid();
-    void storeOldCache();
+    void clearAdjCache();
     Vector modelCenter();
     void init(Entity* vertex);
     double findWorstShape(Vector position);
