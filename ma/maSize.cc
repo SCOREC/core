@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <pcu_util.h>
 #include "apfVectorElement.h"
+#include "maAdapt.h"
 
 namespace ma {
 
@@ -717,6 +718,15 @@ SizeField* makeSizeField(Mesh* m, IsotropicFunction* f)
 SizeField* makeSizeField(Mesh* m, apf::Field* size)
 {
   return new IsoUserField(m, size);
+}
+
+double getAndCacheSize(Adapt* a, Entity* e)
+{
+  if (a->mesh->hasTag(e, a->sizeCache))
+    return getCachedSize(a, e);
+  double size = a->sizeField->measure(e);
+  setCachedSize(a, e, size);
+  return size;
 }
 
 double getAverageEdgeLength(Mesh* m)

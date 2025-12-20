@@ -43,19 +43,6 @@ namespace ma {
 
 namespace {
 
-//Measures edge length and stores the result so it doesn't have to be calculated again
-double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
-{
-  double length = 0;
-  if (a->mesh->hasTag(edge, lengthTag))
-    a->mesh->getDoubleTag(edge, lengthTag, &length);
-  else {
-    length = a->sizeField->measure(edge);
-    a->mesh->setDoubleTag(edge, lengthTag, &length);
-  }
-  return length;
-}
-
 //Make sure that a collapse will not create an edge longer than the max
 bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent)
 {
@@ -330,15 +317,14 @@ bool coarsen(Adapt* a)
 }
 
 //returns a list of vertices that bound a short edge
-std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
+std::list<Entity*> getShortEdgeVerts(Adapt* a)
 {
   std::list<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
   Entity* edge;
   while ((edge = a->mesh->iterate(it))) 
   {
-    double length = getLength(a, lengthTag, edge);
-    if (length > MINLENGTH) continue;
+    if (getAndCacheSize(a, edge) > MINLENGTH) continue;
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
@@ -357,7 +343,6 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
   public:
   Adapt* a;
   Entity* vertex;
-  Tag* lengthTag;
   Collapse collapse;
   std::list<Entity*> shortEdgeVerts;
 
@@ -367,14 +352,12 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
   {
     a = adapt;
     collapse.Init(a);
-    lengthTag = a->mesh->createDoubleTag("edge_length", 1);
-    shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
+    shortEdgeVerts = getShortEdgeVerts(a);
   }
 
   ~CollapseAll()
   {
     ma::clearFlagFromDimension(a, CHECKED, 0);
-    a->mesh->destroyTag(lengthTag);
   }
 
   int getTargetDimension() { return 0; }
@@ -420,7 +403,7 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
 
     std::vector<EdgeLength> sorted;
     for (int i=0; i < adjacent.n; i++) {
-      double length = getLength(a, lengthTag, adjacent.e[i]);
+      double length = getAndCacheSize(a, adjacent.e[i]);
       EdgeLength measured{adjacent.e[i], length};
       if (measured.length > MINLENGTH) continue;
       sorted.push_back(measured);

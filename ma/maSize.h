@@ -18,6 +18,7 @@
 
 namespace ma {
 
+class Adapt;
 typedef apf::Matrix3x3 Matrix;
 /* Desired length bounds in metric space to replace hard coded values. Right now
 these values are const, since we are not sure it is worth while to have the user,
@@ -114,6 +115,7 @@ SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f,
 SizeField* makeSizeField(Mesh* m, apf::Field* size);
 SizeField* makeSizeField(Mesh* m, IsotropicFunction* f);
 
+double getAndCacheSize(Adapt* a, Entity* e);
 double getAverageEdgeLength(Mesh* m);
 double getMaximumEdgeLength(Mesh* m, SizeField* sf = 0);
 
