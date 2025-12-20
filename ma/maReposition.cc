@@ -27,6 +27,7 @@ void RepositionVertex::init(Entity* vertex)
   this->vertex = vertex;
   this->prevPosition = getPosition(mesh, vertex);
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  mesh->getUp(vertex, adjEdges);
   storeOldCache();
 }
 
@@ -39,6 +40,11 @@ void RepositionVertex::storeOldCache()
       mesh->removeTag(adjacentElements[i], adapt->qualityCache);
     }
     else oldCache.push_back(-1);
+  }
+
+  for (size_t i = 0; i < adjEdges.n; ++i) {
+    if (mesh->hasTag(adjEdges.e[i], adapt->sizeCache))
+      mesh->removeTag(adjEdges.e[i], adapt->sizeCache);
   }
 }
 
@@ -105,7 +111,6 @@ bool RepositionVertex::moveToImproveQuality(Entity* vertex)
 {
   if (mesh->getModelType(mesh->toModel(vertex)) != 3) return false; //TODO: remove limitation
   init(vertex);
-  mesh->getUp(vertex, adjEdges);
 
   Vector center = modelCenter();
   Vector target = center + (prevPosition - center)/4;
@@ -154,8 +159,7 @@ void RepositionVertex::moveToImproveShortEdges(Entity* vertex)
   int dim = mesh->getModelType(mesh->toModel(vertex));
   if (dim == 0) return;
   init(vertex);
-  
-  mesh->getUp(vertex, adjEdges);
+
   this->startingQuality = findWorstShape(prevPosition);
   Vector center = modelCenter();
   const auto getLength = [this](const Vector& pos) { return this->findShortestEdge(pos); };

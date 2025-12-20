@@ -41,44 +41,6 @@ This file contains two coarsening alogrithms.
 
 namespace ma {
 
-namespace {
-
-//Make sure that a collapse will not create an edge longer than the max
-bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent)
-{
-  Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vertex);
-  for (int i=0; i<adjacent.n; i++) {
-    Entity* newEdgeVerts[2]{vertex, getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vCollapse)};
-    Entity* newEdge = a->mesh->createEntity(apf::Mesh::EDGE, 0, newEdgeVerts);
-    double length = a->sizeField->measure(newEdge);
-    destroyElement(a, newEdge);
-    if (length > MAXLENGTH) return false;
-  }
-  return true;
-}
-
-bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
-{
-  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-  bool alreadyFlagged = true;
-  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
-  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
-
-  double quality = a->input->shouldForceAdaptation ? a->input->validQuality 
-                                                  : a->input->goodQuality;
-
-  bool result = false;
-  if (collapse.setEdge(edge) && 
-      collapse.checkClass() &&
-      collapse.checkTopo() &&
-      collapse.tryBothDirections(quality)) {
-    result = true;
-  }  
-  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
-  return result;
-}
-}
-
 class CollapseChecker : public apf::CavityOp
 {
   public:
@@ -410,8 +372,6 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
     }
     std::sort(sorted.begin(), sorted.end());
     for (size_t i=0; i < sorted.size(); i++) {
-      // Entity* opposite = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
-      // if (!tryCollapseEdge(a, sorted[i].edge, opposite, collapse, adjacent)) continue;
       if (!collapse.run(sorted[i].edge, vertex, qualityToBeat)) continue;
       flagIndependentSet(adjacent);
       collapse.destroyOldElements();

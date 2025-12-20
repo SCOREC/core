@@ -34,12 +34,11 @@ int markBadQualityNew(Adapt* a)
   Entity* e;
   it = m->begin(m->getDimension());
   int total = 0;
-  while ((e = m->iterate(it))) {
+  while ((e = m->iterate(it)))
     if (getAndCacheQuality(a, e) < a->input->goodQuality){
       setFlag(a, e, ma::BAD_QUALITY);
       total++;
     }
-  }
   m->end(it);
   return total;
 }
@@ -103,27 +102,14 @@ bool FixShape::fixShortEdge(Entity* tet)
   Entity* edges[6];
   a->mesh->getDownward(tet, 1, edges);
   for (int i=0; i<6; i++)
-    if (a->sizeField->measure(edges[i]) < MINLENGTH)
+    if (getAndCacheSize(a, edges[i]) < MINLENGTH)
       if (collapseEdge(edges[i]))
         { numCollapse++; return true; }
   for (int i=0; i<6; i++)
-    if (a->sizeField->measure(edges[i]) < MINLENGTH)
+    if (getAndCacheSize(a, edges[i]) < MINLENGTH)
       if (collapseToAdjacent(edges[i]))
         { numCollapse++; return true; }
   return false;
-}
-
-double FixShape::getWorstShape(EntityArray& tets, Entity*& worst)
-{
-  double worstQuality = 1;
-  for (int i=0; i<tets.size(); i++) {
-    double quality = a->shape->getQuality(tets[i]);
-    if (quality < worstQuality) {
-      worstQuality = quality;
-      worst = tets[i];
-    }
-  }
-  return worstQuality;
 }
 
 bool FixShape::splitReposition(Entity* edge)
@@ -164,10 +150,10 @@ bool FixShape::isOneLargeAngle(Entity* tet, Entity*& worstTriangle)
 
 Entity* FixShape::getLongestEdge(Entity* edges[3])
 {
-  double longestLength = a->sizeField->measure(edges[0]);
+  double longestLength = 0;
   Entity* longestEdge = edges[0];
-  for (int i=1; i<3; i++) {
-    double length = a->sizeField->measure(edges[i]);
+  for (int i=0; i<3; i++) {
+    double length = getAndCacheSize(a, edges[i]);
     if (length > longestLength) {
       longestLength = length;
       longestEdge = edges[i];
@@ -338,7 +324,7 @@ bool FixShape::isShortEdge(Entity* tet)
   a->mesh->getDownward(tet, 1, edges);
   int numShortEdges=0;
   for (int i=0; i<6; i++)
-    if (a->sizeField->measure(edges[i]) < MINLENGTH)
+    if (getAndCacheSize(a, edges[i]) < MINLENGTH)
       numShortEdges++;
 
   if (numShortEdges==0) return false;
