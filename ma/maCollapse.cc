@@ -74,12 +74,9 @@ bool Collapse::isValid()
   Vector prev = getPosition(adapt->mesh, vertToCollapse);
   Vector target = getPosition(adapt->mesh, vertToKeep);
   adapt->mesh->setPoint(vertToCollapse, 0, target);
-  EntityArray elements;
-  elements.setSize(elementsToKeep.size());
-  int i=0;
+  bool valid = true;
   for (Entity* e : elementsToKeep)
-    elements[i++] = e;
-  bool valid = areTetsValid(adapt->mesh, elements);
+    if (!isTetValid(adapt->mesh, e)) {valid = false; break;}
   adapt->mesh->setPoint(vertToCollapse, 0, prev);
   return valid;
 }
@@ -91,8 +88,7 @@ bool Collapse::anyWorseQuality(double qualityToBeat)
   adapt->mesh->setPoint(vertToCollapse, 0, target);
   bool worse = false;
   for (Entity* e : elementsToKeep)
-    if (adapt->shape->getQuality(e) < qualityToBeat)
-      {worse = true; break;}
+    if (adapt->shape->getQuality(e) < qualityToBeat) {worse = true; break;}
   adapt->mesh->setPoint(vertToCollapse, 0, prev);
   return worse;
 }
