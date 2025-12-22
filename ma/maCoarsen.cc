@@ -40,6 +40,7 @@ This file contains two coarsening alogrithms.
 #include "maShapeHandler.h"
 
 namespace ma {
+const double MINIMUM_QUALITY = std::pow(.1, 3);
 
 class CollapseChecker : public apf::CavityOp
 {
@@ -360,7 +361,7 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
   */
   bool collapseShortest(Entity* vertex, apf::Up& adjacent)
   {
-    double qualityToBeat = a->input->shouldForceAdaptation ? a->input->validQuality 
+    double qualityToBeat = a->input->shouldForceAdaptation ? MINIMUM_QUALITY
                                                   : a->input->goodQuality;
 
     std::vector<EdgeLength> sorted;

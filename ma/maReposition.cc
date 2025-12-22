@@ -76,7 +76,14 @@ bool RepositionVertex::move(Entity* vertex, Vector target)
 
 double RepositionVertex::findWorstShape(Vector position)
 {
-  mesh->setPoint(vertex, 0, position);
+  Model* gm = mesh->toModel(vertex);
+  if (mesh->getModelType(gm) < 3)  {
+    Vector p;
+    mesh->getParamOn(gm,vertex,p);
+    mesh->snapToModel(gm,p,position);
+    mesh->setPoint(vertex,0,position);
+  }
+  else mesh->setPoint(vertex, 0, position);  
   double worst = 1;
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
     double quality = adapt->shape->getQuality(adjacentElements[i]);
@@ -106,7 +113,7 @@ double goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector 
 
 bool RepositionVertex::moveToImproveQuality(Entity* vertex)
 {
-  if (mesh->getModelType(mesh->toModel(vertex)) != 3) return false; //TODO: remove limitation
+  if (mesh->getModelType(mesh->toModel(vertex)) < 2) return false; //TODO: remove limitation
   init(vertex);
 
   Vector center = modelCenter();
