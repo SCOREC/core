@@ -55,6 +55,33 @@ bool Collapse::run(Entity* edge, Entity* vert, double qualityToBeat)
   rebuildElements();
   fitElements();
   unmark();
+
+  if (adapt->mesh->getDimension()==2 && !isGood2DMesh()) {destroyNewElements(); return false;}
+  return true;
+}
+
+bool Collapse::run(Entity* edge, double qualityToBeat)
+{
+  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
+  if (!setEdge(edge)) return false;
+  if (!checkClass()) return false;
+  if (!checkTopo()) return false;
+
+  computeElementSets();
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+                    std::max(getOldQuality(), adapt->input->validQuality));
+
+  if (!isValid() || anyWorseQuality(qualityToBeat)) {
+    if (!getFlag(adapt, vertToKeep, COLLAPSE)) { unmark(); return false; }
+    std::swap(vertToKeep, vertToCollapse);
+    computeElementSets();
+    if (!isValid() || anyWorseQuality(qualityToBeat)) { unmark(); return false; }
+  } 
+
+  rebuildElements();
+  fitElements();
+  unmark();
   return true;
 }
 
@@ -71,6 +98,8 @@ bool Collapse::requestLocality(apf::CavityOp* o)
 
 bool Collapse::isValid()
 {
+  // PCU_ALWAYS_ASSERT( ! adapt->mesh->isShared(vertToCollapse));
+  // if (adapt->mesh->getDimension() == 3 && !cavity.shouldFit) return true;
   Vector prev = getPosition(adapt->mesh, vertToCollapse);
   Vector target = getPosition(adapt->mesh, vertToKeep);
   adapt->mesh->setPoint(vertToCollapse, 0, target);
@@ -607,32 +636,6 @@ bool isRequiredForMatchedEdgeCollapse(Adapt* adapt, Entity* vertex)
         return true;
   }
   return isRequiredForAnEdgeCollapse(adapt, vertex);
-}
-
-bool collapseEdge(Collapse& collapse, Entity* edge, double qualityToBeat)
-{
-  Adapt* adapt = collapse.adapt;
-  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
-  if (!collapse.setEdge(edge)) return false;
-  if (!collapse.checkClass()) return false;
-  if (!collapse.checkTopo()) return false;
-
-  collapse.computeElementSets();
-  if (!adapt->input->shouldForceAdaptation)
-    qualityToBeat = std::min(adapt->input->goodQuality,
-                    std::max(collapse.getOldQuality(),adapt->input->validQuality));
-
-  if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) {
-    if (!getFlag(adapt,collapse.vertToKeep,COLLAPSE)) { collapse.unmark(); return false; }
-    std::swap(collapse.vertToKeep,collapse.vertToCollapse);
-    collapse.computeElementSets();
-    if (!collapse.isValid() || collapse.anyWorseQuality(qualityToBeat)) { collapse.unmark(); return false; }
-  } 
-
-  collapse.rebuildElements();
-  collapse.fitElements();
-  collapse.unmark();
-  return true;
 }
 
 bool setupCollapse(Collapse& collapse, Entity* edge, Entity* vert)

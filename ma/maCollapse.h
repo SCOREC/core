@@ -25,6 +25,7 @@ class Collapse
   public:
     void Init(Adapt* a);
     bool run(Entity* edge, Entity* vert, double qualityToBeat);
+    bool run(Entity* edge, double qualityToBeat);
     bool requestLocality(apf::CavityOp* o);
     void destroyOldElements();
     void destroyNewElements();
