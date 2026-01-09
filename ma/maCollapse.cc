@@ -496,8 +496,22 @@ Entity* Collapse::rebuildEntity(Mesh* m, Entity* original, Entity** downward)
   return entity;
 }
 
+void Collapse::rebuildElements2D()
+{
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+  newElements.setSize(elementsToKeep.size());
+  cavity.beforeBuilding();
+  size_t ni=0;
+  APF_ITERATE(EntitySet,elementsToKeep,it)
+    newElements[ni++]=
+        rebuildElement(adapt->mesh, *it, vertToCollapse, vertToKeep,
+            adapt->buildCallback, rebuildCallback);
+  cavity.afterBuilding();
+}
+
 void Collapse::rebuildElements()
 {
+  if (adapt->mesh->getDimension() < 3) return rebuildElements2D();
   PCU_ALWAYS_ASSERT(elementsToKeep.size());
   newElements.setSize(elementsToKeep.size());
   cavity.beforeBuilding();

@@ -77,7 +77,7 @@ bool RepositionVertex::move(Entity* vertex, Vector target)
 double RepositionVertex::findWorstShape(Vector position)
 {
   Model* gm = mesh->toModel(vertex);
-  if (mesh->getModelType(gm) < 3)  {
+  if (mesh->getModelType(gm) < 3 && adapt->input->shouldSnap)  {
     Vector p;
     mesh->getParamOn(gm,vertex,p);
     mesh->snapToModel(gm,p,position);

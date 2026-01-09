@@ -36,6 +36,7 @@ class Collapse
     void setVerts();
     virtual void computeElementSets();
     void rebuildElements();
+    void rebuildElements2D();
     void fitElements();
     bool isGood2DMesh();
     void cancel();
