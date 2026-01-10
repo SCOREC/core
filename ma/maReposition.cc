@@ -19,7 +19,7 @@ RepositionVertex::RepositionVertex(Adapt* a) : adapt(a), mesh(a->mesh)
 {
 }
 
-void RepositionVertex::init(Entity* vertex)
+bool RepositionVertex::init(Entity* vertex)
 {
   this->invalid.n = 0;
   this->adjEdges.n = 0;
@@ -27,8 +27,11 @@ void RepositionVertex::init(Entity* vertex)
   this->vertex = vertex;
   this->prevPosition = getPosition(mesh, vertex);
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i)
+    if (!isSimplex(mesh->getType(adjacentElements[i]))) return false;
   mesh->getUp(vertex, adjEdges);
   clearAdjCache();
+  return true;
 }
 
 void RepositionVertex::clearAdjCache()
@@ -66,7 +69,7 @@ void RepositionVertex::findInvalid()
 
 bool RepositionVertex::move(Entity* vertex, Vector target)
 {
-  init(vertex);
+  if (!init(vertex)) return false;
   mesh->setPoint(vertex, 0, target);
   findInvalid();
   if (invalid.n == 0) return true;
@@ -114,7 +117,7 @@ double goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector 
 bool RepositionVertex::moveToImproveQuality(Entity* vertex)
 {
   if (mesh->getModelType(mesh->toModel(vertex)) < 2) return false; //TODO: remove limitation
-  init(vertex);
+  if (!init(vertex)) return false;
 
   Vector center = modelCenter();
   Vector target = center + (prevPosition - center)/4;
@@ -162,7 +165,7 @@ void RepositionVertex::moveToImproveShortEdges(Entity* vertex)
 {
   int dim = mesh->getModelType(mesh->toModel(vertex));
   if (dim == 0) return;
-  init(vertex);
+  if (!init(vertex)) return;
 
   this->startingQuality = findWorstShape(prevPosition);
   Vector center = modelCenter();

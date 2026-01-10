@@ -34,11 +34,12 @@ int markBadQualityNew(Adapt* a)
   Entity* e;
   it = m->begin(m->getDimension());
   int total = 0;
-  while ((e = m->iterate(it)))
-    if (getAndCacheQuality(a, e) < a->input->goodQuality){
-      setFlag(a, e, ma::BAD_QUALITY);
-      total++;
-    }
+  while ((e = m->iterate(it))) {
+    if (!isSimplex(m->getType(e))) continue;
+    if (getAndCacheQuality(a, e) >= a->input->goodQuality) continue;
+    setFlag(a, e, ma::BAD_QUALITY);
+    total++;
+  }
   m->end(it);
   return total;
 }

@@ -58,7 +58,6 @@ int main(int argc, char** argv)
   in->shouldRunMidParma = true;
   in->shouldRunPostParma = true;
   in->shouldRefineLayer = true;
-  in->goodQuality = 0.2;
   ma::adapt(in);
   m->verify();
   if (logInterpolation)

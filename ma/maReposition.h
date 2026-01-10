@@ -31,7 +31,7 @@ class RepositionVertex
     void findInvalid();
     void clearAdjCache();
     Vector modelCenter();
-    void init(Entity* vertex);
+    bool init(Entity* vertex);
     double findWorstShape(Vector position);
     double findShortestEdge(Vector position);
 };
