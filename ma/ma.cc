@@ -94,8 +94,9 @@ void adapt(Input* in)
   print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
   printHistogramStats(a);
   m->verify();
-  ma_dbg::addFieldInfo(a);
-  apf::writeVtkFiles("mesh_tets_end", m, 3);
+  ma_dbg::useFieldInfo(a, [m] {
+    apf::writeVtkFiles("mesh_tets_end", m, 3);
+  });
 
   delete a;
   // cleanup input object and associated sizefield and solutiontransfer objects

@@ -337,40 +337,40 @@ bool FixShape::isShortEdge(Entity* tet)
 
 void FixShape::printBadShape(Entity* problemTet)
 {
-  Entity* worstTri;
-  Entity* problemEnts[4];
-  if (isShortEdge(problemTet)) print(a->mesh->getPCU(), "Worst is short\n");
-  else if (isOneLargeAngle(problemTet, worstTri)) print(a->mesh->getPCU(), "Worst is one large angle\n");
-  else if (isTwoLargeAngles(problemTet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
-  else print(a->mesh->getPCU(), "Worst is three large angles\n");
+  ma_dbg::useFieldInfo(a, [this, &problemTet] {
+    Entity* worstTri;
+    Entity* problemEnts[4];
+    if (isShortEdge(problemTet)) print(a->mesh->getPCU(), "Worst is short\n");
+    else if (isOneLargeAngle(problemTet, worstTri)) print(a->mesh->getPCU(), "Worst is one large angle\n");
+    else if (isTwoLargeAngles(problemTet, problemEnts)) print(a->mesh->getPCU(), "Worst is two large angles\n");
+    else print(a->mesh->getPCU(), "Worst is three large angles\n");
 
-  ma_dbg::addFieldInfo(a);
+    EntitySet bad;
+    bad.insert(problemTet);
+    EntitySet adjacent1 = getNextLayer(a, bad);
+    EntitySet adjacent2 = getNextLayer(a, adjacent1);
 
-  EntitySet bad;
-  bad.insert(problemTet);
-  EntitySet adjacent1 = getNextLayer(a, bad);
-  EntitySet adjacent2 = getNextLayer(a, adjacent1);
+    ma_dbg::flagEntityAllDim(a, 3, "worst_tet", &problemTet, 1);
+    ma_dbg::flagEntity(a, 3, "worst_tet", bad);
+    ma_dbg::flagEntity(a, 3, "worst_tet_adj", adjacent1);
+    ma_dbg::flagEntity(a, 3, "worst_tet_adj2", adjacent2);
 
-  ma_dbg::flagEntityAllDim(a, 3, "worst_tet", &problemTet, 1);
-  ma_dbg::flagEntity(a, 3, "worst_tet", bad);
-  ma_dbg::flagEntity(a, 3, "worst_tet_adj", adjacent1);
-  ma_dbg::flagEntity(a, 3, "worst_tet_adj2", adjacent2);
-
-  std::vector<Entity*> badFaces;
-  Iterator* it = a->mesh->begin(3);
-  Entity* tet;
-  while ((tet = a->mesh->iterate(it))) {
-    if (!getFlag(a, tet, BAD_QUALITY)) continue;
-    Entity* faces[4];
-    mesh->getDownward(tet, 2, faces);
-    for (Entity* face : faces)
-      if (isOnModelFace(mesh, face))
-        badFaces.push_back(face);
-  }
-  ma_dbg::flagEntity(a, 2, "bad_surface_tets", &badFaces[0], badFaces.size());
-  apf::writeVtkFiles("mesh_tets", a->mesh, 3);
-  apf::writeVtkFiles("mesh_faces", a->mesh, 2);
-  apf::writeVtkFiles("mesh_edges", a->mesh, 1);
+    std::vector<Entity*> badFaces;
+    Iterator* it = a->mesh->begin(3);
+    Entity* tet;
+    while ((tet = a->mesh->iterate(it))) {
+      if (!getFlag(a, tet, BAD_QUALITY)) continue;
+      Entity* faces[4];
+      mesh->getDownward(tet, 2, faces);
+      for (Entity* face : faces)
+        if (isOnModelFace(mesh, face))
+          badFaces.push_back(face);
+    }
+    ma_dbg::flagEntity(a, 2, "bad_surface_tets", &badFaces[0], badFaces.size());
+    apf::writeVtkFiles("mesh_tets", a->mesh, 3);
+    apf::writeVtkFiles("mesh_faces", a->mesh, 2);
+    apf::writeVtkFiles("mesh_edges", a->mesh, 1);
+  });
 }
 
 void FixShape::printNumTypes()

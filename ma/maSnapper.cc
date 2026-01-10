@@ -96,26 +96,25 @@ static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 #if defined(DEBUG_FPP)
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
-  ma_dbg::addTargetLocation(a, "snap_target");
-  ma_dbg::addFieldInfo(a);
+  ma_dbg::useFieldInfo(a, [a, FPP] {
+    apf::writeVtkFiles("FPP_Mesh", a->mesh);
+    EntitySet invalid;
+    for (auto e : FPP->problemRegions) invalid.insert(e);
+    ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
-  apf::writeVtkFiles("FPP_Mesh", a->mesh);
-  EntitySet invalid;
-  for (auto e : FPP->problemRegions) invalid.insert(e);
-  ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
+    for (auto e : FPP->commEdges) setFlag(a, e, CHECKED);
+    ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
+    for (auto e : FPP->commEdges) clearFlag(a, e, CHECKED);
 
-  for (auto e : FPP->commEdges) setFlag(a, e, CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
-  for (auto e : FPP->commEdges) clearFlag(a, e, CHECKED);
+    flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
+    flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
+    flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
 
-  flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
-  flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
-  flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
-
-  EntitySet adjacent1 = getNextLayer(a, invalid);
-  ma_dbg::createCavityMesh(a, adjacent1, "FPP_ADJACENT_1");
-  EntitySet adjacent2 = getNextLayer(a, adjacent1);
-  ma_dbg::createCavityMesh(a, adjacent2, "FPP_ADJACENT_2");
+    EntitySet adjacent1 = getNextLayer(a, invalid);
+    ma_dbg::createCavityMesh(a, adjacent1, "FPP_ADJACENT_1");
+    EntitySet adjacent2 = getNextLayer(a, adjacent1);
+    ma_dbg::createCavityMesh(a, adjacent2, "FPP_ADJACENT_2");
+  });
 }
 #endif
 

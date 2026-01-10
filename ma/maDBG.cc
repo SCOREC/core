@@ -58,7 +58,7 @@ apf::Field* getField(ma::Adapt* a, int dim,  const char* fieldName)
   return field;
 }
 
-void addFieldInfo(ma::Adapt* a)
+void useFieldInfo(ma::Adapt* a, const std::function<void()>& funcUsingField)
 {
   ma::Mesh* m = a->mesh;
   apf::Field* fieldVert = getField(a, 0, "vert_classification");
@@ -92,12 +92,20 @@ void addFieldInfo(ma::Adapt* a)
   std::vector<double> lq_no_metric;
   ma::getLinearQualitiesInMetricSpace(a->mesh, a->sizeField, lq_metric);
   ma::getLinearQualitiesInPhysicalSpace(a->mesh, lq_no_metric);
-  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
-  colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
+  apf::Field* metricField = colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
+  apf::Field* physicalField = colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
+  apf::Field* snapTargetField = addTargetLocation(a, "snap_target");
 
+  funcUsingField();
+  apf::destroyField(fieldVert);
+  apf::destroyField(fieldEdge);
+  apf::destroyField(fieldFace);
+  apf::destroyField(metricField);
+  apf::destroyField(physicalField);
+  apf::destroyField(snapTargetField);
 }
 
-void addTargetLocation(ma::Adapt* a,
+apf::Field* addTargetLocation(ma::Adapt* a,
     const char* fieldName)
 {
   ma::Mesh* m = a->mesh;
@@ -123,6 +131,7 @@ void addTargetLocation(ma::Adapt* a,
     apf::setVector(paramField , ent, 0, x);
   }
   m->end(it);
+  return paramField;
 }
 
 void addParamCoords(ma::Adapt* a,
@@ -199,7 +208,7 @@ void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entit
   }
 }
 
-void colorEntitiesOfDimWithValues(ma::Adapt* a,
+apf::Field* colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,
     const std::vector<double> & vals,
     const char* fieldName)
@@ -225,6 +234,7 @@ void colorEntitiesOfDimWithValues(ma::Adapt* a,
     index++;
   }
   m->end(it);
+  return colorField;
 }
 
 void evaluateFlags(ma::Adapt* a,

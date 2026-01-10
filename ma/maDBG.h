@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <assert.h>
+#include <functional>
 
 namespace ma_dbg {
 
@@ -27,9 +28,9 @@ void writeMesh(ma::Mesh* m,
 
 /* Creates a field to contain the model classification for each vertex. Which can be
   printed to a file using writeMesh() with dim=0. */
-void addFieldInfo(ma::Adapt* a);
+void useFieldInfo(ma::Adapt* a, const std::function<void()>& funcUsingField);
 
-void addTargetLocation(ma::Adapt* a,
+apf::Field* addTargetLocation(ma::Adapt* a,
     const char* fieldName);
 
 void addParamCoords(ma::Adapt* a,
@@ -52,7 +53,7 @@ void flagEntityAllDim(ma::Adapt* a,
     ma::Entity** entities, 
     int size);
 
-void colorEntitiesOfDimWithValues(ma::Adapt* a,
+apf::Field* colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,
     const std::vector<double> & quals,
     const char* fieldName);
