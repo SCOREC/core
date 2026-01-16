@@ -665,6 +665,12 @@ static void clampSizeField(Mesh*m, apf::Field* sizes)
   Vector lower;
   Vector upper;
   getBoundingBox(m, lower, upper);
+  double max = std::abs(lower[0]) + std::abs(upper[0]);
+  max = std::max(max, std::abs(lower[1]) + std::abs(upper[1]));
+  max = std::max(max, std::abs(lower[2]) + std::abs(upper[2]));
+  max = max/2;
+  bool clamped = false;
+
   Entity* ent;
   Iterator* it;
   for (int d = 0; d <= m->getDimension(); d++) {
@@ -675,13 +681,15 @@ static void clampSizeField(Mesh*m, apf::Field* sizes)
       for (int i = 0; i < non; i++) {
         Vector h;
         apf::getVector(sizes, ent, i, h);
-        if (h[0] > upper[0]) h[0] = upper[0];
-        if (h[1] > upper[1]) h[1] = upper[1];
-        if (h[2] > upper[2]) h[2] = upper[2];
+        if (h[0] > max) {clamped = true; h[0] = max;}
+        if (h[1] > max) {clamped = true; h[1] = max;}
+        if (h[2] > max) {clamped = true; h[2] = max;}
         apf::setVector(sizes, ent, i, h);
       }
     }
   }
+  if (clamped) print(m->getPCU(), "[WARNING]: Found size field larger than the bounding box. "
+                                  "Size field has been automatically clamped to the bounding box.");
 }
 
 SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames,

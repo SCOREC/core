@@ -35,6 +35,7 @@ int markBadQualityNew(Adapt* a)
   it = m->begin(m->getDimension());
   int total = 0;
   while ((e = m->iterate(it))) {
+    if (!a->mesh->isOwned(e)) continue;
     if (!isSimplex(m->getType(e))) continue;
     if (getAndCacheQuality(a, e) >= a->input->goodQuality) continue;
     setFlag(a, e, ma::BAD_QUALITY);
