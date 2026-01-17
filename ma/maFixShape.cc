@@ -42,7 +42,7 @@ int markBadQualityNew(Adapt* a)
     total++;
   }
   m->end(it);
-  return total;
+  return m->getPCU()->Add<int>(total);;
 }
 
 FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), split(adapt), reposition(adapt)
@@ -87,8 +87,8 @@ bool FixShape::collapseToAdjacent(Entity* edge)
     for (int e=0; e<adjEdges.n; e++) {
       if (adjEdges.e[e] == edge) continue;
       Entity* keep = getEdgeVertOppositeVert(a->mesh, adjEdges.e[e], verts[v]);
-      if (!mesh->isOwned(keep)) continue; // TODO: improvement to requestLocality should remove use for this function
-      if (mesh->isShared(keep)) continue; // TODO: improvement to requestLocality should remove use for this function
+      if (!mesh->isOwned(keep)) continue;
+      if (mesh->isShared(keep)) continue;
       bool alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
       setFlag(a, keep, DONT_COLLAPSE);
       bool success = collapseEdge(adjEdges.e[e]);
