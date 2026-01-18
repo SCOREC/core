@@ -124,7 +124,12 @@ bool RepositionVertex::moveToImproveQuality(Entity* vertex)
   Vector center = modelCenter();
   Vector target = center + (prevPosition - center)/4;
   const auto getQuality = [this](const Vector& pos) { return this->findWorstShape(pos); };
+  double startQuality = getQuality(prevPosition);
   worstQuality = goldenSearch(getQuality, prevPosition, target, 0.000001);
+  if (startQuality > worstQuality) {
+    mesh->setPoint(vertex, 0, prevPosition);
+    worstQuality = startQuality;
+  }
   return worstQuality > adapt->input->goodQuality;
 }
 

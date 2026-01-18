@@ -82,7 +82,6 @@ void adapt(Input* in)
     snap(a);
   }
   allowSplitCollapseOutsideLayer(a);
-  // fixElementShapes(a);
   fixElementShapesNew(a);
   cleanupLayer(a);
   tetrahedronize(a);
@@ -134,7 +133,7 @@ void adaptVerbose(Input* in, bool verbose)
     snap(a);
     if (verbose && in->shouldSnap)
       ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
-    fixElementShapesNew(a);
+    fixElementShapes(a);
     if (verbose && in->shouldFixShape)
       ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }
