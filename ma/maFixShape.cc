@@ -277,7 +277,7 @@ bool FixShape::fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
   if (edgeSwap->run(faceEdges[0])) {numEdgeSwap++; return true;}
   if (edgeSwap->run(faceEdges[1])) {numEdgeSwap++; return true;}
   if (edgeSwap->run(faceEdges[2])) {numEdgeSwap++; return true;}
-  if (runFaceSwap(a, problemEnts[0], true)) {numFaceSwap++; return true;}
+  // if (runFaceSwap(a, problemEnts[0], true)) {numFaceSwap++; return true;}
   Entity* v = getTriVertOppositeEdge(a->mesh, problemEnts[2], problemEnts[1]);
   if (splitCollapse.run(problemEnts[1], v)) {numEdgeSplitCollapse++; return true;}
   if (faceSplitCollapse.run(problemEnts[0], tet)) {numFaceSplitCollapse++; return true;}

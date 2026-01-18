@@ -99,6 +99,7 @@ double goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector 
 {
   const double M_GOLDEN_RATIO = (1.0 + std::sqrt(5.0)) / 2.0;
   double leftValue;
+  int max = 50;
 
   do {
     Vector delta_left = left + (right - left) * M_GOLDEN_RATIO;
@@ -110,6 +111,7 @@ double goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector 
     else
       left = delta_left;
 
+    if (--max < 0) break;
   } while ((left-right).getLength() > tol);
   return leftValue;
 }
