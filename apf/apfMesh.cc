@@ -15,7 +15,6 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <algorithm>
-#include <array>
 
 namespace apf {
 
@@ -222,8 +221,6 @@ void Mesh::getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
   gmi_reparam(getModel(), from, &from_p[0], to, &p[0]);
 }
 
-std::map<std::pair<gmi_ent*, int>,
-  std::pair<std::array<double, 2>, bool>> periodicRanges;
 bool Mesh::getPeriodicRange(ModelEntity* g, int axis, double range[2])
 {
   gmi_ent* e = (gmi_ent*)g;

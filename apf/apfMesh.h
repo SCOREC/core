@@ -12,11 +12,13 @@
     \brief The APF Mesh interface*/
 
 #include <vector>
+#include <array>
 #include <map>
 #include <set>
 #include <PCU.h>
 #include "apfVector.h"
 #include "apfDynamicArray.h"
+#include "gmi.h"
 
 struct gmi_model;
 
@@ -407,6 +409,8 @@ class Mesh
     std::vector<Numbering*> numberings;
     std::vector<GlobalNumbering*> globalNumberings;
     pcu::PCU* pcu_;
+    std::map<std::pair<gmi_ent*, int>,
+             std::pair<std::array<double, 2>, bool>> periodicRanges; //TODO: Where to clear?
 };
 
 /** \brief run consistency checks on an apf::Mesh structure

@@ -19,7 +19,6 @@
 #include "maFixShape.h"
 #include <pcu_util.h>
 #include <iostream>
-#include <valgrind/callgrind.h>
 #include "apfGeometry.h"
 
 namespace ma {
@@ -64,14 +63,11 @@ void printHistogramStats(Adapt* a)
 
 void adapt(Input* in)
 {
-  apf::writeVtkFiles("mesh_tets_start", in->mesh, 3);
   double t0 = pcu::Time();
   print(in->mesh->getPCU(), "version 2.0 !");
   validateInput(in);
   Adapt* a = new Adapt(in);
   preBalance(a);
-  CALLGRIND_START_INSTRUMENTATION;
-  CALLGRIND_STOP_INSTRUMENTATION;
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
@@ -92,10 +88,8 @@ void adapt(Input* in)
   double t1 = pcu::Time();
   print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
   printHistogramStats(a);
+  apf::printStats(m);
   m->verify();
-  ma_dbg::useFieldInfo(a, [m] {
-    apf::writeVtkFiles("mesh_tets_end", m, 3);
-  });
 
   delete a;
   // cleanup input object and associated sizefield and solutiontransfer objects
@@ -104,7 +98,6 @@ void adapt(Input* in)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
-  apf::printStats(m);
 }
 
 void adapt(const Input* in)
