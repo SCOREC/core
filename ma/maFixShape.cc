@@ -26,6 +26,8 @@
 #include <pcu_util.h>
 
 namespace ma {
+  
+const double GOODQUALITY2D = .09;
 
 int markBadQualityNew(Adapt* a)
 {
@@ -147,7 +149,7 @@ bool FixShape::isOneLargeAngle(Entity* tet, Entity*& worstTriangle)
       worstTriangle = triangles[i];
     }
   }
-  return worstQuality < .09;
+  return worstQuality < GOODQUALITY2D;
 }
 
 Entity* FixShape::getLongestEdge(Entity* edges[3])

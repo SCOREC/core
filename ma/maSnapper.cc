@@ -45,7 +45,6 @@ Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSpl
   snapTag = st;
   collapse.Init(a);
   edgeSwap = makeEdgeSwap(a);
-  edgeSwap = makeEdgeSwap(a);
   vert = 0;
 }
 
@@ -305,8 +304,6 @@ int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* en
   return bit;
 }
 
-static int debugprint = 0;
-
 /*
   We perform this last to make sure that we have a simple region where we can determine the
   best operation to perform and because we want to avoid creating more vertices to snap since
@@ -352,7 +349,6 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
     mesh->getDownward(ents[0], 1, edges);
     for (int i=0; i<3; i++) 
       if (edgeSwap->run(edges[i])) { numSwap++; return true; }
-    // if (runFaceSwap(adapt, ents[0], false)) { numSwap++; return true; }
     if (splitCollapse.run(ents[1], FPP->vert, qual)) { numSplitCollapse++; return true; }
   }
   return false;
@@ -591,7 +587,7 @@ bool Snapper::run()
     if (!success) FPP = getFPP(adapt, vert, snapTag, invalid);
     if (!success) success = tryCollapseToVertex(FPP);
     if (!success) success = tryReduceCommonEdges(FPP);
-    if (!success) success = tryCollapseTetEdges(FPP); //TODO causing holes in mesh
+    if (!success) success = tryCollapseTetEdges(FPP);
     if (!success) success = trySwapOrSplit(FPP);
   }
 
@@ -601,7 +597,7 @@ bool Snapper::run()
     clearFlag(adapt, vert, SNAP);
   }
   #if defined(DEBUG_FPP)
-  // if (!success && ++DEBUGFAILED == 2) printFPP(adapt, FPP);
+  if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
   #endif
   if (FPP) delete FPP;
   return success;

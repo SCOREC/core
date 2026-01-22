@@ -27,6 +27,7 @@ thesis describes there might be utility to having the user modify them */
 const double MAXLENGTH = 1.5;
 const double MINLENGTH = .5;
 const double MAXLENGTHRATIO = 1.2;
+const double GOODQUALITY = .3;
 
 class SizeField
 {
