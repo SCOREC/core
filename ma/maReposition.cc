@@ -118,7 +118,7 @@ double goldenSearch(const std::function<double(Vector)> &f, Vector left, Vector 
 
 bool RepositionVertex::moveToImproveQuality(Entity* vertex)
 {
-  if (mesh->getModelType(mesh->toModel(vertex)) < 2) return false; //TODO: remove limitation
+  if (mesh->getModelType(mesh->toModel(vertex)) < 2) return false;
   if (!init(vertex)) return false;
 
   Vector center = modelCenter();

@@ -104,7 +104,7 @@ namespace ma {
         Vector normal0 = getTriNormal(mesh, face0);
         Vector normal1 = getTriNormal(mesh, face1);
         if (apf::areClose(normal0, normal1, 1e-10)) {
-          numNewTets = 0; //TODO: TEST Two2Two CASE
+          numNewTets = 0;
           commonEdge = findCommonEdge(mesh, face0, face1);
         }
       }
