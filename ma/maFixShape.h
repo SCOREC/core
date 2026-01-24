@@ -20,6 +20,7 @@ class FixShape : public Operator
   public:
   Adapt* a;
   Mesh* mesh;
+  Entity* badTet;
   Collapse collapse;
   SingleSplitCollapse splitCollapse;
   DoubleSplitCollapse doubleSplitCollapse;
@@ -27,7 +28,6 @@ class FixShape : public Operator
   RepositionVertex reposition;
   EdgeSwap* edgeSwap;
   Splits split;
-  Entity* badTet;
 
   int numCollapse=0;
   int numEdgeSwap=0;

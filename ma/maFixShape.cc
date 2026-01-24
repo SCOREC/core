@@ -57,7 +57,7 @@ int markBadQualityNew(Adapt* a)
   return m->getPCU()->Add<int>(total);;
 }
 
-FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), split(adapt), reposition(adapt)
+FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), reposition(adapt), split(adapt)
 {
   a = adapt;
   mesh = a->mesh;
