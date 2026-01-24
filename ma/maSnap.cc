@@ -75,7 +75,7 @@ static size_t isSurfUnderlyingFaceDegenerate(
   double tol = 1.0e-6 * (bmax - bmin).getLength();
 
   bool isPeriodic[2] = {0};
-  double range[2][2] = {0};
+  double range[2][2] = {{0}};
   int numPeriodicDims = 0;
   for (int i = 0; i < md; i++) {
     isPeriodic[i] = m->getPeriodicRange(g,i,range[i]);
