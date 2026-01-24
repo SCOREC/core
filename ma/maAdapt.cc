@@ -170,6 +170,7 @@ void clearCache(Adapt* a)
   }
   m->destroyTag(a->qualityCache);
   m->destroyTag(a->sizeCache);
+  m->clearModelCache();
 }
 
 double getCachedSize(Adapt* a, Entity* e)

@@ -416,15 +416,13 @@ struct AnisoSizeField : public MetricSizeField
       Matrix& Q)
   {
     if (me->getEntity() != hElement.getEntity())
-      hElement.init(rField,me->getEntity(),me);
+      hElement.init(hField,me->getEntity(),me);
     if (me->getEntity() != rElement.getEntity())
       rElement.init(rField,me->getEntity(),me);
     Vector h;
     Matrix R;
     apf::getVector(&hElement,xi,h);
     apf::getMatrix(&rElement,xi,R);
-    apf::destroyElement(&hElement);
-    apf::destroyElement(&rElement);
     orthogonalizeR(R);
     Matrix S(1/h[0],0,0,
              0,1/h[1],0,
@@ -437,7 +435,7 @@ struct AnisoSizeField : public MetricSizeField
       Entity* newVert)
   {
     if (parent->getEntity() != hElement.getEntity())
-      hElement.init(rField,parent->getEntity(),parent);
+      hElement.init(hField,parent->getEntity(),parent);
     if (parent->getEntity() != rElement.getEntity())
       rElement.init(rField,parent->getEntity(),parent);
     Vector h;
@@ -446,8 +444,6 @@ struct AnisoSizeField : public MetricSizeField
     apf::getMatrix(&rElement,xi,R);
     orthogonalizeR(R);
     this->setValue(newVert,R,h);
-    apf::destroyElement(&hElement);
-    apf::destroyElement(&rElement);
   }
   void setValue(
       Entity* vert,

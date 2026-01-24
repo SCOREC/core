@@ -174,6 +174,12 @@ Mesh::~Mesh()
   delete coordinateField;
 }
 
+void Mesh::clearModelCache()
+{
+  periodicRanges.clear();
+  boundingBoxes.clear();
+}
+
 int Mesh::getModelType(ModelEntity* e)
 {
   return gmi_dim(getModel(), (gmi_ent*)e);
@@ -224,16 +230,21 @@ void Mesh::getParamOn(ModelEntity* g, MeshEntity* e, Vector3& p)
 bool Mesh::getPeriodicRange(ModelEntity* g, int axis, double range[2])
 {
   gmi_ent* e = (gmi_ent*)g;
-  auto it = periodicRanges.find({e, axis});
+  gmi_range(getModel(), e, axis, range);
+  return gmi_periodic(getModel(), e, axis);
+}
+
+bool Mesh::getPeriodicRangeCached(ModelEntity* g, int axis, double range[2])
+{
+  auto it = periodicRanges.find({g, axis});
   if (it != periodicRanges.end()) {
     range[0] = it->second.first[0];
     range[1] = it->second.first[1];
     return it->second.second;
   }
   else{
-    gmi_range(getModel(), e, axis, range);
-    bool output = gmi_periodic(getModel(), e, axis);
-    periodicRanges[{e, axis}] = {{range[0], range[1]}, output};
+    bool output = getPeriodicRange(g, axis, range);
+    periodicRanges[{g, axis}] = {{range[0], range[1]}, output};
     return output;
   }
 }
@@ -292,6 +303,20 @@ bool Mesh::isInClosureOf(ModelEntity* g, ModelEntity* target){
   gmi_ent* et = (gmi_ent*)target;
   int res = gmi_is_in_closure_of(getModel(), e, et);
   return (res == 1) ? true : false;
+}
+
+void Mesh::boundingBoxCached(ModelEntity* g,
+    Vector3& bmin, Vector3& bmax)
+{
+  auto it = boundingBoxes.find(g);
+  if (it != boundingBoxes.end()) {
+    bmin = it->second.first;
+    bmax = it->second.second;
+  }
+  else{
+    boundingBox(g, bmin, bmax);
+    boundingBoxes.insert(it, {g, {bmin, bmax}});
+  }
 }
 
 void Mesh::boundingBox(ModelEntity* g,

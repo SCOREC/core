@@ -290,6 +290,8 @@ class Mesh
     virtual gmi_model* getModel() = 0;
     /** \brief set the geometric model */
     virtual void setModel(gmi_model* newModel) = 0;
+    /** \brief clear cached model info */
+    void clearModelCache();
     /** \brief return the model entity dimension */
     int getModelType(ModelEntity* e);
     /** \brief get the dimension-unique model entity identifier */
@@ -311,6 +313,11 @@ class Mesh
       \returns true if (g) is periodic along this axis */
     bool getPeriodicRange(ModelEntity* g, int axis,
         double range[2]);
+    /** \brief get the periodic properties of a model entity and chache the value
+      \param range if periodic, the parametric range
+      \returns true if (g) is periodic along this axis */
+    bool getPeriodicRangeCached(ModelEntity* g, int axis, 
+        double range[2]);
     /** \brief get closest point on geometry */
     void getClosestPoint(ModelEntity* g, Vector3 const& from,
         Vector3& to, Vector3& p);
@@ -327,6 +334,8 @@ class Mesh
     bool isInClosureOf(ModelEntity* g, ModelEntity* target);
     /** \brief get the bounding box of the model entity g */
     void boundingBox(ModelEntity* g, Vector3& bmin, Vector3& bmax);
+    /** \brief get the bounding box of the model entity g and caches the value*/
+    void boundingBoxCached(ModelEntity* g, Vector3& bmin, Vector3& bmax);
     /** \brief checks if p is on model g */
     bool isOnModel(ModelEntity* g, Vector3 p, double scale);
     /** \brief get the distribution of the mesh's coordinate field */
@@ -409,8 +418,9 @@ class Mesh
     std::vector<Numbering*> numberings;
     std::vector<GlobalNumbering*> globalNumberings;
     pcu::PCU* pcu_;
-    std::map<std::pair<gmi_ent*, int>,
-             std::pair<std::array<double, 2>, bool>> periodicRanges; //TODO: Where to clear?
+    std::map<std::pair<ModelEntity*, int>,
+             std::pair<std::array<double, 2>, bool>> periodicRanges;
+    std::map<ModelEntity*, std::pair<Vector3, Vector3>> boundingBoxes;
 };
 
 /** \brief run consistency checks on an apf::Mesh structure
