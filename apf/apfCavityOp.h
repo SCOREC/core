@@ -96,7 +96,6 @@ class CavityOp
     void preDeletion(MeshEntity* e);
     /** \brief mesh pointer for convenience */
     Mesh* mesh;
-    bool movedByDeletion;
   private:
     typedef std::vector<MeshEntity*> Requests;
     Requests requests;
@@ -110,6 +109,7 @@ class CavityOp
     MeshIterator* iterator;
   protected:
     Sharing* sharing;
+    bool movedByDeletion;
 };
 
 } //namespace apf

@@ -61,14 +61,6 @@ double IdentitySizeField::measure(Entity* e)
   return x;
 }
 
-double IdentitySizeField::measure(Entity* e, Matrix const& Q)
-{
-  apf::MeshElement* me = apf::createMeshElement(mesh,e);
-  double x = apf::measure(me);
-  apf::destroyMeshElement(me);
-  return x;
-}
-
 bool IdentitySizeField::shouldSplit(Entity*)
 {
   return false;

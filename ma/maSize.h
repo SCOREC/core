@@ -34,7 +34,6 @@ class SizeField
   public:
     virtual ~SizeField();
     virtual double measure(Entity* e) = 0;
-    virtual double measure(Entity* e, Matrix const& Q) = 0;
     virtual bool shouldSplit(Entity* edge) = 0;
     virtual bool shouldCollapse(Entity* edge) = 0;
     virtual void interpolate(
@@ -60,7 +59,6 @@ struct IdentitySizeField : public SizeField
 {
   IdentitySizeField(Mesh* m);
   double measure(Entity* e);
-  double measure(Entity* e, Matrix const& Q);
   bool shouldSplit(Entity*);
   bool shouldCollapse(Entity*);
   void interpolate(

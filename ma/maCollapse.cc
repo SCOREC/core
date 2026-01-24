@@ -483,7 +483,7 @@ std::map<Entity*,Entity*> Collapse::getReusableEntities()
       if (edgeToDelete != 0)
         reusable[edgeToReplace] = edgeToKeep;
     }
-    reusable[faceToReplace] = faceToKeep;
+    if (faceToReplace && faceToKeep) reusable[faceToReplace] = faceToKeep;
   }
   return reusable;
 }
