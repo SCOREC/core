@@ -13,8 +13,8 @@ namespace apf {
 
 CavityOp::CavityOp(Mesh* m, bool cm):
   mesh(m),
-  isRequesting(false),
   movedByDeletion(false),
+  isRequesting(false),
   canModify(cm),
   iterator(0),
   sharing(0)
