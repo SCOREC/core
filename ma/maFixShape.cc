@@ -25,6 +25,16 @@
 #include "maDBG.h"
 #include <pcu_util.h>
 
+/**
+ * \file maFixShape.cc
+ * \brief Definition of maFixShape.h file.
+ * This file contains functions to improve the quality of tetrahedron in a mesh.
+ * As described in Li's thesis it will first deterimine if low quality elements
+ * in the mesh contain short edges and remove them through collapses. Otherwise
+ * it will collect some properties of the tetrahedron to determine with operations
+ * are most likely to succeed. 
+*/
+
 namespace ma {
   
 const double GOODQUALITY2D = .09;

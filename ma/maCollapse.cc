@@ -451,7 +451,7 @@ void Collapse::computeElementSets()
   APF_ITERATE(Upward,adjacent,it)
     if ( ! elementsToCollapse.count(*it))
       elementsToKeep.insert(*it);
-  // PCU_ALWAYS_ASSERT(elementsToKeep.size()); TODO: change computeElementSets to bool function that fails when this is false
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
 }
 
 //Find edges and faces that can be reused in new entities after collapse

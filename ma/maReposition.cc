@@ -13,6 +13,16 @@
 #include <cmath>
 #include <functional>
 
+/**
+ * \file maReposition.cc
+ * \brief Definition of maReposition.h file.
+ * This file contains functions to move a vertex. If given a target it will reject the 
+ * reposition if invalid elements are created. It also conatins a function that will move
+ * the vertex to a location that will localy maximize the quality of the adjactent elements.
+ * If the vertex is on a model boundary then it will keep that vertex on the model boundary 
+ * as locations are using a golden-section search.
+*/
+
 namespace ma {
 
 RepositionVertex::RepositionVertex(Adapt* a) : adapt(a), mesh(a->mesh)
@@ -153,31 +163,6 @@ Vector RepositionVertex::modelCenter()
   }
   avg = avg / adjEdges.n;
   return avg;
-}
-
-double RepositionVertex::findShortestEdge(Vector position)
-{
-  double quality = findWorstShape(position);
-  if (quality < startingQuality && quality < adapt->input->goodQuality) return -1;
-
-  double shortest = 1000;
-  for (int i=0; i<adjEdges.n; i++) {
-    double length = adapt->sizeField->measure(adjEdges.e[i]);
-    if (length < shortest) shortest = length;
-  }
-  return shortest;
-}
-
-void RepositionVertex::moveToImproveShortEdges(Entity* vertex)
-{
-  int dim = mesh->getModelType(mesh->toModel(vertex));
-  if (dim == 0) return;
-  if (!init(vertex)) return;
-
-  this->startingQuality = findWorstShape(prevPosition);
-  Vector center = modelCenter();
-  const auto getLength = [this](const Vector& pos) { return this->findShortestEdge(pos); };
-  goldenSearch(getLength, prevPosition, center, 0.000001);
 }
 
 void RepositionVertex::cancel(Entity* vertex)

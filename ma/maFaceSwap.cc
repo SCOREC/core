@@ -4,7 +4,14 @@
 #include "maShapeHandler.h"
 #include "maDBG.h"
 
-//TODO: add comments
+/**
+ * \file maFaceSwap.cc
+ * \brief Definition of maFaceSwap.h file.
+ * This file contain functions to remove the face between two tetrahedron
+ * and replace it with a face pointing in the opposite direction or an edge
+ * without affecting any of the vertices in the cavity. This is done to
+ * improve the quality of the cavity or to make room for vertices to move.
+*/
 
 namespace ma {
 
