@@ -94,7 +94,7 @@ void useFieldInfo(ma::Adapt* a, const std::function<void()>& funcUsingField)
   ma::getLinearQualitiesInPhysicalSpace(a->mesh, lq_no_metric);
   apf::Field* metricField = colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
   apf::Field* physicalField = colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
-  apf::Field* snapTargetField; 
+  apf::Field* snapTargetField = 0; 
   if (a->input->shouldSnap) snapTargetField = addTargetLocation(a, "snap_target");
 
   funcUsingField();

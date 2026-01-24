@@ -48,7 +48,7 @@ void RepositionVertex::clearAdjCache()
 {
   for (size_t i = 0; i < adjacentElements.getSize(); ++i)
       mesh->removeTag(adjacentElements[i], adapt->qualityCache);
-  for (size_t i = 0; i < adjEdges.n; ++i)
+  for (int i = 0; i < adjEdges.n; ++i)
       mesh->removeTag(adjEdges.e[i], adapt->sizeCache);
   apf::Adjacent adjTri;
   mesh->getAdjacent(vertex, 2, adjTri);
