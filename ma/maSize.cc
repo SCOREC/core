@@ -415,15 +415,16 @@ struct AnisoSizeField : public MetricSizeField
       Vector const& xi,
       Matrix& Q)
   {
-    //TODO: cache these elements
-    apf::Element* hElement = apf::createElement(hField,me);
-    apf::Element* rElement = apf::createElement(rField,me);
+    if (me->getEntity() != hElement.getEntity())
+      hElement.init(rField,me->getEntity(),me);
+    if (me->getEntity() != rElement.getEntity())
+      rElement.init(rField,me->getEntity(),me);
     Vector h;
     Matrix R;
-    apf::getVector(hElement,xi,h);
-    apf::getMatrix(rElement,xi,R);
-    apf::destroyElement(hElement);
-    apf::destroyElement(rElement);
+    apf::getVector(&hElement,xi,h);
+    apf::getMatrix(&rElement,xi,R);
+    apf::destroyElement(&hElement);
+    apf::destroyElement(&rElement);
     orthogonalizeR(R);
     Matrix S(1/h[0],0,0,
              0,1/h[1],0,
@@ -435,16 +436,18 @@ struct AnisoSizeField : public MetricSizeField
       Vector const& xi,
       Entity* newVert)
   {
-    apf::Element* rElement = apf::createElement(rField,parent);
-    apf::Element* hElement = apf::createElement(hField,parent);
+    if (parent->getEntity() != hElement.getEntity())
+      hElement.init(rField,parent->getEntity(),parent);
+    if (parent->getEntity() != rElement.getEntity())
+      rElement.init(rField,parent->getEntity(),parent);
     Vector h;
-    apf::getVector(hElement,xi,h);
+    apf::getVector(&hElement,xi,h);
     Matrix R;
-    apf::getMatrix(rElement,xi,R);
+    apf::getMatrix(&rElement,xi,R);
     orthogonalizeR(R);
     this->setValue(newVert,R,h);
-    apf::destroyElement(hElement);
-    apf::destroyElement(rElement);
+    apf::destroyElement(&hElement);
+    apf::destroyElement(&rElement);
   }
   void setValue(
       Entity* vert,
@@ -464,6 +467,8 @@ struct AnisoSizeField : public MetricSizeField
                           0,0,1),
                    Vector(value,value,value));
   }
+  apf::Element hElement;
+  apf::Element rElement;
   apf::Field* hField;
   apf::Field* rField;
   BothEval bothEval;
