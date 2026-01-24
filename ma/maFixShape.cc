@@ -392,7 +392,7 @@ void FixShape::printNumTypes()
   resetCounters();
   Entity* tet;
   Iterator* it = a->mesh->begin(3);
-  double worstQual = 1;
+  // double worstQual = 1;
   // Entity* worstShape;
   while ((tet = a->mesh->iterate(it))) {
     if (!getFlag(a, tet, BAD_QUALITY)) continue;
