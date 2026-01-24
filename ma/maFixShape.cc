@@ -393,14 +393,14 @@ void FixShape::printNumTypes()
   Entity* tet;
   Iterator* it = a->mesh->begin(3);
   double worstQual = 1;
-  Entity* worstShape;
+  // Entity* worstShape;
   while ((tet = a->mesh->iterate(it))) {
     if (!getFlag(a, tet, BAD_QUALITY)) continue;
-    double qual = getAndCacheQuality(a, tet);
-    if (qual < worstQual) {
-      worstQual = qual;
-      worstShape = tet;
-    }
+    // double qual = getAndCacheQuality(a, tet);
+    // if (qual < worstQual) {
+    //   worstQual = qual;
+    //   worstShape = tet;
+    // }
     
     Entity* problemEnts[4];
     Entity* worst;
