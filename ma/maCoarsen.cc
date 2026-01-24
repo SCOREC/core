@@ -326,7 +326,7 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
   }
 
   int getTargetDimension() { return 0; }
-  void call(Entity* e) { movedByDeletion = true; }
+  void call(Entity* e) { (void)e; movedByDeletion = true; }
   void resetIndependentSet() { ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0); }
 
   /*
