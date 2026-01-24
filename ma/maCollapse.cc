@@ -462,9 +462,8 @@ std::map<Entity*,Entity*> Collapse::getReusableEntities()
   for (Entity* elm : elementsToCollapse) {
     Entity* faces[4];
     m->getDownward(elm, 2, faces);
-    Entity* faceToKeep;
-    Entity* faceToReplace;
-
+    Entity* faceToKeep = 0;
+    Entity* faceToReplace = 0;
     for (int f=0; f<4; f++) { 
       Entity* edges[3];
       m->getDownward(faces[f], 1, edges);
@@ -483,7 +482,7 @@ std::map<Entity*,Entity*> Collapse::getReusableEntities()
       if (edgeToDelete != 0)
         reusable[edgeToReplace] = edgeToKeep;
     }
-    if (faceToReplace && faceToKeep) reusable[faceToReplace] = faceToKeep;
+    reusable[faceToReplace] = faceToKeep;
   }
   return reusable;
 }
