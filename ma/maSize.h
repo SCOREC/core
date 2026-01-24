@@ -118,6 +118,16 @@ double getAndCacheSize(Adapt* a, Entity* e);
 double getAverageEdgeLength(Mesh* m);
 double getMaximumEdgeLength(Mesh* m, SizeField* sf = 0);
 
+template <typename Map, typename Key, typename Func>
+typename Map::mapped_type&
+get_or_add(Map& m, const Key& key, Func valueFn)
+{
+  auto it = m.find(key);
+  if (it == m.end())
+    it = m.insert(std::make_pair(key, valueFn())).first;
+  return it->second;
+}
+
 }
 
 #endif
