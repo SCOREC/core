@@ -121,17 +121,32 @@ void CavityOp::applyToDimension(int d)
 
 void CavityOp::applyToList(std::list<MeshEntity*>& elements)
 {
+  MeshTag* migTag = mesh->createLongTag("ma_migrate_list", 1);
+  std::vector<std::list<MeshEntity*>::iterator> iterators(elements.size());
+  auto iter = elements.begin();
+  for (iter = elements.begin(); iter != elements.end();) {
+    long size = (long)iterators.size();
+    mesh->setLongTag(*iter, migTag, &size);
+    iterators.push_back(iter++);
+  }
+  mesh->onDestroy = [&](MeshEntity* e) {
+    if (!mesh->hasTag(e, migTag)) return;
+    long i = 0;
+    mesh->getLongTag(e, migTag, &i);
+    iter = elements.erase(iterators[i]);
+    movedByDeletion = true;
+  };
   do {
     delete sharing;
     sharing = apf::getSharing(mesh);
 
     isRequesting = false;
-    for (auto iter = elements.begin(); iter != elements.end();) {
+    for (iter = elements.begin(); iter != elements.end();) {
       if (sharing->isOwned(*iter)) {
         if (setEntity(*iter) == OK) {
           movedByDeletion=false;
           apply();
-          if (movedByDeletion) {iter = elements.erase(iter); continue;}
+          if (movedByDeletion) continue;
         }
       }
       ++iter;
@@ -142,7 +157,7 @@ void CavityOp::applyToList(std::list<MeshEntity*>& elements)
       mesh-modifying operators, since an apply()
       call could change other overlapping cavities */
     isRequesting = true;
-    for (auto iter = elements.begin(); iter != elements.end();) {
+    for (iter = elements.begin(); iter != elements.end();) {
       if (sharing->isOwned(*iter))
         setEntity(*iter);
       ++iter;
@@ -151,6 +166,10 @@ void CavityOp::applyToList(std::list<MeshEntity*>& elements)
 
   delete sharing;
   sharing = 0;
+  mesh->onDestroy = 0;
+  for (iter = elements.begin(); iter != elements.end();)
+    mesh->removeTag(*iter++, migTag);
+  mesh->destroyTag(migTag);
 }
 
 bool CavityOp::requestLocality(MeshEntity** entities, int count)

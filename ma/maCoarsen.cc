@@ -293,7 +293,6 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
     for (int i = 0; i < 2; i++) {
       if (getFlag(a, vertices[i], CHECKED)) continue;
       if (!a->mesh->isOwned(vertices[i])) continue;
-      if (a->mesh->isShared(vertices[i])) continue;
       setFlag(a, vertices[i], CHECKED);
       shortEdgeVerts.push_back(vertices[i]);
     }

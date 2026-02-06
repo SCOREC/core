@@ -14,6 +14,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <functional>
 #include <set>
 #include <PCU.h>
 #include "apfVector.h"
@@ -412,6 +413,7 @@ class Mesh
     void switchPCU(pcu::PCU *newPCU);
     /** \brief true if any associated fields use array storage */
     bool hasFrozenFields;
+    std::function<void(MeshEntity*)> onDestroy=0;
   protected:
     Field* coordinateField;
     std::vector<Field*> fields;

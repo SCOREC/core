@@ -42,7 +42,7 @@ class Element
     void getNodeData();
     Field* field;
     Mesh* mesh;
-    MeshEntity* entity;
+    MeshEntity* entity=0;
     EntityShape* shape;
     VectorElement* parent;
     int nen;
