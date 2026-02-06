@@ -51,6 +51,7 @@ class Adapt
     Tag* flagsTag;
     Tag* qualityCache; // to avoid repeated quality computations
     Tag* sizeCache; // to avoid repeated size computations
+    Tag* snapTag;
     DeleteCallback* deleteCallback;
     apf::BuildCallback* buildCallback;
     SizeField* sizeField;

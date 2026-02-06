@@ -184,6 +184,7 @@ Entity* makeSplitVertOnFace(Adapt* a, Entity* face)
   Entity* vert = buildVertex(a, c, point, param);
   st->onVertex(me, xi, vert);
   sf->interpolate(me, xi, vert);
+  tagVertexToSnap(a, vert);
   apf::destroyMeshElement(me);
   return vert;
 }

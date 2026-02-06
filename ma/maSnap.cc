@@ -841,7 +841,6 @@ class SnapMatched : public Operator
       didAnything = didAnything || snapped;
       if (snapped)
         ++successCount;
-      clearFlagMatched(adapter, vert, SNAP);
     }
     int successCount;
     bool didAnything;
@@ -860,26 +859,28 @@ bool snapMatchedVerts(Adapt* a, Tag* t, long& successCount)
   return a->mesh->getPCU()->Or(op.didAnything);
 }
 
-long tagVertsToSnap(Adapt* a, Tag*& tag)
+void tagVertexToSnap(Adapt* a, Entity* vertex)
 {
   Mesh* m = a->mesh;
   int dim = m->getDimension();
+  int md = m->getModelType(m->toModel(vertex));
+  if (dim == 3 && md == 3) return;
+  Vector snapPoint;
+  getSnapPoint(m, vertex, snapPoint);
+  Vector position = getPosition(m, vertex);
+  setFlag(a, vertex, SNAP);
+  m->setDoubleTag(vertex, a->snapTag, &snapPoint[0]);
+}
+
+long countTaggedVerts(Adapt* a)
+{
+  Mesh* m = a->mesh;
   Entity* v;
   long n = 0;
   Iterator* it = m->begin(0);
   while ((v = m->iterate(it))) {
-    int md = m->getModelType(m->toModel(v));
-    if (dim == 3 && md == 3)
-      continue;
-    Vector s;
-    getSnapPoint(m, v, s);
-    Vector x = getPosition(m, v);
-    if (apf::areClose(s, x, 1e-12))
-      continue;
-    m->setDoubleTag(v, tag, &s[0]);
-    setFlag(a, v, SNAP);
-    if (m->isOwned(v))
-      ++n;
+    if (!m->hasTag(v, a->snapTag)) continue;
+    if (m->isOwned(v)) ++n;
   }
   m->end(it);
   return m->getPCU()->Add<long>(n);
@@ -894,7 +895,7 @@ long snapTaggedVerts(Adapt* a, Tag* tag, Snapper& snapper)
   bool snapped = true;
   int prevTagged = 0;
   while (snapped) {
-    int tagged = tagVertsToSnap(a, tag);
+    int tagged = countTaggedVerts(a);
     if (tagged == prevTagged) break;
     prevTagged = tagged;
     if (a->mesh->hasMatching())
@@ -922,14 +923,13 @@ void snap(Adapt* a)
   if (!a->input->shouldSnap)
     return;
   double t0 = pcu::Time();
-  Tag* snapTag = a->mesh->createDoubleTag("ma_snap", 3);
   preventMatchedCavityMods(a);
-  int toSnap = tagVertsToSnap(a, snapTag);
+  int toSnap = countTaggedVerts(a);
   if (toSnap)
   {
-    Snapper snapper(a, snapTag);
-    snapTaggedVerts(a, snapTag, snapper);
-    snapLayer(a, snapTag);
+    Snapper snapper(a, a->snapTag);
+    snapTaggedVerts(a, a->snapTag, snapper);
+    snapLayer(a, a->snapTag);
 
     double t1 = pcu::Time();
     print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d"
@@ -941,6 +941,5 @@ void snap(Adapt* a)
     if (a->hasLayer)
       checkLayerShape(a->mesh, "after snapping");
   }
-  a->mesh->destroyTag(snapTag);
 }
 }

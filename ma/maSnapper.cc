@@ -591,11 +591,7 @@ bool Snapper::run()
     if (!success) success = trySwapOrSplit(FPP);
   }
 
-  if (!success) {
-    numFailed++;
-    mesh->removeTag(vert,snapTag);
-    clearFlag(adapt, vert, SNAP);
-  }
+  if (!success) numFailed++;
   #if defined(DEBUG_FPP)
   if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
   #endif

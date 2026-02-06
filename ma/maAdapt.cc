@@ -60,6 +60,7 @@ Adapt::~Adapt()
 void setupFlags(Adapt* a)
 {
   a->flagsTag = a->mesh->createIntTag("ma_flags",1);
+  a->snapTag = a->mesh->createDoubleTag("ma_snap",3);
 }
 
 void clearFlags(Adapt* a)
@@ -69,12 +70,16 @@ void clearFlags(Adapt* a)
   for (int d=0; d <= 3; ++d)
   {
     Iterator* it = m->begin(d);
-    while ((e = m->iterate(it)))
+    while ((e = m->iterate(it))) {
       if (m->hasTag(e,a->flagsTag))
         m->removeTag(e,a->flagsTag);
+      if (m->hasTag(e,a->snapTag))
+        m->removeTag(e,a->snapTag);
+    }
     m->end(it);
   }
   m->destroyTag(a->flagsTag);
+  m->destroyTag(a->snapTag);
 }
 
 int getFlags(Adapt* a, Entity* e)
