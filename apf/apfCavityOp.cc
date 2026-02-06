@@ -15,9 +15,9 @@ CavityOp::CavityOp(Mesh* m, bool cm):
   mesh(m),
   isRequesting(false),
   canModify(cm),
+  movedByDeletion(false),
   iterator(0),
-  sharing(0),
-  movedByDeletion(false)
+  sharing(0)
 {
 }
 
@@ -119,11 +119,10 @@ void CavityOp::applyToDimension(int d)
   sharing = 0;
 }
 
-void CavityOp::applyToList(std::list<MeshEntity*>& elements)
+void CavityOp::prepareListMigration(EntityList& elements, EntityList::iterator& iter, std::function<void()> migrationPossible)
 {
   MeshTag* migTag = mesh->createLongTag("ma_migrate_list", 1);
-  std::vector<std::list<MeshEntity*>::iterator> iterators(elements.size());
-  auto iter = elements.begin();
+  std::vector<EntityList::iterator> iterators(elements.size());
   for (iter = elements.begin(); iter != elements.end();) {
     long size = (long)iterators.size();
     mesh->setLongTag(*iter, migTag, &size);
@@ -136,6 +135,19 @@ void CavityOp::applyToList(std::list<MeshEntity*>& elements)
     iter = elements.erase(iterators[i]);
     movedByDeletion = true;
   };
+
+  migrationPossible();
+
+  mesh->onDestroy = 0;
+  for (iter = elements.begin(); iter != elements.end();)
+    mesh->removeTag(*iter++, migTag);
+  mesh->destroyTag(migTag);
+}
+
+void CavityOp::applyToList(EntityList& elements)
+{
+  auto iter = elements.begin();
+  prepareListMigration(elements, iter, [&]() {
   do {
     delete sharing;
     sharing = apf::getSharing(mesh);
@@ -166,10 +178,7 @@ void CavityOp::applyToList(std::list<MeshEntity*>& elements)
 
   delete sharing;
   sharing = 0;
-  mesh->onDestroy = 0;
-  for (iter = elements.begin(); iter != elements.end();)
-    mesh->removeTag(*iter++, migTag);
-  mesh->destroyTag(migTag);
+  });
 }
 
 bool CavityOp::requestLocality(MeshEntity** entities, int count)

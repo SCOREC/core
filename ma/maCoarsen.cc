@@ -302,7 +302,7 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a)
   return shortEdgeVerts;
 }
 
-class CollapseAll : public apf::CavityOp, public DeleteCallback
+class CollapseAll : public apf::CavityOp
 {
   public:
   Adapt* a;
@@ -312,7 +312,7 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
 
   int success=0;
 
-  CollapseAll(Adapt* adapt) : apf::CavityOp(adapt->mesh,true), DeleteCallback(adapt)
+  CollapseAll(Adapt* adapt) : apf::CavityOp(adapt->mesh,true)
   {
     a = adapt;
     collapse.Init(a);
@@ -325,7 +325,6 @@ class CollapseAll : public apf::CavityOp, public DeleteCallback
   }
 
   int getTargetDimension() { return 0; }
-  void call(Entity* e) { (void)e; movedByDeletion = true; }
   void resetIndependentSet() { ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0); }
 
   /*
