@@ -3,6 +3,7 @@
 
 #include "maMesh.h"
 #include "ma.h"
+#include "apfVectorElement.h"
 
 namespace ma {
 
@@ -27,6 +28,7 @@ class RepositionVertex
     apf::Up adjEdges;
     double worstQuality;
     double startingQuality;
+    apf::MeshElement me;
 
     void findInvalid();
     void clearAdjCache();

@@ -861,6 +861,7 @@ bool snapMatchedVerts(Adapt* a, Tag* t, long& successCount)
 
 void tagVertexToSnap(Adapt* a, Entity* vertex)
 {
+  if (!a->input->shouldSnap) return;
   Mesh* m = a->mesh;
   int dim = m->getDimension();
   int md = m->getModelType(m->toModel(vertex));

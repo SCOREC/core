@@ -82,7 +82,12 @@ bool RepositionVertex::move(Entity* vertex, Vector target)
   if (!init(vertex)) return false;
   mesh->setPoint(vertex, 0, target);
   findInvalid();
-  if (invalid.n == 0) return true;
+  if (invalid.n == 0) {
+    Vector xi(0,0,0);
+    me.init(mesh->getCoordinateField(), vertex, 0);
+    adapt->solutionTransfer->onVertex(&me, xi, vertex);
+    return true;
+  }
   cancel(vertex);
   return false;
 }
@@ -139,6 +144,11 @@ bool RepositionVertex::moveToImproveQuality(Entity* vertex)
   if (startQuality > worstQuality) {
     mesh->setPoint(vertex, 0, prevPosition);
     worstQuality = startQuality;
+  }
+  else {
+    Vector xi(0,0,0);
+    me.init(mesh->getCoordinateField(), vertex, 0);
+    adapt->solutionTransfer->onVertex(&me, xi, vertex);
   }
   return worstQuality > adapt->input->goodQuality;
 }
