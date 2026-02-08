@@ -89,7 +89,6 @@ void adapt(Input* in)
   print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
   printHistogramStats(a);
   apf::printStats(m);
-  m->verify();
 
   delete a;
   // cleanup input object and associated sizefield and solutiontransfer objects
