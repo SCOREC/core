@@ -6,7 +6,7 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include "stdlib.h" // malloc
-#include "mds_config.h" //MDS_SET_MAX
+#include "mds/mds_config.h" //MDS_SET_MAX
 
 namespace apf {
 
