@@ -432,6 +432,7 @@ void fixElementShapesNew(Adapt* a)
   int iter = 0;
   do {
     if (!count) break;
+    double tLoopStart = pcu::Time();
     prev_count = count;
     applyOperator(a,&fixShape);
     if (a->mesh->getDimension() == 3)
@@ -439,12 +440,12 @@ void fixElementShapesNew(Adapt* a)
     count = markBadQualityNew(a);
     midBalance(a); // balance the mesh to avoid empty parts
     iter++;
-    print(a->mesh->getPCU(), "loop %d: bad shapes went from %d to %d", iter, prev_count, count); 
+    double tLoopEnd = pcu::Time();
+    print(a->mesh->getPCU(), "loop %d: bad shapes went from %d to %d in %f seconds",iter,prev_count,count,tLoopEnd-tLoopStart); 
   } while(count < prev_count);
   a->input->shouldForceAdaptation = oldForce;
-  double t1 = pcu::Time();
-  print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds", 
-        originalCount,count,t1-t0);
+  double tEnd = pcu::Time();
+  print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds",originalCount,count,tEnd-t0);
   fixShape.printNumOperations();
   fixShape.printNumTypes();
   clearFlagFromDimension(a, BAD_QUALITY, a->mesh->getDimension());
