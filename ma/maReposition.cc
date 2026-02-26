@@ -80,6 +80,8 @@ void RepositionVertex::findInvalid()
 bool RepositionVertex::move(Entity* vertex, Vector target)
 {
   if (!init(vertex)) return false;
+  Vector pos = getPosition(mesh, vertex);
+  if (pos[0] == target[0] && pos[1] == target[1] && pos[2] == target[2]) return true;
   mesh->setPoint(vertex, 0, target);
   findInvalid();
   if (invalid.n == 0) {

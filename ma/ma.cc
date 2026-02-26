@@ -114,7 +114,7 @@ void adaptVerbose(Input* in, bool verbose)
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
-    coarsen(a);
+    coarsenMultiple(a);
     if (verbose && in->shouldCoarsen)
       ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
     coarsenLayer(a);
