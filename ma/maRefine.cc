@@ -19,6 +19,7 @@
 #include "maLayer.h"
 #include <apf.h>
 #include <pcu_util.h>
+#include "apfVectorElement.h"
 
 namespace ma {
 
@@ -135,19 +136,18 @@ Entity* makeSplitVert(Refine* r, Entity* edge)
   SolutionTransfer* st = a->solutionTransfer;
 /* midpoint of [-1,1] */
   Vector xi(0,0,0);
-  apf::MeshElement* me = apf::createMeshElement(m,edge);
+  apf::MeshElement me(m->getCoordinateField(),edge);
   Vector point;
-  apf::mapLocalToGlobal(me,xi,point);
+  apf::mapLocalToGlobal(&me,xi,point);
   Vector param(0,0,0); //prevents uninitialized values
   if (a->input->shouldTransferParametric)
     transferParametricOnEdgeSplit(m,edge,0.5,param);
   if (a->input->shouldTransferToClosestPoint)
     transferToClosestPointOnEdgeSplit(m,edge,0.5,param);
   Entity* vert = buildVertex(a,c,point,param);
-  st->onVertex(me,xi,vert);
-  sf->interpolate(me,xi,vert);
+  st->onVertex(&me,xi,vert);
+  sf->interpolate(&me,xi,vert);
   tagVertexToSnap(a,vert);
-  apf::destroyMeshElement(me);
   return vert;
 }
 

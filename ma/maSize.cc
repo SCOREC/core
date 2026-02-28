@@ -55,9 +55,8 @@ IdentitySizeField::IdentitySizeField(Mesh* m):
 
 double IdentitySizeField::measure(Entity* e)
 {
-  apf::MeshElement* me = apf::createMeshElement(mesh,e);
-  double x = apf::measure(me);
-  apf::destroyMeshElement(me);
+  apf::MeshElement me(mesh->getCoordinateField(),e);
+  double x = apf::measure(&me);
   return x;
 }
 

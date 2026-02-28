@@ -17,6 +17,7 @@
 #include "maShapeHandler.h"
 #include "maShape.h"
 #include <apfGeometry.h>
+#include "apfVectorElement.h"
 
 namespace ma {
 
@@ -56,16 +57,12 @@ class FixedMetricIntegrator : public apf::Integrator
     virtual void inElement(apf::MeshElement* me)
     {
       dimension = apf::getDimension(me);
-      elem = apf::createElement(mesh->getCoordinateField(), me);
-    }
-    virtual void outElement()
-    {
-      apf::destroyElement(elem);
+      this->elem = me;
     }
     virtual void atPoint(Vector const& p, double w, double)
     {
       Matrix J;
-      apf::getJacobian(apf::getMeshElement(elem),p,J);
+      apf::getJacobian(elem,p,J);
 /* transforms the rows of J, the differential tangent vectors,
    into the metric space, then uses the generalized determinant */
       double dV2 = apf::getJacobianDeterminant(J*Q,dimension);
@@ -76,16 +73,15 @@ class FixedMetricIntegrator : public apf::Integrator
     Mesh* mesh;
     Matrix Q;
     int dimension;
-    apf::Element* elem;
+    apf::MeshElement* elem;
 };
 
 
 static double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
 {
   FixedMetricIntegrator integrator(mesh, Q);
-  apf::MeshElement* me = apf::createMeshElement(mesh, e);
-  integrator.process(me);
-  apf::destroyMeshElement(me);
+  apf::MeshElement me(mesh->getCoordinateField(), e);
+  integrator.process(&me);
   return integrator.measurement;
 }
 
@@ -103,15 +99,14 @@ static Matrix getMetricWithMaxJacobean(Mesh* m, SizeField* sf,
   double maxJ = -1.0;
 
   for (int i = 0; i < nd; i++) {
-    apf::MeshElement* me = createMeshElement(m, dv[i]);
+    apf::MeshElement me(m->getCoordinateField(), dv[i]);
     Matrix currentQ;
-    sf->getTransform(me, Vector(0.0, 0.0, 0.0), currentQ);
+    sf->getTransform(&me, Vector(0.0, 0.0, 0.0), currentQ);
     double currentJ = apf::getJacobianDeterminant(currentQ, dim);
     if (currentJ > maxJ) {
       maxJ = currentJ;
       Q = currentQ;
     }
-    apf::destroyMeshElement(me);
   }
   return Q;
 }
@@ -126,10 +121,9 @@ double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax)
   if (useMax)
     Q = getMetricWithMaxJacobean(m, f, tri);
   else {
-    apf::MeshElement* me = createMeshElement(m, tri);
+    apf::MeshElement me(m->getCoordinateField(), tri);
     Vector xi(1./3., 1./3., 1./3.);
-    f->getTransform(me, xi, Q);
-    apf::destroyMeshElement(me);
+    f->getTransform(&me, xi, Q);
   }
 
   Entity* e[3];
@@ -155,10 +149,9 @@ double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax)
   if (useMax)
     Q = getMetricWithMaxJacobean(m, f, tet);
   else {
-    apf::MeshElement* me = createMeshElement(m, tet);
+    apf::MeshElement me(m->getCoordinateField(), tet);
     Vector xi(0.25, 0.25, 0.25);
-    f->getTransform(me, xi, Q);
-    apf::destroyMeshElement(me);
+    f->getTransform(&me, xi, Q);
   }
 
   Entity* e[6];
