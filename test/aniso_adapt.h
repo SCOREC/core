@@ -79,23 +79,37 @@ int countEdges(ma::Mesh* m)
   return m->count(1);
 }
 
-void fixShapeTest(ma::Adapt* a)
+ma::Mesh* fixShapeTest(ma::Mesh* m)
 {
-  ma::Mesh* m = a->mesh;
+  m->verify();
+  AnIso sf(m, 2, 2);
+  ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  ma::Adapt* a = new ma::Adapt(in);
+
+  for (int i = 0; i < in->maximumIterations; ++i)
+  {
+    ma::refine(a);
+    ma::snap(a);
+    ma::coarsenMultiple(a);
+  }
+
   double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
   measureQuality(a, avgQualBefore, minQualBefore);
-
   ma::fixElementShapesNew(a);
-
   measureQuality(a, avgQualAfter, minQualAfter);
 
-  PCU_ALWAYS_ASSERT(minQualAfter >= minQualBefore);
-  PCU_ALWAYS_ASSERT(avgQualAfter >= avgQualBefore);
+  PCU_ALWAYS_ASSERT(minQualAfter > minQualBefore);
+  PCU_ALWAYS_ASSERT(avgQualAfter > avgQualBefore);
 
-  apf::writeVtkFiles("afterFixShape", m);
+  m->verify();
+  delete a;
+  if (in->ownsSizeField) delete in->sizeField;
+  if (in->ownsSolutionTransfer) delete in->solutionTransfer;
+  delete in;
+  return m;
 }
 
-ma::Mesh* coarsenRegular(ma::Mesh* m)
+ma::Mesh* coarsenTest(ma::Mesh* m)
 {
   m->verify();
   AnIso sf(m, .5, 1);
@@ -115,8 +129,6 @@ ma::Mesh* coarsenRegular(ma::Mesh* m)
   PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
   PCU_ALWAYS_ASSERT(averageBefore < ma::getAverageEdgeLength(m));
   PCU_ALWAYS_ASSERT(fabs(minQualBefore - minQualAfter) < 0.01f || minQualBefore < minQualAfter);
-
-  fixShapeTest(a);
 
   m->verify();
   delete a;
@@ -199,8 +211,11 @@ void adaptTests(ma::Mesh* meshReg, ma::Mesh* meshForced)
   refineSnapTest(meshReg);
   apf::writeVtkFiles("afterRefine", meshReg);
 
-  coarsenRegular(meshReg);
+  coarsenTest(meshReg);
   apf::writeVtkFiles("afterCoarsen", meshReg);
+
+  fixShapeTest(meshReg);
+  apf::writeVtkFiles("afterFixShape", meshReg);
 }
 
 #endif
