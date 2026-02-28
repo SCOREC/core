@@ -80,15 +80,6 @@ static bool moreThanOneOptionIsTrue(const std::initializer_list<bool>& ops)
   return cnt > 1;
 }
 
-//used to avoid expensive cube root operations
-void setPerformanceQuality(Input* in)
-{
-  if (in->mesh->getDimension()==3)
-    in->goodQuality = std::pow(in->goodQuality, 3);
-  else
-    in->goodQuality = std::pow(in->goodQuality, 2);
-}
-
 void validateInput(Input* in)
 {
   if ( ! in->sizeField)
@@ -127,7 +118,6 @@ void validateInput(Input* in)
     rejectInput("desired element quality too large", in->mesh->getPCU());
   if (in->validQuality < 0.0)
     rejectInput("negative minimum element quality", in->mesh->getPCU());
-  setPerformanceQuality(in);
   if (in->maximumImbalance < 1.0)
     rejectInput("maximum imbalance less than 1.0", in->mesh->getPCU());
   if (in->maximumEdgeRatio < 1.0)

@@ -23,44 +23,6 @@
 
 namespace ma {
 
-void printHistogramData(std::string name, std::vector<double> input, double min, double max, Mesh* m)
-{
-  const int nbins = 10;
-  int count[nbins] = {0};
-  const double bin_size = (max-min)/(nbins*1.0);
-  double inputMax = 0;
-  double inputMin = max;
-
-  for (size_t i = 0; i < input.size(); ++i) {
-    if (std::isnan(input[i])) continue;
-    if (input[i] > inputMax)
-      inputMax = input[i];
-    if (input[i] < inputMin)
-      inputMin = input[i];
-    int bin = (int)std::floor((input[i] - min)/bin_size);
-    if (bin >= nbins) bin = nbins - 1;
-    if (bin < 0) bin = 0;
-    count[bin] += 1;
-  }
-
-  inputMin = m->getPCU()->Min<double>(inputMin);
-  inputMax = m->getPCU()->Max<double>(inputMax);
-  for (int i = 0; i < nbins; ++i) count[i] = m->getPCU()->Add<long>(count[i]);
-
-  if (m->getPCU()->Self()) return;
-  printf("%s Min: %f, Max: %f\n", name.c_str(), inputMin, inputMax);
-  for (int i = 0; i < nbins; ++i) printf("%d\n", count[i]);
-}
-
-void printHistogramStats(Adapt* a)
-{
-  std::vector<double> lengths;
-  std::vector<double> qualities;
-  ma::stats(a->mesh, a->input->sizeField, lengths, qualities, true);
-  printHistogramData("\nQualities:", qualities, 0, 1, a->mesh);
-  printHistogramData("\nLengths:", lengths, 0, MAXLENGTH+1, a->mesh);
-}
-
 void adapt(Input* in)
 {
   double t0 = pcu::Time();
@@ -87,7 +49,6 @@ void adapt(Input* in)
 
   double t1 = pcu::Time();
   print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
-  printHistogramStats(a);
   apf::printStats(m);
 
   delete a;

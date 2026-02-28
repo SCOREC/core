@@ -121,17 +121,17 @@ void CavityOp::applyToDimension(int d)
 
 void CavityOp::prepareListMigration(EntityList& elements, EntityList::iterator& iter, std::function<void()> migrationPossible)
 {
-  MeshTag* migTag = mesh->createLongTag("ma_migrate_list", 1);
+  MeshTag* migTag = mesh->createIntTag("ma_migrate_list", 1);
   std::vector<EntityList::iterator> iterators(elements.size());
   for (iter = elements.begin(); iter != elements.end();) {
-    long size = (long)iterators.size();
-    mesh->setLongTag(*iter, migTag, &size);
+    int size = (int)iterators.size();
+    mesh->setIntTag(*iter, migTag, &size);
     iterators.push_back(iter++);
   }
   mesh->onDestroy = [&](MeshEntity* e) {
     if (!mesh->hasTag(e, migTag)) return;
-    long i = 0;
-    mesh->getLongTag(e, migTag, &i);
+    int i = 0;
+    mesh->getIntTag(e, migTag, &i);
     iter = elements.erase(iterators[i]);
     movedByDeletion = true;
   };

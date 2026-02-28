@@ -24,8 +24,18 @@
 
 namespace ma {
 
+//used to avoid expensive cube root operations
+void setPerformanceQuality(Input* in)
+{
+  if (in->mesh->getDimension()==3)
+    in->goodQuality = std::pow(in->goodQuality, 3);
+  else
+    in->goodQuality = std::pow(in->goodQuality, 2);
+}
+
 Adapt::Adapt(Input* in)
 {
+  setPerformanceQuality(in);
   input = in;
   mesh = in->mesh;
   setupFlags(this);
