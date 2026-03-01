@@ -428,6 +428,30 @@ static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
 }
 
 /*
+  If collapsing the common edges failed we want to try collapsing any edge that will
+  move us towards the first problem plane. We try collapses first in order to simplify
+  the region until we can perform smarter operations.
+*/
+bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
+{
+  std::vector<Entity*>& commEdges = FPP->commEdges;
+  BestCollapse best;
+
+  for (size_t i=0; i<commEdges.size(); i++) {
+    Entity* vertex[2];
+    mesh->getDownward(commEdges[i], 0, vertex);
+    for (int j=0; j<2; j++)
+      getBestQualityCollapse(adapt, commEdges[i], vertex[j], collapse, best);
+  }
+
+  if (best.quality > 0) {
+    numCollapse++;
+    return tryCollapseEdge(adapt, best.edge, best.keep, collapse);
+  }
+  else return false;
+}
+
+/*
   If collapsing to the first problem plane has failed then we want
   to collapse edges on the first problem plane in order to simplify
   the region future operations are more likely to succeed.
@@ -548,6 +572,7 @@ bool Snapper::run()
     if (!success) FPP = getFPP(adapt, vert, snapTag, invalid);
     if (!success) success = tryCollapseToVertex(FPP);
     if (!success) success = tryReduceCommonEdges(FPP);
+    if (!success) success = tryCollapseTetEdges(FPP);
     if (!success) success = trySwapOrSplit(FPP);
   }
 

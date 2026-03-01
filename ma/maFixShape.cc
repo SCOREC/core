@@ -464,7 +464,6 @@ void fixElementShapesNew(Adapt* a)
   int count = markBadQualityNew(a);
   print(a->mesh->getPCU(), "loop %d: of shape correction loop: #bad elements %d", 0, count);
   FixShape fixShape(a);
-  // fixShape.printNumTypes();
   int originalCount = count;
   int prev_count;
   int iter = 0;
@@ -486,7 +485,7 @@ void fixElementShapesNew(Adapt* a)
   print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds",originalCount,count,tEnd-t0);
   // fixShape.printNumOperations();
   // fixShape.printNumTypes();
-  printHistogramStats(a);
+  // printHistogramStats(a);
   clearFlagFromDimension(a, BAD_QUALITY, a->mesh->getDimension());
 }
 
