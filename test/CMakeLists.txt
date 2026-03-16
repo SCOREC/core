@@ -60,9 +60,6 @@ endif()
 util_exe_func(render render.cc)
 util_exe_func(renderClass renderClass.cc)
 util_exe_func(render_ascii render_ascii.cc)
-if(ENABLE_VIZ)
-  test_exe_func(viz_test viz.cc)
-endif()
 
 # Aniso statistic ans size-field visualization utilities
 util_exe_func(measureAnisoStats measureAnisoStats.cc)
