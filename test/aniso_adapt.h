@@ -204,7 +204,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   return m;
 }
 
-void adaptTests(ma::Mesh* meshReg, ma::Mesh* meshForced)
+void adaptTests(ma::Mesh* meshReg)
 {
   apf::writeVtkFiles("startMesh", meshReg);
 

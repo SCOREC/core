@@ -406,27 +406,6 @@ static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collaps
   if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
 }
 
-//returns if testVert and refVert are on the same side of the face
-static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
-{
-  Entity* faceVert[3];
-  a->mesh->getDownward(face, 0, faceVert);
-  Vector facePos[3];
-  for (int i=0; i < 3; ++i)
-    facePos[i] = getPosition(a->mesh,faceVert[i]);
-  
-  Vector normal = apf::cross((facePos[1]-facePos[0]),(facePos[2]-facePos[0]));
-  Vector testPos = getPosition(a->mesh, testVert);
-  Vector refPos = getPosition(a->mesh, refVert);
-  const double tol=1e-12;
-
-  double dr = (testPos - facePos[0]) * normal;
-  if (dr*dr < tol) return false; //testVert is on the face
-  double ds = (refPos - facePos[0]) * normal;
-  if (dr*ds < 0.0) return false; //different sides of face
-  return true; //same side of face
-}
-
 /*
   If collapsing the common edges failed we want to try collapsing any edge that will
   move us towards the first problem plane. We try collapses first in order to simplify
