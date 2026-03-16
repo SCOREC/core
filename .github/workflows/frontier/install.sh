@@ -3,7 +3,7 @@
 module load PrgEnv-amd
 
 branch=$1
-cd /lustre/orion/phy122/scratch/castia5/globus-compute/core-test
+cd /lustre/orion/csc679/scratch/castia5/globus-compute/core-test
 
 # Core
 rm build-core -rf
