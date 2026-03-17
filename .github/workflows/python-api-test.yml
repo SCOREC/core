@@ -76,7 +76,6 @@ jobs:
           installDir=${{ github.workspace }}/libs/install
           make config prefix=$installDir shared=1
           make install
-          ln -s $installDir/lib/libGKlib.so.0 $installDir/lib/libGKlib.so #https://github.com/KarypisLab/GKlib/issues/49
       
       - name: Build METIS
         run: |
