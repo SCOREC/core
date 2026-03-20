@@ -41,7 +41,16 @@ endif()
 #
 # option related to MPI
 #
-option(PUMI_NO_MPI "Disable MPI support.  When enabled only serial execution is supported." OFF)
+if(SCOREC_NO_MPI)
+	message(DEPRECATION
+		"The SCOREC_NO_MPI option has been renamed to"
+		" PUMI_NO_MPI. Please update your configuration to use the new name.")
+	set(PUMI_NO_MPI_DEFAULT ON)
+endif()
+option(PUMI_NO_MPI
+	"Disable MPI support. When enabled only serial execution is supported."
+	${PUMI_NO_MPI_DEFAULT}
+)
 message(STATUS "PUMI_NO_MPI: ${PUMI_NO_MPI}")
 if(PUMI_NO_MPI AND PUMI_ENABLE_CGNS)
   message(FATAL_ERROR "PUMI_NO_MPI is incompatible with CGNS.")
