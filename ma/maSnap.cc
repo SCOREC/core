@@ -933,8 +933,8 @@ void snap(Adapt* a)
     snapLayer(a, a->snapTag);
 
     double t1 = pcu::Time();
-    print(a->mesh->getPCU(), "ToSnap %d - Moved %d - Failed %d - CollapseToVtx %d"
-                            " - Collapse %d - Swap %d - SplitCollapse %d"
+    print(a->mesh->getPCU(), "snapping %d - moved %d - failed %d - collapseToVtx %d"
+                            " - collapse %d - swap %d - splitCollapse %d"
                             " - completed in %f seconds",
               toSnap, collect(a,snapper.numSnapped), collect(a,snapper.numFailed), 
               collect(a,snapper.numCollapseToVtx), collect(a,snapper.numCollapse), 
