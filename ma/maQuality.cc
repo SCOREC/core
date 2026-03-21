@@ -45,10 +45,9 @@ bool areTetsValid(Mesh* m, EntityArray& tets)
 class FixedMetricIntegrator : public apf::Integrator
 {
   public:
-    FixedMetricIntegrator(Mesh* inMesh, const Matrix& inQ):
+    FixedMetricIntegrator(const Matrix& inQ):
       Integrator(1),
       measurement(0),
-      mesh(inMesh),
       Q(inQ)
     {
       dimension = 0;
@@ -70,7 +69,6 @@ class FixedMetricIntegrator : public apf::Integrator
     }
     double measurement;
   private:
-    Mesh* mesh;
     Matrix Q;
     int dimension;
     apf::MeshElement* elem;
@@ -79,7 +77,7 @@ class FixedMetricIntegrator : public apf::Integrator
 
 static double qMeasure(Mesh* mesh, Entity* e, const Matrix& Q)
 {
-  FixedMetricIntegrator integrator(mesh, Q);
+  FixedMetricIntegrator integrator(Q);
   apf::MeshElement me(mesh->getCoordinateField(), e);
   integrator.process(&me);
   return integrator.measurement;
