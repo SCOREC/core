@@ -406,6 +406,27 @@ static void getBestQualityCollapse(Adapt* a, Entity* edge, Entity* keep, Collaps
   if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
 }
 
+//returns if testVert and refVert are on the same side of the face
+static bool sameSide(Adapt* a, Entity* testVert, Entity* refVert, Entity* face)
+{
+  Entity* faceVert[3];
+  a->mesh->getDownward(face, 0, faceVert);
+  Vector facePos[3];
+  for (int i=0; i < 3; ++i)
+    facePos[i] = getPosition(a->mesh,faceVert[i]);
+  
+  Vector normal = apf::cross((facePos[1]-facePos[0]),(facePos[2]-facePos[0]));
+  Vector testPos = getPosition(a->mesh, testVert);
+  Vector refPos = getPosition(a->mesh, refVert);
+  const double tol=1e-12;
+
+  double dr = (testPos - facePos[0]) * normal;
+  if (dr*dr < tol) return false; //testVert is on the face
+  double ds = (refPos - facePos[0]) * normal;
+  if (dr*ds < 0.0) return false; //different sides of face
+  return true; //same side of face
+}
+
 /*
   If collapsing the common edges failed we want to try collapsing any edge that will
   move us towards the first problem plane. We try collapses first in order to simplify
@@ -421,6 +442,21 @@ bool Snapper::tryCollapseTetEdges(FirstProblemPlane* FPP)
     mesh->getDownward(commEdges[i], 0, vertex);
     for (int j=0; j<2; j++)
       getBestQualityCollapse(adapt, commEdges[i], vertex[j], collapse, best);
+  }
+
+  for (size_t i=0; i<commEdges.size(); i++) {
+    Entity* edge = commEdges[i];
+    Entity* vertexFPP = getEdgeVertOppositeVert(mesh, edge, vert);
+    apf::Up adjEdges;
+    mesh->getUp(vertexFPP, adjEdges);
+    for (int j=0; j<adjEdges.n; j++) {
+      Entity* edgeDel = adjEdges.e[j];
+      if (edgeDel==edge) continue;
+      if (isLowInHigh(mesh, FPP->problemFace, edgeDel)) continue;
+      Entity* vertKeep = getEdgeVertOppositeVert(mesh, edgeDel, vertexFPP);
+      if (sameSide(adapt, vertKeep, vert, FPP->problemFace)) continue;
+      getBestQualityCollapse(adapt, edgeDel, vertKeep, collapse, best);
+    }
   }
 
   if (best.quality > 0) {

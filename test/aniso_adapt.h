@@ -208,12 +208,15 @@ void adaptTests(ma::Mesh* meshReg)
 {
   apf::writeVtkFiles("startMesh", meshReg);
 
+  printf("\n==REFINE TEST==\n");
   refineSnapTest(meshReg);
   apf::writeVtkFiles("afterRefine", meshReg);
 
+  printf("\n==COARSEN TEST==\n");
   coarsenTest(meshReg);
   apf::writeVtkFiles("afterCoarsen", meshReg);
 
+  printf("\n==FIX SHAPE TEST==\n");
   fixShapeTest(meshReg);
   apf::writeVtkFiles("afterFixShape", meshReg);
 }

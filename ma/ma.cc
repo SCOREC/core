@@ -86,7 +86,7 @@ void adaptVerbose(Input* in, bool verbose)
     snap(a);
     if (verbose && in->shouldSnap)
       ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
-    fixElementShapes(a);
+    fixElementShapesNew(a);
     if (verbose && in->shouldFixShape)
       ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }
