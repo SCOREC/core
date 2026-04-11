@@ -319,15 +319,15 @@ int FixShape::collect(int val) {
 }
 void FixShape::printNumOperations()
 {
-  print(mesh->getPCU(), "shape operations: \n collapses %17d\n edge swaps %16d\n reposition %16d\n split reposition %9d\n double split collapse %d\n "
-                            "edge split collapses %5d\n face split collapses %3d\n region collapses %7d\n face swaps %12d\n ",
-                            collect(numCollapse), collect(numEdgeSwap), collect(numReposition), collect(numSplitReposition), collect(numDoubleSplitCollapse),
-                            collect(numEdgeSplitCollapse), collect(numFaceSplitCollapse), collect(numRegionCollapse), collect(numFaceSwap));
+  print(mesh->getPCU(), "shape operations: \n collapses %13s%d\n edge swaps %12s%d\n reposition %12s%d\n split reposition \t\t\t%d\n double split collapse \t%d\n "
+                            "edge split collapses \t%d\n face split collapses \t%d\n region collapses \t\t\t%d\n face swaps %12s%d\n ",
+                            "", collect(numCollapse), "", collect(numEdgeSwap), "", collect(numReposition), collect(numSplitReposition), collect(numDoubleSplitCollapse),
+                            collect(numEdgeSplitCollapse), collect(numFaceSplitCollapse), collect(numRegionCollapse), "", collect(numFaceSwap));
 }
 void FixShape::printBadTypes()
 {
-  print(mesh->getPCU(), "bad shape types: \n oneShortEdge   \t%d\n twoShortEdges   \t%d\n threeShortEdges \t%d\n "
-                            "moreShortEdges \t%d\n oneLargeAngle   \t%d\n twoLargeAngle   \t%d\n threeLargeAngle \t%d\n",
+  print(mesh->getPCU(), "bad shape types: \n oneShortEdge \t\t%d\n twoShortEdges \t\t%d\n threeShortEdges \t%d\n "
+                            "moreShortEdges \t%d\n oneLargeAngle \t\t%d\n twoLargeAngle \t\t%d\n threeLargeAngle \t%d\n",
                             collect(numOneShortEdge), collect(numTwoShortEdge), collect(numThreeShortEdge),
                             collect(numMoreShortEdge), collect(numOneLargeAngle), collect(numTwoLargeAngles), collect(numThreeLargeAngles));
 }
@@ -483,9 +483,11 @@ void fixElementShapesNew(Adapt* a)
   a->input->shouldForceAdaptation = oldForce;
   double tEnd = pcu::Time();
   print(a->mesh->getPCU(), "bad shapes down from %d to %d in %f seconds",originalCount,count,tEnd-t0);
-  // fixShape.printNumOperations();
-  // fixShape.printNumTypes();
-  // printHistogramStats(a);
+  if (a->input->shouldPrintQuality) {
+    fixShape.printNumOperations();
+    fixShape.printNumTypes();
+    printHistogramStats(a);
+  }
   clearFlagFromDimension(a, BAD_QUALITY, a->mesh->getDimension());
 }
 
