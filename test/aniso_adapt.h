@@ -16,6 +16,7 @@
 #include <apfGeometry.h>
 #include <functional>
 #include <maFixShape.h>
+#include <maStats.h>
 /*
  Test some of the individual components in mesh adaptation to make sure that they are 
  functioning as intended. Right now it only tests coarsen refinement and snapping but
@@ -79,11 +80,12 @@ int countEdges(ma::Mesh* m)
   return m->count(1);
 }
 
-ma::Mesh* fixShapeTest(ma::Mesh* m)
+ma::Mesh* fixShapeTest(ma::Mesh* m, std::vector<int> lastQuality)
 {
   m->verify();
   AnIso sf(m, 2, 2);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  in->shouldPrintQuality = false;
   ma::Adapt* a = new ma::Adapt(in);
 
   for (int i = 0; i < in->maximumIterations; ++i)
@@ -101,6 +103,10 @@ ma::Mesh* fixShapeTest(ma::Mesh* m)
   PCU_ALWAYS_ASSERT(minQualAfter > minQualBefore);
   PCU_ALWAYS_ASSERT(avgQualAfter > avgQualBefore);
 
+  ma::HistogramStats hist = ma::printHistogramStats(a);
+  double dist = ma::histogramDistance(hist.quality, lastQuality);
+  printf("\n\n === Histogram Distance %f ===\n\n", dist);
+
   m->verify();
   delete a;
   if (in->ownsSizeField) delete in->sizeField;
@@ -114,6 +120,7 @@ ma::Mesh* coarsenTest(ma::Mesh* m)
   m->verify();
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  in->shouldPrintQuality = false;
   ma::Adapt* a = new ma::Adapt(in);
   double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
 
@@ -172,6 +179,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   m->verify();
   AnIso sf(m, 3, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  in->shouldPrintQuality = false;
   ma::Adapt* a = new ma::Adapt(in);
   int edgesBefore = countEdges(m);
   double averageBefore = ma::getAverageEdgeLength(m);
@@ -204,7 +212,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   return m;
 }
 
-void adaptTests(ma::Mesh* meshReg)
+void adaptTests(ma::Mesh* meshReg, std::vector<int> lastQuality)
 {
   apf::writeVtkFiles("startMesh", meshReg);
 
@@ -217,7 +225,7 @@ void adaptTests(ma::Mesh* meshReg)
   apf::writeVtkFiles("afterCoarsen", meshReg);
 
   printf("\n==FIX SHAPE TEST==\n");
-  fixShapeTest(meshReg);
+  fixShapeTest(meshReg, lastQuality);
   apf::writeVtkFiles("afterFixShape", meshReg);
 }
 

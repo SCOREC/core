@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
   ma::Mesh* meshMDS = apf::createMdsMesh(mdl_ref, mesh_ref);
   apf::disownMdsModel(meshMDS);
 
-  adaptTests(meshMDS);
+  adaptTests(meshMDS, {0, 0, 1, 89, 141, 205, 157, 169, 97, 29});
 
   meshMDS->destroyNative();
   mesh_ref->destroyNative();

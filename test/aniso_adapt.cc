@@ -14,7 +14,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   gmi_register_mesh();
   ma::Mesh* mesh = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
-  adaptTests(mesh);
+  adaptTests(mesh, {0, 0, 0, 5168, 10638, 18363, 25244, 28600, 21121, 6330});
   mesh->destroyNative();
   apf::destroyMesh(mesh);
   }

@@ -6,6 +6,9 @@
  */
 #include "maStats.h"
 #include "maAdapt.h"
+#include <numeric>
+#include <stdexcept>
+#include <algorithm>
 
 namespace ma {
 
@@ -133,5 +136,70 @@ void stats(ma::Mesh* m, ma::SizeField* sf,
   else
     getStatsInPhysicalSpace(m, edgeLengths, linearQualities);
 }
+
+std::vector<int> printHistogramData(std::string name, std::vector<double> input, double min, double max, Mesh* m)
+{
+  const int nbins = 10;
+  std::vector<int> count(nbins, 0);
+  const double bin_size = (max-min)/(nbins*1.0);
+  double inputMax = 0;
+  double inputMin = max;
+
+  for (size_t i = 0; i < input.size(); ++i) {
+    if (std::isnan(input[i])) continue;
+    if (input[i] > inputMax)
+      inputMax = input[i];
+    if (input[i] < inputMin)
+      inputMin = input[i];
+    int bin = (int)std::floor((input[i] - min)/bin_size);
+    if (bin >= nbins) bin = nbins - 1;
+    if (bin < 0) bin = 0;
+    count[bin] += 1;
+  }
+
+  inputMin = m->getPCU()->Min<double>(inputMin);
+  inputMax = m->getPCU()->Max<double>(inputMax);
+  for (int i = 0; i < nbins; ++i) count[i] = m->getPCU()->Add<long>(count[i]);
+
+  if (m->getPCU()->Self()) return count;
+  printf("%s Min: %f, Max: %f\n", name.c_str(), inputMin, inputMax);
+  for (int i = 0; i < nbins; ++i) printf("%d\n", count[i]);
+  return count;
+}
+
+HistogramStats printHistogramStats(Adapt* a)
+{
+  std::vector<double> lengths;
+  std::vector<double> qualities;
+  ma::stats(a->mesh, a->input->sizeField, lengths, qualities, true);
+  std::vector<int> qualityHist = printHistogramData("\nQualities:", qualities, 0, 1, a->mesh);
+  std::vector<int> lengthHist = printHistogramData("\nLengths:", lengths, 0, MAXLENGTH+1, a->mesh);
+  return HistogramStats(qualityHist, lengthHist);
+}
+
+//Compare two histograms using L2 (Euclidean) distance.
+double histogramDistance(const std::vector<int>& hist1, const std::vector<int>& hist2, bool normalize) 
+{
+  if (hist1.size() != hist2.size()) throw std::invalid_argument("Histograms must be the same size");
+
+  size_t n = hist1.size();
+  std::vector<double> h1(hist1.begin(), hist1.end());
+  std::vector<double> h2(hist2.begin(), hist2.end());
+
+  if (normalize) {
+    double sum1 = std::accumulate(h1.begin(), h1.end(), 0.0);
+    double sum2 = std::accumulate(h2.begin(), h2.end(), 0.0);
+    if (sum1 > 0) for (double& val : h1) val /= sum1;
+    if (sum2 > 0) for (double& val : h2) val /= sum2;
+  }
+
+  double sum_sq_diff = 0.0;
+  for (size_t i = 0; i < n; ++i) {
+    double diff = h1[i] - h2[i];
+    sum_sq_diff += diff * diff;
+  }
+  return std::sqrt(sum_sq_diff);
+}
+
 
 }

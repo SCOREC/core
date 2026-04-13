@@ -44,5 +44,18 @@ void stats(ma::Mesh* m, ma::SizeField* sf,
     std::vector<double> &linearQualities,
     bool inMetric);
 
+std::vector<int> printHistogramData(std::string name, std::vector<double> input, 
+    double min, double max, Mesh* m);
+
+struct HistogramStats {
+    std::vector<int> quality;
+    std::vector<int> length;
+    HistogramStats(std::vector<int> q, std::vector<int> l) : quality(q), length(l) {}
+};
+
+HistogramStats printHistogramStats(Adapt* a);
+
+double histogramDistance(const std::vector<int>& hist1, const std::vector<int>& hist2, bool normalize=true);
+
 }
 #endif

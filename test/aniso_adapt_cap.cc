@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   ma::Mesh* mesh = apf::createMdsMesh(model, apfCapMesh);
   apf::disownMdsModel(mesh);
 
-  adaptTests(apfCapMesh);
+  adaptTests(apfCapMesh, {0, 0, 1, 2448, 5307, 9044, 13173, 14190, 10931, 3499});
 
   mesh->destroyNative();
   apfCapMesh->destroyNative();
