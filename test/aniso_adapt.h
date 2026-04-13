@@ -80,7 +80,7 @@ int countEdges(ma::Mesh* m)
   return m->count(1);
 }
 
-ma::Mesh* fixShapeTest(ma::Mesh* m, std::vector<int> lastQuality)
+ma::Mesh* fixShapeTest(ma::Mesh* m, std::vector<int> savedQuality)
 {
   m->verify();
   AnIso sf(m, 2, 2);
@@ -104,8 +104,10 @@ ma::Mesh* fixShapeTest(ma::Mesh* m, std::vector<int> lastQuality)
   PCU_ALWAYS_ASSERT(avgQualAfter > avgQualBefore);
 
   ma::HistogramStats hist = ma::printHistogramStats(a);
-  double dist = ma::histogramDistance(hist.quality, lastQuality);
-  printf("\n\n === Histogram Distance %f ===\n\n", dist);
+  std::vector<int> badQualityHist(hist.quality.begin(), hist.quality.begin() + 3);
+  std::vector<int> badQualityHistSaved(savedQuality.begin(), savedQuality.begin() + 3);
+  PCU_ALWAYS_ASSERT(ma::histogramDistance(hist.quality, savedQuality) <= .05);
+  PCU_ALWAYS_ASSERT(ma::histogramDistance(badQualityHist, badQualityHistSaved) <= .05);
 
   m->verify();
   delete a;
@@ -212,7 +214,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   return m;
 }
 
-void adaptTests(ma::Mesh* meshReg, std::vector<int> lastQuality)
+void adaptTests(ma::Mesh* meshReg, std::vector<int> savedQuality)
 {
   apf::writeVtkFiles("startMesh", meshReg);
 
@@ -225,7 +227,7 @@ void adaptTests(ma::Mesh* meshReg, std::vector<int> lastQuality)
   apf::writeVtkFiles("afterCoarsen", meshReg);
 
   printf("\n==FIX SHAPE TEST==\n");
-  fixShapeTest(meshReg, lastQuality);
+  fixShapeTest(meshReg, savedQuality);
   apf::writeVtkFiles("afterFixShape", meshReg);
 }
 
