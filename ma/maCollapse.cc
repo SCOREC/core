@@ -10,8 +10,11 @@
 #include "maCollapse.h"
 #include "maAdapt.h"
 #include "maShape.h"
+#include "maShapeHandler.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
+#include "apfGeometry.h"
+#include "maDBG.h"
 
 namespace ma {
 
@@ -24,6 +27,65 @@ void Collapse::Init(Adapt* a)
   vertToKeep = 0;
 }
 
+
+bool Collapse::run(Entity* edge, Entity* vert, double qualityToBeat)
+{
+  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
+  PCU_ALWAYS_ASSERT(adapt->mesh->getType(vert) == apf::Mesh::VERTEX);
+  if (!setEdge(edge)) return false;
+  if (!checkClass()) return false;
+  if (!getFlag(adapt, vert, COLLAPSE)) { unmark(); return false; }
+  vertToCollapse = vert;
+  vertToKeep = getEdgeVertOppositeVert(adapt->mesh, edge, vert);
+  clearFlag(adapt, vertToKeep, COLLAPSE);
+  computeElementSets();
+  if (elementsToKeep.size() == 0) { unmark(); return false; }
+  if (!isValid()) { unmark(); return false; }
+  
+  if (!checkEdgeCollapseTopology(adapt, edge)) { unmark(); return false; }
+  if (!getFlag(adapt, vert, COLLAPSE)) { unmark(); return false; }
+  PCU_ALWAYS_ASSERT(vertToCollapse == vert);
+
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+        std::max(getOldQuality(),adapt->input->validQuality));
+
+  if (anyWorseQuality(qualityToBeat)) { unmark(); return false;}
+
+  rebuildElements();
+  fitElements();
+  unmark();
+
+  if (adapt->mesh->getDimension()==2 && !isGood2DMesh()) {destroyNewElements(); return false;}
+  return true;
+}
+
+bool Collapse::run(Entity* edge, double qualityToBeat)
+{
+  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
+  if (!setEdge(edge)) return false;
+  if (!checkClass()) return false;
+  if (!checkTopo()) return false;
+
+  computeElementSets();
+  if (!adapt->input->shouldForceAdaptation)
+    qualityToBeat = std::min(adapt->input->goodQuality,
+                    std::max(getOldQuality(), adapt->input->validQuality));
+
+  if (!isValid() || anyWorseQuality(qualityToBeat)) {
+    if (!getFlag(adapt, vertToKeep, COLLAPSE)) { unmark(); return false; }
+    std::swap(vertToKeep, vertToCollapse);
+    computeElementSets();
+    if (!isValid() || anyWorseQuality(qualityToBeat)) { unmark(); return false; }
+  } 
+
+  rebuildElements();
+  fitElements();
+  unmark();
+  return true;
+}
+
+
 bool Collapse::requestLocality(apf::CavityOp* o)
 {
 /* get vertices again since this is sometimes used
@@ -32,6 +94,32 @@ bool Collapse::requestLocality(apf::CavityOp* o)
   Mesh* m = adapt->mesh;
   m->getDownward(edge,0,v);
   return o->requestLocality(v,2);
+}
+
+bool Collapse::isValid()
+{
+  PCU_ALWAYS_ASSERT(!adapt->mesh->isShared(vertToCollapse));
+  if (adapt->mesh->getDimension() == 3 && !cavity.shouldFit) return true;
+  Vector prev = getPosition(adapt->mesh, vertToCollapse);
+  Vector target = getPosition(adapt->mesh, vertToKeep);
+  adapt->mesh->setPoint(vertToCollapse, 0, target);
+  bool valid = true;
+  for (Entity* e : elementsToKeep)
+    if (!isTetValid(adapt->mesh, e)) {valid = false; break;}
+  adapt->mesh->setPoint(vertToCollapse, 0, prev);
+  return valid;
+}
+
+bool Collapse::anyWorseQuality(double qualityToBeat)
+{
+  Vector prev = getPosition(adapt->mesh, vertToCollapse);
+  Vector target = getPosition(adapt->mesh, vertToKeep);
+  adapt->mesh->setPoint(vertToCollapse, 0, target);
+  bool worse = false;
+  for (Entity* e : elementsToKeep)
+    if (adapt->shape->getQuality(e) < qualityToBeat) {worse = true; break;}
+  adapt->mesh->setPoint(vertToCollapse, 0, prev);
+  return worse;
 }
 
 bool Collapse::tryThisDirectionNoCancel(double qualityToBeat)
@@ -158,9 +246,9 @@ bool checkEdgeCollapseEdgeRings(Adapt* a, Entity* edge)
   Mesh* m = a->mesh;
   Entity* v[2];
   m->getDownward(edge,0,v);
-  if (!getFlag(a, v[0], DONT_COLLAPSE)) //Allow collapse in one direction
+  if (getFlag(a, v[0], COLLAPSE)) //Allow collapse in one direction
     PCU_ALWAYS_ASSERT( ! m->isShared(v[0]));
-  if (!getFlag(a, v[1], DONT_COLLAPSE)) //Allow collapse in one direction
+  if (getFlag(a, v[1], COLLAPSE)) //Allow collapse in one direction
     PCU_ALWAYS_ASSERT( ! m->isShared(v[1]));
   apf::Up ve[2];
   m->getUp(v[0],ve[0]);
@@ -363,10 +451,50 @@ void Collapse::computeElementSets()
   APF_ITERATE(Upward,adjacent,it)
     if ( ! elementsToCollapse.count(*it))
       elementsToKeep.insert(*it);
-  PCU_ALWAYS_ASSERT(elementsToKeep.size());
 }
 
-void Collapse::rebuildElements()
+//Find edges and faces that can be reused in new entities after collapse
+std::map<Entity*,Entity*> Collapse::getReusableEntities()
+{
+  Mesh* m = adapt->mesh;
+  std::map<Entity*,Entity*> reusable;
+  for (Entity* elm : elementsToCollapse) {
+    Entity* faces[4];
+    m->getDownward(elm, 2, faces);
+    Entity* faceToKeep = 0;
+    Entity* faceToReplace = 0;
+    for (int f=0; f<4; f++) { 
+      Entity* edges[3];
+      m->getDownward(faces[f], 1, edges);
+      Entity* edgeToDelete=0;
+      Entity* edgeToKeep=0;
+      Entity* edgeToReplace=0;
+      for (int e=0; e<3; e++) {
+        if (edges[e] == edge) edgeToDelete = edges[e];
+        else if (isInClosure(m, edges[e], vertToKeep)) edgeToKeep = edges[e];
+        else if (isInClosure(m, edges[e], vertToCollapse)) edgeToReplace = edges[e];
+      }
+      if (edgeToReplace != 0 && edgeToDelete == 0 && edgeToKeep == 0)
+        faceToReplace = faces[f];
+      if (edgeToKeep != 0 && edgeToDelete == 0 && edgeToReplace == 0)
+        faceToKeep = faces[f];
+      if (edgeToDelete != 0)
+        reusable[edgeToReplace] = edgeToKeep;
+    }
+    reusable[faceToReplace] = faceToKeep;
+  }
+  return reusable;
+}
+
+Entity* Collapse::rebuildEntity(Mesh* m, Entity* original, Entity** downward)
+{
+  Entity* entity = m->createEntity(m->getType(original), m->toModel(original), downward);
+  if (adapt->buildCallback) adapt->buildCallback->call(entity);
+  if (rebuildCallback) rebuildCallback->rebuilt(entity, original);
+  return entity;
+}
+
+void Collapse::rebuildElements2D()
 {
   PCU_ALWAYS_ASSERT(elementsToKeep.size());
   newElements.setSize(elementsToKeep.size());
@@ -376,6 +504,47 @@ void Collapse::rebuildElements()
     newElements[ni++]=
         rebuildElement(adapt->mesh, *it, vertToCollapse, vertToKeep,
             adapt->buildCallback, rebuildCallback);
+  cavity.afterBuilding();
+}
+
+void Collapse::rebuildElements()
+{
+  if (adapt->mesh->getDimension() < 3) return rebuildElements2D();
+  PCU_ALWAYS_ASSERT(elementsToKeep.size());
+  newElements.setSize(elementsToKeep.size());
+  cavity.beforeBuilding();
+  size_t ni=0;
+
+  Mesh* m = adapt->mesh;
+  std::map<Entity*,Entity*> rebuilt = getReusableEntities();
+  APF_ITERATE(EntitySet, elementsToKeep, it) {
+    Entity* tetFaces[4];
+    m->getDownward(*it, 2, tetFaces);
+    for (int f=0; f<4; f++) {
+      auto foundFace = rebuilt.find(tetFaces[f]);
+      if (foundFace != rebuilt.end()) {tetFaces[f] = foundFace->second; continue;}
+      if (!isInClosure(m, tetFaces[f], vertToCollapse)) continue;
+
+      Entity* faceEdges[3];
+      m->getDownward(tetFaces[f], 1, faceEdges);
+      for (int e=0; e<3; e++) {
+        auto foundEdge = rebuilt.find(faceEdges[e]);
+        if (foundEdge != rebuilt.end()) {faceEdges[e] = foundEdge->second; continue;}
+        Entity* edgeVerts[2];
+        m->getDownward(faceEdges[e], 0, edgeVerts);
+        if (edgeVerts[0] == vertToCollapse) edgeVerts[0] = vertToKeep;
+        else if (edgeVerts[1] == vertToCollapse) edgeVerts[1] = vertToKeep;
+        else continue;
+        Entity* newEdge = rebuildEntity(m, faceEdges[e], edgeVerts);
+        rebuilt[faceEdges[e]] = newEdge;
+        faceEdges[e] = newEdge;
+      }
+      Entity* newFace = rebuildEntity(m, tetFaces[f], faceEdges);
+      rebuilt[tetFaces[f]] = newFace;
+      tetFaces[f] = newFace;
+    }
+    newElements[ni++] = rebuildEntity(m, *it, tetFaces);
+  }
   cavity.afterBuilding();
 }
 

@@ -172,6 +172,22 @@ if(ENABLE_CGNS)
   add_definitions(-DHAVE_CGNS)
 endif()
 
+if(DEBUG_FPP)
+  add_definitions(-DDEBUG_FPP)
+endif()
+
+if(ENABLE_EIGEN)
+  include(FetchContent)
+  FetchContent_Declare(
+    eigen
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG        5.0
+  )
+  FetchContent_MakeAvailable(eigen)
+  include_directories(${eigen_SOURCE_DIR})
+  add_definitions(-DEIGEN_ENABLED)
+endif()
+
 configure_file(SCOREC_config.h.in SCOREC_config.h)
 install(FILES "${CMAKE_BINARY_DIR}/SCOREC_config.h" DESTINATION include)
 include_directories(PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>")

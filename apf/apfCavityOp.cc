@@ -119,6 +119,68 @@ void CavityOp::applyToDimension(int d)
   sharing = 0;
 }
 
+void CavityOp::prepareListMigration(EntityList& elements, EntityList::iterator& iter, std::function<void()> migrationPossible)
+{
+  MeshTag* migTag = mesh->createIntTag("ma_migrate_list", 1);
+  std::vector<EntityList::iterator> iterators(elements.size());
+  for (iter = elements.begin(); iter != elements.end();) {
+    int size = (int)iterators.size();
+    mesh->setIntTag(*iter, migTag, &size);
+    iterators.push_back(iter++);
+  }
+  mesh->onDestroy = [&](MeshEntity* e) {
+    if (!mesh->hasTag(e, migTag)) return;
+    int i = 0;
+    mesh->getIntTag(e, migTag, &i);
+    iter = elements.erase(iterators[i]);
+    movedByDeletion = true;
+  };
+
+  migrationPossible();
+
+  mesh->onDestroy = 0;
+  for (iter = elements.begin(); iter != elements.end();)
+    mesh->removeTag(*iter++, migTag);
+  mesh->destroyTag(migTag);
+}
+
+void CavityOp::applyToList(EntityList& elements)
+{
+  auto iter = elements.begin();
+  prepareListMigration(elements, iter, [&]() {
+  do {
+    delete sharing;
+    sharing = apf::getSharing(mesh);
+
+    isRequesting = false;
+    for (iter = elements.begin(); iter != elements.end();) {
+      if (sharing->isOwned(*iter)) {
+        if (setEntity(*iter) == OK) {
+          movedByDeletion=false;
+          apply();
+          if (movedByDeletion) continue;
+        }
+      }
+      ++iter;
+    }
+    /* request any non-local cavities.
+      note: it is critical that this loop
+      be separated from the one above for
+      mesh-modifying operators, since an apply()
+      call could change other overlapping cavities */
+    isRequesting = true;
+    for (iter = elements.begin(); iter != elements.end();) {
+      if (sharing->isOwned(*iter))
+        setEntity(*iter);
+      ++iter;
+    }
+  } while (tryToPull());
+
+  delete sharing;
+  sharing = 0;
+  });
+}
+
 bool CavityOp::requestLocality(MeshEntity** entities, int count)
 {
   bool areLocal = true;

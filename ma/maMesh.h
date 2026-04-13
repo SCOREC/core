@@ -100,6 +100,7 @@ Entity* findTriFromVerts(Mesh* m, Entity** v);
 
 bool isOnModelEdge(Mesh* m, Entity* e);
 bool isOnModelFace(Mesh* m, Entity* e);
+bool isInModelRegion(Mesh* m, Entity* e);
 
 Vector getTriNormal(Mesh* m, Entity** v);
 Vector getTriNormal(Mesh* m, Entity* e);

@@ -1,0 +1,128 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{float}       % For [H] placement
+\usepackage[a4paper, margin=0.5in]{geometry}
+\usepackage[font=scriptsize,labelfont=bf]{caption}
+\usepackage{caption}
+\captionsetup[figure]{justification=centering, font=small}
+
+\title{Mesh Adapt Pseudo Code}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Algorithms}
+
+
+\begin{algorithm}
+\caption{Adapt Top Level}
+\begin{algorithmic}[1]
+    \State $numIterations$ = number of splits necessary to reduce the longest edge to the desired edge length
+    \For{\textbf{each} $numIterations$}
+        \State collapse all edges below desired length if possible
+        \State split all edges above desired edge length
+        \State snap all new vertices to model boundary
+    \EndFor
+
+    \State for each shape below minimum quality, attempt operations to collapse shape or improve quality
+    
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}
+\caption{Coarsen}
+\begin{algorithmic}[1]
+    \For {every edge}
+        \State if the edge length is less than the desired edge length, then add both vertices to a list
+    \EndFor
+
+    \While {there are unchecked vertices in list}
+        \State flag vertex as checked
+        \State attempt to collapse adjacent edges with current vertex removed, starting with the shortest edge until one succeeds
+        \State if an edge collapse succeeds, then remove flag from adjacent vertices so they are processed again
+    \EndWhile
+    
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{adapt_tet_types.png}
+    \caption{Types of low quality tetrahedron\\
+    Reproduced from Wan, J., "An automated adaptive procedure for 3D metal forming simulations", Ph.D. Thesis, Rensselaer Polytechnic Institute, Troy, NY 12180 (2006)}
+    \label{fig:tetTypes}
+\end{figure}
+
+
+\begin{algorithm}
+\caption{Snapping}
+\begin{algorithmic}[1]
+    \While {there are any vertices are not on model boundary}
+        \State reposition the vertex to the model boundary, if no adjacent element is inverted then we are done
+        \State otherwise use inverted adjacent elements to calculate the first problem plane (FPP)
+        \State now we will attempt different operations to move the vertex towards the FPP until one succeeds starting with operations that are more likely to succeed
+        \State attempt collapsing edges shared by inverted elements that will move the vertex to the FPP
+        \State attempt to collapse edges on the FPP so FPP disappears
+        \State attempt to collapse edges shared by inverted elements to simplify the FPP
+        \State evaluate collapsing any edge that will move vertex towards the FPP and select the collapse that results in the highest quality elements
+        \State we will determine which of the problem entities in Figure 1 is preventing movement to FPP, using the method described section 6.4.2.2 of Li's Thesis
+        \If {\textbf{one large dihedral angle}}
+            \State attempt swapping the longest edge 
+            \State attempt split-collapse on the longest edge
+        \EndIf
+        \If {\textbf{two large dihedral angles}}
+            \State attempt swapping either problem edge
+            \State attempt split-collapse on either problem edge
+            \State attempt double-split-collapse on both problem edges
+        \ElsIf {\textbf{three large dihedral angles}}
+            \State attempt swapping any edge in problem face
+            \State attempt swapping the problem face
+            \State attempt split-collapsing towards the FPP
+        \EndIf
+    \EndWhile
+    
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}
+\caption{Fix Element Shapes}
+\begin{algorithmic}[1]
+\While {the number of low quality entities decreases}
+    \State we will attempt different operations and check if they increase quality
+    \State attempt to collapse any short edges in entity
+    \State we will determine which of the low quality entities in Figure 1 matches the current entity, using the method described section 6.4.2.2 of Li's Thesis
+    \If {\textbf{one large dihedral angle}}
+        \State attempt region-collapse if the tetrahedron is on the surface
+        \State attempt edge-swap on the longest edge in the low quality triangle
+        \State attempt split-collapse on the longest edge in the low quality triangle
+        \State attempt edge-collapse on any edge in the low quality triangle besides the longest edge
+        \State reposition vertices to improve quality
+    \EndIf
+    \If {\textbf{two large dihedral angles}}
+        \State attempt region-collapse if the tetrahedron is on the surface
+        \State attempt edge-swap on $M^{1}_{j_0}$ or $M^{1}_{j_1}$
+        \State attempt split-collapse on $M^{1}_{j_0}$ or $M^{1}_{j_1}$
+        \State attempt double-split-collapse on $M^{1}_{j_0}$ and $M^{1}_{j_1}$
+        \State reposition vertices to improve quality
+    \ElsIf {\textbf{three large dihedral angles}}
+        \State attempt edge-collapse on $M^{1}_{j_0}$, $M^{1}_{j_1}$, or $M^{1}_{j_2}$ with $M^{0}_{i_3}$ deleted
+        \State attempt edge-swap on any edge bounding triangle made by $M^{0}_{i_0}$, $M^{0}_{i_1}$, and $M^{0}_{i_2}$
+        \State attempt face-swap on the triangle made by $M^{0}_{i_0}$, $M^{0}_{i_1}$, $M^{0}_{i_2}$
+        \State attempt split-collapse on the triangle made by $M^{0}_{i_0}$, $M^{0}_{i_1}$, $M^{0}_{i_2}$ with $M^{0}_{i_3}$ deleted
+        \State attempt face-split-collapse on the triangle made by $M^{0}_{i_0}$, $M^{0}_{i_1}$, $M^{0}_{i_2}$ with $M^{0}_{i_3}$ deleted
+        \State reposition vertex $M^{0}_{i_3}$ to improve quality
+    \EndIf
+\EndWhile
+
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}

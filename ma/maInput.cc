@@ -29,16 +29,11 @@ void setDefaultValues(Input* in)
   in->shouldFixShape = true;
   in->shouldForceAdaptation = false;
   in->shouldPrintQuality = true;
+  in->goodQuality = GOODQUALITY;
   if (in->mesh->getDimension()==3)
-  {
-    in->goodQuality = 0.027;
     in->maximumEdgeRatio = 2.0;
-  }
-  else
-  { PCU_ALWAYS_ASSERT(in->mesh->getDimension()==2);
-    //old MA says .04, but that rarely kicks in.
-    //.2 is strict, but at least quality goes up
-    in->goodQuality = 0.2;
+  else {
+    PCU_ALWAYS_ASSERT(in->mesh->getDimension()==2);
     //this basically turns off short edge removal...
     in->maximumEdgeRatio = 100.0;
     //2D mesh adapt performs better if forceAdapt is on
@@ -119,8 +114,8 @@ void validateInput(Input* in)
         "but shape correction does not support matching yet", in->mesh->getPCU());
   if (in->goodQuality < 0.0)
     rejectInput("negative desired element quality", in->mesh->getPCU());
-  if (in->goodQuality > 1.0)
-    rejectInput("desired element quality greater than one", in->mesh->getPCU());
+  if (in->goodQuality > .5)
+    rejectInput("desired element quality too large", in->mesh->getPCU());
   if (in->validQuality < 0.0)
     rejectInput("negative minimum element quality", in->mesh->getPCU());
   if (in->maximumImbalance < 1.0)

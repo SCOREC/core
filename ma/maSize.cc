@@ -13,6 +13,8 @@
 #include <apfShape.h>
 #include <cstdlib>
 #include <pcu_util.h>
+#include "apfVectorElement.h"
+#include "maAdapt.h"
 
 namespace ma {
 
@@ -53,9 +55,8 @@ IdentitySizeField::IdentitySizeField(Mesh* m):
 
 double IdentitySizeField::measure(Entity* e)
 {
-  apf::MeshElement* me = apf::createMeshElement(mesh,e);
-  double x = apf::measure(me);
-  apf::destroyMeshElement(me);
+  apf::MeshElement me(mesh->getCoordinateField(),e);
+  double x = apf::measure(&me);
   return x;
 }
 
@@ -184,6 +185,7 @@ class SizeFieldIntegrator : public apf::Integrator
     {
       meshElement = me;
       dimension = apf::getDimension(me);
+      measurement = 0;
     }
     void atPoint(Vector const& p , double w, double )
     {
@@ -205,14 +207,29 @@ class SizeFieldIntegrator : public apf::Integrator
 
 struct MetricSizeField : public SizeField
 {
+  MetricSizeField(Mesh* m, int o) : mesh(m), order(o)
+  {
+  }
   double measure(Entity* e)
   {
-    SizeFieldIntegrator sFI(this,
-    	std::max(mesh->getShape()->getOrder(), order)+1);
-    apf::MeshElement* me = apf::createMeshElement(mesh, e);
-    sFI.process(me);
-    apf::destroyMeshElement(me);
-    return sFI.measurement;
+    me.init(mesh->getCoordinateField(), e, 0);
+    int integrationOrder = std::max(mesh->getShape()->getOrder(), order)+1;
+    double measurement = 0;
+    int dim = apf::getDimension(&me);
+    int np = get_or_add(numIntegrationPoints, dim, [&]() {return countIntPoints(&me,integrationOrder);});
+    double w = get_or_add(integrationWeight, dim, [&]() {return getIntWeight(&me,integrationOrder,0);});
+    for (int p=0; p < np; ++p) {
+      Vector point = get_or_add(integrationPoint, std::make_pair(dim, p), [&]() {return getIntPoint(&me,integrationOrder,p);});
+      Matrix Q;
+      getTransform(&me,point,Q);
+      Matrix J;
+      apf::getJacobian(&me,point,J);
+      /* transforms the rows of J, the differential tangent vectors,
+        into the metric space, then uses the generalized determinant */
+      double dV2 = apf::getJacobianDeterminant(J*Q,dim);
+      measurement += w*dV2;
+    }
+    return measurement;
   }
   bool shouldSplit(Entity* edge)
   {
@@ -229,6 +246,10 @@ struct MetricSizeField : public SizeField
   }
   Mesh* mesh;
   int order; // this is the underlying sizefield order (default 1)
+  apf::MeshElement me;
+  std::map<int, int> numIntegrationPoints;
+  std::map<int, double> integrationWeight;
+  std::map<std::pair<int, int>, Vector> integrationPoint;
 };
 
 AnisotropicFunction::~AnisotropicFunction()
@@ -363,18 +384,14 @@ struct LogMEval : public apf::Function
 
 struct AnisoSizeField : public MetricSizeField
 {
-  AnisoSizeField()
+  AnisoSizeField() : MetricSizeField(0, 1)
   {
-    mesh = 0;
-    order = 1;
   }
-  AnisoSizeField(Mesh* m, AnisotropicFunction* f):
+  AnisoSizeField(Mesh* m, AnisotropicFunction* f): MetricSizeField(m, 1),
     bothEval(f),
     sizesEval(&bothEval),
     frameEval(&bothEval)
   {
-    mesh = m;
-    order = 1;
     hField = apf::createUserField(m, "ma_sizes", apf::VECTOR,
         apf::getLagrange(1), &sizesEval);
     rField = apf::createUserField(m, "ma_frame", apf::MATRIX,
@@ -397,14 +414,14 @@ struct AnisoSizeField : public MetricSizeField
       Vector const& xi,
       Matrix& Q)
   {
-    apf::Element* hElement = apf::createElement(hField,me);
-    apf::Element* rElement = apf::createElement(rField,me);
+    if (me->getEntity() != hElement.getEntity())
+      hElement.init(hField,me->getEntity(),me);
+    if (me->getEntity() != rElement.getEntity())
+      rElement.init(rField,me->getEntity(),me);
     Vector h;
     Matrix R;
-    apf::getVector(hElement,xi,h);
-    apf::getMatrix(rElement,xi,R);
-    apf::destroyElement(hElement);
-    apf::destroyElement(rElement);
+    apf::getVector(&hElement,xi,h);
+    apf::getMatrix(&rElement,xi,R);
     orthogonalizeR(R);
     Matrix S(1/h[0],0,0,
              0,1/h[1],0,
@@ -416,16 +433,16 @@ struct AnisoSizeField : public MetricSizeField
       Vector const& xi,
       Entity* newVert)
   {
-    apf::Element* rElement = apf::createElement(rField,parent);
-    apf::Element* hElement = apf::createElement(hField,parent);
+    if (parent->getEntity() != hElement.getEntity())
+      hElement.init(hField,parent->getEntity(),parent);
+    if (parent->getEntity() != rElement.getEntity())
+      rElement.init(rField,parent->getEntity(),parent);
     Vector h;
-    apf::getVector(hElement,xi,h);
+    apf::getVector(&hElement,xi,h);
     Matrix R;
-    apf::getMatrix(rElement,xi,R);
+    apf::getMatrix(&rElement,xi,R);
     orthogonalizeR(R);
     this->setValue(newVert,R,h);
-    apf::destroyElement(hElement);
-    apf::destroyElement(rElement);
   }
   void setValue(
       Entity* vert,
@@ -445,6 +462,8 @@ struct AnisoSizeField : public MetricSizeField
                           0,0,1),
                    Vector(value,value,value));
   }
+  apf::Element hElement;
+  apf::Element rElement;
   apf::Field* hField;
   apf::Field* rField;
   BothEval bothEval;
@@ -454,12 +473,10 @@ struct AnisoSizeField : public MetricSizeField
 
 struct LogAnisoSizeField : public MetricSizeField
 {
-  LogAnisoSizeField()
+  LogAnisoSizeField() : MetricSizeField(0, 1)
   {
-    mesh = 0;
-    order = 1;
   }
-  LogAnisoSizeField(Mesh* m, AnisotropicFunction* f):
+  LogAnisoSizeField(Mesh* m, AnisotropicFunction* f): MetricSizeField(m, 1),
     logMEval(f)
   {
     mesh = m;
@@ -485,19 +502,19 @@ struct LogAnisoSizeField : public MetricSizeField
         continue;
       it = m->begin(d);
       while( (ent = m->iterate(it)) ){
-	int type = m->getType(ent);
-	int non = apf::getShape(logMField)->countNodesOn(type);
-	for (int i = 0; i < non; i++) {
-	  Vector h;
-	  Matrix f;
-	  apf::getVector(sizes, ent, i, h);
-	  apf::getMatrix(frames, ent, i, f);
-	  Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
-	  Matrix S(s[0], 0   , 0,
-	      0    , s[1], 0,
-	      0    , 0   , s[2]);
-	  apf::setMatrix(logMField, ent, i, f * S * transpose(f));
-	}
+        int type = m->getType(ent);
+        int non = apf::getShape(logMField)->countNodesOn(type);
+        for (int i = 0; i < non; i++) {
+          Vector h;
+          Matrix f;
+          apf::getVector(sizes, ent, i, h);
+          apf::getMatrix(frames, ent, i, f);
+          Vector s(log(1/h[0]/h[0]), log(1/h[1]/h[1]), log(1/h[2]/h[2]));
+          Matrix S(s[0], 0   , 0,
+              0    , s[1], 0,
+              0    , 0   , s[2]);
+          apf::setMatrix(logMField, ent, i, f * S * transpose(f));
+        }
       }
       m->end(it);
     }
@@ -508,10 +525,10 @@ struct LogAnisoSizeField : public MetricSizeField
       Vector const& xi,
       Matrix& Q)
   {
-    apf::Element* logMElement = apf::createElement(logMField,me);
+    if (me->getEntity() != logMElement.getEntity())
+      logMElement.init(logMField,me->getEntity(),me);
     Matrix logM;
-    apf::getMatrix(logMElement,xi,logM);
-    apf::destroyElement(logMElement);
+    apf::getMatrix(&logMElement,xi,logM);
     Vector v;
     Matrix R;
     orthogonalEigenDecompForSymmetricMatrix(logM, v, R);
@@ -525,11 +542,11 @@ struct LogAnisoSizeField : public MetricSizeField
       Vector const& xi,
       Entity* newVert)
   {
-    apf::Element* logMElement = apf::createElement(logMField,parent);
+    if (parent->getEntity() != logMElement.getEntity()) 
+      logMElement.init(logMField,parent->getEntity(),parent);
     Matrix logM;
-    apf::getMatrix(logMElement,xi,logM);
+    apf::getMatrix(&logMElement,xi,logM);
     this->setValue(newVert,logM);
-    apf::destroyElement(logMElement);
   }
   void setValue(
       Entity* vert,
@@ -574,6 +591,7 @@ struct LogAnisoSizeField : public MetricSizeField
     return apf::getShape(logMField)->hasNodesIn(dimension);
   }
   apf::NewArray<double> fieldVal;
+  apf::Element logMElement;
   apf::Field* logMField;
   LogMEval logMEval;
 };
@@ -615,10 +633,42 @@ struct IsoUserField : public IsoSizeField
   FieldReader reader;
 };
 
+static void clampSizeField(Mesh*m, apf::Field* sizes)
+{
+  Vector lower;
+  Vector upper;
+  getBoundingBox(m, lower, upper);
+  double max = std::abs(lower[0]) + std::abs(upper[0]);
+  max = std::max(max, std::abs(lower[1]) + std::abs(upper[1]));
+  max = std::max(max, std::abs(lower[2]) + std::abs(upper[2]));
+  max = max/2;
+  bool clamped = false;
+
+  Entity* ent;
+  Iterator* it;
+  for (int d = 0; d <= m->getDimension(); d++) {
+    it = m->begin(d);
+    while( (ent = m->iterate(it)) ){
+      int type = m->getType(ent);
+      int non = sizes->getShape()->countNodesOn(type);
+      for (int i = 0; i < non; i++) {
+        Vector h;
+        apf::getVector(sizes, ent, i, h);
+        if (h[0] > max) {clamped = true; h[0] = max;}
+        if (h[1] > max) {clamped = true; h[1] = max;}
+        if (h[2] > max) {clamped = true; h[2] = max;}
+        apf::setVector(sizes, ent, i, h);
+      }
+    }
+  }
+  if (clamped) print(m->getPCU(), "[WARNING]: Found size field larger than the bounding box. "
+                                  "Size field has been automatically clamped to the bounding box.");
+}
+
 SizeField* makeSizeField(Mesh* m, apf::Field* sizes, apf::Field* frames,
     bool logInterpolation)
 {
-  // logInterpolation is "false" by default
+  clampSizeField(m, sizes);
   if (! logInterpolation) {
     AnisoSizeField* anisoF = new AnisoSizeField();
     anisoF->init(m, sizes, frames);
@@ -649,6 +699,15 @@ SizeField* makeSizeField(Mesh* m, IsotropicFunction* f)
 SizeField* makeSizeField(Mesh* m, apf::Field* size)
 {
   return new IsoUserField(m, size);
+}
+
+double getAndCacheSize(Adapt* a, Entity* e)
+{
+  if (a->mesh->hasTag(e, a->sizeCache))
+    return getCachedSize(a, e);
+  double size = a->sizeField->measure(e);
+  setCachedSize(a, e, size);
+  return size;
 }
 
 double getAverageEdgeLength(Mesh* m)

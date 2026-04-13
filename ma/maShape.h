@@ -20,6 +20,7 @@ class Adapt;
 
 /* quick check of positivity of volumes based on vertices */
 bool areTetsValid(Mesh* m, EntityArray& tets);
+bool isTetValid(Mesh* m, Entity* tets);
 
 double measureTriQuality(Mesh* m, SizeField* f, Entity* tri, bool useMax=true);
 double measureTetQuality(Mesh* m, SizeField* f, Entity* tet, bool useMax=true);
@@ -33,6 +34,7 @@ double measureQuadraticTetQuality(Mesh* m, Entity* tet);
 
 double getWorstQuality(Adapt* a, EntityArray& e);
 double getWorstQuality(Adapt* a, Entity** e, size_t n);
+double getAndCacheQuality(Adapt* a, Entity* e);
 
 /* has worse quality than qualityToBeat
  */

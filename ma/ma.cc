@@ -16,7 +16,10 @@
 #include "maBalance.h"
 #include "maLayer.h"
 #include "maDBG.h"
+#include "maFixShape.h"
 #include <pcu_util.h>
+#include <iostream>
+#include "apfGeometry.h"
 
 namespace ma {
 
@@ -30,19 +33,24 @@ void adapt(Input* in)
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
-    coarsen(a);
+    coarsenMultiple(a);
     coarsenLayer(a);
     midBalance(a);
     refine(a);
     snap(a);
   }
   allowSplitCollapseOutsideLayer(a);
-  fixElementShapes(a);
+  fixElementShapesNew(a);
   cleanupLayer(a);
   tetrahedronize(a);
   printQuality(a);
   postBalance(a);
   Mesh* m = a->mesh;
+
+  double t1 = pcu::Time();
+  print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
+  apf::printStats(m);
+
   delete a;
   // cleanup input object and associated sizefield and solutiontransfer objects
   if (in->ownsSizeField)
@@ -50,9 +58,6 @@ void adapt(Input* in)
   if (in->ownsSolutionTransfer)
     delete in->solutionTransfer;
   delete in;
-  double t1 = pcu::Time();
-  print(m->getPCU(), "mesh adapted in %f seconds", t1-t0);
-  apf::printStats(m);
 }
 
 void adapt(const Input* in)
@@ -70,7 +75,7 @@ void adaptVerbose(Input* in, bool verbose)
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
-    coarsen(a);
+    coarsenMultiple(a);
     if (verbose && in->shouldCoarsen)
       ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
     coarsenLayer(a);
@@ -81,7 +86,7 @@ void adaptVerbose(Input* in, bool verbose)
     snap(a);
     if (verbose && in->shouldSnap)
       ma_dbg::dumpMeshWithQualities(a,i,"after_snap");
-    fixElementShapes(a);
+    fixElementShapesNew(a);
     if (verbose && in->shouldFixShape)
       ma_dbg::dumpMeshWithQualities(a,i,"after_fix");
   }

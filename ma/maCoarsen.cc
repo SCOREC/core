@@ -16,6 +16,15 @@ This file contains two coarsening alogrithms.
   2. coarsen: The first will create one independent set and then collapse all of the edges 
       in that independent set. 
 */
+/*
+This file contains two coarsening alogrithms. 
+  1. coarsenMultiple: will repeatedly create independent sets and collapse the mesh 
+      until there are no more short edges left. This code is currently only used for testing 
+      since more work needs to be done to achieve better performance and have the code work in 
+      parallel, at which point the other coarsen algorithm can be deleted.
+  2. coarsen: The first will create one independent set and then collapse all of the edges 
+      in that independent set. 
+*/
 #include "maCoarsen.h"
 #include "maAdapt.h"
 #include "maCollapse.h"
@@ -27,60 +36,11 @@ This file contains two coarsening alogrithms.
 #include <vector>
 #include <list>
 #include <algorithm>
+#include "maSnapper.h"
+#include "maShapeHandler.h"
 
 namespace ma {
-
-namespace {
-
-//Measures edge length and stores the result so it doesn't have to be calculated again
-double getLength(Adapt* a, Tag* lengthTag, Entity* edge)
-{
-  double length = 0;
-  if (a->mesh->hasTag(edge, lengthTag))
-    a->mesh->getDoubleTag(edge, lengthTag, &length);
-  else {
-    length = a->sizeField->measure(edge);
-    a->mesh->setDoubleTag(edge, lengthTag, &length);
-  }
-  return length;
-}
-
-//Make sure that a collapse will not create an edge longer than the max
-bool collapseSizeCheck(Adapt* a, Entity* vertex, Entity* edge, apf::Up& adjacent)
-{
-  Entity* vCollapse = getEdgeVertOppositeVert(a->mesh, edge, vertex);
-  for (int i=0; i<adjacent.n; i++) {
-    Entity* newEdgeVerts[2]{vertex, getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vCollapse)};
-    Entity* newEdge = a->mesh->createEntity(apf::Mesh::EDGE, 0, newEdgeVerts);
-    double length = a->sizeField->measure(newEdge);
-    destroyElement(a, newEdge);
-    if (length > MAXLENGTH) return false;
-  }
-  return true;
-}
-
-bool tryCollapseEdge(Adapt* a, Entity* edge, Entity* keep, Collapse& collapse, apf::Up& adjacent)
-{
-  PCU_ALWAYS_ASSERT(a->mesh->getType(edge) == apf::Mesh::EDGE);
-  bool alreadyFlagged = true;
-  if (keep) alreadyFlagged = getFlag(a, keep, DONT_COLLAPSE);
-  if (!alreadyFlagged) setFlag(a, keep, DONT_COLLAPSE);
-
-  double quality = a->input->shouldForceAdaptation ? a->input->validQuality 
-                                                  : a->input->goodQuality;
-
-  bool result = false;
-  if (collapse.setEdge(edge) && 
-      collapse.checkClass() &&
-      collapse.checkTopo() &&
-      collapseSizeCheck(a, keep, edge, adjacent) &&
-      collapse.tryBothDirections(quality)) {
-    result = true;
-  }  
-  if (!alreadyFlagged) clearFlag(a, keep, DONT_COLLAPSE);
-  return result;
-}
-}
+const double MINIMUM_QUALITY = std::pow(.1, 3);
 
 class CollapseChecker : public apf::CavityOp
 {
@@ -319,111 +279,21 @@ bool coarsen(Adapt* a)
   return true;
 }
 
-/*
-  To be used after collapsing a vertex to flag adjacent vertices as NEED_NOT_COLLAPSE. This will create a
-  set of collapses where no two adjacent are vertices collapsed. Will also clear adjacent vertices for 
-  collapse in next independent set since they might succeed after a collapse.
-*/
-void flagIndependentSet(Adapt* a, apf::Up& adjacent, size_t& checked)
-{
-  for (int adj=0; adj < adjacent.n; adj++) {
-    Entity* vertices[2];
-    a->mesh->getDownward(adjacent.e[adj],0, vertices);
-    for (int v = 0; v < 2; v++) {
-      setFlag(a, vertices[v], NEED_NOT_COLLAPSE);
-      if (getFlag(a, vertices[v], CHECKED)){
-        clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
-        checked--;
-      }
-    }
-  }
-}
-
-struct EdgeLength
-{
-  Entity* edge;
-  double length;
-  bool operator<(const EdgeLength& other) const {
-    return length < other.length;
-  }
-};
-
-/*
-  Given an iterator pointing to a vertex we will collapse the shortest adjacent edge and try the next
-  shorted until one succeeds and then it will expand independent set. In Li's thesis it only attempts
-  to collapse the shortest edge, but this gave us better results.
-*/
-bool collapseShortest(Adapt* a, Collapse& collapse, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, size_t& checked, apf::Up& adjacent, Tag* lengthTag)
-{
-  Entity* vertex = *itr;
-  std::vector<EdgeLength> sorted;
-  for (int i=0; i < adjacent.n; i++) {
-    double length = getLength(a, lengthTag, adjacent.e[i]);
-    EdgeLength measured{adjacent.e[i], length};
-    if (measured.length > MINLENGTH) continue;
-    sorted.push_back(measured);
-  }
-  if (sorted.size() == 0) { //performance optimization, will rarely result in a missed edge
-    itr = shortEdgeVerts.erase(itr);
-    return false;
-  }
-  std::sort(sorted.begin(), sorted.end());
-  for (size_t i=0; i < sorted.size(); i++) {
-    Entity* keepVertex = getEdgeVertOppositeVert(a->mesh, sorted[i].edge, vertex);
-    if (!tryCollapseEdge(a, sorted[i].edge, keepVertex, collapse, adjacent)) continue;
-    flagIndependentSet(a, adjacent, checked);
-    itr = shortEdgeVerts.erase(itr);
-    collapse.destroyOldElements();
-    return true;
-  }
-  setFlag(a, vertex, CHECKED);
-  checked++;
-  return false;
-}
-
-/*
-  Iterates through shortEdgeVerts until it finds a vertex that is adjacent to an 
-  independent set. We want our collapses to touch the independent set in order to
-  reduce adjacent collapses, since collapsing adjacent vertices will result in a
-  lower quality mesh.
-*/
-bool getAdjIndependentSet(Adapt* a, std::list<Entity*>& shortEdgeVerts, std::list<Entity*>::iterator& itr, bool& independentSetStarted, apf::Up& adjacent)
-{
-  size_t numItr=0;
-  do {
-    numItr++;
-    if (itr == shortEdgeVerts.end()) itr = shortEdgeVerts.begin();
-    Entity* vertex = *itr;
-    if (getFlag(a, vertex, CHECKED)) {itr++; continue;} //Already tried to collapse
-    a->mesh->getUp(vertex, adjacent);
-    if (!independentSetStarted) return true;
-    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) {itr++; continue;} //Too close to last collapse
-    for (int i=0; i < adjacent.n; i++)
-    {
-      Entity* opposite = getEdgeVertOppositeVert(a->mesh, adjacent.e[i], vertex);
-      if (getFlag(a, opposite, NEED_NOT_COLLAPSE)) return true; //Touching independent set
-    }
-    itr++;
-  } while (numItr < shortEdgeVerts.size());
-  for (auto v : shortEdgeVerts) clearFlag(a, v, NEED_NOT_COLLAPSE);
-  independentSetStarted = false;
-  return false;
-}
-
-//returns a list of vertices that bound a short edge and flags them
-std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
+//returns a list of vertices that bound a short edge
+std::list<Entity*> getShortEdgeVerts(Adapt* a)
 {
   std::list<Entity*> shortEdgeVerts;
   Iterator* it = a->mesh->begin(1);
   Entity* edge;
   while ((edge = a->mesh->iterate(it))) 
   {
-    double length = getLength(a, lengthTag, edge);
-    if (length > MINLENGTH) continue;
+    if (getAndCacheSize(a, edge) > MINLENGTH) continue;
     Entity* vertices[2];
     a->mesh->getDownward(edge,0,vertices);
     for (int i = 0; i < 2; i++) {
       if (getFlag(a, vertices[i], CHECKED)) continue;
+      if (!a->mesh->isOwned(vertices[i])) continue;
+      if (a->mesh->isShared(vertices[i])) continue;
       setFlag(a, vertices[i], CHECKED);
       shortEdgeVerts.push_back(vertices[i]);
     }
@@ -433,37 +303,121 @@ std::list<Entity*> getShortEdgeVerts(Adapt* a, Tag* lengthTag)
   return shortEdgeVerts;
 }
 
-/*
-  Follows the alogritm in Li's thesis in order to coarsen all short edges 
-  in a mesh while maintaining a decent quality mesh.
-*/
-bool coarsenMultiple(Adapt* a)
+class CollapseAll : public apf::CavityOp
 {
-  if (!a->input->shouldCoarsen)
-    return false;
-  double t0 = pcu::Time();
-  Tag* lengthTag = a->mesh->createDoubleTag("edge_length", 1);
-  std::list<Entity*> shortEdgeVerts = getShortEdgeVerts(a, lengthTag);
-
+  public:
+  Adapt* a;
+  Entity* vertex;
   Collapse collapse;
-  collapse.Init(a);
-  int success = 0;
-  size_t checked = 0;
-  bool independentSetStarted = false;
-  std::list<Entity*>::iterator itr = shortEdgeVerts.begin();
-  while (checked < shortEdgeVerts.size())
+  std::list<Entity*> shortEdgeVerts;
+
+  int success=0;
+
+  CollapseAll(Adapt* adapt) : apf::CavityOp(adapt->mesh,true)
   {
-    apf::Up adjacent;
-    if (!getAdjIndependentSet(a, shortEdgeVerts, itr, independentSetStarted, adjacent)) continue;
-    if (collapseShortest(a, collapse, shortEdgeVerts, itr, checked, adjacent, lengthTag)) {
-      independentSetStarted=true;
-      success++;
+    a = adapt;
+    collapse.Init(a);
+    shortEdgeVerts = getShortEdgeVerts(a);
+  }
+
+  ~CollapseAll()
+  {
+    ma::clearFlagFromDimension(a, CHECKED, 0);
+  }
+
+  int getTargetDimension() { return 0; }
+  void resetIndependentSet() { ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE, 0); }
+
+  /*
+  To be used after collapsing a vertex to flag adjacent vertices as NEED_NOT_COLLAPSE. This will create a
+  set of collapses where no two adjacent are vertices collapsed. Will also clear adjacent vertices for 
+  collapse in next independent set since they might succeed after a collapse.
+  */
+  void flagIndependentSet(apf::Up& adjacent)
+  {
+    for (int adj=0; adj < adjacent.n; adj++) {
+      Entity* vertices[2];
+      a->mesh->getDownward(adjacent.e[adj],0, vertices);
+      for (int v = 0; v < 2; v++) {
+        setFlag(a, vertices[v], NEED_NOT_COLLAPSE);
+        if (getFlag(a, vertices[v], CHECKED))
+          clearFlag(a, vertices[v], CHECKED); //needs to be checked again in next independent set
+      }
     }
   }
-  ma::clearFlagFromDimension(a, NEED_NOT_COLLAPSE | CHECKED, 0);
-  a->mesh->destroyTag(lengthTag);
+
+  struct EdgeLength
+  {
+    Entity* edge;
+    double length;
+    bool operator<(const EdgeLength& other) const {
+      return length < other.length;
+    }
+  };
+
+  /*
+  Given an iterator pointing to a vertex we will collapse the shortest adjacent edge and try the next
+  shorted until one succeeds and then it will expand independent set. In Li's thesis it only attempts
+  to collapse the shortest edge, but this gave us better results.
+  */
+  bool collapseShortest(Entity* vertex, apf::Up& adjacent)
+  {
+    double qualityToBeat = a->input->shouldForceAdaptation ? MINIMUM_QUALITY
+                                                  : a->input->goodQuality;
+
+    std::vector<EdgeLength> sorted;
+    for (int i=0; i < adjacent.n; i++) {
+      double length = getAndCacheSize(a, adjacent.e[i]);
+      EdgeLength measured{adjacent.e[i], length};
+      if (measured.length > MINLENGTH) continue;
+      sorted.push_back(measured);
+    }
+    std::sort(sorted.begin(), sorted.end());
+    for (size_t i=0; i < sorted.size(); i++) {
+      if (!collapse.run(sorted[i].edge, vertex, qualityToBeat)) continue;
+      flagIndependentSet(adjacent);
+      collapse.destroyOldElements();
+      return true;
+    }
+    return false;
+  }
+
+  Outcome setEntity(Entity* vert)
+  {
+    vertex = vert;
+    if (getFlag(a, vertex, CHECKED)) return SKIP;
+    if (getFlag(a, vertex, NEED_NOT_COLLAPSE)) return SKIP;
+    if (!requestLocality(&vertex, 1))
+      return REQUEST;
+    return OK;
+  }
+
+  void apply()
+  {
+    apf::Up adjacent;
+    a->mesh->getUp(vertex, adjacent);
+    setFlag(a, vertex, CHECKED);
+    if (collapseShortest(vertex, adjacent)) success++;
+  }
+};
+
+bool coarsenMultiple(Adapt* a)
+{
+  if (!a->input->shouldCoarsen) return false;
+  double t0 = pcu::Time();
+  CollapseAll collapseAll(a);
+  int totalSuccess = 0;
+  int success = 0;
+  do {
+    collapseAll.success = 0;
+    collapseAll.applyToList(collapseAll.shortEdgeVerts);
+    collapseAll.resetIndependentSet();
+    success = a->mesh->getPCU()->Add<int>(collapseAll.success);
+    totalSuccess += success;
+  } while (success > 0);
+
   double t1 = pcu::Time();
-  print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", success, t1-t0);
+  print(a->mesh->getPCU(), "coarsened %d edges in %f seconds", totalSuccess, t1-t0);
   return true;
 }
 

@@ -10,6 +10,16 @@
 
 namespace apf {
 
+VectorElement::VectorElement(): 
+  ElementOf<Vector3>()
+{
+}
+
+VectorElement::VectorElement(Field* f, MeshEntity* e):
+  ElementOf<Vector3>(static_cast<apf::VectorField*>(f),e)
+{
+}
+
 VectorElement::VectorElement(VectorField* f, MeshEntity* e):
   ElementOf<Vector3>(f,e)
 {

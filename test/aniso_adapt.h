@@ -15,6 +15,8 @@
 #include <maSnap.h>
 #include <apfGeometry.h>
 #include <functional>
+#include <maFixShape.h>
+#include <maStats.h>
 /*
  Test some of the individual components in mesh adaptation to make sure that they are 
  functioning as intended. Right now it only tests coarsen refinement and snapping but
@@ -45,20 +47,20 @@ class AnIso : public ma::AnisotropicFunction
     ma::Vector lower, upper;
 };
 
-void measureQuality(ma::Mesh* m, double& avgQuality, double& minQuality)
+void measureQuality(ma::Adapt* a, double& avgQuality, double& minQuality)
 {
-  int d = m->getDimension();
+  ma::Mesh* m = a->mesh;
   apf::MeshEntity* elem;
-  apf::MeshIterator* it = m->begin(d);
-  ma::IdentitySizeField I(m);
+  apf::MeshIterator* it = m->begin(m->getDimension());
   minQuality = 1;
+  avgQuality = 0;
   while ((elem = m->iterate(it))) {
-    double q = ma::measureElementQuality(m, &I, elem);
+    double q = cbrt(ma::getAndCacheQuality(a, elem));
     avgQuality += q;
     minQuality = std::min(minQuality, q);
   }
   m->end(it);
-  avgQuality = avgQuality / m->count(d);
+  avgQuality = avgQuality / m->count(m->getDimension());
 }
 
 //make sure refinement is done
@@ -78,54 +80,59 @@ int countEdges(ma::Mesh* m)
   return m->count(1);
 }
 
-ma::Mesh* coarsenForced(ma::Mesh* m)
+ma::Mesh* fixShapeTest(ma::Mesh* m, std::vector<int> savedQuality)
 {
   m->verify();
-  AnIso sf(m, .5, 1);
+  AnIso sf(m, 2, 2);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
-  in->shouldForceAdaptation = true;
+  in->shouldPrintQuality = false;
   ma::Adapt* a = new ma::Adapt(in);
+
+  for (int i = 0; i < in->maximumIterations; ++i)
+  {
+    ma::refine(a);
+    ma::snap(a);
+    ma::coarsenMultiple(a);
+  }
+
   double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
+  measureQuality(a, avgQualBefore, minQualBefore);
+  ma::fixElementShapesNew(a);
+  measureQuality(a, avgQualAfter, minQualAfter);
 
-  measureQuality(m, avgQualBefore, minQualBefore);
-  double averageBefore = ma::getAverageEdgeLength(m);
-  int edgesBefore = countEdges(m);
+  PCU_ALWAYS_ASSERT(minQualAfter > minQualBefore);
+  PCU_ALWAYS_ASSERT(avgQualAfter > avgQualBefore);
 
-  ma::coarsen(a);
-
-  measureQuality(m, avgQualAfter, minQualAfter);
-
-  //make sure that coarsening is happening and it doesn't make the mesh invalid
-  PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
-  PCU_ALWAYS_ASSERT(averageBefore < ma::getAverageEdgeLength(m));
-  PCU_ALWAYS_ASSERT(minQualAfter >= in->validQuality);
+  ma::HistogramStats hist = ma::printHistogramStats(a);
+  std::vector<int> badQualityHist(hist.quality.begin(), hist.quality.begin() + 3);
+  std::vector<int> badQualityHistSaved(savedQuality.begin(), savedQuality.begin() + 3);
+  PCU_ALWAYS_ASSERT(ma::histogramDistance(hist.quality, savedQuality) <= .05);
+  PCU_ALWAYS_ASSERT(ma::histogramDistance(badQualityHist, badQualityHistSaved) <= .05);
 
   m->verify();
   delete a;
-  // cleanup input object and associated sizefield and solutiontransfer objects
-  if (in->ownsSizeField)
-    delete in->sizeField;
-  if (in->ownsSolutionTransfer)
-    delete in->solutionTransfer;
+  if (in->ownsSizeField) delete in->sizeField;
+  if (in->ownsSolutionTransfer) delete in->solutionTransfer;
   delete in;
   return m;
 }
 
-ma::Mesh* coarsenRegular(ma::Mesh* m)
+ma::Mesh* coarsenTest(ma::Mesh* m)
 {
   m->verify();
   AnIso sf(m, .5, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  in->shouldPrintQuality = false;
   ma::Adapt* a = new ma::Adapt(in);
   double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
 
-  measureQuality(m, avgQualBefore, minQualBefore);
+  measureQuality(a, avgQualBefore, minQualBefore);
   double averageBefore = ma::getAverageEdgeLength(m);
   int edgesBefore = countEdges(m);
 
-  ma::coarsen(a);
+  ma::coarsenMultiple(a);
 
-  measureQuality(m, avgQualAfter, minQualAfter);
+  measureQuality(a, avgQualAfter, minQualAfter);
 
   //Makes sure that coarsening is happening and it isn't decreasing the quality of the mesh
   PCU_ALWAYS_ASSERT(edgesBefore > countEdges(m));
@@ -174,6 +181,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   m->verify();
   AnIso sf(m, 3, 1);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
+  in->shouldPrintQuality = false;
   ma::Adapt* a = new ma::Adapt(in);
   int edgesBefore = countEdges(m);
   double averageBefore = ma::getAverageEdgeLength(m);
@@ -185,7 +193,7 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   }
 
   double avgQualAfter=0, minQualAfter=0;
-  measureQuality(m, avgQualAfter, minQualAfter);
+  measureQuality(a, avgQualAfter, minQualAfter);
 
   //Makes sure that refinement is happening
   PCU_ALWAYS_ASSERT(edgesBefore < countEdges(m));
@@ -206,22 +214,21 @@ ma::Mesh* refineSnapTest(ma::Mesh* m)
   return m;
 }
 
-void adaptTests(ma::Mesh* meshReg, ma::Mesh* meshForced)
+void adaptTests(ma::Mesh* meshReg, std::vector<int> savedQuality)
 {
   apf::writeVtkFiles("startMesh", meshReg);
 
+  printf("\n==REFINE TEST==\n");
   refineSnapTest(meshReg);
   apf::writeVtkFiles("afterRefine", meshReg);
 
-  coarsenRegular(meshReg);
+  printf("\n==COARSEN TEST==\n");
+  coarsenTest(meshReg);
   apf::writeVtkFiles("afterCoarsen", meshReg);
 
-  coarsenForced(refineSnapTest(meshForced));
-  apf::writeVtkFiles("afterForcedCoarsen", meshForced);
-
-  //Make sure setting to force coarsen is functioning
-  PCU_ALWAYS_ASSERT(countEdges(meshReg) > countEdges(meshForced));
-  PCU_ALWAYS_ASSERT(ma::getAverageEdgeLength(meshReg) < ma::getAverageEdgeLength(meshForced));
+  printf("\n==FIX SHAPE TEST==\n");
+  fixShapeTest(meshReg, savedQuality);
+  apf::writeVtkFiles("afterFixShape", meshReg);
 }
 
 #endif

@@ -15,20 +15,32 @@
  * it will collapse to simplify the region and attempt other operators such as
  * swap, split collapse, double split collapse.
 */
+/**
+ * \file maSnapper.cc
+ * \brief Definition of maSnapper.h file.
+ * This file contains functions to move a point to the model surface. As described
+ * in Li's thesis it will first try to collapse in the target direction. Otherwise 
+ * it will collapse to simplify the region and attempt other operators such as
+ * swap, split collapse, double split collapse.
+*/
 #include "maSnapper.h"
 #include "maAdapt.h"
 #include "maShapeHandler.h"
+#include "maFaceSwap.h"
 #include "maSnap.h"
+#include "maDBG.h"
 #include "maDBG.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <iostream>
+#include "apfGeometry.cc"
 
 namespace ma {
 
-Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSplitCollapse(a)
+Snapper::Snapper(Adapt* a, Tag* st) : mesh(a->mesh), splitCollapse(a), doubleSplitCollapse(a), reposition(a)
 {
+  adapt = a;
   adapt = a;
   snapTag = st;
   collapse.Init(a);
@@ -83,23 +95,25 @@ static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 #if defined(DEBUG_FPP)
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
-  ma_dbg::addTargetLocation(a, "snap_target");
-  ma_dbg::addClassification(a, "classification");
+  ma_dbg::useFieldInfo(a, [a, FPP] {
+    apf::writeVtkFiles("FPP_Mesh", a->mesh);
+    EntitySet invalid;
+    for (auto e : FPP->problemRegions) invalid.insert(e);
+    ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
 
-  apf::writeVtkFiles("FPP_Mesh", a->mesh);
-  EntityArray invalid;
-  for (int i=0; i<FPP->problemRegions.n; i++){
-    invalid.append(FPP->problemRegions.e[i]);
-  }
-  ma_dbg::createCavityMesh(a, invalid, "FPP_Invalid");
+    for (auto e : FPP->commEdges) setFlag(a, e, CHECKED);
+    ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
+    for (auto e : FPP->commEdges) clearFlag(a, e, CHECKED);
 
-  for (int i=0; i<FPP->commEdges.n; i++) setFlag(a, FPP->commEdges.e[i], CHECKED);
-  ma_dbg::dumpMeshWithFlag(a, 0, 1, CHECKED, "FPP_CommEdges", "FPP_CommEdges");
-  for (int i=0; i<FPP->commEdges.n; i++) clearFlag(a, FPP->commEdges.e[i], CHECKED);
+    flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
+    flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
+    flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
 
-  flagAndPrint(a, FPP->vert, 0, "FPP_Vertex");
-  flagAndPrint(a, FPP->problemFace, 2, "FPP_Face");
-  flagAndPrint(a, FPP->problemRegion, 3, "FPP_Region");
+    EntitySet adjacent1 = getNextLayer(a, invalid);
+    ma_dbg::createCavityMesh(a, adjacent1, "FPP_ADJACENT_1");
+    EntitySet adjacent2 = getNextLayer(a, adjacent1);
+    ma_dbg::createCavityMesh(a, adjacent2, "FPP_ADJACENT_2");
+  });
 }
 #endif
 
@@ -300,6 +314,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
   Entity* ents[4] = {0};
   double area[4];
   int bit = getTetStats(adapt, FPP->vert, FPP->problemFace, FPP->problemRegion, ents, area);
+  double qual = adapt->input->validQuality;
 
   double min=area[0];
   for(int i=1; i<4; i++) 
@@ -313,14 +328,8 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
       if (adapt->sizeField->measure(edges[i]) > adapt->sizeField->measure(longest))
         longest = edges[i];
 
-    if (edgeSwap->run(longest)) {
-      numSwap++;
-      return true;
-    }
-    if (splitCollapse.run(longest, FPP->vert, adapt->input->validQuality)) {
-      numSplitCollapse++;
-      return true;
-    }
+    if (edgeSwap->run(longest)) { numSwap++; return true; }
+    if (splitCollapse.run(longest, FPP->vert, qual)) { numSplitCollapse++; return true; }
   }
 
   if (ents[0] == 0)
@@ -328,38 +337,19 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 
   // two large dihedral angles -> key problem: two mesh edges
   if (bit==3 || bit==5 || bit==6) {
-    for (int i=0; i<2; i++)
-      if (edgeSwap->run(ents[i])) {
-        numSwap++;
-        return true;
-      }
-    for (int i=0; i<2; i++)
-      if (splitCollapse.run(ents[i], FPP->vert, adapt->input->validQuality)) {
-        numSplitCollapse++;
-        return true;
-      }
-    if (doubleSplitCollapse.run(ents, adapt->input->validQuality)) {
-      numSplitCollapse++;
-      return true;
-    }
-    print(mesh->getPCU(), "Swap failed: Consider more collapses");
+    if (edgeSwap->run(ents[0])) { numSwap++; return true; }
+    if (edgeSwap->run(ents[1])) { numSwap++; return true; }
+    if (splitCollapse.run(ents[0], FPP->vert, qual)) { numSplitCollapse++; return true; }
+    if (splitCollapse.run(ents[1], FPP->vert, qual)) { numSplitCollapse++; return true; }
+    if (doubleSplitCollapse.run(ents, qual)) { numSplitCollapse++; return true; }
   }
   // three large dihedral angles -> key entity: a mesh face
   else {
     Entity* edges[3];
     mesh->getDownward(ents[0], 1, edges);
-    for (int i=0; i<3; i++) {
-      if (edgeSwap->run(edges[i])) {
-        numSwap++;
-        return true;
-      }
-    }
-    //TODO: RUN FACE SWAP HERE
-    if (splitCollapse.run(ents[1], FPP->vert, adapt->input->validQuality)) {
-      numSplitCollapse++;
-      return true;
-    }
-    print(mesh->getPCU(), "Swap failed: face swap not implemented");
+    for (int i=0; i<3; i++) 
+      if (edgeSwap->run(edges[i])) { numSwap++; return true; }
+    if (splitCollapse.run(ents[1], FPP->vert, qual)) { numSplitCollapse++; return true; }
   }
   return false;
 }
@@ -560,43 +550,12 @@ static FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up
   return FPP;
 }
 
-static void getInvalid(Adapt* a, Upward& adjacentElements, apf::Up& invalid)
-{
-  invalid.n = 0;
-  for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
-    /* for now, when snapping a vertex on the boundary
-    layer, ignore the quality of layer elements.
-    not only do we not have metrics for this, but the
-    algorithm that moves curves would need to change */
-    if (getFlag(a, adjacentElements[i], LAYER))
-      continue;
-    if (a->shape->getQuality(adjacentElements[i]) < a->input->validQuality)
-      invalid.e[invalid.n++] = adjacentElements[i];
-  }
-}
-
-//Moved vertex to model surface or returns invalid elements if not possible
-static bool tryReposition(Adapt* adapt, Entity* vertex, Tag* snapTag, apf::Up& invalid) 
-{
-  Mesh* mesh = adapt->mesh;
-  if (!mesh->hasTag(vertex, snapTag)) return true;
-  Vector prev = getPosition(mesh, vertex);
-  Vector target;
-  mesh->getDoubleTag(vertex, snapTag, &target[0]);
-  Upward adjacentElements;
-  mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-
-  mesh->setPoint(vertex, 0, target);
-  getInvalid(adapt, adjacentElements, invalid);
-  if (invalid.n == 0) return true;
-  mesh->setPoint(vertex, 0, prev);
-  return false;
-}
-
 bool Snapper::trySimpleSnap()
 {
-  apf::Up invalid;
-  return tryReposition(adapt, vert, snapTag, invalid);
+  if (!mesh->hasTag(vert, snapTag)) return true;
+  Vector target;
+  adapt->mesh->getDoubleTag(vert, snapTag, &target[0]);
+  return reposition.move(vert, target);
 }
 #if defined(DEBUG_FPP)
 static int DEBUGFAILED=0;
@@ -610,8 +569,12 @@ to apply certain opperators so other algoritms were adapted from old scorec libr
 */
 bool Snapper::run()
 {
-  apf::Up invalid;
-  bool success = tryReposition(adapt, vert, snapTag, invalid);
+  if (!mesh->hasTag(vert, snapTag)) return true;
+  Vector target;
+  adapt->mesh->getDoubleTag(vert, snapTag, &target[0]);
+  bool success = reposition.move(vert, target);
+  apf::Up& invalid = reposition.getInvalid();
+
   if (success) {
     numSnapped++;
     mesh->removeTag(vert,snapTag);
@@ -628,11 +591,7 @@ bool Snapper::run()
     if (!success) success = trySwapOrSplit(FPP);
   }
 
-  if (!success) {
-    numFailed++;
-    mesh->removeTag(vert,snapTag);
-    clearFlag(adapt, vert, SNAP);
-  }
+  if (!success) numFailed++;
   #if defined(DEBUG_FPP)
   if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
   #endif
@@ -949,6 +908,22 @@ bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt)
       return true;
   }
   return false;
+}
+
+EntitySet getNextLayer(Adapt* a, EntitySet& tets)
+{
+  EntitySet adjacent;
+    APF_ITERATE(ma::EntitySet,tets,it) {
+      Entity* faces[4];
+      a->mesh->getDownward(*it, 2, faces);
+      for (int f=0; f<4; f++) {
+        apf::Up nextLayer;
+        a->mesh->getUp(faces[f], nextLayer);
+        for (int n=0; n<nextLayer.n; n++)
+          adjacent.insert(nextLayer.e[n]);
+      }
+    }
+    return adjacent;
 }
 
 }
