@@ -16,6 +16,7 @@
 #include <set>
 
 #include "gmi_sim_config.h"
+#include <simModSuiteConfig.h> //simmodsuite version
 
 #ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"

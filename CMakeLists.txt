@@ -174,6 +174,19 @@ endif()
 
 configure_file(SCOREC_config.h.in SCOREC_config.h)
 install(FILES "${CMAKE_BINARY_DIR}/SCOREC_config.h" DESTINATION include)
+
+if(ENABLE_SIMMETRIX)
+  option(ENABLE_FIELDSIM "Enable use of FieldSim from Simmetrix SimModSuite" FALSE)
+  message(STATUS "ENABLE_FIELDSIM: ${ENABLE_FIELDSIM}")
+  set(USE_FIELDSIM FALSE)
+  if(SIMMODSUITE_SimField_FOUND AND ENABLE_FIELDSIM)
+    set(USE_FIELDSIM TRUE)
+  endif()
+  set(USE_SIM_ADVMESHING ${SIMMODSUITE_SimAdvMeshing_FOUND})
+  configure_file(simModSuiteConfig.h.in simModSuiteConfig.h)
+  install(FILES "${CMAKE_BINARY_DIR}/simModSuiteConfig.h" DESTINATION include)
+endif()
+
 include_directories(PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>")
 
 # Include the SCOREC project packages

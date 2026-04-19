@@ -2,8 +2,8 @@ tribits_package(SCORECapf_cap)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-#directory containing apf_simConfig.h
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+#directory containing simModSuiteConfig.h
+include_directories("${PROJECT_BINARY_DIR}")
 
 #Sources & Headers
 set(SOURCES apfCAP.cc)

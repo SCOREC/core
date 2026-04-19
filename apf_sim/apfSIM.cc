@@ -7,7 +7,7 @@
 #include <SimPartitionedMesh.h>
 #include <gmi.h>
 #include <gmi_sim.h>
-#include <apf_simConfig.h>
+#include <simModSuiteConfig.h>
 #include <cstdlib>
 #include <pcu_util.h>
 #include <algorithm>
