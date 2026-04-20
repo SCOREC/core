@@ -7,13 +7,14 @@
 #include <lionPrint.h>
 #include <pcu_util.h>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <ph.h>
 #include <apfSIM.h>
+#include <apf_simConfig.h>
 #include <gmi_sim.h>
 #include <phastaChef.h>
 #include <SimPartitionedMesh.h>
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   #include <SimAdvMeshing.h>
 #endif
 #endif
@@ -57,11 +58,11 @@ int main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   SimModel_start();
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   SimAdvMeshing_start();
 #endif
   gmi_sim_start();
@@ -79,9 +80,9 @@ int main(int argc, char** argv)
 
   getStats(".null", meshFile, sizeName, inPrefix, &PCUObj);
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   SimAdvMeshing_stop();
 #endif
   SimPartitionedMesh_stop();
@@ -128,7 +129,7 @@ void getStats(
 {
 
   apf::Mesh2* m;
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (ph::mesh_has_ext(meshFile, "sms")) {
     pParMesh sim_mesh = PM_load(meshFile, NULL, NULL);
@@ -142,7 +143,7 @@ void getStats(
   m->verify();
 
   apf::Field* sizes;
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (ph::mesh_has_ext(meshFile, "sms")) {
     if(m->findField("sizes")) apf::destroyField(m->findField("sizes"));
@@ -236,7 +237,7 @@ void getStats(
   apf::writeVtkFiles(ssm.str().c_str(), m);
 
 // measure the triangular mesh face in the BL mesh
-#ifdef HAVE_SIMADVMESHING
+#ifdef PUMI_HAS_SIMADVMESHING
   if (ph::mesh_has_ext(meshFile, "sms")) {
 // get simmetrix mesh
     apf::MeshSIM* apf_msim = dynamic_cast<apf::MeshSIM*>(m);

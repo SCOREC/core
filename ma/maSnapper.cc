@@ -70,7 +70,7 @@ bool Snapper::requestLocality(apf::CavityOp* o)
 
 //Write snapping data to files for debugging purposes
 //In order to view relevant information it is neccessary to hide entities with relevent flag in vtk viewer
-#if defined(DEBUG_FPP)
+#if defined(PUMI_DEBUG_FPP)
 static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 {
   setFlag(a, ent, CHECKED);
@@ -80,7 +80,7 @@ static void flagAndPrint(Adapt* a, Entity* ent, int dim, const char* name)
 #endif
 
 //Write snapping data to files for debugging purposes
-#if defined(DEBUG_FPP)
+#if defined(PUMI_DEBUG_FPP)
 static void printFPP(Adapt* a, FirstProblemPlane* FPP)
 {
   ma_dbg::addTargetLocation(a, "snap_target");
@@ -598,7 +598,7 @@ bool Snapper::trySimpleSnap()
   apf::Up invalid;
   return tryReposition(adapt, vert, snapTag, invalid);
 }
-#if defined(DEBUG_FPP)
+#if defined(PUMI_DEBUG_FPP)
 static int DEBUGFAILED=0;
 #endif
 
@@ -633,7 +633,7 @@ bool Snapper::run()
     mesh->removeTag(vert,snapTag);
     clearFlag(adapt, vert, SNAP);
   }
-  #if defined(DEBUG_FPP)
+  #if defined(PUMI_DEBUG_FPP)
   if (!success && ++DEBUGFAILED == 1) printFPP(adapt, FPP);
   #endif
   if (FPP) delete FPP;

@@ -3,7 +3,7 @@
 #include <apfMDS.h>
 #include <gmi_mesh.h>
 #include <lionPrint.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   pcu::Protect();
   lion_set_verbosity(1);
   checkInputs(argc,argv,&pcu_obj);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
   apf::Unmodulo outMap(code.mesh->getPCU()->Self(), code.mesh->getPCU()->Peers());
   code.ctrl = in;
   Parma_ShrinkPartition(code.mesh, atoi(argv[2]), code);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
 #endif
