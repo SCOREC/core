@@ -9,7 +9,7 @@
 #include <SimUtil.h>
 #include <apfSIM.h>
 #include <apfMDS.h>
-#include <simModSuiteConfig.h>
+#include <pumi_simModSuiteConfig.h>
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
 #include <apf.h>

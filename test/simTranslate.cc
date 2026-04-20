@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string>
 
-#include <simModSuiteConfig.h>
+#include <pumi_simModSuiteConfig.h>
 /* cheap hackish way to get SIM_PARASOLID and SIM_ACIS */
 #include "gmi_sim_config.h"
 #include <gmi_sim.h>
