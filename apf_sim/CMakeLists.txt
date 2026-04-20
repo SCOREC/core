@@ -10,7 +10,7 @@ endif()
 
 #Sources & Headers
 set(SOURCES apfSIM.cc)
-set(HEADERS apfSIM.h)
+set(HEADERS apfSIM.h apf_simConfig.h)
 
 #Library
 add_library(apf_sim ${SOURCES})
