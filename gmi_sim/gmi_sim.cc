@@ -16,6 +16,7 @@
 #include <set>
 
 #include "gmi_sim_config.h"
+#include <pumi_simModSuiteConfig.h> //simmodsuite version
 
 #ifdef SIM_PARASOLID
 #include "SimParasolidKrnl.h"
@@ -493,8 +494,14 @@ struct gmi_model* gmi_sim_load(const char* nativefile, const char* smdfile)
     if (NM_isAssemblyModel(nm)) {
       pGModel am = GAM_createFromNativeModel(nm, NULL);
       NM_release(nm);
+#if SIMMODSUITE_MAJOR_VERSION < 2026
       sm = GM_createFromAssemblyModel(am, NULL, NULL);
       GM_release(am);
+#else
+      pModelBuilder mb = ModelBuilder_new(am);
+      ModelBuilder_setOperation(mb, ModelBuilder_unite);
+      sm = ModelBuilder_execute(mb, NULL);
+#endif
       nm = GM_nativeModel(sm);
     } else
       sm = GM_createFromNativeModel(nm, NULL);
