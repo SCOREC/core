@@ -2,7 +2,7 @@
 #include "SimAttribute.h"
 #include "AttributeTypes.h"
 #include "SimParasolidKrnl.h"
-#include "simModSuiteConfig.h"
+#include "pumi_simModSuiteConfig.h"
 #include "string.h"
 #include <iostream>
 #include <cstdlib>

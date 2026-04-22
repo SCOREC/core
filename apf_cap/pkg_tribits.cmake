@@ -2,7 +2,7 @@ tribits_package(SCORECapf_cap)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-#directory containing simModSuiteConfig.h
+#directory containing pumi_simModSuiteConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
 
 #Sources & Headers
