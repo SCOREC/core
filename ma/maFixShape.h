@@ -1,5 +1,5 @@
-#ifndef MA_SHAPE_NEW
-#define MA_SHAPE_NEW
+#ifndef MA_FIX_SHAPE
+#define MA_FIX_SHAPE
 
 #include "maMesh.h"
 #include "maTables.h"
@@ -79,7 +79,7 @@ class FixShape : public Operator
   void printNumTypes();
 };
 
-void fixElementShapesNew(Adapt* a);
+void fixElementShapes(Adapt* a);
 }
 
 #endif

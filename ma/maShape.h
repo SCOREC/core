@@ -65,13 +65,7 @@ bool isPyramidOk(apf::Mesh* m, Entity* e,
     int* good_rotation = 0);
 bool isLayerElementOk(Mesh* m, Entity* e);
 
-CodeMatch matchSliver(
-    Mesh* m,
-    Entity* tet);
-
 double improveQualities(Adapt* a);
-void fixElementShapes(Adapt* a);
-void alignElements(Adapt* a);
 void printQuality(Adapt* a);
 
 }

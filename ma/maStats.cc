@@ -150,7 +150,6 @@ std::vector<int> printHistogramData(std::string name, std::vector<double> bins, 
 
     auto it = std::upper_bound(bins.begin(), bins.end(), input[i]);
     size_t binIdx = std::distance(bins.begin(), it) - 1;
-    if (binIdx < 0) binIdx = 0;
     if (binIdx >= count.size()) binIdx = count.size()-1;
     count[binIdx]++;
   }

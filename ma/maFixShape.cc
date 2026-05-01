@@ -39,7 +39,7 @@ namespace ma {
   
 const double GOODQUALITY2D = .09;
 
-int markBadQualityNew(Adapt* a)
+int markBadQuality(Adapt* a)
 {
   Mesh* m = a->mesh;
   Iterator* it;
@@ -416,14 +416,14 @@ void FixShape::printNumTypes()
   // printBadShape(worstShape);
 }
 
-void fixElementShapesNew(Adapt* a)
+void fixElementShapes(Adapt* a)
 {
   if ( ! a->input->shouldFixShape)
     return;
   double t0 = pcu::Time();
   bool oldForce = a->input->shouldForceAdaptation;
   a->input->shouldForceAdaptation = false;
-  int count = markBadQualityNew(a);
+  int count = markBadQuality(a);
   print(a->mesh->getPCU(), "loop %d: of shape correction loop: #bad elements %d", 0, count);
   FixShape fixShape(a);
   int originalCount = count;
@@ -436,7 +436,7 @@ void fixElementShapesNew(Adapt* a)
     applyOperator(a,&fixShape);
     if (a->mesh->getDimension() == 3)
       snap(a);
-    count = markBadQualityNew(a);
+    count = markBadQuality(a);
     midBalance(a); // balance the mesh to avoid empty parts
     iter++;
     double tLoopEnd = pcu::Time();

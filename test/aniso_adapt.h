@@ -97,7 +97,7 @@ ma::Mesh* fixShapeTest(ma::Mesh* m, std::vector<int> savedQuality)
 
   double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
   measureQuality(a, avgQualBefore, minQualBefore);
-  ma::fixElementShapesNew(a);
+  ma::fixElementShapes(a);
   measureQuality(a, avgQualAfter, minQualAfter);
 
   PCU_ALWAYS_ASSERT(minQualAfter > minQualBefore);
