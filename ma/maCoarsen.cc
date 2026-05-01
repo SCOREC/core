@@ -8,22 +8,8 @@
  
 *******************************************************************************/
 /*
-This file contains two coarsening alogrithms. 
-  1. coarsenMultiple: will repeatedly create independent sets and collapse the mesh 
-      until there are no more short edges left. This code is currently only used for testing 
-      since more work needs to be done to achieve better performance and have the code work in 
-      parallel, at which point the other coarsen algorithm can be deleted.
-  2. coarsen: The first will create one independent set and then collapse all of the edges 
-      in that independent set. 
-*/
-/*
-This file contains two coarsening alogrithms. 
-  1. coarsenMultiple: will repeatedly create independent sets and collapse the mesh 
-      until there are no more short edges left. This code is currently only used for testing 
-      since more work needs to be done to achieve better performance and have the code work in 
-      parallel, at which point the other coarsen algorithm can be deleted.
-  2. coarsen: The first will create one independent set and then collapse all of the edges 
-      in that independent set. 
+  coarsen will repeatedly create independent sets and collapse the mesh 
+  until there are no more short edges left.
 */
 #include "maCoarsen.h"
 #include "maAdapt.h"
@@ -183,101 +169,6 @@ int collapseAllEdges(Adapt* a, int modelDimension)
   return collapser.successCount;
 }
 
-class MatchedEdgeCollapser : public Operator
-{
-  public:
-    MatchedEdgeCollapser(Adapt* a, int md):
-      modelDimension(md),
-      collapse(a)
-    {
-      successCount = 0;
-    }
-    virtual int getTargetDimension() {return 1;}
-    virtual bool shouldApply(Entity* e)
-    {
-      Adapt* a = getAdapt();
-      if ( ! getFlag(a,e,COLLAPSE))
-        return false;
-      Mesh* m = a->mesh;
-      int md = m->getModelType(m->toModel(e));
-      if (md!=modelDimension)
-        return false;
-      collapse.setEdge(e);
-      return true;
-    }
-    virtual bool requestLocality(apf::CavityOp* o)
-    {
-      return collapse.requestLocality(o);
-    }
-    virtual void apply()
-    {
-      double qualityToBeat = getAdapt()->input->validQuality;
-      collapse.setEdges();
-      if ( ! collapse.checkTopo())
-        return;
-      if ( ! collapse.tryBothDirections(qualityToBeat))
-        return;
-      collapse.destroyOldElements();
-      ++successCount;
-    }
-    Adapt* getAdapt() {return collapse.adapt;}
-    int successCount;
-  private:
-    int modelDimension;
-    MatchedCollapse collapse;
-};
-
-static int collapseMatchedEdges(Adapt* a, int modelDimension)
-{
-  MatchedEdgeCollapser collapser(a, modelDimension);
-  applyOperator(a, &collapser);
-  return collapser.successCount;
-}
-
-struct ShouldCollapse : public Predicate
-{
-  ShouldCollapse(Adapt* a_):a(a_) {}
-  bool operator()(Entity* e)
-  {
-    return a->sizeField->shouldCollapse(e);
-  }
-  Adapt* a;
-};
-
-long markEdgesToCollapse(Adapt* a)
-{
-  ShouldCollapse p(a);
-  return markEntities(a, 1, p, COLLAPSE, NEED_NOT_COLLAPSE,
-                      DONT_COLLAPSE | NEED_NOT_COLLAPSE);
-}
-
-bool coarsen(Adapt* a)
-{
-  if (!a->input->shouldCoarsen)
-    return false;
-  double t0 = pcu::Time();
-  --(a->coarsensLeft);
-  long count = markEdgesToCollapse(a);
-  if ( ! count)
-    return false;
-  Mesh* m = a->mesh;
-  int maxDimension = m->getDimension();
-  PCU_ALWAYS_ASSERT(checkFlagConsistency(a,1,COLLAPSE));
-  long successCount = 0;
-  for (int modelDimension=1; modelDimension <= maxDimension; ++modelDimension)
-  {
-    checkAllEdgeCollapses(a,modelDimension);
-    findIndependentSet(a);
-    if (m->hasMatching())
-      successCount += collapseMatchedEdges(a, modelDimension);
-    else
-      successCount += collapseAllEdges(a, modelDimension);
-  }
-  successCount = m->getPCU()->Add<long>(successCount);
-  double t1 = pcu::Time();
-  print(m->getPCU(), "coarsened %li edges in %f seconds", successCount,t1-t0);
-  return true;
-}
 
 //returns a list of vertices that bound a short edge
 std::list<Entity*> getShortEdgeVerts(Adapt* a)
@@ -401,7 +292,7 @@ class CollapseAll : public apf::CavityOp
   }
 };
 
-bool coarsenMultiple(Adapt* a)
+bool coarsen(Adapt* a)
 {
   if (!a->input->shouldCoarsen) return false;
   double t0 = pcu::Time();

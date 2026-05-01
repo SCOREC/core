@@ -140,7 +140,7 @@ void stats(ma::Mesh* m, ma::SizeField* sf,
 std::vector<int> printHistogramData(std::string name, std::vector<double> bins, std::vector<double> input, double min, double max, Mesh* m)
 {
   std::vector<int> count(bins.size()-1, 0);
-  double inputMax = 0;
+  double inputMax = min;
   double inputMin = max;
 
   for (size_t i = 0; i < input.size(); ++i) {
@@ -149,7 +149,7 @@ std::vector<int> printHistogramData(std::string name, std::vector<double> bins, 
     if (input[i] < inputMin) inputMin = input[i];
 
     auto it = std::upper_bound(bins.begin(), bins.end(), input[i]);
-    int binIdx = std::distance(bins.begin(), it) - 1;
+    size_t binIdx = std::distance(bins.begin(), it) - 1;
     if (binIdx < 0) binIdx = 0;
     if (binIdx >= count.size()) binIdx = count.size()-1;
     count[binIdx]++;
@@ -157,11 +157,11 @@ std::vector<int> printHistogramData(std::string name, std::vector<double> bins, 
 
   inputMin = m->getPCU()->Min<double>(inputMin);
   inputMax = m->getPCU()->Max<double>(inputMax);
-  for (int i = 0; i < count.size(); ++i) count[i] = m->getPCU()->Add<long>(count[i]);
+  for (size_t i = 0; i < count.size(); ++i) count[i] = m->getPCU()->Add<long>(count[i]);
 
   if (m->getPCU()->Self()) return count;
   printf("%s Min: %f, Max: %f\n", name.c_str(), inputMin, inputMax);
-  for (int i = 0; i < count.size(); ++i) printf("%d\n", count[i]);
+  for (size_t i = 0; i < count.size(); ++i) printf("%d\n", count[i]);
   return count;
 }
 

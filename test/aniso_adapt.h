@@ -92,7 +92,7 @@ ma::Mesh* fixShapeTest(ma::Mesh* m, std::vector<int> savedQuality)
   {
     ma::refine(a);
     ma::snap(a);
-    ma::coarsenMultiple(a);
+    ma::coarsen(a);
   }
 
   double avgQualBefore=0, avgQualAfter=0, minQualBefore=0, minQualAfter=0;
@@ -130,7 +130,7 @@ ma::Mesh* coarsenTest(ma::Mesh* m)
   double averageBefore = ma::getAverageEdgeLength(m);
   int edgesBefore = countEdges(m);
 
-  ma::coarsenMultiple(a);
+  ma::coarsen(a);
 
   measureQuality(a, avgQualAfter, minQualAfter);
 

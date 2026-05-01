@@ -33,7 +33,7 @@ void adapt(Input* in)
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
-    coarsenMultiple(a);
+    coarsen(a);
     coarsenLayer(a);
     midBalance(a);
     refine(a);
@@ -75,7 +75,7 @@ void adaptVerbose(Input* in, bool verbose)
   for (int i = 0; i < in->maximumIterations; ++i)
   {
     print(a->mesh->getPCU(), "iteration %d", i);
-    coarsenMultiple(a);
+    coarsen(a);
     if (verbose && in->shouldCoarsen)
       ma_dbg::dumpMeshWithQualities(a,i,"after_coarsen");
     coarsenLayer(a);
