@@ -137,33 +137,31 @@ void stats(ma::Mesh* m, ma::SizeField* sf,
     getStatsInPhysicalSpace(m, edgeLengths, linearQualities);
 }
 
-std::vector<int> printHistogramData(std::string name, std::vector<double> input, double min, double max, Mesh* m)
+std::vector<int> printHistogramData(std::string name, std::vector<double> bins, std::vector<double> input, double min, double max, Mesh* m)
 {
-  const int nbins = 10;
-  std::vector<int> count(nbins, 0);
-  const double bin_size = (max-min)/(nbins*1.0);
+  std::vector<int> count(bins.size()-1, 0);
   double inputMax = 0;
   double inputMin = max;
 
   for (size_t i = 0; i < input.size(); ++i) {
     if (std::isnan(input[i])) continue;
-    if (input[i] > inputMax)
-      inputMax = input[i];
-    if (input[i] < inputMin)
-      inputMin = input[i];
-    int bin = (int)std::floor((input[i] - min)/bin_size);
-    if (bin >= nbins) bin = nbins - 1;
-    if (bin < 0) bin = 0;
-    count[bin] += 1;
+    if (input[i] > inputMax) inputMax = input[i];
+    if (input[i] < inputMin) inputMin = input[i];
+
+    auto it = std::upper_bound(bins.begin(), bins.end(), input[i]);
+    int binIdx = std::distance(bins.begin(), it) - 1;
+    if (binIdx < 0) binIdx = 0;
+    if (binIdx >= count.size()) binIdx = count.size()-1;
+    count[binIdx]++;
   }
 
   inputMin = m->getPCU()->Min<double>(inputMin);
   inputMax = m->getPCU()->Max<double>(inputMax);
-  for (int i = 0; i < nbins; ++i) count[i] = m->getPCU()->Add<long>(count[i]);
+  for (int i = 0; i < count.size(); ++i) count[i] = m->getPCU()->Add<long>(count[i]);
 
   if (m->getPCU()->Self()) return count;
   printf("%s Min: %f, Max: %f\n", name.c_str(), inputMin, inputMax);
-  for (int i = 0; i < nbins; ++i) printf("%d\n", count[i]);
+  for (int i = 0; i < count.size(); ++i) printf("%d\n", count[i]);
   return count;
 }
 
@@ -172,8 +170,11 @@ HistogramStats printHistogramStats(Adapt* a)
   std::vector<double> lengths;
   std::vector<double> qualities;
   ma::stats(a->mesh, a->input->sizeField, lengths, qualities, true);
-  std::vector<int> qualityHist = printHistogramData("\nQualities:", qualities, 0, 1, a->mesh);
-  std::vector<int> lengthHist = printHistogramData("\nLengths:", lengths, 0, MAXLENGTH+1, a->mesh);
+  std::vector<double> qualityBins = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+  std::vector<double> lengthBins;
+  for (double i = 0.0; i <= 10.0; i++) lengthBins.push_back(i*((MAXLENGTH+1)/10));
+  std::vector<int> qualityHist = printHistogramData("\nQualities:", qualityBins, qualities, 0, 1, a->mesh);
+  std::vector<int> lengthHist = printHistogramData("\nLengths:", lengthBins, lengths, 0, MAXLENGTH+1, a->mesh);
   return HistogramStats(qualityHist, lengthHist);
 }
 
