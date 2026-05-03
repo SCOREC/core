@@ -27,7 +27,6 @@ void Collapse::Init(Adapt* a)
   vertToKeep = 0;
 }
 
-
 bool Collapse::run(Entity* edge, Entity* vert, double qualityToBeat)
 {
   PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
@@ -114,11 +113,15 @@ bool Collapse::anyWorseQuality(double qualityToBeat)
 {
   Vector prev = getPosition(adapt->mesh, vertToCollapse);
   Vector target = getPosition(adapt->mesh, vertToKeep);
+  auto prevMatrix = adapt->sizeField->getValue(vertToCollapse);
+  auto targetMatrix = adapt->sizeField->getValue(vertToKeep);
   adapt->mesh->setPoint(vertToCollapse, 0, target);
+  adapt->sizeField->setValue(vertToCollapse, targetMatrix);
   bool worse = false;
   for (Entity* e : elementsToKeep)
     if (adapt->shape->getQuality(e) < qualityToBeat) {worse = true; break;}
   adapt->mesh->setPoint(vertToCollapse, 0, prev);
+  adapt->sizeField->setValue(vertToCollapse, prevMatrix);
   return worse;
 }
 

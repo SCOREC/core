@@ -70,6 +70,18 @@ bool IdentitySizeField::shouldCollapse(Entity*)
   return false;
 }
 
+SizeField::Value IdentitySizeField::getValue(Entity*)
+{
+  Value value;
+  value.matrix = Matrix(1,0,0,
+                        0,1,0,
+                        0,0,1);
+  return value;
+}
+void IdentitySizeField::setValue(Entity*, Value const&)
+{
+}
+
 void IdentitySizeField::interpolate(
     apf::MeshElement*,
     Vector const&,
@@ -428,15 +440,28 @@ struct AnisoSizeField : public MetricSizeField
              0,0,1/h[2]);
     Q = R*S;
   }
+  Value getValue(Entity* vert)
+  {
+    apf::MeshElement me(mesh->getCoordinateField(), vert);
+    if (vert != hElement.getEntity()) hElement.init(hField,vert,&me);
+    if (vert != rElement.getEntity()) rElement.init(rField,vert,&me);
+    Value value;
+    apf::getVector(&hElement,Vector(0.0, 0.0, 0.0),value.vector);
+    apf::getMatrix(&rElement,Vector(0.0, 0.0, 0.0),value.matrix);
+    return value;
+  }
+  void setValue(Entity* vert, Value const& value)
+  {
+    apf::setMatrix(rField,vert,0,value.matrix);
+    apf::setVector(hField,vert,0,value.vector);
+  }
   void interpolate(
       apf::MeshElement* parent,
       Vector const& xi,
       Entity* newVert)
   {
-    if (parent->getEntity() != hElement.getEntity())
-      hElement.init(hField,parent->getEntity(),parent);
-    if (parent->getEntity() != rElement.getEntity())
-      rElement.init(rField,parent->getEntity(),parent);
+    if (parent->getEntity() != hElement.getEntity()) hElement.init(hField,parent->getEntity(),parent);
+    if (parent->getEntity() != rElement.getEntity()) rElement.init(rField,parent->getEntity(),parent);
     Vector h;
     apf::getVector(&hElement,xi,h);
     Matrix R;
@@ -525,8 +550,7 @@ struct LogAnisoSizeField : public MetricSizeField
       Vector const& xi,
       Matrix& Q)
   {
-    if (me->getEntity() != logMElement.getEntity())
-      logMElement.init(logMField,me->getEntity(),me);
+    if (me->getEntity() != logMElement.getEntity()) logMElement.init(logMField,me->getEntity(),me);
     Matrix logM;
     apf::getMatrix(&logMElement,xi,logM);
     Vector v;
@@ -536,6 +560,18 @@ struct LogAnisoSizeField : public MetricSizeField
               0, sqrt(exp(v[1])), 0,
               0, 0, sqrt(exp(v[2])));
     Q = R*S;
+  }
+  Value getValue(Entity* vert)
+  {
+    apf::MeshElement me(mesh->getCoordinateField(), vert);
+    if (vert != logMElement.getEntity()) logMElement.init(logMField,vert,&me);
+    Value value;
+    apf::getMatrix(&logMElement,Vector(0.0, 0.0, 0.0),value.matrix);
+    return value;
+  }
+  void setValue(Entity* vert, Value const& value)
+  {
+    apf::setMatrix(logMField,vert,0,value.matrix);
   }
   void interpolate(
       apf::MeshElement* parent,

@@ -32,10 +32,17 @@ const double GOODQUALITY = .3;
 class SizeField
 {
   public:
+    struct Value {
+      Matrix matrix;
+      Vector vector;
+    };
+
     virtual ~SizeField();
     virtual double measure(Entity* e) = 0;
     virtual bool shouldSplit(Entity* edge) = 0;
     virtual bool shouldCollapse(Entity* edge) = 0;
+    virtual Value getValue(Entity* vert) = 0;
+    virtual void setValue(Entity* vert, Value const& value) = 0;
     virtual void interpolate(
         apf::MeshElement* parent,
         Vector const& xi,
@@ -61,6 +68,8 @@ struct IdentitySizeField : public SizeField
   double measure(Entity* e);
   bool shouldSplit(Entity*);
   bool shouldCollapse(Entity*);
+  Value getValue(Entity* vert);
+  void setValue(Entity* vert, Value const& value);
   void interpolate(
       apf::MeshElement* parent,
       Vector const& xi,
