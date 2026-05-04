@@ -5,6 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include "apfMETIScommon.h"
+
 #include <numeric>
 
 #include <apfMesh.h>

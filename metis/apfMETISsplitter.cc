@@ -1,3 +1,5 @@
+#include "apfMETISsplitter.h"
+
 #include <apfMesh.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
@@ -5,9 +7,6 @@
 #include <pcu_util.h>
 #include "apfMETIS.h"
 
-#include <metis.h>
-
-#include "apfMETISsplitter.h"
 #include "apfMETIScommon.h"
 
 namespace apf {
@@ -30,7 +29,6 @@ Migration* MetisSplitter::split(
     lion_oprint(1, "METIS: weights are not supported\n");
   }
   int elm_dim = mesh_->getDimension();
-  PCU_ALWAYS_ASSERT(elm_dim == 3); // FIXME: update code to allow 2d
   int metis_nvtxs = apf::countOwned(mesh_, elm_dim);
   auto gn = makeNumbering(mesh_, "apfMETISsplitter_gnb");
   std::vector<idx_t> xadj, adjncy;

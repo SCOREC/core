@@ -5,6 +5,8 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include "apfMETISbalancer.h"
+
 #include <algorithm>
 #include <map>
 #include <numeric>
@@ -20,7 +22,6 @@
 
 #include <metis.h>
 
-#include "apfMETISbalancer.h"
 #include "apfMETIScommon.h"
 
 namespace apf {

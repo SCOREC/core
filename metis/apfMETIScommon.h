@@ -12,9 +12,11 @@
 
 #include <vector>
 
+#include <apfNumbering.h>
+#include <metis.h>
+
 namespace apf {
 
-typedef NumberingOf<long> GlobalNumbering;
 class Mesh;
 class Migration;
 
