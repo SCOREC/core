@@ -33,8 +33,7 @@ target_include_directories(apf_metis INTERFACE
 target_link_libraries(apf_metis PUBLIC apf)
 if(ENABLE_METIS)
   target_compile_definitions(apf_metis PUBLIC PUMI_HAS_METIS)
-  target_link_libraries(apf_metis PRIVATE "${METIS_LIBRARIES}")
-  target_include_directories(apf_metis PRIVATE "${METIS_INCLUDE_DIRS}")
+  target_link_libraries(apf_metis PRIVATE METIS::METIS)
 endif()
 
 scorec_export_library(apf_metis)

@@ -46,7 +46,7 @@ set_target_properties(METIS::METIS PROPERTIES
 # Sometimes GKLib is an external dependency; usually it is in METIS itself.
 find_library(GK_LIBRARY GKlib HINTS "${METIS_PREFIX}/lib")
 if(EXISTS "${GK_LIBRARY}")
-  set_target_property(METIS::METIS PROPERTIES
+  set_target_properties(METIS::METIS PROPERTIES
     INTERFACE_LINK_LIBRARIES "${GK_LIBRARY}"
   )
   set(METIS_LIBRARIES "${METIS_LIBRARY}" "${GK_LIBRARY}")
