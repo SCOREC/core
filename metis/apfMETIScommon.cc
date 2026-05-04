@@ -48,7 +48,7 @@ void getOwnedAdjacencies(
   int n_owned_elm = apf::countOwned(mesh, elm_dim);
   MeshTag* opp_tag = nullptr;
   if (remoteEdges) {
-    opp_tag = apf::tagOpposites(gn, "maBalance__run_LGM_opp");
+    opp_tag = tagOpposites(gn, "maBalance__run_LGM_opp");
   }
   // Build local adj_cts.
   std::vector<idx_t> adj_cts(n_owned_elm);
