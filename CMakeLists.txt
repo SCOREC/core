@@ -59,6 +59,41 @@ endif()
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()
+  if(SCOREC_CXX_OPTIMIZE)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_OPTIMIZE)."
+    )
+    set(PUMI_CXX_OPTIMIZE ${SCOREC_CXX_OPTIMIZE})
+  endif()
+  if(SCOREC_CXX_SYMBOLS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_SYMBOLS)."
+    )
+    set(PUMI_CXX_SYMBOLS ${SCOREC_CXX_SYMBOLS})
+  endif()
+  if(SCOREC_CXX_WARNINGS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_WARNINGS)."
+    )
+    set(PUMI_CXX_WARNINGS ${SCOREC_CXX_WARNINGS})
+  endif()
+  if(SCOREC_CXX_FLAGS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_FLAGS)."
+    )
+    set(PUMI_CXX_FLAGS ${SCOREC_CXX_FLAGS})
+  endif()
+  if(SCOREC_EXTRA_CXX_FLAGS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_EXTRA_CXX_FLAGS)."
+    )
+  set(PUMI_EXTRA_CXX_FLAGS ${SCOREC_EXTRA_CXX_FLAGS})
+  endif()
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
