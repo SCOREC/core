@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.12)
 
-project(SCOREC VERSION 4.2.0 LANGUAGES CXX C)
+project(PUMI VERSION 4.3.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -167,7 +167,7 @@ if(PUMI_ENABLE_SIMMETRIX)
 endif()
 
 if(PUMI_ENABLE_CAPSTONE)
-  set(SCOREC_USE_CreateMG_DEFAULT ${PUMI_ENABLE_CAPSTONE})
+  set(PUMI_USE_CreateMG_DEFAULT ${PUMI_ENABLE_CAPSTONE})
   bob_public_dep(CreateMG)
 endif()
 
@@ -175,17 +175,17 @@ if(PUMI_ENABLE_OMEGA_H)
   bob_cxx17_flags()
   bob_set_cxx_standard(17)
   # find the omega_h library
-  set(SCOREC_USE_Omega_h_DEFAULT ${PUMI_ENABLE_OMEGA_H})
+  set(PUMI_USE_Omega_h_DEFAULT ${PUMI_ENABLE_OMEGA_H})
   set(Omega_h_REQUIRED_VERSION ${PUMI_USE_OMEGA_H_VERSION})
   bob_public_dep(Omega_h)
 endif()
 
 if(PUMI_ENABLE_CGNS)
-  set(SCOREC_USE_CGNS_DEFAULT ${PUMI_ENABLE_CGNS})
+  set(PUMI_USE_CGNS_DEFAULT ${PUMI_ENABLE_CGNS})
   bob_public_dep(CGNS)
   #CGNS does not provide cmake targets :(
   include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
-  set(SCOREC_USE_HDF5_DEFAULT ${PUMI_ENABLE_CGNS})
+  set(PUMI_USE_HDF5_DEFAULT ${PUMI_ENABLE_CGNS})
   bob_public_dep(HDF5)
   add_definitions(-DPUMI_HAS_CGNS)
 endif()
@@ -239,7 +239,7 @@ add_subdirectory(apf_cap)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
-target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
+target_link_libraries(core INTERFACE ${PUMI_EXPORTED_TARGETS})
 if(PUMI_ENABLE_CGNS)
   target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
 endif()
@@ -279,3 +279,18 @@ if(DOXYGEN_FOUND)
 endif()
 
 bob_end_package()
+
+# The following is included for compatibility with PUMI<4.3 when the project
+# was named SCOREC:
+configure_file(cmake/SCORECConfig.cmake.in SCORECConfig.cmake @ONLY)
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/SCORECConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/SCORECConfigVersion.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/SCORECConfig.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/SCOREC"
+)

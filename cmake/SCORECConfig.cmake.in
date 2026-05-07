@@ -1,0 +1,120 @@
+if(CMAKE_VERSION VERSION_LESS "3.12")
+  set("${CMAKE_FIND_PACKAGE_NAME}_FOUND" 0)
+  set("${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE"
+    "SCOREC requires CMake 3.12 in order to reliably be used.")
+  return()
+endif()
+cmake_policy(PUSH)
+cmake_policy(VERSION 3.12)
+
+# Included to deprecate old package name
+if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION)
+  if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
+    message(DEPRECATION "The new name for the SCOREC package is PUMI.")
+  endif()
+elseif(${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION VERSION_LESS 4.3)
+  # Ignore for compatibility
+  if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
+    message(AUTHOR_WARNING
+      "The new name for the SCOREC package is PUMI. Consider updating your"
+      " find_package() call."
+    )
+  endif()
+else()
+  message(FATAL_ERROR
+    "The new name for the SCOREC package is PUMI. By requesting at least"
+    " version 4.3, the new name is now required."
+  )
+endif()
+
+set(PUMI_FIND_ARGS "")
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION_COMPLETE)
+  set(PUMI_FIND_ARGS
+    ${PUMI_FIND_ARGS} ${${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION_COMPLETE}
+  )
+endif()
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION_EXACT)
+  set(PUMI_FIND_ARGS ${PUMI_FIND_ARGS} EXACT)
+endif()
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION_QUIETLY)
+  set(PUMI_FIND_ARGS ${PUMI_FIND_ARGS} QUIET)
+endif()
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION_REQUIRED)
+  set(PUMI_FIND_ARGS ${PUMI_FIND_ARGS} REQUIRED)
+endif()
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+  set(PUMI_FIND_COMP_REQUIRED)
+  set(PUMI_FIND_COMP_OPTIONAL)
+  foreach(_comp in LISTS ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+    if(${CMAKE_FIND_PACKAGE_NAME}_REQUIRED_${_comp})
+      set(PUMI_FIND_COMP_REQUIRED ${PUMI_FIND_COMP_REQUIRED} ${_comp})
+    else()
+      set(PUMI_FIND_COMP_OPTIONAL ${PUMI_FIND_COMP_OPTIONAL} ${_comp})
+    endif()
+  endforeach()
+  if(PUMI_FIND_COMP_REQUIRED)
+    set(PUMI_FIND_ARGS
+      ${PUMI_FIND_ARGS} COMPONENTS ${PUMI_FIND_COMP_REQUIRED}
+    )
+  endif()
+  if(PUMI_FIND_COMP_OPTIONAL)
+    set(PUMI_FIND_ARGS
+      ${PUMI_FIND_ARGS} OPTIONAL_COMPONENTS ${PUMI_FIND_COMP_OPTIONAL}
+    )
+  endif()
+endif()
+
+if(SCOREC_ROOT)
+  set(PUMI_ROOT "${SCOREC_ROOT}")
+endif()
+if(SCOREC_DIR)
+  set(PUMI_DIR "${SCOREC_DIR}")
+endif()
+if(SCOREC_PREFIX)
+  set(PUMI_PREFIX "${PUMI_PREFIX}")
+endif()
+
+get_filename_component(_PUMI_HINT "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(_PUMI_HINT "${_PUMI_HINT}" PATH)
+get_filename_component(_PUMI_HINT "${_PUMI_HINT}" PATH)
+get_filename_component(_PUMI_HINT "${_PUMI_HINT}" PATH)
+
+find_package(PUMI ${PUMI_FIND_ARGS} HINTS "${_PUMI_HINT}")
+if(NOT PUMI_FOUND)
+  set(SCOREC_FOUND 0)
+  set(SCOREC_NOT_FOUND_MESSAGE "PUMI not found: ${PUMI_NOT_FOUND_MESSAGE}")
+  cmake_policy(POP)
+  return()
+endif()
+
+set(PUMI_EXPORTED_TARGETS "@PUMI_EXPORTED_TARGETS@")
+foreach(target IN LISTS PUMI_EXPORTED_TARGETS)
+  if(NOT TARGET SCOREC::${target} AND TARGET PUMI::${target})
+    get_target_property(target_type PUMI::${target} TYPE)
+    if(target_type STREQUAL "EXECUTABLE")
+      add_executable(SCOREC::${target} IMPORTED)
+      get_target_property(target_location PUMI::${target} IMPORTED_LOCATION)
+      set_target_properties(SCOREC::${target} PROPERTIES
+        IMPORTED_LOCATION "${target_location}"
+      )
+      get_target_property(target_configs PUMI::${target}
+        IMPORTED_CONFIGURATIONS
+      )
+      foreach(cfg IN LISTS target_configs)
+        get_target_property(target_location PUMI::${target}
+          IMPORTED_LOCATION_${cfg}
+        )
+        set_target_properties(SCOREC::${target} PROPERTIES
+          IMPORTED_LOCATION_${cfg} "${target_location}"
+        )
+      endforeach()
+    else()
+      add_library(SCOREC::${target} IMPORTED INTERFACE)
+      set_target_properties(SCOREC::${target} PROPERTIES
+        INTERFACE_LINK_LIBRARIES "PUMI::${target}"
+      )
+    endif()
+  endif()
+endforeach()
+
+cmake_policy(POP)
