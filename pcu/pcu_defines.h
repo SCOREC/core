@@ -2,7 +2,7 @@
 #define SCOREC_PCU_PCU_DEFINES_H
 
 #include <SCOREC_config.h>
-#ifndef SCOREC_NO_MPI
+#ifndef PUMI_NO_MPI
 #include <mpi.h>
 #endif
 
@@ -19,7 +19,7 @@
 extern "C"{
 #endif
 
-#ifndef SCOREC_NO_MPI
+#ifndef PUMI_NO_MPI
 typedef MPI_Comm PCU_Comm;
 typedef MPI_Request PCU_Request;
 #define PCU_ANY_SOURCE MPI_ANY_SOURCE

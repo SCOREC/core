@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   if (rank == 0)
     std::cout << "MPI size: " << size << "; PCU size: " <<
       PCUObj.Peers() << std::endl;
-  #ifdef SCOREC_NO_MPI
+  #ifdef PUMI_NO_MPI
   PCU_ALWAYS_ASSERT(PCUObj.Self() == 0);
   PCU_ALWAYS_ASSERT(PCUObj.Peers() == 1);
   #else

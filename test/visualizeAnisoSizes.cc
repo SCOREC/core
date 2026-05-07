@@ -6,7 +6,7 @@
 #include <maDBG.h>
 #include <lionPrint.h>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <ph.h>
 #include <apfSIM.h>
 #include <gmi_sim.h>
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   SimModel_start();
   Sim_readLicenseFile(0);
   SimPartitionedMesh_start(0, 0);
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
   safe_mkdir(inPrefix);
   visualizeSizeField(".null", meshFile, sizeName, frameName, sampleSize, scale, inPrefix, &PCUObj);
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   SimPartitionedMesh_stop();
   SimModel_stop();
@@ -136,7 +136,7 @@ void visualizeSizeField(
     pcu::PCU *PCUObj)
 {
   apf::Mesh2* m;
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (ph::mesh_has_ext(meshFile, "sms")) {
     pParMesh sim_mesh = PM_load(meshFile, NULL, NULL);
@@ -151,7 +151,7 @@ void visualizeSizeField(
 
   apf::Field* sizes;
   apf::Field* frames;
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   /* if it is a simmetrix mesh */
   if (ph::mesh_has_ext(meshFile, "sms")) {
     if(m->findField("sizes")) apf::destroyField(m->findField("sizes"));

@@ -22,9 +22,11 @@ set(MDS_SOURCES
   mdsGmsh.cc
   mdsUgrid.cc)
 
-if(ENABLE_CGNS)
+if(PUMI_ENABLE_CGNS)
   set(MDS_SOURCES ${MDS_SOURCES} mdsCGNS.cc)
-endif(ENABLE_CGNS)
+else()
+  set(MDS_SOURCES ${MDS_SOURCES} mdsCGNSempty.cc)
+endif()
 
 set(MDS_HEADERS
   apfMDS.h

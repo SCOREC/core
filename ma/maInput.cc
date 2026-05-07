@@ -157,7 +157,10 @@ void validateInput(Input* in)
   if (in->shouldRunPreZoltan ||
       in->shouldRunPreZoltanRib ||
       in->shouldRunMidZoltan)
-    rejectInput("core is not compiled with Zoltan. Use a different balancer or compile core with ENABLE_ZOLTAN=ON!", in->mesh->getPCU());
+    rejectInput(
+      "core is not compiled with Zoltan. Use a different balancer or compile "
+      "core with PUMI_ENABLE_ZOLTAN=ON!", in->mesh->getPCU()
+    );
 #endif
 #ifndef PUMI_HAS_METIS
   if (
@@ -165,7 +168,7 @@ void validateInput(Input* in)
   ) {
     rejectInput(
       "PUMI was not compiled with METIS. Use a different balancer or compile "
-      "PUMI with ENABLE_METIS=ON!", in->mesh->getPCU()
+      "with PUMI_ENABLE_METIS=ON!", in->mesh->getPCU()
     );
   }
 #endif

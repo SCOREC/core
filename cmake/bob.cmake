@@ -47,6 +47,9 @@ macro(bob_set_shared_libs)
   message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 endmacro(bob_set_shared_libs)
 
+# Flags can be set either by bob's three flags or by CMAKE_BUILD_TYPE. The
+# advantage of CMAKE_BUILD_TYPE is that you get modern defaults, but the
+# USE_DEFAULT_XSDK flag always sets the CMAKE_BUILD_TYPE to "DEBUG".
 function(bob_begin_cxx_flags)
   option(${PROJECT_NAME}_CXX_OPTIMIZE "Compile C++ with optimization" ON)
   option(${PROJECT_NAME}_CXX_SYMBOLS "Compile C++ with debug symbols" ON)
@@ -74,7 +77,7 @@ function(bob_begin_cxx_flags)
   else()
     message(WARNING "Unexpected compiler type ${CMAKE_CXX_COMPILER_ID}")
   endif()
-  set(CMAKE_CXX_FLAGS "${FLAGS}" PARENT_SCOPE)
+  set(CMAKE_CXX_FLAGS "${FLAGS}" PARENT_SCOPE) # Upgrade to directory scope
 endfunction(bob_begin_cxx_flags)
 
 # The following is from the book,"Professional CMake: 19th edition"

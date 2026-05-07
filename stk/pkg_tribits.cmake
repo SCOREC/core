@@ -1,11 +1,11 @@
 tribits_package(SCORECapf_stk)
 
 # determine if configured with stk
-SET(ENABLE_STK_MESH OFF)
+SET(PUMI_ENABLE_STK_MESH OFF)
 if(SCORECapf_stk_ENABLE_STKIO AND
    SCORECapf_stk_ENABLE_STKMesh AND
    SCORECapf_stk_ENABLE_SEACASIoss)
-  SET(ENABLE_STK_MESH ON)
+  SET(PUMI_ENABLE_STK_MESH ON)
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -21,7 +21,7 @@ set(SOURCES
   apfSTK.cc)
 set(HEADERS apfAlbany.h)
 
-if(ENABLE_STK_MESH)
+if(PUMI_ENABLE_STK_MESH)
   set(HEADERS ${HEADERS} apfSTK.h)
   set(SOURCES ${SOURCES} apfExodusOutput.cc)
 endif()

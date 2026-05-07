@@ -15,7 +15,7 @@
 namespace pcu {
 
 void Init(int *argc, char ***argv) {
-#ifndef SCOREC_NO_MPI
+#ifndef PUMI_NO_MPI
   int flag;
   MPI_Initialized(&flag);
   if (!flag) MPI_Init(argc, argv);
@@ -25,7 +25,7 @@ void Init(int *argc, char ***argv) {
 }
 
 void Finalize() {
-#ifndef SCOREC_NO_MPI
+#ifndef PUMI_NO_MPI
   int flag;
   MPI_Finalized(&flag);
   if (!flag) MPI_Finalize();
@@ -186,7 +186,7 @@ void PCU::DebugOpen() noexcept {
 double GetMem() noexcept { return pcu_get_mem(); }
 void Protect() noexcept { reel_protect(); }
 double Time() noexcept {
-#ifndef SCOREC_NO_MPI
+#ifndef PUMI_NO_MPI
   return MPI_Wtime();
 #else
   struct timespec now;
@@ -208,7 +208,7 @@ void PCU::DebugPrint(const char *format, va_list args) noexcept {
   fflush(msg_->file);
 }
 PCU::PCU() :
-#ifndef SCOREC_NO_MPI
+#ifndef PUMI_NO_MPI
 PCU(MPI_COMM_WORLD)
 #else
 PCU(0)

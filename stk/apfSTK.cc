@@ -15,7 +15,7 @@
 #include <cstdlib>
 #include <fstream>
 
-#if HAS_STK
+#if PUMI_HAS_STK
 #include "apfSTK.h"
 #include <stk_mesh/base/MetaData.hpp>
 #include <stk_io/IossBridge.hpp>
@@ -71,7 +71,7 @@ void collectEntityModels(
   gmi_free_set(s);
 }
 
-#if HAS_STK
+#if PUMI_HAS_STK
 /**
  *   \brief Implement an shards::ArrayDimTag for Quadrature points
  *
@@ -107,7 +107,7 @@ typedef stk::mesh::Field<double, QPDimTag> StkQPScalarField;
 
 typedef std::map<long,Node> GlobalMap;
 
-#if HAS_STK
+#if PUMI_HAS_STK
 template <class T>
 T* makeStkField(
     const char* name,

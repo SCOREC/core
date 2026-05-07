@@ -27,7 +27,7 @@ struct phastaio_stats {
 };
 static struct phastaio_stats phastaio_global_stats;
 
-#if defined(HAVE_INTEL_RDTSC)
+#if defined(PUMI_HAVE_INTEL_RDTSC)
 /* return the cycle count */
 void phastaio_time(phastaioTime* t) {
   *t = _rdtsc(); //intel intrinsic
@@ -60,7 +60,7 @@ size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
   size_t us = ((double)cycles)/phastaio_global_stats.cpus;
   return us;
 }
-#elif defined(USE_PCU_TIME)
+#elif defined(PUMI_USE_PCU_TIME)
 void phastaio_time(phastaioTime* t) {
   *t = pcu::Time();
 }
@@ -69,7 +69,7 @@ size_t phastaio_time_diff(phastaioTime* start, phastaioTime* end) {
   size_t elapsed = static_cast<size_t>((*end-*start)*MILLION);
   return elapsed;
 }
-#elif defined(HAVE_CLOCK_GETTIME)
+#elif defined(PUMI_HAVE_CLOCK_GETTIME)
 void phastaio_time(phastaioTime* t) {
   int err;
   err = clock_gettime(CLOCK_MONOTONIC,t);

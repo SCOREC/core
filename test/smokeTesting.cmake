@@ -1,6 +1,6 @@
 function(smoke_test TESTNAME PROCS EXE)
   set(tname smoke_test_${TESTNAME})
-  if(SCOREC_NO_MPI)
+  if(PUMI_NO_MPI)
     if(PROCS EQUAL "1")
       add_test(NAME ${tname} COMMAND ${VALGRIND} ${VALGRIND_ARGS}
         ${EXE} ${ARGN})

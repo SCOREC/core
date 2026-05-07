@@ -1,10 +1,10 @@
 tribits_package(SCORECapf_zoltan)
-set(ENABLE_ZOLTAN ON)
+set(PUMI_ENABLE_ZOLTAN ON)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 #Sources & Headers
-if(ENABLE_ZOLTAN)
+if(PUMI_ENABLE_ZOLTAN)
   set(SOURCES
     apfInterElement.cc
     apfZoltan.cc

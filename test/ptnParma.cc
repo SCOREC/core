@@ -7,7 +7,7 @@
 #include <parma.h>
 #include <pumi_version.h>
 #include <lionPrint.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
   lion_set_verbosity(1);
   if( !PCUObj.Self() )
     lion_oprint(1, "PUMI version %s Git hash %s\n", pumi_version(), pumi_git_sha());
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(NULL);
@@ -182,7 +182,7 @@ int main(int argc, char** argv)
     mymain(false, &PCUObj);
   else
     mymain(true, &PCUObj);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();
