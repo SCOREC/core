@@ -868,7 +868,6 @@ void tagVertexToSnap(Adapt* a, Entity* vertex)
   if (dim == 3 && md == 3) return;
   Vector snapPoint;
   getSnapPoint(m, vertex, snapPoint);
-  Vector position = getPosition(m, vertex);
   setFlag(a, vertex, SNAP);
   m->setDoubleTag(vertex, a->snapTag, &snapPoint[0]);
 }
