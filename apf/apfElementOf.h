@@ -18,6 +18,10 @@ template <class T, class S = T>
 class ElementOf : public Element
 {
   public:
+    ElementOf():
+      Element()
+    {
+    }
     ElementOf(FieldOf<S>* f, MeshEntity* e):
       Element(f,e)
     {

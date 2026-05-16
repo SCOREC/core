@@ -9,6 +9,7 @@ opyright 2013 Scientific Computation Research Center,
  
 *******************************************************************************/
 #include "maSolutionTransferHelper.h"
+#include "apfVectorElement.h"
 #include "maAffine.h"
 #include "maMap.h"
 #include <apfShape.h>
@@ -76,9 +77,8 @@ void transferToNode(
     point = childMap * xi;
   }
   else { // else inquire the physical coordinated of local coordinate xi
-    apf::MeshElement* me = apf::createMeshElement(mesh,node.entity);
-    apf::mapLocalToGlobal(me, xi, point);
-    apf::destroyMeshElement(me);
+    apf::MeshElement me(mesh->getCoordinateField(),node.entity);
+    apf::mapLocalToGlobal(&me, xi, point);
   }
   Vector elemXi;
   int i = getBestElement(mesh,n,elems,elemInvMaps,point,elemXi);

@@ -6,6 +6,9 @@
  */
 #include "maStats.h"
 #include "maAdapt.h"
+#include <numeric>
+#include <stdexcept>
+#include <algorithm>
 
 namespace ma {
 
@@ -133,5 +136,70 @@ void stats(ma::Mesh* m, ma::SizeField* sf,
   else
     getStatsInPhysicalSpace(m, edgeLengths, linearQualities);
 }
+
+std::vector<int> printHistogramData(std::string name, std::vector<double> bins, std::vector<double> input, double min, double max, Mesh* m)
+{
+  std::vector<int> count(bins.size()-1, 0);
+  double inputMax = min;
+  double inputMin = max;
+
+  for (size_t i = 0; i < input.size(); ++i) {
+    if (std::isnan(input[i])) continue;
+    if (input[i] > inputMax) inputMax = input[i];
+    if (input[i] < inputMin) inputMin = input[i];
+
+    auto it = std::upper_bound(bins.begin(), bins.end(), input[i]);
+    size_t binIdx = std::distance(bins.begin(), it) - 1;
+    if (binIdx >= count.size()) binIdx = count.size()-1;
+    count[binIdx]++;
+  }
+
+  inputMin = m->getPCU()->Min<double>(inputMin);
+  inputMax = m->getPCU()->Max<double>(inputMax);
+  for (size_t i = 0; i < count.size(); ++i) count[i] = m->getPCU()->Add<long>(count[i]);
+
+  if (m->getPCU()->Self()) return count;
+  printf("%s Min: %f, Max: %f\n", name.c_str(), inputMin, inputMax);
+  for (size_t i = 0; i < count.size(); ++i) printf("%d\n", count[i]);
+  return count;
+}
+
+HistogramStats printHistogramStats(Adapt* a)
+{
+  std::vector<double> lengths;
+  std::vector<double> qualities;
+  ma::stats(a->mesh, a->input->sizeField, lengths, qualities, true);
+  std::vector<double> qualityBins = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+  std::vector<double> lengthBins;
+  for (double i = 0.0; i <= 10.0; i++) lengthBins.push_back(i*((MAXLENGTH+1)/10));
+  std::vector<int> qualityHist = printHistogramData("\nQualities:", qualityBins, qualities, 0, 1, a->mesh);
+  std::vector<int> lengthHist = printHistogramData("\nLengths:", lengthBins, lengths, 0, MAXLENGTH+1, a->mesh);
+  return HistogramStats(qualityHist, lengthHist);
+}
+
+//Compare two histograms using L2 (Euclidean) distance.
+double histogramDistance(const std::vector<int>& hist1, const std::vector<int>& hist2, bool normalize) 
+{
+  if (hist1.size() != hist2.size()) throw std::invalid_argument("Histograms must be the same size");
+
+  size_t n = hist1.size();
+  std::vector<double> h1(hist1.begin(), hist1.end());
+  std::vector<double> h2(hist2.begin(), hist2.end());
+
+  if (normalize) {
+    double sum1 = std::accumulate(h1.begin(), h1.end(), 0.0);
+    double sum2 = std::accumulate(h2.begin(), h2.end(), 0.0);
+    if (sum1 > 0) for (double& val : h1) val /= sum1;
+    if (sum2 > 0) for (double& val : h2) val /= sum2;
+  }
+
+  double sum_sq_diff = 0.0;
+  for (size_t i = 0; i < n; ++i) {
+    double diff = h1[i] - h2[i];
+    sum_sq_diff += diff * diff;
+  }
+  return std::sqrt(sum_sq_diff);
+}
+
 
 }

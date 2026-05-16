@@ -12,6 +12,7 @@
 #include "maFaceSplit.h"
 #include "maSolutionTransfer.h"
 #include "maShapeHandler.h"
+#include "apfVectorElement.h"
 
 namespace ma {
 
@@ -173,18 +174,18 @@ Entity* makeSplitVertOnFace(Adapt* a, Entity* face)
   SolutionTransfer* st = a->solutionTransfer;
   // midpoint of face (parametric space)
   Vector xi(1.0/3.0, 1.0/3.0, 1.0/3.0);
-  apf::MeshElement* me = apf::createMeshElement(m, face);
+  apf::MeshElement me(m->getCoordinateField(), face);
   Vector point;
-  apf::mapLocalToGlobal(me,xi,point);
+  apf::mapLocalToGlobal(&me,xi,point);
   Vector param(0,0,0);
   if (a->input->shouldTransferParametric)
     transferParametricOnTriSplit(m, face, xi, param);
   if (a->input->shouldTransferToClosestPoint)
     transferToClosestPointOnTriSplit(m, face, xi, param);
   Entity* vert = buildVertex(a, c, point, param);
-  st->onVertex(me, xi, vert);
-  sf->interpolate(me, xi, vert);
-  apf::destroyMeshElement(me);
+  st->onVertex(&me, xi, vert);
+  sf->interpolate(&me, xi, vert);
+  tagVertexToSnap(a, vert);
   return vert;
 }
 
