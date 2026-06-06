@@ -33,7 +33,7 @@ int getMinimumDimension(apf::FieldShape* s)
 int getBestElement(
     apf::Mesh* mesh,
     int n,
-    apf::Element** elems,
+    Entity** elems,
     Affine* elemInvMaps,
     Vector const& point,
     Vector& bestXi)
@@ -46,8 +46,8 @@ int getBestElement(
     if (mesh->getShape()->getOrder() == 1)
       xi = elemInvMaps[i] * point;
     else
-      xi = curvedElemInvMap(mesh, apf::getMeshEntity(elems[i]), point);
-    double value = getInsideness(mesh,apf::getMeshEntity(elems[i]),xi);
+      xi = curvedElemInvMap(mesh, elems[i], point);
+    double value = getInsideness(mesh, elems[i], xi);
     if (value > bestValue)
     {
       bestValue = value;
@@ -62,6 +62,7 @@ void transferToNode(
     apf::Field* field,
     double *value,
     int n,
+    Entity** entities,
     apf::Element** elems,
     Affine* elemInvMaps,
     apf::Node const& node)
@@ -81,7 +82,7 @@ void transferToNode(
     apf::mapLocalToGlobal(&me, xi, point);
   }
   Vector elemXi;
-  int i = getBestElement(mesh,n,elems,elemInvMaps,point,elemXi);
+  int i = getBestElement(mesh,n,entities,elemInvMaps,point,elemXi);
   apf::getComponents(elems[i],elemXi,value);
   apf::setComponents(field,node.entity,node.node,value);
 }
@@ -114,7 +115,7 @@ void transfer(
     {
       apf::Node node(newEntities[i],j);
       transferToNode(field, value,
-      	  n,&(elems[0]),&(elemInvMaps[0]),node);
+      	  n,cavity,&(elems[0]),&(elemInvMaps[0]),node);
     }
   }
   for (int i = 0; i < n; ++i)
