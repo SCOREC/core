@@ -97,6 +97,7 @@ bool Collapse::requestLocality(apf::CavityOp* o)
 
 bool Collapse::isValid()
 {
+  if(adapt->mesh->getDimension() < 3 || !cavity.shouldFit) return true;
   PCU_ALWAYS_ASSERT(!adapt->mesh->isShared(vertToCollapse));
   Vector prev = getPosition(adapt->mesh, vertToCollapse);
   Vector target = getPosition(adapt->mesh, vertToKeep);
