@@ -59,32 +59,6 @@ bool Collapse::run(Entity* edge, Entity* vert, double qualityToBeat)
   return true;
 }
 
-bool Collapse::run(Entity* edge, double qualityToBeat)
-{
-  PCU_ALWAYS_ASSERT(adapt->mesh->getType(edge) == apf::Mesh::EDGE);
-  if (!setEdge(edge)) return false;
-  if (!checkClass()) return false;
-  if (!checkTopo()) return false;
-
-  computeElementSets();
-  if (!adapt->input->shouldForceAdaptation)
-    qualityToBeat = std::min(adapt->input->goodQuality,
-                    std::max(getOldQuality(), adapt->input->validQuality));
-
-  if (!isValid() || anyWorseQuality(qualityToBeat)) {
-    if (!getFlag(adapt, vertToKeep, COLLAPSE)) { unmark(); return false; }
-    std::swap(vertToKeep, vertToCollapse);
-    computeElementSets();
-    if (!isValid() || anyWorseQuality(qualityToBeat)) { unmark(); return false; }
-  } 
-
-  rebuildElements();
-  fitElements();
-  unmark();
-  return true;
-}
-
-
 bool Collapse::requestLocality(apf::CavityOp* o)
 {
 /* get vertices again since this is sometimes used
