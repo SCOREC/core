@@ -241,8 +241,8 @@ bool FixShape::isTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
   Entity* vert = verts[0];
   Entity* face = getTetFaceOppositeVert(mesh, tet, vert);
   double area[4];
-  int bit = getTetStats(a, vert, face, tet, problemEnts, area);
-  return bit==3 || bit==5 || bit==6;
+  auto problemType = getTetStats(a, vert, face, tet, problemEnts, area);
+  return problemType == ProblemType::TWOLARGEANGLES;
 }
 
 bool FixShape::fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])

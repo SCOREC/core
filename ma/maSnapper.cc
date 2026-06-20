@@ -125,7 +125,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
 {
   Entity* ents[4] = {0};
   double area[4];
-  int bit = getTetStats(adapt, FPP->vert, FPP->problemFace, FPP->problemRegion, ents, area);
+  auto problemType = getTetStats(adapt, FPP->vert, FPP->problemFace, FPP->problemRegion, ents, area);
   double qual = adapt->input->validQuality;
 
   double min=area[0];
@@ -148,7 +148,7 @@ bool Snapper::trySwapOrSplit(FirstProblemPlane* FPP)
     return false;
 
   // two large dihedral angles -> key problem: two mesh edges
-  if (bit==3 || bit==5 || bit==6) {
+  if (problemType == ProblemType::TWOLARGEANGLES) {
     if (edgeSwap->run(ents[0])) { numSwap++; return true; }
     if (edgeSwap->run(ents[1])) { numSwap++; return true; }
     if (splitCollapse.run(ents[0], FPP->vert, qual)) { numSplitCollapse++; return true; }
@@ -386,7 +386,7 @@ bool Snapper::run()
 
   FirstProblemPlane* FPP=0;
   if (mesh->getDimension() == 3) {
-    if (!success) FPP = getFPP(adapt, vert, snapTag, invalid);
+    if (!success) FPP = getFPP(adapt, vert, target, invalid);
     if (!success) success = tryCollapseToVertex(FPP);
     if (!success) success = tryReduceCommonEdges(FPP);
     if (!success) success = tryCollapseTetEdges(FPP);

@@ -12,10 +12,16 @@ struct Ray
   Vector dir;
 };
 
+enum class ProblemType
+{
+  TWOLARGEANGLES,
+  THREELARGEANGLES,
+};
+
 class FirstProblemPlane
 {
   public:
-    FirstProblemPlane(Adapt* a, Tag* st);
+    FirstProblemPlane(Adapt* a, Vector target);
     void setVertex(Entity* v);
     void setBadElements(apf::Up& badElements);
     void getCandidateEdges(std::vector<Entity*> &edges);
@@ -24,7 +30,8 @@ class FirstProblemPlane
     std::vector<Entity*> commEdges;
     std::vector<Entity*> problemRegions;
     Entity* problemRegion;
-    Tag* snapTag;
+    Vector target;
+  
   private:
     Adapt* adapter;
     Vector intersection;
@@ -36,8 +43,8 @@ class FirstProblemPlane
     void findCommonEdges(apf::Up& cpRegions);
 };
 
-FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid);
-int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4]);
+FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Vector target, apf::Up& invalid);
+ProblemType getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4]);
 Entity* getTetFaceOppositeVert(Mesh* m, Entity* e, Entity* v);
 void getFaceCoords(Mesh* m, Entity* face, std::vector<Vector>& coords);
 Vector getCenter(Mesh* mesh, Entity* face);

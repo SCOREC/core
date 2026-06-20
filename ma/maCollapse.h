@@ -56,6 +56,7 @@ class Collapse
     EntityArray newElements;
     Cavity cavity;
     RebuildCallback* rebuildCallback;
+    apf::Up invalid;
   private:
     std::map<Entity*,Entity*> getReusableEntities();
     Entity* rebuildEntity(Mesh* m, Entity* original, Entity** downward);

@@ -4,10 +4,10 @@
 
 namespace ma {
 
-FirstProblemPlane::FirstProblemPlane(Adapt* a, Tag* st)
+FirstProblemPlane::FirstProblemPlane(Adapt* a, Vector t)
 {
   adapter = a;
-  snapTag = st;
+  target = t;
   problemFace = 0;
   problemRegion = 0;
   commEdges.clear();
@@ -46,8 +46,6 @@ bool FirstProblemPlane::find()
   Entity* elem;
   Entity* face;
   Ray ray;
-  Vector target;
-  mesh->getDoubleTag(vert, snapTag, &target[0]);
 
   ray.start = getPosition(mesh, vert);
   ray.dir   = target - ray.start;
@@ -115,11 +113,10 @@ void FirstProblemPlane::findCandidateEdges(std::vector<Entity*> &edges)
 
   // We deny collapsing that moves further away form the current target
   // Need the original dist b/w the current vert and the target snap point
-  Vector x, t;
+  Vector x;
   x = getPosition(mesh, vert);
-  mesh->getDoubleTag(vert, snapTag, &t[0]);
 
-  double dist = (x - t).getLength();
+  double dist = (x - target).getLength();
 
   Entity* edge;
   Entity* v;
@@ -133,7 +130,7 @@ void FirstProblemPlane::findCandidateEdges(std::vector<Entity*> &edges)
 
     if (false) {;} // boundary layer stuff
 
-    double candidateDist = (vCoord - t).getLength();
+    double candidateDist = (vCoord - target).getLength();
     if (candidateDist > dist)
       continue;
     else
@@ -245,9 +242,9 @@ void FirstProblemPlane::findCommonEdges(apf::Up& cpRegions)
   }
 }
 
-FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Tag* snapTag, apf::Up& invalid)
+FirstProblemPlane* getFPP(Adapt* a, Entity* vertex, Vector target, apf::Up& invalid)
 {
-  FirstProblemPlane* FPP = new FirstProblemPlane(a, snapTag);
+  FirstProblemPlane* FPP = new FirstProblemPlane(a, target);
   FPP->setVertex(vertex);
   FPP->setBadElements(invalid);
   std::vector<Entity*> commEdges;
@@ -361,7 +358,7 @@ static Vector projOnTriPlane(Adapt* a, Entity* vert, Vector normal, Vector v0)
      3,5,6 : the tetrahedron has two large dihedral angles. The opposite edges will be stored in ents[0], ents[1].
    1,2,4,7 : the tetrahedron has three large angles. The largeest face is stored in ents[0].
 */
-int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4])
+ProblemType getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4])
 {
   Entity* faceEdges[3];
   a->mesh->getDownward(face, 1, faceEdges);
@@ -509,7 +506,10 @@ int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* en
     default:
       print(a->mesh->getPCU(), "Swap warning: This swap/splt may not work consider more collapses");
   }
-  return bit;
+
+  if (bit==3 || bit==5 || bit==6)
+    return ProblemType::TWOLARGEANGLES;
+  else return ProblemType::THREELARGEANGLES;
 }
 
 }

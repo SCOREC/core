@@ -76,11 +76,11 @@ bool Collapse::isValid()
   Vector prev = getPosition(adapt->mesh, vertToCollapse);
   Vector target = getPosition(adapt->mesh, vertToKeep);
   adapt->mesh->setPoint(vertToCollapse, 0, target);
-  bool valid = true;
+  invalid.n = 0;
   for (Entity* e : elementsToKeep)
-    if (!isTetValid(adapt->mesh, e)) {valid = false; break;}
+    if (!isTetValid(adapt->mesh, e)) invalid.e[invalid.n++] = e;
   adapt->mesh->setPoint(vertToCollapse, 0, prev);
-  return valid;
+  return invalid.n == 0;
 }
 
 bool Collapse::anyWorseQuality(double qualityToBeat)
