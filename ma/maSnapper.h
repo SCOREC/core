@@ -15,6 +15,7 @@
 #include "maDoubleSplitCollapse.h"
 #include "maEdgeSwap.h"
 #include "maReposition.h"
+#include "maFirstProblemPlane.h"
 
 namespace apf {
 class CavityOp;
@@ -25,8 +26,6 @@ namespace ma {
 /* tries to make room for a vertex to snap into
    a mesh by collapsing edges in the direction
    of desired snapping */
-
-class FirstProblemPlane;
 
 class Snapper
 {
@@ -62,40 +61,6 @@ class Snapper
     bool trySwapOrSplit(FirstProblemPlane* FPP);
 };
 
-struct Ray{
-  Vector start;
-  Vector dir;
-};
-
-class FirstProblemPlane
-{
-  public:
-    FirstProblemPlane(Adapt* a, Tag* st);
-    void setVertex(Entity* v);
-    void setBadElements(apf::Up& badElements);
-    void getCandidateEdges(std::vector<Entity*> &edges);
-    Entity* vert;
-    Entity* problemFace;
-    std::vector<Entity*> commEdges;
-    std::vector<Entity*> problemRegions;
-    Entity* problemRegion;
-    Tag* snapTag;
-  private:
-    Adapt* adapter;
-    Vector intersection;
-    double tol;
-    bool find();
-    void findCandidateEdges(std::vector<Entity*> &edges);
-    bool intersectRayFace(const Ray& ray, const std::vector<Vector>& coords,
-    	Vector& intersection, bool& isInf);
-    void findCommonEdges(apf::Up& cpRegions);
-};
-
-int getTetStats(Adapt* a, Entity* vert, Entity* face, Entity* region, Entity* ents[4], double area[4]);
-Entity* getTetFaceOppositeVert(Mesh* m, Entity* e, Entity* v);
-void getFaceCoords(Mesh* m, Entity* face, std::vector<Vector>& coords);
-Vector getCenter(Mesh* mesh, Entity* face);
-bool isLowInHigh(Mesh* mesh, Entity* highEnt, Entity* lowEnt);
 EntitySet getNextLayer(Adapt* a, EntitySet& tets);
 
 }

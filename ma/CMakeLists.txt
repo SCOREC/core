@@ -52,6 +52,7 @@ set(SOURCES
   maExtrude.cc
   maDBG.cc
   maStats.cc
+  maFirstProblemPlane.cc
 )
 
 # Package headers
