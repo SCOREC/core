@@ -2,6 +2,7 @@
 #include "SimAttribute.h"
 #include "AttributeTypes.h"
 #include "SimParasolidKrnl.h"
+#include "pumi_simModSuiteConfig.h"
 #include "string.h"
 #include <iostream>
 #include <cstdlib>
@@ -37,8 +38,14 @@ int main(int argc, char* argv[])
   if(NM_isAssemblyModel(pnModel)) {
     pGModel amodel = GAM_createFromNativeModel(pnModel, prog);
     NM_release(pnModel);
+#if SIMMODSUITE_MAJOR_VERSION < 2026
     model = GM_createFromAssemblyModel(amodel, NULL, prog);
     GM_release(amodel);
+#else
+    pModelBuilder mb = ModelBuilder_new(amodel);
+    ModelBuilder_setOperation(mb, ModelBuilder_unite);
+    model = ModelBuilder_execute(mb, NULL);
+#endif
     pnModel = GM_nativeModel(model);
   }
   else

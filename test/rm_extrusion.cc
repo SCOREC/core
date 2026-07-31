@@ -3,7 +3,7 @@
 #include <SimPartitionedMesh.h>
 #include <SimUtil.h>
 #include <apfSIM.h>
-#include <apf_simConfig.h>
+#include <pumi_simModSuiteConfig.h>
 #include <apfMDS.h>
 #include <gmi.h>
 #include <gmi_sim.h>
