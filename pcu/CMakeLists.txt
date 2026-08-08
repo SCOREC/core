@@ -23,7 +23,7 @@ set(SOURCES
   reel/reel.c
   PCU.cc)
 
-if(SCOREC_NO_MPI)
+if(PUMI_NO_MPI)
   set(SOURCES ${SOURCES} pcu_pnompi.c)
 else()
   set(SOURCES ${SOURCES} pcu_pmpi.c)

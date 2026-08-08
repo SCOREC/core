@@ -10,7 +10,7 @@
 #include <gmi_mesh.h>
 #include <gmi_null.h>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   #include <gmi_sim.h>
 #endif
 
@@ -31,7 +31,7 @@
 #include <ma.h>
 #include <crv.h>
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   #include <sim_helper.h>
 #endif
 %}
@@ -82,7 +82,7 @@ void PCU_ALWAYS_ASSERT(int cond);
 void PCU_ALWAYS_ASSERT_VERBOSE(int cond, const char* msg);
 
 /* These are helper functions used to inintialize/finalize SimModSuite */
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   void start_sim(const char* logfile = 0);
   void stop_sim();
   bool is_sim_started();
@@ -92,7 +92,7 @@ void PCU_ALWAYS_ASSERT_VERBOSE(int cond, const char* msg);
 void gmi_register_mesh(void);
 void gmi_register_null(void);
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   void gmi_register_sim(void);
   void gmi_sim_start(void);
   void gmi_sim_stop(void);

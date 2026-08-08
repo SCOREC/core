@@ -5,7 +5,7 @@
 #include <lionPrint.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #include <MeshSim.h>
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
         << " <model file> <in mesh> <split direction=[0-2]> <out mesh> \n";
     return EXIT_FAILURE;
   }
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(NULL);
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
   m->writeNative(argv[4]);
   m->destroyNative();
   apf::destroyMesh(m);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
   SimModel_stop();

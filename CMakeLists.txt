@@ -6,7 +6,7 @@ endif()
 # This is the top level CMake file for the SCOREC build
 cmake_minimum_required(VERSION 3.12)
 
-project(SCOREC VERSION 4.2.0 LANGUAGES CXX C)
+project(PUMI VERSION 4.3.0 LANGUAGES CXX C)
 
 include(cmake/bob.cmake)
 include(cmake/xsdk.cmake)
@@ -20,18 +20,20 @@ if(USE_XSDK_DEFAULTS)
   xsdk_compiler_flags()
 endif()
 
-option(ENABLE_CGNS "Enable the CGNS reader: requires c++14 extensions" OFF)
-message(STATUS "ENABLE_CGNS: ${ENABLE_CGNS}")
-option(ENABLE_OMEGA_H "Enable the Omega_h interface" OFF)
+option(PUMI_ENABLE_CGNS
+  "Enable the CGNS reader (requires c++14 extensions)" ${ENABLE_CGNS}
+)
+message(STATUS "PUMI_ENABLE_CGNS: ${PUMI_ENABLE_CGNS}")
+option(PUMI_ENABLE_OMEGA_H "Enable the Omega_h interface" ${ENABLE_OMEGA_H})
 set(PUMI_USE_OMEGA_H_VERSION "10.0.0" CACHE STRING "Specify the Omega_h version PUMI should use")
-message(STATUS "ENABLE_OMEGA_H: ${ENABLE_OMEGA_H}")
-if(NOT ENABLE_CGNS AND NOT ENABLE_OMEGA_H)
+message(STATUS "PUMI_ENABLE_OMEGA_H: ${PUMI_ENABLE_OMEGA_H}")
+if(NOT PUMI_ENABLE_CGNS AND NOT PUMI_ENABLE_OMEGA_H)
   message(STATUS "enabling cxx11")
   bob_set_cxx_standard(11)
-elseif(ENABLE_CGNS)
+elseif(PUMI_ENABLE_CGNS)
   message(STATUS "enabling cxx14")
   bob_set_cxx_standard(14)
-elseif(ENABLE_OMEGA_H)
+elseif(PUMI_ENABLE_OMEGA_H)
   message(STATUS "enabling cxx17")
   bob_set_cxx_standard(17)
 endif()
@@ -39,19 +41,63 @@ endif()
 #
 # option related to MPI
 #
-option(SCOREC_NO_MPI "Disable MPI support.  When enabled only serial execution is supported." OFF)
-message(STATUS "SCOREC_NO_MPI: ${SCOREC_NO_MPI}")
-if(SCOREC_NO_MPI AND ENABLE_CGNS)
-  message(FATAL_ERROR "SCOREC_NO_MPI is incompatible with CGNS.")
+if(SCOREC_NO_MPI)
+	message(DEPRECATION
+		"The SCOREC_NO_MPI option has been renamed to"
+		" PUMI_NO_MPI. Please update your configuration to use the new name.")
+	set(PUMI_NO_MPI_DEFAULT ON)
+endif()
+option(PUMI_NO_MPI
+	"Disable MPI support. When enabled only serial execution is supported."
+	${PUMI_NO_MPI_DEFAULT}
+)
+message(STATUS "PUMI_NO_MPI: ${PUMI_NO_MPI}")
+if(PUMI_NO_MPI AND PUMI_ENABLE_CGNS)
+  message(FATAL_ERROR "PUMI_NO_MPI is incompatible with CGNS.")
 endif()
 
 # Set some default compiler flags that should always be used
 if(NOT USE_XSDK_DEFAULTS)
   bob_set_shared_libs()
+  if(SCOREC_CXX_OPTIMIZE)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_OPTIMIZE)."
+    )
+    set(PUMI_CXX_OPTIMIZE ${SCOREC_CXX_OPTIMIZE})
+  endif()
+  if(SCOREC_CXX_SYMBOLS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_SYMBOLS)."
+    )
+    set(PUMI_CXX_SYMBOLS ${SCOREC_CXX_SYMBOLS})
+  endif()
+  if(SCOREC_CXX_WARNINGS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_WARNINGS)."
+    )
+    set(PUMI_CXX_WARNINGS ${SCOREC_CXX_WARNINGS})
+  endif()
+  if(SCOREC_CXX_FLAGS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_CXX_FLAGS)."
+    )
+    set(PUMI_CXX_FLAGS ${SCOREC_CXX_FLAGS})
+  endif()
+  if(SCOREC_EXTRA_CXX_FLAGS)
+    message(DEPRECATION
+      "The SCOREC project is now called PUMI. Please update your"
+      "configuration to use the new name (i.e. PUMI_EXTRA_CXX_FLAGS)."
+    )
+  set(PUMI_EXTRA_CXX_FLAGS ${SCOREC_EXTRA_CXX_FLAGS})
+  endif()
   bob_begin_cxx_flags()
   bob_end_cxx_flags()
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS}")
-  if(ENABLE_CGNS)
+  if(PUMI_ENABLE_CGNS)
     bob_cxx14_flags()
   else()
     bob_cxx11_flags()
@@ -103,26 +149,33 @@ add_custom_target(check
 set(Trilinos_PREFIX "" CACHE STRING "Trilinos installation directory")
 
 option(SKIP_SIMMETRIX_VERSION_CHECK "enable at your own risk; it may result in undefined behavior" OFF)
-option(ENABLE_SIMMETRIX "Build with Simmetrix support" OFF)
-message(STATUS "ENABLE_SIMMETRIX: ${ENABLE_SIMMETRIX}")
-option(PUMI_ENABLE_CAPSTONE "Build PUMI with Capstone support" OFF)
-# For compatibility and to inherit from owning projects:
-if(ENABLE_CAPSTONE)
-  set(PUMI_ENABLE_CAPSTONE ON)
+option(
+  PUMI_ENABLE_SIMMETRIX
+  "Build PUMI with Simmetrix support"
+  ${ENABLE_SIMMETRIX} # For compatibility and to inherit from owning projects
+)
+message(STATUS "PUMI_ENABLE_SIMMETRIX: ${PUMI_ENABLE_SIMMETRIX}")
+if(PUMI_ENABLE_SIMMETRIX)
+  add_definitions(-DPUMI_HAS_SIMMETRIX)
 endif()
+option(
+  PUMI_ENABLE_CAPSTONE
+  "Build PUMI with Capstone support"
+  ${ENABLE_CAPSTONE}
+)
 message(STATUS "PUMI_ENABLE_CAPSTONE: ${PUMI_ENABLE_CAPSTONE}")
-
-if(ENABLE_SIMMETRIX)
-  add_definitions(-DHAVE_SIMMETRIX)
-endif()
 if(PUMI_ENABLE_CAPSTONE)
   add_definitions(-DPUMI_HAS_CAPSTONE)
 endif()
 
-option(ENABLE_FPP "Build with snapping to first problem plane" OFF)
-message(STATUS "ENABLE_FPP: ${ENABLE_FPP}")
-if(ENABLE_FPP)
-  add_definitions(-DDO_FPP)
+option(
+  PUMI_DEBUG_FPP
+  "Build with debugging for snapping to first problem plane"
+  ${DEBUG_FPP} # Inherit default value
+)
+message(STATUS "PUMI_DEBUG_FPP: ${PUMI_DEBUG_FPP}")
+if(PUMI_DEBUG_FPP)
+  add_definitions(-DPUMI_DEBUG_FPP)
 endif()
 
 macro(scorec_export_library target)
@@ -144,45 +197,49 @@ macro(scorec_export_library target)
   endif()
 endmacro(scorec_export_library)
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   find_package(SimModSuite MODULE REQUIRED)
 endif()
 
 if(PUMI_ENABLE_CAPSTONE)
-  set(SCOREC_USE_CreateMG_DEFAULT ${PUMI_ENABLE_CAPSTONE})
+  set(PUMI_USE_CreateMG_DEFAULT ${PUMI_ENABLE_CAPSTONE})
   bob_public_dep(CreateMG)
 endif()
 
-if(ENABLE_OMEGA_H)
+if(PUMI_ENABLE_OMEGA_H)
   bob_cxx17_flags()
   bob_set_cxx_standard(17)
   # find the omega_h library
-  set(SCOREC_USE_Omega_h_DEFAULT ${ENABLE_OMEGA_H})
+  set(PUMI_USE_Omega_h_DEFAULT ${PUMI_ENABLE_OMEGA_H})
   set(Omega_h_REQUIRED_VERSION ${PUMI_USE_OMEGA_H_VERSION})
   bob_public_dep(Omega_h)
 endif()
 
-if(ENABLE_CGNS)
-  set(SCOREC_USE_CGNS_DEFAULT ${ENABLE_CGNS})
+if(PUMI_ENABLE_CGNS)
+  set(PUMI_USE_CGNS_DEFAULT ${PUMI_ENABLE_CGNS})
   bob_public_dep(CGNS)
   #CGNS does not provide cmake targets :(
   include_directories(SYSTEM ${CGNS_INCLUDE_DIR})
-  set(SCOREC_USE_HDF5_DEFAULT ${ENABLE_CGNS})
+  set(PUMI_USE_HDF5_DEFAULT ${PUMI_ENABLE_CGNS})
   bob_public_dep(HDF5)
-  add_definitions(-DHAVE_CGNS)
+  add_definitions(-DPUMI_HAS_CGNS)
 endif()
 
 configure_file(SCOREC_config.h.in SCOREC_config.h)
 install(FILES "${CMAKE_BINARY_DIR}/SCOREC_config.h" DESTINATION include)
 
-if(ENABLE_SIMMETRIX)
-  option(ENABLE_FIELDSIM "Enable use of FieldSim from Simmetrix SimModSuite" FALSE)
-  message(STATUS "ENABLE_FIELDSIM: ${ENABLE_FIELDSIM}")
-  set(USE_FIELDSIM FALSE)
-  if(SIMMODSUITE_SimField_FOUND AND ENABLE_FIELDSIM)
-    set(USE_FIELDSIM TRUE)
+if(PUMI_ENABLE_SIMMETRIX)
+  option(
+    PUMI_ENABLE_FIELDSIM
+    "Request use of FieldSim from Simmetrix SimModSuite (only used if found)"
+    ${ENABLE_FIELDSIM} # Inherit default value
+  )
+  message(STATUS "PUMI_ENABLE_FIELDSIM: ${PUMI_ENABLE_FIELDSIM}")
+  set(PUMI_USE_FIELDSIM FALSE)
+  if(SIMMODSUITE_SimField_FOUND AND PUMI_ENABLE_FIELDSIM)
+    set(PUMI_USE_FIELDSIM TRUE)
   endif()
-  set(USE_SIM_ADVMESHING ${SIMMODSUITE_SimAdvMeshing_FOUND})
+  set(PUMI_HAS_SIM_ADVMESHING ${SIMMODSUITE_SimAdvMeshing_FOUND})
   configure_file(pumi_simModSuiteConfig.h.in pumi_simModSuiteConfig.h)
   install(FILES "${CMAKE_BINARY_DIR}/pumi_simModSuiteConfig.h" DESTINATION include)
 endif()
@@ -217,8 +274,8 @@ add_subdirectory(apf_cap)
 
 # this INTERFACE target bundles all the enabled libraries together
 add_library(core INTERFACE)
-target_link_libraries(core INTERFACE ${SCOREC_EXPORTED_TARGETS})
-if(ENABLE_CGNS)
+target_link_libraries(core INTERFACE ${PUMI_EXPORTED_TARGETS})
+if(PUMI_ENABLE_CGNS)
   target_link_libraries(core INTERFACE ${CMAKE_DL_LIBS}) #HDF5 uses dlopen
 endif()
 scorec_export_library(core)
@@ -257,3 +314,18 @@ if(DOXYGEN_FOUND)
 endif()
 
 bob_end_package()
+
+# The following is included for compatibility with PUMI<4.3 when the project
+# was named SCOREC:
+configure_file(cmake/SCORECConfig.cmake.in SCORECConfig.cmake @ONLY)
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/SCORECConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/SCORECConfigVersion.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/SCORECConfig.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/SCOREC"
+)

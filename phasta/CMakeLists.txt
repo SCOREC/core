@@ -23,7 +23,7 @@ set(SOURCES
   phiotimer.cc
 )
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   if(SIM_DOT_VERSION VERSION_GREATER 12.0.180605)
     set(SOURCES ${SOURCES} splitMeshOnGFace_2arg.cpp)
   else()
@@ -38,7 +38,7 @@ if(PUMI_FORTRAN_INTERFACE)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
 endif()
 
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   set(SOURCES ${SOURCES}
       phAttrib.cc
       phSnap.cc
@@ -50,7 +50,7 @@ endif()
 if(SIMMODSUITE_SimAdvMeshing_FOUND) # simmetrix enabled
   set(SOURCES ${SOURCES} phGrowthCurves.cc)
 endif()
-if(NOT ENABLE_SIMMETRIX # no simmetrix
+if(NOT PUMI_ENABLE_SIMMETRIX # no simmetrix
    OR
    NOT SIMMODSUITE_SimAdvMeshing_FOUND) # have simmetrix, but not advMeshing
   set(SOURCES ${SOURCES} phGrowthCurves_empty.cc)
@@ -70,32 +70,23 @@ set(HEADERS
 # Add the ph library
 add_library(ph ${SOURCES})
 
-# Add the SimAdvMeshing flag
-if(SIMMODSUITE_SimAdvMeshing_FOUND) # simmetrix enabled
-  target_compile_definitions(ph PRIVATE -DHAVE_SIMADVMESHING)
-endif()
-
 #determine which timer to use based on the target system and compiler
 if(CMAKE_SYSTEM_NAME MATCHES BlueGeneQ*)
-  add_definitions(-DUSE_PCU_TIME)
-  target_compile_definitions(ph INTERFACE -DUSE_PCU_TIME)
+  target_compile_definitions(ph PUBLIC -DPUMI_USE_PCU_TIME)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES Intel)
-  add_definitions(-DHAVE_INTEL_RDTSC)
-  target_compile_definitions(ph INTERFACE -DHAVE_INTEL_RDTSC)
+  target_compile_definitions(ph PUBLIC -DPUMI_HAVE_INTEL_RDTSC)
 else()
   #from https://github.com/abduld/libwb/issues/5
   include(CheckFunctionExists)
-  CHECK_FUNCTION_EXISTS(clock_gettime HAVE_CLOCK_GETTIME)
-  if(NOT HAVE_CLOCK_GETTIME)
+  CHECK_FUNCTION_EXISTS(clock_gettime PUMI_HAVE_CLOCK_GETTIME)
+  if(NOT PUMI_HAVE_CLOCK_GETTIME)
     find_library(LIBRT_LIBRARIES rt)
     message(STATUS "librt: ${LIBRT_LIBRARIES}")
-  endif(NOT HAVE_CLOCK_GETTIME)
-  if( HAVE_CLOCK_GETTIME OR LIBRT_LIBRARIES )
-    add_definitions(-DHAVE_CLOCK_GETTIME)
-    target_compile_definitions(ph INTERFACE -DHAVE_CLOCK_GETTIME)
+  endif(NOT PUMI_HAVE_CLOCK_GETTIME)
+  if( PUMI_HAVE_CLOCK_GETTIME OR LIBRT_LIBRARIES )
+    target_compile_definitions(ph PUBLIC -DPUMI_HAVE_CLOCK_GETTIME)
   else()
-    add_definitions(-DUSE_PCU_TIME)
-    target_compile_definitions(ph INTERFACE -DUSE_PCU_TIME)
+    target_compile_definitions(ph PUBLIC -DPUMI_USE_PCU_TIME)
   endif()
 endif()
 
@@ -116,7 +107,7 @@ target_link_libraries(ph
       apf_zoltan
       pumi
     )
-if(ENABLE_SIMMETRIX)
+if(PUMI_ENABLE_SIMMETRIX)
   target_link_libraries(ph PUBLIC
       gmi_sim
       apf_sim

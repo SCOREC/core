@@ -10,7 +10,7 @@
 
 
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <apfSIM.h>
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
@@ -176,7 +176,7 @@ void zoltanBalance(apf::Mesh2* m, Input& in, int method)
         m, method, apf::REPARTITION, dbg));
 }
 
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 void setEqualWeights(pParMesh pmesh, int desiredTotNumParts, pProgress progress)
 {
   pPartitionOpts pOpts = PartitionOpts_new();
@@ -229,7 +229,7 @@ void balance(Input& in, apf::Mesh2* m)
     zoltanBalance(m,in,apf::RIB);
   else if(in.prePhastaBalanceMethod == "graph" )
     zoltanBalance(m,in,apf::GRAPH);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   else if(in.prePhastaBalanceMethod == "simmetrix" )
     simmetrixBalance(m);
 #endif

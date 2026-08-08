@@ -1,6 +1,6 @@
 #include <lionPrint.h>
 #include "phBC.h"
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include "phAttrib.h"
 #include <gmi_sim.h>
 #endif
@@ -114,7 +114,7 @@ void readBCs(gmi_model* m, const char* attFile, bool axisymmetry, BCs& bcs)
      either its an SPJ file or they came in with the model */
   if (gmi_has_ext(attFile, "spj"))
     readBCsFromSPJ(attFile, bcs);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   else
     getSimmetrixAttributes(m, bcs);
 #endif
@@ -131,7 +131,7 @@ void loadModelAndBCs(ph::Input& in, gmi_model*& m, BCs& bcs, pcu::PCU *PCUObj)
   /* case 1: meshmodel */
   if (gmi_has_ext(modelfile, "dmg"))
     m = gmi_load(modelfile);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   /* cases 2: Simmetrix model (and possibly attributes) file */
   else if (gmi_has_ext(modelfile, "smd"))
     m = gmi_sim_load(0, modelfile);

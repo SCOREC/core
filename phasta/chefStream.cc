@@ -13,7 +13,7 @@
 #include <chef.h>
 #include <phstream.h>
 #include <gmi_mesh.h>
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include <gmi_sim.h>
 #include <SimUtil.h>
 #endif
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   {
   pcu::PCU PCUObj;
   pcu::Protect();
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
   destroyGRStream(grs,&PCUObj);
   destroyRStream(rs,&PCUObj);
   freeMesh(m);
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
   gmi_sim_stop();
   Sim_unregisterAllKeys();
 #endif

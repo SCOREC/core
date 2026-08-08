@@ -94,7 +94,7 @@ jobs:
         -DSCOREC_CXX_WARNINGS=ON
         -DIS_TESTING=ON
         -DMESHES=${{github.workspace}}/pumi-meshes
-        -DSCOREC_NO_MPI=${{matrix.no_mpi}}
+        -DPUMI_NO_MPI=${{matrix.no_mpi}}
         -DENABLE_METIS=${{matrix.metis}}
 
     - name: Build
@@ -124,7 +124,7 @@ jobs:
         cmake --build ${{github.workspace}}/buildExample
 
     - name: Build MPI-NoMPI Example
-      # Test if a SCOREC_NO_MPI build works with MPI applications.
+      # Test if a PUMI_NO_MPI build works with MPI applications.
       if: >-
         matrix.compiler.name == 'GNU' && matrix.build_type == 'Release' &&
         matrix.no_mpi == 'ON'

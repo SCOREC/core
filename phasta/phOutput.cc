@@ -6,7 +6,7 @@
 #include "phBubble.h"
 #include "phAxisymmetry.h"
 #include "phInterfaceCutter.h"
-#ifdef HAVE_SIMMETRIX
+#ifdef PUMI_HAS_SIMMETRIX
 #include "apfSIM.h"
 #include "gmi_sim.h"
 #include <SimUtil.h>

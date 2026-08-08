@@ -477,7 +477,9 @@ std::string doit(apf::CGNSBCMap &cgnsBCMap, const std::string &argv1, const std:
 
 int main(int argc, char **argv)
 {
-#ifdef HAVE_CGNS
+#ifndef PUMI_HAS_CGNS
+  apf::fail("Build with PUMI_ENABLE_CGNS.");
+#endif
   pcu::Init(&argc, &argv);
   {
   pcu::PCU PCUObj;
@@ -548,10 +550,4 @@ int main(int argc, char **argv)
   }
   pcu::Finalize();
   return 0;
-#else
-  PCU_ALWAYS_ASSERT_VERBOSE(true == false,
-                            "Build with ENABLE_CGNS to allow this functionality.");
-  exit(EXIT_FAILURE);
-  return -1;
-#endif
 }
