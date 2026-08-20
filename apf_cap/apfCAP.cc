@@ -616,13 +616,6 @@ void MeshCAP::setModel(gmi_model* newModel)
   model = newModel;
 }
 
-void MeshCAP::setModelEntity(MeshEntity* e, ModelEntity* me)
-{
-  (void)e;
-  (void)me;
-  apf::fail("MeshCAP::setModelEntity called!\n");
-}
-
 static MeshMG::GeometryTopoType getCapGeomType(int d)
 {
   MeshMG::GeometryTopoType gtype = MeshMG::GVERTEX;
@@ -643,6 +636,14 @@ static MeshMG::GeometryTopoType getCapGeomType(int d)
       break;
   }
   return gtype;
+}
+
+void MeshCAP::setModelEntity(MeshEntity* e, ModelEntity* me)
+{
+  M_MTopo topo = fromEntity(e);
+  M_GTopo gtopo = fromGmiEntity(reinterpret_cast<gmi_ent*>(me));
+  MeshMG::GeometryTopoType gtype = getCapGeomType(getModelType(me));
+  meshInterface->set_geom_entity(topo, gtype, gtopo);
 }
 
 MeshEntity* MeshCAP::createVert_(ModelEntity* me)

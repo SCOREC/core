@@ -357,6 +357,13 @@ void getIntPoint(MeshElement* e, int order, int point, Vector3& param)
   param = p->param;
 }
 
+Vector3 getIntPoint(MeshElement* e, int order, int point)
+{
+  IntegrationPoint const* p = 
+    getIntegration(e->getType())->getAccurate(order)->getPoint(point);
+  return p->param;
+}
+
 double getIntWeight(MeshElement* e, int order, int point)
 {
   IntegrationPoint const* p = 
