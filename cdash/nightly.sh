@@ -1,6 +1,11 @@
 #!/bin/bash -x
+(
+#cdash output root
+d=/users/d_zxg06726/nightlyBuilds/core_build
+exec > $d/nightly_log.txt 2>&1
+
 source /etc/profile
-source /users/smithc11/.bash_profile
+# source /users/d_zxg06726/.bash_profile
 
 #setup lmod
 export PATH=/usr/share/lmod/lmod/libexec:$PATH
@@ -16,8 +21,6 @@ module load zoltan/3.83-hap4ggo
 module load cmake/3.26.3-2duxfcd
 module load cgns/develop-cc4dfwp
 
-#cdash output root
-d=/lore/smithc11/nightlyBuilds/
 cd $d
 #remove compilation directories created by previous nightly.cmake runs
 [ -d build ] && rm -rf build/
@@ -28,6 +31,7 @@ ctest -V --script $d/nightly.cmake
 touch $d/doneCoreNightly
 
 #create doxygen docs
-cd build/master
-make doc
-cp -r doc/html /net/web/scorec/scorec-web/htdocs/pumi/doxygen
+#cd build/master
+#make doc
+#cp -r doc/html /net/web/scorec/scorec-web/htdocs/pumi/doxygen
+)

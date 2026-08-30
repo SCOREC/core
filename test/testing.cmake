@@ -59,6 +59,8 @@ mpi_test(print_pumipic_partion 1
 endif()
 
 mpi_test(align 1 ./align)
+mpi_test(deriveMdlFromManifold 1 ./deriveMdlFromManifold)
+mpi_test(derive2DMdlFromManifold 1 ./derive2DMdlFromManifold)
 mpi_test(eigen_test 1 ./eigen_test)
 mpi_test(integrate 1 ./integrate)
 mpi_test(qr_test 1 ./qr)

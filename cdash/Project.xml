@@ -1,12 +1,11 @@
 <Project name="SCOREC">
-  <SubProject name="master">
-  </SubProject>
-  <SubProject name="develop">
-  </SubProject>
-  <SubProject name="develop-into-master">
-  </SubProject>
-  <SubProject name="omega_h">
-  </SubProject>
-  <SubProject name="pumi-pic">
-  </SubProject>
+    <SubProject name="master"> </SubProject>
+    <SubProject name="develop"> </SubProject>
+    <SubProject name="develop-into-master"> </SubProject>
+    <SubProject name="omega_h"> </SubProject>
+    <SubProject name="pcms"> </SubProject>
+    <SubProject name="pumi-pic"> </SubProject>
+    <SubProject name="meshfields"> </SubProject>
+    <SubProject name="EnGPar"> </SubProject>
 </Project>
+

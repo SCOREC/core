@@ -56,20 +56,20 @@ static int getFaceIdInRegion(apf::Mesh* mesh, apf::MeshEntity* region,
 {
   apf::Downward verts;
   apf::MeshTag* vIDTag = mesh->findTag("_vert_id");
-  int vID;
+  long vID;
   mesh->getDownward(region, 0, verts);
   // Go through all vertices. What vertex is not on the face can be used to determine the face id.
   // TODO: Good way to assert that the rest of the 3 actually exist?
-  mesh->getIntTag(verts[0], vIDTag, &vID);
+  mesh->getLongTag(verts[0], vIDTag, &vID);
   if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
     return 2;
-  mesh->getIntTag(verts[1], vIDTag, &vID);
+  mesh->getLongTag(verts[1], vIDTag, &vID);
   if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
     return 3;
-  mesh->getIntTag(verts[2], vIDTag, &vID);
+  mesh->getLongTag(verts[2], vIDTag, &vID);
   if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
     return 1;
-  mesh->getIntTag(verts[3], vIDTag, &vID);
+  mesh->getLongTag(verts[3], vIDTag, &vID);
   if (vID != bface_data[2] && vID != bface_data[3] && vID != bface_data[4])
     return 0;
   return 12; // Should give segmentation fault
@@ -80,12 +80,13 @@ static int getEdgeIdInFace(apf::Mesh* mesh, apf::MeshEntity* face,
 {
   apf::Downward verts, edges;
   apf::MeshTag* vIDTag = mesh->findTag("_vert_id");
-  int vID[2], eID;
+  long vID[2];
+  int eID;
   mesh->getDownward(face, 1, edges);
   for (eID = 0; eID < 3; ++eID) {
     mesh->getDownward(edges[eID], 0, verts);
-    mesh->getIntTag(verts[0], vIDTag, &vID[0]);
-    mesh->getIntTag(verts[1], vIDTag, &vID[1]);
+    mesh->getLongTag(verts[0], vIDTag, &vID[0]);
+    mesh->getLongTag(verts[1], vIDTag, &vID[1]);
     if((vID[0] == bedge_data[2] && vID[1] == bedge_data[3]) ||
        (vID[0] == bedge_data[3] && vID[1] == bedge_data[2])) {
       return eID;
