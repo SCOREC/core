@@ -17,10 +17,16 @@
 #include "maShapeHandler.h"
 #include "maSnap.h"
 #include "maLayer.h"
+#include "maShape.h"
 #include <apf.h>
 #include <pcu_util.h>
+#include <lionPrint.h>
 
 namespace ma {
+
+/* forward declarations for internal quality functions from maShape.cc */
+int markBadQuality(Adapt* a);
+void unMarkBadQuality(Adapt* a);
 
 void addEdgePreAllocation(Refine* r, Entity* e, int counts[4])
 {
@@ -440,6 +446,16 @@ bool refine(Adapt* a)
   forgetNewEntities(r);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(),"refined %li edges in %f seconds",count,t1-t0);
+  /* Report post-refinement quality diagnostics if verbose mode is enabled. */
+  if (lion_get_verbosity() > 0) {
+    int badCount = markBadQuality(a);
+    if (badCount > 0) {
+      const char* elemName = (a->mesh->getDimension() == 2) ? "triangles" : "tets";
+      print(a->mesh->getPCU(), "after refine: %d %s with quality < goodQuality (%f)",
+          badCount, elemName, a->input->goodQuality);
+    }
+    unMarkBadQuality(a);
+  }
   resetLayer(a);
   if (a->hasLayer)
     checkLayerShape(a->mesh, "after refinement");
