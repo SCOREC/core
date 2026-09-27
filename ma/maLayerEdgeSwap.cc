@@ -7,8 +7,18 @@
 #include "maFirstProblemPlane.h"
 
 namespace ma {
+  namespace {
+    Entity* getUpward(Mesh* mesh, int type, std::initializer_list<Entity*> down)
+    {
+      std::vector<Entity*> entities(down.begin(), down.end());
+      Entity* upward = findUpward(mesh, type, entities.data());
+      PCU_ALWAYS_ASSERT(upward);
+      return upward;
+    }
+  }
 
-  LayerEdgeSwap::LayerEdgeSwap(Adapt* adapt) {
+  LayerEdgeSwap::LayerEdgeSwap(Adapt* adapt)
+  {
     a = adapt;
     mesh = a->mesh;
   }
@@ -41,7 +51,8 @@ namespace ma {
     return true;
   }
 
-  void LayerEdgeSwap::collectEdges(Entity* edge) {
+  void LayerEdgeSwap::collectEdges(Entity* edge)
+  {
     Entity* verts[2];
     HasFlag p(a, CHECKED);
     while (true) {
@@ -75,6 +86,25 @@ namespace ma {
     }
   }
 
+  void LayerEdgeSwap::rebuildEdges()
+  {
+    for (size_t i=0; i<edges.size(); ++i)
+      newEdges.push_back(mesh->createEntity(Mesh::EDGE, mesh->toModel(edges[i]), &newVerts[i*2]));
+  }
+
+  void LayerEdgeSwap::rebuildTriangles()
+  {
+    for (size_t i=0; i<edges.size(); ++i) {
+      for (size_t j = 0; j < 2; ++j) {
+        Entity* oppEdges[2];
+        oppEdges[0] = getUpward(mesh, Mesh::EDGE, {oldVerts[(i*2)+j], newVerts[i*2]});
+        oppEdges[1] = getUpward(mesh, Mesh::EDGE, {oldVerts[(i*2)+j], newVerts[i*2+1]});
+        Entity* triEdges[3]{newEdges[i], oppEdges[0], oppEdges[1]};
+        newTriangles.push_back(mesh->createEntity(mesh->getType(oldTriangles[i]), mesh->toModel(oldTriangles[i]), triEdges));
+      }
+    }
+  }
+
   void LayerEdgeSwap::rebuildTets() 
   {
     //TODO: pass in old tets, new edge and triangles instead of global
@@ -91,70 +121,41 @@ namespace ma {
 
     Entity* oldFace = getTetFaceOppositeVert(mesh, tets[0], newVerts[0]);
     Entity* oppVert = getTriVertOppositeEdge(mesh, oldFace, edges[0]);
-    Entity* edgeVerts1[2] = {oppVert, newVerts[0]};
-    Entity* edgeVerts2[2] = {oppVert, newVerts[1]};
-    Entity* edge1 = findUpward(mesh, Mesh::EDGE, edgeVerts1);
-    Entity* edge2 = findUpward(mesh, Mesh::EDGE, edgeVerts2);
-    if (!edge1 || !edge2) printf("TRI EDGE NOT FOUND\n");
+    Entity* edge1 = getUpward(mesh, Mesh::EDGE, {oppVert, newVerts[0]});
+    Entity* edge2 = getUpward(mesh, Mesh::EDGE, {oppVert, newVerts[1]});
     Entity* triEdges[3] = {newEdges[0], edge1, edge2};
-    Entity* newVerticalTriangle = mesh->createEntity(mesh->getType(oldFace), mesh->toModel(oldFace), triEdges);
+    Entity* newTetTriangle = mesh->createEntity(Mesh::TRIANGLE, mesh->toModel(oldFace), triEdges);
     for (size_t j=0; j<2; ++j) {
-      Entity* tetFaces[4]{newVerticalTriangle, newTriangles[j], oldFaces[j][0], oldFaces[j][1]};
+      Entity* tetFaces[4]{newTetTriangle, newTriangles[j], oldFaces[j][0], oldFaces[j][1]};
       newLayer.push_back(mesh->createEntity(Mesh::TET, mesh->toModel(tets[j]), tetFaces));
+    }
+  }
+
+  void LayerEdgeSwap::rebuildQuads()
+  {
+    for (size_t i=0; i<edges.size()-1; ++i) {
+      EntityArray quads;
+      mesh->getAdjacent(edges[i], 2, quads);
+      for (size_t q=0; q<quads.getSize(); q++) {
+        if (mesh->getType(quads[q]) == Mesh::QUAD) {
+          Entity* oppEdge1 = getUpward(mesh, Mesh::EDGE, {newVerts[i*2], newVerts[i*2+2]});
+          Entity* oppEdge2 = getUpward(mesh, Mesh::EDGE, {newVerts[i*2+1], newVerts[i*2+3]});
+          Entity* quadEdges[4]{newEdges[i], oppEdge1, newEdges[i+1], oppEdge2};
+          Entity* newQuad = mesh->createEntity(Mesh::QUAD, mesh->toModel(quads[q]), quadEdges);
+          auto [it, inserted] = old2New.insert({quads[q], newQuad});
+          PCU_ALWAYS_ASSERT(inserted);
+          break;
+        }
+      }
     }
   }
 
   void LayerEdgeSwap::rebuildElements()
   {
-    EntityVector newQuads;
-    EntityVector oldQuads;
-    EntityVector keptEdges;
-    EntityVector keptQuads;
-    for (size_t i=0; i<edges.size(); ++i){
-      newEdges.push_back(mesh->createEntity(mesh->getType(edges[i]), mesh->toModel(edges[i]), &newVerts[i*2]));
-
-      for (size_t j = 0; j < 2; ++j) {
-        Entity* oppEdges[2];
-        Entity* av1[2] = {oldVerts[(i*2)+j], newVerts[i*2]};
-        oppEdges[0] = findUpward(mesh, Mesh::EDGE, av1);
-        Entity* av2[2] = {oldVerts[(i*2)+j], newVerts[(i*2)+1]};
-        oppEdges[1] = findUpward(mesh, Mesh::EDGE, av2);
-        if (!oppEdges[0] || !oppEdges[1]) printf("EDGE NOT FOUND\n");
-        Entity* triEdges[3]{newEdges[i], oppEdges[0], oppEdges[1]};
-        newTriangles.push_back(mesh->createEntity(mesh->getType(oldTriangles[i]), mesh->toModel(oldTriangles[i]), triEdges));
-
-        if (i%2 != 0) continue;
-        for (size_t k = 0; k < 2; ++k) {
-          EntityArray faces;
-          mesh->getAdjacent(oppEdges[k], 2, faces);
-          for (size_t l = 0; l < faces.getSize(); ++l)
-            if (mesh->getType(faces[l]) == Mesh::QUAD){
-              keptQuads.push_back(faces[l]);
-            }
-        }
-      }
-
-      if (i%2 != 0) continue;
-      EntityArray faces;
-      mesh->getAdjacent(edges[i], 2, faces);
-      for (size_t j = 0; j < faces.getSize(); ++j)
-        if (mesh->getType(faces[j]) == Mesh::QUAD)
-          oldQuads.push_back(faces[j]);
-    }
-
-    for (size_t i=0; i<newVerts.size()-2; ++i){
-      Entity* av[2] = {newVerts[i], newVerts[i+2]};
-      Entity* keptEdge = findUpward(mesh, Mesh::EDGE, av);
-      if (!keptEdge) printf("EDGE NOT FOUND\n");
-      else keptEdges.push_back(keptEdge);
-    }
-
-    for (size_t i=0; i<oldQuads.size(); ++i) {
-      Entity* faceEdges[4]{newEdges[i], keptEdges[i*2], newEdges[i+1], keptEdges[i*2+1]};
-      newQuads.push_back(mesh->createEntity(mesh->getType(oldQuads[i]), mesh->toModel(oldQuads[i]), faceEdges));
-    }
-
+    rebuildEdges();
+    rebuildTriangles();
     rebuildTets();
+    rebuildQuads();
 
     // int kq = 0;
     // int nq = 0;
@@ -169,18 +170,9 @@ namespace ma {
     //   }
     // }
 
-    ma_dbg::useFieldInfo(a, [this, keptEdges, keptQuads, newQuads] {
-      EntityVector keptE = keptEdges;
-      EntityVector copyQuads = keptQuads;
-      EntityVector nQuads = newQuads;
-      ma_dbg::flagEntity(a, 1, "edges_to_swap", &edges[0], edges.size());
-      ma_dbg::flagEntity(a, 0, "target_verts", &newVerts[0], newVerts.size());
-      ma_dbg::flagEntity(a, 1, "kept_edges", &keptE[0], 2);
-      ma_dbg::flagEntity(a, 1, "new_edges", &newEdges[0], 2);
-      ma_dbg::flagEntity(a, 2, "kept_quads", &copyQuads[0], 2);
-      ma_dbg::flagEntity(a, 2, "new_triangles", &newTriangles[0]+2, 1);
-      ma_dbg::flagEntity(a, 2, "new_quads", &nQuads[0], 1);
+    ma_dbg::useFieldInfo(a, [this] {
       ma_dbg::flagEntity(a, 3, "new_layer", &newLayer[0], newLayer.size());
+      // ma_dbg::flagEntity(a, 2, "old2new", &old2New[0], old2New.size());
 
       apf::writeVtkFiles("mesh_tets", mesh, 3);
       apf::writeVtkFiles("mesh_faces", mesh, 2);
