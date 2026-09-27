@@ -12,6 +12,7 @@ set(SOURCES
   maRefine.cc
   maLayerRefine.cc
   maLayerCoarsen.cc
+  maLayerEdgeSwap.cc
   maTables.cc
   maLayerTables.cc
   maTemplates.cc

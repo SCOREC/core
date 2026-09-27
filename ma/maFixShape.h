@@ -11,6 +11,7 @@
 #include "maFaceSplitCollapse.h"
 #include "maFaceSwap.h"
 #include "maReposition.h"
+#include "maLayerEdgeSwap.h"
 
 namespace ma {
 class Adapt;
@@ -26,6 +27,7 @@ class FixShape : public Operator
   DoubleSplitCollapse doubleSplitCollapse;
   FaceSplitCollapse faceSplitCollapse;
   RepositionVertex reposition;
+  LayerEdgeSwap layerEdgeSwap;
   EdgeSwap* edgeSwap;
   Splits split;
 
@@ -54,6 +56,7 @@ class FixShape : public Operator
   bool shouldApply(Entity* e);
   bool requestLocality(apf::CavityOp* o);
 
+  bool swapEdge(Entity* edge);
   bool collapseEdge(Entity* edge);
   bool collapseToAdjacent(Entity* edge);
   double getWorstShape(EntityArray& tets, Entity*& worst);

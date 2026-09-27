@@ -57,6 +57,7 @@ void setDefaultValues(Input* in)
   in->shouldCleanupLayer = false;
   in->shouldRefineLayer = false;
   in->shouldCoarsenLayer = false;
+  in->shouldSwapLayer = false;
   in->splitAllLayerEdges = false;
   in->userDefinedLayerTagName = "";
   in->shapeHandler = 0;

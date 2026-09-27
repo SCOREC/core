@@ -12,28 +12,28 @@
 #endif
 #include <pcu_util.h>
 
-class Linear : public ma::IsotropicFunction
+class AnIso : public ma::AnisotropicFunction
 {
   public:
-    Linear(ma::Mesh* m, double refFactor)
+    AnIso(ma::Mesh* m, double sf1, double sf2) :
+      sizeFactor1(sf1), sizeFactor2(sf2)
     {
-      mesh = m;
-      refineFactor = refFactor;
       average = ma::getAverageEdgeLength(m);
-      ma::getBoundingBox(m,lower,upper);
+      ma::getBoundingBox(m, lower, upper);
     }
-    virtual double getValue(ma::Entity* v)
+    virtual void getValue(ma::Entity*, ma::Matrix& R, ma::Vector& H)
     {
-      ma::Vector p = ma::getPosition(mesh,v);
-      double x = (p[0] - lower[0])/(upper[0] - lower[0]);
-      return average*(4*x+2)/refineFactor;
+      double h = average/sizeFactor1;
+      H = ma::Vector(h, h, h/sizeFactor2);
+      R = ma::Matrix(
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0
+      );
     }
   private:
-    ma::Mesh* mesh;
-    double average;
-    ma::Vector lower;
-    ma::Vector upper;
-    double refineFactor;
+    double sizeFactor1, sizeFactor2, average;
+    ma::Vector lower, upper;
 };
 
 int main(int argc, char** argv)
@@ -57,7 +57,8 @@ int main(int argc, char** argv)
   gmi_register_mesh();
   ma::Mesh* m = apf::loadMdsMesh(modelFile,meshFile,&PCUObj);
   m->verify();
-  Linear sf(m,adaptRefineFactor);
+  apf::writeVtkFiles("before",m);
+  AnIso sf(m, .5, .5);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   in->shouldRunPreZoltan = true;
   in->shouldRunMidParma = true;
@@ -66,7 +67,9 @@ int main(int argc, char** argv)
     lion_oprint(1,"disabling adaptation in layer elements tagged %s\n", layerTagString);
     in->userDefinedLayerTagName = layerTagString;
   } else {
+    in->shouldSwapLayer = true;
     in->shouldRefineLayer = true;
+    in->shouldCoarsenLayer = true;
   }
   ma::adapt(in);
   m->verify();

@@ -57,7 +57,8 @@ int markBadQuality(Adapt* a)
   return m->getPCU()->Add<int>(total);;
 }
 
-FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), faceSplitCollapse(adapt), reposition(adapt), split(adapt)
+FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), 
+  faceSplitCollapse(adapt), reposition(adapt), split(adapt), layerEdgeSwap(adapt)
 {
   a = adapt;
   mesh = a->mesh;
@@ -75,6 +76,12 @@ bool FixShape::requestLocality(apf::CavityOp* o)
   Entity* verts[4];
   mesh->getDownward(badTet, 0, verts);
   return o->requestLocality(verts, 4);
+}
+
+bool FixShape::swapEdge(Entity* edge)
+{
+  if (getFlag(a, edge, LAYER)) return layerEdgeSwap.run(edge);
+  else return edgeSwap->run(edge);
 }
 
 bool FixShape::collapseEdge(Entity* edge)
@@ -185,7 +192,7 @@ bool FixShape::fixOneLargeAngle(Entity* tet)
   mesh->getDownward(worstTriangle, 1, edges);
   Entity* longestEdge = getLongestEdge(edges);
   Entity* oppositeVert = getTriVertOppositeEdge(mesh, worstTriangle, longestEdge);
-  if (edgeSwap->run(longestEdge)) {numEdgeSwap++; return true;}
+  if (swapEdge(longestEdge)) {numEdgeSwap++; return true;}
   if (splitCollapse.run(longestEdge, oppositeVert)) {numEdgeSplitCollapse++; return true;}
   for (int i=0; i<3; i++)
     if (edges[i] != longestEdge && collapseEdge(edges[i]))
@@ -248,8 +255,8 @@ bool FixShape::isTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
 bool FixShape::fixTwoLargeAngles(Entity* tet, Entity* problemEnts[4])
 {
   if (collapseRegion(tet)) {numRegionCollapse++; return true;}
-  if (edgeSwap->run(problemEnts[0])) {numEdgeSwap++; return true;}
-  if (edgeSwap->run(problemEnts[1])) {numEdgeSwap++; return true;}
+  if (swapEdge(problemEnts[0])) {numEdgeSwap++; return true;}
+  if (swapEdge(problemEnts[1])) {numEdgeSwap++; return true;}
   if (splitReposition(problemEnts[0])) {numSplitReposition++; return true;}
   if (splitReposition(problemEnts[1])) {numSplitReposition++; return true;}
   Entity* faces[4];
@@ -286,9 +293,9 @@ bool FixShape::fixThreeLargeAngles(Entity* tet, Entity* problemEnts[4])
     }
   Entity* faceEdges[3];
   mesh->getDownward(problemEnts[0], 1, faceEdges);
-  if (edgeSwap->run(faceEdges[0])) {numEdgeSwap++; return true;}
-  if (edgeSwap->run(faceEdges[1])) {numEdgeSwap++; return true;}
-  if (edgeSwap->run(faceEdges[2])) {numEdgeSwap++; return true;}
+  if (swapEdge(faceEdges[0])) {numEdgeSwap++; return true;}
+  if (swapEdge(faceEdges[1])) {numEdgeSwap++; return true;}
+  if (swapEdge(faceEdges[2])) {numEdgeSwap++; return true;}
   // if (runFaceSwap(a, problemEnts[0], true)) {numFaceSwap++; return true;}
   Entity* v = getTriVertOppositeEdge(mesh, problemEnts[2], problemEnts[1]);
   if (splitCollapse.run(problemEnts[1], v)) {numEdgeSplitCollapse++; return true;}

@@ -156,6 +156,8 @@ class Input
     bool shouldRefineLayer;
 /** \brief whether to allow layer coarsening (default false) */
     bool shouldCoarsenLayer;
+/** \brief whether to allow layer swapping (default false) */
+    bool shouldSwapLayer;
 /** \brief set to true during UR to get splits in the normal direction */
     bool splitAllLayerEdges;
 /** \brief the name of the (user defined) INT tag specifying the boundary
