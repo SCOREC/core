@@ -66,7 +66,6 @@ namespace ma {
       mesh->getAdjacent(edge, 2, faces);
       for (size_t i = 0; i < faces.getSize(); ++i)
         if (getFlag(a, faces[i], LAYER) && mesh->getType(faces[i]) == Mesh::TRIANGLE){
-          oldTriangles.push_back(faces[i]);
           newVerts.push_back(getTriVertOppositeEdge(mesh,faces[i],edge));
         }
       
@@ -94,14 +93,16 @@ namespace ma {
 
   void LayerEdgeSwap::rebuildTriangles()
   {
-    for (size_t i=0; i<edges.size(); ++i) {
-      for (size_t j = 0; j < 2; ++j) {
-        Entity* oppEdges[2];
-        oppEdges[0] = getUpward(mesh, Mesh::EDGE, {oldVerts[(i*2)+j], newVerts[i*2]});
-        oppEdges[1] = getUpward(mesh, Mesh::EDGE, {oldVerts[(i*2)+j], newVerts[i*2+1]});
-        Entity* triEdges[3]{newEdges[i], oppEdges[0], oppEdges[1]};
-        newTriangles.push_back(mesh->createEntity(mesh->getType(oldTriangles[i]), mesh->toModel(oldTriangles[i]), triEdges));
-      }
+    for (size_t e=0; e<edges.size(); ++e) {
+      EntityArray triagles;
+      mesh->getAdjacent(edges[e], 2, triagles);
+      for (size_t t = 0; t < triagles.getSize(); ++t)
+        if (getFlag(a, triagles[t], LAYER) && mesh->getType(triagles[t]) == Mesh::TRIANGLE){
+          Entity* oppEdge1 = getUpward(mesh, Mesh::EDGE, {oldVerts[(e*2)+t], newVerts[e*2]});
+          Entity* oppEdge2 = getUpward(mesh, Mesh::EDGE, {oldVerts[(e*2)+t], newVerts[e*2+1]});
+          Entity* triEdges[3]{newEdges[e], oppEdge1, oppEdge2};
+          newTriangles.push_back(mesh->createEntity(Mesh::TRIANGLE, mesh->toModel(triagles[t]), triEdges));
+        }
     }
   }
 

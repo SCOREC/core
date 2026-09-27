@@ -21,7 +21,6 @@ class LayerEdgeSwap
   Mesh* mesh;
   EntityVector edges;
   EntityVector oldVerts;
-  EntityVector oldTriangles;
   EntityVector newVerts;
   EntityVector newLayer;
   EntityVector newEdges;
