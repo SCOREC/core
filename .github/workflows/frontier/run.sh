@@ -2,7 +2,7 @@
 
 name=core
 
-cd /lustre/orion/phy122/scratch/castia5/globus-compute/$name-test
+cd /lustre/orion/cli193/scratch/yus9/globus-compute/$name-test
 
 module load PrgEnv-amd
 
