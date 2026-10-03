@@ -25,8 +25,8 @@ class LayerEdgeSwap
   EntityVector newLayer;
   EntityVector newEdges;
   EntityVector newTriangles;
-  std::map<Entity*,Entity*> old2New;
   EntitySet elementsToChange;
+  std::map<Entity*,Entity*> old2New;
 
   void collectEdges(Entity* edge);
   void computeElementSets();
@@ -34,6 +34,7 @@ class LayerEdgeSwap
   void rebuildTriangles();
   void rebuildQuads();
   void rebuildTets();
+  void rebuildPrisms();
   void rebuildElements();
   void destroyOldElements();
   void printInfo();
