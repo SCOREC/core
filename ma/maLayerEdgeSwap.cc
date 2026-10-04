@@ -29,7 +29,7 @@ namespace ma {
     if (!a->input->shouldSwapLayer) return false;
     if (isOnModelEdge(mesh, edge)) return false;
     if (!getFlag(a, edge, LAYER)) return false;
-    //TODO: only accept edge if its the layer base
+    if (!checkTopo(edge)) return false;
 
     edges.clear();
     oldVerts.clear();
@@ -48,6 +48,16 @@ namespace ma {
     
     for (int i=0; i<edges.size(); i++) clearFlag(a, edges[i], CHECKED);
     return true;
+  }
+
+  bool LayerEdgeSwap::checkTopo(Entity* edge) {
+    int nTets = 0;
+    EntityArray adjElems;
+    mesh->getAdjacent(edge, 3, adjElems);
+    for (size_t i=0; i<adjElems.getSize(); ++i)
+    if (mesh->getType(adjElems[i]) == Mesh::TET)
+      nTets++;
+    return nTets == 2;
   }
 
   void LayerEdgeSwap::collectEdges(Entity* edge)
@@ -84,6 +94,16 @@ namespace ma {
     }
   }
 
+  static int reached=0;
+  void LayerEdgeSwap::rebuildElements()
+  {
+    rebuildEdges();
+    rebuildTriangles();
+    rebuildTets();
+    rebuildQuads();
+    rebuildPrisms();
+  }
+
   void LayerEdgeSwap::rebuildEdges()
   {
     for (size_t i=0; i<edges.size(); ++i)
@@ -94,16 +114,17 @@ namespace ma {
   {
     for (size_t e=0; e<edges.size(); ++e) {
       EntityArray triangles;
-      mesh->getAdjacent(edges[e], 2, triangles);
+      mesh->getAdjacent(edges[e], Mesh::TRIANGLE, triangles);
+      int v = 0;
       for (size_t t = 0; t < triangles.getSize(); ++t)
-        if (getFlag(a, triangles[t], LAYER) && mesh->getType(triangles[t]) == Mesh::TRIANGLE){
-          Entity* oppEdge1 = getUpward(mesh, Mesh::EDGE, {oldVerts[(e*2)+t], newVerts[e*2]});
-          Entity* oppEdge2 = getUpward(mesh, Mesh::EDGE, {oldVerts[(e*2)+t], newVerts[e*2+1]});
-          printf("HERE\n");
+        if (getFlag(a, triangles[t], LAYER) && mesh->getType(triangles[t]) == Mesh::TRIANGLE) {
+          Entity* oppEdge1 = getUpward(mesh, Mesh::EDGE, {oldVerts[e*2+v], newVerts[e*2]});
+          Entity* oppEdge2 = getUpward(mesh, Mesh::EDGE, {oldVerts[e*2+v], newVerts[e*2+1]});
           Entity* triEdges[3]{newEdges[e], oppEdge1, oppEdge2};
           newTriangles.push_back(mesh->createEntity(Mesh::TRIANGLE, mesh->toModel(triangles[t]), triEdges));
           auto [it, inserted] = old2New.insert({triangles[t], newTriangles.back()});
           PCU_ALWAYS_ASSERT(inserted);
+          v++;
         }
     }
   }
@@ -112,12 +133,14 @@ namespace ma {
   {
     //TODO: pass in old tets, new edge and triangles instead of global
     EntityVector oldFaces[2];
-    EntityArray tets;
-    mesh->getAdjacent(edges[0], 3, tets);
-    for (size_t i=0; i<tets.getSize(); ++i)
-    if (mesh->getType(tets[i]) == Mesh::TET) {
-      oldFaces[0].push_back(getTetFaceOppositeVert(mesh, tets[i], oldVerts[1]));
-      oldFaces[1].push_back(getTetFaceOppositeVert(mesh, tets[i], oldVerts[0]));
+    EntityVector tets;
+    EntityArray adjElems;
+    mesh->getAdjacent(edges[0], 3, adjElems);
+    for (size_t i=0; i<adjElems.getSize(); ++i)
+    if (mesh->getType(adjElems[i]) == Mesh::TET) {
+      tets.push_back(adjElems[i]);
+      oldFaces[0].push_back(getTetFaceOppositeVert(mesh, adjElems[i], oldVerts[1]));
+      oldFaces[1].push_back(getTetFaceOppositeVert(mesh, adjElems[i], oldVerts[0]));
     }
     PCU_ALWAYS_ASSERT(oldFaces[0].size() == 2);
     PCU_ALWAYS_ASSERT(oldFaces[1].size() == 2);
@@ -176,23 +199,15 @@ namespace ma {
 
     APF_ITERATE(EntitySet, elementsToChange, it) {
       if (mesh->getType(*it) == Mesh::TET) continue;
-      Entity* tetFaces[5];
-      mesh->getDownward(*it, 2, tetFaces);
+      Entity* prismFaces[5];
+      mesh->getDownward(*it, 2, prismFaces);
       for (int i=0; i<5; i++) {
-        auto newFaceIt = old2New.find(tetFaces[i]);
-        if (newFaceIt != old2New.end()) tetFaces[i] = newFaceIt->second;
+        auto newFaceIt = old2New.find(prismFaces[i]);
+        if (newFaceIt != old2New.end()) prismFaces[i] = newFaceIt->second;
       }
-      newLayer.push_back(mesh->createEntity(Mesh::PRISM, mesh->toModel(*it), tetFaces));
+      newLayer.push_back(mesh->createEntity(Mesh::PRISM, mesh->toModel(*it), prismFaces));
+      setFlagOnClosure(a, newLayer.back(), LAYER);
     }
-  }
-
-  void LayerEdgeSwap::rebuildElements()
-  {
-    rebuildEdges();
-    rebuildTriangles();
-    rebuildTets();
-    rebuildQuads();
-    rebuildPrisms();
   }
 
   void LayerEdgeSwap::destroyOldElements()
@@ -207,6 +222,7 @@ namespace ma {
       ma_dbg::flagEntity(a, 1, "edges_to_swap", &edges[0], edges.size());
       ma_dbg::flagEntity(a, 0, "old_verts", &oldVerts[0], oldVerts.size());
       ma_dbg::flagEntity(a, 0, "target_verts", &newVerts[0], newVerts.size());
+      ma_dbg::flagEntity(a, 3, "tets_to_swap", elementsToChange);
 
       apf::writeVtkFiles("mesh_tets", mesh, 3);
       apf::writeVtkFiles("mesh_faces", mesh, 2);
