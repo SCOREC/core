@@ -5,6 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
+#include "apfVectorElement.h"
 #include "apfIntegrate.h"
 #include "apfMesh.h"
 #include "apf.h"
@@ -651,9 +652,8 @@ void Integrator::process(Mesh* m, int d)
   while ((entity = m->iterate(elements)))
   {
     if ( ! m->isOwned(entity)) continue;
-    MeshElement* e = createMeshElement(m,entity);
-    this->process(e);
-    destroyMeshElement(e);
+    MeshElement e(m->getCoordinateField(),entity);
+    this->process(&e);
   }
   m->end(elements);
   this->parallelReduce(m->getPCU());
@@ -695,9 +695,8 @@ double measure(MeshElement* e)
 
 double measure(Mesh* m, MeshEntity* e)
 {
-  MeshElement* me = createMeshElement(m,e);
-  double v = measure(me);
-  destroyMeshElement(me);
+  MeshElement me(m->getCoordinateField(),e);
+  double v = measure(&me);
   return v;
 }
 

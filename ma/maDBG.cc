@@ -46,28 +46,67 @@ void writeMesh(ma::Mesh* m,
   apf::writeVtkFiles(fileName, m, dim);
 }
 
-void addClassification(ma::Adapt* a,
-    const char* fieldName)
+apf::Field* getField(ma::Adapt* a, int dim,  const char* fieldName)
 {
-  ma::Mesh* m = a->mesh;
-  apf::Field* field;
-  field = m->findField(fieldName);
+  apf::Field* field = a->mesh->findField(fieldName);
   if (field)
     apf::destroyField(field);
-
-  field = apf::createFieldOn(m, fieldName, apf::SCALAR);
-  ma::Entity* ent;
-  ma::Iterator* it;
-  it = m->begin(0);
-  while ( (ent = m->iterate(it)) ){
-    ma::Model* g = m->toModel(ent);
-    double modelDimension = (double)m->getModelType(g);
-    apf::setComponents(field, ent, 0, &modelDimension);
-  }
-  m->end(it);
+  if (dim == 0)
+    field = apf::createFieldOn(a->mesh, fieldName, apf::SCALAR);
+  else
+    field = apf::createField(a->mesh, fieldName, apf::SCALAR, apf::getConstant(dim));
+  return field;
 }
 
-void addTargetLocation(ma::Adapt* a,
+void useFieldInfo(ma::Adapt* a, const std::function<void()>& funcUsingField)
+{
+  ma::Mesh* m = a->mesh;
+  apf::Field* fieldVert = getField(a, 0, "vert_classification");
+  apf::Field* fieldEdge = getField(a, 1, "edge_classification");
+  apf::Field* fieldFace = getField(a, 2, "face_classification");
+
+  ma::Entity* e;
+  ma::Iterator* it = m->begin(0);
+  while ((e = m->iterate(it))){
+    double modelDimension = (double)m->getModelType(m->toModel(e));
+    apf::setComponents(fieldVert, e, 0, &modelDimension);
+  }
+  m->end(it);
+
+  it = m->begin(1);
+  while ((e = m->iterate(it))){
+    double modelDimension = (double)m->getModelType(m->toModel(e));
+    apf::setComponents(fieldEdge, e, 0, &modelDimension);
+  }
+  m->end(it);
+
+  it = m->begin(2);
+  while ((e = m->iterate(it))){
+    double modelDimension = (double)m->getModelType(m->toModel(e));
+    apf::setComponents(fieldFace, e, 0, &modelDimension);
+  }
+  m->end(it);
+
+  // measure qualities
+  std::vector<double> lq_metric;
+  std::vector<double> lq_no_metric;
+  ma::getLinearQualitiesInMetricSpace(a->mesh, a->sizeField, lq_metric);
+  ma::getLinearQualitiesInPhysicalSpace(a->mesh, lq_no_metric);
+  apf::Field* metricField = colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_metric, "qual_metric");
+  apf::Field* physicalField = colorEntitiesOfDimWithValues(a, a->mesh->getDimension(), lq_no_metric, "qual_no_metric");
+  apf::Field* snapTargetField = 0; 
+  if (a->input->shouldSnap) snapTargetField = addTargetLocation(a, "snap_target");
+
+  funcUsingField();
+  apf::destroyField(fieldVert);
+  apf::destroyField(fieldEdge);
+  apf::destroyField(fieldFace);
+  apf::destroyField(metricField);
+  apf::destroyField(physicalField);
+  if (a->input->shouldSnap) apf::destroyField(snapTargetField);
+}
+
+apf::Field* addTargetLocation(ma::Adapt* a,
     const char* fieldName)
 {
   ma::Mesh* m = a->mesh;
@@ -93,6 +132,7 @@ void addTargetLocation(ma::Adapt* a,
     apf::setVector(paramField , ent, 0, x);
   }
   m->end(it);
+  return paramField;
 }
 
 void addParamCoords(ma::Adapt* a,
@@ -116,7 +156,60 @@ void addParamCoords(ma::Adapt* a,
   m->end(it);
 }
 
-void colorEntitiesOfDimWithValues(ma::Adapt* a,
+void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::EntitySet entities)
+{
+  std::vector<ma::Entity*> converted(entities.begin(), entities.end());
+  flagEntity(a, dim, fieldName, &converted[0], converted.size());
+}
+
+void flagEntityAllDim(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entities, int size)
+{
+  std::vector<ma::Entity*> allFaces;
+  std::vector<ma::Entity*> allEdges;
+  std::vector<ma::Entity*> allVerts;
+
+  for (int i = 0; i<size; i++) {
+    if (dim > 2){
+      ma::Entity* faces[4];
+      a->mesh->getDownward(entities[i], 2, faces);
+      for (ma::Entity* face : faces) allFaces.push_back(face);
+    }
+    if (dim > 1){
+      ma::Entity* edges[6];
+      a->mesh->getDownward(entities[i], 1, edges);
+      for (ma::Entity* edge : edges) allEdges.push_back(edge);
+    }
+    if (dim > 0){
+      ma::Entity* verts[4];
+      a->mesh->getDownward(entities[i], 0, verts);
+      for (ma::Entity* vert : verts) allVerts.push_back(vert); 
+    }
+  }
+
+  flagEntity(a, dim, fieldName, entities, size);
+  if (dim > 2) flagEntity(a, 2, fieldName, &allFaces[0], allFaces.size());
+  if (dim > 1) flagEntity(a, 1, fieldName, &allEdges[0], allEdges.size());
+  if (dim > 0) flagEntity(a, 0, fieldName, &allVerts[0], allVerts.size());
+}
+
+void flagEntity(ma::Adapt* a, int dim, const char* fieldName, ma::Entity** entities, int size)
+{
+  apf::Field* colorField = getField(a, dim, fieldName);
+  ma::Entity* entity;
+  ma::Iterator* it = a->mesh->begin(dim);
+  while ((entity = a->mesh->iterate(it))){
+    double zero = 0.0;
+    apf::setComponents(colorField, entity, 0, &zero);
+  }
+  a->mesh->end(it);
+
+  for (int i=0; i<size; i++){
+    double one = 1.0;
+    apf::setComponents(colorField, entities[i], 0, &one);
+  }
+}
+
+apf::Field* colorEntitiesOfDimWithValues(ma::Adapt* a,
     int dim,
     const std::vector<double> & vals,
     const char* fieldName)
@@ -142,6 +235,7 @@ void colorEntitiesOfDimWithValues(ma::Adapt* a,
     index++;
   }
   m->end(it);
+  return colorField;
 }
 
 void evaluateFlags(ma::Adapt* a,

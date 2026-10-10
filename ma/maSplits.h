@@ -26,8 +26,8 @@ class Splits
     Entity* getSplitVert(int i);
     EntityArray& getTets() {return refiner->toSplit[3];}
     Adapt* getAdapt() {return refiner->adapt;}
-  private:
     Refine* refiner;
+  private:
 };
 
 }

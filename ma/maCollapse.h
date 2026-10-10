@@ -24,6 +24,7 @@ class Collapse
 {
   public:
     void Init(Adapt* a);
+    bool run(Entity* edge, Entity* vert, double qualityToBeat);
     bool requestLocality(apf::CavityOp* o);
     void destroyOldElements();
     void destroyNewElements();
@@ -34,6 +35,7 @@ class Collapse
     void setVerts();
     virtual void computeElementSets();
     void rebuildElements();
+    void rebuildElements2D();
     void fitElements();
     bool isGood2DMesh();
     void cancel();
@@ -42,6 +44,8 @@ class Collapse
     bool tryBothDirections(double qualityToBeat);
     void getOldElements(EntityArray& oldElements);
     bool edgesGoodSize();
+    bool isValid();
+    bool anyWorseQuality(double qualityToBeat);
     double getOldQuality();
     Adapt* adapt;
     Entity* edge; 
@@ -52,6 +56,9 @@ class Collapse
     EntityArray newElements;
     Cavity cavity;
     RebuildCallback* rebuildCallback;
+  private:
+    std::map<Entity*,Entity*> getReusableEntities();
+    Entity* rebuildEntity(Mesh* m, Entity* original, Entity** downward);
 };
 
 bool checkEdgeCollapseTopology(Adapt* a, Entity* edge);

@@ -18,6 +18,7 @@
 
 namespace ma {
 
+class Adapt;
 typedef apf::Matrix3x3 Matrix;
 /* Desired length bounds in metric space to replace hard coded values. Right now
 these values are const, since we are not sure it is worth while to have the user,
@@ -26,14 +27,22 @@ thesis describes there might be utility to having the user modify them */
 const double MAXLENGTH = 1.5;
 const double MINLENGTH = .5;
 const double MAXLENGTHRATIO = 1.2;
+const double GOODQUALITY = .3;
 
 class SizeField
 {
   public:
+    struct Value {
+      Matrix matrix;
+      Vector vector;
+    };
+
     virtual ~SizeField();
     virtual double measure(Entity* e) = 0;
     virtual bool shouldSplit(Entity* edge) = 0;
     virtual bool shouldCollapse(Entity* edge) = 0;
+    virtual Value getValue(Entity* vert) = 0;
+    virtual void setValue(Entity* vert, Value const& value) = 0;
     virtual void interpolate(
         apf::MeshElement* parent,
         Vector const& xi,
@@ -59,6 +68,8 @@ struct IdentitySizeField : public SizeField
   double measure(Entity* e);
   bool shouldSplit(Entity*);
   bool shouldCollapse(Entity*);
+  Value getValue(Entity* vert);
+  void setValue(Entity* vert, Value const& value);
   void interpolate(
       apf::MeshElement* parent,
       Vector const& xi,
@@ -112,8 +123,19 @@ SizeField* makeSizeField(Mesh* m, AnisotropicFunction* f,
 SizeField* makeSizeField(Mesh* m, apf::Field* size);
 SizeField* makeSizeField(Mesh* m, IsotropicFunction* f);
 
+double getAndCacheSize(Adapt* a, Entity* e);
 double getAverageEdgeLength(Mesh* m);
 double getMaximumEdgeLength(Mesh* m, SizeField* sf = 0);
+
+template <typename Map, typename Key, typename Func>
+typename Map::mapped_type&
+get_or_add(Map& m, const Key& key, Func valueFn)
+{
+  auto it = m.find(key);
+  if (it == m.end())
+    it = m.insert(std::make_pair(key, valueFn())).first;
+  return it->second;
+}
 
 }
 

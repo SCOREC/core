@@ -26,6 +26,10 @@ void Element::init(Field* f, MeshEntity* e, VectorElement* p)
   getNodeData();
 }
 
+Element::Element() 
+{
+}
+
 Element::Element(Field* f, MeshEntity* e)
 {
   init(f,e,0);

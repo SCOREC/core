@@ -21,6 +21,7 @@ class VectorElement;
 class Element
 {
   public:
+    Element();
     Element(Field* f, MeshEntity* e);
     Element(Field* f, VectorElement* p);
     virtual ~Element();
@@ -36,12 +37,12 @@ class Element
     FieldShape* getFieldShape() {return field->getShape();}
     void getComponents(Vector3 const& xi, double* c);
     void getElementNodeData(NewArray<double>& d);
-  protected:
     void init(Field* f, MeshEntity* e, VectorElement* p);
+  protected:
     void getNodeData();
     Field* field;
     Mesh* mesh;
-    MeshEntity* entity;
+    MeshEntity* entity=0;
     EntityShape* shape;
     VectorElement* parent;
     int nen;

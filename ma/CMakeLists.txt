@@ -28,6 +28,8 @@ set(SOURCES
   maSolutionTransferHelper.cc
   maSnap.cc
   maEdgeSwap.cc
+  maFaceSwap.cc
+  maFixShape.cc
   maShape.cc
   maShapeHandler.cc
   maQuality.cc
@@ -59,6 +61,7 @@ set(HEADERS
   maMesh.h
   maSize.h
   maShape.h
+  maFixShape.h
   maTables.h
   maSolutionTransfer.h
   maExtrude.h
