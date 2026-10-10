@@ -31,6 +31,26 @@ namespace ma {
     if (!getFlag(a, edge, LAYER)) return false;
     if (!checkTopo(edge)) return false;
 
+    resetState();
+
+    collectEdges(edge);
+    computeElementSets();
+    double oldMinQuality = collectOldTets();
+    rebuildEdges();
+    rebuildTriangles();
+    rebuildTets();
+    rebuildQuads();
+    rebuildPrisms();
+
+    bool valid = checkValidity(oldMinQuality);
+    if (valid) destroyOldElements();
+    else destroyNewElements();
+    
+    return valid;
+  }
+
+  void LayerEdgeSwap::resetState()
+  {
     edges.clear();
     oldTets.clear();
     oldVerts.clear();
@@ -40,18 +60,6 @@ namespace ma {
     newTriangles.clear();
     elementsToChange.clear();
     old2New.clear();
-
-    collectEdges(edge);
-    computeElementSets();
-    double oldMinQuality = collectOldTets();
-    rebuildElements();
-
-    bool valid = checkValidity(oldMinQuality);
-    if (valid) destroyOldElements();
-    else destroyNewElements();
-    //TODO: check quality before accepting swap
-    
-    return valid;
   }
 
   bool LayerEdgeSwap::checkTopo(Entity* edge)
@@ -114,15 +122,6 @@ namespace ma {
       }
     PCU_ALWAYS_ASSERT(oldTets.size() == 2);
     return minQuality;
-  }
-
-  void LayerEdgeSwap::rebuildElements()
-  {
-    rebuildEdges();
-    rebuildTriangles();
-    rebuildTets();
-    rebuildQuads();
-    rebuildPrisms();
   }
 
   void LayerEdgeSwap::rebuildEdges()

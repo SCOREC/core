@@ -29,6 +29,7 @@ class LayerEdgeSwap
   EntitySet elementsToChange;
   std::map<Entity*,Entity*> old2New;
 
+  void resetState();
   bool checkTopo(Entity* edge);
   void collectEdges(Entity* edge);
   double collectOldTets();
