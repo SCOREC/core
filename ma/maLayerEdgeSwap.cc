@@ -32,6 +32,7 @@ namespace ma {
     if (!checkTopo(edge)) return false;
 
     edges.clear();
+    oldTets.clear();
     oldVerts.clear();
     newVerts.clear();
     newLayer.clear();
@@ -42,14 +43,15 @@ namespace ma {
 
     collectEdges(edge);
     computeElementSets();
+    double oldMinQuality = collectOldTets();
     rebuildElements();
 
-    bool valid = checkValidity();
+    bool valid = checkValidity(oldMinQuality);
     if (valid) destroyOldElements();
     else destroyNewElements();
     //TODO: check quality before accepting swap
     
-    return true;
+    return valid;
   }
 
   bool LayerEdgeSwap::checkTopo(Entity* edge)
@@ -98,6 +100,22 @@ namespace ma {
     }
   }
 
+  double LayerEdgeSwap::collectOldTets()
+  {
+    EntityArray adjacentElements;
+    mesh->getAdjacent(edges[0], 3, adjacentElements);
+    double minQuality = 0.0;
+    for (size_t i = 0; i < adjacentElements.getSize(); ++i)
+      if (mesh->getType(adjacentElements[i]) == Mesh::TET) {
+        oldTets.push_back(adjacentElements[i]);
+        double quality = getAndCacheQuality(a, adjacentElements[i]);
+        if (oldTets.size() == 1 || quality < minQuality)
+          minQuality = quality;
+      }
+    PCU_ALWAYS_ASSERT(oldTets.size() == 2);
+    return minQuality;
+  }
+
   void LayerEdgeSwap::rebuildElements()
   {
     rebuildEdges();
@@ -134,21 +152,15 @@ namespace ma {
 
   void LayerEdgeSwap::rebuildTets() 
   {
-    //TODO: pass in old tets, new edge and triangles instead of global
     EntityVector oldFaces[2];
-    EntityVector tets;
-    EntityArray adjElems;
-    mesh->getAdjacent(edges[0], 3, adjElems);
-    for (size_t i=0; i<adjElems.getSize(); ++i)
-    if (mesh->getType(adjElems[i]) == Mesh::TET) {
-      tets.push_back(adjElems[i]);
-      oldFaces[0].push_back(getTetFaceOppositeVert(mesh, adjElems[i], oldVerts[1]));
-      oldFaces[1].push_back(getTetFaceOppositeVert(mesh, adjElems[i], oldVerts[0]));
+    for (size_t i = 0; i < oldTets.size(); ++i) {
+      oldFaces[0].push_back(getTetFaceOppositeVert(mesh, oldTets[i], oldVerts[1]));
+      oldFaces[1].push_back(getTetFaceOppositeVert(mesh, oldTets[i], oldVerts[0]));
     }
     PCU_ALWAYS_ASSERT(oldFaces[0].size() == 2);
     PCU_ALWAYS_ASSERT(oldFaces[1].size() == 2);
 
-    Entity* oldFace = getTetFaceOppositeVert(mesh, tets[0], newVerts[0]);
+    Entity* oldFace = getTetFaceOppositeVert(mesh, oldTets[0], newVerts[0]);
     Entity* oppVert = getTriVertOppositeEdge(mesh, oldFace, edges[0]);
     Entity* edge1 = getUpward(mesh, Mesh::EDGE, {oppVert, newVerts[0]});
     Entity* edge2 = getUpward(mesh, Mesh::EDGE, {oppVert, newVerts[1]});
@@ -156,7 +168,7 @@ namespace ma {
     Entity* newTetTriangle = mesh->createEntity(Mesh::TRIANGLE, mesh->toModel(oldFace), triEdges);
     for (size_t j=0; j<2; ++j) {
       Entity* tetFaces[4]{newTetTriangle, newTriangles[j], oldFaces[j][0], oldFaces[j][1]};
-      newLayer.push_back(mesh->createEntity(Mesh::TET, mesh->toModel(tets[j]), tetFaces));
+      newLayer.push_back(mesh->createEntity(Mesh::TET, mesh->toModel(oldTets[j]), tetFaces));
     }
   }
 
@@ -213,12 +225,16 @@ namespace ma {
     }
   }
 
-  bool LayerEdgeSwap::checkValidity()
+  bool LayerEdgeSwap::checkValidity(double oldMinQuality)
   {
-    for (size_t i = 0; i < newLayer.size(); ++i)
-      if (mesh->getType(newLayer[i]) != Mesh::TET &&
-          !isLayerElementOk(mesh, newLayer[i]))
+    for (size_t i = 0; i < newLayer.size(); ++i) {
+      if (mesh->getType(newLayer[i]) == Mesh::TET) {
+        if (getAndCacheQuality(a, newLayer[i]) < oldMinQuality)
+          return false;
+      } 
+      else if (!isLayerElementOk(mesh, newLayer[i]))
         return false;
+    }
     return true;
   }
 

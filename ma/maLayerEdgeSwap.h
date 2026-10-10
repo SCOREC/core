@@ -20,6 +20,7 @@ class LayerEdgeSwap
   Adapt* a;
   Mesh* mesh;
   EntityVector edges;
+  EntityVector oldTets;
   EntityVector oldVerts;
   EntityVector newVerts;
   EntityVector newLayer;
@@ -30,6 +31,7 @@ class LayerEdgeSwap
 
   bool checkTopo(Entity* edge);
   void collectEdges(Entity* edge);
+  double collectOldTets();
   void computeElementSets();
   void rebuildEdges();
   void rebuildTriangles();
@@ -37,7 +39,7 @@ class LayerEdgeSwap
   void rebuildTets();
   void rebuildPrisms();
   void rebuildElements();
-  bool checkValidity();
+  bool checkValidity(double oldMinQuality);
   void destroyNewElements();
   void destroyOldElements();
   void printInfo();
