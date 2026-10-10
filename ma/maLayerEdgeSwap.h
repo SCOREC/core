@@ -37,6 +37,8 @@ class LayerEdgeSwap
   void rebuildTets();
   void rebuildPrisms();
   void rebuildElements();
+  bool checkValidity();
+  void destroyNewElements();
   void destroyOldElements();
   void printInfo();
 };

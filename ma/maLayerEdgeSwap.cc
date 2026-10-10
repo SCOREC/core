@@ -43,14 +43,17 @@ namespace ma {
     collectEdges(edge);
     computeElementSets();
     rebuildElements();
-    destroyOldElements();
+
+    bool valid = checkValidity();
+    if (valid) destroyOldElements();
+    else destroyNewElements();
     //TODO: check quality before accepting swap
     
-    for (int i=0; i<edges.size(); i++) clearFlag(a, edges[i], CHECKED);
     return true;
   }
 
-  bool LayerEdgeSwap::checkTopo(Entity* edge) {
+  bool LayerEdgeSwap::checkTopo(Entity* edge)
+  {
     int nTets = 0;
     EntityArray adjElems;
     mesh->getAdjacent(edge, 3, adjElems);
@@ -81,6 +84,7 @@ namespace ma {
       edge = getOtherEdge(mesh, edge, p);
       if (!edge) break;
     }
+    for (int i=0; i<edges.size(); i++) clearFlag(a, edges[i], CHECKED);
   }
 
   void LayerEdgeSwap::computeElementSets()
@@ -94,7 +98,6 @@ namespace ma {
     }
   }
 
-  static int reached=0;
   void LayerEdgeSwap::rebuildElements()
   {
     rebuildEdges();
@@ -208,6 +211,21 @@ namespace ma {
       newLayer.push_back(mesh->createEntity(Mesh::PRISM, mesh->toModel(*it), prismFaces));
       setFlagOnClosure(a, newLayer.back(), LAYER);
     }
+  }
+
+  bool LayerEdgeSwap::checkValidity()
+  {
+    for (size_t i = 0; i < newLayer.size(); ++i)
+      if (mesh->getType(newLayer[i]) != Mesh::TET &&
+          !isLayerElementOk(mesh, newLayer[i]))
+        return false;
+    return true;
+  }
+
+  void LayerEdgeSwap::destroyNewElements()
+  {
+    for (size_t i = 0; i < newLayer.size(); ++i)
+      destroyElement(a, newLayer[i]);
   }
 
   void LayerEdgeSwap::destroyOldElements()
