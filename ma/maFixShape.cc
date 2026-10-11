@@ -39,6 +39,23 @@ namespace ma {
   
 const double GOODQUALITY2D = .09;
 
+bool isGoodQualityBoundaryLayer(ma::Adapt* a, Entity* tet)
+{
+  Entity* faces[4];
+  a->mesh->getDownward(tet, 2, faces);
+  double lowestQuality = 1;
+
+  for (int i = 0; i < 4; ++i)
+  if (ma::getFlag(a, faces[i], ma::LAYER)) {
+    double quality = getAndCacheQuality(a, faces[i]);
+    if (quality < lowestQuality) lowestQuality = quality;
+  }
+
+  if (lowestQuality == 1) return false;
+  if (lowestQuality >= GOODQUALITY2D) return true;
+  return false;
+}
+
 int markBadQuality(Adapt* a)
 {
   Mesh* m = a->mesh;
@@ -50,6 +67,7 @@ int markBadQuality(Adapt* a)
     if (!a->mesh->isOwned(e)) continue;
     if (!isSimplex(m->getType(e))) continue;
     if (getAndCacheQuality(a, e) >= a->input->goodQuality) continue;
+    if (isGoodQualityBoundaryLayer(a, e)) continue;
     setFlag(a, e, ma::BAD_QUALITY);
     total++;
   }
