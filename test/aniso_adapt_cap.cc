@@ -25,18 +25,14 @@ int main(int argc, char** argv)
   gmi_model* model = gmi_load(meshFile);
   ma::Mesh* apfCapMesh = apf::createCapMesh(model, &PCUObj);
   apf::disownCapModel(apfCapMesh);
-  ma::Mesh* mesh1 = apf::createMdsMesh(model, apfCapMesh);
-  apf::disownMdsModel(mesh1);
-  ma::Mesh* mesh2 = apf::createMdsMesh(model, apfCapMesh);
-  apf::disownMdsModel(mesh2);
+  ma::Mesh* mesh = apf::createMdsMesh(model, apfCapMesh);
+  apf::disownMdsModel(mesh);
 
-  adaptTests(apfCapMesh, mesh2);
+  adaptTests(apfCapMesh, {0, 0, 1, 2448, 5307, 9044, 13173, 14190, 10931, 3499});
 
-  mesh1->destroyNative();
-  mesh2->destroyNative();
+  mesh->destroyNative();
   apfCapMesh->destroyNative();
-  apf::destroyMesh(mesh1);
-  apf::destroyMesh(mesh2);
+  apf::destroyMesh(mesh);
   apf::destroyMesh(apfCapMesh);
   gmi_cap_stop();
   }

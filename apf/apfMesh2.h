@@ -102,6 +102,7 @@ class Mesh2 : public Mesh
   downward adjacencies */
     void destroy(MeshEntity* e)
     {
+      if (onDestroy) onDestroy(e);
       requireUnfrozen();
       destroy_(e);
     }

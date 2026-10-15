@@ -14,6 +14,7 @@
 #include "apfMesh.h"
 #include <vector>
 #include <cstring>
+#include <list>
 
 namespace apf {
 
@@ -87,6 +88,9 @@ class CavityOp
     virtual void apply() = 0;
     /** \brief parallel collective operation over entities of one dimension */
     void applyToDimension(int d);
+    /** \brief parallel collective operation over entities in list */
+    typedef std::list<MeshEntity*> EntityList;
+    void applyToList(EntityList& elements);
     /** \brief within setEntity, require that entities be made local */
     bool requestLocality(MeshEntity** entities, int count);
     /** \brief call before deleting a mesh entity during the operation */
@@ -102,6 +106,7 @@ class CavityOp
     bool tryToPull();
     void applyLocallyWithModification(int d);
     void applyLocallyWithoutModification(int d);
+    void prepareListMigration(EntityList& elements, EntityList::iterator& iter, std::function<void()> migrationPossible);
     bool canModify;
     bool movedByDeletion;
     MeshIterator* iterator;

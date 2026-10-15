@@ -56,11 +56,6 @@ int main(int argc, char** argv)
   apf::writeVtkFiles("torus_before",m);
   CylindricalShock sf(m);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
-  // Note that the optimal number of iterations will be set
-  // inside the call to ma::configure above. However for this
-  // test we override this value to 3 to reduce the run time of
-  // test.
-  in->maximumIterations = 3;
   in->shouldRunPreZoltan = true;
   in->shouldRunMidParma = true;
   in->shouldRunPostParma = true;

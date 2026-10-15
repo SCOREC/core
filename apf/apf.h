@@ -383,6 +383,15 @@ int countIntPoints(MeshElement* e, int order);
   */
 void getIntPoint(MeshElement* e, int order, int point, Vector3& param);
 
+
+/** \brief Get an integration point in an element.
+  *
+  * \param order The polynomial order of accuracy.
+  * \param point The integration point number.
+  * \returns The resulting local coordinate of the integration point.
+  */
+Vector3 getIntPoint(MeshElement* e, int order, int point);
+
 /** \brief Get the weight of an integration point in an element.
   *
   * \details All integration point tables in APF are scaled

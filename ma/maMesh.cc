@@ -328,6 +328,11 @@ bool isOnModelFace(Mesh* m, Entity* e)
   return m->getModelType(m->toModel(e))==2;
 }
 
+bool isInModelRegion(Mesh* m, Entity* e)
+{
+  return m->getModelType(m->toModel(e))==3;
+}
+
 Vector getTriNormal(Mesh* m, Entity** v)
 {
   Vector x[3];

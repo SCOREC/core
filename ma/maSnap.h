@@ -19,7 +19,7 @@ class Adapt;
 void snap(Adapt* a);
 void visualizeGeometricInfo(Mesh* m, const char* name);
 
-long snapTaggedVerts(Adapt* a, Tag* snapTag);
+void tagVertexToSnap(Adapt* a, Entity* vertex);
 
 void interpolateParametricCoordinates(
     apf::Mesh* m,
