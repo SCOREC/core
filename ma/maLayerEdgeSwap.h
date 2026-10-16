@@ -24,22 +24,15 @@ class LayerEdgeSwap
   EntityVector oldVerts;
   EntityVector newVerts;
   EntityVector newLayer;
-  EntityVector newEdges;
-  EntityVector newTriangles;
   EntitySet elementsToChange;
-  std::map<Entity*,Entity*> old2New;
 
   void resetState();
   bool checkTopo(Entity* edge);
   void collectEdges(Entity* edge);
   double collectOldTets();
   void computeElementSets();
-  void rebuildEdges();
-  void rebuildTriangles();
-  void rebuildQuads();
   void rebuildTets();
   void rebuildPrisms();
-  void rebuildElements();
   bool checkValidity(double oldMinQuality);
   void destroyNewElements();
   void destroyOldElements();

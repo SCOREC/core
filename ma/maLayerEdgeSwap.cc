@@ -7,16 +7,6 @@
 #include "maFirstProblemPlane.h"
 
 namespace ma {
-  namespace {
-    Entity* getUpward(Mesh* mesh, int type, std::initializer_list<Entity*> down)
-    {
-      std::vector<Entity*> entities(down.begin(), down.end());
-      Entity* upward = findUpward(mesh, type, entities.data());
-      PCU_ALWAYS_ASSERT(upward);
-      return upward;
-    }
-  }
-
   LayerEdgeSwap::LayerEdgeSwap(Adapt* adapt)
   {
     a = adapt;
@@ -36,10 +26,7 @@ namespace ma {
     collectEdges(edge);
     computeElementSets();
     double oldMinQuality = collectOldTets();
-    rebuildEdges();
-    rebuildTriangles();
     rebuildTets();
-    rebuildQuads();
     rebuildPrisms();
 
     bool valid = checkValidity(oldMinQuality);
@@ -56,10 +43,7 @@ namespace ma {
     oldVerts.clear();
     newVerts.clear();
     newLayer.clear();
-    newEdges.clear();
-    newTriangles.clear();
     elementsToChange.clear();
-    old2New.clear();
   }
 
   bool LayerEdgeSwap::checkTopo(Entity* edge)
@@ -124,103 +108,31 @@ namespace ma {
     return minQuality;
   }
 
-  void LayerEdgeSwap::rebuildEdges()
-  {
-    for (size_t i=0; i<edges.size(); ++i)
-      newEdges.push_back(mesh->createEntity(Mesh::EDGE, mesh->toModel(edges[i]), &newVerts[i*2]));
-  }
-
-  void LayerEdgeSwap::rebuildTriangles()
-  {
-    for (size_t e=0; e<edges.size(); ++e) {
-      EntityArray triangles;
-      mesh->getAdjacent(edges[e], Mesh::TRIANGLE, triangles);
-      int v = 0;
-      for (size_t t = 0; t < triangles.getSize(); ++t)
-        if (getFlag(a, triangles[t], LAYER) && mesh->getType(triangles[t]) == Mesh::TRIANGLE) {
-          Entity* oppEdge1 = getUpward(mesh, Mesh::EDGE, {oldVerts[e*2+v], newVerts[e*2]});
-          Entity* oppEdge2 = getUpward(mesh, Mesh::EDGE, {oldVerts[e*2+v], newVerts[e*2+1]});
-          Entity* triEdges[3]{newEdges[e], oppEdge1, oppEdge2};
-          newTriangles.push_back(mesh->createEntity(Mesh::TRIANGLE, mesh->toModel(triangles[t]), triEdges));
-          auto [it, inserted] = old2New.insert({triangles[t], newTriangles.back()});
-          PCU_ALWAYS_ASSERT(inserted);
-          v++;
-        }
-    }
-  }
-
   void LayerEdgeSwap::rebuildTets() 
   {
-    EntityVector oldFaces[2];
-    for (size_t i = 0; i < oldTets.size(); ++i) {
-      oldFaces[0].push_back(getTetFaceOppositeVert(mesh, oldTets[i], oldVerts[1]));
-      oldFaces[1].push_back(getTetFaceOppositeVert(mesh, oldTets[i], oldVerts[0]));
-    }
-    PCU_ALWAYS_ASSERT(oldFaces[0].size() == 2);
-    PCU_ALWAYS_ASSERT(oldFaces[1].size() == 2);
-
     Entity* oldFace = getTetFaceOppositeVert(mesh, oldTets[0], newVerts[0]);
     Entity* oppVert = getTriVertOppositeEdge(mesh, oldFace, edges[0]);
-    Entity* edge1 = getUpward(mesh, Mesh::EDGE, {oppVert, newVerts[0]});
-    Entity* edge2 = getUpward(mesh, Mesh::EDGE, {oppVert, newVerts[1]});
-    Entity* triEdges[3] = {newEdges[0], edge1, edge2};
-    Entity* newTetTriangle = mesh->createEntity(Mesh::TRIANGLE, mesh->toModel(oldFace), triEdges);
     for (size_t j=0; j<2; ++j) {
-      Entity* tetFaces[4]{newTetTriangle, newTriangles[j], oldFaces[j][0], oldFaces[j][1]};
-      newLayer.push_back(mesh->createEntity(Mesh::TET, mesh->toModel(oldTets[j]), tetFaces));
-    }
-  }
-
-  void LayerEdgeSwap::rebuildQuads()
-  {
-    for (size_t i=0; i<edges.size()-1; ++i) {
-      EntityArray quads;
-      mesh->getAdjacent(edges[i], 2, quads);
-      for (size_t q=0; q<quads.getSize(); q++) {
-        if (mesh->getType(quads[q]) == Mesh::QUAD) {
-          Entity* oppEdge1 = getUpward(mesh, Mesh::EDGE, {newVerts[i*2], newVerts[i*2+2]});
-          Entity* oppEdge2 = getUpward(mesh, Mesh::EDGE, {newVerts[i*2+1], newVerts[i*2+3]});
-          Entity* quadEdges[4]{newEdges[i], oppEdge1, newEdges[i+1], oppEdge2};
-          Entity* newQuad = mesh->createEntity(Mesh::QUAD, mesh->toModel(quads[q]), quadEdges);
-          auto [it, inserted] = old2New.insert({quads[q], newQuad});
-          PCU_ALWAYS_ASSERT(inserted);
-          break;
-        }
-      }
+      Entity* tetVerts[4]{newVerts[0], newVerts[1], oppVert, oldVerts[j]};
+      newLayer.push_back(buildElement(a, mesh->toModel(oldTets[j]), Mesh::TET, tetVerts));
     }
   }
 
   void LayerEdgeSwap::rebuildPrisms()
   {
-    for (size_t v=0; v<newVerts.size()-1; v+=2) {
-      Entity* oppEdge1 = getUpward(mesh, Mesh::EDGE, {oldVerts[v], newVerts[v+1]});
-      Entity* oppEdge2 = getUpward(mesh, Mesh::EDGE, {oldVerts[v+1], newVerts[v]});
-      EntityArray quads1;
-      mesh->getAdjacent(oppEdge1, 2, quads1);
-      EntityArray quads2;
-      mesh->getAdjacent(oppEdge2, 2, quads2);
-      Entity* oppQuad1;
-      Entity* oppQuad2;
-      for (size_t q=0; q<quads1.size(); ++q)
-      if (mesh->getType(quads1[q]) == Mesh::QUAD && old2New.find(quads1[q]) == old2New.end())
-        oppQuad1 = quads1[q];
-      for (size_t q=0; q<quads2.size(); ++q)
-      if (mesh->getType(quads2[q]) == Mesh::QUAD && old2New.find(quads2[q]) == old2New.end())
-        oppQuad2 = quads2[q];
-      old2New[oppQuad1] = oppQuad2;
-      old2New[oppQuad2] = oppQuad1;
-    }
-
-    APF_ITERATE(EntitySet, elementsToChange, it) {
-      if (mesh->getType(*it) == Mesh::TET) continue;
-      Entity* prismFaces[5];
-      mesh->getDownward(*it, 2, prismFaces);
-      for (int i=0; i<5; i++) {
-        auto newFaceIt = old2New.find(prismFaces[i]);
-        if (newFaceIt != old2New.end()) prismFaces[i] = newFaceIt->second;
+    int nv=0;
+    int ov=0;
+    for (size_t e = 1; e < edges.size(); e+=2) {
+      EntityArray prisms;
+      mesh->getAdjacent(edges[e], 3, prisms);
+      for (size_t p = 0; p < prisms.size(); p++) {
+        if (mesh->getType(prisms[p]) == Mesh::TET) continue;
+        Entity* verts[6]{newVerts[nv], newVerts[nv+1], newVerts[nv+2], newVerts[nv+3], oldVerts[ov], oldVerts[ov+2]};
+        newLayer.push_back(buildElement(a, mesh->toModel(prisms[p]), Mesh::PRISM, verts));
+        setFlagOnClosure(a, newLayer.back(), LAYER);
+        ov++;
       }
-      newLayer.push_back(mesh->createEntity(Mesh::PRISM, mesh->toModel(*it), prismFaces));
-      setFlagOnClosure(a, newLayer.back(), LAYER);
+      nv+=2;
     }
   }
 
