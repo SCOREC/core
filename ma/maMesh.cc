@@ -97,6 +97,42 @@ void rotateEntity(apf::Mesh* m, Entity* e, int n, Entity** v)
   rotateEntity(type,dv,n,v);
 }
 
+static double signedTetVolume6(const Vector* p, int v0, int v1, int v2, int v3)
+{
+  return cross(p[v1] - p[v0], p[v2] - p[v0]) * (p[v3] - p[v0]);
+}
+
+void orientElementVertices(Mesh* m, int type, Entity** verts)
+{
+  Vector p[6];
+  int nverts;
+  if (type == Mesh::TET)
+    nverts = 4;
+  else {
+    PCU_ALWAYS_ASSERT(type == Mesh::PRISM);
+    nverts = 6;
+  }
+  for (int i = 0; i < nverts; ++i)
+    m->getPoint(verts[i], 0, p[i]);
+
+  double orientation;
+  if (type == Mesh::TET)
+    orientation = signedTetVolume6(p, 0, 1, 2, 3);
+  else
+    orientation = signedTetVolume6(p, 0, 1, 2, 3)
+                + signedTetVolume6(p, 1, 2, 3, 4)
+                + signedTetVolume6(p, 2, 3, 4, 5);
+
+  if (orientation < 0.0) {
+    if (type == Mesh::TET)
+      std::swap(verts[0], verts[1]);
+    else {
+      std::swap(verts[1], verts[2]);
+      std::swap(verts[4], verts[5]);
+    }
+  }
+}
+
 /* the inverse of rotateEntity on a tet, finds the rotation
    code based on the array of rotated vertices */
 int findTetRotation(Mesh* m, Entity* tet, Entity** v)

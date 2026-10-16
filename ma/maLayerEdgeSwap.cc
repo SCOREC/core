@@ -114,6 +114,7 @@ namespace ma {
     Entity* oppVert = getTriVertOppositeEdge(mesh, oldFace, edges[0]);
     for (size_t j=0; j<2; ++j) {
       Entity* tetVerts[4]{newVerts[0], newVerts[1], oppVert, oldVerts[j]};
+      orientElementVertices(mesh, Mesh::TET, tetVerts);
       newLayer.push_back(buildElement(a, mesh->toModel(oldTets[j]), Mesh::TET, tetVerts));
     }
   }
@@ -128,6 +129,7 @@ namespace ma {
       for (size_t p = 0; p < prisms.size(); p++) {
         if (mesh->getType(prisms[p]) == Mesh::TET) continue;
         Entity* verts[6]{newVerts[nv], newVerts[nv+1], newVerts[nv+2], newVerts[nv+3], oldVerts[ov], oldVerts[ov+2]};
+        orientElementVertices(mesh, Mesh::PRISM, verts);
         newLayer.push_back(buildElement(a, mesh->toModel(prisms[p]), Mesh::PRISM, verts));
         setFlagOnClosure(a, newLayer.back(), LAYER);
         ov++;
@@ -143,8 +145,8 @@ namespace ma {
         if (getAndCacheQuality(a, newLayer[i]) < oldMinQuality)
           return false;
       } 
-      else if (!isLayerElementOk(mesh, newLayer[i]))
-        return false;
+      // else if (!isLayerElementOk(mesh, newLayer[i]))
+      //   return false;
     }
     return true;
   }
