@@ -3,6 +3,7 @@
 #include "maRefine.h"
 #include "maShape.h"
 #include <sstream>
+#include <unordered_set>
 #include <pcu_util.h>
 #include <lionPrint.h>
 
@@ -136,20 +137,22 @@ bool isLayerStackEnd(Mesh* m, Entity* e)
   return false;
 }
 
-std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* end) 
+std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* elem) 
 {
   std::vector<Entity*> stack;
-  stack.push_back(end);
+  std::unordered_set<Entity*> inStack;
+  stack.push_back(elem);
+  inStack.insert(elem);
   for (size_t i = 0; i < stack.size(); ++i) {
-    Entity* faces[4];
-    mesh->getDownward(stack[i], 2, faces);
-    for (int f = 0; f < 4; ++f) {
+    Downward faces;
+    int nf = mesh->getDownward(stack[i], 2, faces);
+    for (int f = 0; f < nf; ++f) {
       if (mesh->getType(faces[f]) != Mesh::TRIANGLE) continue;
       EntityArray adjacentElem;
       mesh->getAdjacent(faces[f], 3, adjacentElem);
       for (size_t j = 0; j < adjacentElem.getSize(); ++j) {
         if (mesh->getType(adjacentElem[j]) != Mesh::PRISM) continue;
-        if (adjacentElem[j] == stack[i]) continue;
+        if (!inStack.insert(adjacentElem[j]).second) continue;
         stack.push_back (adjacentElem[j]);
       }
     }
