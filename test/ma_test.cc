@@ -18,6 +18,7 @@
 #include <pcu_util.h>
 #include <string>
 #include <vector>
+#include "maLayer.h"
 
 class AnIso : public ma::AnisotropicFunction
 {
@@ -90,6 +91,7 @@ int main(int argc, char** argv)
 #endif
       apf::MeshTag* weights = Parma_WeighByMemory(m);
       plan = splitter->split(weights, 1.10, PCUObj.Peers());
+      ma::migrateBoundaryLayerStackTogether(m, plan);
       apf::removeTagFromDimension(m, weights, m->getDimension());
       m->destroyTag(weights);
       delete splitter;

@@ -2,6 +2,7 @@
 #define MA_LAYER_H
 
 #include "maMesh.h"
+#include <vector>
 
 namespace ma {
 
@@ -12,6 +13,10 @@ void resetLayer(Adapt* a);
 void freezeLayer(Adapt* a);
 void unfreezeLayer(Adapt* a);
 void findLayerBase(Adapt* a);
+
+bool isLayerStackEnd(Mesh* m, Entity* e);
+std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* end);
+void migrateBoundaryLayerStackTogether(Mesh* m, apf::Migration* plan);
 
 void allowSplitCollapseOutsideLayer(Adapt* a);
 

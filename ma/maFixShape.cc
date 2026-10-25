@@ -23,6 +23,7 @@
 #include "maShapeHandler.h"
 #include "maBalance.h"
 #include "maDBG.h"
+#include "maLayer.h"
 #include <pcu_util.h>
 
 /**
@@ -75,28 +76,6 @@ int markBadQuality(Adapt* a)
   return m->getPCU()->Add<int>(total);;
 }
 
-std::vector<Entity*> getBoundaryLayerStack(Adapt* a, Entity* tet) 
-{
-  std::vector<Entity*> stack;
-  stack.push_back(tet);
-  for (size_t i = 0; i < stack.size(); ++i) {
-    Entity* faces[4];
-    a->mesh->getDownward(stack[i], 2, faces);
-    for (int f = 0; f < 4; ++f) {
-      if (a->mesh->getType(faces[f]) != Mesh::TRIANGLE) continue;
-      if (!getFlag(a, faces[f], LAYER)) continue;
-      EntityArray adjacentElem;
-      a->mesh->getAdjacent(faces[f], 3, adjacentElem);
-      for (size_t j = 0; j < adjacentElem.getSize(); ++j) {
-        if (a->mesh->getType(adjacentElem[j]) != Mesh::PRISM) continue;
-        if (adjacentElem[j] == stack[i]) continue;
-        stack.push_back (adjacentElem[j]);
-      }
-    }
-  }
-  return stack;
-}
-
 FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(adapt), 
   faceSplitCollapse(adapt), reposition(adapt), split(adapt), layerEdgeSwap(adapt)
 {
@@ -118,7 +97,7 @@ bool FixShape::requestLocality(apf::CavityOp* o)
 
   std::vector<Entity*> entities(verts, verts + 4);
   if (a->hasLayer) {
-    std::vector<Entity*> layerStack = getBoundaryLayerStack(a, badTet);
+    std::vector<Entity*> layerStack = getBoundaryLayerStack(mesh, badTet);
     entities.insert(entities.end(), layerStack.begin(), layerStack.end());
   }
 

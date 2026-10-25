@@ -145,8 +145,8 @@ namespace ma {
         if (getAndCacheQuality(a, newLayer[i]) < oldMinQuality)
           return false;
       } 
-      // else if (!isLayerElementOk(mesh, newLayer[i]))
-      //   return false;
+      else if (!isLayerElementOk(mesh, newLayer[i]))
+        return false;
     }
     return true;
   }
