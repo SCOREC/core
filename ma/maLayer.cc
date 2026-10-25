@@ -121,22 +121,6 @@ void findLayerBase(Adapt* a)
     syncFlag(a,i,LAYER_BASE);
 }
 
-bool isLayerStackEnd(Mesh* m, Entity* e)
-{
-  if (m->getType(e) != apf::Mesh::PRISM) return false;
-  Downward faces;
-  int nf = m->getDownward(e, 2, faces);
-  for (int i = 0; i < nf; ++i) {
-    if (m->getType(faces[i]) != apf::Mesh::TRIANGLE) continue;
-    if (isOnModelFace(m, faces[i]) && (m->countUpward(faces[i]) == 1)) return true;
-    apf::Up up;
-    m->getUp(faces[i], up);
-    for (int j = 0; j < up.n; ++j)
-      if (m->getType(up.e[j]) == apf::Mesh::TET) return true;
-  }
-  return false;
-}
-
 std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* elem) 
 {
   std::vector<Entity*> stack;
@@ -160,21 +144,16 @@ std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* elem)
   return stack;
 }
 
-void migrateBoundaryLayerStackTogether(Mesh* m, apf::Migration* plan)
+void migrateBoundaryLayerStackTogether(Mesh* mesh, apf::Migration* plan)
 {
-  Entity* e;
-  Iterator* it = m->begin(m->getDimension());
-  while ((e = m->iterate(it))) {
-    if (!isLayerStackEnd(m, e)) continue;
-    int target = 0;
-    if (plan->has(e)) target = plan->sending(e);
-    else continue;
-    auto stack = getBoundaryLayerStack(m, e);
-    for (size_t i = 0; i < stack.size(); ++i) {
+  for (int i=0; i < plan->count(); i++) {
+    Entity* ent = plan->get(i);
+    if (mesh->getType(ent) != Mesh::PRISM) continue;
+    int target = plan->sending(ent);
+    auto stack = getBoundaryLayerStack(mesh, ent);
+    for (size_t i = 0; i < stack.size(); ++i)
       plan->send(stack[i], target);
-    }
   }
-  m->end(it);
 }
 
 void allowSplitCollapseOutsideLayer(Adapt* a)

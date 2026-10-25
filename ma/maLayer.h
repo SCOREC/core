@@ -14,7 +14,6 @@ void freezeLayer(Adapt* a);
 void unfreezeLayer(Adapt* a);
 void findLayerBase(Adapt* a);
 
-bool isLayerStackEnd(Mesh* m, Entity* e);
 std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* elem);
 void migrateBoundaryLayerStackTogether(Mesh* m, apf::Migration* plan);
 
