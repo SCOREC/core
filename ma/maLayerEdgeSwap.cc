@@ -119,22 +119,73 @@ namespace ma {
     }
   }
 
+  static Entity* getPrismPartner(Mesh* m, Entity* prism, Entity* v)
+  {
+    Entity* pv[6];
+    m->getDownward(prism, 0, pv);
+    int i = apf::findIn(pv, 6, v);
+    PCU_ALWAYS_ASSERT(i >= 0);
+    return pv[(i + 3) % 6];
+  }
+
+  static Entity* findPrism(Mesh* m, Entity* edge, Entity* next, Entity* v)
+  {
+    EntityArray prisms;
+    m->getAdjacent(edge, 3, prisms);
+    for (size_t i = 0; i < prisms.getSize(); ++i) {
+      if (m->getType(prisms[i]) != Mesh::PRISM) continue;
+      Entity* pe[9];
+      Entity* pv[6];
+      m->getDownward(prisms[i], 1, pe);
+      m->getDownward(prisms[i], 0, pv);
+      if (apf::findIn(pe, 9, next) >= 0 && apf::findIn(pv, 6, v) >= 0)
+        return prisms[i];
+    }
+    return 0;
+  }
+
+  static void buildBoundaryTris(Adapt* a, Entity* edge, Entity* va, Entity* vb, Entity* vc, Entity* vd)
+  {
+    Mesh* m = a->mesh;
+    Model* c = m->toModel(edge);
+    if (m->getModelType(c) != 2) return;
+    Entity* triA[3]{vc, vd, va};
+    Entity* triB[3]{vc, vd, vb};
+    Entity* tris[2];
+    tris[0] = buildElement(a, c, Mesh::TRIANGLE, triA);
+    tris[1] = buildElement(a, c, Mesh::TRIANGLE, triB);
+    if (getFlag(a, edge, LAYER_BASE))
+      for (int i = 0; i < 2; ++i)
+        setFlagOnClosure(a, tris[i], LAYER_BASE);
+  }
+
   void LayerEdgeSwap::rebuildPrisms()
   {
-    int nv=0;
-    int ov=0;
-    for (size_t e = 1; e < edges.size(); e+=2) {
-      EntityArray prisms;
-      mesh->getAdjacent(edges[e], 3, prisms);
-      for (size_t p = 0; p < prisms.size(); p++) {
-        if (mesh->getType(prisms[p]) == Mesh::TET) continue;
-        Entity* verts[6]{newVerts[nv], newVerts[nv+1], newVerts[nv+2], newVerts[nv+3], oldVerts[ov], oldVerts[ov+2]};
-        orientElementVertices(mesh, Mesh::PRISM, verts);
-        newLayer.push_back(buildElement(a, mesh->toModel(prisms[p]), Mesh::PRISM, verts));
-        setFlagOnClosure(a, newLayer.back(), LAYER);
-        ov++;
-      }
-      nv+=2;
+    Entity* va = oldVerts[0];
+    Entity* vb = oldVerts[1];
+    Entity* vc = newVerts[0];
+    Entity* vd = newVerts[1];
+    buildBoundaryTris(a, edges[0], va, vb, vc, vd);
+    for (size_t e = 0; e + 1 < edges.size(); ++e) {
+      Entity* prismC = findPrism(mesh, edges[e], edges[e+1], vc);
+      Entity* prismD = findPrism(mesh, edges[e], edges[e+1], vd);
+      PCU_ALWAYS_ASSERT(prismC && prismD);
+      Entity* va2 = getPrismPartner(mesh, prismC, va);
+      Entity* vb2 = getPrismPartner(mesh, prismC, vb);
+      Entity* vc2 = getPrismPartner(mesh, prismC, vc);
+      Entity* vd2 = getPrismPartner(mesh, prismD, vd);
+      buildBoundaryTris(a, edges[e+1], va2, vb2, vc2, vd2);
+
+      Entity* vertsA[6]{vc, vd, va, vc2, vd2, va2};
+      Entity* vertsB[6]{vc, vd, vb, vc2, vd2, vb2};
+      orientElementVertices(mesh, Mesh::PRISM, vertsA);
+      orientElementVertices(mesh, Mesh::PRISM, vertsB);
+      newLayer.push_back(buildElement(a, mesh->toModel(prismC), Mesh::PRISM, vertsA));
+      setFlagOnClosure(a, newLayer.back(), LAYER);
+      newLayer.push_back(buildElement(a, mesh->toModel(prismD), Mesh::PRISM, vertsB));
+      setFlagOnClosure(a, newLayer.back(), LAYER);
+
+      va = va2; vb = vb2; vc = vc2; vd = vd2;
     }
   }
 
@@ -170,6 +221,7 @@ namespace ma {
       ma_dbg::flagEntity(a, 0, "old_verts", &oldVerts[0], oldVerts.size());
       ma_dbg::flagEntity(a, 0, "target_verts", &newVerts[0], newVerts.size());
       ma_dbg::flagEntity(a, 3, "tets_to_swap", elementsToChange);
+      if (newLayer.size() > 0) ma_dbg::flagEntity(a, 3, "new_layer", &newLayer[0], newLayer.size());
 
       apf::writeVtkFiles("mesh_tets", mesh, 3);
       apf::writeVtkFiles("mesh_faces", mesh, 2);
