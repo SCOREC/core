@@ -131,6 +131,17 @@ void migrate(Mesh2* m, Migration* plan);
 
 void migrateSilent(Mesh2* m, Migration* plan);
 
+/** \brief get the prisms connected to elem through triangle faces
+  \details returns elem followed by every prism reachable from it
+  by crossing triangles, i.e. the boundary layer stack it belongs to. */
+std::vector<MeshEntity*> getBoundaryLayerStack(Mesh* mesh, MeshEntity* elem);
+
+/** \brief add the boundary layer stack of each prism in the plan
+  \details every prism in a stack is sent to the destination of the
+  planned prism, so stacks are never split across parts.
+  apf::migrate calls this on every plan. */
+void migrateBoundaryLayerStackTogether(Mesh* mesh, Migration* plan);
+
 /** \brief set the maximum elements that apf::migrate moves at once
   \details apf::migrate implements gradual limited migration
   in an effort to help applications keep memory use to a minimum.

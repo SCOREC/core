@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <apfMesh.h>
+#include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <apfShape.h>
 #include <lionPrint.h>
@@ -214,6 +215,7 @@ void MetisBalancer::balance(MeshTag* weights, double tolerance) {
   );
   apf::Migration *plan = makePlan(gn, owned_part, gn_offset);
   auto t0migrate = pcu::Time();
+  apf::migrateBoundaryLayerStackTogether(mesh_, plan);
   mesh_->migrate(plan);
   auto t1migrate = pcu::Time();
   if (mesh_->getPCU()->Self() == 0)

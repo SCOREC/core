@@ -1,4 +1,5 @@
 #include <parma.h>
+#include <apfMesh2.h>
 #include "parma_step.h"
 #include "parma_sides.h"
 #include "parma_weights.h"
@@ -36,6 +37,7 @@ namespace parma {
     apf::Migration* plan = selects->run(targets);
     int planSz = m->getPCU()->Add<int>(plan->count());
     const double t0 = pcu::Time();
+    apf::migrateBoundaryLayerStackTogether(m, plan);
     m->migrate(plan);
     if ( !m->getPCU()->Self() && verbosity )
       status("%d elements migrated in %f seconds\n", planSz, pcu::Time()-t0);

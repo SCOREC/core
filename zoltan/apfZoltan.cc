@@ -8,6 +8,7 @@
 #include "apfZoltan.h"
 #include "apfZoltanMesh.h"
 #include <apfPartition.h>
+#include <apfMesh2.h>
 #include <lionPrint.h>
 
 namespace apf {
@@ -60,6 +61,7 @@ class ZoltanBalancer : public Balancer
         lion_oprint(1, "planned Zoltan balance to target "
             "imbalance %f in %f seconds\n",
             tolerance, pcu::Time() - t0);
+      migrateBoundaryLayerStackTogether(bridge.mesh, plan);
       bridge.mesh->migrate(plan);
       double t1 = pcu::Time();
       if (!bridge.mesh->getPCU()->Self())

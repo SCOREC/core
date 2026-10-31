@@ -39,6 +39,7 @@ void adapt(Input* in)
     refine(a);
     snap(a);
   }
+  apf::writeVtkFiles("before_fix_shape", a->mesh);
   allowSplitCollapseOutsideLayer(a);
   fixElementShapes(a);
   cleanupLayer(a);

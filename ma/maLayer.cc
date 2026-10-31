@@ -3,7 +3,6 @@
 #include "maRefine.h"
 #include "maShape.h"
 #include <sstream>
-#include <unordered_set>
 #include <pcu_util.h>
 #include <lionPrint.h>
 
@@ -119,41 +118,6 @@ void findLayerBase(Adapt* a)
   m->end(it);
   for (int i=0; i < 2; ++i)
     syncFlag(a,i,LAYER_BASE);
-}
-
-std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* elem) 
-{
-  std::vector<Entity*> stack;
-  std::unordered_set<Entity*> inStack;
-  stack.push_back(elem);
-  inStack.insert(elem);
-  for (size_t i = 0; i < stack.size(); ++i) {
-    Downward faces;
-    int nf = mesh->getDownward(stack[i], 2, faces);
-    for (int f = 0; f < nf; ++f) {
-      if (mesh->getType(faces[f]) != Mesh::TRIANGLE) continue;
-      EntityArray adjacentElem;
-      mesh->getAdjacent(faces[f], 3, adjacentElem);
-      for (size_t j = 0; j < adjacentElem.getSize(); ++j) {
-        if (mesh->getType(adjacentElem[j]) != Mesh::PRISM) continue;
-        if (!inStack.insert(adjacentElem[j]).second) continue;
-        stack.push_back (adjacentElem[j]);
-      }
-    }
-  }
-  return stack;
-}
-
-void migrateBoundaryLayerStackTogether(Mesh* mesh, apf::Migration* plan)
-{
-  for (int i=0; i < plan->count(); i++) {
-    Entity* ent = plan->get(i);
-    if (mesh->getType(ent) != Mesh::PRISM) continue;
-    int target = plan->sending(ent);
-    auto stack = getBoundaryLayerStack(mesh, ent);
-    for (size_t i = 0; i < stack.size(); ++i)
-      plan->send(stack[i], target);
-  }
 }
 
 void allowSplitCollapseOutsideLayer(Adapt* a)

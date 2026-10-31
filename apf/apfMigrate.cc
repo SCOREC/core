@@ -11,6 +11,7 @@
 #include <pcu_util.h>
 #include <lionPrint.h>
 #include <cstdlib>
+#include <unordered_set>
 
 namespace apf {
 
@@ -894,6 +895,41 @@ static void migrate2(Mesh2* m, Migration* plan)
       plan->send(tmp[i].first, tmp[i].second);
     migrate1(m, plan);
     sent += send;
+  }
+}
+
+std::vector<MeshEntity*> getBoundaryLayerStack(Mesh* mesh, MeshEntity* elem)
+{
+  std::vector<MeshEntity*> stack;
+  std::unordered_set<MeshEntity*> inStack;
+  stack.push_back(elem);
+  inStack.insert(elem);
+  for (size_t i = 0; i < stack.size(); ++i) {
+    Downward faces;
+    int nf = mesh->getDownward(stack[i], 2, faces);
+    for (int f = 0; f < nf; ++f) {
+      if (mesh->getType(faces[f]) != Mesh::TRIANGLE) continue;
+      Adjacent adjacentElem;
+      mesh->getAdjacent(faces[f], 3, adjacentElem);
+      for (size_t j = 0; j < adjacentElem.getSize(); ++j) {
+        if (mesh->getType(adjacentElem[j]) != Mesh::PRISM) continue;
+        if (!inStack.insert(adjacentElem[j]).second) continue;
+        stack.push_back (adjacentElem[j]);
+      }
+    }
+  }
+  return stack;
+}
+
+void migrateBoundaryLayerStackTogether(Mesh* mesh, Migration* plan)
+{
+  for (int i=0; i < plan->count(); i++) {
+    MeshEntity* ent = plan->get(i);
+    if (mesh->getType(ent) != Mesh::PRISM) continue;
+    int target = plan->sending(ent);
+    auto stack = getBoundaryLayerStack(mesh, ent);
+    for (size_t i = 0; i < stack.size(); ++i)
+      plan->send(stack[i], target);
   }
 }
 

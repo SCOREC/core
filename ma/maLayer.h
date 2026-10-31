@@ -14,9 +14,6 @@ void freezeLayer(Adapt* a);
 void unfreezeLayer(Adapt* a);
 void findLayerBase(Adapt* a);
 
-std::vector<Entity*> getBoundaryLayerStack(Mesh* mesh, Entity* elem);
-void migrateBoundaryLayerStackTogether(Mesh* m, apf::Migration* plan);
-
 void allowSplitCollapseOutsideLayer(Adapt* a);
 
 void allowSplitInLayer(Adapt* a);
