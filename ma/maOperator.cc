@@ -16,7 +16,7 @@ class CollectiveOperation : public apf::CavityOp, public DeleteCallback
 {
   public:
     CollectiveOperation(Adapt* a, Operator* o):
-      apf::CavityOp(a->mesh,true),
+      apf::CavityOp(a->mesh,true,a->hasLayer && o->shouldKeepLayerStacks()),
       DeleteCallback(a)
     {
       op = o;

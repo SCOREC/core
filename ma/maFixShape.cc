@@ -86,6 +86,7 @@ FixShape::FixShape(Adapt* adapt) : splitCollapse(adapt), doubleSplitCollapse(ada
 }
 
 int FixShape::getTargetDimension() { return 3; }
+bool FixShape::shouldKeepLayerStacks() { return true; }
 bool FixShape::shouldApply(Entity* e) {
   badTet = e;
   return getFlag(a, e, BAD_QUALITY); 

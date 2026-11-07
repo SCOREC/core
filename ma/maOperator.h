@@ -23,6 +23,7 @@ class Operator
     virtual bool shouldApply(Entity* e) = 0;
     virtual bool requestLocality(apf::CavityOp* o) = 0;
     virtual void apply() = 0;
+    virtual bool shouldKeepLayerStacks() { return false; }
 };
 
 void applyOperator(Adapt* a, Operator* o);

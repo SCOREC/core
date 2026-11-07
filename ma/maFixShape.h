@@ -54,6 +54,7 @@ class FixShape : public Operator
 
   int getTargetDimension();
   bool shouldApply(Entity* e);
+  bool shouldKeepLayerStacks();
   bool requestLocality(apf::CavityOp* o);
 
   bool swapEdge(Entity* edge);

@@ -72,8 +72,10 @@ class CavityOp
   public:
     /** \brief constructor
       \param canModify true iff the operator can create or
-                       destroy mesh entities */
-    CavityOp(Mesh* m, bool canModify = false);
+                       destroy mesh entities
+      \param keepLayerStacks true iff pulling elements should
+                             keep boundary layer stacks on one part */
+    CavityOp(Mesh* m, bool canModify = false, bool keepLayerStacks = false);
     /** \brief outcome of a setEntity call */
     enum Outcome {
       /** \brief skip the given entity */
@@ -108,6 +110,7 @@ class CavityOp
     void applyLocallyWithoutModification(int d);
     void prepareListMigration(EntityList& elements, EntityList::iterator& iter, std::function<void()> migrationPossible);
     bool canModify;
+    bool keepLayerStacks;
     bool movedByDeletion;
     MeshIterator* iterator;
   protected:

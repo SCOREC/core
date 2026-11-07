@@ -110,7 +110,8 @@ namespace ma {
 
   void LayerEdgeSwap::rebuildTets() 
   {
-    Entity* oldFace = getTetFaceOppositeVert(mesh, oldTets[0], newVerts[0]);
+    Entity* tet = isLowInHigh(mesh, oldTets[0], newVerts[0]) ? oldTets[0] : oldTets[1];
+    Entity* oldFace = getTetFaceOppositeVert(mesh, tet, newVerts[0]);
     Entity* oppVert = getTriVertOppositeEdge(mesh, oldFace, edges[0]);
     for (size_t j=0; j<2; ++j) {
       Entity* tetVerts[4]{newVerts[0], newVerts[1], oppVert, oldVerts[j]};

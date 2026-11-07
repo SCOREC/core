@@ -8,13 +8,15 @@
 #include "apfCavityOp.h"
 #include "apf.h"
 #include "apfMesh2.h"
+#include <set>
 
 namespace apf {
 
-CavityOp::CavityOp(Mesh* m, bool cm):
+CavityOp::CavityOp(Mesh* m, bool cm, bool kls):
   mesh(m),
   isRequesting(false),
   canModify(cm),
+  keepLayerStacks(kls),
   movedByDeletion(false),
   iterator(0),
   sharing(0)
@@ -277,6 +279,32 @@ static void markElements(
     markElement(plan,a[i],requester);
 }
 
+/* boundary layer stacks must stay on one part, so each
+   stack goes to the winner among the requests for its prisms,
+   using the same ownership rule as competing element requests */
+static void markStacks(Migration* plan)
+{
+  Mesh* m = plan->getMesh();
+  std::set<MeshEntity*> visited;
+  int n = plan->count();
+  for (int i=0; i < n; ++i)
+  {
+    MeshEntity* e = plan->get(i);
+    if (m->getType(e) != Mesh::PRISM || visited.count(e))
+      continue;
+    std::vector<MeshEntity*> stack = getBoundaryLayerStack(m, e);
+    int target = plan->sending(e);
+    for (size_t j=0; j < stack.size(); ++j)
+      if (plan->has(stack[j]))
+        target = ownership(target, plan->sending(stack[j]));
+    for (size_t j=0; j < stack.size(); ++j)
+    {
+      plan->send(stack[j], target);
+      visited.insert(stack[j]);
+    }
+  }
+}
+
 bool CavityOp::tryToPull()
 {
   std::vector<PullRequest> pulls;
@@ -285,6 +313,8 @@ bool CavityOp::tryToPull()
   Migration* plan = new Migration(mesh);
   for (std::size_t i=0; i < pulls.size(); ++i)
     markElements(plan,pulls[i].e,pulls[i].to);
+  if (keepLayerStacks)
+    markStacks(plan);
   mesh->migrate(plan); //plan deleted here
   return true;
 }
