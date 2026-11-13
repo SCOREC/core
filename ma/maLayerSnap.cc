@@ -532,6 +532,20 @@ static long unsnapMarkedCurves(Adapt* a, Tag* snapTag)
   return op.ncurves;
 }
 
+static void clearLayerSnapTags(Adapt* a, Tag* snapTag)
+{
+  Mesh* m = a->mesh;
+  Iterator* it = m->begin(0);
+  Entity* v;
+  while ((v = m->iterate(it)))
+    if (getFlag(a, v, LAYER)) {
+      if (m->hasTag(v, snapTag))
+        m->removeTag(v, snapTag);
+      clearFlag(a, v, SNAP);
+    }
+  m->end(it);
+}
+
 void snapLayer(Adapt* a, Tag* snapTag)
 {
   if ( ! a->hasLayer)
@@ -549,6 +563,7 @@ void snapLayer(Adapt* a, Tag* snapTag)
     nunsnapped += unsnapMarkedCurves(a, snapTag);
   }
   delete l;
+  clearLayerSnapTags(a, snapTag);
   double t1 = pcu::Time();
   print(a->mesh->getPCU(), "finished snapping %ld of %ld layer curves in %f seconds", 
       nsnapped - nunsnapped, nsnapped, t1 - t0);

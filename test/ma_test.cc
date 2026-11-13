@@ -104,7 +104,7 @@ int main(int argc, char** argv)
   }
   m->verify();
   apf::writeVtkFiles("before",m);
-  AnIso sf(m, .5, .5);
+  AnIso sf(m, 4, .5);
   ma::Input* in = ma::makeAdvanced(ma::configure(m, &sf));
   in->shouldRunPreZoltan = true;
   in->shouldRunMidParma = true;
