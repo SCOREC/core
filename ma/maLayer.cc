@@ -3,6 +3,8 @@
 #include "maRefine.h"
 #include "maShape.h"
 #include <sstream>
+#include <set>
+#include <algorithm>
 #include <pcu_util.h>
 #include <lionPrint.h>
 
@@ -118,6 +120,65 @@ void findLayerBase(Adapt* a)
   m->end(it);
   for (int i=0; i < 2; ++i)
     syncFlag(a,i,LAYER_BASE);
+}
+
+/* in a prism, the growth edges connect vertex i of the
+   bottom triangle to vertex i+3 of the top triangle
+   (see apf::prism_edge_verts), so the next vertex in the
+   stack is the opposite end of that edge */
+static Entity* getNextStackVert(Mesh* m, Entity* v,
+    std::set<Entity*> const& visited)
+{
+  apf::Adjacent prisms;
+  m->getAdjacent(v, 3, prisms);
+  for (size_t i = 0; i < prisms.getSize(); ++i) {
+    if (m->getType(prisms[i]) != apf::Mesh::PRISM)
+      continue;
+    Entity* pv[6];
+    m->getDownward(prisms[i], 0, pv);
+    int j = apf::findIn(pv, 6, v);
+    Entity* ov = pv[(j + 3) % 6];
+    if (!visited.count(ov))
+      return ov;
+  }
+  return 0;
+}
+
+static bool isAdjacentToSimplex(Mesh* m, Entity* v)
+{
+  apf::Adjacent elements;
+  m->getAdjacent(v, m->getDimension(), elements);
+  for (size_t i = 0; i < elements.getSize(); ++i)
+    if (apf::isSimplex(m->getType(elements[i])))
+      return true;
+  return false;
+}
+
+std::vector<Entity*> getLayerVertStack(Mesh* m, Entity* vert)
+{
+  /* walk to one end of the stack */
+  std::set<Entity*> visited;
+  visited.insert(vert);
+  Entity* end = vert;
+  Entity* next;
+  while ((next = getNextStackVert(m, end, visited))) {
+    visited.insert(next);
+    end = next;
+  }
+  /* then walk back to the other end collecting vertices in order */
+  std::vector<Entity*> stack;
+  visited.clear();
+  stack.push_back(end);
+  visited.insert(end);
+  while ((next = getNextStackVert(m, stack.back(), visited))) {
+    visited.insert(next);
+    stack.push_back(next);
+  }
+  /* orient base -> top, top being next to the tets */
+  if (isAdjacentToSimplex(m, stack.front()) &&
+      !isAdjacentToSimplex(m, stack.back()))
+    std::reverse(stack.begin(), stack.end());
+  return stack;
 }
 
 void allowSplitCollapseOutsideLayer(Adapt* a)

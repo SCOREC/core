@@ -59,6 +59,10 @@ class Snapper
     bool tryCollapseTetEdges(FirstProblemPlane* FPP);
     bool tryReduceCommonEdges(FirstProblemPlane* FPP);
     bool trySwapOrSplit(FirstProblemPlane* FPP);
+    bool hasInvalidPrisms(apf::Up& invalid);
+    void swapWithLayerTop();
+
+    std::vector<Entity*> layerStack;
 };
 
 EntitySet getNextLayer(Adapt* a, EntitySet& tets);

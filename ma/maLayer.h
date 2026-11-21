@@ -14,6 +14,8 @@ void freezeLayer(Adapt* a);
 void unfreezeLayer(Adapt* a);
 void findLayerBase(Adapt* a);
 
+std::vector<Entity*> getLayerVertStack(Mesh* m, Entity* vert);
+
 void allowSplitCollapseOutsideLayer(Adapt* a);
 
 void allowSplitInLayer(Adapt* a);

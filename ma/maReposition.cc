@@ -37,8 +37,6 @@ bool RepositionVertex::init(Entity* vertex)
   this->vertex = vertex;
   this->prevPosition = getPosition(mesh, vertex);
   mesh->getAdjacent(vertex, mesh->getDimension(), adjacentElements);
-  for (size_t i = 0; i < adjacentElements.getSize(); ++i)
-    if (!isSimplex(mesh->getType(adjacentElements[i]))) return false;
   mesh->getUp(vertex, adjEdges);
   clearAdjCache();
   return true;
@@ -61,11 +59,11 @@ void RepositionVertex::clearAdjCache()
 void RepositionVertex::findInvalid()
 {
   for (size_t i = 0; i < adjacentElements.getSize(); ++i) {
-    /* for now, when snapping a vertex on the boundary
-    layer, ignore the quality of layer elements.
-    not only do we not have metrics for this, but the
-    algorithm that moves curves would need to change */
-    if (getFlag(adapt, adjacentElements[i], LAYER)) continue;
+    if (!isSimplex(mesh->getType(adjacentElements[i]))) {
+      if (!isLayerElementOk(mesh, adjacentElements[i]))
+        invalid.e[invalid.n++] = adjacentElements[i];
+      continue;
+    }
 
     double quality;
     if (mesh->getType(adjacentElements[i]) == apf::Mesh::TET && !isTetValid(mesh, adjacentElements[i]))
@@ -137,6 +135,8 @@ bool RepositionVertex::moveToImproveQuality(Entity* vertex)
 {
   if (mesh->getModelType(mesh->toModel(vertex)) < 2) return false;
   if (!init(vertex)) return false;
+  for (size_t i = 0; i < adjacentElements.getSize(); ++i)
+    if (!isSimplex(mesh->getType(adjacentElements[i]))) return false;
 
   Vector center = modelCenter();
   Vector target = center + (prevPosition - center)/4;

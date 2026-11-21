@@ -778,8 +778,6 @@ class SnapAll : public Operator
     {
       if ( ! getFlag(adapter, e, SNAP))
         return false;
-      if (getFlag(adapter, e, LAYER))
-        return false;
       vert = e;
       snapper->setVert(e);
       return true;
@@ -929,7 +927,7 @@ void snap(Adapt* a)
   {
     Snapper snapper(a, a->snapTag);
     snapTaggedVerts(a, a->snapTag, snapper);
-    snapLayer(a, a->snapTag);
+    // snapLayer(a, a->snapTag);
 
     double t1 = pcu::Time();
     print(a->mesh->getPCU(), "snapping %d - moved %d - failed %d - collapseToVtx %d"

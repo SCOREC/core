@@ -29,6 +29,7 @@
 #include "maFaceSwap.h"
 #include "maSnap.h"
 #include "maDBG.h"
+#include "maLayer.h"
 #include <apfCavityOp.h>
 #include <pcu_util.h>
 #include <lionPrint.h>
@@ -359,6 +360,33 @@ bool Snapper::trySimpleSnap()
   adapt->mesh->getDoubleTag(vert, snapTag, &target[0]);
   return reposition.move(vert, target);
 }
+
+bool Snapper::hasInvalidPrisms(apf::Up& invalid)
+{
+  int numPrisms = 0;
+  for (int i = 0; i < invalid.n; ++i)
+    if (mesh->getType(invalid.e[i]) == apf::Mesh::PRISM) {
+      lion_eprint(1, "[Warning]: Snapping vertex would create invalid prism(s), skipping vertex\n");
+      return true;
+    }
+  return false;
+}
+
+void Snapper::swapWithLayerTop()
+{
+  layerStack = getLayerVertStack(mesh, vert);
+  Entity* top = layerStack.back();
+  if (top == vert) return;
+  Vector target;
+  mesh->getDoubleTag(vert, snapTag, &target[0]);
+  Vector topTarget = getPosition(mesh, top) + (target - getPosition(mesh, vert));
+  mesh->setDoubleTag(top, snapTag, &topTarget[0]);
+  setFlag(adapt, top, SNAP);
+  mesh->removeTag(vert, snapTag);
+  clearFlag(adapt, vert, SNAP);
+  vert = top;
+}
+
 #if defined(DEBUG_FPP)
 static int DEBUGFAILED=0;
 #endif
@@ -372,10 +400,13 @@ to apply certain opperators so other algoritms were adapted from old scorec libr
 bool Snapper::run()
 {
   if (!mesh->hasTag(vert, snapTag)) return true;
+  if (getFlag(adapt, vert, LAYER)) swapWithLayerTop();
   Vector target;
   adapt->mesh->getDoubleTag(vert, snapTag, &target[0]);
   bool success = reposition.move(vert, target);
+  //TODO: modify reposition to move all vertices on the boundary layer stack at once
   apf::Up& invalid = reposition.getInvalid();
+  if (hasInvalidPrisms(invalid)) { numFailed++; return false; }
 
   if (success) {
     numSnapped++;
